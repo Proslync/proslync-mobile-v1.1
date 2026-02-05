@@ -1,5 +1,5 @@
 // Set to true to use local backend (requires backend running on your machine)
-const USE_LOCAL_BACKEND = true;
+const USE_LOCAL_BACKEND = false;
 
 // Your machine's local IP address when using local backend
 // Find it with: ipconfig (Windows) or ifconfig (Mac/Linux)
