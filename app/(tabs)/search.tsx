@@ -1,0 +1,1065 @@
+// Snap Map-style interactive map screen with Mapbox
+// Requires development build: expo run:ios or expo run:android
+
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
+import * as Haptics from 'expo-haptics';
+import Constants from 'expo-constants';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  FadeIn,
+  withRepeat,
+  withSequence,
+} from 'react-native-reanimated';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { eventsApi } from '@/lib/api/events';
+import type { Event } from '@/lib/types/events.types';
+import { EventStatus } from '@/lib/types/events.types';
+import Mapbox, { MapView, Camera, MarkerView, LocationPuck } from '@rnmapbox/maps';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Check if running in Expo Go (native modules not available)
+const isExpoGo = Constants.appOwnership === 'expo';
+
+// Initialize Mapbox with token from environment
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+if (MAPBOX_TOKEN && !isExpoGo) {
+  Mapbox.setAccessToken(MAPBOX_TOKEN);
+}
+
+// Custom dark nightlife map style URL for Mapbox
+const DARK_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';
+
+// Filter type for nearby modal
+type NearbyFilter = 'events' | 'friends';
+
+// Friend marker interface
+interface FriendMarker {
+  id: string;
+  name: string;
+  imageUrl: string;
+  latitude: number;
+  longitude: number;
+}
+
+// Types
+interface MapEvent {
+  id: string;
+  title: string;
+  venue: string;
+  latitude: number;
+  longitude: number;
+  imageUrl: string;
+  date: string;
+  time: string;
+  rawDate: string; // Original ISO date string for event page
+  attendees: number;
+  isLive: boolean;
+  popularity: number;
+  type: 'event' | 'venue' | 'hotspot';
+}
+
+// Transform API Event to MapEvent
+function transformEventToMapEvent(event: Event): MapEvent {
+  const now = new Date();
+  const startDate = new Date(event.startDate);
+  const endDate = event.endDate ? new Date(event.endDate) : null;
+
+  // Calculate if event is today or tomorrow
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrowStart = new Date(todayStart.getTime() + 86400000);
+  const dayAfterTomorrow = new Date(todayStart.getTime() + 2 * 86400000);
+
+  const isToday = startDate >= todayStart && startDate < tomorrowStart;
+  const isTomorrow = startDate >= tomorrowStart && startDate < dayAfterTomorrow;
+  const isPast = startDate < todayStart;
+
+  // Check if event is currently live (happening RIGHT NOW)
+  // Event is live ONLY if:
+  // 1. Event status is ACTIVE (set by backend when event is happening)
+  // OR
+  // 2. Start time has passed AND end time hasn't (with reasonable defaults)
+  let isLive = false;
+
+  // Primary check: Use backend status if available
+  if (event.status === EventStatus.ACTIVE) {
+    isLive = true;
+  } else if (event.status === EventStatus.FINISHED || event.status === EventStatus.CANCELLED) {
+    isLive = false;
+  } else {
+    // Fallback: Calculate based on time if status is PUBLISHED
+    // Only consider it live if currently within the event timeframe
+    if (startDate <= now && event.status === EventStatus.PUBLISHED) {
+      if (endDate) {
+        // Has explicit end date - check if we're before it
+        isLive = now <= endDate;
+      } else {
+        // No end date - assume event lasts 6 hours max from start
+        const assumedEndDate = new Date(startDate.getTime() + 6 * 60 * 60 * 1000);
+        isLive = now <= assumedEndDate;
+      }
+    }
+  }
+
+  // Never show past events as live
+  if (isPast) {
+    isLive = false;
+  }
+
+  // Format date string
+  let dateStr = 'Upcoming';
+  if (isPast) {
+    dateStr = 'Past';
+  } else if (isToday) {
+    // Check if it's evening/night (after 6pm) to say "Tonight" vs "Today"
+    const hour = startDate.getHours();
+    dateStr = hour >= 18 ? 'Tonight' : 'Today';
+  } else if (isTomorrow) {
+    dateStr = 'Tomorrow';
+  } else {
+    // Show day of week for this week, or full date for later
+    const daysUntil = Math.floor((startDate.getTime() - todayStart.getTime()) / 86400000);
+    if (daysUntil <= 7) {
+      dateStr = startDate.toLocaleDateString([], { weekday: 'long' });
+    } else {
+      dateStr = startDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+  }
+
+  // Format time - use actual event start time
+  const timeStr = startDate.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+
+  // Get actual attendee count from API
+  const attendeeCount = event.attendeeCount ?? 0;
+
+  return {
+    id: event.id.toString(),
+    title: event.name,
+    venue: event.venue?.name || event.location || 'TBA',
+    latitude: event.venue?.latitude || 40.7580, // Default to NYC
+    longitude: event.venue?.longitude || -73.9855,
+    imageUrl: event.flyer?.url || event.imageUrl || 'https://picsum.photos/seed/event/400/600',
+    date: dateStr,
+    time: timeStr,
+    rawDate: event.startDate, // Keep original ISO date for event page
+    attendees: attendeeCount,
+    isLive,
+    popularity: Math.min(100, attendeeCount > 0 ? Math.floor(attendeeCount / 5) : 0),
+    type: 'event',
+  };
+}
+
+// Event card for bottom sheet
+function EventCard({ event, onPress }: { event: MapEvent; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={styles.eventCard} onPress={onPress} activeOpacity={0.9}>
+      <Image source={{ uri: event.imageUrl }} style={styles.eventCardImage} />
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.9)']}
+        style={styles.eventCardGradient}
+      />
+      <View style={styles.eventCardContent}>
+        {event.isLive && (
+          <View style={styles.eventCardLive}>
+            <View style={styles.eventCardLiveDot} />
+            <Text style={styles.eventCardLiveText}>LIVE NOW</Text>
+          </View>
+        )}
+        <Text style={styles.eventCardTitle} numberOfLines={1}>
+          {event.title}
+        </Text>
+        <Text style={styles.eventCardVenue} numberOfLines={1}>
+          {event.venue}
+        </Text>
+        <View style={styles.eventCardMeta}>
+          <View style={styles.eventCardMetaItem}>
+            <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.7)" />
+            <Text style={styles.eventCardMetaText}>{event.date} @ {event.time}</Text>
+          </View>
+          <View style={styles.eventCardMetaItem}>
+            <Ionicons name="people-outline" size={12} color="rgba(255,255,255,0.7)" />
+            <Text style={styles.eventCardMetaText}>{event.attendees}</Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// Search overlay
+function SearchOverlay({
+  searchQuery,
+  onSearchChange,
+  onFilterPress,
+}: {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onFilterPress: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Animated.View
+      entering={FadeIn.duration(300)}
+      style={[styles.searchOverlay, { top: insets.top + 12 }]}
+    >
+      <View style={styles.searchBar}>
+        <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
+        <TextInput
+          style={styles.searchInput}
+          value={searchQuery}
+          onChangeText={onSearchChange}
+          placeholder="Search events, venues..."
+          placeholderTextColor="rgba(255,255,255,0.4)"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => onSearchChange('')}>
+            <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.5)" />
+          </TouchableOpacity>
+        )}
+      </View>
+      <TouchableOpacity style={styles.filterButton} onPress={onFilterPress}>
+        <Ionicons name="options-outline" size={20} color="#fff" />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
+// Pulsing border animation for live events
+function PulsingBorder({ children }: { children: React.ReactNode }) {
+  const pulseAnim = useSharedValue(1);
+
+  useEffect(() => {
+    pulseAnim.value = withRepeat(
+      withSequence(
+        withTiming(1.15, { duration: 800 }),
+        withTiming(1, { duration: 800 })
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseAnim.value }],
+    opacity: 2 - pulseAnim.value,
+  }));
+
+  return (
+    <View style={styles.pulsingContainer}>
+      <Animated.View style={[styles.pulsingBorder, animatedStyle]} />
+      {children}
+    </View>
+  );
+}
+
+// Event flyer card marker for map (rectangular flyer style)
+function EventMarker({ event, onPress }: { event: MapEvent; onPress: () => void }) {
+  const marker = (
+    <TouchableOpacity onPress={onPress} style={styles.eventMarkerContainer}>
+      <View style={[styles.eventMarker, event.isLive && styles.eventMarkerLive]}>
+        <Image source={{ uri: event.imageUrl }} style={styles.eventMarkerImage} />
+        {event.isLive && (
+          <View style={styles.eventMarkerLiveBadge}>
+            <Text style={styles.eventMarkerLiveText}>LIVE</Text>
+          </View>
+        )}
+      </View>
+      <View style={[styles.eventMarkerPointer, event.isLive && styles.eventMarkerPointerLive]} />
+    </TouchableOpacity>
+  );
+
+  if (event.isLive) {
+    return <PulsingBorder>{marker}</PulsingBorder>;
+  }
+
+  return marker;
+}
+
+// Friend profile marker for map (circular profile photo)
+function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.friendMarkerContainer}>
+      <View style={styles.friendMarker}>
+        <Image source={{ uri: friend.imageUrl }} style={styles.friendMarkerImage} />
+      </View>
+      <View style={styles.friendMarkerPointer} />
+    </TouchableOpacity>
+  );
+}
+
+// Fallback/Preview screen for Expo Go
+function MapPreview() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [events, setEvents] = useState<MapEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>('events');
+
+  const snapPoints = useMemo(() => [140, '45%'], []);
+
+  // Fetch events from API
+  const fetchEvents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const apiEvents = await eventsApi.getEvents({ limit: 50 });
+      const mapEvents = apiEvents.map(transformEventToMapEvent);
+      setEvents(mapEvents);
+
+      console.log('[Map] Fetched', mapEvents.length, 'events from API');
+    } catch (err) {
+      console.error('[Map] Failed to fetch events:', err);
+      setError('Failed to load events');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  // Pull-to-refresh with haptic feedback
+  const { refreshControl } = useRefreshControl({
+    onRefresh: fetchEvents,
+  });
+
+  const filteredEvents = useMemo(() => {
+    // Filter out past events
+    let filtered = events.filter(e => e.date !== 'Past');
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (e) =>
+          e.title.toLowerCase().includes(query) ||
+          e.venue.toLowerCase().includes(query)
+      );
+    }
+    return filtered;
+  }, [searchQuery, events]);
+
+  const handleEventPress = useCallback(
+    (event: MapEvent) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push({
+        pathname: '/event/[id]',
+        params: {
+          id: event.id,
+          title: event.title,
+          date: event.rawDate,
+          imageUrl: event.imageUrl,
+          venueName: event.venue,
+          isPaid: 'false',
+          isUserRegistered: 'false',
+        },
+      });
+    },
+    [router]
+  );
+
+  const handleFilterPress = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  const handleFilterChange = useCallback((filter: NearbyFilter) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNearbyFilter(filter);
+  }, []);
+
+  const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
+
+  return (
+    <View style={styles.container}>
+      {/* Map placeholder background */}
+      <LinearGradient
+        colors={['#1a1a2e', '#16213e', '#0f3460']}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Decorative map grid */}
+      <View style={styles.mapGrid}>
+        {[...Array(8)].map((_, i) => (
+          <View key={`h-${i}`} style={[styles.gridLineH, { top: `${(i + 1) * 12}%` }]} />
+        ))}
+        {[...Array(6)].map((_, i) => (
+          <View key={`v-${i}`} style={[styles.gridLineV, { left: `${(i + 1) * 16}%` }]} />
+        ))}
+      </View>
+
+      {/* Floating event markers preview */}
+      <View style={styles.markerPreviewContainer}>
+        {events.slice(0, 5).map((event, index) => (
+          <TouchableOpacity
+            key={event.id}
+            style={[
+              styles.markerPreview,
+              {
+                top: 80 + (index * 45) % 180,
+                left: 30 + (index * 67) % (SCREEN_WIDTH - 100),
+              },
+            ]}
+            onPress={() => handleEventPress(event)}
+          >
+            <Image source={{ uri: event.imageUrl }} style={styles.markerPreviewImage} />
+            {event.isLive && <View style={styles.markerPreviewLive} />}
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {/* Development build notice */}
+      <View style={[styles.devNotice, { top: insets.top + 70 }]}>
+        <Ionicons name="information-circle" size={16} color="#8b5cf6" />
+        <Text style={styles.devNoticeText}>
+          Full map requires dev build
+        </Text>
+      </View>
+
+      {/* Search Overlay */}
+      <SearchOverlay
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onFilterPress={handleFilterPress}
+      />
+
+      {/* Bottom Sheet with events */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={1}
+        snapPoints={snapPoints}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.bottomSheetIndicator}
+        enablePanDownToClose={false}
+        animateOnMount={true}
+      >
+        <View style={styles.bottomSheetHeader}>
+          <Text style={styles.bottomSheetTitle}>Nearby</Text>
+          <View style={styles.filterTabs}>
+            <TouchableOpacity
+              style={[styles.filterTab, nearbyFilter === 'events' && styles.filterTabActive]}
+              onPress={() => handleFilterChange('events')}
+            >
+              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              <Text style={[styles.filterTabText, nearbyFilter === 'events' && styles.filterTabTextActive]}>Events</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterTab, nearbyFilter === 'friends' && styles.filterTabActive]}
+              onPress={() => handleFilterChange('friends')}
+            >
+              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              <Text style={[styles.filterTabText, nearbyFilter === 'friends' && styles.filterTabTextActive]}>Friends</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.liveIndicator}>
+            {nearbyFilter === 'events' && liveCount > 0 && (
+              <>
+                <View style={styles.liveIndicatorDot} />
+                <Text style={styles.liveIndicatorText}>{liveCount} Live</Text>
+              </>
+            )}
+            {isLoading && <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />}
+          </View>
+        </View>
+
+        <BottomSheetScrollView
+          contentContainerStyle={styles.bottomSheetContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        >
+          {nearbyFilter === 'friends' ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="people-outline" size={48} color="rgba(255,255,255,0.3)" />
+              <Text style={styles.emptyStateText}>No friends nearby</Text>
+              <Text style={styles.emptyStateSubtext}>Friends will appear here when they're at events near you</Text>
+            </View>
+          ) : isLoading && events.length === 0 ? (
+            <View style={styles.loadingState}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={styles.loadingStateText}>Loading events...</Text>
+            </View>
+          ) : error && events.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="cloud-offline-outline" size={48} color="rgba(255,255,255,0.3)" />
+              <Text style={styles.emptyStateText}>{error}</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()}>
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredEvents.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="map-outline" size={48} color="rgba(255,255,255,0.3)" />
+              <Text style={styles.emptyStateText}>{searchQuery ? 'No events found' : 'No events available'}</Text>
+            </View>
+          ) : (
+            filteredEvents.map((event) => (
+              <EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />
+            ))
+          )}
+        </BottomSheetScrollView>
+      </BottomSheet>
+    </View>
+  );
+}
+
+// Full Mapbox Map Screen
+function FullMapScreen() {
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const cameraRef = useRef<Camera>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [events, setEvents] = useState<MapEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<MapEvent | null>(null);
+  const [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>('events');
+
+  const snapPoints = useMemo(() => [140, '45%', '85%'], []);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation([location.coords.longitude, location.coords.latitude]);
+      }
+    })();
+  }, []);
+
+  const fetchEvents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const apiEvents = await eventsApi.getEvents({ limit: 50 });
+      const mapEvents = apiEvents.map(transformEventToMapEvent);
+      setEvents(mapEvents);
+    } catch (err) {
+      console.error('[Map] Failed to fetch events:', err);
+      setError('Failed to load events');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchEvents(); }, [fetchEvents]);
+
+  const { refreshControl } = useRefreshControl({ onRefresh: fetchEvents });
+
+  const filteredEvents = useMemo(() => {
+    let filtered = events.filter(e => e.date !== 'Past');
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(e => e.title.toLowerCase().includes(query) || e.venue.toLowerCase().includes(query));
+    }
+    return filtered;
+  }, [searchQuery, events]);
+
+  const nearbyFriends = useMemo<FriendMarker[]>(() => [], []);
+
+  const handleEventPress = useCallback((event: MapEvent) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ pathname: '/event/[id]', params: { id: event.id, title: event.title, date: event.rawDate, imageUrl: event.imageUrl, venueName: event.venue, isPaid: 'false', isUserRegistered: 'false' } });
+  }, [router]);
+
+  const handleMarkerPress = useCallback((event: MapEvent) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedEvent(event);
+    cameraRef.current?.setCamera({ centerCoordinate: [event.longitude, event.latitude], zoomLevel: 14, animationDuration: 500 });
+    bottomSheetRef.current?.snapToIndex(1);
+  }, []);
+
+  const handleFilterPress = useCallback(() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }, []);
+  const handleFilterChange = useCallback((filter: NearbyFilter) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNearbyFilter(filter); }, []);
+  const handleRecenter = useCallback(() => { if (userLocation) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); cameraRef.current?.setCamera({ centerCoordinate: userLocation, zoomLevel: 13, animationDuration: 500 }); } }, [userLocation]);
+
+  const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
+  const defaultCenter: [number, number] = userLocation || [-73.9855, 40.7580];
+
+  return (
+    <View style={styles.container}>
+      <MapView style={StyleSheet.absoluteFill} styleURL={DARK_STYLE_URL} logoEnabled={false} attributionEnabled={false} compassEnabled={false} scaleBarEnabled={false}>
+        <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12 }} />
+        <LocationPuck puckBearing="heading" puckBearingEnabled={true} pulsing={{ isEnabled: true, color: '#8b5cf6' }} />
+        {nearbyFilter === 'events' && filteredEvents.map((event) => (
+          <MarkerView key={event.id} coordinate={[event.longitude, event.latitude]} anchor={{ x: 0.5, y: 1 }}>
+            <EventMarker event={event} onPress={() => handleMarkerPress(event)} />
+          </MarkerView>
+        ))}
+        {nearbyFilter === 'friends' && nearbyFriends.map((friend) => (
+          <MarkerView key={friend.id} coordinate={[friend.longitude, friend.latitude]} anchor={{ x: 0.5, y: 1 }}>
+            <FriendMarkerView friend={friend} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} />
+          </MarkerView>
+        ))}
+      </MapView>
+
+      <SearchOverlay searchQuery={searchQuery} onSearchChange={setSearchQuery} onFilterPress={handleFilterPress} />
+      <TouchableOpacity style={[styles.recenterButton, { bottom: 180 }]} onPress={handleRecenter}>
+        <Ionicons name="locate" size={22} color="#fff" />
+      </TouchableOpacity>
+
+      <BottomSheet ref={bottomSheetRef} index={0} snapPoints={snapPoints} backgroundStyle={styles.bottomSheetBackground} handleIndicatorStyle={styles.bottomSheetIndicator} enablePanDownToClose={false} animateOnMount={true}>
+        <View style={styles.bottomSheetHeader}>
+          <Text style={styles.bottomSheetTitle}>Nearby</Text>
+          <View style={styles.filterTabs}>
+            <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'events' && styles.filterTabActive]} onPress={() => handleFilterChange('events')}>
+              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              <Text style={[styles.filterTabText, nearbyFilter === 'events' && styles.filterTabTextActive]}>Events</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'friends' && styles.filterTabActive]} onPress={() => handleFilterChange('friends')}>
+              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              <Text style={[styles.filterTabText, nearbyFilter === 'friends' && styles.filterTabTextActive]}>Friends</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.liveIndicator}>
+            {nearbyFilter === 'events' && liveCount > 0 && (<><View style={styles.liveIndicatorDot} /><Text style={styles.liveIndicatorText}>{liveCount} Live</Text></>)}
+            {isLoading && <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />}
+          </View>
+        </View>
+        <BottomSheetScrollView contentContainerStyle={styles.bottomSheetContent} showsVerticalScrollIndicator={false} refreshControl={refreshControl}>
+          {nearbyFilter === 'friends' ? (
+            <View style={styles.emptyState}><Ionicons name="people-outline" size={48} color="rgba(255,255,255,0.3)" /><Text style={styles.emptyStateText}>No friends nearby</Text><Text style={styles.emptyStateSubtext}>Friends will appear here when they're at events near you</Text></View>
+          ) : isLoading && events.length === 0 ? (
+            <View style={styles.loadingState}><ActivityIndicator size="large" color="#fff" /><Text style={styles.loadingStateText}>Loading events...</Text></View>
+          ) : error && events.length === 0 ? (
+            <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color="rgba(255,255,255,0.3)" /><Text style={styles.emptyStateText}>{error}</Text><TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()}><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity></View>
+          ) : filteredEvents.length === 0 ? (
+            <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color="rgba(255,255,255,0.3)" /><Text style={styles.emptyStateText}>{searchQuery ? 'No events found' : 'No events available'}</Text></View>
+          ) : (
+            <>{selectedEvent && <EventCard key={`selected-${selectedEvent.id}`} event={selectedEvent} onPress={() => handleEventPress(selectedEvent)} />}{filteredEvents.filter(e => !selectedEvent || e.id !== selectedEvent.id).map((event) => (<EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />))}</>
+          )}
+        </BottomSheetScrollView>
+      </BottomSheet>
+    </View>
+  );
+}
+
+// Main Map Screen - shows preview in Expo Go, full map in dev build
+export default function MapScreen() {
+  if (isExpoGo || !MAPBOX_TOKEN) {
+    return <MapPreview />;
+  }
+  return <FullMapScreen />;
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  // Map grid decoration
+  mapGrid: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.1,
+  },
+  gridLineH: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: '#fff',
+  },
+  gridLineV: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 1,
+    backgroundColor: '#fff',
+  },
+  // Marker previews
+  markerPreviewContainer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  markerPreview: {
+    position: 'absolute',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: '#8b5cf6',
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  markerPreviewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  markerPreviewLive: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#ff3b30',
+    borderWidth: 2,
+    borderColor: '#000',
+  },
+  // Dev notice
+  devNotice: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 6,
+  },
+  devNoticeText: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: '#8b5cf6',
+  },
+  // Search overlay
+  searchOverlay: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    height: 46,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    color: '#fff',
+  },
+  filterButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  // Bottom sheet
+  bottomSheetBackground: {
+    backgroundColor: '#1a1a1a',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  bottomSheetIndicator: {
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    width: 40,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  filterTabs: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 10,
+    padding: 4,
+    gap: 4,
+  },
+  filterTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  filterTabActive: {
+    backgroundColor: '#8b5cf6',
+  },
+  filterTabText: {
+    fontSize: 14,
+    fontFamily: 'Lato_600SemiBold',
+    color: 'rgba(255,255,255,0.5)',
+  },
+  filterTabTextActive: {
+    color: '#fff',
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  liveIndicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ff3b30',
+  },
+  liveIndicatorText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  bottomSheetContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+  },
+  // Event card
+  eventCard: {
+    height: 160,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  eventCardImage: {
+    ...StyleSheet.absoluteFillObject,
+    resizeMode: 'cover',
+  },
+  eventCardGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  eventCardContent: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 14,
+  },
+  eventCardLive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#ff3b30',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 8,
+    gap: 6,
+  },
+  eventCardLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#fff',
+  },
+  eventCardLiveText: {
+    fontSize: 10,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  eventCardTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  eventCardVenue: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: 8,
+  },
+  eventCardMeta: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  eventCardMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  eventCardMetaText: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  // Loading state
+  loadingState: {
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingStateText: {
+    marginTop: 16,
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  // Empty state
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    marginTop: 12,
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.5)',
+  },
+  emptyStateSubtext: {
+    marginTop: 8,
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.3)',
+    textAlign: 'center',
+    paddingHorizontal: 40,
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#8b5cf6',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontFamily: 'Lato_600SemiBold',
+    color: '#fff',
+  },
+  // Pulsing animation
+  pulsingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pulsingBorder: {
+    position: 'absolute',
+    width: 76,
+    height: 106,
+    borderRadius: 10,
+    backgroundColor: '#ff3b30',
+    opacity: 0.5,
+  },
+  // Event flyer card markers
+  eventMarkerContainer: {
+    alignItems: 'center',
+  },
+  eventMarker: {
+    width: 70,
+    height: 100,
+    borderRadius: 8,
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  eventMarkerLive: {
+    borderColor: '#ff3b30',
+  },
+  eventMarkerImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  eventMarkerLiveBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: '#ff3b30',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  eventMarkerLiveText: {
+    fontSize: 8,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  eventMarkerPointer: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderTopWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#ffffff',
+    marginTop: -1,
+  },
+  eventMarkerPointerLive: {
+    borderTopColor: '#ff3b30',
+  },
+  // Friend profile markers
+  friendMarkerContainer: {
+    alignItems: 'center',
+  },
+  friendMarker: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: '#34c759',
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  friendMarkerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  friendMarkerPointer: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#34c759',
+    marginTop: -1,
+  },
+  // Recenter button
+  recenterButton: {
+    position: 'absolute',
+    right: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+});

@@ -1,0 +1,536 @@
+// Withdrawal Sheet - Comprehensive withdraw flow with integrated payout management
+import React, { useState, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { BottomSheet } from './bottom-sheet';
+import { WalletBalances, PayoutMethod } from '../../lib/types/wallet.types';
+
+interface WithdrawalSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  balances: WalletBalances;
+  payoutMethods: PayoutMethod[];
+  onWithdraw: (amountCents: number, methodId: string) => void | Promise<void>;
+  onAddPayoutMethod: (method: Omit<PayoutMethod, 'id'>) => void | Promise<void>;
+}
+
+type SheetView = 'withdraw' | 'select-method' | 'add-method-choice';
+
+function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+const QUICK_AMOUNTS = [
+  { label: '25%', multiplier: 0.25 },
+  { label: '50%', multiplier: 0.5 },
+  { label: 'Max', multiplier: 1 },
+];
+
+export function WithdrawalSheet({
+  visible,
+  onClose,
+  balances,
+  payoutMethods,
+  onWithdraw,
+  onAddPayoutMethod,
+}: WithdrawalSheetProps) {
+  const [view, setView] = useState<SheetView>('withdraw');
+  const [amountInput, setAmountInput] = useState('');
+  const [selectedMethodId, setSelectedMethodId] = useState<string | null>(
+    payoutMethods.find((m) => m.isDefault)?.id || payoutMethods[0]?.id || null
+  );
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const amountCents = useMemo(() => {
+    const parsed = parseFloat(amountInput);
+    return isNaN(parsed) ? 0 : Math.round(parsed * 100);
+  }, [amountInput]);
+
+  const canWithdraw =
+    amountCents >= balances.minimumCashOutCents &&
+    amountCents <= balances.availableCents &&
+    selectedMethodId !== null;
+
+  const selectedMethod = payoutMethods.find((m) => m.id === selectedMethodId);
+
+  const handleClose = () => {
+    setView('withdraw');
+    setAmountInput('');
+    onClose();
+  };
+
+  const handleQuickAmount = (multiplier: number) => {
+    const amount = Math.floor(balances.availableCents * multiplier) / 100;
+    setAmountInput(amount.toFixed(2));
+  };
+
+  const handleWithdraw = () => {
+    if (!canWithdraw || !selectedMethodId || isProcessing) return;
+
+    Alert.alert(
+      'Confirm Withdrawal',
+      `Withdraw ${formatCents(amountCents)} to ${selectedMethod?.label} ••${selectedMethod?.last4}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Withdraw',
+          onPress: async () => {
+            try {
+              setIsProcessing(true);
+              await onWithdraw(amountCents, selectedMethodId);
+              handleClose();
+            } catch (error: any) {
+              Alert.alert('Error', error?.message || 'Failed to process withdrawal');
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSelectMethod = (methodId: string) => {
+    setSelectedMethodId(methodId);
+    setView('withdraw');
+  };
+
+  // Render different views
+  const renderWithdrawView = () => (
+    <>
+      <Text style={styles.title}>Withdraw</Text>
+
+      {/* Available Balance */}
+      <View style={styles.balanceSection}>
+        <Text style={styles.balanceLabel}>Available balance</Text>
+        <Text style={styles.balanceAmount}>{formatCents(balances.availableCents)}</Text>
+      </View>
+
+      {/* Amount Input */}
+      <View style={styles.inputSection}>
+        <Text style={styles.inputLabel}>Amount</Text>
+        <View style={styles.inputContainer}>
+          <Text style={styles.currencySymbol}>$</Text>
+          <TextInput
+            style={styles.amountInput}
+            value={amountInput}
+            onChangeText={setAmountInput}
+            placeholder="0.00"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            keyboardType="decimal-pad"
+            returnKeyType="done"
+          />
+        </View>
+
+        {/* Quick Amount Buttons */}
+        <View style={styles.quickAmounts}>
+          {QUICK_AMOUNTS.map((qa) => (
+            <TouchableOpacity
+              key={qa.label}
+              style={styles.quickAmountButton}
+              onPress={() => handleQuickAmount(qa.multiplier)}
+            >
+              <Text style={styles.quickAmountText}>{qa.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Payout Method Selector */}
+      <View style={styles.methodSection}>
+        <Text style={styles.inputLabel}>Payout method</Text>
+        <TouchableOpacity
+          style={styles.methodSelector}
+          onPress={() => setView('select-method')}
+        >
+          {selectedMethod ? (
+            <View style={styles.selectedMethodContent}>
+              <Ionicons
+                name={selectedMethod.type === 'bank' ? 'business-outline' : 'card-outline'}
+                size={20}
+                color="#fff"
+              />
+              <View style={styles.selectedMethodInfo}>
+                <Text style={styles.selectedMethodLabel}>{selectedMethod.label}</Text>
+                <Text style={styles.selectedMethodLast4}>••••{selectedMethod.last4}</Text>
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.addMethodText}>Select payout method</Text>
+          )}
+          <Ionicons name="chevron-down" size={20} color="rgba(255,255,255,0.5)" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Estimated Arrival */}
+      {selectedMethod && (
+        <View style={styles.arrivalSection}>
+          <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.5)" />
+          <Text style={styles.arrivalText}>
+            {selectedMethod.type === 'debit' ? 'Instant' : '1-3 business days'}
+          </Text>
+        </View>
+      )}
+
+      {/* Withdraw Button */}
+      <TouchableOpacity
+        style={[styles.withdrawButton, (!canWithdraw || isProcessing) && styles.withdrawButtonDisabled]}
+        onPress={handleWithdraw}
+        disabled={!canWithdraw || isProcessing}
+      >
+        {isProcessing ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.withdrawButtonText}>
+            {amountCents < balances.minimumCashOutCents && amountCents > 0
+              ? `Min. ${formatCents(balances.minimumCashOutCents)}`
+              : 'Confirm Withdrawal'}
+          </Text>
+        )}
+      </TouchableOpacity>
+    </>
+  );
+
+  const renderSelectMethodView = () => (
+    <>
+      <View style={styles.viewHeader}>
+        <TouchableOpacity onPress={() => setView('withdraw')} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#0095f6" />
+        </TouchableOpacity>
+        <Text style={styles.viewTitle}>Select Payout Method</Text>
+        <View style={styles.backButton} />
+      </View>
+
+      <ScrollView style={styles.methodList}>
+        {payoutMethods.map((method) => (
+          <TouchableOpacity
+            key={method.id}
+            style={[
+              styles.methodOption,
+              selectedMethodId === method.id && styles.methodOptionSelected,
+            ]}
+            onPress={() => handleSelectMethod(method.id)}
+          >
+            <Ionicons
+              name={method.type === 'bank' ? 'business-outline' : 'card-outline'}
+              size={22}
+              color={selectedMethodId === method.id ? '#0095f6' : 'rgba(255,255,255,0.6)'}
+            />
+            <View style={styles.methodOptionInfo}>
+              <Text style={styles.methodOptionLabel}>{method.label}</Text>
+              <Text style={styles.methodOptionLast4}>••••{method.last4}</Text>
+            </View>
+            {selectedMethodId === method.id && (
+              <Ionicons name="checkmark-circle" size={22} color="#0095f6" />
+            )}
+          </TouchableOpacity>
+        ))}
+
+        {/* Add Payout Method Option */}
+        <TouchableOpacity
+          style={styles.addMethodOption}
+          onPress={() => setView('add-method-choice')}
+        >
+          <Ionicons name="add-circle-outline" size={22} color="#0095f6" />
+          <Text style={styles.addMethodOptionText}>Add payout method</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </>
+  );
+
+  const renderAddMethodChoiceView = () => (
+    <>
+      <View style={styles.viewHeader}>
+        <TouchableOpacity onPress={() => setView('select-method')} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#0095f6" />
+        </TouchableOpacity>
+        <Text style={styles.viewTitle}>Add Payout Method</Text>
+        <View style={styles.backButton} />
+      </View>
+
+      <View style={styles.methodChoices}>
+        <View style={styles.stripeInfoContainer}>
+          <Ionicons name="shield-checkmark" size={32} color="#8b5cf6" />
+          <Text style={styles.stripeInfoTitle}>Secure Setup via Stripe</Text>
+          <Text style={styles.stripeInfoText}>
+            To add a bank account or debit card, you'll be redirected to Stripe's secure dashboard where you can manage your payout methods.
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.openStripeButton}
+          onPress={async () => {
+            try {
+              await onAddPayoutMethod({} as any);
+              handleClose();
+            } catch (error) {
+              // Error handled in provider
+            }
+          }}
+        >
+          <Ionicons name="open-outline" size={20} color="#fff" />
+          <Text style={styles.openStripeButtonText}>Open Stripe Dashboard</Text>
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
+  return (
+    <BottomSheet visible={visible} onClose={handleClose} maxHeight="90%">
+      {view === 'withdraw' && renderWithdrawView()}
+      {view === 'select-method' && renderSelectMethodView()}
+      {view === 'add-method-choice' && renderAddMethodChoiceView()}
+    </BottomSheet>
+  );
+}
+
+const styles = StyleSheet.create({
+  title: {
+    fontSize: 20,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  balanceSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  balanceLabel: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  balanceAmount: {
+    fontSize: 32,
+    fontFamily: 'Lato_700Bold',
+    color: '#34c759',
+    marginTop: 4,
+  },
+  inputSection: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    color: 'rgba(255, 255, 255, 0.5)',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  currencySymbol: {
+    fontSize: 24,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.5)',
+    marginRight: 4,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 24,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    paddingVertical: 16,
+  },
+  quickAmounts: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  quickAmountButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  quickAmountText: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+    color: '#0095f6',
+  },
+  methodSection: {
+    marginBottom: 16,
+  },
+  methodSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 14,
+    minHeight: 56,
+  },
+  selectedMethodContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  selectedMethodInfo: {
+    marginLeft: 12,
+  },
+  selectedMethodLabel: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  selectedMethodLast4: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+  addMethodText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+  arrivalSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginBottom: 16,
+  },
+  arrivalText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+  withdrawButton: {
+    backgroundColor: '#34c759',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    minHeight: 52,
+    justifyContent: 'center',
+  },
+  withdrawButtonDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  withdrawButtonText: {
+    fontSize: 17,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  // View header
+  viewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  viewTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Method list
+  methodList: {
+    maxHeight: 300,
+  },
+  methodOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  methodOptionSelected: {
+    borderColor: '#0095f6',
+    backgroundColor: 'rgba(0, 149, 246, 0.1)',
+  },
+  methodOptionInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  methodOptionLabel: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  methodOptionLast4: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.5)',
+  },
+  addMethodOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#0095f6',
+    borderStyle: 'dashed',
+    gap: 10,
+  },
+  addMethodOptionText: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    color: '#0095f6',
+  },
+  // Method choices
+  methodChoices: {
+    gap: 16,
+  },
+  stripeInfoContainer: {
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.3)',
+  },
+  stripeInfoTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  stripeInfoText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  openStripeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#8b5cf6',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  openStripeButtonText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+});

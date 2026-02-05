@@ -1,0 +1,181 @@
+import * as React from 'react';
+import {
+  View,
+  TextInput,
+  StyleSheet,
+  Pressable,
+} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  interpolateColor,
+} from 'react-native-reanimated';
+
+interface OTPInputProps {
+  value: string;
+  onChange: (value: string) => void;
+  onComplete: (value: string) => void;
+  maxLength?: number;
+  disabled?: boolean;
+  error?: boolean;
+  success?: boolean;
+}
+
+export function OTPInput({
+  value,
+  onChange,
+  onComplete,
+  maxLength = 6,
+  disabled = false,
+  error = false,
+  success = false,
+}: OTPInputProps) {
+  const inputRef = React.useRef<TextInput>(null);
+
+  const handlePress = () => {
+    inputRef.current?.focus();
+  };
+
+  const handleChange = (text: string) => {
+    // Only allow digits
+    const digits = text.replace(/\D/g, '').slice(0, maxLength);
+    onChange(digits);
+
+    // Auto-submit when complete
+    if (digits.length === maxLength) {
+      onComplete(digits);
+    }
+  };
+
+  return (
+    <Pressable onPress={handlePress} style={styles.container}>
+      <View style={styles.boxesContainer}>
+        {Array.from({ length: maxLength }).map((_, index) => (
+          <OTPBox
+            key={index}
+            digit={value[index] || ''}
+            isFocused={value.length === index && !disabled}
+            isFilled={index < value.length}
+            error={error}
+            success={success}
+          />
+        ))}
+      </View>
+
+      {/* Hidden TextInput for keyboard */}
+      <TextInput
+        ref={inputRef}
+        style={styles.hiddenInput}
+        value={value}
+        onChangeText={handleChange}
+        keyboardType="number-pad"
+        maxLength={maxLength}
+        autoComplete="sms-otp"
+        textContentType="oneTimeCode"
+        editable={!disabled}
+        autoFocus
+      />
+    </Pressable>
+  );
+}
+
+interface OTPBoxProps {
+  digit: string;
+  isFocused: boolean;
+  isFilled: boolean;
+  error: boolean;
+  success: boolean;
+}
+
+function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
+  const animatedValue = useSharedValue(0);
+  const cursorOpacity = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (error) {
+      animatedValue.value = withTiming(1, { duration: 200 });
+    } else if (success) {
+      animatedValue.value = withTiming(2, { duration: 200 });
+    } else {
+      animatedValue.value = withTiming(0, { duration: 200 });
+    }
+  }, [error, success, animatedValue]);
+
+  // Cursor blink animation
+  React.useEffect(() => {
+    if (isFocused) {
+      const interval = setInterval(() => {
+        cursorOpacity.value = withTiming(cursorOpacity.value === 0 ? 1 : 0, {
+          duration: 300,
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    } else {
+      cursorOpacity.value = 0;
+    }
+  }, [isFocused, cursorOpacity]);
+
+  const boxStyle = useAnimatedStyle(() => {
+    const borderColor = interpolateColor(
+      animatedValue.value,
+      [0, 1, 2],
+      ['rgba(255, 255, 255, 0.2)', '#ff6b6b', '#4ade80']
+    );
+
+    return {
+      borderColor,
+      borderWidth: isFocused || isFilled ? 2 : 1,
+    };
+  });
+
+  const cursorStyle = useAnimatedStyle(() => ({
+    opacity: cursorOpacity.value,
+  }));
+
+  return (
+    <Animated.View style={[styles.box, boxStyle]}>
+      {digit ? (
+        <Animated.Text style={styles.digit}>{digit}</Animated.Text>
+      ) : isFocused ? (
+        <Animated.View style={[styles.cursor, cursorStyle]} />
+      ) : null}
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  boxesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  box: {
+    width: 48,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  digit: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  cursor: {
+    width: 2,
+    height: 24,
+    backgroundColor: '#fff',
+    borderRadius: 1,
+  },
+  hiddenInput: {
+    position: 'absolute',
+    opacity: 0,
+    height: 0,
+    width: 0,
+  },
+});
