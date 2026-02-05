@@ -91,6 +91,7 @@ export interface VerifyOtpRequest {
 
 export interface VerifyOtpResponse {
   accessToken: string;
+  refreshToken?: string;
   user: {
     id: number;
     phoneNumber: string;

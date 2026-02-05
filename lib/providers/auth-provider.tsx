@@ -23,7 +23,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (partialUser: PartialUser, accessToken: string) => Promise<void>;
+  login: (partialUser: PartialUser, accessToken: string, refreshToken?: string) => Promise<void>;
   logout: () => Promise<void>;
   switchAccount: (accessToken: string, refreshToken?: string) => Promise<boolean>;
   hasRole: (role: UserRole) => boolean;
@@ -97,11 +97,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const login = async (partialUser: PartialUser, accessToken: string) => {
+  const login = async (partialUser: PartialUser, accessToken: string, refreshToken?: string) => {
     console.log('[Auth] Login called with partial user:', JSON.stringify(partialUser, null, 2));
 
-    // Store access token first
+    // Store tokens
     await apiClient.setAccessToken(accessToken);
+    if (refreshToken) {
+      await apiClient.setRefreshToken(refreshToken);
+      console.log('[Auth] Refresh token stored');
+    }
 
     // Immediately fetch full user profile from /api/auth/me
     // This gets all profile fields: firstName, lastName, userName, bio, avatar, etc.

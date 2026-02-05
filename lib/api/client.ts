@@ -141,30 +141,43 @@ class ApiClient {
     const refreshToken = await this.getRefreshToken();
 
     if (!refreshToken) {
+      console.log('[ApiClient] No refresh token available');
       throw new ApiClientError('No refresh token available', 401);
     }
 
-    const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
+    console.log('[ApiClient] Attempting token refresh...');
 
-    if (!response.ok) {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.log('[ApiClient] Token refresh failed:', response.status, errorData);
+        await this.clearAccessToken();
+        await this.clearRefreshToken();
+        throw new ApiClientError('Session expired. Please log in again.', 401);
+      }
+
+      const data = await response.json();
+      console.log('[ApiClient] Token refresh successful');
+
+      if (data.accessToken) {
+        await this.setAccessToken(data.accessToken);
+      }
+      if (data.refreshToken) {
+        await this.setRefreshToken(data.refreshToken);
+      }
+    } catch (error) {
+      console.error('[ApiClient] Token refresh error:', error);
       await this.clearAccessToken();
       await this.clearRefreshToken();
-      throw new ApiClientError('Session expired. Please log in again.', 401);
-    }
-
-    const data = await response.json();
-
-    if (data.accessToken) {
-      await this.setAccessToken(data.accessToken);
-    }
-    if (data.refreshToken) {
-      await this.setRefreshToken(data.refreshToken);
+      throw error;
     }
   }
 
@@ -210,11 +223,20 @@ class ApiClient {
 
       // Handle 401 - try to refresh token
       if (response.status === 401 && !requestConfig?.skipAuth) {
+        // Don't retry refresh endpoint to avoid infinite loops
+        if (endpoint.includes('/auth/refresh')) {
+          console.log('[ApiClient] 401 on refresh endpoint, not retrying');
+          throw ApiClientError.fromResponse(response, data);
+        }
+
+        console.log('[ApiClient] 401 received, attempting token refresh for:', endpoint);
         try {
           await this.performTokenRefresh();
-          // Retry the original request
+          console.log('[ApiClient] Retrying request after token refresh:', endpoint);
+          // Retry the original request with new token
           return this.request<T>(method, endpoint, body, requestConfig);
         } catch (refreshError) {
+          console.error('[ApiClient] Token refresh failed, throwing original error');
           throw ApiClientError.fromResponse(response, data);
         }
       }

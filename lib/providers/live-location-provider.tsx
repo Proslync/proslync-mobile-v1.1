@@ -93,8 +93,13 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     restoreSharingState();
   }, []);
 
-  // Connect socket when authenticated
+  // Connect socket when authenticated (only if feature is enabled)
   React.useEffect(() => {
+    if (!config.websocket.enabled) {
+      console.log('[LiveLocation] WebSocket disabled in config');
+      return;
+    }
+
     if (isAuthenticated && user) {
       connectSocket();
     } else {
@@ -336,6 +341,11 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
   };
 
   const startSharing = async (duration: ShareDuration) => {
+    if (!config.websocket.enabled) {
+      console.warn('[LiveLocation] Live location feature is disabled');
+      return;
+    }
+
     if (!socketRef.current?.connected) {
       console.warn('[LiveLocation] Cannot start sharing - socket not connected');
       return;

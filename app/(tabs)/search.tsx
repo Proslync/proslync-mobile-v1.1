@@ -36,6 +36,7 @@ import { EventStatus } from '@/lib/types/events.types';
 import Mapbox, { MapView, Camera, MarkerView, LocationPuck } from '@rnmapbox/maps';
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import { ShareLocationSheet } from '@/components/map/share-location-sheet';
+import { config } from '@/lib/config';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -639,18 +640,20 @@ function FullMapScreen() {
 
       <SearchOverlay searchQuery={searchQuery} onSearchChange={setSearchQuery} onFilterPress={handleFilterPress} />
 
-      {/* Share location button */}
-      <TouchableOpacity
-        style={[styles.shareLocationButton, { bottom: 240 }]}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowShareSheet(true); }}
-      >
-        <Ionicons
-          name={sharingState.isSharing ? 'location' : 'location-outline'}
-          size={22}
-          color={sharingState.isSharing ? '#34c759' : '#fff'}
-        />
-        {sharingState.isSharing && <View style={styles.sharingIndicator} />}
-      </TouchableOpacity>
+      {/* Share location button - only show when feature is enabled */}
+      {config.websocket.enabled && (
+        <TouchableOpacity
+          style={[styles.shareLocationButton, { bottom: 240 }]}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowShareSheet(true); }}
+        >
+          <Ionicons
+            name={sharingState.isSharing ? 'location' : 'location-outline'}
+            size={22}
+            color={sharingState.isSharing ? '#34c759' : '#fff'}
+          />
+          {sharingState.isSharing && <View style={styles.sharingIndicator} />}
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity style={[styles.recenterButton, { bottom: 180 }]} onPress={handleRecenter}>
         <Ionicons name="locate" size={22} color="#fff" />
