@@ -268,9 +268,14 @@ export function TabPage({ index, children, isFocused }: TabPageProps) {
   );
 }
 
+// Props passed to children of SwipeableTabPager
+export interface SwipeableTabChildProps {
+  isFocused?: boolean;
+}
+
 // Main PagerView container
 interface SwipeableTabPagerProps {
-  children: React.ReactElement[];
+  children: React.ReactElement<SwipeableTabChildProps>[];
   initialIndex?: number;
 }
 

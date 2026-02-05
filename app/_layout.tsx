@@ -10,6 +10,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/lib/providers/auth-provider';
+import { QueryProvider } from '@/lib/providers/query-provider';
 import { StreamProvider } from '@/lib/providers/stream-provider';
 import { WalletProvider } from '@/lib/providers/wallet-provider';
 import { ToastProvider } from '@/components/shared/toast';
@@ -52,12 +53,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ToastProvider>
-        <AuthProvider>
-          <TabNavigationProvider>
-            <StreamProvider>
-              <ChatProvider>
-                <WalletProvider>
+      <QueryProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <TabNavigationProvider>
+              <StreamProvider>
+                <ChatProvider>
+                  <WalletProvider>
                   <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                     <Stack screenOptions={{ headerShown: false }}>
                       <Stack.Screen name="index" />
@@ -89,8 +91,9 @@ export default function RootLayout() {
               </ChatProvider>
             </StreamProvider>
           </TabNavigationProvider>
-        </AuthProvider>
-      </ToastProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </QueryProvider>
     </GestureHandlerRootView>
   );
 }

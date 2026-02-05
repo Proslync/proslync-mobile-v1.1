@@ -26,6 +26,28 @@ interface PhoneStepProps {
   onBack?: () => void;
 }
 
+// Minimum digits required per country code (without leading zero)
+const PHONE_LENGTH_BY_COUNTRY: Record<string, number> = {
+  '+1': 10,    // US, Canada
+  '+44': 10,   // UK
+  '+380': 9,   // Ukraine
+  '+49': 10,   // Germany
+  '+33': 9,    // France
+  '+39': 10,   // Italy
+  '+34': 9,    // Spain
+  '+81': 10,   // Japan
+  '+82': 9,    // South Korea
+  '+86': 11,   // China
+  '+91': 10,   // India
+  '+7': 10,    // Russia
+  '+972': 9,   // Israel
+  '+61': 9,    // Australia
+  '+55': 11,   // Brazil
+};
+
+// Countries where local numbers typically start with 0 (should be stripped)
+const STRIP_LEADING_ZERO = ['+380', '+44', '+49', '+33', '+39', '+34', '+81', '+82', '+61', '+55', '+972'];
+
 export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
   const [phoneNumber, setPhoneNumber] = React.useState('');
   const [countryCode, setCountryCode] = React.useState('+1');
@@ -33,17 +55,26 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
   const [error, setError] = React.useState<string | null>(null);
   const insets = useSafeAreaInsets();
 
+  // Get minimum digits required for current country
+  const minDigits = PHONE_LENGTH_BY_COUNTRY[countryCode] || 7;
+
   const isPhoneComplete = React.useMemo(() => {
     const digits = phoneNumber.replace(/\D/g, '');
-    return digits.length >= 10;
-  }, [phoneNumber]);
+    return digits.length >= minDigits;
+  }, [phoneNumber, minDigits]);
 
   const handleSendOTP = async () => {
-    const digits = phoneNumber.replace(/\D/g, '');
+    let digits = phoneNumber.replace(/\D/g, '');
 
     if (digits.length < 6) {
       setError('Please enter a valid phone number');
       return;
+    }
+
+    // Strip leading zero for countries where national format starts with 0
+    // e.g., Ukraine: 093 -> 93 (user pastes 0930566527, we send +380930566527)
+    if (STRIP_LEADING_ZERO.includes(countryCode) && digits.startsWith('0')) {
+      digits = digits.substring(1);
     }
 
     const fullPhone = `${countryCode}${digits}`;
