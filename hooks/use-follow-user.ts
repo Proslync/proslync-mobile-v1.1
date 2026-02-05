@@ -1,6 +1,7 @@
 import * as React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useStream } from '@/lib/providers/stream-provider';
-import { useAuth } from '@/lib/providers/auth-provider';
+import { followsApi } from '@/lib/api/follows';
 
 interface UseFollowUserResult {
   isFollowing: boolean;
@@ -19,7 +20,7 @@ interface UseFollowUserResult {
  */
 export function useFollowUser(targetUserId?: number | string | null): UseFollowUserResult {
   const { client, isReady, userId: currentUserId } = useStream();
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const targetId = targetUserId ? String(targetUserId) : null;
 
@@ -106,7 +107,7 @@ export function useFollowUser(targetUserId?: number | string | null): UseFollowU
     };
   }, [targetId]);
 
-  // Follow function using Stream SDK directly
+  // Follow function - Two-step: 1) GetStream (primary), 2) Backend sync (secondary)
   const follow = React.useCallback(async () => {
     if (!canFollow || !client || !currentUserId || !targetId) {
       console.log('[useFollowUser] Cannot follow - missing requirements');
@@ -117,16 +118,31 @@ export function useFollowUser(targetUserId?: number | string | null): UseFollowU
     try {
       console.log('[useFollowUser] Following user:', targetId);
 
+      // Step 1: Follow in GetStream (primary)
       const timelineFeed = client.feed('timeline', currentUserId);
-
-      // Ensure timeline feed exists
       await timelineFeed.getOrCreate();
-
-      // Follow the target user's feed
       await timelineFeed.follow(`user:${targetId}`);
 
-      console.log('[useFollowUser] Successfully followed user:', targetId);
+      console.log('[useFollowUser] GetStream follow successful');
       setIsFollowing(true);
+
+      // Step 2: Sync with backend database (secondary)
+      // This runs after GetStream succeeds - errors logged but don't fail the operation
+      try {
+        const userIdNumber = Number(targetId);
+        if (!isNaN(userIdNumber)) {
+          await followsApi.followUser(userIdNumber);
+          console.log('[useFollowUser] Backend sync successful');
+        }
+      } catch (syncError) {
+        // Log error but don't fail - GetStream follow already succeeded
+        console.error('[useFollowUser] Failed to sync follow with backend:', syncError);
+      }
+
+      // Invalidate React Query caches
+      queryClient.invalidateQueries({ queryKey: ['userFollowers', Number(targetId)] });
+      queryClient.invalidateQueries({ queryKey: ['userFollowing', Number(currentUserId)] });
+
     } catch (error: any) {
       console.error('[useFollowUser] Follow error:', error);
 
@@ -149,9 +165,9 @@ export function useFollowUser(targetUserId?: number | string | null): UseFollowU
     } finally {
       setIsFollowInProgress(false);
     }
-  }, [canFollow, client, currentUserId, targetId]);
+  }, [canFollow, client, currentUserId, targetId, queryClient]);
 
-  // Unfollow function using Stream SDK directly
+  // Unfollow function - Two-step: 1) GetStream (primary), 2) Backend sync (secondary)
   const unfollow = React.useCallback(async () => {
     if (!canFollow || !client || !currentUserId || !targetId) {
       console.log('[useFollowUser] Cannot unfollow - missing requirements');
@@ -162,20 +178,37 @@ export function useFollowUser(targetUserId?: number | string | null): UseFollowU
     try {
       console.log('[useFollowUser] Unfollowing user:', targetId);
 
+      // Step 1: Unfollow in GetStream (primary)
       const timelineFeed = client.feed('timeline', currentUserId);
-
-      // Unfollow the target user's feed
       await timelineFeed.unfollow(`user:${targetId}`);
 
-      console.log('[useFollowUser] Successfully unfollowed user:', targetId);
+      console.log('[useFollowUser] GetStream unfollow successful');
       setIsFollowing(false);
+
+      // Step 2: Sync with backend database (secondary)
+      // This runs after GetStream succeeds - errors logged but don't fail the operation
+      try {
+        const userIdNumber = Number(targetId);
+        if (!isNaN(userIdNumber)) {
+          await followsApi.unfollowUser(userIdNumber);
+          console.log('[useFollowUser] Backend sync successful');
+        }
+      } catch (syncError) {
+        // Log error but don't fail - GetStream unfollow already succeeded
+        console.error('[useFollowUser] Failed to sync unfollow with backend:', syncError);
+      }
+
+      // Invalidate React Query caches
+      queryClient.invalidateQueries({ queryKey: ['userFollowers', Number(targetId)] });
+      queryClient.invalidateQueries({ queryKey: ['userFollowing', Number(currentUserId)] });
+
     } catch (error) {
       console.error('[useFollowUser] Unfollow error:', error);
       throw error;
     } finally {
       setIsUnfollowInProgress(false);
     }
-  }, [canFollow, client, currentUserId, targetId]);
+  }, [canFollow, client, currentUserId, targetId, queryClient]);
 
   return {
     isFollowing,

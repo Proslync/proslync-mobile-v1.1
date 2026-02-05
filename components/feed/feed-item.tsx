@@ -136,6 +136,8 @@ export function FeedItem({
             onDoubleTap={onDoubleTap}
             onSingleTap={onEventPress}
             isLiked={isLiked}
+            aspectRatio={item.aspectRatio}
+            mediaOrientation={item.mediaOrientation}
             overlay={
               item.username && item.userAvatar ? (
                 <TouchableOpacity

@@ -10,11 +10,13 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider } from '@/lib/providers/auth-provider';
+import { QueryProvider } from '@/lib/providers/query-provider';
 import { StreamProvider } from '@/lib/providers/stream-provider';
 import { WalletProvider } from '@/lib/providers/wallet-provider';
 import { ToastProvider } from '@/components/shared/toast';
 import { TabNavigationProvider } from '@/lib/providers/tab-navigation-provider';
 import { ChatProvider } from '@/lib/providers/chat-provider';
+import { LiveLocationProvider } from '@/lib/providers/live-location-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -52,12 +54,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ToastProvider>
-        <AuthProvider>
-          <TabNavigationProvider>
-            <StreamProvider>
-              <ChatProvider>
-                <WalletProvider>
+      <QueryProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <LiveLocationProvider>
+              <TabNavigationProvider>
+                <StreamProvider>
+                  <ChatProvider>
+                    <WalletProvider>
                   <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                     <Stack screenOptions={{ headerShown: false }}>
                       <Stack.Screen name="index" />
@@ -85,12 +89,14 @@ export default function RootLayout() {
                     </Stack>
                     <StatusBar style="light" />
                   </ThemeProvider>
-                </WalletProvider>
-              </ChatProvider>
-            </StreamProvider>
-          </TabNavigationProvider>
-        </AuthProvider>
-      </ToastProvider>
+                  </WalletProvider>
+                </ChatProvider>
+              </StreamProvider>
+            </TabNavigationProvider>
+          </LiveLocationProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </QueryProvider>
     </GestureHandlerRootView>
   );
 }

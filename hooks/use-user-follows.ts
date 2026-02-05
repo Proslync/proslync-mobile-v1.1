@@ -1,5 +1,13 @@
-import * as React from 'react';
+// Hooks for fetching user followers and following from backend API
 
+import { useQuery } from '@tanstack/react-query';
+import { followsApi } from '@/lib/api/follows';
+import type { UserFollowItem, VenueFollowItem } from '@/lib/types/follows.types';
+
+// Default avatar for users without one
+const DEFAULT_AVATAR = 'https://picsum.photos/200';
+
+// Interface for display in UI (used by profile screen)
 export interface FollowUser {
   id: string;
   userName: string;
@@ -8,41 +16,105 @@ export interface FollowUser {
   avatar: string;
 }
 
+// Interface for venue display
+export interface FollowVenue {
+  id: string;
+  name: string;
+  logo: string;
+}
+
+/**
+ * Transform API user item to UI format
+ */
+function transformUserItem(item: UserFollowItem): FollowUser {
+  return {
+    id: item.id.toString(),
+    userName: item.userName || 'user',
+    firstName: item.firstName || '',
+    lastName: item.lastName || '',
+    avatar: item.avatarUrl || DEFAULT_AVATAR,
+  };
+}
+
+/**
+ * Transform API venue item to UI format
+ */
+function transformVenueItem(item: VenueFollowItem): FollowVenue {
+  return {
+    id: item.id.toString(),
+    name: item.name,
+    logo: item.logoUrl || DEFAULT_AVATAR,
+  };
+}
+
 /**
  * Hook to fetch user's followers
- * Note: GetStream React Native SDK doesn't expose followers() method directly.
- * This hook returns an empty list for now - the follower count is available via useUserFeedStats.
- * To get actual follower list, you'd need a backend endpoint.
+ * @param userId - User ID to fetch followers for
+ * @param enabled - Set to true to fetch (use for lazy loading when modal opens)
  */
-export function useUserFollowers(userId: string | number | null | undefined) {
-  const [followers] = React.useState<FollowUser[]>([]);
-  const [isLoading] = React.useState(false);
-  const [error] = React.useState<Error | null>(null);
+export function useUserFollowers(
+  userId: string | number | null | undefined,
+  enabled: boolean = true
+) {
+  const numericUserId = userId ? Number(userId) : null;
 
-  // The React Native SDK doesn't have direct access to followers list
-  // The follower count is available through getOrCreate() response
-  // For full list, you'd need to use backend API
+  const query = useQuery({
+    queryKey: ['userFollowers', numericUserId],
+    queryFn: async () => {
+      console.log('[useUserFollowers] Fetching followers for user:', numericUserId);
+      const result = await followsApi.getUserFollowers(numericUserId!);
+      console.log('[useUserFollowers] Response:', result);
+      return result;
+    },
+    enabled: !!numericUserId && enabled,
+    staleTime: 30000, // 30 seconds - data considered fresh for this duration
+    refetchOnMount: true, // Refetch when component mounts if data is stale
+  });
 
   return {
-    followers,
-    isLoading,
-    error,
+    followers: query.data?.userFollowers.map(transformUserItem) || [],
+    totalFollowers: query.data?.totalFollowers || 0,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error,
+    refetch: query.refetch,
   };
 }
 
 /**
- * Hook to fetch users that this user is following
- * Note: Similar limitation as followers - count available but not full list via SDK
+ * Hook to fetch users and venues that this user is following
+ * @param userId - User ID to fetch following for
+ * @param enabled - Set to true to fetch (use for lazy loading when modal opens)
  */
-export function useUserFollowing(userId: string | number | null | undefined) {
-  const [following] = React.useState<FollowUser[]>([]);
-  const [isLoading] = React.useState(false);
-  const [error] = React.useState<Error | null>(null);
+export function useUserFollowing(
+  userId: string | number | null | undefined,
+  enabled: boolean = true
+) {
+  const numericUserId = userId ? Number(userId) : null;
+
+  const query = useQuery({
+    queryKey: ['userFollowing', numericUserId],
+    queryFn: async () => {
+      console.log('[useUserFollowing] Fetching following for user:', numericUserId);
+      const result = await followsApi.getUserFollowing(numericUserId!);
+      console.log('[useUserFollowing] Response:', result);
+      return result;
+    },
+    enabled: !!numericUserId && enabled,
+    staleTime: 30000, // 30 seconds - data considered fresh for this duration
+    refetchOnMount: true, // Refetch when component mounts if data is stale
+  });
 
   return {
-    following,
-    isLoading,
-    error,
+    // Combined list of users for backward compatibility with existing UI
+    following: query.data?.followingUsers.map(transformUserItem) || [],
+    // Separate lists for more detailed UI
+    followingUsers: query.data?.followingUsers.map(transformUserItem) || [],
+    followingVenues: query.data?.followingVenues.map(transformVenueItem) || [],
+    totalFollowing: query.data?.totalFollowing || 0,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
+    error: query.error,
+    refetch: query.refetch,
   };
 }
-

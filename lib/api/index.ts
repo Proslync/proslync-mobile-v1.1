@@ -7,3 +7,5 @@ export { eventsApi } from './events';
 export { streamApi } from './stream';
 export type { StreamTokenResponse, StreamTokensResponse } from './stream';
 export { addToGoogleWallet, updateGoogleWalletCard, generateAppleWalletToken, generateAppleWalletTicketToken, getMembershipCard } from './wallet';
+export { followsApi } from './follows';
+export type { FollowersResponse, FollowingResponse } from '../types/follows.types';

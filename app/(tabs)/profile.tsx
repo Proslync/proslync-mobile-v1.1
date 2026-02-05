@@ -22,9 +22,9 @@ import Animated, {
   FadeInDown,
 } from 'react-native-reanimated';
 import { useAuth } from '@/lib/providers/auth-provider';
-import { useUserFeedStats } from '@/hooks/use-user-feed-stats';
 import { useUserActivities } from '@/hooks/use-user-activities';
 import { useUserFollowers, useUserFollowing } from '@/hooks/use-user-follows';
+import { useFollowUser } from '@/hooks/use-follow-user';
 import { useToast } from '@/components/shared/toast';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 import { SwipeableTabView } from '@/components/shared/swipeable-tab-view';
@@ -79,34 +79,104 @@ interface FollowUser {
   avatar: string;
 }
 
+// Individual user item with follow/unfollow functionality
+function UserListItem({
+  user,
+  currentUserId,
+}: {
+  user: FollowUser;
+  currentUserId?: number;
+}) {
+  const router = useRouter();
+  const {
+    isFollowing,
+    isLoading: followLoading,
+    follow,
+    unfollow,
+    isFollowInProgress,
+    isUnfollowInProgress,
+  } = useFollowUser(user.id);
+
+  const isSelf = currentUserId?.toString() === user.id;
+  const isActionInProgress = isFollowInProgress || isUnfollowInProgress;
+
+  const handleFollowPress = async () => {
+    if (isActionInProgress) return;
+
+    if (isFollowing) {
+      await unfollow();
+    } else {
+      await follow();
+    }
+  };
+
+  const handleUserPress = () => {
+    router.push({
+      pathname: '/user-profile/[userId]',
+      params: { userId: user.id },
+    });
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.userListItem}
+      activeOpacity={0.7}
+      onPress={handleUserPress}
+    >
+      <Image source={{ uri: user.avatar }} style={styles.userListAvatar} />
+      <View style={styles.userListInfo}>
+        <Text style={styles.userListName}>{user.userName}</Text>
+        <Text style={styles.userListFullName}>
+          {user.firstName} {user.lastName}
+        </Text>
+      </View>
+      {!isSelf && (
+        <TouchableOpacity
+          style={[
+            styles.followButton,
+            isFollowing && styles.followingButton,
+          ]}
+          activeOpacity={0.8}
+          onPress={handleFollowPress}
+          disabled={followLoading || isActionInProgress}
+        >
+          {isActionInProgress ? (
+            <ActivityIndicator size="small" color={isFollowing ? '#fff' : '#fff'} />
+          ) : (
+            <Text
+              style={[
+                styles.followButtonText,
+                isFollowing && styles.followingButtonText,
+              ]}
+            >
+              {isFollowing ? 'Following' : 'Follow'}
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
+  );
+}
+
 function UserListModal({
   visible,
   title,
   users,
   isLoading,
   onClose,
+  currentUserId,
 }: {
   visible: boolean;
   title: string;
   users: FollowUser[];
   isLoading?: boolean;
   onClose: () => void;
+  currentUserId?: number;
 }) {
   const insets = useSafeAreaInsets();
 
   const renderUser = ({ item }: { item: FollowUser }) => (
-    <TouchableOpacity style={styles.userListItem} activeOpacity={0.7}>
-      <Image source={{ uri: item.avatar }} style={styles.userListAvatar} />
-      <View style={styles.userListInfo}>
-        <Text style={styles.userListName}>{item.userName}</Text>
-        <Text style={styles.userListFullName}>
-          {item.firstName} {item.lastName}
-        </Text>
-      </View>
-      <TouchableOpacity style={styles.followButton} activeOpacity={0.8}>
-        <Text style={styles.followButtonText}>Follow</Text>
-      </TouchableOpacity>
-    </TouchableOpacity>
+    <UserListItem user={item} currentUserId={currentUserId} />
   );
 
   return (
@@ -238,11 +308,22 @@ export default function ProfileScreen() {
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
   const lastTapRef = React.useRef<number>(0);
 
-  // Fetch real stats from GetStream
-  const { followerCount, followingCount } = useUserFeedStats(user?.id);
+  // Fetch posts/activities from GetStream
   const { activities: userPosts, isLoading: postsLoading } = useUserActivities(user?.id);
-  const { followers, isLoading: followersLoading } = useUserFollowers(user?.id);
-  const { following, isLoading: followingLoading } = useUserFollowing(user?.id);
+
+  // Fetch followers/following from backend API
+  // Fetches on mount to get counts, data is cached for modal
+  const {
+    followers,
+    totalFollowers: followerCount,
+    isLoading: followersLoading,
+  } = useUserFollowers(user?.id);
+
+  const {
+    following,
+    totalFollowing: followingCount,
+    isLoading: followingLoading,
+  } = useUserFollowing(user?.id);
 
   // Derive display values from user data
   const displayName = user?.firstName
@@ -547,6 +628,7 @@ export default function ProfileScreen() {
         users={followers}
         isLoading={followersLoading}
         onClose={() => setShowFollowers(false)}
+        currentUserId={user?.id}
       />
 
       {/* Following Modal */}
@@ -556,6 +638,7 @@ export default function ProfileScreen() {
         users={following}
         isLoading={followingLoading}
         onClose={() => setShowFollowing(false)}
+        currentUserId={user?.id}
       />
 
       {/* Account Switcher Modal */}
@@ -818,11 +901,22 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 8,
+    minWidth: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  followingButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   followButtonText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
+  },
+  followingButtonText: {
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   modalLoadingContainer: {
     flex: 1,

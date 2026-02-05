@@ -83,7 +83,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
       });
 
       // Login with the response data (verify-otp returns partial user, login will fetch full profile)
-      await login(response.user, response.accessToken);
+      await login(response.user, response.accessToken, response.refreshToken);
 
       setIsSuccess(true);
 
