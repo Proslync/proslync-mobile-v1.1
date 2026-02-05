@@ -16,6 +16,7 @@ import { WalletProvider } from '@/lib/providers/wallet-provider';
 import { ToastProvider } from '@/components/shared/toast';
 import { TabNavigationProvider } from '@/lib/providers/tab-navigation-provider';
 import { ChatProvider } from '@/lib/providers/chat-provider';
+import { LiveLocationProvider } from '@/lib/providers/live-location-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -56,10 +57,11 @@ export default function RootLayout() {
       <QueryProvider>
         <ToastProvider>
           <AuthProvider>
-            <TabNavigationProvider>
-              <StreamProvider>
-                <ChatProvider>
-                  <WalletProvider>
+            <LiveLocationProvider>
+              <TabNavigationProvider>
+                <StreamProvider>
+                  <ChatProvider>
+                    <WalletProvider>
                   <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                     <Stack screenOptions={{ headerShown: false }}>
                       <Stack.Screen name="index" />
@@ -87,10 +89,11 @@ export default function RootLayout() {
                     </Stack>
                     <StatusBar style="light" />
                   </ThemeProvider>
-                </WalletProvider>
-              </ChatProvider>
-            </StreamProvider>
-          </TabNavigationProvider>
+                  </WalletProvider>
+                </ChatProvider>
+              </StreamProvider>
+            </TabNavigationProvider>
+          </LiveLocationProvider>
           </AuthProvider>
         </ToastProvider>
       </QueryProvider>

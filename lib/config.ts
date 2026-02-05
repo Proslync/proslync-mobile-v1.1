@@ -12,6 +12,12 @@ export const config = {
       : 'https://status-social-api-dev-699705646196.us-east4.run.app',
     timeout: 10000,
   },
+  websocket: {
+    // WebSocket uses same base but different protocol
+    url: USE_LOCAL_BACKEND
+      ? `ws://${LOCAL_IP}:5050`
+      : 'wss://status-social-api-dev-699705646196.us-east4.run.app',
+  },
   auth: {
     tokenKey: 'accessToken',
     refreshTokenKey: 'refreshToken',

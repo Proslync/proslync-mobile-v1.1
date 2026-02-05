@@ -34,6 +34,8 @@ import { eventsApi } from '@/lib/api/events';
 import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
 import Mapbox, { MapView, Camera, MarkerView, LocationPuck } from '@rnmapbox/maps';
+import { useLiveLocation } from '@/lib/providers/live-location-provider';
+import { ShareLocationSheet } from '@/components/map/share-location-sheet';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -543,6 +545,10 @@ function FullMapScreen() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<MapEvent | null>(null);
   const [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>('events');
+  const [showShareSheet, setShowShareSheet] = useState(false);
+
+  // Live location hook
+  const { friendLocations, sharingState } = useLiveLocation();
 
   const snapPoints = useMemo(() => [140, '45%', '85%'], []);
 
@@ -584,7 +590,16 @@ function FullMapScreen() {
     return filtered;
   }, [searchQuery, events]);
 
-  const nearbyFriends = useMemo<FriendMarker[]>(() => [], []);
+  // Convert live location data to friend markers
+  const nearbyFriends = useMemo<FriendMarker[]>(() => {
+    return Array.from(friendLocations.values()).map((loc) => ({
+      id: loc.userId,
+      name: loc.username,
+      imageUrl: loc.avatarUrl,
+      latitude: loc.latitude,
+      longitude: loc.longitude,
+    }));
+  }, [friendLocations]);
 
   const handleEventPress = useCallback((event: MapEvent) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -623,6 +638,20 @@ function FullMapScreen() {
       </MapView>
 
       <SearchOverlay searchQuery={searchQuery} onSearchChange={setSearchQuery} onFilterPress={handleFilterPress} />
+
+      {/* Share location button */}
+      <TouchableOpacity
+        style={[styles.shareLocationButton, { bottom: 240 }]}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowShareSheet(true); }}
+      >
+        <Ionicons
+          name={sharingState.isSharing ? 'location' : 'location-outline'}
+          size={22}
+          color={sharingState.isSharing ? '#34c759' : '#fff'}
+        />
+        {sharingState.isSharing && <View style={styles.sharingIndicator} />}
+      </TouchableOpacity>
+
       <TouchableOpacity style={[styles.recenterButton, { bottom: 180 }]} onPress={handleRecenter}>
         <Ionicons name="locate" size={22} color="#fff" />
       </TouchableOpacity>
@@ -647,7 +676,53 @@ function FullMapScreen() {
         </View>
         <BottomSheetScrollView contentContainerStyle={styles.bottomSheetContent} showsVerticalScrollIndicator={false} refreshControl={refreshControl}>
           {nearbyFilter === 'friends' ? (
-            <View style={styles.emptyState}><Ionicons name="people-outline" size={48} color="rgba(255,255,255,0.3)" /><Text style={styles.emptyStateText}>No friends nearby</Text><Text style={styles.emptyStateSubtext}>Friends will appear here when they're at events near you</Text></View>
+            nearbyFriends.length > 0 ? (
+              <View style={styles.friendsListContainer}>
+                {nearbyFriends.map((friend) => (
+                  <TouchableOpacity
+                    key={friend.id}
+                    style={styles.friendListItem}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      cameraRef.current?.setCamera({
+                        centerCoordinate: [friend.longitude, friend.latitude],
+                        zoomLevel: 15,
+                        animationDuration: 500,
+                      });
+                    }}
+                  >
+                    <Image source={{ uri: friend.imageUrl }} style={styles.friendListAvatar} />
+                    <View style={styles.friendListInfo}>
+                      <Text style={styles.friendListName}>{friend.name}</Text>
+                      <View style={styles.friendListStatus}>
+                        <View style={styles.friendListLiveDot} />
+                        <Text style={styles.friendListStatusText}>Sharing location</Text>
+                      </View>
+                    </View>
+                    <Ionicons name="navigate-outline" size={20} color="rgba(255,255,255,0.5)" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Ionicons name="people-outline" size={48} color="rgba(255,255,255,0.3)" />
+                <Text style={styles.emptyStateText}>No friends sharing location</Text>
+                <Text style={styles.emptyStateSubtext}>
+                  {sharingState.isSharing
+                    ? 'Friends will appear here when they share their location'
+                    : 'Share your location to let friends see you on the map'}
+                </Text>
+                {!sharingState.isSharing && (
+                  <TouchableOpacity
+                    style={styles.shareButton}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowShareSheet(true); }}
+                  >
+                    <Ionicons name="location-outline" size={18} color="#fff" />
+                    <Text style={styles.shareButtonText}>Share My Location</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )
           ) : isLoading && events.length === 0 ? (
             <View style={styles.loadingState}><ActivityIndicator size="large" color="#fff" /><Text style={styles.loadingStateText}>Loading events...</Text></View>
           ) : error && events.length === 0 ? (
@@ -659,6 +734,12 @@ function FullMapScreen() {
           )}
         </BottomSheetScrollView>
       </BottomSheet>
+
+      {/* Share Location Sheet */}
+      <ShareLocationSheet
+        isVisible={showShareSheet}
+        onClose={() => setShowShareSheet(false)}
+      />
     </View>
   );
 }
@@ -1061,5 +1142,90 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+  },
+  // Share location button
+  shareLocationButton: {
+    position: 'absolute',
+    right: 16,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  sharingIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#34c759',
+    borderWidth: 2,
+    borderColor: 'rgba(30, 30, 30, 0.95)',
+  },
+  // Friends list
+  friendsListContainer: {
+    gap: 8,
+  },
+  friendListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    gap: 12,
+  },
+  friendListAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#34c759',
+  },
+  friendListInfo: {
+    flex: 1,
+  },
+  friendListName: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  friendListStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  friendListLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#34c759',
+  },
+  friendListStatusText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#8b5cf6',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginTop: 16,
+  },
+  shareButtonText: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
   },
 });
