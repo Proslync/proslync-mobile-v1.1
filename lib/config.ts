@@ -24,7 +24,7 @@ export const config = {
     refreshTokenKey: 'refreshToken',
   },
   stream: {
-    apiKey: '869wu8z8cz2y',
+    apiKey: 'wnyzcwhxkjsf',
   },
 } as const;
 
