@@ -52,6 +52,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const isAuthenticated = !!user;
 
+  // Handle auth errors from API client (session expired, refresh failed)
+  const handleAuthError = React.useCallback(() => {
+    console.log('[Auth] Auth error received, clearing user state');
+    setUser(null);
+    // Navigation effect will handle redirect to signin
+  }, []);
+
+  // Set up auth error callback on mount
+  React.useEffect(() => {
+    apiClient.setOnAuthError(handleAuthError);
+    return () => {
+      apiClient.clearOnAuthError();
+    };
+  }, [handleAuthError]);
+
   // Check for existing auth on mount
   React.useEffect(() => {
     checkAuth();

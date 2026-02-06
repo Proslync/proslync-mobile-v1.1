@@ -1,23 +1,23 @@
 // Share Location Sheet - Telegram-style location sharing controls
 // Shows duration options and active sharing status
 
-import * as React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import {
   SHARE_DURATION_OPTIONS,
-  ShareDuration,
+  ShareDurationSeconds,
 } from '@/lib/types/live-location.types';
+import { Ionicons } from '@expo/vector-icons';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import * as Haptics from 'expo-haptics';
+import * as React from 'react';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 interface ShareLocationSheetProps {
   isVisible: boolean;
@@ -60,7 +60,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
     }
   }, [isVisible]);
 
-  const handleDurationSelect = async (duration: ShareDuration) => {
+  const handleDurationSelect = async (duration: ShareDurationSeconds) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsStarting(true);
 
@@ -96,7 +96,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
     <BottomSheet
       ref={bottomSheetRef}
       index={-1}
-      snapPoints={[sharingState.isSharing ? 280 : 340]}
+      snapPoints={[sharingState.isSharing ? 400 : 400]}
       enablePanDownToClose
       onClose={onClose}
       backgroundStyle={styles.sheetBackground}
@@ -232,22 +232,22 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   headerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(139, 92, 246, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subtitle: {
     fontSize: 14,
@@ -315,16 +315,16 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   optionsContainer: {
-    gap: 10,
+    gap: 8,
   },
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    gap: 10,
   },
   optionButtonDisabled: {
     opacity: 0.5,

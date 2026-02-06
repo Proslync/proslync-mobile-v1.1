@@ -5,12 +5,6 @@ const USE_LOCAL_BACKEND = false;
 // Find it with: ipconfig (Windows) or ifconfig (Mac/Linux)
 const LOCAL_IP = '192.168.31.112'; // Update this with your actual IP
 
-// Feature flags
-const FEATURES = {
-  // Set to true when backend implements WebSocket for live locations
-  LIVE_LOCATION_ENABLED: false,
-};
-
 export const config = {
   api: {
     baseUrl: USE_LOCAL_BACKEND
@@ -23,8 +17,7 @@ export const config = {
     url: USE_LOCAL_BACKEND
       ? `ws://${LOCAL_IP}:5050`
       : 'wss://status-social-api-dev-699705646196.us-east4.run.app',
-    // Disable until backend implements the WebSocket gateway
-    enabled: FEATURES.LIVE_LOCATION_ENABLED,
+    enabled: true,
   },
   auth: {
     tokenKey: 'accessToken',

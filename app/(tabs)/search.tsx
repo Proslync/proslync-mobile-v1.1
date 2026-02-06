@@ -37,6 +37,7 @@ import Mapbox, { MapView, Camera, MarkerView, LocationPuck } from '@rnmapbox/map
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import { ShareLocationSheet } from '@/components/map/share-location-sheet';
 import { config } from '@/lib/config';
+import { useAuth } from '@/lib/providers/auth-provider';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -314,6 +315,18 @@ function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: 
   );
 }
 
+// Current user's own location marker (purple, shows when sharing)
+function MyLocationMarker({ imageUrl }: { imageUrl: string }) {
+  return (
+    <View style={styles.friendMarkerContainer}>
+      <View style={styles.myLocationMarker}>
+        <Image source={{ uri: imageUrl }} style={styles.friendMarkerImage} />
+      </View>
+      <View style={styles.myLocationPointer} />
+    </View>
+  );
+}
+
 // Fallback/Preview screen for Expo Go
 function MapPreview() {
   const insets = useSafeAreaInsets();
@@ -551,6 +564,9 @@ function FullMapScreen() {
   // Live location hook
   const { friendLocations, sharingState } = useLiveLocation();
 
+  // Auth hook for current user's avatar
+  const { user } = useAuth();
+
   const snapPoints = useMemo(() => [140, '45%', '85%'], []);
 
   useEffect(() => {
@@ -593,13 +609,20 @@ function FullMapScreen() {
 
   // Convert live location data to friend markers
   const nearbyFriends = useMemo<FriendMarker[]>(() => {
-    return Array.from(friendLocations.values()).map((loc) => ({
-      id: loc.userId,
-      name: loc.username,
-      imageUrl: loc.avatarUrl,
-      latitude: loc.latitude,
-      longitude: loc.longitude,
-    }));
+    return Array.from(friendLocations.values()).map((loc) => {
+      // Build display name from firstName/lastName or fall back to userName
+      const displayName = loc.firstName || loc.lastName
+        ? `${loc.firstName || ''} ${loc.lastName || ''}`.trim()
+        : loc.userName || `User ${loc.userId}`;
+
+      return {
+        id: String(loc.userId),
+        name: displayName,
+        imageUrl: loc.avatarUrl || 'https://picsum.photos/200',
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+      };
+    });
   }, [friendLocations]);
 
   const handleEventPress = useCallback((event: MapEvent) => {
@@ -625,7 +648,10 @@ function FullMapScreen() {
     <View style={styles.container}>
       <MapView style={StyleSheet.absoluteFill} styleURL={DARK_STYLE_URL} logoEnabled={false} attributionEnabled={false} compassEnabled={false} scaleBarEnabled={false}>
         <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12 }} />
-        <LocationPuck puckBearing="heading" puckBearingEnabled={true} pulsing={{ isEnabled: true, color: '#8b5cf6' }} />
+        {/* Show LocationPuck only when NOT sharing (avatar marker replaces it when sharing) */}
+        {!sharingState.isSharing && (
+          <LocationPuck puckBearing="heading" puckBearingEnabled={true} pulsing={{ isEnabled: true, color: '#8b5cf6' }} />
+        )}
         {nearbyFilter === 'events' && filteredEvents.map((event) => (
           <MarkerView key={event.id} coordinate={[event.longitude, event.latitude]} anchor={{ x: 0.5, y: 1 }}>
             <EventMarker event={event} onPress={() => handleMarkerPress(event)} />
@@ -636,6 +662,12 @@ function FullMapScreen() {
             <FriendMarkerView friend={friend} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} />
           </MarkerView>
         ))}
+        {/* Show current user's marker when sharing location */}
+        {sharingState.isSharing && userLocation && user?.avatar?.url && (
+          <MarkerView coordinate={userLocation} anchor={{ x: 0.5, y: 1 }}>
+            <MyLocationMarker imageUrl={user.avatar.url} />
+          </MarkerView>
+        )}
       </MapView>
 
       <SearchOverlay searchQuery={searchQuery} onSearchChange={setSearchQuery} onFilterPress={handleFilterPress} />
@@ -1131,6 +1163,27 @@ const styles = StyleSheet.create({
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderTopColor: '#34c759',
+    marginTop: -1,
+  },
+  // Current user's location marker (purple)
+  myLocationMarker: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: '#8b5cf6',
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  myLocationPointer: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#8b5cf6',
     marginTop: -1,
   },
   // Recenter button
