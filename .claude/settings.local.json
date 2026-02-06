@@ -15,7 +15,9 @@
       "Bash(npm uninstall:*)",
       "Bash(ngrok http:*)",
       "Bash(curl:*)",
-      "Bash(ngrok config:*)"
+      "Bash(ngrok config:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx eslint:*)"
     ]
   }
 }

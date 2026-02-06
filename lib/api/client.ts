@@ -17,10 +17,35 @@ class ApiClient {
   private timeout: number;
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<void> | null = null;
+  private onAuthErrorCallback: (() => void) | null = null;
 
   constructor() {
     this.baseUrl = config.api.baseUrl;
     this.timeout = config.api.timeout;
+  }
+
+  /**
+   * Set callback for auth errors (session expired, refresh failed)
+   * Called by AuthProvider to handle automatic logout
+   */
+  setOnAuthError(callback: () => void): void {
+    this.onAuthErrorCallback = callback;
+  }
+
+  /**
+   * Clear the auth error callback
+   */
+  clearOnAuthError(): void {
+    this.onAuthErrorCallback = null;
+  }
+
+  /**
+   * Trigger auth error callback (internal use)
+   */
+  private notifyAuthError(): void {
+    if (this.onAuthErrorCallback) {
+      this.onAuthErrorCallback();
+    }
   }
 
   /**
@@ -142,6 +167,8 @@ class ApiClient {
 
     if (!refreshToken) {
       console.log('[ApiClient] No refresh token available');
+      // Notify auth provider to clear user state and redirect to signin
+      this.notifyAuthError();
       throw new ApiClientError('No refresh token available', 401);
     }
 
@@ -161,6 +188,8 @@ class ApiClient {
         console.log('[ApiClient] Token refresh failed:', response.status, errorData);
         await this.clearAccessToken();
         await this.clearRefreshToken();
+        // Notify auth provider to clear user state and redirect to signin
+        this.notifyAuthError();
         throw new ApiClientError('Session expired. Please log in again.', 401);
       }
 
@@ -177,6 +206,8 @@ class ApiClient {
       console.error('[ApiClient] Token refresh error:', error);
       await this.clearAccessToken();
       await this.clearRefreshToken();
+      // Notify auth provider to clear user state and redirect to signin
+      this.notifyAuthError();
       throw error;
     }
   }
