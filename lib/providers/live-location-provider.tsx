@@ -2,7 +2,7 @@
 // Uses Socket.io for real-time communication with backend
 
 import * as React from 'react';
-import { AppState, AppStateStatus, Platform } from 'react-native';
+import { AppState, AppStateStatus } from 'react-native';
 import * as Location from 'expo-location';
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,7 +11,7 @@ import { useAuth } from './auth-provider';
 import type {
   FriendLocation,
   SharingState,
-  ShareDuration,
+  ShareDurationSeconds,
   ConnectionState,
   ClientToServerEvents,
   ServerToClientEvents,
@@ -23,6 +23,9 @@ const SHARING_STATE_KEY = 'live_location_sharing_state';
 // Location update interval (in ms) - balance between accuracy and battery
 const LOCATION_UPDATE_INTERVAL = 5000; // 5 seconds
 
+// Heartbeat interval to keep connection alive
+const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+
 interface LiveLocationContextType {
   // Connection state
   connectionState: ConnectionState;
@@ -31,11 +34,11 @@ interface LiveLocationContextType {
   sharingState: SharingState;
   remainingTime: number | null; // seconds remaining
 
-  // Friends' locations
-  friendLocations: Map<string, FriendLocation>;
+  // Friends' locations (keyed by number since backend sends number userId)
+  friendLocations: Map<number, FriendLocation>;
 
   // Actions
-  startSharing: (duration: ShareDuration) => Promise<void>;
+  startSharing: (duration: ShareDurationSeconds) => Promise<void>;
   stopSharing: () => Promise<void>;
 
   // Permission state
@@ -43,12 +46,15 @@ interface LiveLocationContextType {
   requestLocationPermission: () => Promise<boolean>;
 }
 
-const LiveLocationContext = React.createContext<LiveLocationContextType | null>(null);
+const LiveLocationContext =
+  React.createContext<LiveLocationContextType | null>(null);
 
 export function useLiveLocation() {
   const context = React.useContext(LiveLocationContext);
   if (!context) {
-    throw new Error('useLiveLocation must be used within a LiveLocationProvider');
+    throw new Error(
+      'useLiveLocation must be used within a LiveLocationProvider'
+    );
   }
   return context;
 }
@@ -61,16 +67,28 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
   const { user, isAuthenticated } = useAuth();
 
   // Socket reference
-  const socketRef = React.useRef<Socket<ServerToClientEvents, ClientToServerEvents> | null>(null);
+  const socketRef = React.useRef<Socket<
+    ServerToClientEvents,
+    ClientToServerEvents
+  > | null>(null);
 
   // Location subscription reference
-  const locationSubRef = React.useRef<Location.LocationSubscription | null>(null);
+  const locationSubRef = React.useRef<Location.LocationSubscription | null>(
+    null
+  );
 
-  // Timer for remaining time updates
+  // Timer references
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatRef = React.useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
+
+  // Current location for start_sharing
+  const currentLocationRef = React.useRef<Location.LocationObject | null>(null);
 
   // State
-  const [connectionState, setConnectionState] = React.useState<ConnectionState>('disconnected');
+  const [connectionState, setConnectionState] =
+    React.useState<ConnectionState>('disconnected');
   const [sharingState, setSharingState] = React.useState<SharingState>({
     isSharing: false,
     startedAt: null,
@@ -78,10 +96,11 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     duration: null,
   });
   const [remainingTime, setRemainingTime] = React.useState<number | null>(null);
-  const [friendLocations, setFriendLocations] = React.useState<Map<string, FriendLocation>>(
-    new Map()
-  );
-  const [hasLocationPermission, setHasLocationPermission] = React.useState(false);
+  const [friendLocations, setFriendLocations] = React.useState<
+    Map<number, FriendLocation>
+  >(new Map());
+  const [hasLocationPermission, setHasLocationPermission] =
+    React.useState(false);
 
   // Check location permission on mount
   React.useEffect(() => {
@@ -113,7 +132,10 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
   // Handle app state changes (background/foreground)
   React.useEffect(() => {
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = AppState.addEventListener(
+      'change',
+      handleAppStateChange
+    );
     return () => {
       subscription.remove();
     };
@@ -124,7 +146,10 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     if (sharingState.isSharing && sharingState.expiresAt) {
       timerRef.current = setInterval(() => {
         const now = Date.now();
-        const remaining = Math.max(0, Math.floor((sharingState.expiresAt! - now) / 1000));
+        const remaining = Math.max(
+          0,
+          Math.floor((sharingState.expiresAt! - now) / 1000)
+        );
         setRemainingTime(remaining);
 
         // Auto-stop when time expires
@@ -203,18 +228,25 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       // Get auth token
       const token = await AsyncStorage.getItem(config.auth.tokenKey);
       if (!token) {
+        console.error('[LiveLocation] No auth token available');
         setConnectionState('error');
         return;
       }
 
-      const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(config.websocket.url, {
-        path: '/socket.io',
-        transports: ['websocket'],
-        auth: { token },
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-      });
+      // Connect to /locations namespace
+      const socketUrl = `${config.websocket.url}/locations`;
+      console.log('[LiveLocation] Connecting to:', socketUrl);
+
+      const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
+        socketUrl,
+        {
+          transports: ['websocket', 'polling'],
+          auth: { token },
+          reconnection: true,
+          reconnectionAttempts: 5,
+          reconnectionDelay: 1000,
+        }
+      );
 
       socket.on('connect', () => {
         console.log('[LiveLocation] Socket connected');
@@ -227,11 +259,15 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         if (sharingState.isSharing) {
           startLocationUpdates();
         }
+
+        // Start heartbeat
+        startHeartbeat();
       });
 
       socket.on('disconnect', (reason) => {
         console.log('[LiveLocation] Socket disconnected:', reason);
         setConnectionState('disconnected');
+        stopHeartbeat();
       });
 
       socket.on('connect_error', (error) => {
@@ -239,8 +275,22 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         setConnectionState('error');
       });
 
+      // Handle initial batch of friends' locations
+      socket.on('friends_locations', (data) => {
+        console.log(
+          '[LiveLocation] Received initial friends locations:',
+          data.users.length
+        );
+        const newMap = new Map<number, FriendLocation>();
+        for (const friend of data.users) {
+          newMap.set(friend.userId, friend);
+        }
+        setFriendLocations(newMap);
+      });
+
       // Handle friend location updates
       socket.on('friend_location', (data) => {
+        console.log('[LiveLocation] Friend location update:', data.userId);
         setFriendLocations((prev) => {
           const updated = new Map(prev);
           updated.set(data.userId, data);
@@ -248,8 +298,9 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         });
       });
 
-      // Handle friend stopped sharing
-      socket.on('friend_stopped', (data) => {
+      // Handle friend stopped sharing (backend sends friend_offline)
+      socket.on('friend_offline', (data) => {
+        console.log('[LiveLocation] Friend went offline:', data.userId);
         setFriendLocations((prev) => {
           const updated = new Map(prev);
           updated.delete(data.userId);
@@ -259,17 +310,19 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
       // Handle sharing confirmations
       socket.on('sharing_started', (data) => {
+        console.log('[LiveLocation] Sharing confirmed:', data);
         const newState: SharingState = {
           isSharing: true,
           startedAt: Date.now(),
-          expiresAt: data.expiresAt,
+          expiresAt: data.sharingUntil,
           duration: sharingState.duration,
         };
         setSharingState(newState);
         persistSharingState(newState);
       });
 
-      socket.on('sharing_stopped', () => {
+      socket.on('sharing_stopped', (data) => {
+        console.log('[LiveLocation] Sharing stopped:', data.reason);
         const newState: SharingState = {
           isSharing: false,
           startedAt: null,
@@ -281,8 +334,13 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         stopLocationUpdates();
       });
 
+      // Handle heartbeat response
+      socket.on('pong', (data) => {
+        console.log('[LiveLocation] Heartbeat pong:', data.serverTime);
+      });
+
       socket.on('error', (data) => {
-        console.error('[LiveLocation] Server error:', data.message);
+        console.error('[LiveLocation] Server error:', data.code, data.message);
       });
 
       socketRef.current = socket;
@@ -293,12 +351,29 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
   };
 
   const disconnectSocket = () => {
+    stopHeartbeat();
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
     setConnectionState('disconnected');
     stopLocationUpdates();
+  };
+
+  const startHeartbeat = () => {
+    stopHeartbeat();
+    heartbeatRef.current = setInterval(() => {
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('ping');
+      }
+    }, HEARTBEAT_INTERVAL);
+  };
+
+  const stopHeartbeat = () => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
+    }
   };
 
   const startLocationUpdates = async () => {
@@ -318,12 +393,16 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
           distanceInterval: 10, // Also update if moved 10 meters
         },
         (location) => {
+          // Store current location for start_sharing
+          currentLocationRef.current = location;
+
           if (socketRef.current?.connected && sharingState.isSharing) {
             socketRef.current.emit('location_update', {
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
               accuracy: location.coords.accuracy ?? undefined,
               heading: location.coords.heading ?? undefined,
+              speed: location.coords.speed ?? undefined,
             });
           }
         }
@@ -340,7 +419,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     }
   };
 
-  const startSharing = async (duration: ShareDuration) => {
+  const startSharing = async (duration: ShareDurationSeconds) => {
     if (!config.websocket.enabled) {
       console.warn('[LiveLocation] Live location feature is disabled');
       return;
@@ -356,11 +435,25 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       if (!granted) return;
     }
 
+    // Get current location first
+    let location = currentLocationRef.current;
+    if (!location) {
+      try {
+        location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        currentLocationRef.current = location;
+      } catch (error) {
+        console.error('[LiveLocation] Failed to get current location:', error);
+        return;
+      }
+    }
+
     // Optimistically update state (will be confirmed by server)
     const optimisticState: SharingState = {
       isSharing: true,
       startedAt: Date.now(),
-      expiresAt: Date.now() + duration * 60 * 1000,
+      expiresAt: Date.now() + duration * 1000, // duration is in seconds
       duration,
     };
     setSharingState(optimisticState);
@@ -368,8 +461,15 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     // Start location updates
     startLocationUpdates();
 
-    // Tell server
-    socketRef.current.emit('start_sharing', { duration });
+    // Tell server with current location
+    socketRef.current.emit('start_sharing', {
+      duration,
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+      accuracy: location.coords.accuracy ?? undefined,
+      heading: location.coords.heading ?? undefined,
+      speed: location.coords.speed ?? undefined,
+    });
   };
 
   const stopSharing = async () => {

@@ -16,7 +16,7 @@ import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import {
   SHARE_DURATION_OPTIONS,
-  ShareDuration,
+  ShareDurationSeconds,
 } from '@/lib/types/live-location.types';
 
 interface ShareLocationSheetProps {
@@ -60,7 +60,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
     }
   }, [isVisible]);
 
-  const handleDurationSelect = async (duration: ShareDuration) => {
+  const handleDurationSelect = async (duration: ShareDurationSeconds) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsStarting(true);
 

@@ -593,13 +593,20 @@ function FullMapScreen() {
 
   // Convert live location data to friend markers
   const nearbyFriends = useMemo<FriendMarker[]>(() => {
-    return Array.from(friendLocations.values()).map((loc) => ({
-      id: loc.userId,
-      name: loc.username,
-      imageUrl: loc.avatarUrl,
-      latitude: loc.latitude,
-      longitude: loc.longitude,
-    }));
+    return Array.from(friendLocations.values()).map((loc) => {
+      // Build display name from firstName/lastName or fall back to userName
+      const displayName = loc.firstName || loc.lastName
+        ? `${loc.firstName || ''} ${loc.lastName || ''}`.trim()
+        : loc.userName || `User ${loc.userId}`;
+
+      return {
+        id: String(loc.userId),
+        name: displayName,
+        imageUrl: loc.avatarUrl || 'https://picsum.photos/200',
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+      };
+    });
   }, [friendLocations]);
 
   const handleEventPress = useCallback((event: MapEvent) => {
