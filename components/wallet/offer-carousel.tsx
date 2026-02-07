@@ -28,11 +28,8 @@ function OfferCard({ offer, onClaim }: { offer: Offer; onClaim: () => void }) {
         {offer.subtitle}
       </Text>
 
-      {/* Bottom: Fixed footer with eligibility and claim button */}
+      {/* Bottom: Claim button */}
       <View style={styles.offerFooter}>
-        <View style={styles.eligibilityBadge}>
-          <Text style={styles.eligibilityText}>{offer.eligibility}</Text>
-        </View>
         <TouchableOpacity
           style={[styles.claimButton, offer.isClaimed && styles.claimButtonClaimed]}
           onPress={() => !offer.isClaimed && onClaim()}
@@ -60,9 +57,9 @@ export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
   if (offers.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.sectionTitle}>Perks & Offers</Text>
+        <Text style={styles.sectionTitle}>Promos</Text>
         <View style={styles.emptyState}>
-          <Ionicons name="gift-outline" size={40} color="rgba(255,255,255,0.2)" />
+          <Ionicons name="gift-outline" size={40} color="rgba(0,0,0,0.2)" />
           <Text style={styles.emptyText}>No offers available</Text>
         </View>
       </View>
@@ -71,7 +68,7 @@ export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Perks & Offers</Text>
+      <Text style={styles.sectionTitle}>Promos</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -93,12 +90,12 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: 'rgba(0, 0, 0, 0.06)',
   },
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingHorizontal: 16,
@@ -111,7 +108,7 @@ const styles = StyleSheet.create({
   offerCard: {
     width: 180,
     height: 150,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
     borderRadius: 16,
     padding: 16,
     justifyContent: 'space-between',
@@ -119,35 +116,24 @@ const styles = StyleSheet.create({
   offerTitle: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     lineHeight: 20,
     height: 40,
   },
   offerSubtitle: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     lineHeight: 16,
     height: 32,
   },
   offerFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  eligibilityBadge: {
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  eligibilityText: {
-    fontSize: 10,
-    fontFamily: 'Lato_700Bold',
-    color: '#8b5cf6',
+    justifyContent: 'flex-end',
   },
   claimButton: {
-    backgroundColor: '#0095f6',
+    backgroundColor: '#3897F0',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
@@ -175,7 +161,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0, 0, 0, 0.4)',
     marginTop: 12,
   },
 });

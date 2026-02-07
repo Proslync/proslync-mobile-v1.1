@@ -1,12 +1,12 @@
 import * as React from 'react';
 import {
   View,
+  Text,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FeedTab } from '@/lib/types/feed.types';
 
@@ -26,31 +26,28 @@ export function FeedHeader({
       entering={FadeInDown.duration(500)}
       style={[styles.container, { paddingTop: insets.top + 8 }]}
     >
-      <View style={styles.content}>
-        {/* Tab Dots */}
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity
-            style={styles.tabButton}
-            onPress={() => onTabChange('foryou')}
-            activeOpacity={0.7}
-          >
-            <View style={[
-              styles.tabDot,
-              activeTab === 'foryou' && styles.tabDotActive
-            ]} />
-          </TouchableOpacity>
+      <View style={styles.tabRow}>
+        <TouchableOpacity
+          onPress={() => onTabChange('foryou')}
+          activeOpacity={0.7}
+          style={styles.tab}
+        >
+          <Text style={[styles.tabText, activeTab === 'foryou' && styles.tabTextActive]}>
+            For You
+          </Text>
+          {activeTab === 'foryou' && <View style={styles.tabIndicator} />}
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.tabButton}
-            onPress={() => onTabChange('following')}
-            activeOpacity={0.7}
-          >
-            <View style={[
-              styles.tabDot,
-              activeTab === 'following' && styles.tabDotActive
-            ]} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => onTabChange('following')}
+          activeOpacity={0.7}
+          style={styles.tab}
+        >
+          <Text style={[styles.tabText, activeTab === 'following' && styles.tabTextActive]}>
+            Following
+          </Text>
+          {activeTab === 'following' && <View style={styles.tabIndicator} />}
+        </TouchableOpacity>
       </View>
     </Animated.View>
   );
@@ -66,31 +63,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
-  content: {
+  tabRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 24,
   },
-  tabsContainer: {
-    flexDirection: 'row',
+  tab: {
     alignItems: 'center',
-    gap: 12,
-    position: 'relative',
+    paddingVertical: 4,
   },
-  tabButton: {
-    padding: 8,
-    alignItems: 'center',
+  tabText: {
+    fontSize: 16,
+    fontFamily: 'Lato_600SemiBold',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
-  tabDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+  tabTextActive: {
+    color: '#1a1a1a',
   },
-  tabDotActive: {
-    backgroundColor: '#fff',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  tabIndicator: {
+    marginTop: 4,
+    width: 28,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#1a1a1a',
   },
 });

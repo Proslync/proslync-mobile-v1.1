@@ -2,24 +2,22 @@
 import React, { useRef } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useWallet } from '@/lib/providers/wallet-provider';
 import {
   MembershipCard,
   StatusCardMenuSheet,
   OfferCarousel,
-  ExploreEvents,
+  TicketCarousel,
   WalletSkeleton,
 } from '@/components/wallet';
 
 export default function WalletScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
   const {
     user,
-    balances,
     offers,
     events,
     isLoading,
@@ -34,16 +32,14 @@ export default function WalletScreen() {
     onRefresh: refreshWallet,
   });
 
-  const handleViewEvent = (eventId: string) => {
-    router.push(`/event/${eventId}`);
-  };
-
   if (isLoading || !user) {
     return <WalletSkeleton />;
   }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+      <DarkGradientBg />
+
       <ScrollView
         ref={scrollRef}
         style={styles.scrollView}
@@ -54,7 +50,7 @@ export default function WalletScreen() {
         {/* Membership Card - Tappable */}
         <MembershipCard user={user} onPress={() => setCardMenuVisible(true)} />
 
-        {/* Offers Carousel */}
+        {/* Promos Carousel */}
         {offers.length > 0 && (
           <OfferCarousel
             offers={offers}
@@ -62,8 +58,12 @@ export default function WalletScreen() {
           />
         )}
 
-        {/* Explore Events */}
-        <ExploreEvents events={events} onViewEvent={handleViewEvent} />
+        {/* Tickets */}
+        <TicketCarousel
+          events={events}
+          onViewEvent={(eventId) => console.log('View event:', eventId)}
+        />
+
       </ScrollView>
 
       {/* Status Card Menu Sheet */}
@@ -79,7 +79,7 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   scrollView: {
     flex: 1,

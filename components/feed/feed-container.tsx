@@ -118,7 +118,6 @@ export function FeedContainer({
       data={items}
       renderItem={renderItem}
       keyExtractor={(item) => item.id}
-      pagingEnabled
       showsVerticalScrollIndicator={false}
       snapToInterval={SCREEN_HEIGHT}
       snapToAlignment="start"
@@ -130,6 +129,8 @@ export function FeedContainer({
       maxToRenderPerBatch={3}
       windowSize={5}
       initialNumToRender={2}
+      bounces={false}
+      overScrollMode="never"
       style={styles.container}
       refreshControl={refreshControl}
     />
@@ -139,6 +140,6 @@ export function FeedContainer({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
 });

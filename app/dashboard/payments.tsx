@@ -76,7 +76,7 @@ export default function PaymentsScreen() {
   if (isLoading && !isRefreshing) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color="#1a1a1a" />
         <Text style={styles.loadingText}>Loading payments...</Text>
       </View>
     );
@@ -94,7 +94,7 @@ export default function PaymentsScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Payments</Text>
         <TouchableOpacity
@@ -106,7 +106,7 @@ export default function PaymentsScreen() {
           <Ionicons
             name="open-outline"
             size={22}
-            color={needsStripeSetup ? 'rgba(255,255,255,0.3)' : '#8b5cf6'}
+            color={needsStripeSetup ? 'rgba(0,0,0,0.2)' : '#3897F0'}
           />
         </TouchableOpacity>
       </Animated.View>
@@ -119,7 +119,7 @@ export default function PaymentsScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            tintColor="#fff"
+            tintColor="#1a1a1a"
           />
         }
       >
@@ -130,7 +130,7 @@ export default function PaymentsScreen() {
             style={styles.setupContainer}
           >
             <View style={styles.setupIconContainer}>
-              <Ionicons name="wallet-outline" size={56} color="#8b5cf6" />
+              <Ionicons name="wallet-outline" size={56} color="#3897F0" />
             </View>
             <Text style={styles.setupTitle}>Set Up Payouts</Text>
             <Text style={styles.setupDescription}>
@@ -236,7 +236,7 @@ export default function PaymentsScreen() {
                         <Ionicons
                           name={method.type === 'bank' ? 'business' : 'card'}
                           size={20}
-                          color="#fff"
+                          color="#1a1a1a"
                         />
                       </View>
                       <View style={styles.methodInfo}>
@@ -253,7 +253,7 @@ export default function PaymentsScreen() {
                 </View>
               ) : (
                 <TouchableOpacity style={styles.addMethodButton} onPress={openStripeDashboard}>
-                  <Ionicons name="add-circle-outline" size={24} color="#8b5cf6" />
+                  <Ionicons name="add-circle-outline" size={24} color="#3897F0" />
                   <Text style={styles.addMethodText}>Add payout method</Text>
                 </TouchableOpacity>
               )}
@@ -297,7 +297,7 @@ export default function PaymentsScreen() {
                 </View>
               ) : (
                 <View style={styles.emptyActivity}>
-                  <Ionicons name="receipt-outline" size={40} color="rgba(255,255,255,0.3)" />
+                  <Ionicons name="receipt-outline" size={40} color="rgba(0,0,0,0.2)" />
                   <Text style={styles.emptyActivityText}>No activity yet</Text>
                   <Text style={styles.emptyActivityHint}>
                     Your earnings and withdrawals will appear here
@@ -325,7 +325,7 @@ export default function PaymentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
   },
   header: {
     flexDirection: 'row',
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   backButton: {
     width: 40,
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   headerButton: {
     width: 40,
@@ -371,18 +371,18 @@ const styles = StyleSheet.create({
   },
   // Setup Container
   setupContainer: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    backgroundColor: 'rgba(56, 151, 240, 0.06)',
     borderRadius: 20,
     padding: 28,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
+    borderColor: 'rgba(56, 151, 240, 0.2)',
   },
   setupIconContainer: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
+    backgroundColor: 'rgba(56, 151, 240, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -390,13 +390,13 @@ const styles = StyleSheet.create({
   setupTitle: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 12,
   },
   setupDescription: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(0,0,0,0.6)',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -414,13 +414,13 @@ const styles = StyleSheet.create({
   setupFeatureText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(0,0,0,0.7)',
   },
   setupButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#3897F0',
     paddingVertical: 16,
     paddingHorizontal: 28,
     borderRadius: 14,
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
   setupHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0,0,0,0.4)',
     marginTop: 16,
     textAlign: 'center',
   },
@@ -453,19 +453,19 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 16,
     padding: 16,
   },
   availableCard: {
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.3)',
+    borderColor: 'rgba(34, 197, 94, 0.2)',
   },
   balanceLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0,0,0,0.5)',
     marginBottom: 4,
   },
   balanceAmount: {
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   balanceHint: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0,0,0,0.4)',
   },
   withdrawButton: {
     flexDirection: 'row',
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   withdrawButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(0,0,0,0.1)',
   },
   withdrawButtonText: {
     fontSize: 14,
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   lifetimeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -513,12 +513,12 @@ const styles = StyleSheet.create({
   lifetimeLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0,0,0,0.5)',
   },
   lifetimeAmount: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   // Section
   section: {
@@ -533,16 +533,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   manageLink: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: '#8b5cf6',
+    color: '#3897F0',
   },
   // Payout Methods
   methodsList: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -551,13 +551,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   methodIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0,0,0,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -568,15 +568,15 @@ const styles = StyleSheet.create({
   methodLabel: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   methodLast4: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0,0,0,0.5)',
   },
   defaultBadge: {
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    backgroundColor: 'rgba(56, 151, 240, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -584,16 +584,16 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 11,
     fontFamily: 'Lato_700Bold',
-    color: '#8b5cf6',
+    color: '#3897F0',
   },
   addMethodButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
+    borderColor: 'rgba(56, 151, 240, 0.3)',
     borderStyle: 'dashed',
     padding: 16,
     gap: 10,
@@ -601,11 +601,11 @@ const styles = StyleSheet.create({
   addMethodText: {
     fontSize: 15,
     fontFamily: 'Lato_600SemiBold',
-    color: '#8b5cf6',
+    color: '#3897F0',
   },
   // Transactions
   transactionsList: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   transactionIcon: {
     width: 32,
@@ -624,10 +624,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   earningIcon: {
-    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
   },
   withdrawalIcon: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
   },
   transactionInfo: {
     flex: 1,
@@ -636,12 +636,12 @@ const styles = StyleSheet.create({
   transactionTitle: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   transactionDate: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0,0,0,0.4)',
     marginTop: 2,
   },
   transactionAmount: {
@@ -657,19 +657,19 @@ const styles = StyleSheet.create({
   emptyActivity: {
     alignItems: 'center',
     padding: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
   },
   emptyActivityText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0,0,0,0.5)',
     marginTop: 12,
   },
   emptyActivityHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0,0,0,0.4)',
     marginTop: 4,
     textAlign: 'center',
   },

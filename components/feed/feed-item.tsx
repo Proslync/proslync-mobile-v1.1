@@ -6,36 +6,34 @@ import {
   StyleSheet,
   Dimensions,
   Image,
-  ImageBackground,
 } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { FeedMediaPlayer } from './feed-media-player';
+import { Ionicons } from '@expo/vector-icons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { FeedBottomCTA } from './feed-bottom-cta';
+import { useFollowUser } from '@/hooks/use-follow-user';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CARD_MARGIN = 16;
+const CARD_WIDTH = SCREEN_WIDTH - (CARD_MARGIN * 2);
+const CARD_BORDER_RADIUS = 20;
 
-function getOrdinalSuffix(n: number): string {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return s[(v - 20) % 10] || s[v] || s[0];
-}
-
-function formatEventDate(dateString: string, venueName?: string): string {
+function formatEventDate(dateString: string): string {
   try {
     const date = new Date(dateString);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     const dayName = days[date.getDay()];
     const monthName = months[date.getMonth()];
     const dayNum = date.getDate();
-    const ordinal = getOrdinalSuffix(dayNum);
 
     let hours = date.getHours();
     const minutes = date.getMinutes();
@@ -44,11 +42,7 @@ function formatEventDate(dateString: string, venueName?: string): string {
     hours = hours ? hours : 12;
     const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
 
-    let result = `${dayName}, ${monthName} ${dayNum}${ordinal} at ${hours}:${minutesStr}${ampm}`;
-    if (venueName) {
-      result += ` at ${venueName}`;
-    }
-    return result;
+    return `${dayName}, ${monthName} ${dayNum} at ${hours}:${minutesStr}${ampm}`;
   } catch {
     return dateString;
   }
@@ -74,109 +68,187 @@ interface FeedItemProps {
 
 export function FeedItem({
   item,
-  index,
   isActive,
   isLiked,
   isRsvp,
-  isPendingRsvp,
-  isPurchased,
   showDoubleTapHeart,
   onDoubleTap,
   onRsvp,
   onPendingRsvp,
   onPurchase,
-  onRefer,
   onUserClick,
   onEventPress,
 }: FeedItemProps) {
   const insets = useSafeAreaInsets();
-  const backgroundImageUrl =
-    item.mediaType === 'video'
-      ? item.thumbnail
-      : item.imageUrl || item.thumbnail;
+  const {
+    isFollowing,
+    isLoading: followLoading,
+    follow,
+    unfollow,
+    isFollowInProgress,
+    isUnfollowInProgress,
+  } = useFollowUser(item.userId);
+  const lastTapRef = React.useRef<number>(0);
+
+  const flyerUrl = item.imageUrl || item.thumbnail;
+  const isFollowActionInProgress = isFollowInProgress || isUnfollowInProgress;
+
+  const handleFollowPress = async () => {
+    if (isFollowActionInProgress || followLoading) return;
+    try {
+      if (isFollowing) {
+        await unfollow();
+      } else {
+        await follow();
+      }
+    } catch (error) {
+      console.error('[FeedItem] Follow error:', error);
+    }
+  };
+
+  const handleFlyerTap = () => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTapRef.current;
+
+    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+      // Double tap
+      onDoubleTap();
+      lastTapRef.current = 0;
+    } else {
+      lastTapRef.current = now;
+      setTimeout(() => {
+        if (lastTapRef.current === now) {
+          onEventPress();
+        }
+      }, 300);
+    }
+  };
 
   return (
     <View style={[styles.container, { height: SCREEN_HEIGHT }]}>
-      {/* Blurred background */}
-      {backgroundImageUrl && (
-        <ImageBackground
-          source={{ uri: backgroundImageUrl }}
-          style={styles.backgroundImage}
-          blurRadius={12}
-        >
-          <View style={styles.backgroundOverlay} />
-        </ImageBackground>
-      )}
+      {/* Background wrapper with rounded bottom corners */}
+      <View style={styles.backgroundWrapper}>
+        {/* Background with flyer image - blurred */}
+        {flyerUrl && (
+          <Image
+            source={{ uri: flyerUrl }}
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
+        )}
 
-      {/* Gradient overlay - darker at bottom */}
-      <LinearGradient
-        colors={['transparent', 'rgba(0, 0, 0, 0.3)', 'rgba(0, 0, 0, 0.7)', 'rgba(0, 0, 0, 0.95)']}
-        locations={[0, 0.4, 0.7, 1]}
-        style={styles.gradientOverlay}
-      />
+        {/* Blur layer over background */}
+        <BlurView
+          intensity={60}
+          tint="light"
+          style={styles.blurOverlay}
+        />
 
-      {/* Main content */}
+        {/* Gradient dark overlay - darker toward the bottom */}
+        <LinearGradient
+          colors={['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0.9)', '#fff', '#fff']}
+          locations={[0, 0.7, 0.8, 0.88, 0.93, 1]}
+          style={styles.gradientOverlay}
+        />
+      </View>
+
+      {/* Main content area */}
       <View
         style={[
           styles.content,
           {
-            paddingTop: insets.top + 60, // Reduced header height for flyer to be higher
-            paddingBottom: insets.bottom + 105, // Bottom CTA + tab bar height
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 105,
           },
         ]}
       >
-        {/* Media Player with Organizer Overlay */}
-        <View style={styles.mediaContainer}>
-          <FeedMediaPlayer
-            mediaType={item.mediaType}
-            videoUrl={item.videoUrl}
-            imageUrl={item.imageUrl}
-            poster={item.thumbnail}
-            isActive={isActive}
-            onDoubleTap={onDoubleTap}
-            onSingleTap={onEventPress}
-            isLiked={isLiked}
-            aspectRatio={item.aspectRatio}
-            mediaOrientation={item.mediaOrientation}
-            overlay={
-              item.username && item.userAvatar ? (
-                <TouchableOpacity
-                  onPress={onUserClick}
-                  activeOpacity={0.8}
-                  style={styles.organizerOverlay}
-                >
-                  <View style={styles.organizerContainer}>
-                    <Image
-                      source={{ uri: item.userAvatar }}
-                      style={styles.organizerAvatar}
-                    />
-                    <Text style={styles.organizerName} numberOfLines={1}>
-                      @{item.username}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ) : null
-            }
+        {/* Instagram Story Card - Liquid Glass */}
+        <View style={styles.card}>
+          {/* Glass blur background for card */}
+          <BlurView
+            intensity={25}
+            tint="light"
+            style={styles.cardBlurBackground}
           />
-        </View>
+          {/* Card Header - Organizer info + Follow button */}
+          <View style={styles.cardHeader}>
+            <TouchableOpacity
+              onPress={onUserClick}
+              activeOpacity={0.7}
+              style={styles.organizerSection}
+            >
+              {item.userAvatar && (
+                <Image
+                  source={{ uri: item.userAvatar }}
+                  style={styles.organizerAvatar}
+                />
+              )}
+              <View style={styles.organizerNameRow}>
+                <Text style={styles.organizerName} numberOfLines={1}>
+                  {item.username}
+                </Text>
+                <MaterialCommunityIcons name="check-decagram" size={16} color="#3897F0" />
+              </View>
+            </TouchableOpacity>
 
-        {/* Event Info Section - Title & Date */}
-        <View style={styles.eventInfoContainer}>
-          {item.eventTitle && (
+            <TouchableOpacity
+              onPress={handleFollowPress}
+              activeOpacity={0.8}
+              style={[
+                styles.followButton,
+                isFollowing && styles.followButtonFollowing,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.followButtonText,
+                  isFollowing && styles.followButtonTextFollowing,
+                ]}
+              >
+                {isFollowing ? 'Following' : 'Follow'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Flyer Image - Rounded corners with glass padding */}
+          <TouchableOpacity
+            activeOpacity={0.95}
+            onPress={handleFlyerTap}
+            style={styles.flyerContainer}
+          >
+            <View style={styles.flyerOutline}>
+              {flyerUrl && (
+                <Image
+                  source={{ uri: flyerUrl }}
+                  style={styles.flyerImage}
+                  resizeMode="cover"
+                />
+              )}
+            </View>
+
+            {/* Double tap heart overlay */}
+            {showDoubleTapHeart && (
+              <Animated.View
+                entering={FadeIn.duration(200)}
+                exiting={FadeOut.duration(200)}
+                style={styles.heartOverlay}
+              >
+                <Text style={styles.heartEmoji}>❤️</Text>
+              </Animated.View>
+            )}
+          </TouchableOpacity>
+
+          {/* Card Footer - Event title + date */}
+          <View style={styles.cardFooter}>
             <Text style={styles.eventTitle} numberOfLines={2}>
-              {item.eventTitle}
+              {item.eventTitle || item.description || 'Untitled Event'}
             </Text>
-          )}
-          {item.eventDate && (
-            <Text style={styles.eventDate}>
-              {formatEventDate(item.eventDate, item.venueName)}
-            </Text>
-          )}
-          {!item.eventTitle && item.description && (
-            <Text style={styles.eventTitle} numberOfLines={2}>
-              {item.description}
-            </Text>
-          )}
+            {item.eventDate && (
+              <Text style={styles.eventDate}>
+                {formatEventDate(item.eventDate)}
+              </Text>
+            )}
+          </View>
         </View>
       </View>
 
@@ -186,18 +258,8 @@ export function FeedItem({
         isPaid={item.isPaid}
         isRsvpd={isRsvp || item.isUserRegistered}
         isEvent={item.isEvent}
+        price={item.price}
       />
-
-      {/* Double tap heart overlay */}
-      {showDoubleTapHeart && (
-        <Animated.View
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(200)}
-          style={styles.doubleTapHeart}
-        >
-          <Text style={styles.heartEmoji}>❤️</Text>
-        </Animated.View>
-      )}
     </View>
   );
 }
@@ -205,8 +267,17 @@ export function FeedItem({
 const styles = StyleSheet.create({
   container: {
     width: SCREEN_WIDTH,
-    backgroundColor: '#000',
-    position: 'relative',
+    backgroundColor: '#fff',
+  },
+  backgroundWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
   },
   backgroundImage: {
     position: 'absolute',
@@ -215,9 +286,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  backgroundOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   gradientOverlay: {
     position: 'absolute',
@@ -228,71 +302,128 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-  },
-  mediaContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 0,
+    paddingHorizontal: CARD_MARGIN,
   },
-  // Organizer overlay styles
-  organizerOverlay: {
+
+  // Card container - Liquid Glass
+  card: {
+    width: CARD_WIDTH,
+    backgroundColor: '#fff',
+    borderRadius: CARD_BORDER_RADIUS,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+    // Soft shadow for lift
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  cardBlurBackground: {
     position: 'absolute',
-    top: 12,
-    left: 12,
-    zIndex: 10,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  organizerContainer: {
+
+  // Card Header
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    paddingRight: 14,
-    borderRadius: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  organizerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
     gap: 8,
   },
   organizerAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#e0e0e0',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: '#e0e0e0',
+  },
+  organizerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 4,
   },
   organizerName: {
-    fontSize: 13,
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    color: '#1a1a1a',
+    flexShrink: 1,
+  },
+
+  // Follow Button - Glass aesthetic
+  followButton: {
+    backgroundColor: '#3897F0',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 151, 240, 0.3)',
+  },
+  followButtonFollowing: {
+    backgroundColor: '#e0e0e0',
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+  },
+  followButtonText: {
+    fontSize: 14,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
-    maxWidth: 120,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
-  // Event info styles
-  eventInfoContainer: {
-    paddingHorizontal: 8,
-    paddingBottom: 12,
-    marginTop: 16,
+  followButtonTextFollowing: {
+    color: 'rgba(0, 0, 0, 0.5)',
+  },
+
+  // Flyer
+  flyerContainer: {
+    width: '100%',
+    aspectRatio: 4 / 5,
+  },
+  flyerOutline: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  flyerImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  // Card Footer
+  cardFooter: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 4,
   },
   eventTitle: {
-    fontSize: 26,
+    fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    marginBottom: 4,
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: '#1a1a1a',
+    lineHeight: 26,
   },
   eventDate: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.8)',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: 'rgba(0, 0, 0, 0.55)',
   },
-  doubleTapHeart: {
+
+  // Heart overlay
+  heartOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -300,9 +431,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 100,
   },
   heartEmoji: {
-    fontSize: 96,
+    fontSize: 80,
   },
 });

@@ -47,13 +47,13 @@ function MenuItem({ title, subtitle, icon, onPress }: MenuItemProps) {
   return (
     <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.menuItemIcon}>
-        <Ionicons name={icon} size={22} color="#fff" />
+        <Ionicons name={icon} size={22} color="#1a1a1a" />
       </View>
       <View style={styles.menuItemContent}>
         <Text style={styles.menuItemTitle}>{title}</Text>
         <Text style={styles.menuItemSubtitle}>{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+      <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.3)" />
     </TouchableOpacity>
   );
 }
@@ -76,7 +76,7 @@ export default function DashboardScreen() {
   if (isLoading && !refreshing) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color="#1a1a1a" />
         <Text style={styles.loadingText}>Loading dashboard...</Text>
       </View>
     );
@@ -94,7 +94,7 @@ export default function DashboardScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Dashboard</Text>
         <View style={styles.headerSpacer} />
@@ -108,8 +108,8 @@ export default function DashboardScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#fff"
-            colors={['#8b5cf6']}
+            tintColor="#1a1a1a"
+            colors={['#1a1a1a']}
           />
         }
       >
@@ -248,7 +248,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -258,12 +258,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
   },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(248, 113, 113, 0.15)',
+    backgroundColor: 'rgba(248, 113, 113, 0.1)',
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -273,12 +273,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: '#f87171',
+    color: '#ef4444',
   },
   retryText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#8b5cf6',
+    color: '#3897F0',
   },
   header: {
     flexDirection: 'row',
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   backButton: {
     width: 40,
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   headerSpacer: {
     width: 40,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 3,
@@ -332,17 +332,17 @@ const styles = StyleSheet.create({
   statCardTitle: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.5)',
   },
   statCardValue: {
     fontSize: 28,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   statCardSubtitle: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.4)',
     marginTop: 4,
   },
   section: {
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 16,
   },
   quickActions: {
@@ -373,11 +373,11 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(0,0,0,0.6)',
     textAlign: 'center',
   },
   menuList: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -386,13 +386,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   menuItemIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -403,12 +403,12 @@ const styles = StyleSheet.create({
   menuItemTitle: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   menuItemSubtitle: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.5)',
     marginTop: 2,
   },
 });

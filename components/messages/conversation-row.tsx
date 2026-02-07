@@ -96,7 +96,7 @@ export function ConversationRow({
               <Ionicons
                 name="pin"
                 size={12}
-                color="rgba(255, 255, 255, 0.5)"
+                color="rgba(0, 0, 0, 0.4)"
                 style={styles.statusIcon}
               />
             )}
@@ -104,7 +104,7 @@ export function ConversationRow({
               <Ionicons
                 name="notifications-off"
                 size={12}
-                color="rgba(255, 255, 255, 0.5)"
+                color="rgba(0, 0, 0, 0.4)"
                 style={styles.statusIcon}
               />
             )}
@@ -136,7 +136,7 @@ export function ConversationRow({
       <Ionicons
         name="chevron-forward"
         size={16}
-        color="rgba(255, 255, 255, 0.3)"
+        color="rgba(0, 0, 0, 0.25)"
         style={styles.chevron}
       />
     </TouchableOpacity>
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   avatarContainer: {
     position: 'relative',
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   content: {
     flex: 1,
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
     flexShrink: 1,
   },
   nameUnread: {
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
   bottomRow: {
     flexDirection: 'row',
@@ -205,12 +205,12 @@ const styles = StyleSheet.create({
   preview: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     flex: 1,
     marginRight: 8,
   },
   previewUnread: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: 'rgba(0, 0, 0, 0.8)',
   },
   unreadBadge: {
     backgroundColor: '#0095f6',

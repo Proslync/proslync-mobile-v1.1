@@ -73,10 +73,7 @@ export default function RootLayout() {
                       <Stack.Screen
                         name="event/[id]"
                         options={{
-                          presentation: 'modal',
-                          animation: 'slide_from_bottom',
-                          gestureEnabled: true,
-                          gestureDirection: 'vertical',
+                          animation: 'slide_from_right',
                         }}
                       />
                       <Stack.Screen name="edit-profile" options={{ animation: 'slide_from_right' }} />

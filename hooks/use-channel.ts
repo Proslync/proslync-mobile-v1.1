@@ -120,8 +120,8 @@ export function useChannel(channelId: string | undefined) {
 
         setChannelInfo({
           id: ch.id || ch.cid,
-          name: (channelData?.name as string) || firstMember?.user?.name || 'Chat',
-          imageUrl: ((channelData?.image as string) || firstMember?.user?.image) as string | undefined,
+          name: firstMember?.user?.name || (channelData?.name as string) || 'Chat',
+          imageUrl: (firstMember?.user?.image || (channelData?.image as string)) as string | undefined,
           memberCount: Object.keys(ch.state.members).length,
           isOnline: firstMember?.user?.online,
           otherMember: firstMember?.user ? {

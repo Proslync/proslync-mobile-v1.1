@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '@/lib/providers/chat-provider';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useChannels, type ChannelData } from '@/hooks/use-channels';
 
 interface SearchUser {
@@ -51,7 +52,7 @@ function ContactRow({
 function EmptyState({ query }: { query: string }) {
   return (
     <View style={styles.emptyContainer}>
-      <Ionicons name="search-outline" size={48} color="rgba(255,255,255,0.3)" />
+      <Ionicons name="search-outline" size={48} color="rgba(0,0,0,0.25)" />
       <Text style={styles.emptyTitle}>No results</Text>
       <Text style={styles.emptySubtitle}>
         {query ? `No users found for "${query}"` : 'Search for someone to message'}
@@ -223,7 +224,8 @@ export default function NewMessageScreen() {
   if (status === 'connecting') {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" />
+        <DarkGradientBg />
+        <StatusBar barStyle="dark-content" />
         <View style={styles.header}>
           <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
             <Text style={styles.cancelText}>Cancel</Text>
@@ -232,7 +234,7 @@ export default function NewMessageScreen() {
           <View style={styles.cancelButton} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color="#1a1a1a" />
           <Text style={styles.loadingText}>Connecting...</Text>
         </View>
       </View>
@@ -244,12 +246,13 @@ export default function NewMessageScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <DarkGradientBg />
+      <StatusBar barStyle="dark-content" />
 
       {/* Creating overlay */}
       {showOverlay && (
         <View style={styles.overlay}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color="#1a1a1a" />
           <Text style={styles.overlayText}>Creating conversation...</Text>
         </View>
       )}
@@ -272,16 +275,16 @@ export default function NewMessageScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search"
-            placeholderTextColor="rgba(255,255,255,0.4)"
+            placeholderTextColor="rgba(0,0,0,0.35)"
             autoCapitalize="none"
             autoCorrect={false}
           />
           {isSearching && (
-            <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />
+            <ActivityIndicator size="small" color="rgba(0,0,0,0.4)" />
           )}
           {searchQuery.length > 0 && !isSearching && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.5)" />
+              <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.4)" />
             </TouchableOpacity>
           )}
         </View>
@@ -327,7 +330,7 @@ export default function NewMessageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -336,7 +339,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   cancelButton: {
     width: 60,
@@ -349,7 +352,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   searchContainer: {
     flexDirection: 'row',
@@ -358,12 +361,12 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   toLabel: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     marginRight: 12,
   },
   searchBar: {
@@ -375,18 +378,18 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
     paddingVertical: 0,
   },
   sectionHeader: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.45)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -413,7 +416,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#22c55e',
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: '#fff',
   },
   contactInfo: {
     flex: 1,
@@ -422,11 +425,11 @@ const styles = StyleSheet.create({
   contactName: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   separator: {
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     marginLeft: 78,
   },
   emptyListContainer: {
@@ -442,14 +445,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
     textAlign: 'center',
   },
   loadingContainer: {
@@ -461,11 +464,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,
@@ -474,6 +477,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
   },
 });

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+
 // Mock recent events for venue/promoter profiles
 const MOCK_RECENT_EVENTS = [
   {
@@ -89,7 +90,7 @@ export default function UserProfileScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={28} color="#0095f6" />
+          <Ionicons name="chevron-back" size={28} color="#1a1a1a" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Profile</Text>
         <View style={styles.backButton} />
@@ -118,7 +119,7 @@ export default function UserProfileScreen() {
         {/* Action Buttons - Only Message button */}
         <View style={styles.actionsRow}>
           <TouchableOpacity style={[styles.actionButton, styles.actionButtonDisabled]}>
-            <Ionicons name="chatbubble" size={20} color="rgba(255, 255, 255, 0.3)" />
+            <Ionicons name="chatbubble" size={20} color="rgba(0, 0, 0, 0.3)" />
             <Text style={[styles.actionButtonText, styles.actionButtonTextDisabled]}>Message</Text>
           </TouchableOpacity>
         </View>
@@ -166,7 +167,7 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -175,7 +176,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   backButton: {
     width: 44,
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   scrollView: {
     flex: 1,
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   roleBadge: {
     paddingHorizontal: 14,
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     paddingVertical: 12,
     borderRadius: 12,
     gap: 8,
@@ -250,13 +251,13 @@ const styles = StyleSheet.create({
     color: '#0095f6',
   },
   actionButtonTextDisabled: {
-    color: 'rgba(255, 255, 255, 0.3)',
+    color: 'rgba(0, 0, 0, 0.3)',
   },
   section: {
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopColor: 'rgba(0, 0, 0, 0.08)',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -267,7 +268,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.45)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     width: 140,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -296,12 +297,12 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 2,
   },
   eventDate: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.45)',
   },
 });

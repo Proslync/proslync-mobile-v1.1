@@ -283,7 +283,7 @@ export default function EditProfileScreen() {
             disabled={isSaving || isUploadingPhoto}
           >
             {isSaving ? (
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color="#1a1a1a" size="small" />
             ) : (
               <Text style={[styles.saveText, !hasChanges && styles.saveTextDisabled]}>
                 Done
@@ -336,7 +336,7 @@ export default function EditProfileScreen() {
                 value={formData.firstName}
                 onChangeText={(text) => updateField('firstName', text)}
                 placeholder="Enter your first name"
-                placeholderTextColor="rgba(255,255,255,0.4)"
+                placeholderTextColor="rgba(0,0,0,0.35)"
                 autoCapitalize="words"
               />
             </View>
@@ -348,7 +348,7 @@ export default function EditProfileScreen() {
                 value={formData.lastName}
                 onChangeText={(text) => updateField('lastName', text)}
                 placeholder="Enter your last name"
-                placeholderTextColor="rgba(255,255,255,0.4)"
+                placeholderTextColor="rgba(0,0,0,0.35)"
                 autoCapitalize="words"
               />
             </View>
@@ -362,7 +362,7 @@ export default function EditProfileScreen() {
                   value={formData.userName}
                   onChangeText={(text) => updateField('userName', text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   placeholder="username"
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor="rgba(0,0,0,0.35)"
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
@@ -376,7 +376,7 @@ export default function EditProfileScreen() {
                 value={formData.email}
                 onChangeText={(text) => updateField('email', text)}
                 placeholder="your@email.com"
-                placeholderTextColor="rgba(255,255,255,0.4)"
+                placeholderTextColor="rgba(0,0,0,0.35)"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -390,7 +390,7 @@ export default function EditProfileScreen() {
                 value={formData.bio}
                 onChangeText={(text) => updateField('bio', text)}
                 placeholder="Tell us about yourself"
-                placeholderTextColor="rgba(255,255,255,0.4)"
+                placeholderTextColor="rgba(0,0,0,0.35)"
                 multiline
                 numberOfLines={4}
                 maxLength={150}
@@ -411,7 +411,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   keyboardView: {
     flex: 1,
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   headerButton: {
     minWidth: 60,
@@ -434,12 +434,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   cancelText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   saveText: {
     fontSize: 16,
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(0,0,0,0.15)',
   },
   editPhotoOverlay: {
     position: 'absolute',
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: '#fff',
   },
   changePhotoText: {
     fontSize: 14,
@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.4)',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 16,
@@ -503,19 +503,19 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.6)',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   bioInput: {
     minHeight: 100,
@@ -524,22 +524,22 @@ const styles = StyleSheet.create({
   charCount: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(0,0,0,0.4)',
     textAlign: 'right',
     marginTop: 4,
   },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   usernamePrefix: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.5)',
     paddingLeft: 16,
   },
   usernameInput: {

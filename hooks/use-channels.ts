@@ -85,11 +85,13 @@ export function useChannels() {
     const newMessageListener = client.on('message.new', handleNewMessage);
     const channelUpdatedListener = client.on('channel.updated', handleChannelUpdated);
     const channelDeletedListener = client.on('channel.deleted', handleChannelUpdated);
+    const channelHiddenListener = client.on('channel.hidden', handleChannelUpdated);
 
     return () => {
       newMessageListener?.unsubscribe?.();
       channelUpdatedListener?.unsubscribe?.();
       channelDeletedListener?.unsubscribe?.();
+      channelHiddenListener?.unsubscribe?.();
     };
   }, [client, fetchChannels]);
 
@@ -121,8 +123,8 @@ export function useChannels() {
 
       return {
         id: channel.id || channel.cid,
-        name: (channelDataObj?.name as string) || firstMember?.user?.name || 'Unknown',
-        imageUrl: ((channelDataObj?.image as string) || firstMember?.user?.image) as string | undefined,
+        name: firstMember?.user?.name || (channelDataObj?.name as string) || 'Unknown',
+        imageUrl: (firstMember?.user?.image || (channelDataObj?.image as string)) as string | undefined,
         lastMessage: lastMessage ? {
           text: lastMessage.text || '',
           createdAt: lastMessage.created_at?.toString() || new Date().toISOString(),
@@ -137,7 +139,7 @@ export function useChannels() {
     });
   }, [channels, client?.userID]);
 
-  // Delete a channel
+  // Hide a channel (remove from user's list without needing admin permissions)
   const deleteChannel = React.useCallback(async (channelId: string) => {
     const channel = channels.find((c) => c.id === channelId || c.cid === channelId);
     if (!channel) {
@@ -146,13 +148,13 @@ export function useChannels() {
     }
 
     try {
-      await channel.delete();
+      await channel.hide(null, true);
       // Remove from local state
       setChannels((prev) => prev.filter((c) => c.id !== channelId && c.cid !== channelId));
-      console.log('[Channels] Deleted channel:', channelId);
+      console.log('[Channels] Hidden channel:', channelId);
       return true;
     } catch (err) {
-      console.error('[Channels] Error deleting channel:', err);
+      console.error('[Channels] Error hiding channel:', err);
       return false;
     }
   }, [channels]);

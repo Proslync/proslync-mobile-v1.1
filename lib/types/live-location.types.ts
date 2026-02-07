@@ -1,16 +1,19 @@
 // Live Location Types - Telegram-style temporary location sharing
 
 // Duration options for sharing (in seconds for backend, display in minutes)
-export type ShareDurationSeconds = 900 | 3600 | 28800; // 15min, 1h, 8h
+// 0 = permanent (until manually stopped)
+export type ShareDurationSeconds = 0 | 900 | 3600 | 28800;
 
 export const SHARE_DURATION_OPTIONS: {
   label: string;
   value: ShareDurationSeconds;
   minutes: number;
+  isPermanent?: boolean;
 }[] = [
   { label: '15 minutes', value: 900, minutes: 15 },
   { label: '1 hour', value: 3600, minutes: 60 },
   { label: '8 hours', value: 28800, minutes: 480 },
+  { label: 'Until I turn it off', value: 0, minutes: 0, isPermanent: true },
 ];
 
 // Location update from a friend (matches backend ActiveSharer)

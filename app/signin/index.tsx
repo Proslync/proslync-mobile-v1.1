@@ -7,6 +7,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { PhoneStep } from '@/components/auth/phone-step';
 import { OtpStep } from '@/components/auth/otp-step';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 export default function SignInScreen() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -30,6 +31,7 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.container}>
+      <DarkGradientBg />
       {step === 'phone' && (
         <Animated.View
           entering={FadeIn.duration(300)}

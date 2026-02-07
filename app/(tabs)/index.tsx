@@ -1,40 +1,41 @@
 import * as React from 'react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { FeedContainer, FeedLoadingSkeleton } from '@/components/feed';
+import { FeedContainer, FeedHeader, FeedLoadingSkeleton } from '@/components/feed';
 import { useFeed } from '@/hooks/use-feed';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
-import type { FeedItem } from '@/lib/types/feed.types';
+import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
 
 export default function FeedScreen() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useToast();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [rsvpItems, setRsvpItems] = useState<Map<string, boolean>>(new Map());
   const [pendingRsvpItems, setPendingRsvpItems] = useState<Map<string, boolean>>(new Map());
   const [purchasedItems, setPurchasedItems] = useState<Set<string>>(new Set());
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<FeedTab>('foryou');
 
   // Liked items still tracked for double-tap heart animation
   const likedItems = new Set<string>();
 
-  // Fetch feed from API - always use 'foryou' feed
+  // Fetch feed from API based on active tab
   const {
     items: feedItems,
     isLoading,
     isError,
     refetch,
   } = useFeed({
-    feedType: 'foryou',
+    feedType: activeTab,
     enabled: isAuthenticated,
   });
 
@@ -139,8 +140,16 @@ export default function FeedScreen() {
   };
 
   const handleUserClick = (item: FeedItem) => {
-    // TODO: Navigate to user profile
-    console.log('View user:', item.userId);
+    if (item.userId) {
+      router.push({
+        pathname: '/user-profile/[userId]',
+        params: {
+          userId: item.userId,
+          name: item.username || '',
+          avatarUrl: item.userAvatar || '',
+        },
+      });
+    }
   };
 
   const handleEventPress = useCallback((item: FeedItem) => {
@@ -213,6 +222,10 @@ export default function FeedScreen() {
         onEventPress={handleEventPress}
         refreshControl={refreshControl}
       />
+      <FeedHeader
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
     </View>
   );
 }
@@ -220,7 +233,7 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   emptyContainer: {
     flex: 1,
@@ -231,12 +244,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     textAlign: 'center',
   },
 });

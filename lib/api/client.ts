@@ -166,13 +166,10 @@ class ApiClient {
     const refreshToken = await this.getRefreshToken();
 
     if (!refreshToken) {
-      console.log('[ApiClient] No refresh token available');
-      // Notify auth provider to clear user state and redirect to signin
+      // No refresh token stored — session expired, user must re-authenticate.
       this.notifyAuthError();
-      throw new ApiClientError('No refresh token available', 401);
+      throw new ApiClientError('Session expired', 401);
     }
-
-    console.log('[ApiClient] Attempting token refresh...');
 
     try {
       const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
@@ -260,14 +257,12 @@ class ApiClient {
           throw ApiClientError.fromResponse(response, data);
         }
 
-        console.log('[ApiClient] 401 received, attempting token refresh for:', endpoint);
         try {
           await this.performTokenRefresh();
-          console.log('[ApiClient] Retrying request after token refresh:', endpoint);
           // Retry the original request with new token
           return this.request<T>(method, endpoint, body, requestConfig);
-        } catch (refreshError) {
-          console.error('[ApiClient] Token refresh failed, throwing original error');
+        } catch {
+          // Refresh failed (no token or expired) — throw the original 401
           throw ApiClientError.fromResponse(response, data);
         }
       }

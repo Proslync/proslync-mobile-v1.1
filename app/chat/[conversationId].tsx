@@ -36,6 +36,7 @@ import Animated, {
   FadeOut,
 } from 'react-native-reanimated';
 import { useChannel, type ChatMessage } from '@/hooks/use-channel';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.75;
@@ -413,7 +414,7 @@ function VoiceMessagePlayer({
                 {
                   height: 4 + Math.random() * 12,
                   backgroundColor: isOwn
-                    ? 'rgba(255,255,255,0.5)'
+                    ? 'rgba(255,255,255,0.35)'
                     : 'rgba(0,149,246,0.4)',
                 },
               ]}
@@ -683,7 +684,7 @@ function Composer({
               value={text}
               onChangeText={handleChangeText}
               placeholder={placeholder || 'Message...'}
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor="rgba(0,0,0,0.35)"
               multiline
               maxLength={1000}
             />
@@ -694,7 +695,7 @@ function Composer({
               onPress={onPickImage}
               activeOpacity={0.7}
             >
-              <Ionicons name="image-outline" size={24} color="rgba(255,255,255,0.6)" />
+              <Ionicons name="image-outline" size={24} color="rgba(0,0,0,0.45)" />
             </TouchableOpacity>
           </View>
         ) : (
@@ -728,7 +729,7 @@ function Composer({
             <Ionicons
               name={isRecording ? 'stop' : 'mic'}
               size={24}
-              color={isRecording ? '#fff' : 'rgba(255,255,255,0.6)'}
+              color={isRecording ? '#fff' : 'rgba(0,0,0,0.45)'}
             />
           </TouchableOpacity>
         )}
@@ -792,9 +793,9 @@ function ImageViewerModal({
 function LoadingScreen({ insets }: { insets: { top: number } }) {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color="#1a1a1a" />
         <Text style={styles.loadingText}>Loading chat...</Text>
       </View>
     </View>
@@ -813,10 +814,10 @@ function ErrorScreen({
 }) {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color="#1a1a1a" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Chat</Text>
@@ -824,7 +825,7 @@ function ErrorScreen({
         <View style={styles.headerRight} />
       </View>
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={64} color="rgba(255,255,255,0.3)" />
+        <Ionicons name="alert-circle-outline" size={64} color="rgba(0,0,0,0.25)" />
         <Text style={styles.emptyTitle}>Unable to load chat</Text>
         <Text style={styles.emptySubtitle}>{error}</Text>
       </View>
@@ -1049,12 +1050,13 @@ export default function ChatThreadScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <DarkGradientBg />
+      <StatusBar barStyle="dark-content" />
 
       {/* Header - Instagram style */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color="#1a1a1a" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1063,7 +1065,7 @@ export default function ChatThreadScreen() {
           activeOpacity={0.7}
         >
           <View style={styles.headerAvatarContainer}>
-            <Avatar uri={channelInfo?.imageUrl} size={40} />
+            <Avatar uri={channelInfo?.otherMember?.image} size={40} />
             {channelInfo?.isOnline && <View style={styles.onlineIndicator} />}
           </View>
           <View style={styles.headerInfo}>
@@ -1077,10 +1079,10 @@ export default function ChatThreadScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.headerRight}>
-          <Ionicons name="call-outline" size={24} color="#fff" />
+          <Ionicons name="call-outline" size={24} color="#1a1a1a" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerRight}>
-          <Ionicons name="videocam-outline" size={26} color="#fff" />
+          <Ionicons name="videocam-outline" size={26} color="#1a1a1a" />
         </TouchableOpacity>
       </View>
 
@@ -1126,7 +1128,7 @@ export default function ChatThreadScreen() {
             onPress={() => flatListRef.current?.scrollToEnd({ animated: true })}
             activeOpacity={0.8}
           >
-            <Ionicons name="chevron-down" size={20} color="#fff" />
+            <Ionicons name="chevron-down" size={20} color="#1a1a1a" />
           </TouchableOpacity>
         </Animated.View>
 
@@ -1157,7 +1159,7 @@ export default function ChatThreadScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   // Header
   header: {
@@ -1166,7 +1168,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 10,
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   backButton: {
     width: 44,
@@ -1197,7 +1199,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#34c759',
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: '#fff',
   },
   headerInfo: {
     marginLeft: 12,
@@ -1206,12 +1208,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   headerStatus: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     marginTop: 1,
   },
   headerRight: {
@@ -1241,7 +1243,7 @@ const styles = StyleSheet.create({
   daySeparatorText: {
     fontSize: 12,
     fontFamily: 'Lato_600SemiBold',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.45)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1286,11 +1288,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   messageBubbleOther: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#f0f0f0',
     borderBottomLeftRadius: 4,
   },
   messageBubbleOwn: {
-    backgroundColor: '#0095f6',
+    backgroundColor: '#007AFF',
     borderBottomRightRadius: 4,
   },
   messageBubbleGroupOther: {
@@ -1304,7 +1306,7 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
     lineHeight: 20,
   },
   messageTextOwn: {
@@ -1316,7 +1318,7 @@ const styles = StyleSheet.create({
   messageTime: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.45)',
     marginTop: 4,
     marginLeft: 4,
   },
@@ -1362,10 +1364,10 @@ const styles = StyleSheet.create({
     maxWidth: MAX_BUBBLE_WIDTH,
   },
   voiceMessageOwn: {
-    backgroundColor: '#0095f6',
+    backgroundColor: '#007AFF',
   },
   voiceMessageOther: {
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#f0f0f0',
   },
   voicePlayButton: {
     width: 36,
@@ -1408,11 +1410,11 @@ const styles = StyleSheet.create({
   voiceDuration: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(0, 0, 0, 0.6)',
     marginTop: 4,
   },
   voiceDurationOwn: {
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   // Typing indicator
   typingContainer: {
@@ -1425,7 +1427,7 @@ const styles = StyleSheet.create({
   typingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -1435,19 +1437,19 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   typingText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.45)',
     marginLeft: 8,
   },
   // Composer
   composerContainer: {
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: 'rgba(0, 0, 0, 0.08)',
     paddingTop: 8,
     paddingHorizontal: 8,
   },
@@ -1469,7 +1471,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -6,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     borderRadius: 10,
   },
   composerInner: {
@@ -1494,10 +1496,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
     borderRadius: 22,
     borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     minHeight: 44,
@@ -1506,7 +1508,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
     maxHeight: 100,
     paddingVertical: 4,
   },
@@ -1564,7 +1566,7 @@ const styles = StyleSheet.create({
   cancelRecordingText: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(0, 0, 0, 0.6)',
   },
   recordingInputWrapper: {
     flex: 1,
@@ -1581,7 +1583,7 @@ const styles = StyleSheet.create({
   recordingInputText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
   },
   // Scroll to bottom
   scrollToBottom: {
@@ -1593,11 +1595,11 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 0.5,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   // Empty state
   emptyContainer: {
@@ -1619,13 +1621,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
     textAlign: 'center',
   },
   // Loading
@@ -1638,7 +1640,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
   },
   // Image viewer
   imageViewerOverlay: {

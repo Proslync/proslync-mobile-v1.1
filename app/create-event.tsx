@@ -20,6 +20,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { eventsApi, CreateEventDto } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 type Step = 'basic' | 'datetime' | 'location' | 'details';
 
@@ -343,6 +344,7 @@ export default function CreateEventScreen() {
 
   return (
     <View style={styles.container}>
+      <DarkGradientBg />
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}

@@ -181,6 +181,7 @@ export const MOCK_WALLET_EVENTS: WalletEventCard[] = [
   {
     id: 'we-1',
     title: 'Neon Nights - Saturday Edition',
+    dateTime: '2026-02-08T22:00:00',
     dateTimeLabel: 'Sat, Feb 8 • 10PM',
     venueName: 'Club Nebula',
     flyerUrl: 'https://picsum.photos/seed/wallet-event1/400/600',
@@ -191,6 +192,7 @@ export const MOCK_WALLET_EVENTS: WalletEventCard[] = [
   {
     id: 'we-2',
     title: 'Deep House Fridays',
+    dateTime: '2026-02-07T23:00:00',
     dateTimeLabel: 'Fri, Feb 7 • 11PM',
     venueName: 'The Velvet Room',
     flyerUrl: 'https://picsum.photos/seed/wallet-event2/400/600',
@@ -200,6 +202,7 @@ export const MOCK_WALLET_EVENTS: WalletEventCard[] = [
   {
     id: 'we-3',
     title: 'Rooftop Sessions',
+    dateTime: '2026-02-09T16:00:00',
     dateTimeLabel: 'Sun, Feb 9 • 4PM',
     venueName: 'Sky Lounge',
     flyerUrl: 'https://picsum.photos/seed/wallet-event3/400/600',
@@ -209,6 +212,7 @@ export const MOCK_WALLET_EVENTS: WalletEventCard[] = [
   {
     id: 'we-4',
     title: 'Latin Heat',
+    dateTime: '2026-02-06T21:00:00',
     dateTimeLabel: 'Thu, Feb 6 • 9PM',
     venueName: 'Havana Club',
     flyerUrl: 'https://picsum.photos/seed/wallet-event4/400/600',
@@ -218,6 +222,7 @@ export const MOCK_WALLET_EVENTS: WalletEventCard[] = [
   {
     id: 'we-5',
     title: 'Techno Underground',
+    dateTime: '2026-02-15T23:00:00',
     dateTimeLabel: 'Sat, Feb 15 • 11PM',
     venueName: 'The Basement',
     flyerUrl: 'https://picsum.photos/seed/wallet-event5/400/600',

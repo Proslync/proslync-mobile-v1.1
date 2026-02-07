@@ -22,7 +22,6 @@ import Animated, {
   withTiming,
   withSpring,
 } from 'react-native-reanimated';
-import { BottomNav } from '@/components/shared/bottom-nav';
 import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 
@@ -223,7 +222,7 @@ export default function EventPage() {
 
       {/* Gradient overlay - darker at bottom */}
       <LinearGradient
-        colors={['transparent', 'rgba(0, 0, 0, 0.3)', 'rgba(0, 0, 0, 0.7)', 'rgba(0, 0, 0, 0.95)']}
+        colors={['transparent', 'rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.7)', 'rgba(255, 255, 255, 0.97)']}
         locations={[0, 0.4, 0.7, 1]}
         style={styles.background}
       />
@@ -235,7 +234,7 @@ export default function EventPage() {
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color="#1a1a1a" />
         </TouchableOpacity>
       </View>
 
@@ -259,7 +258,7 @@ export default function EventPage() {
               />
             ) : (
               <View style={styles.flyerPlaceholder}>
-                <Ionicons name="image-outline" size={64} color="rgba(255,255,255,0.3)" />
+                <Ionicons name="image-outline" size={64} color="rgba(0,0,0,0.2)" />
                 <Text style={styles.flyerPlaceholderText}>No flyer available</Text>
               </View>
             )}
@@ -311,7 +310,7 @@ export default function EventPage() {
       </ScrollView>
 
       {/* RSVP Button */}
-      <View style={[styles.rsvpContainer, { bottom: 50 + insets.bottom }]}>
+      <View style={[styles.rsvpContainer, { bottom: insets.bottom + 16 }]}>
         <TouchableOpacity
           onPress={handleRsvp}
           activeOpacity={0.8}
@@ -324,9 +323,6 @@ export default function EventPage() {
           </Animated.View>
         </TouchableOpacity>
       </View>
-
-      {/* Bottom Navigation */}
-      <BottomNav />
     </View>
   );
 }
@@ -334,7 +330,7 @@ export default function EventPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   backgroundImage: {
     position: 'absolute',
@@ -345,7 +341,7 @@ const styles = StyleSheet.create({
   },
   backgroundOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   background: {
     position: 'absolute',
@@ -384,10 +380,10 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH - 32,
     height: SCREEN_HEIGHT * 0.55,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     overflow: 'hidden',
-    // Subtle glow effect like home page
-    shadowColor: 'rgba(255, 255, 255, 0.2)',
+    // Subtle shadow effect
+    shadowColor: 'rgba(0, 0, 0, 0.2)',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
     shadowRadius: 30,
@@ -402,13 +398,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#f5f5f5',
   },
   flyerPlaceholderText: {
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0, 0, 0, 0.3)',
   },
   tabContentContainer: {
     paddingHorizontal: 8,
@@ -419,19 +415,19 @@ const styles = StyleSheet.create({
   tabContentTitle: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 8,
   },
   tabContentDate: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(0, 0, 0, 0.6)',
     marginBottom: 16,
   },
   tabContentDescription: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     lineHeight: 22,
   },
   posterContainer: {
@@ -445,12 +441,12 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(0, 0, 0, 0.15)',
   },
   posterName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   tabBarInner: {
     flexDirection: 'row',
@@ -464,20 +460,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(0, 0, 0, 0.15)',
     backgroundColor: 'transparent',
     alignItems: 'center',
   },
   tabButtonActive: {
-    borderColor: '#fff',
+    borderColor: '#1a1a1a',
   },
   tabButtonText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
   tabButtonTextActive: {
-    color: '#fff',
+    color: '#1a1a1a',
   },
   rsvpContainer: {
     position: 'absolute',
@@ -487,7 +483,7 @@ const styles = StyleSheet.create({
   rsvpButton: {
     height: 48,
     borderRadius: 8,
-    backgroundColor: '#fff',
+    backgroundColor: '#D3D3D3',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -499,7 +495,7 @@ const styles = StyleSheet.create({
   rsvpButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#000',
+    color: '#1a1a1a',
     letterSpacing: 0.5,
   },
   rsvpButtonTextSuccess: {

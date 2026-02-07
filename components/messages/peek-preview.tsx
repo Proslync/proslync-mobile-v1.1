@@ -50,14 +50,14 @@ function PreviewMessage({ message, isOwn }: { message: Message; isOwn: boolean }
       case 'image':
         return (
           <View style={styles.imagePreview}>
-            <Ionicons name="image" size={14} color="rgba(255, 255, 255, 0.7)" />
+            <Ionicons name="image" size={14} color="rgba(0, 0, 0, 0.6)" />
             <Text style={styles.imagePreviewText}>Photo</Text>
           </View>
         );
       case 'eventCard':
         return (
           <View style={styles.imagePreview}>
-            <Ionicons name="calendar" size={14} color="rgba(255, 255, 255, 0.7)" />
+            <Ionicons name="calendar" size={14} color="rgba(0, 0, 0, 0.6)" />
             <Text style={styles.imagePreviewText}>{message.eventCard?.eventTitle || 'Event'}</Text>
           </View>
         );
@@ -146,7 +146,7 @@ export function PeekPreview({
             </View>
           </View>
           <View style={styles.headerRight}>
-            <Ionicons name="chevron-back" size={16} color="rgba(255, 255, 255, 0.4)" />
+            <Ionicons name="chevron-back" size={16} color="rgba(0, 0, 0, 0.3)" />
             <Text style={styles.releaseText}>Release</Text>
           </View>
         </View>
@@ -182,7 +182,7 @@ export function PeekPreview({
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#000',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     zIndex: 998,
   },
   container: {
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: PREVIEW_WIDTH,
     maxHeight: SCREEN_HEIGHT * 0.6,
-    backgroundColor: '#1c1c1e',
+    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
     zIndex: 999,
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     maxWidth: 150,
   },
   peekLabel: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   releaseText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0, 0, 0, 0.35)',
   },
   messagesContainer: {
     flex: 1,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
     textAlign: 'center',
     paddingVertical: 40,
   },
@@ -266,28 +266,28 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   bubbleOwn: {
-    backgroundColor: '#0095f6',
+    backgroundColor: '#D3D3D3',
     alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#f0f0f0',
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 4,
   },
   messageText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
     lineHeight: 18,
   },
   messageTextOwn: {
-    color: '#fff',
+    color: '#1a1a1a',
   },
   messageTime: {
     fontSize: 10,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
     marginTop: 4,
     alignSelf: 'flex-end',
   },
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   imagePreviewText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(0, 0, 0, 0.7)',
   },
   systemMessage: {
     alignSelf: 'center',
@@ -308,19 +308,19 @@ const styles = StyleSheet.create({
   systemText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
     textAlign: 'center',
   },
   footer: {
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
   },
   footerText: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0, 0, 0, 0.35)',
   },
 });

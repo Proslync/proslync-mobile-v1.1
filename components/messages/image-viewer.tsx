@@ -35,7 +35,7 @@ export function ImageViewer({ visible, imageUrl, onClose }: ImageViewerProps) {
       statusBarTranslucent
     >
       <View style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="transparent" />
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" />
 
         {/* Close Button */}
         <TouchableOpacity
@@ -62,7 +62,7 @@ export function ImageViewer({ visible, imageUrl, onClose }: ImageViewerProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
   },

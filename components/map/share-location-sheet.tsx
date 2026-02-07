@@ -1,5 +1,4 @@
-// Share Location Sheet - Telegram-style location sharing controls
-// Shows duration options and active sharing status
+// Share Location Sheet — Liquid glass design
 
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import {
@@ -9,15 +8,38 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as React from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassCard } from '@/components/glass/glass-card';
+import { GlassButton } from '@/components/glass/glass-button';
+import { GlassText } from '@/components/glass/glass-text';
+import { GlassOverlay } from '@/components/glass/glass-overlay';
+import { LocationVisibilitySheet } from '@/components/map/location-visibility-sheet';
+import { useLocationVisibility } from '@/hooks/use-location-visibility';
+import { VISIBILITY_MODE_LABELS } from '@/lib/types/location-visibility.types';
+import {
+  spacing,
+  radius,
+  textColor,
+  glassFill,
+  glassBorder,
+} from '@/constants/glass/tokens';
 
 interface ShareLocationSheetProps {
   isVisible: boolean;
@@ -39,6 +61,7 @@ function formatRemainingTime(seconds: number): string {
 
 export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
+  const insets = useSafeAreaInsets();
   const {
     sharingState,
     remainingTime,
@@ -48,13 +71,51 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
     hasLocationPermission,
     requestLocationPermission,
   } = useLiveLocation();
+  const { settings } = useLocationVisibility();
 
   const [isStarting, setIsStarting] = React.useState(false);
+  const [showVisibility, setShowVisibility] = React.useState(false);
 
-  // Handle sheet visibility
+  // Animated pulse for live indicator
+  const livePulse = useSharedValue(1);
+  const glowOpacity = useSharedValue(0.3);
+
+  React.useEffect(() => {
+    if (sharingState.isSharing) {
+      livePulse.value = withRepeat(
+        withSequence(
+          withTiming(1.4, { duration: 1000 }),
+          withTiming(1, { duration: 1000 })
+        ),
+        -1,
+        true
+      );
+      glowOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.6, { duration: 1500 }),
+          withTiming(0.2, { duration: 1500 })
+        ),
+        -1,
+        true
+      );
+    }
+  }, [sharingState.isSharing]);
+
+  const livePulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: livePulse.value }],
+    opacity: 2 - livePulse.value,
+  }));
+
+  const timerGlowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
   React.useEffect(() => {
     if (isVisible) {
       bottomSheetRef.current?.expand();
+      if (!hasLocationPermission) {
+        requestLocationPermission();
+      }
     } else {
       bottomSheetRef.current?.close();
     }
@@ -65,7 +126,6 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
     setIsStarting(true);
 
     try {
-      // Check permission first
       if (!hasLocationPermission) {
         const granted = await requestLocationPermission();
         if (!granted) {
@@ -75,7 +135,6 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
       }
 
       await startSharing(duration);
-      // Don't close immediately - show the active state
     } catch (error) {
       console.error('[ShareLocationSheet] Failed to start sharing:', error);
     } finally {
@@ -92,257 +151,537 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
   const isConnected = connectionState === 'connected';
   const isConnecting = connectionState === 'connecting';
 
+  const visibilityLabel = VISIBILITY_MODE_LABELS[settings.mode];
+
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={-1}
-      snapPoints={[sharingState.isSharing ? 400 : 400]}
-      enablePanDownToClose
-      onClose={onClose}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.sheetIndicator}
-    >
-      <BottomSheetView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Ionicons
-              name={sharingState.isSharing ? 'location' : 'location-outline'}
-              size={28}
-              color={sharingState.isSharing ? '#34c759' : '#fff'}
-            />
-          </View>
-          <Text style={styles.title}>
-            {sharingState.isSharing ? 'Sharing Your Location' : 'Share Live Location'}
-          </Text>
-          <Text style={styles.subtitle}>
-            {sharingState.isSharing
-              ? 'Your friends can see where you are'
-              : 'Let friends see where you are temporarily'}
-          </Text>
-        </View>
+    <>
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={[sharingState.isSharing ? 440 : 500]}
+        enablePanDownToClose
+        onClose={onClose}
+        backgroundStyle={styles.sheetBackground}
+        handleIndicatorStyle={styles.sheetIndicator}
+        enableDynamicSizing={false}
+      >
+        <BottomSheetView style={[styles.container, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
 
-        {/* Connection status indicator */}
-        {!isConnected && (
-          <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.connectionStatus}>
-            {isConnecting ? (
-              <>
-                <ActivityIndicator size="small" color="#f0a500" />
-                <Text style={styles.connectionText}>Connecting...</Text>
-              </>
-            ) : (
-              <>
-                <Ionicons name="cloud-offline" size={16} color="#ff6b6b" />
-                <Text style={[styles.connectionText, { color: '#ff6b6b' }]}>
-                  Not connected
-                </Text>
-              </>
-            )}
-          </Animated.View>
-        )}
-
-        {/* Active sharing state */}
-        {sharingState.isSharing ? (
-          <Animated.View entering={FadeIn} style={styles.activeContainer}>
-            {/* Timer */}
-            <View style={styles.timerContainer}>
-              <View style={styles.timerPulse} />
-              <Text style={styles.timerText}>
-                {remainingTime !== null ? formatRemainingTime(remainingTime) : '--:--'}
-              </Text>
-              <Text style={styles.timerLabel}>remaining</Text>
-            </View>
-
-            {/* Stop button */}
-            <TouchableOpacity
-              style={styles.stopButton}
-              onPress={handleStopSharing}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="stop-circle" size={20} color="#fff" />
-              <Text style={styles.stopButtonText}>Stop Sharing</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        ) : (
-          /* Duration options */
-          <Animated.View entering={FadeIn} style={styles.optionsContainer}>
-            {SHARE_DURATION_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.optionButton,
-                  (!isConnected || isStarting) && styles.optionButtonDisabled,
-                ]}
-                onPress={() => handleDurationSelect(option.value)}
-                disabled={!isConnected || isStarting}
-                activeOpacity={0.7}
+          {/* Connection banner */}
+          {!isConnected && (
+            <Animated.View entering={FadeIn} exiting={FadeOut}>
+              <GlassCard
+                fill="light"
+                border="subtle"
+                cornerRadius="md"
+                shadowLevel="sm"
+                blurIntensity="medium"
+                style={styles.connectionBanner}
               >
-                <Ionicons
-                  name="time-outline"
-                  size={20}
-                  color={isConnected ? '#8b5cf6' : 'rgba(255,255,255,0.3)'}
-                />
-                <Text
-                  style={[
-                    styles.optionText,
-                    !isConnected && styles.optionTextDisabled,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-                {isStarting ? (
-                  <ActivityIndicator size="small" color="#8b5cf6" />
+                {isConnecting ? (
+                  <View style={styles.connectionContent}>
+                    <ActivityIndicator size="small" color="rgba(0, 0, 0, 0.5)" />
+                    <GlassText hierarchy="secondary" size={13}>Connecting...</GlassText>
+                  </View>
                 ) : (
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={isConnected ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.2)'}
-                  />
+                  <View style={styles.connectionContent}>
+                    <Ionicons name="cloud-offline-outline" size={14} color="rgba(0, 0, 0, 0.4)" />
+                    <GlassText hierarchy="secondary" size={13}>
+                      No connection
+                    </GlassText>
+                  </View>
                 )}
-              </TouchableOpacity>
-            ))}
+              </GlassCard>
+            </Animated.View>
+          )}
 
-            {/* Permission note */}
-            {!hasLocationPermission && (
-              <Text style={styles.permissionNote}>
-                Location permission required to share
-              </Text>
-            )}
-          </Animated.View>
+          {/* Active sharing state */}
+          {sharingState.isSharing ? (
+            <View style={styles.activeContainer}>
+              {/* Live badge with pulse ring */}
+              <View style={styles.liveBadgeWrap}>
+                <Animated.View style={[styles.livePulseRing, livePulseStyle]} />
+                <GlassOverlay
+                  blurIntensity="medium"
+                  fillLevel="light"
+                  borderLevel="subtle"
+                  borderRadius={radius.md}
+                  style={styles.liveBadge}
+                >
+                  <View style={styles.liveDot} />
+                  <GlassText weight="bold" size={11} style={styles.liveText}>LIVE</GlassText>
+                </GlassOverlay>
+              </View>
+
+              {/* Title */}
+              <GlassText weight="bold" size={18} style={styles.activeTitle}>
+                Sharing your location
+              </GlassText>
+              <GlassText hierarchy="muted" size={13}>
+                Visible to: {visibilityLabel}
+              </GlassText>
+
+              {/* Timer card with glow */}
+              <View style={styles.timerWrap}>
+                {/* Ambient glow behind timer */}
+                <Animated.View style={[styles.timerGlow, timerGlowStyle]}>
+                  <LinearGradient
+                    colors={['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)', 'transparent']}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </Animated.View>
+                <GlassCard
+                  fill="medium"
+                  border="medium"
+                  cornerRadius="2xl"
+                  shadowLevel="lg"
+                  blurIntensity="strong"
+                  style={styles.timerCard}
+                >
+                  {/* Inner gradient highlight */}
+                  <LinearGradient
+                    colors={['rgba(0, 0, 0, 0.02)', 'transparent']}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 0.6 }}
+                    style={styles.innerHighlight}
+                  />
+                  <View style={styles.timerContent}>
+                    {sharingState.duration === 0 ? (
+                      <>
+                        <Ionicons name="infinite" size={52} color="#1a1a1a" style={{ marginBottom: 4 }} />
+                        <GlassText hierarchy="secondary" size={14}>Always on</GlassText>
+                      </>
+                    ) : (
+                      <>
+                        <GlassText weight="light" size={56} style={styles.timerValue}>
+                          {remainingTime !== null ? formatRemainingTime(remainingTime) : '--:--'}
+                        </GlassText>
+                        <GlassText hierarchy="muted" size={14}>remaining</GlassText>
+                      </>
+                    )}
+                  </View>
+                </GlassCard>
+              </View>
+
+              {/* Visibility row */}
+              <GlassCard
+                fill="subtle"
+                border="subtle"
+                cornerRadius="lg"
+                shadowLevel="sm"
+                blurIntensity="light"
+                style={styles.visibilityCard}
+              >
+                <TouchableOpacity
+                  style={styles.visibilityRow}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowVisibility(true);
+                  }}
+                  activeOpacity={0.6}
+                >
+                  <View style={styles.visibilityIcon}>
+                    <Ionicons name="eye-outline" size={15} color="rgba(0, 0, 0, 0.6)" />
+                  </View>
+                  <GlassText hierarchy="secondary" size={14} style={{ flex: 1 }}>
+                    {visibilityLabel}
+                  </GlassText>
+                  <Ionicons name="chevron-forward" size={14} color={textColor.faint} />
+                </TouchableOpacity>
+              </GlassCard>
+
+              {/* Stop button */}
+              <GlassButton
+                label="Stop Sharing"
+                variant="glass"
+                size="lg"
+                fullWidth
+                onPress={handleStopSharing}
+                icon={<Ionicons name="stop-circle" size={18} color="#1a1a1a" />}
+              />
+            </View>
+          ) : (
+            /* Pick duration */
+            <View style={styles.pickContainer}>
+              {/* Header icon with glow */}
+              <View style={styles.headerIconWrap}>
+                <View style={styles.headerGlow}>
+                  <LinearGradient
+                    colors={['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)', 'transparent']}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0.5, y: 0.3 }}
+                    end={{ x: 0.5, y: 1 }}
+                  />
+                </View>
+                <GlassOverlay
+                  blurIntensity="medium"
+                  fillLevel="light"
+                  borderLevel="medium"
+                  borderRadius={radius['2xl']}
+                  style={styles.headerIcon}
+                >
+                  <Ionicons name="location" size={26} color="#1a1a1a" />
+                </GlassOverlay>
+              </View>
+
+              <GlassText weight="bold" size={20} style={styles.pickTitle}>
+                Share Live Location
+              </GlassText>
+              <GlassText hierarchy="muted" size={13} style={styles.pickSubtitle}>
+                Choose how long to share with friends
+              </GlassText>
+
+              {/* Duration options — blurred glass group */}
+              <GlassCard
+                fill="light"
+                border="subtle"
+                cornerRadius="2xl"
+                shadowLevel="md"
+                blurIntensity="medium"
+                style={styles.optionsList}
+              >
+                {/* Top highlight */}
+                <LinearGradient
+                  colors={['rgba(0, 0, 0, 0.02)', 'transparent']}
+                  start={{ x: 0.5, y: 0 }}
+                  end={{ x: 0.5, y: 0.5 }}
+                  style={styles.innerHighlight}
+                />
+                {SHARE_DURATION_OPTIONS.map((option, index) => (
+                  <React.Fragment key={option.value}>
+                    <DurationRow
+                      label={option.label}
+                      icon={option.isPermanent ? 'infinite' : 'time-outline'}
+                      onPress={() => handleDurationSelect(option.value)}
+                      disabled={!isConnected || isStarting}
+                      isStarting={isStarting}
+                    />
+                    {index < SHARE_DURATION_OPTIONS.length - 1 && (
+                      <View style={styles.separator} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </GlassCard>
+
+              {/* Who can see row */}
+              <GlassCard
+                fill="subtle"
+                border="subtle"
+                cornerRadius="xl"
+                shadowLevel="sm"
+                blurIntensity="light"
+                style={styles.whoCanSeeCard}
+              >
+                <TouchableOpacity
+                  style={styles.whoCanSeeRow}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setShowVisibility(true);
+                  }}
+                  activeOpacity={0.6}
+                >
+                  <View style={styles.whoCanSeeIcon}>
+                    <Ionicons name="eye-outline" size={16} color="rgba(0, 0, 0, 0.6)" />
+                  </View>
+                  <View style={styles.whoCanSeeContent}>
+                    <GlassText hierarchy="secondary" size={14}>Who can see</GlassText>
+                    <GlassText hierarchy="muted" size={12}>{visibilityLabel}</GlassText>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={textColor.faint} />
+                </TouchableOpacity>
+              </GlassCard>
+
+              {!hasLocationPermission && (
+                <GlassText hierarchy="muted" size={12} style={styles.permissionNote}>
+                  Location permission required
+                </GlassText>
+              )}
+            </View>
+          )}
+        </BottomSheetView>
+      </BottomSheet>
+
+      {/* Visibility settings sheet */}
+      <LocationVisibilitySheet
+        isVisible={showVisibility}
+        onClose={() => setShowVisibility(false)}
+      />
+    </>
+  );
+}
+
+function DurationRow({
+  label,
+  icon,
+  onPress,
+  disabled,
+  isStarting,
+}: {
+  label: string;
+  icon: string;
+  onPress: () => void;
+  disabled: boolean;
+  isStarting: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.6}
+    >
+      <View style={[styles.optionRow, disabled && styles.optionRowDisabled]}>
+        <View style={styles.optionIcon}>
+          <Ionicons
+            name={icon as any}
+            size={18}
+            color={disabled ? textColor.muted : '#1a1a1a'}
+          />
+        </View>
+        <GlassText
+          hierarchy={disabled ? 'muted' : 'primary'}
+          size={17}
+          style={styles.optionLabel}
+        >
+          {label}
+        </GlassText>
+        {isStarting ? (
+          <ActivityIndicator size="small" color={textColor.muted} />
+        ) : (
+          <Ionicons name="chevron-forward" size={16} color={textColor.faint} />
         )}
-      </BottomSheetView>
-    </BottomSheet>
+      </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: '#1a1a1a',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    borderTopLeftRadius: radius['2xl'],
+    borderTopRightRadius: radius['2xl'],
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   sheetIndicator: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    width: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
   },
   container: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingHorizontal: spacing.lg,
   },
-  header: {
+
+  // Connection
+  connectionBanner: {
+    marginBottom: spacing.sm,
+  },
+  connectionContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  headerIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(139, 92, 246, 0.2)',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
-  title: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+
+  // Active sharing
+  activeContainer: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+  },
+
+  // Live badge
+  liveBadgeWrap: {
+    position: 'relative',
+    marginBottom: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  livePulseRing: {
+    position: 'absolute',
+    width: 72,
+    height: 32,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: '#1a1a1a',
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 6,
+  },
+  liveDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#1a1a1a',
+  },
+  liveText: {
+    color: '#1a1a1a',
+    letterSpacing: 1.5,
+  },
+  activeTitle: {
     marginBottom: 2,
   },
-  subtitle: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
-    textAlign: 'center',
+
+  // Timer
+  timerWrap: {
+    width: '100%',
+    marginTop: spacing.xl,
+    marginBottom: spacing.lg,
+    position: 'relative',
   },
-  connectionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-  },
-  connectionText: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    color: '#f0a500',
-  },
-  activeContainer: {
-    alignItems: 'center',
-  },
-  timerContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  timerPulse: {
+  timerGlow: {
     position: 'absolute',
-    width: 80,
+    top: -20,
+    left: '10%',
+    right: '10%',
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(52, 199, 89, 0.2)',
-    top: -10,
   },
-  timerText: {
-    fontSize: 48,
-    fontFamily: 'Lato_700Bold',
-    color: '#34c759',
-    letterSpacing: 2,
-  },
-  timerLabel: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 4,
-  },
-  stopButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#ff3b30',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+  timerCard: {
     width: '100%',
   },
-  stopButtonText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+  innerHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    borderTopLeftRadius: radius['2xl'],
+    borderTopRightRadius: radius['2xl'],
   },
-  optionsContainer: {
-    gap: 8,
+  timerContent: {
+    alignItems: 'center',
+    paddingVertical: spacing['2xl'],
   },
-  optionButton: {
+  timerValue: {
+    letterSpacing: 2,
+    fontVariant: ['tabular-nums'],
+  },
+
+  // Visibility row (active state)
+  visibilityCard: {
+    width: '100%',
+    marginBottom: spacing.md,
+  },
+  visibilityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    gap: 10,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  optionButtonDisabled: {
-    opacity: 0.5,
+  visibilityIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  optionText: {
+
+  // Pick duration
+  pickContainer: {
     flex: 1,
-    fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    alignItems: 'center',
+    paddingTop: spacing.xs,
   },
-  optionTextDisabled: {
-    color: 'rgba(255,255,255,0.4)',
+  headerIconWrap: {
+    position: 'relative',
+    marginBottom: spacing.md,
+    alignItems: 'center',
   },
-  permissionNote: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
+  headerGlow: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    top: -24,
+  },
+  headerIcon: {
+    width: 56,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pickTitle: {
     textAlign: 'center',
-    marginTop: 8,
+    marginBottom: 2,
+  },
+  pickSubtitle: {
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+  },
+  optionsList: {
+    width: '100%',
+    overflow: 'hidden',
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  optionRowDisabled: {
+    opacity: 0.35,
+  },
+  optionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionLabel: {
+    flex: 1,
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    marginLeft: spacing.lg + 34 + spacing.md,
+  },
+
+  // Who can see row
+  whoCanSeeCard: {
+    width: '100%',
+    marginTop: spacing.md,
+  },
+  whoCanSeeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  whoCanSeeIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  whoCanSeeContent: {
+    flex: 1,
+    gap: 1,
+  },
+
+  permissionNote: {
+    textAlign: 'center',
+    marginTop: spacing.md,
   },
 });

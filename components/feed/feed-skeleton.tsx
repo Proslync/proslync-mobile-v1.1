@@ -43,9 +43,9 @@ function ShimmerOverlay() {
       <LinearGradient
         colors={[
           'transparent',
-          'rgba(255, 255, 255, 0.08)',
-          'rgba(255, 255, 255, 0.15)',
-          'rgba(255, 255, 255, 0.08)',
+          'rgba(0, 0, 0, 0.04)',
+          'rgba(0, 0, 0, 0.08)',
+          'rgba(0, 0, 0, 0.04)',
           'transparent',
         ]}
         start={{ x: 0, y: 0.5 }}
@@ -66,7 +66,7 @@ export function FeedItemSkeleton() {
     <View style={[styles.container, { height: SCREEN_HEIGHT }]}>
       {/* Background gradient */}
       <LinearGradient
-        colors={['#1a1a1a', '#0d0d0d', '#000']}
+        colors={['#f5f5f5', '#fafafa', '#fff']}
         style={styles.background}
       />
 
@@ -144,11 +144,11 @@ export function FeedLoadingSkeleton() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   container: {
     width: SCREEN_WIDTH,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -190,14 +190,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     overflow: 'hidden',
   },
   nameSkeleton: {
     width: 100,
     height: 16,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     marginLeft: 10,
     overflow: 'hidden',
   },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH - 32,
     aspectRatio: 0.7,
     maxHeight: SCREEN_HEIGHT * 0.55,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 16,
     overflow: 'hidden',
     position: 'relative',
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     width: '70%',
     height: 28,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     marginBottom: 12,
     overflow: 'hidden',
   },
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     width: '50%',
     height: 18,
     borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     marginBottom: 8,
     overflow: 'hidden',
   },
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     width: '40%',
     height: 14,
     borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
     overflow: 'hidden',
   },
   // Event info skeleton
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     width: '80%',
     height: 28,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     marginBottom: 12,
     overflow: 'hidden',
   },
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     width: '60%',
     height: 18,
     borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     overflow: 'hidden',
   },
   // CTA skeleton
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   ctaButtonSkeleton: {
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     overflow: 'hidden',
   },
 });

@@ -29,6 +29,8 @@ import { useToast } from '@/components/shared/toast';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 import { SwipeableTabView } from '@/components/shared/swipeable-tab-view';
 import { LinkifiedText } from '@/components/shared/linkified-text';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const POST_SIZE = (SCREEN_WIDTH - 6) / 3; // 3 columns with 2px gaps
@@ -141,7 +143,7 @@ function UserListItem({
           disabled={followLoading || isActionInProgress}
         >
           {isActionInProgress ? (
-            <ActivityIndicator size="small" color={isFollowing ? '#fff' : '#fff'} />
+            <ActivityIndicator size="small" color={isFollowing ? '#1a1a1a' : '#fff'} />
           ) : (
             <Text
               style={[
@@ -189,14 +191,14 @@ function UserListModal({
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Ionicons name="close" size={28} color="#fff" />
+            <Ionicons name="close" size={28} color="#1a1a1a" />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>{title}</Text>
           <View style={styles.modalCloseButton} />
         </View>
         {isLoading ? (
           <View style={styles.modalLoadingContainer}>
-            <ActivityIndicator color="#fff" size="large" />
+            <ActivityIndicator color="#1a1a1a" size="large" />
           </View>
         ) : users.length > 0 ? (
           <FlatList
@@ -243,7 +245,7 @@ function AccountSwitcherModal({
       <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Ionicons name="close" size={28} color="#fff" />
+            <Ionicons name="close" size={28} color="#1a1a1a" />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>Switch Account</Text>
           <View style={styles.modalCloseButton} />
@@ -287,7 +289,7 @@ function AccountSwitcherModal({
             activeOpacity={0.7}
           >
             <View style={styles.addAccountIcon}>
-              <Ionicons name="add" size={24} color="#fff" />
+              <Ionicons name="add" size={24} color="#1a1a1a" />
             </View>
             <Text style={styles.addAccountText}>Add Account</Text>
           </TouchableOpacity>
@@ -309,7 +311,7 @@ export default function ProfileScreen() {
   const lastTapRef = React.useRef<number>(0);
 
   // Fetch posts/activities from GetStream
-  const { activities: userPosts, isLoading: postsLoading } = useUserActivities(user?.id);
+  const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserActivities(user?.id);
 
   // Fetch followers/following from backend API
   // Fetches on mount to get counts, data is cached for modal
@@ -317,13 +319,23 @@ export default function ProfileScreen() {
     followers,
     totalFollowers: followerCount,
     isLoading: followersLoading,
+    refetch: refetchFollowers,
   } = useUserFollowers(user?.id);
 
   const {
     following,
     totalFollowing: followingCount,
     isLoading: followingLoading,
+    refetch: refetchFollowing,
   } = useUserFollowing(user?.id);
+
+  // Pull-to-refresh
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await Promise.all([refetchPosts(), refetchFollowers(), refetchFollowing()]);
+    },
+    tintColor: '#1a1a1a',
+  });
 
   // Derive display values from user data
   const displayName = user?.firstName
@@ -457,7 +469,8 @@ export default function ProfileScreen() {
     return (
       <SwipeableTabView>
         <View style={[styles.container, styles.loadingContainer]}>
-          <ActivityIndicator size="large" color="#fff" />
+          <DarkGradientBg />
+          <ActivityIndicator size="large" color="#1a1a1a" />
         </View>
       </SwipeableTabView>
     );
@@ -466,6 +479,7 @@ export default function ProfileScreen() {
   return (
     <SwipeableTabView>
       <View style={styles.container}>
+      <DarkGradientBg />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -473,11 +487,12 @@ export default function ProfileScreen() {
           { paddingTop: insets.top + 8 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {/* Header - Centered Username */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="lock-closed-outline" size={20} color="#fff" />
+            <Ionicons name="lock-closed-outline" size={20} color="#1a1a1a" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -486,11 +501,11 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
           >
             <Text style={styles.headerUsername}>{username}</Text>
-            <Ionicons name="chevron-down" size={20} color="#fff" />
+            <Ionicons name="chevron-down" size={20} color="#1a1a1a" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="menu-outline" size={28} color="#fff" />
+            <Ionicons name="menu-outline" size={28} color="#1a1a1a" />
           </TouchableOpacity>
         </Animated.View>
 
@@ -536,7 +551,7 @@ export default function ProfileScreen() {
             activeOpacity={0.8}
             onPress={() => router.push('/dashboard')}
           >
-            <Ionicons name="grid-outline" size={18} color="#fff" />
+            <Ionicons name="grid-outline" size={18} color="#1a1a1a" />
             <Text style={styles.dashboardButtonText}>Dashboard</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -554,11 +569,11 @@ export default function ProfileScreen() {
             <Text style={styles.actionButtonText}>Edit Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, styles.shareButton]}
             activeOpacity={0.8}
             onPress={handleShareProfile}
           >
-            <Text style={styles.actionButtonText}>Share Profile</Text>
+            <Text style={[styles.actionButtonText, styles.shareButtonText]}>Share Profile</Text>
           </TouchableOpacity>
         </Animated.View>
 
@@ -568,7 +583,7 @@ export default function ProfileScreen() {
           style={styles.gridHeader}
         >
           <View style={[styles.gridTab, styles.gridTabActive]}>
-            <Ionicons name="grid-outline" size={24} color="#fff" />
+            <Ionicons name="grid-outline" size={24} color="#1a1a1a" />
           </View>
         </Animated.View>
 
@@ -579,7 +594,7 @@ export default function ProfileScreen() {
         >
           {postsLoading ? (
             <View style={styles.postsLoadingContainer}>
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color="#1a1a1a" size="small" />
             </View>
           ) : userPosts.length > 0 ? (
             userPosts.map((post) => (
@@ -597,7 +612,7 @@ export default function ProfileScreen() {
             ))
           ) : (
             <View style={styles.noPostsContainer}>
-              <Ionicons name="images-outline" size={48} color="rgba(255,255,255,0.3)" />
+              <Ionicons name="images-outline" size={48} color="rgba(0,0,0,0.2)" />
               <Text style={styles.noPostsText}>No posts yet</Text>
             </View>
           )}
@@ -658,7 +673,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -685,7 +700,7 @@ const styles = StyleSheet.create({
   headerUsername: {
     fontSize: 22,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   headerIcon: {
     padding: 4,
@@ -703,7 +718,7 @@ const styles = StyleSheet.create({
     height: 86,
     borderRadius: 43,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(0,0,0,0.15)',
   },
   statsRow: {
     flex: 1,
@@ -717,12 +732,12 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   statLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(0, 0, 0, 0.6)',
     marginTop: 2,
   },
   bioSection: {
@@ -732,13 +747,13 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: 'rgba(0, 0, 0, 0.7)',
     lineHeight: 20,
   },
   dashboardButtonContainer: {
@@ -749,7 +764,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#D3D3D3',
     borderRadius: 8,
     paddingVertical: 10,
     gap: 8,
@@ -757,7 +772,7 @@ const styles = StyleSheet.create({
   dashboardButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -767,7 +782,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#D3D3D3',
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: 'center',
@@ -775,12 +790,18 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
+    color: '#1a1a1a',
+  },
+  shareButton: {
+    backgroundColor: '#3897F0',
+  },
+  shareButtonText: {
     color: '#fff',
   },
   gridHeader: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   gridTab: {
     flex: 1,
@@ -789,7 +810,7 @@ const styles = StyleSheet.create({
   },
   gridTabActive: {
     borderBottomWidth: 1,
-    borderBottomColor: '#fff',
+    borderBottomColor: '#1a1a1a',
   },
   postsGrid: {
     flexDirection: 'row',
@@ -803,7 +824,7 @@ const styles = StyleSheet.create({
     width: POST_SIZE,
     height: POST_SIZE,
     margin: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#f5f5f5',
   },
   videoIndicator: {
     position: 'absolute',
@@ -827,7 +848,7 @@ const styles = StyleSheet.create({
   noPostsText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
   logoutButton: {
     flexDirection: 'row',
@@ -845,7 +866,7 @@ const styles = StyleSheet.create({
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -854,7 +875,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalCloseButton: {
     width: 44,
@@ -865,7 +886,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   userList: {
     paddingVertical: 8,
@@ -888,12 +909,12 @@ const styles = StyleSheet.create({
   userListName: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   userListFullName: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     marginTop: 2,
   },
   followButton: {
@@ -908,7 +929,7 @@ const styles = StyleSheet.create({
   followingButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: 'rgba(0, 0, 0, 0.2)',
   },
   followButtonText: {
     fontSize: 13,
@@ -916,7 +937,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   followingButtonText: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(0, 0, 0, 0.6)',
   },
   modalLoadingContainer: {
     flex: 1,
@@ -931,7 +952,7 @@ const styles = StyleSheet.create({
   modalEmptyText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
   // Account switcher styles
   accountList: {
@@ -956,12 +977,12 @@ const styles = StyleSheet.create({
   accountUsername: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   accountName: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     marginTop: 2,
   },
   addAccountButton: {
@@ -971,13 +992,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   addAccountIcon: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },

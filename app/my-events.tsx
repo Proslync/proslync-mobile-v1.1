@@ -25,6 +25,7 @@ import PagerView, { PagerViewOnPageScrollEventData } from 'react-native-pager-vi
 import * as Haptics from 'expo-haptics';
 import { eventsApi } from '@/lib/api/events';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
 
@@ -252,6 +253,7 @@ export default function MyEventsScreen() {
 
   return (
     <View style={styles.container}>
+      <DarkGradientBg />
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}

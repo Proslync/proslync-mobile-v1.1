@@ -91,11 +91,11 @@ export function WalletSkeleton() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     padding: 16,
   },
   shimmerBlock: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     borderRadius: 12,
   },
   card: {

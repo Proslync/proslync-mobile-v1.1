@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { eventsApi, UpdateEventDto } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import type { Event } from '@/lib/types/events.types';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 type Step = 'basic' | 'datetime' | 'location' | 'details';
 
@@ -402,6 +403,7 @@ export default function EditEventScreen() {
 
   return (
     <View style={styles.container}>
+      <DarkGradientBg />
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}

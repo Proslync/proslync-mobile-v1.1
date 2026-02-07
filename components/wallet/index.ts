@@ -9,4 +9,5 @@ export { ActivityList } from './activity-list';
 export { OfferCarousel } from './offer-carousel';
 export { ExploreEvents } from './explore-events';
 export { WithdrawalSheet } from './withdrawal-sheet';
+export { TicketCarousel } from './ticket-carousel';
 export { WalletSkeleton } from './wallet-skeleton';

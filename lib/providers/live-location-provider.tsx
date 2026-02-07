@@ -449,11 +449,15 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       }
     }
 
+    // Permanent sharing (0) = no expiry; timed = expiresAt set
+    const isPermanent = duration === 0;
+    const serverDuration = isPermanent ? 315360000 : duration; // 10 years fallback for backend
+
     // Optimistically update state (will be confirmed by server)
     const optimisticState: SharingState = {
       isSharing: true,
       startedAt: Date.now(),
-      expiresAt: Date.now() + duration * 1000, // duration is in seconds
+      expiresAt: isPermanent ? null : Date.now() + duration * 1000,
       duration,
     };
     setSharingState(optimisticState);
@@ -463,7 +467,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
     // Tell server with current location
     socketRef.current.emit('start_sharing', {
-      duration,
+      duration: serverDuration as any,
       latitude: location.coords.latitude,
       longitude: location.coords.longitude,
       accuracy: location.coords.accuracy ?? undefined,

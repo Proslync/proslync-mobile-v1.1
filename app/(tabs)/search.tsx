@@ -33,9 +33,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { eventsApi } from '@/lib/api/events';
 import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
-import Mapbox, { MapView, Camera, MarkerView, LocationPuck } from '@rnmapbox/maps';
+import Mapbox, { MapView, Camera, MarkerView, LocationPuck, SymbolLayer } from '@rnmapbox/maps';
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import { ShareLocationSheet } from '@/components/map/share-location-sheet';
+import { FriendProfileSheet } from '@/components/map/friend-profile-sheet';
 import { config } from '@/lib/config';
 import { useAuth } from '@/lib/providers/auth-provider';
 
@@ -231,22 +232,22 @@ function SearchOverlay({
       style={[styles.searchOverlay, { top: insets.top + 12 }]}
     >
       <View style={styles.searchBar}>
-        <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
+        <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
         <TextInput
           style={styles.searchInput}
           value={searchQuery}
           onChangeText={onSearchChange}
           placeholder="Search events, venues..."
-          placeholderTextColor="rgba(255,255,255,0.4)"
+          placeholderTextColor="rgba(0,0,0,0.4)"
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity onPress={() => onSearchChange('')}>
-            <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.5)" />
+            <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.4)" />
           </TouchableOpacity>
         )}
       </View>
       <TouchableOpacity style={styles.filterButton} onPress={onFilterPress}>
-        <Ionicons name="options-outline" size={20} color="#fff" />
+        <Ionicons name="options-outline" size={20} color="#1a1a1a" />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -315,12 +316,33 @@ function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: 
   );
 }
 
-// Current user's own location marker (purple, shows when sharing)
+// Current user's own location marker (green, pulsing)
 function MyLocationMarker({ imageUrl }: { imageUrl: string }) {
+  const pulseAnim = useSharedValue(1);
+
+  useEffect(() => {
+    pulseAnim.value = withRepeat(
+      withSequence(
+        withTiming(1.3, { duration: 1000 }),
+        withTiming(1, { duration: 1000 })
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulseAnim.value }],
+    opacity: 2 - pulseAnim.value,
+  }));
+
   return (
     <View style={styles.friendMarkerContainer}>
-      <View style={styles.myLocationMarker}>
-        <Image source={{ uri: imageUrl }} style={styles.friendMarkerImage} />
+      <View style={styles.myPulseWrap}>
+        <Animated.View style={[styles.myPulseRing, pulseStyle]} />
+        <View style={styles.myLocationMarker}>
+          <Image source={{ uri: imageUrl }} style={styles.friendMarkerImage} />
+        </View>
       </View>
       <View style={styles.myLocationPointer} />
     </View>
@@ -484,14 +506,14 @@ function MapPreview() {
               style={[styles.filterTab, nearbyFilter === 'events' && styles.filterTabActive]}
               onPress={() => handleFilterChange('events')}
             >
-              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? '#1a1a1a' : 'rgba(0,0,0,0.4)'} />
               <Text style={[styles.filterTabText, nearbyFilter === 'events' && styles.filterTabTextActive]}>Events</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, nearbyFilter === 'friends' && styles.filterTabActive]}
               onPress={() => handleFilterChange('friends')}
             >
-              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? '#1a1a1a' : 'rgba(0,0,0,0.4)'} />
               <Text style={[styles.filterTabText, nearbyFilter === 'friends' && styles.filterTabTextActive]}>Friends</Text>
             </TouchableOpacity>
           </View>
@@ -502,7 +524,7 @@ function MapPreview() {
                 <Text style={styles.liveIndicatorText}>{liveCount} Live</Text>
               </>
             )}
-            {isLoading && <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />}
+            {isLoading && <ActivityIndicator size="small" color="rgba(0,0,0,0.4)" />}
           </View>
         </View>
 
@@ -513,18 +535,18 @@ function MapPreview() {
         >
           {nearbyFilter === 'friends' ? (
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={48} color="rgba(255,255,255,0.3)" />
+              <Ionicons name="people-outline" size={48} color="rgba(0,0,0,0.2)" />
               <Text style={styles.emptyStateText}>No friends nearby</Text>
               <Text style={styles.emptyStateSubtext}>Friends will appear here when they're at events near you</Text>
             </View>
           ) : isLoading && events.length === 0 ? (
             <View style={styles.loadingState}>
-              <ActivityIndicator size="large" color="#fff" />
+              <ActivityIndicator size="large" color="#1a1a1a" />
               <Text style={styles.loadingStateText}>Loading events...</Text>
             </View>
           ) : error && events.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="cloud-offline-outline" size={48} color="rgba(255,255,255,0.3)" />
+              <Ionicons name="cloud-offline-outline" size={48} color="rgba(0,0,0,0.2)" />
               <Text style={styles.emptyStateText}>{error}</Text>
               <TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()}>
                 <Text style={styles.retryButtonText}>Retry</Text>
@@ -532,7 +554,7 @@ function MapPreview() {
             </View>
           ) : filteredEvents.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="map-outline" size={48} color="rgba(255,255,255,0.3)" />
+              <Ionicons name="map-outline" size={48} color="rgba(0,0,0,0.2)" />
               <Text style={styles.emptyStateText}>{searchQuery ? 'No events found' : 'No events available'}</Text>
             </View>
           ) : (
@@ -560,6 +582,7 @@ function FullMapScreen() {
   const [selectedEvent, setSelectedEvent] = useState<MapEvent | null>(null);
   const [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>('events');
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState<FriendMarker | null>(null);
 
   // Live location hook
   const { friendLocations, sharingState } = useLiveLocation();
@@ -646,20 +669,26 @@ function FullMapScreen() {
 
   return (
     <View style={styles.container}>
-      <MapView style={StyleSheet.absoluteFill} styleURL={DARK_STYLE_URL} logoEnabled={false} attributionEnabled={false} compassEnabled={false} scaleBarEnabled={false}>
-        <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12 }} />
+      <MapView style={StyleSheet.absoluteFill} styleURL={DARK_STYLE_URL} logoEnabled={false} attributionEnabled={false} compassEnabled={false} scaleBarEnabled={false} zoomEnabled={true} pitchEnabled={true} rotateEnabled={true}>
+        <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12 }} minZoomLevel={2} maxZoomLevel={20} />
+        {/* Override POI/business label colors to white */}
+        <SymbolLayer id="poi-label" existing={true} style={{ textColor: '#ffffff' }} />
         {/* Show LocationPuck only when NOT sharing (avatar marker replaces it when sharing) */}
         {!sharingState.isSharing && (
-          <LocationPuck puckBearing="heading" puckBearingEnabled={true} pulsing={{ isEnabled: true, color: '#8b5cf6' }} />
+          <LocationPuck puckBearing="heading" puckBearingEnabled={true} pulsing={{ isEnabled: true, color: '#34c759' }} />
         )}
-        {nearbyFilter === 'events' && filteredEvents.map((event) => (
+        {filteredEvents.map((event) => (
           <MarkerView key={event.id} coordinate={[event.longitude, event.latitude]} anchor={{ x: 0.5, y: 1 }}>
             <EventMarker event={event} onPress={() => handleMarkerPress(event)} />
           </MarkerView>
         ))}
-        {nearbyFilter === 'friends' && nearbyFriends.map((friend) => (
+        {nearbyFriends.map((friend) => (
           <MarkerView key={friend.id} coordinate={[friend.longitude, friend.latitude]} anchor={{ x: 0.5, y: 1 }}>
-            <FriendMarkerView friend={friend} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} />
+            <FriendMarkerView friend={friend} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setSelectedFriend(friend);
+              cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, animationDuration: 500 });
+            }} />
           </MarkerView>
         ))}
         {/* Show current user's marker when sharing location */}
@@ -676,19 +705,28 @@ function FullMapScreen() {
       {config.websocket.enabled && (
         <TouchableOpacity
           style={[styles.shareLocationButton, { bottom: 240 }]}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowShareSheet(true); }}
+          onPress={async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            // Request location permission before opening the sheet
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted' && !userLocation) {
+              const location = await Location.getCurrentPositionAsync({});
+              setUserLocation([location.coords.longitude, location.coords.latitude]);
+            }
+            setShowShareSheet(true);
+          }}
         >
           <Ionicons
             name={sharingState.isSharing ? 'location' : 'location-outline'}
             size={22}
-            color={sharingState.isSharing ? '#34c759' : '#fff'}
+            color={sharingState.isSharing ? '#34c759' : '#1a1a1a'}
           />
           {sharingState.isSharing && <View style={styles.sharingIndicator} />}
         </TouchableOpacity>
       )}
 
       <TouchableOpacity style={[styles.recenterButton, { bottom: 180 }]} onPress={handleRecenter}>
-        <Ionicons name="locate" size={22} color="#fff" />
+        <Ionicons name="locate" size={22} color="#1a1a1a" />
       </TouchableOpacity>
 
       <BottomSheet ref={bottomSheetRef} index={0} snapPoints={snapPoints} backgroundStyle={styles.bottomSheetBackground} handleIndicatorStyle={styles.bottomSheetIndicator} enablePanDownToClose={false} animateOnMount={true}>
@@ -696,17 +734,17 @@ function FullMapScreen() {
           <Text style={styles.bottomSheetTitle}>Nearby</Text>
           <View style={styles.filterTabs}>
             <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'events' && styles.filterTabActive]} onPress={() => handleFilterChange('events')}>
-              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? '#1a1a1a' : 'rgba(0,0,0,0.4)'} />
               <Text style={[styles.filterTabText, nearbyFilter === 'events' && styles.filterTabTextActive]}>Events</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'friends' && styles.filterTabActive]} onPress={() => handleFilterChange('friends')}>
-              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? '#fff' : 'rgba(255,255,255,0.5)'} />
+              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? '#1a1a1a' : 'rgba(0,0,0,0.4)'} />
               <Text style={[styles.filterTabText, nearbyFilter === 'friends' && styles.filterTabTextActive]}>Friends</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.liveIndicator}>
             {nearbyFilter === 'events' && liveCount > 0 && (<><View style={styles.liveIndicatorDot} /><Text style={styles.liveIndicatorText}>{liveCount} Live</Text></>)}
-            {isLoading && <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />}
+            {isLoading && <ActivityIndicator size="small" color="rgba(0,0,0,0.4)" />}
           </View>
         </View>
         <BottomSheetScrollView contentContainerStyle={styles.bottomSheetContent} showsVerticalScrollIndicator={false} refreshControl={refreshControl}>
@@ -734,13 +772,13 @@ function FullMapScreen() {
                         <Text style={styles.friendListStatusText}>Sharing location</Text>
                       </View>
                     </View>
-                    <Ionicons name="navigate-outline" size={20} color="rgba(255,255,255,0.5)" />
+                    <Ionicons name="navigate-outline" size={20} color="rgba(0,0,0,0.4)" />
                   </TouchableOpacity>
                 ))}
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={48} color="rgba(255,255,255,0.3)" />
+                <Ionicons name="people-outline" size={48} color="rgba(0,0,0,0.2)" />
                 <Text style={styles.emptyStateText}>No friends sharing location</Text>
                 <Text style={styles.emptyStateSubtext}>
                   {sharingState.isSharing
@@ -750,20 +788,24 @@ function FullMapScreen() {
                 {!sharingState.isSharing && (
                   <TouchableOpacity
                     style={styles.shareButton}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowShareSheet(true); }}
+                    onPress={async () => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      await Location.requestForegroundPermissionsAsync();
+                      setShowShareSheet(true);
+                    }}
                   >
-                    <Ionicons name="location-outline" size={18} color="#fff" />
+                    <Ionicons name="location-outline" size={18} color="#1a1a1a" />
                     <Text style={styles.shareButtonText}>Share My Location</Text>
                   </TouchableOpacity>
                 )}
               </View>
             )
           ) : isLoading && events.length === 0 ? (
-            <View style={styles.loadingState}><ActivityIndicator size="large" color="#fff" /><Text style={styles.loadingStateText}>Loading events...</Text></View>
+            <View style={styles.loadingState}><ActivityIndicator size="large" color="#1a1a1a" /><Text style={styles.loadingStateText}>Loading events...</Text></View>
           ) : error && events.length === 0 ? (
-            <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color="rgba(255,255,255,0.3)" /><Text style={styles.emptyStateText}>{error}</Text><TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()}><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity></View>
+            <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color="rgba(0,0,0,0.2)" /><Text style={styles.emptyStateText}>{error}</Text><TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()}><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity></View>
           ) : filteredEvents.length === 0 ? (
-            <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color="rgba(255,255,255,0.3)" /><Text style={styles.emptyStateText}>{searchQuery ? 'No events found' : 'No events available'}</Text></View>
+            <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color="rgba(0,0,0,0.2)" /><Text style={styles.emptyStateText}>{searchQuery ? 'No events found' : 'No events available'}</Text></View>
           ) : (
             <>{selectedEvent && <EventCard key={`selected-${selectedEvent.id}`} event={selectedEvent} onPress={() => handleEventPress(selectedEvent)} />}{filteredEvents.filter(e => !selectedEvent || e.id !== selectedEvent.id).map((event) => (<EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />))}</>
           )}
@@ -774,6 +816,13 @@ function FullMapScreen() {
       <ShareLocationSheet
         isVisible={showShareSheet}
         onClose={() => setShowShareSheet(false)}
+      />
+
+      {/* Friend Profile Sheet */}
+      <FriendProfileSheet
+        visible={!!selectedFriend}
+        onClose={() => setSelectedFriend(null)}
+        friend={selectedFriend}
       />
     </View>
   );
@@ -790,7 +839,7 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   // Map grid decoration
   mapGrid: {
@@ -802,14 +851,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ccc',
   },
   gridLineV: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ccc',
   },
   // Marker previews
   markerPreviewContainer: {
@@ -823,7 +872,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#8b5cf6',
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#f5f5f5',
   },
   markerPreviewImage: {
     width: '100%',
@@ -838,7 +887,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#ff3b30',
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: '#fff',
   },
   // Dev notice
   devNotice: {
@@ -870,38 +919,38 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderRadius: 12,
     paddingHorizontal: 14,
     height: 46,
     gap: 10,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   filterButton: {
     width: 46,
     height: 46,
     borderRadius: 12,
-    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   // Bottom sheet
   bottomSheetBackground: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   bottomSheetIndicator: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.2)',
     width: 40,
   },
   bottomSheetHeader: {
@@ -914,12 +963,12 @@ const styles = StyleSheet.create({
   bottomSheetTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 12,
   },
   filterTabs: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderRadius: 10,
     padding: 4,
     gap: 4,
@@ -933,15 +982,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   filterTabActive: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#D3D3D3',
   },
   filterTabText: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.4)',
   },
   filterTabTextActive: {
-    color: '#fff',
+    color: '#1a1a1a',
   },
   liveIndicator: {
     flexDirection: 'row',
@@ -958,7 +1007,7 @@ const styles = StyleSheet.create({
   liveIndicatorText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.6)',
   },
   bottomSheetContent: {
     paddingHorizontal: 16,
@@ -1041,7 +1090,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
   },
   // Empty state
   emptyState: {
@@ -1052,13 +1101,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.4)',
   },
   emptyStateSubtext: {
     marginTop: 8,
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(0,0,0,0.3)',
     textAlign: 'center',
     paddingHorizontal: 40,
   },
@@ -1066,13 +1115,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#D3D3D3',
     borderRadius: 8,
   },
   retryButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   // Pulsing animation
   pulsingContainer: {
@@ -1146,7 +1195,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 3,
-    borderColor: '#34c759',
+    borderColor: '#ffffff',
     overflow: 'hidden',
     backgroundColor: '#000',
   },
@@ -1162,16 +1211,28 @@ const styles = StyleSheet.create({
     borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#34c759',
+    borderTopColor: '#ffffff',
     marginTop: -1,
   },
-  // Current user's location marker (purple)
+  // Current user's location marker (green, pulsing)
+  myPulseWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  myPulseRing: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 2,
+    borderColor: '#34c759',
+  },
   myLocationMarker: {
     width: 50,
     height: 50,
     borderRadius: 25,
     borderWidth: 3,
-    borderColor: '#8b5cf6',
+    borderColor: '#34c759',
     overflow: 'hidden',
     backgroundColor: '#000',
   },
@@ -1183,7 +1244,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderTopColor: '#8b5cf6',
+    borderTopColor: '#34c759',
     marginTop: -1,
   },
   // Recenter button
@@ -1193,11 +1254,11 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   // Share location button
   shareLocationButton: {
@@ -1206,11 +1267,11 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(30, 30, 30, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   sharingIndicator: {
     position: 'absolute',
@@ -1221,7 +1282,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#34c759',
     borderWidth: 2,
-    borderColor: 'rgba(30, 30, 30, 0.95)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   // Friends list
   friendsListContainer: {
@@ -1230,7 +1291,7 @@ const styles = StyleSheet.create({
   friendListItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 12,
@@ -1249,7 +1310,7 @@ const styles = StyleSheet.create({
   friendListName: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
     marginBottom: 2,
   },
   friendListStatus: {
@@ -1266,14 +1327,14 @@ const styles = StyleSheet.create({
   friendListStatusText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
   },
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#8b5cf6',
+    backgroundColor: '#D3D3D3',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
@@ -1282,6 +1343,6 @@ const styles = StyleSheet.create({
   shareButtonText: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
 });

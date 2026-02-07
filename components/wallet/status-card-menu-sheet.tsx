@@ -1,20 +1,28 @@
-// Status Card Menu Sheet - Enlarged card preview with QR, perks, actions
+// Status Card Menu Sheet — Liquid glass design
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   Alert,
   Linking,
+  TouchableOpacity,
   ActivityIndicator,
+  Text,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BottomSheet } from './bottom-sheet';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MembershipCard } from './membership-card';
 import { generateAppleWalletToken } from '../../lib/api/wallet';
 import { WalletUser, TIER_PERKS } from '../../lib/types/wallet.types';
+import { GlassCard } from '../glass/glass-card';
+import { GlassText } from '../glass/glass-text';
+import {
+  spacing,
+  radius,
+  glassBorder,
+} from '../../constants/glass/tokens';
 
 interface StatusCardMenuSheetProps {
   visible: boolean;
@@ -27,27 +35,34 @@ export function StatusCardMenuSheet({
   onClose,
   user,
 }: StatusCardMenuSheetProps) {
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
+  const insets = useSafeAreaInsets();
   const [isAddingToWallet, setIsAddingToWallet] = useState(false);
   const perks = TIER_PERKS[user.statusTier] || [];
   const displayPerks = perks.slice(0, 3);
+
+  React.useEffect(() => {
+    if (visible) {
+      bottomSheetRef.current?.expand();
+    } else {
+      bottomSheetRef.current?.close();
+    }
+  }, [visible]);
+
+  const handleViewOnWallet = () => {
+    Linking.openURL('shoebox://');
+  };
 
   const handleAddToWallet = async () => {
     setIsAddingToWallet(true);
     try {
       const response = await generateAppleWalletToken();
-
       if (response.success && response.data?.downloadUrl) {
-        const canOpen = await Linking.canOpenURL(response.data.downloadUrl);
-        if (canOpen) {
-          await Linking.openURL(response.data.downloadUrl);
-        } else {
-          Alert.alert('Error', 'Unable to open Apple Wallet');
-        }
+        Linking.openURL(response.data.downloadUrl);
       } else {
         Alert.alert('Error', response.error || 'Failed to add to Apple Wallet');
       }
     } catch (error: any) {
-      console.error('Apple Wallet error:', error);
       Alert.alert('Error', error.message || 'Failed to add to Apple Wallet');
     } finally {
       setIsAddingToWallet(false);
@@ -55,194 +70,196 @@ export function StatusCardMenuSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} maxHeight="85%">
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={-1}
+      enablePanDownToClose
+      enableDynamicSizing
+      onClose={onClose}
+      backgroundStyle={styles.sheetBackground}
+      handleIndicatorStyle={styles.sheetIndicator}
+    >
+      <BottomSheetView style={[styles.container, { paddingBottom: insets.bottom || 8 }]}>
         {/* Enlarged Card */}
         <View style={styles.cardContainer}>
           <MembershipCard user={user} enlarged />
         </View>
 
-        {/* QR Code Section */}
-        <View style={styles.qrSection}>
-          <View style={styles.qrContainer}>
-            {/* Mock QR Code */}
-            <View style={styles.qrCode}>
-              <View style={styles.qrRow}>
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-              </View>
-              <View style={styles.qrRow}>
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-              </View>
-              <View style={styles.qrRow}>
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-              </View>
-              <View style={styles.qrRow}>
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-              </View>
-              <View style={styles.qrRow}>
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-              </View>
-              <View style={styles.qrRow}>
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-              </View>
-              <View style={styles.qrRow}>
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={[styles.qrBlock, styles.qrBlockFilled]} />
-                <View style={styles.qrBlock} />
-              </View>
-            </View>
-          </View>
-          <Text style={styles.qrHint}>Show this at check-in</Text>
-        </View>
-
         {/* Tier Perks */}
-        <View style={styles.perksSection}>
-          <Text style={styles.perksTitle}>{user.statusTier} Perks</Text>
-          {displayPerks.map((perk, index) => (
-            <View key={index} style={styles.perkRow}>
-              <Ionicons name="checkmark-circle" size={18} color="#34c759" />
-              <Text style={styles.perkText}>{perk}</Text>
-            </View>
-          ))}
-        </View>
+        <GlassCard
+          fill="light"
+          border="subtle"
+          cornerRadius="2xl"
+          shadowLevel="md"
+          blurIntensity="medium"
+          style={styles.perksCard}
+        >
+          {/* Inner highlight */}
+          <LinearGradient
+            colors={['rgba(0, 0, 0, 0.02)', 'transparent']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 0.5 }}
+            style={styles.innerHighlight}
+          />
 
-        {/* Add to Wallet Button */}
+          <View style={styles.perksTitleRow}>
+            <View style={styles.perksIcon}>
+              <Ionicons name="star-outline" size={14} color="#FFD700" />
+            </View>
+            <GlassText weight="bold" size={15}>{user.statusTier} Perks</GlassText>
+          </View>
+
+          {displayPerks.map((perk, index) => (
+            <React.Fragment key={index}>
+              {index > 0 && <View style={styles.perkSeparator} />}
+              <View style={styles.perkRow}>
+                <View style={styles.checkCircle}>
+                  <Ionicons name="checkmark" size={12} color="#fff" />
+                </View>
+                <GlassText hierarchy="secondary" size={14} style={styles.perkText}>
+                  {perk}
+                </GlassText>
+              </View>
+            </React.Fragment>
+          ))}
+        </GlassCard>
+
+        {/* Wallet Actions */}
         <View style={styles.actionsSection}>
           <TouchableOpacity
-            style={styles.actionButton}
+            style={styles.walletButton}
+            onPress={handleViewOnWallet}
+            activeOpacity={0.7}
+          >
+            <View style={styles.walletButtonFill} />
+            <Ionicons name="wallet-outline" size={18} color="#1a1a1a" />
+            <Text style={styles.walletButtonText}>View on Apple Wallet</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.walletButton}
             onPress={handleAddToWallet}
+            activeOpacity={0.7}
             disabled={isAddingToWallet}
           >
+            <View style={styles.walletButtonFill} />
             {isAddingToWallet ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color="#1a1a1a" />
             ) : (
               <>
-                <Ionicons name="logo-apple" size={20} color="#fff" />
-                <Text style={styles.actionButtonText}>Add to Apple Wallet</Text>
+                <Ionicons name="logo-apple" size={18} color="#1a1a1a" />
+                <Text style={styles.walletButtonText}>Add to Apple Wallet</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </BottomSheetView>
     </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
+  sheetBackground: {
+    backgroundColor: 'rgba(255, 255, 255, 0.97)',
+    borderTopLeftRadius: radius['2xl'],
+    borderTopRightRadius: radius['2xl'],
+    borderWidth: 1,
+    borderColor: `rgba(0, 0, 0, ${glassBorder.medium.opacity * 0.3})`,
+  },
+  sheetIndicator: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+  },
+  container: {
+    paddingHorizontal: spacing.lg,
+  },
   cardContainer: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing['2xl'],
   },
-  qrSection: {
-    alignItems: 'center',
-    marginBottom: 24,
+
+  // Perks
+  perksCard: {
+    marginBottom: 15,
+    overflow: 'hidden',
   },
-  qrContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+  innerHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    borderTopLeftRadius: radius['2xl'],
+    borderTopRightRadius: radius['2xl'],
   },
-  qrCode: {
-    width: 112,
-    height: 112,
-  },
-  qrRow: {
+  perksTitleRow: {
     flexDirection: 'row',
-    height: 16,
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
   },
-  qrBlock: {
-    width: 16,
-    height: 16,
-    backgroundColor: '#fff',
-  },
-  qrBlockFilled: {
-    backgroundColor: '#000',
-  },
-  qrHint: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
-    marginTop: 12,
-  },
-  perksSection: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  perksTitle: {
-    fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    marginBottom: 12,
+  perksIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   perkRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    gap: 10,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  perkSeparator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    marginLeft: spacing.lg + 22 + spacing.md,
+  },
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#34c759',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   perkText: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.8)',
     flex: 1,
   },
+
+  // Actions
   actionsSection: {
-    gap: 10,
+    gap: 15,
+    marginBottom: 0,
   },
-  actionButton: {
+  walletButton: {
+    height: 48,
+    borderRadius: radius.md,
+    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
-  actionButtonText: {
-    fontSize: 15,
+  walletButtonFill: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#D3D3D3',
+  },
+  walletButtonText: {
+    fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
+    letterSpacing: 0.5,
   },
 });

@@ -60,6 +60,7 @@ export interface Offer {
 export interface WalletEventCard {
   id: string;
   title: string;
+  dateTime: string;
   dateTimeLabel: string;
   venueName: string;
   flyerUrl: string;

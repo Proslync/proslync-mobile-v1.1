@@ -22,6 +22,7 @@ import { useFollowUser } from '@/hooks/use-follow-user';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { LinkifiedText } from '@/components/shared/linkified-text';
 import type { PublicUserProfile } from '@/lib/types/auth.types';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -231,6 +232,7 @@ export default function UserProfileScreen() {
 
   return (
     <View style={styles.container}>
+      <DarkGradientBg />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[

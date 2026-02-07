@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useToast } from '@/components/shared/toast';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200';
 
@@ -103,6 +104,7 @@ export default function CreatePostScreen() {
 
   return (
     <View style={styles.container}>
+      <DarkGradientBg />
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}

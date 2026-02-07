@@ -19,16 +19,20 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   FadeIn,
-  FadeInDown,
+  FadeInUp,
   FadeOutDown,
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   withSequence,
+  Easing,
 } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 type ScanMode = 'id' | 'membership';
 
@@ -40,7 +44,8 @@ interface ScanResult {
   fields: { label: string; value: string }[];
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const SCAN_FRAME_SIZE = SCREEN_WIDTH - 80;
 
 // Parse AAMVA PDF417 Driver's License format
 function parseDriverLicense(data: string): {
@@ -114,14 +119,14 @@ export default function ScannerScreen() {
   const [scanResult, setScanResult] = React.useState<ScanResult | null>(null);
   const [isActive, setIsActive] = React.useState(true);
 
-  // Scan line animation
+  // Scan line animation - smooth up and down
   const scanLinePosition = useSharedValue(0);
 
   React.useEffect(() => {
     scanLinePosition.value = withRepeat(
       withSequence(
-        withTiming(1, { duration: 1500 }),
-        withTiming(0, { duration: 1500 })
+        withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
       false
@@ -129,7 +134,7 @@ export default function ScannerScreen() {
   }, []);
 
   const scanLineStyle = useAnimatedStyle(() => ({
-    top: `${scanLinePosition.value * 100}%`,
+    transform: [{ translateY: scanLinePosition.value * (SCAN_FRAME_SIZE - 4) }],
   }));
 
   const formatDate = (dateStr: string) => {
@@ -154,7 +159,7 @@ export default function ScannerScreen() {
       setScanResult({
         type: 'error',
         title: 'Could Not Read ID',
-        subtitle: 'Try moving closer',
+        subtitle: 'Please try again',
         status: 'error',
         fields: [],
       });
@@ -193,7 +198,6 @@ export default function ScannerScreen() {
   }, []);
 
   const handleMembershipScan = React.useCallback((data: string) => {
-    // Try to parse as JSON
     let parsed: any = null;
     try {
       parsed = JSON.parse(data);
@@ -208,7 +212,7 @@ export default function ScannerScreen() {
     setScanResult({
       type: 'membership',
       title: memberName || 'Membership Card',
-      subtitle: 'Scanned',
+      subtitle: 'Verified',
       status: 'success',
       fields: [
         ...(memberId ? [{ label: 'Member ID', value: String(memberId) }] : []),
@@ -243,7 +247,7 @@ export default function ScannerScreen() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'success': return '#22c55e';
+      case 'success': return '#10b981';
       case 'warning': return '#f59e0b';
       case 'error': return '#ef4444';
       default: return '#fff';
@@ -253,13 +257,12 @@ export default function ScannerScreen() {
   const getStatusIcon = (status: string): keyof typeof Ionicons.glyphMap => {
     switch (status) {
       case 'success': return 'checkmark-circle';
-      case 'warning': return 'warning';
+      case 'warning': return 'alert-circle';
       case 'error': return 'close-circle';
       default: return 'checkmark-circle';
     }
   };
 
-  // Request permission on mount
   React.useEffect(() => {
     if (!hasPermission) {
       requestPermission();
@@ -269,17 +272,18 @@ export default function ScannerScreen() {
   if (!hasPermission) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <Ionicons name="camera-outline" size={64} color="rgba(255,255,255,0.5)" />
-        <Text style={styles.permissionTitle}>Camera Access Required</Text>
-        <Text style={styles.permissionText}>Allow camera access to scan IDs and membership cards.</Text>
+        <View style={styles.permissionIcon}>
+          <Ionicons name="camera" size={48} color="#1a1a1a" />
+        </View>
+        <Text style={styles.permissionTitle}>Camera Access</Text>
+        <Text style={styles.permissionText}>
+          We need camera access to scan IDs and membership cards
+        </Text>
         <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          <Text style={styles.permissionButtonText}>Enable Camera</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.permissionButton, { backgroundColor: 'rgba(255,255,255,0.1)', marginTop: 12 }]}
-          onPress={() => Linking.openSettings()}
-        >
-          <Text style={styles.permissionButtonText}>Open Settings</Text>
+        <TouchableOpacity style={styles.settingsLink} onPress={() => Linking.openSettings()}>
+          <Text style={styles.settingsLinkText}>Open Settings</Text>
         </TouchableOpacity>
       </View>
     );
@@ -288,14 +292,15 @@ export default function ScannerScreen() {
   if (!device) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color="#fff" />
-        <Text style={styles.loadingText}>Loading camera...</Text>
+        <ActivityIndicator size="large" color="#1a1a1a" />
+        <Text style={styles.loadingText}>Initializing camera...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      <DarkGradientBg />
       <Camera
         style={StyleSheet.absoluteFill}
         device={device}
@@ -304,119 +309,184 @@ export default function ScannerScreen() {
         torch={torch ? 'on' : 'off'}
       />
 
-      {/* Scanning overlay */}
+      {/* Gradient overlays for smooth darkening */}
       {!scanResult && (
-        <View style={styles.scanOverlay}>
-          <View style={[styles.darkArea, { height: SCREEN_HEIGHT * 0.12 }]} />
-          <View style={styles.middleRow}>
-            <View style={[styles.darkArea, { width: 16 }]} />
-            <View style={styles.scanArea}>
-              <View style={[styles.corner, styles.topLeft]} />
-              <View style={[styles.corner, styles.topRight]} />
-              <View style={[styles.corner, styles.bottomLeft]} />
-              <View style={[styles.corner, styles.bottomRight]} />
-              <Animated.View style={[styles.scanLine, scanLineStyle]} />
-            </View>
-            <View style={[styles.darkArea, { width: 16 }]} />
+        <>
+          <LinearGradient
+            colors={['rgba(0,0,0,0.8)', 'transparent']}
+            style={styles.topGradient}
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.9)']}
+            style={styles.bottomGradient}
+          />
+        </>
+      )}
+
+      {/* Scan frame */}
+      {!scanResult && (
+        <View style={styles.scanFrameContainer}>
+          <View style={styles.scanFrame}>
+            {/* Corner accents */}
+            <View style={[styles.corner, styles.cornerTL]} />
+            <View style={[styles.corner, styles.cornerTR]} />
+            <View style={[styles.corner, styles.cornerBL]} />
+            <View style={[styles.corner, styles.cornerBR]} />
+
+            {/* Animated scan line */}
+            <Animated.View style={[styles.scanLine, scanLineStyle]}>
+              <LinearGradient
+                colors={['transparent', '#10b981', 'transparent']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.scanLineGradient}
+              />
+            </Animated.View>
           </View>
-          <View style={[styles.darkArea, { flex: 1 }]} />
         </View>
       )}
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 12 }]}
       >
         <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="close" size={28} color="#fff" />
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {scanMode === 'id' ? 'Scan ID' : 'Scan Membership'}
-        </Text>
-        <TouchableOpacity style={styles.headerButton} onPress={() => setTorch(!torch)}>
-          <Ionicons name={torch ? 'flash' : 'flash-outline'} size={24} color={torch ? '#fbbf24' : '#fff'} />
+
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>
+            {scanMode === 'id' ? 'Scan ID' : 'Scan Card'}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.headerButton, torch && styles.headerButtonActive]}
+          onPress={() => setTorch(!torch)}
+        >
+          <Ionicons
+            name={torch ? 'flash' : 'flash-outline'}
+            size={22}
+            color={torch ? '#000' : '#fff'}
+          />
         </TouchableOpacity>
       </Animated.View>
 
       {/* Instructions */}
       {!scanResult && (
-        <View style={[styles.instructions, { top: insets.top + 70 }]}>
-          <Text style={styles.instructionText}>
-            {scanMode === 'id'
-              ? 'Scan barcode on back of ID'
-              : 'Scan membership QR code'}
-          </Text>
-        </View>
-      )}
-
-      {/* Scan Result Card */}
-      {scanResult && (
         <Animated.View
-          entering={FadeInDown.duration(300).springify()}
-          exiting={FadeOutDown.duration(200)}
-          style={styles.resultContainer}
+          entering={FadeInUp.delay(200).duration(400)}
+          style={styles.instructionsContainer}
         >
-          <View style={[styles.resultCard, { borderColor: getStatusColor(scanResult.status) }]}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(scanResult.status) }]}>
-              <Ionicons name={getStatusIcon(scanResult.status)} size={24} color="#fff" />
-              {scanResult.subtitle && (
-                <Text style={styles.statusText}>{scanResult.subtitle}</Text>
-              )}
-            </View>
-
-            <Text style={styles.resultTitle}>{scanResult.title}</Text>
-
-            {scanResult.fields.length > 0 && (
-              <View style={styles.fieldsContainer}>
-                {scanResult.fields.map((field, index) => (
-                  <View key={index} style={styles.fieldRow}>
-                    <Text style={styles.fieldLabel}>{field.label}</Text>
-                    <Text style={styles.fieldValue}>{field.value}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            <View style={styles.resultActions}>
-              <TouchableOpacity style={styles.scanNextButton} onPress={handleScanNext}>
-                <Ionicons name="scan" size={20} color="#fff" />
-                <Text style={styles.scanNextText}>Scan Next</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.doneButton} onPress={() => router.back()}>
-                <Text style={styles.doneText}>Done</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.instructionsPill}>
+            <Ionicons
+              name={scanMode === 'id' ? 'card' : 'qr-code'}
+              size={16}
+              color="rgba(255,255,255,0.8)"
+            />
+            <Text style={styles.instructionText}>
+              {scanMode === 'id'
+                ? 'Position barcode on back of ID'
+                : 'Position QR code in frame'}
+            </Text>
           </View>
         </Animated.View>
       )}
 
-      {/* Bottom mode tabs */}
+      {/* Scan Result */}
+      {scanResult && (
+        <Animated.View
+          entering={FadeInUp.duration(300)}
+          exiting={FadeOutDown.duration(200)}
+          style={[styles.resultOverlay, { paddingBottom: insets.bottom + 20 }]}
+        >
+          <BlurView intensity={80} tint="light" style={styles.resultBlur}>
+            <View style={[styles.resultCard]}>
+              {/* Status indicator */}
+              <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(scanResult.status) }]}>
+                <Ionicons name={getStatusIcon(scanResult.status)} size={32} color="#fff" />
+              </View>
+
+              {/* Status badge */}
+              {scanResult.subtitle && (
+                <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(scanResult.status)}20` }]}>
+                  <Text style={[styles.statusBadgeText, { color: getStatusColor(scanResult.status) }]}>
+                    {scanResult.subtitle}
+                  </Text>
+                </View>
+              )}
+
+              {/* Name */}
+              <Text style={styles.resultName}>{scanResult.title}</Text>
+
+              {/* Fields */}
+              {scanResult.fields.length > 0 && (
+                <View style={styles.fieldsGrid}>
+                  {scanResult.fields.map((field, index) => (
+                    <View key={index} style={styles.fieldItem}>
+                      <Text style={styles.fieldLabel}>{field.label}</Text>
+                      <Text style={styles.fieldValue}>{field.value}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Actions */}
+              <View style={styles.resultActions}>
+                <TouchableOpacity
+                  style={styles.primaryButton}
+                  onPress={handleScanNext}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="scan-outline" size={20} color="#1a1a1a" />
+                  <Text style={styles.primaryButtonText}>Scan Next</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.secondaryButton}
+                  onPress={() => router.back()}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.secondaryButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BlurView>
+        </Animated.View>
+      )}
+
+      {/* Mode selector */}
       {!scanResult && (
-        <View style={[styles.bottomSection, { paddingBottom: insets.bottom + 20 }]}>
-          <View style={styles.modeTabs}>
+        <Animated.View
+          entering={FadeInUp.delay(100).duration(400)}
+          style={[styles.modeSelector, { bottom: insets.bottom + 32 }]}
+        >
+          <View style={styles.modeContainer}>
             {(['id', 'membership'] as ScanMode[]).map((mode) => (
               <TouchableOpacity
                 key={mode}
-                style={[styles.modeTab, scanMode === mode && styles.modeTabActive]}
+                style={[styles.modeButton, scanMode === mode && styles.modeButtonActive]}
                 onPress={() => {
                   setScanMode(mode);
                   setScanResult(null);
                   setIsActive(true);
+                  Haptics.selectionAsync();
                 }}
+                activeOpacity={0.8}
               >
                 <Ionicons
-                  name={mode === 'id' ? 'card-outline' : 'person-outline'}
-                  size={22}
+                  name={mode === 'id' ? 'card' : 'person-circle'}
+                  size={20}
                   color={scanMode === mode ? '#fff' : 'rgba(255,255,255,0.5)'}
                 />
-                <Text style={[styles.modeTabText, scanMode === mode && styles.modeTabTextActive]}>
-                  {mode === 'id' ? 'ID' : 'Membership'}
+                <Text style={[styles.modeText, scanMode === mode && styles.modeTextActive]}>
+                  {mode === 'id' ? 'ID Card' : 'Membership'}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
+        </Animated.View>
       )}
     </View>
   );
@@ -425,78 +495,93 @@ export default function ScannerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 48,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.5)',
   },
-  scanOverlay: {
+
+  // Gradients
+  topGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_HEIGHT * 0.25,
+  },
+  bottomGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: SCREEN_HEIGHT * 0.35,
+  },
+
+  // Scan frame
+  scanFrameContainer: {
     ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  darkArea: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  middleRow: {
-    flexDirection: 'row',
-    height: SCREEN_HEIGHT * 0.5,
-  },
-  scanArea: {
-    flex: 1,
+  scanFrame: {
+    width: SCAN_FRAME_SIZE,
+    height: SCAN_FRAME_SIZE,
     position: 'relative',
   },
   corner: {
     position: 'absolute',
-    width: 28,
-    height: 28,
-    borderColor: '#22c55e',
+    width: 32,
+    height: 32,
+    borderColor: '#10b981',
   },
-  topLeft: {
+  cornerTL: {
     top: 0,
     left: 0,
     borderTopWidth: 3,
     borderLeftWidth: 3,
-    borderTopLeftRadius: 8,
+    borderTopLeftRadius: 16,
   },
-  topRight: {
+  cornerTR: {
     top: 0,
     right: 0,
     borderTopWidth: 3,
     borderRightWidth: 3,
-    borderTopRightRadius: 8,
+    borderTopRightRadius: 16,
   },
-  bottomLeft: {
+  cornerBL: {
     bottom: 0,
     left: 0,
     borderBottomWidth: 3,
     borderLeftWidth: 3,
-    borderBottomLeftRadius: 8,
+    borderBottomLeftRadius: 16,
   },
-  bottomRight: {
+  cornerBR: {
     bottom: 0,
     right: 0,
     borderBottomWidth: 3,
     borderRightWidth: 3,
-    borderBottomRightRadius: 8,
+    borderBottomRightRadius: 16,
   },
   scanLine: {
     position: 'absolute',
-    left: 8,
-    right: 8,
+    left: 16,
+    right: 16,
     height: 2,
-    backgroundColor: '#22c55e',
-    shadowColor: '#22c55e',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 8,
   },
+  scanLineGradient: {
+    flex: 1,
+    borderRadius: 1,
+  },
+
+  // Header
   header: {
     position: 'absolute',
     top: 0,
@@ -506,180 +591,231 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   headerButton: {
     width: 44,
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 22,
   },
+  headerButtonActive: {
+    backgroundColor: '#fbbf24',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
+    letterSpacing: 0.3,
   },
-  instructions: {
+
+  // Instructions
+  instructionsContainer: {
     position: 'absolute',
+    top: SCREEN_HEIGHT * 0.22,
     left: 0,
     right: 0,
     alignItems: 'center',
+  },
+  instructionsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
   },
   instructionText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    color: 'rgba(255,255,255,0.8)',
   },
-  resultContainer: {
+
+  // Result
+  resultOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    paddingHorizontal: 24,
+    justifyContent: 'flex-end',
+  },
+  resultBlur: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    overflow: 'hidden',
   },
   resultCard: {
-    width: '100%',
-    backgroundColor: '#1a1a1a',
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 2,
-  },
-  statusBadge: {
-    flexDirection: 'row',
+    padding: 28,
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
+  },
+  statusIndicator: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  statusText: {
-    fontSize: 14,
+  statusBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginBottom: 12,
+  },
+  statusBadgeText: {
+    fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  resultTitle: {
-    fontSize: 28,
+  resultName: {
+    fontSize: 26,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    marginBottom: 20,
+    color: '#1a1a1a',
+    textAlign: 'center',
+    marginBottom: 24,
   },
-  fieldsContainer: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
-    gap: 12,
-  },
-  fieldRow: {
+  fieldsGrid: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    marginBottom: 28,
+    width: '100%',
+  },
+  fieldItem: {
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    minWidth: 80,
     alignItems: 'center',
   },
   fieldLabel: {
-    fontSize: 14,
+    fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.4)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   fieldValue: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   resultActions: {
     flexDirection: 'row',
     gap: 12,
+    width: '100%',
   },
-  scanNextButton: {
+  primaryButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#22c55e',
+    backgroundColor: '#D3D3D3',
+    paddingVertical: 16,
+    borderRadius: 14,
+    gap: 8,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#1a1a1a',
+  },
+  secondaryButton: {
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#1a1a1a',
+  },
+
+  // Mode selector
+  modeSelector: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+  },
+  modeContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 16,
+    padding: 4,
+  },
+  modeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
   },
-  scanNextText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+  modeButtonActive: {
+    backgroundColor: 'rgba(16, 185, 129, 0.3)',
   },
-  doneButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  doneText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  bottomSection: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-  },
-  modeTabs: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 14,
-    padding: 4,
-  },
-  modeTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 6,
-  },
-  modeTabActive: {
-    backgroundColor: 'rgba(34, 197, 94, 0.4)',
-  },
-  modeTabText: {
+  modeText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
   },
-  modeTabTextActive: {
+  modeTextActive: {
     color: '#fff',
     fontFamily: 'Lato_700Bold',
   },
+
+  // Permission screen
+  permissionIcon: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
   permissionTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    marginTop: 24,
+    color: '#1a1a1a',
     marginBottom: 12,
   },
   permissionText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.5)',
     textAlign: 'center',
+    lineHeight: 22,
   },
   permissionButton: {
-    backgroundColor: '#22c55e',
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    backgroundColor: '#D3D3D3',
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 14,
     marginTop: 32,
   },
   permissionButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1a1a1a',
+  },
+  settingsLink: {
+    marginTop: 16,
+    padding: 12,
+  },
+  settingsLinkText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.4)',
   },
 });

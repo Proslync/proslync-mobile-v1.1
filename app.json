@@ -13,8 +13,8 @@
       "bundleIdentifier": "com.statusdigitalinc.status",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "Status needs your location to show events near you",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Status needs your location to show events near you",
+        "NSLocationWhenInUseUsageDescription": "Status uses your location to show nearby events and share your live location with friends",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Status uses your location to show nearby events and share your live location with friends",
         "NSCameraUsageDescription": "Status needs camera access to scan IDs and membership cards"
       }
     },
@@ -48,6 +48,13 @@
         }
       ],
       "expo-video",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Status uses your location to show nearby events and share your live location with friends",
+          "locationWhenInUsePermission": "Status uses your location to show nearby events and share your live location with friends"
+        }
+      ],
       [
         "@rnmapbox/maps",
         {

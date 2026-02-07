@@ -2,16 +2,26 @@
 // Uses react-native-pager-view for smooth 60fps interactive swipe with page peeking
 
 import * as React from 'react';
-import { View, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
-import PagerView, { PagerViewOnPageSelectedEvent, PagerViewOnPageScrollEvent } from 'react-native-pager-view';
+import { View, Text, StyleSheet, Pressable, Image, Dimensions } from 'react-native';
+import PagerView, { PagerViewOnPageSelectedEvent } from 'react-native-pager-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 
-// Direct imports (React.lazy doesn't work well in Expo Go)
-import MapScreen from './search';
+// Safe imports - MapScreen uses @rnmapbox/maps native module which crashes in Expo Go
+let MapScreen: React.ComponentType<any>;
+try {
+  MapScreen = require('./search').default;
+} catch {
+  MapScreen = () => (
+    <View style={{ flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: '#1a1a1a' }}>Map requires a development build</Text>
+    </View>
+  );
+}
+
 import MessagesScreen from './explore';
 import HomeScreen from './index';
 import WalletScreen from './activity';
@@ -34,6 +44,25 @@ const DEFAULT_AVATAR = 'https://picsum.photos/200';
 // Screen components array
 const SCREENS = [MapScreen, MessagesScreen, HomeScreen, WalletScreen, ProfileScreen];
 
+// Error boundary to prevent one screen from crashing the entire tab layout
+class ScreenErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: '#1a1a1a', fontSize: 16 }}>Something went wrong</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Tab page wrapper - memoized to prevent re-renders
 interface TabPageWrapperProps {
   index: number;
@@ -49,7 +78,9 @@ const TabPageWrapper = React.memo(function TabPageWrapper({ index, shouldRender 
 
   return (
     <View style={styles.pageContainer} collapsable={false}>
-      <ScreenComponent />
+      <ScreenErrorBoundary>
+        <ScreenComponent />
+      </ScreenErrorBoundary>
     </View>
   );
 });
@@ -89,8 +120,16 @@ export default function SwipeableTabLayout() {
   const [currentIndex, setCurrentIndex] = React.useState(DEFAULT_TAB_INDEX);
   const isNavigatingProgrammatically = React.useRef(false);
 
-  // Track which pages have been loaded (for lazy rendering)
+  // Pre-load all pages after initial render to avoid jank during swipes
   const [loadedPages, setLoadedPages] = React.useState<Set<number>>(() => new Set([DEFAULT_TAB_INDEX]));
+
+  React.useEffect(() => {
+    // Load all pages shortly after mount so swipes are always smooth
+    const timer = setTimeout(() => {
+      setLoadedPages(new Set(TAB_CONFIG.map((_, i) => i)));
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const avatarUrl = user?.avatar?.url || DEFAULT_AVATAR;
 
@@ -103,12 +142,6 @@ export default function SwipeableTabLayout() {
 
     setCurrentIndex(newIndex);
 
-    // Mark page as loaded
-    setLoadedPages(prev => {
-      if (prev.has(newIndex)) return prev;
-      return new Set([...prev, newIndex]);
-    });
-
     // Haptic feedback on page change (only if from swipe, not programmatic)
     if (!isNavigatingProgrammatically.current) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -116,35 +149,9 @@ export default function SwipeableTabLayout() {
     isNavigatingProgrammatically.current = false;
   }, [currentIndex]);
 
-  // Handle page scroll for preloading adjacent pages
-  const handlePageScroll = React.useCallback((e: PagerViewOnPageScrollEvent) => {
-    const { position, offset } = e.nativeEvent;
-
-    // When swiping right (offset > 0), preload next page
-    if (offset > 0.1 && position + 1 < TAB_CONFIG.length) {
-      setLoadedPages(prev => {
-        if (prev.has(position + 1)) return prev;
-        return new Set([...prev, position + 1]);
-      });
-    }
-    // When on a page and offset indicates left swipe starting
-    if (position > 0 && offset < 0.9 && offset > 0) {
-      setLoadedPages(prev => {
-        if (prev.has(position)) return prev;
-        return new Set([...prev, position]);
-      });
-    }
-  }, []);
-
   // Navigate to tab programmatically (from tab bar tap)
   const goToPage = React.useCallback((index: number) => {
     if (index === currentIndex) return;
-
-    // Pre-load the target page
-    setLoadedPages(prev => {
-      if (prev.has(index)) return prev;
-      return new Set([...prev, index]);
-    });
 
     isNavigatingProgrammatically.current = true;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -174,30 +181,33 @@ export default function SwipeableTabLayout() {
     }
   }, [goToPage, openAccountSwitcher]);
 
+  const TAB_BAR_HEIGHT = 50 + insets.bottom;
+
   return (
     <View style={styles.container}>
-      {/* Pager View - handles horizontal swipe between tabs */}
-      <PagerView
-        ref={pagerRef}
-        style={styles.pager}
-        initialPage={DEFAULT_TAB_INDEX}
-        onPageSelected={handlePageSelected}
-        onPageScroll={handlePageScroll}
-        overdrag={true}
-        offscreenPageLimit={1}
-      >
-        {TAB_CONFIG.map((_, index) => (
-          <View key={index} style={styles.pageWrapper} collapsable={false}>
-            <TabPageWrapper index={index} shouldRender={loadedPages.has(index)} />
-          </View>
-        ))}
-      </PagerView>
+      {/* Pager View - constrained to leave room for tab bar */}
+      <View style={{ flex: 1, marginBottom: TAB_BAR_HEIGHT }}>
+        <PagerView
+          ref={pagerRef}
+          style={styles.pager}
+          initialPage={DEFAULT_TAB_INDEX}
+          onPageSelected={handlePageSelected}
+          overdrag={true}
+          offscreenPageLimit={2}
+        >
+          {TAB_CONFIG.map((_, index) => (
+            <View key={index} style={styles.pageWrapper} collapsable={false}>
+              <TabPageWrapper index={index} shouldRender={loadedPages.has(index)} />
+            </View>
+          ))}
+        </PagerView>
+      </View>
 
-      {/* Custom Tab Bar - fixed at bottom */}
-      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4, height: 50 + insets.bottom }]}>
+      {/* Custom Tab Bar - absolutely positioned over the reserved margin space */}
+      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4, height: TAB_BAR_HEIGHT }]}>
         {TAB_CONFIG.map((tab, index) => {
           const isFocused = currentIndex === index;
-          const color = isFocused ? '#fff' : 'rgba(255, 255, 255, 0.5)';
+          const color = isFocused ? '#1a1a1a' : 'rgba(0, 0, 0, 0.35)';
 
           return (
             <Pressable
@@ -224,7 +234,7 @@ export default function SwipeableTabLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   pager: {
     flex: 1,
@@ -236,7 +246,7 @@ const styles = StyleSheet.create({
   pageContainer: {
     flex: 1,
     width: SCREEN_WIDTH,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   tabBar: {
     position: 'absolute',
@@ -244,10 +254,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
+    borderTopWidth: 0,
     paddingTop: 4,
     paddingHorizontal: 20,
-    borderTopWidth: 0,
     elevation: 0,
   },
   tabButton: {
@@ -266,7 +276,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   profileWrapperActive: {
-    borderColor: '#fff',
+    borderColor: '#1a1a1a',
   },
   profileImage: {
     width: 26,
