@@ -1,5 +1,5 @@
 // Set to true to use local backend (requires backend running on your machine)
-const USE_LOCAL_BACKEND = false;
+const USE_LOCAL_BACKEND = true;
 
 // Your machine's local IP address when using local backend
 // Find it with: ipconfig (Windows) or ifconfig (Mac/Linux)
@@ -24,7 +24,7 @@ export const config = {
     refreshTokenKey: 'refreshToken',
   },
   stream: {
-    apiKey: 'wnyzcwhxkjsf',
+    apiKey: '869wu8z8cz2y',
   },
 } as const;
 

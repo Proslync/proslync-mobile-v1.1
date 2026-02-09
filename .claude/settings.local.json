@@ -17,7 +17,9 @@
       "Bash(curl:*)",
       "Bash(ngrok config:*)",
       "Bash(npm run build:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npx expo-lint:*)"
     ]
   }
 }

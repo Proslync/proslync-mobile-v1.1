@@ -6,11 +6,10 @@ import {
   Dimensions,
   TouchableWithoutFeedback,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import Animated, {
-  FadeIn,
-  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -19,6 +18,11 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Default aspect ratio (4:5 portrait) when no dimensions provided
+const DEFAULT_ASPECT_RATIO = 4 / 5;
+
+type MediaOrientation = 'horizontal' | 'vertical' | 'square';
 
 interface FeedMediaPlayerProps {
   mediaType: 'video' | 'image';
@@ -30,6 +34,38 @@ interface FeedMediaPlayerProps {
   onSingleTap?: () => void;
   isLiked?: boolean;
   overlay?: React.ReactNode;
+  // Dynamic aspect ratio from GetStream
+  aspectRatio?: number;
+  mediaWidth?: number;
+  mediaHeight?: number;
+  // Media orientation from GetStream (horizontal, vertical, square)
+  mediaOrientation?: MediaOrientation;
+  // Container width for sizing calculations
+  containerWidth?: number;
+  // Maximum height for media (to fit within available screen space)
+  maxHeight?: number;
+}
+
+/**
+ * Calculate media dimensions based on aspect ratio
+ * Ensures media fits within screen bounds while respecting aspect ratio
+ */
+function calculateMediaDimensions(
+  aspectRatio: number,
+  containerWidth: number,
+  maxHeight: number
+): { width: number; height: number } {
+  // Calculate height based on aspect ratio
+  let width = containerWidth;
+  let height = containerWidth / aspectRatio;
+
+  // If height exceeds max, scale down
+  if (height > maxHeight) {
+    height = maxHeight;
+    width = height * aspectRatio;
+  }
+
+  return { width, height };
 }
 
 export function FeedMediaPlayer({
@@ -42,10 +78,26 @@ export function FeedMediaPlayer({
   onSingleTap,
   isLiked,
   overlay,
+  aspectRatio: propAspectRatio,
+  mediaWidth,
+  mediaHeight,
+  // mediaOrientation - available from GetStream but container sizing handles orientation automatically
+  containerWidth = SCREEN_WIDTH * 0.85,
+  maxHeight: propMaxHeight,
 }: FeedMediaPlayerProps) {
   const lastTapRef = React.useRef<number>(0);
   const [showHeartAnimation, setShowHeartAnimation] = React.useState(false);
+  const [detectedAspectRatio, setDetectedAspectRatio] = React.useState<number | null>(null);
+  const [videoAspectRatio, setVideoAspectRatio] = React.useState<number | null>(null);
+  const [isLoadingImageRatio, setIsLoadingImageRatio] = React.useState(
+    mediaType === 'image' && !propAspectRatio && !mediaWidth
+  );
   const heartScale = useSharedValue(0);
+
+  // Track if video ratio detection is in progress
+  const [isLoadingVideoRatio, setIsLoadingVideoRatio] = React.useState(
+    mediaType === 'video' && !propAspectRatio
+  );
 
   // Create video player using expo-video
   const player = useVideoPlayer(
@@ -55,6 +107,87 @@ export function FeedMediaPlayer({
       player.muted = false;
     }
   );
+
+  // Detect video dimensions from player metadata when video loads
+  React.useEffect(() => {
+    if (!player || mediaType !== 'video' || propAspectRatio) {
+      setIsLoadingVideoRatio(false);
+      return;
+    }
+
+    // Listen for sourceLoad event to get video dimensions
+    const subscription = player.addListener('sourceLoad', () => {
+      try {
+        const tracks = (player as any).availableVideoTracks;
+        if (tracks && tracks.length > 0 && tracks[0].size) {
+          const { width, height } = tracks[0].size;
+          if (width && height && height > 0) {
+            const detectedRatio = width / height;
+            console.log('[FeedMediaPlayer] Detected video dimensions:', width, 'x', height, 'ratio:', detectedRatio);
+            setVideoAspectRatio(detectedRatio);
+          }
+        }
+      } catch (e) {
+        // Fallback: keep default ratio
+        console.log('[FeedMediaPlayer] Could not detect video dimensions:', e);
+      }
+      setIsLoadingVideoRatio(false);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [player, mediaType, propAspectRatio]);
+
+  // Determine aspect ratio: prop > calculated from dimensions > video detected > image detected > default
+  const effectiveAspectRatio = React.useMemo(() => {
+    if (propAspectRatio && propAspectRatio > 0) {
+      return propAspectRatio;
+    }
+    if (mediaWidth && mediaHeight && mediaHeight > 0) {
+      return mediaWidth / mediaHeight;
+    }
+    if (mediaType === 'video' && videoAspectRatio) {
+      return videoAspectRatio;
+    }
+    if (mediaType === 'image' && detectedAspectRatio) {
+      return detectedAspectRatio;
+    }
+    return DEFAULT_ASPECT_RATIO;
+  }, [propAspectRatio, mediaWidth, mediaHeight, videoAspectRatio, detectedAspectRatio, mediaType]);
+
+  // Calculate dimensions for media display
+  // Use provided maxHeight or fallback to 58% of screen height
+  const maxHeight = propMaxHeight || SCREEN_HEIGHT * 0.58;
+  const mediaDimensions = React.useMemo(
+    () => calculateMediaDimensions(effectiveAspectRatio, containerWidth, maxHeight),
+    [effectiveAspectRatio, containerWidth, maxHeight]
+  );
+
+  // Use 'cover' since container is sized to match aspect ratio exactly
+  // This ensures video fills container completely with no gaps
+
+  // Detect aspect ratio from image if not provided
+  React.useEffect(() => {
+    if (mediaType === 'image' && imageUrl && !propAspectRatio && !mediaWidth) {
+      setIsLoadingImageRatio(true);
+      Image.getSize(
+        imageUrl,
+        (width, height) => {
+          if (height > 0) {
+            setDetectedAspectRatio(width / height);
+          }
+          setIsLoadingImageRatio(false);
+        },
+        (error) => {
+          console.log('[FeedMediaPlayer] Failed to get image size:', error);
+          setIsLoadingImageRatio(false);
+        }
+      );
+    } else {
+      setIsLoadingImageRatio(false);
+    }
+  }, [mediaType, imageUrl, propAspectRatio, mediaWidth]);
 
   // Handle video play/pause based on active state
   React.useEffect(() => {
@@ -111,17 +244,33 @@ export function FeedMediaPlayer({
     opacity: heartScale.value,
   }));
 
+  // Dynamic media wrapper style based on calculated dimensions
+  // Background matches original flyerOutline style (#f5f5f5)
+  const mediaWrapperStyle = {
+    width: mediaDimensions.width,
+    height: mediaDimensions.height,
+    borderRadius: 0, // No border radius - card has its own
+    overflow: 'hidden' as const,
+    backgroundColor: '#f5f5f5',
+  };
+
   // Image display
   if (mediaType === 'image' && imageUrl) {
     return (
       <TouchableWithoutFeedback onPress={handleTap}>
         <View style={styles.container}>
-          <View style={styles.mediaWrapper}>
+          <View style={mediaWrapperStyle}>
             <Image
               source={{ uri: imageUrl }}
               style={styles.media}
               resizeMode="cover"
             />
+            {/* Loading indicator while detecting aspect ratio */}
+            {isLoadingImageRatio && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="small" color="rgba(255, 255, 255, 0.7)" />
+              </View>
+            )}
             {/* Overlay (e.g., organizer info) */}
             {overlay}
           </View>
@@ -142,13 +291,19 @@ export function FeedMediaPlayer({
     return (
       <TouchableWithoutFeedback onPress={handleTap}>
         <View style={styles.container}>
-          <View style={styles.mediaWrapper}>
+          <View style={mediaWrapperStyle}>
             <VideoView
               player={player}
               style={styles.media}
               contentFit="cover"
               nativeControls={false}
             />
+            {/* Loading indicator while detecting aspect ratio */}
+            {isLoadingVideoRatio && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="small" color="rgba(255, 255, 255, 0.7)" />
+              </View>
+            )}
             {/* Overlay (e.g., organizer info) */}
             {overlay}
           </View>
@@ -178,23 +333,15 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
   },
-  mediaWrapper: {
-    width: SCREEN_WIDTH * 0.85,
-    aspectRatio: 3 / 4,
-    maxHeight: SCREEN_HEIGHT * 0.58,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
-    // Subtle shadow effect
-    shadowColor: 'rgba(0, 0, 0, 0.15)',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
-    elevation: 10,
-  },
   media: {
     width: '100%',
     height: '100%',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   heartContainer: {
     position: 'absolute',

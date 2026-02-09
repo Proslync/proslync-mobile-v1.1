@@ -7,16 +7,12 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeOut,
-} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { FeedBottomCTA } from './feed-bottom-cta';
+import { FeedMediaPlayer } from './feed-media-player';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
@@ -24,6 +20,13 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const CARD_MARGIN = 16;
 const CARD_WIDTH = SCREEN_WIDTH - (CARD_MARGIN * 2);
 const CARD_BORDER_RADIUS = 20;
+// Extra top padding to account for the FeedHeader (For You / Following tabs)
+const HEADER_HEIGHT = 50;
+// Bottom CTA height
+const BOTTOM_CTA_HEIGHT = 105;
+// Card header and footer heights (approximate)
+const CARD_HEADER_HEIGHT = 56; // 12px padding * 2 + 32px avatar
+const CARD_FOOTER_HEIGHT = 80; // 14px padding * 2 + title + date
 
 function formatEventDate(dateString: string): string {
   try {
@@ -71,7 +74,7 @@ export function FeedItem({
   isActive,
   isLiked,
   isRsvp,
-  showDoubleTapHeart,
+  // showDoubleTapHeart - handled by FeedMediaPlayer's internal animation
   onDoubleTap,
   onRsvp,
   onPendingRsvp,
@@ -88,10 +91,20 @@ export function FeedItem({
     isFollowInProgress,
     isUnfollowInProgress,
   } = useFollowUser(item.userId);
-  const lastTapRef = React.useRef<number>(0);
 
   const flyerUrl = item.imageUrl || item.thumbnail;
   const isFollowActionInProgress = isFollowInProgress || isUnfollowInProgress;
+
+  // Calculate maximum height for media to ensure card fits within available space
+  // with adequate spacing between card and bottom CTA button
+  const availableHeight = SCREEN_HEIGHT
+    - (insets.top + HEADER_HEIGHT + 8)  // Top: safe area + header + margin
+    - (insets.bottom + BOTTOM_CTA_HEIGHT)  // Bottom: safe area + CTA
+    - CARD_HEADER_HEIGHT  // Card header
+    - CARD_FOOTER_HEIGHT  // Card footer
+    - 32;  // Gap between card and bottom CTA
+
+  const maxMediaHeight = Math.max(availableHeight, 200); // Minimum 200px for media
 
   const handleFollowPress = async () => {
     if (isFollowActionInProgress || followLoading) return;
@@ -103,24 +116,6 @@ export function FeedItem({
       }
     } catch (error) {
       console.error('[FeedItem] Follow error:', error);
-    }
-  };
-
-  const handleFlyerTap = () => {
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapRef.current;
-
-    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-      // Double tap
-      onDoubleTap();
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
-      setTimeout(() => {
-        if (lastTapRef.current === now) {
-          onEventPress();
-        }
-      }, 300);
     }
   };
 
@@ -157,7 +152,7 @@ export function FeedItem({
         style={[
           styles.content,
           {
-            paddingTop: insets.top + 16,
+            paddingTop: insets.top + HEADER_HEIGHT + 8,
             paddingBottom: insets.bottom + 105,
           },
         ]}
@@ -210,33 +205,25 @@ export function FeedItem({
             </TouchableOpacity>
           </View>
 
-          {/* Flyer Image - Rounded corners with glass padding */}
-          <TouchableOpacity
-            activeOpacity={0.95}
-            onPress={handleFlyerTap}
-            style={styles.flyerContainer}
-          >
-            <View style={styles.flyerOutline}>
-              {flyerUrl && (
-                <Image
-                  source={{ uri: flyerUrl }}
-                  style={styles.flyerImage}
-                  resizeMode="cover"
-                />
-              )}
-            </View>
-
-            {/* Double tap heart overlay */}
-            {showDoubleTapHeart && (
-              <Animated.View
-                entering={FadeIn.duration(200)}
-                exiting={FadeOut.duration(200)}
-                style={styles.heartOverlay}
-              >
-                <Text style={styles.heartEmoji}>❤️</Text>
-              </Animated.View>
-            )}
-          </TouchableOpacity>
+          {/* Media Player - Supports video and image with dynamic aspect ratio */}
+          <View style={styles.flyerContainer}>
+            <FeedMediaPlayer
+              mediaType={item.mediaType}
+              videoUrl={item.videoUrl}
+              imageUrl={item.imageUrl || item.thumbnail}
+              poster={item.thumbnail}
+              isActive={isActive}
+              onDoubleTap={onDoubleTap}
+              onSingleTap={onEventPress}
+              isLiked={isLiked}
+              aspectRatio={item.aspectRatio}
+              mediaWidth={item.mediaWidth}
+              mediaHeight={item.mediaHeight}
+              mediaOrientation={item.mediaOrientation}
+              containerWidth={CARD_WIDTH - 2} // Account for card border
+              maxHeight={maxMediaHeight}
+            />
+          </View>
 
           {/* Card Footer - Event title + date */}
           <View style={styles.cardFooter}>
@@ -390,18 +377,10 @@ const styles = StyleSheet.create({
     color: 'rgba(0, 0, 0, 0.5)',
   },
 
-  // Flyer
+  // Flyer/Media container
   flyerContainer: {
     width: '100%',
-    aspectRatio: 4 / 5,
-  },
-  flyerOutline: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  flyerImage: {
-    width: '100%',
-    height: '100%',
+    alignItems: 'center',
   },
 
   // Card Footer
@@ -422,17 +401,4 @@ const styles = StyleSheet.create({
     color: 'rgba(0, 0, 0, 0.55)',
   },
 
-  // Heart overlay
-  heartOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heartEmoji: {
-    fontSize: 80,
-  },
 });
