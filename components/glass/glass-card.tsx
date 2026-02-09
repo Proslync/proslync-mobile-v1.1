@@ -10,6 +10,7 @@ import {
   blur as blurTokens,
 } from '@/constants/glass/tokens';
 import { absoluteFill } from '@/constants/glass/helpers';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type {
   GlassFill,
   GlassBorder,
@@ -31,7 +32,7 @@ interface GlassCardProps {
 
 /**
  * Pre-composed card: blur background + glass fill + border + shadow.
- * Replaces the card pattern from feed-item.tsx.
+ * Automatically adapts to light/dark theme.
  */
 export function GlassCard({
   fill = 'subtle',
@@ -39,21 +40,33 @@ export function GlassCard({
   cornerRadius = 'xl',
   shadowLevel = 'xl',
   blurIntensity = 'light',
-  blurTint = 'light',
+  blurTint,
   style,
   children,
 }: GlassCardProps) {
+  const { isDark } = useAppTheme();
   const borderToken = glassBorderTokens[border];
   const r = radiusTokens[cornerRadius];
+
+  // Use theme-appropriate colors
+  const fillColor = isDark
+    ? `rgba(255, 255, 255, ${glassFillTokens[fill]})`
+    : `rgba(0, 0, 0, ${glassFillTokens[fill]})`;
+  const borderColor = isDark
+    ? `rgba(255, 255, 255, ${borderToken.opacity})`
+    : `rgba(0, 0, 0, ${borderToken.opacity})`;
+
+  // Auto-select blur tint based on theme if not specified
+  const effectiveBlurTint = blurTint ?? (isDark ? 'dark' : 'light');
 
   return (
     <View
       style={[
         {
-          backgroundColor: `rgba(0, 0, 0, ${glassFillTokens[fill]})`,
+          backgroundColor: fillColor,
           borderRadius: r,
           borderWidth: borderToken.borderWidth,
-          borderColor: `rgba(0, 0, 0, ${borderToken.opacity})`,
+          borderColor: borderColor,
           overflow: 'hidden' as const,
           ...shadowTokens[shadowLevel],
         },
@@ -63,7 +76,7 @@ export function GlassCard({
       {/* Blur background */}
       <BlurView
         intensity={blurTokens[blurIntensity]}
-        tint={blurTint}
+        tint={effectiveBlurTint}
         style={styles.absolute}
       />
 

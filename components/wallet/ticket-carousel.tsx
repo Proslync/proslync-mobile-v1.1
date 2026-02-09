@@ -8,6 +8,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { WalletEventCard } from '../../lib/types/wallet.types';
 
 interface TicketCarouselProps {
@@ -15,22 +16,38 @@ interface TicketCarouselProps {
   onViewEvent: (eventId: string) => void;
 }
 
-function TicketCard({ event, onView }: { event: WalletEventCard; onView: () => void }) {
+interface TicketCardProps {
+  event: WalletEventCard;
+  onView: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
+}
+
+function TicketCard({ event, onView, colors, isDark }: TicketCardProps) {
   return (
-    <TouchableOpacity style={styles.ticketCard} onPress={onView} activeOpacity={0.8}>
-      <Image source={{ uri: event.flyerUrl }} style={styles.ticketImage} />
+    <TouchableOpacity
+      style={[
+        styles.ticketCard,
+        { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }
+      ]}
+      onPress={onView}
+      activeOpacity={0.8}
+    >
+      <Image source={{ uri: event.flyerUrl }} style={[styles.ticketImage, { backgroundColor: colors.backgroundSecondary }]} />
       <View style={styles.ticketInfo}>
-        <Text style={styles.ticketTitle} numberOfLines={2}>
+        <Text style={[styles.ticketTitle, { color: colors.text }]} numberOfLines={2}>
           {event.title}
         </Text>
-        <Text style={styles.ticketDate}>{event.dateTimeLabel}</Text>
-        <Text style={styles.ticketVenue}>{event.venueName}</Text>
+        <Text style={[styles.ticketDate, { color: colors.textSecondary }]}>{event.dateTimeLabel}</Text>
+        <Text style={[styles.ticketVenue, { color: colors.textTertiary }]}>{event.venueName}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
 export function TicketCarousel({ events, onViewEvent }: TicketCarouselProps) {
+  const { colors, isDark } = useAppTheme();
+
   // Filter upcoming events and sort soonest first
   const upcomingEvents = useMemo(() => {
     const now = new Date();
@@ -40,12 +57,12 @@ export function TicketCarousel({ events, onViewEvent }: TicketCarouselProps) {
   }, [events]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Upcoming Tickets</Text>
+    <View style={[styles.container, { borderTopColor: colors.border }]}>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Upcoming Tickets</Text>
       {upcomingEvents.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="ticket-outline" size={40} color="rgba(0,0,0,0.2)" />
-          <Text style={styles.emptyText}>No upcoming tickets</Text>
+          <Ionicons name="ticket-outline" size={40} color={colors.textTertiary} />
+          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No upcoming tickets</Text>
         </View>
       ) : (
         <View style={styles.listContent}>
@@ -54,6 +71,8 @@ export function TicketCarousel({ events, onViewEvent }: TicketCarouselProps) {
               key={event.id}
               event={event}
               onView={() => onViewEvent(event.id)}
+              colors={colors}
+              isDark={isDark}
             />
           ))}
         </View>
@@ -66,12 +85,10 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.06)',
   },
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(0, 0, 0, 0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingHorizontal: 16,
@@ -83,14 +100,12 @@ const styles = StyleSheet.create({
   },
   ticketCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
     borderRadius: 16,
     overflow: 'hidden',
   },
   ticketImage: {
     width: 80,
     height: 80,
-    backgroundColor: '#f5f5f5',
   },
   ticketInfo: {
     flex: 1,
@@ -101,19 +116,16 @@ const styles = StyleSheet.create({
   ticketTitle: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     lineHeight: 18,
   },
   ticketDate: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.5)',
     marginTop: 2,
   },
   ticketVenue: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
   },
   emptyState: {
     alignItems: 'center',
@@ -122,7 +134,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
     marginTop: 12,
   },
 });

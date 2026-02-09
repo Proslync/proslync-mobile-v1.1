@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Dimensions,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
@@ -15,6 +16,7 @@ import { FeedBottomCTA } from './feed-bottom-cta';
 import { FeedMediaPlayer } from './feed-media-player';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useStream } from '@/lib/providers/stream-provider';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -85,6 +87,7 @@ export function FeedItem({
 }: FeedItemProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
+  const { userId: currentUserId } = useStream();
   const {
     isFollowing,
     isLoading: followLoading,
@@ -96,6 +99,9 @@ export function FeedItem({
 
   const flyerUrl = item.imageUrl || item.thumbnail;
   const isFollowActionInProgress = isFollowInProgress || isUnfollowInProgress;
+
+  // Check if this is the current user's own post
+  const isSelf = currentUserId && item.userId && currentUserId === String(item.userId);
 
   // Calculate maximum height for media to ensure card fits within available space
   // with adequate spacing between card and bottom CTA button
@@ -193,23 +199,30 @@ export function FeedItem({
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={handleFollowPress}
-              activeOpacity={0.8}
-              style={[
-                styles.followButton,
-                isFollowing && [styles.followButtonFollowing, { backgroundColor: colors.buttonSecondary, borderColor: colors.border }],
-              ]}
-            >
-              <Text
+            {!isSelf && (
+              <TouchableOpacity
+                onPress={handleFollowPress}
+                activeOpacity={0.8}
+                disabled={followLoading || isFollowActionInProgress}
                 style={[
-                  styles.followButtonText,
-                  isFollowing && { color: colors.textSecondary },
+                  styles.followButton,
+                  isFollowing && [styles.followButtonFollowing, { backgroundColor: colors.buttonSecondary, borderColor: colors.border }],
                 ]}
               >
-                {isFollowing ? 'Following' : 'Follow'}
-              </Text>
-            </TouchableOpacity>
+                {isFollowActionInProgress ? (
+                  <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : '#fff'} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.followButtonText,
+                      isFollowing && { color: colors.textSecondary },
+                    ]}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Media Player - Supports video and image with dynamic aspect ratio */}

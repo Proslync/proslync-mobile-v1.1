@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Offer } from '../../lib/types/wallet.types';
 
 interface OfferCarouselProps {
@@ -15,16 +16,26 @@ interface OfferCarouselProps {
   onClaimOffer: (offerId: string) => void;
 }
 
-function OfferCard({ offer, onClaim }: { offer: Offer; onClaim: () => void }) {
+interface OfferCardProps {
+  offer: Offer;
+  onClaim: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
+}
+
+function OfferCard({ offer, onClaim, colors, isDark }: OfferCardProps) {
   return (
-    <View style={styles.offerCard}>
+    <View style={[
+      styles.offerCard,
+      { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }
+    ]}>
       {/* Top: Title (max 2 lines) */}
-      <Text style={styles.offerTitle} numberOfLines={2}>
+      <Text style={[styles.offerTitle, { color: colors.text }]} numberOfLines={2}>
         {offer.title}
       </Text>
 
       {/* Middle: Subtitle (max 2 lines) */}
-      <Text style={styles.offerSubtitle} numberOfLines={2}>
+      <Text style={[styles.offerSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
         {offer.subtitle}
       </Text>
 
@@ -54,21 +65,23 @@ function OfferCard({ offer, onClaim }: { offer: Offer; onClaim: () => void }) {
 }
 
 export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
+  const { colors, isDark } = useAppTheme();
+
   if (offers.length === 0) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.sectionTitle}>Promos</Text>
+      <View style={[styles.container, { borderTopColor: colors.border }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Promos</Text>
         <View style={styles.emptyState}>
-          <Ionicons name="gift-outline" size={40} color="rgba(0,0,0,0.2)" />
-          <Text style={styles.emptyText}>No offers available</Text>
+          <Ionicons name="gift-outline" size={40} color={colors.textTertiary} />
+          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No offers available</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Promos</Text>
+    <View style={[styles.container, { borderTopColor: colors.border }]}>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Promos</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -79,6 +92,8 @@ export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
             key={offer.id}
             offer={offer}
             onClaim={() => onClaimOffer(offer.id)}
+            colors={colors}
+            isDark={isDark}
           />
         ))}
       </ScrollView>
@@ -90,12 +105,10 @@ const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.06)',
   },
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(0, 0, 0, 0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingHorizontal: 16,
@@ -108,7 +121,6 @@ const styles = StyleSheet.create({
   offerCard: {
     width: 180,
     height: 150,
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
     borderRadius: 16,
     padding: 16,
     justifyContent: 'space-between',
@@ -116,14 +128,12 @@ const styles = StyleSheet.create({
   offerTitle: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     lineHeight: 20,
     height: 40,
   },
   offerSubtitle: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.5)',
     lineHeight: 16,
     height: 32,
   },
@@ -161,7 +171,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
     marginTop: 12,
   },
 });

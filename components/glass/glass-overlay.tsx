@@ -8,6 +8,7 @@ import {
   glassBorder as glassBorderTokens,
 } from '@/constants/glass/tokens';
 import { absoluteFill } from '@/constants/glass/helpers';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { BlurIntensity, GlassFill, GlassBorder } from '@/constants/glass/types';
 
 interface GlassOverlayProps {
@@ -22,21 +23,33 @@ interface GlassOverlayProps {
 
 /**
  * Lowest-level glass primitive: BlurView + color fill + optional border.
- * Matches the 3-layer pattern from inverted-button.tsx.
+ * Automatically adapts to light/dark theme.
  */
 export function GlassOverlay({
   blurIntensity = 'light',
-  blurTint = 'light',
+  blurTint,
   fillLevel = 'subtle',
   borderLevel,
   borderRadius = 0,
   style,
   children,
 }: GlassOverlayProps) {
+  const { isDark } = useAppTheme();
+
+  // Use theme-appropriate colors
+  const fillColor = isDark
+    ? `rgba(255, 255, 255, ${glassFillTokens[fillLevel]})`
+    : `rgba(0, 0, 0, ${glassFillTokens[fillLevel]})`;
+
+  // Auto-select blur tint based on theme if not specified
+  const effectiveBlurTint = blurTint ?? (isDark ? 'dark' : 'light');
+
   const borderStyle: ViewStyle | undefined = borderLevel
     ? {
         borderWidth: glassBorderTokens[borderLevel].borderWidth,
-        borderColor: `rgba(0, 0, 0, ${glassBorderTokens[borderLevel].opacity})`,
+        borderColor: isDark
+          ? `rgba(255, 255, 255, ${glassBorderTokens[borderLevel].opacity})`
+          : `rgba(0, 0, 0, ${glassBorderTokens[borderLevel].opacity})`,
       }
     : undefined;
 
@@ -45,7 +58,7 @@ export function GlassOverlay({
       {/* Layer 1: Blur */}
       <BlurView
         intensity={blurTokens[blurIntensity]}
-        tint={blurTint}
+        tint={effectiveBlurTint}
         style={styles.absolute}
       />
 
@@ -54,7 +67,7 @@ export function GlassOverlay({
         style={[
           styles.absolute,
           {
-            backgroundColor: `rgba(0, 0, 0, ${glassFillTokens[fillLevel]})`,
+            backgroundColor: fillColor,
             borderRadius,
           },
         ]}

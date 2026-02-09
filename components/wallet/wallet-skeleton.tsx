@@ -9,10 +9,19 @@ import Animated, {
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-function ShimmerBlock({ width, height, style }: { width: number | string; height: number; style?: any }) {
+interface ShimmerBlockProps {
+  width: number | string;
+  height: number;
+  style?: any;
+  isDark: boolean;
+}
+
+function ShimmerBlock({ width, height, style, isDark }: ShimmerBlockProps) {
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
@@ -27,7 +36,11 @@ function ShimmerBlock({ width, height, style }: { width: number | string; height
     <Animated.View
       style={[
         styles.shimmerBlock,
-        { width, height },
+        {
+          width,
+          height,
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        },
         animatedStyle,
         style,
       ]}
@@ -36,51 +49,55 @@ function ShimmerBlock({ width, height, style }: { width: number | string; height
 }
 
 export function WalletSkeleton() {
+  const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {/* Card Skeleton */}
       <ShimmerBlock
         width={SCREEN_WIDTH - 32}
         height={(SCREEN_WIDTH - 32) * 0.6}
         style={styles.card}
+        isDark={isDark}
       />
 
       {/* Wallet Buttons */}
       <View style={styles.buttonsRow}>
-        <ShimmerBlock width="48%" height={44} style={styles.button} />
-        <ShimmerBlock width="48%" height={44} style={styles.button} />
+        <ShimmerBlock width="48%" height={44} style={styles.button} isDark={isDark} />
+        <ShimmerBlock width="48%" height={44} style={styles.button} isDark={isDark} />
       </View>
 
       {/* Earnings Section */}
       <View style={styles.section}>
-        <ShimmerBlock width={80} height={14} style={styles.sectionTitle} />
+        <ShimmerBlock width={80} height={14} style={styles.sectionTitle} isDark={isDark} />
         <View style={styles.balanceRow}>
-          <ShimmerBlock width="30%" height={80} style={styles.balanceCard} />
-          <ShimmerBlock width="30%" height={80} style={styles.balanceCard} />
-          <ShimmerBlock width="30%" height={80} style={styles.balanceCard} />
+          <ShimmerBlock width="30%" height={80} style={styles.balanceCard} isDark={isDark} />
+          <ShimmerBlock width="30%" height={80} style={styles.balanceCard} isDark={isDark} />
+          <ShimmerBlock width="30%" height={80} style={styles.balanceCard} isDark={isDark} />
         </View>
         <View style={styles.actionsRow}>
-          <ShimmerBlock width="48%" height={50} style={styles.button} />
-          <ShimmerBlock width="48%" height={50} style={styles.button} />
+          <ShimmerBlock width="48%" height={50} style={styles.button} isDark={isDark} />
+          <ShimmerBlock width="48%" height={50} style={styles.button} isDark={isDark} />
         </View>
       </View>
 
       {/* Activity Section */}
       <View style={styles.section}>
-        <ShimmerBlock width={120} height={14} style={styles.sectionTitle} />
+        <ShimmerBlock width={120} height={14} style={styles.sectionTitle} isDark={isDark} />
         <View style={styles.filterRow}>
-          <ShimmerBlock width={60} height={32} style={styles.filterButton} />
-          <ShimmerBlock width={70} height={32} style={styles.filterButton} />
-          <ShimmerBlock width={90} height={32} style={styles.filterButton} />
+          <ShimmerBlock width={60} height={32} style={styles.filterButton} isDark={isDark} />
+          <ShimmerBlock width={70} height={32} style={styles.filterButton} isDark={isDark} />
+          <ShimmerBlock width={90} height={32} style={styles.filterButton} isDark={isDark} />
         </View>
         {[1, 2, 3].map((i) => (
           <View key={i} style={styles.transactionRow}>
-            <ShimmerBlock width={36} height={36} style={styles.txIcon} />
+            <ShimmerBlock width={36} height={36} style={styles.txIcon} isDark={isDark} />
             <View style={styles.txContent}>
-              <ShimmerBlock width={120} height={14} />
-              <ShimmerBlock width={180} height={12} style={{ marginTop: 6 }} />
+              <ShimmerBlock width={120} height={14} isDark={isDark} />
+              <ShimmerBlock width={180} height={12} style={{ marginTop: 6 }} isDark={isDark} />
             </View>
-            <ShimmerBlock width={60} height={16} />
+            <ShimmerBlock width={60} height={16} isDark={isDark} />
           </View>
         ))}
       </View>
@@ -91,11 +108,9 @@ export function WalletSkeleton() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 16,
   },
   shimmerBlock: {
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     borderRadius: 12,
   },
   card: {

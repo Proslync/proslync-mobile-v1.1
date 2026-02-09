@@ -23,6 +23,7 @@ import {
 } from '@/constants/glass/tokens';
 import { absoluteFill } from '@/constants/glass/helpers';
 import { buttonPress } from '@/constants/glass/animations';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { GlassButtonVariant, GlassButtonSize } from '@/constants/glass/types';
 
 // ── Size map ──────────────────────────────────────────────────────────
@@ -37,48 +38,62 @@ interface VariantConfig {
   fillOpacity: number;
   borderOpacity: number;
   blurIntensity: number;
-  blurTint: 'light' | 'dark';
-  textColor: string;
   useFrostedFill: boolean;
-  frostedBg?: string;
 }
 
-const variantConfigs: Record<GlassButtonVariant, VariantConfig> = {
+interface ThemedVariantConfig extends VariantConfig {
+  blurTint: 'light' | 'dark';
+  textColor: string;
+  frostedBg: string;
+}
+
+const baseVariantConfigs: Record<GlassButtonVariant, VariantConfig> = {
   glass: {
     fillOpacity: 1,
     borderOpacity: 0,
     blurIntensity: 0,
-    blurTint: 'light',
-    textColor: '#1a1a1a',
     useFrostedFill: true,
-    frostedBg: '#D3D3D3',
   },
   frosted: {
     fillOpacity: 1,
     borderOpacity: 0,
     blurIntensity: 0,
-    blurTint: 'light',
-    textColor: '#1a1a1a',
     useFrostedFill: true,
-    frostedBg: '#D3D3D3',
   },
   accent: {
     fillOpacity: 1,
     borderOpacity: 0,
     blurIntensity: 0,
-    blurTint: 'light',
-    textColor: '#1a1a1a',
     useFrostedFill: false,
   },
   danger: {
     fillOpacity: 1,
     borderOpacity: 0,
     blurIntensity: 0,
-    blurTint: 'light',
-    textColor: '#ffffff',
     useFrostedFill: false,
   },
 };
+
+function getThemedConfig(variant: GlassButtonVariant, isDark: boolean): ThemedVariantConfig {
+  const base = baseVariantConfigs[variant];
+
+  if (variant === 'danger') {
+    return {
+      ...base,
+      blurTint: isDark ? 'dark' : 'light',
+      textColor: '#ffffff',
+      frostedBg: accent.red,
+    };
+  }
+
+  // For glass, frosted, accent variants
+  return {
+    ...base,
+    blurTint: isDark ? 'dark' : 'light',
+    textColor: isDark ? '#ffffff' : '#1a1a1a',
+    frostedBg: isDark ? 'rgba(255, 255, 255, 0.15)' : '#D3D3D3',
+  };
+}
 
 interface GlassButtonProps {
   label: string;
@@ -94,9 +109,10 @@ interface GlassButtonProps {
 
 /**
  * Animated touchable with glass variants and press animation.
- * - glass: translucent dark blur (follow buttons)
- * - frosted: opaque white blur (inverted-button CTA)
- * - accent: solid blue (primary CTA)
+ * Automatically adapts to light/dark theme.
+ * - glass: translucent blur (follow buttons)
+ * - frosted: opaque blur (inverted-button CTA)
+ * - accent: solid color (primary CTA)
  * - danger: solid red (stop/delete)
  */
 export function GlassButton({
@@ -110,8 +126,9 @@ export function GlassButton({
   fullWidth = false,
   style,
 }: GlassButtonProps) {
+  const { isDark } = useAppTheme();
   const scale = useSharedValue(1);
-  const config = variantConfigs[variant];
+  const config = getThemedConfig(variant, isDark);
   const sizeConfig = sizeMap[size];
 
   const handlePress = () => {
@@ -134,10 +151,10 @@ export function GlassButton({
     overflow: 'hidden' as const,
     ...(isSolidVariant
       ? {
-          backgroundColor: isAccentVariant ? '#D3D3D3' : accent.red,
+          backgroundColor: isDangerVariant ? accent.red : config.frostedBg,
         }
       : {
-          backgroundColor: '#D3D3D3',
+          backgroundColor: config.frostedBg,
         }),
     ...shadowTokens.md,
     opacity: disabled ? 0.5 : 1,

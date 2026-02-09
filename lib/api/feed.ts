@@ -251,6 +251,21 @@ export function mapActivityToFeedItem(
     ? activity.actor.id
     : activity.actor;
 
+  // Get user ID - prefer activity.user.id (clean numeric ID), fall back to parsing actor
+  // The actor format in GetStream is often "user:123" but we need just "123" for comparison
+  const getUserId = (): string => {
+    // First check activity.user.id (cleanest source, matches frontend)
+    if (activity.user?.id) {
+      return activity.user.id;
+    }
+    // Parse from actorId - remove "user:" prefix if present
+    if (actorId.startsWith('user:')) {
+      return actorId.substring(5);
+    }
+    return actorId;
+  };
+  const userId = getUserId();
+
   // Get username - prioritize venue name for venue activities
   const username = isVenueActivity
     ? customFields?.venueName || `venue-${customFields?.venueId}` || 'venue'
@@ -373,7 +388,7 @@ export function mapActivityToFeedItem(
       isPrivate: !event.isPublic,
       venueId: event.venue?.id,
       venueName: event.venue?.name,
-      userId: actorId,
+      userId,
       isVenueActivity: !!event.venue?.id,
       isUserRegistered: event.isUserRegistered,
     };
@@ -407,7 +422,7 @@ export function mapActivityToFeedItem(
     isPrivate: activity.isPrivate || false,
     venueId: activity.venueId,
     venueName: activity.venueName,
-    userId: actorId,
+    userId,
     isVenueActivity,
     isUserRegistered: false,
   };

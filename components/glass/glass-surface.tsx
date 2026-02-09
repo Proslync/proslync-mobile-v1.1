@@ -6,6 +6,7 @@ import {
   glassBorder as glassBorderTokens,
   radius as radiusTokens,
 } from '@/constants/glass/tokens';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { GlassFill, GlassBorder, RadiusScale } from '@/constants/glass/types';
 
 interface GlassSurfaceProps {
@@ -18,7 +19,7 @@ interface GlassSurfaceProps {
 
 /**
  * Lightweight View with glass fill + border, NO blur.
- * Use for option rows, field items, badges, and other lightweight surfaces.
+ * Automatically adapts to light/dark theme.
  */
 export function GlassSurface({
   fill = 'subtle',
@@ -27,10 +28,19 @@ export function GlassSurface({
   style,
   children,
 }: GlassSurfaceProps) {
+  const { isDark } = useAppTheme();
+
+  // Use theme-appropriate colors
+  const fillColor = isDark
+    ? `rgba(255, 255, 255, ${glassFillTokens[fill]})`
+    : `rgba(0, 0, 0, ${glassFillTokens[fill]})`;
+
   const borderStyle: ViewStyle | undefined = border
     ? {
         borderWidth: glassBorderTokens[border].borderWidth,
-        borderColor: `rgba(0, 0, 0, ${glassBorderTokens[border].opacity})`,
+        borderColor: isDark
+          ? `rgba(255, 255, 255, ${glassBorderTokens[border].opacity})`
+          : `rgba(0, 0, 0, ${glassBorderTokens[border].opacity})`,
       }
     : undefined;
 
@@ -38,7 +48,7 @@ export function GlassSurface({
     <View
       style={[
         {
-          backgroundColor: `rgba(0, 0, 0, ${glassFillTokens[fill]})`,
+          backgroundColor: fillColor,
           borderRadius: radiusTokens[cornerRadius],
         },
         borderStyle,
