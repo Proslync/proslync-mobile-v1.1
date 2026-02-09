@@ -17,6 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -34,6 +35,7 @@ export function BottomSheet({
   maxHeight = '90%',
 }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const overlayOpacity = useSharedValue(0);
 
@@ -101,11 +103,18 @@ export function BottomSheet({
           <Animated.View
             style={[
               styles.sheet,
-              { maxHeight: maxHeightValue, paddingBottom: insets.bottom + 16 },
+              {
+                maxHeight: maxHeightValue,
+                paddingBottom: insets.bottom + 16,
+                backgroundColor: isDark ? '#1c1c1e' : colors.card,
+              },
               sheetStyle,
             ]}
           >
-            <View style={styles.handle} />
+            <View style={[
+              styles.handle,
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)' }
+            ]} />
             {children}
           </Animated.View>
         </GestureDetector>
@@ -124,7 +133,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   sheet: {
-    backgroundColor: '#1c1c1e',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 16,
@@ -132,7 +140,6 @@ const styles = StyleSheet.create({
   handle: {
     width: 36,
     height: 5,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     borderRadius: 3,
     alignSelf: 'center',
     marginBottom: 16,

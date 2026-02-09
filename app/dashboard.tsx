@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useDashboard } from '@/hooks/use-dashboard';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface StatCardProps {
   title: string;
@@ -21,17 +22,23 @@ interface StatCardProps {
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
   subtitle?: string;
+  colors: {
+    cardElevated: string;
+    textSecondary: string;
+    text: string;
+    textTertiary: string;
+  };
 }
 
-function StatCard({ title, value, icon, color, subtitle }: StatCardProps) {
+function StatCard({ title, value, icon, color, subtitle, colors }: StatCardProps) {
   return (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+    <View style={[styles.statCard, { borderLeftColor: color, backgroundColor: colors.cardElevated }]}>
       <View style={styles.statCardHeader}>
         <Ionicons name={icon} size={20} color={color} />
-        <Text style={styles.statCardTitle}>{title}</Text>
+        <Text style={[styles.statCardTitle, { color: colors.textSecondary }]}>{title}</Text>
       </View>
-      <Text style={styles.statCardValue}>{value}</Text>
-      {subtitle && <Text style={styles.statCardSubtitle}>{subtitle}</Text>}
+      <Text style={[styles.statCardValue, { color: colors.text }]}>{value}</Text>
+      {subtitle && <Text style={[styles.statCardSubtitle, { color: colors.textTertiary }]}>{subtitle}</Text>}
     </View>
   );
 }
@@ -41,19 +48,26 @@ interface MenuItemProps {
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
+  colors: {
+    text: string;
+    textSecondary: string;
+    iconSecondary: string;
+    cardElevated: string;
+    border: string;
+  };
 }
 
-function MenuItem({ title, subtitle, icon, onPress }: MenuItemProps) {
+function MenuItem({ title, subtitle, icon, onPress, colors }: MenuItemProps) {
   return (
-    <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.menuItemIcon}>
-        <Ionicons name={icon} size={22} color="#1a1a1a" />
+    <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.menuItemIcon, { backgroundColor: colors.cardElevated }]}>
+        <Ionicons name={icon} size={22} color={colors.text} />
       </View>
       <View style={styles.menuItemContent}>
-        <Text style={styles.menuItemTitle}>{title}</Text>
-        <Text style={styles.menuItemSubtitle}>{subtitle}</Text>
+        <Text style={[styles.menuItemTitle, { color: colors.text }]}>{title}</Text>
+        <Text style={[styles.menuItemSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.3)" />
+      <Ionicons name="chevron-forward" size={20} color={colors.iconSecondary} />
     </TouchableOpacity>
   );
 }
@@ -63,6 +77,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { stats, isLoading: statsLoading, error, refetch } = useDashboard();
+  const { colors, isDark } = useAppTheme();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
@@ -75,28 +90,28 @@ export default function DashboardScreen() {
 
   if (isLoading && !refreshing) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#1a1a1a" />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.text} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading dashboard...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
       >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Dashboard</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Dashboard</Text>
         <View style={styles.headerSpacer} />
       </Animated.View>
 
@@ -108,8 +123,8 @@ export default function DashboardScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#1a1a1a"
-            colors={['#1a1a1a']}
+            tintColor={colors.text}
+            colors={[colors.text]}
           />
         }
       >
@@ -122,7 +137,7 @@ export default function DashboardScreen() {
             <Ionicons name="warning-outline" size={20} color="#f87171" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={refetch} activeOpacity={0.7}>
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={[styles.retryText, { color: colors.buttonPrimary }]}>Retry</Text>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -138,6 +153,7 @@ export default function DashboardScreen() {
             icon="calendar-outline"
             color="#8b5cf6"
             subtitle="Events created"
+            colors={colors}
           />
           <StatCard
             title="Total RSVPs"
@@ -145,6 +161,7 @@ export default function DashboardScreen() {
             icon="people-outline"
             color="#22c55e"
             subtitle="Attendees"
+            colors={colors}
           />
           <StatCard
             title="Views"
@@ -152,6 +169,7 @@ export default function DashboardScreen() {
             icon="eye-outline"
             color="#3b82f6"
             subtitle="Event page views"
+            colors={colors}
           />
           <StatCard
             title="Engagement"
@@ -159,6 +177,7 @@ export default function DashboardScreen() {
             icon="trending-up-outline"
             color="#f59e0b"
             subtitle="Conversion rate"
+            colors={colors}
           />
         </Animated.View>
 
@@ -167,7 +186,7 @@ export default function DashboardScreen() {
           entering={FadeInDown.delay(200).duration(500).springify()}
           style={styles.section}
         >
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
           <View style={styles.quickActions}>
             <TouchableOpacity
               style={styles.quickActionButton}
@@ -177,7 +196,7 @@ export default function DashboardScreen() {
               <View style={[styles.quickActionIcon, { backgroundColor: '#8b5cf6' }]}>
                 <Ionicons name="add" size={24} color="#fff" />
               </View>
-              <Text style={styles.quickActionText}>Create Event</Text>
+              <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Create Event</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickActionButton}
@@ -187,13 +206,13 @@ export default function DashboardScreen() {
               <View style={[styles.quickActionIcon, { backgroundColor: '#22c55e' }]}>
                 <Ionicons name="scan-outline" size={24} color="#fff" />
               </View>
-              <Text style={styles.quickActionText}>Scanner</Text>
+              <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Scanner</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.quickActionButton} activeOpacity={0.8}>
               <View style={[styles.quickActionIcon, { backgroundColor: '#3b82f6' }]}>
                 <Ionicons name="share-social-outline" size={24} color="#fff" />
               </View>
-              <Text style={styles.quickActionText}>Promote</Text>
+              <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Promote</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -203,37 +222,42 @@ export default function DashboardScreen() {
           entering={FadeInDown.delay(300).duration(500).springify()}
           style={styles.section}
         >
-          <Text style={styles.sectionTitle}>Manage</Text>
-          <View style={styles.menuList}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Manage</Text>
+          <View style={[styles.menuList, { backgroundColor: colors.cardElevated }]}>
             <MenuItem
               title="My Events"
               subtitle="View and manage your events"
               icon="calendar-outline"
               onPress={() => router.push('/my-events')}
+              colors={colors}
             />
             <MenuItem
               title="Analytics"
               subtitle="View detailed insights"
               icon="bar-chart-outline"
               onPress={() => {}}
+              colors={colors}
             />
             <MenuItem
               title="Attendees"
               subtitle="Manage event attendees"
               icon="people-outline"
               onPress={() => {}}
+              colors={colors}
             />
             <MenuItem
               title="Payments"
               subtitle="View earnings and payouts"
               icon="wallet-outline"
               onPress={() => router.push('/dashboard/payments')}
+              colors={colors}
             />
             <MenuItem
               title="Settings"
               subtitle="Account and preferences"
               icon="settings-outline"
               onPress={() => {}}
+              colors={colors}
             />
           </View>
         </Animated.View>
@@ -248,7 +272,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -258,7 +281,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
   },
   errorBanner: {
     flexDirection: 'row',
@@ -278,7 +300,6 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#3897F0',
   },
   header: {
     flexDirection: 'row',
@@ -287,7 +308,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   backButton: {
     width: 40,
@@ -298,7 +318,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   headerSpacer: {
     width: 40,
@@ -318,7 +337,6 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 3,
@@ -332,17 +350,14 @@ const styles = StyleSheet.create({
   statCardTitle: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
   },
   statCardValue: {
     fontSize: 28,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   statCardSubtitle: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
     marginTop: 4,
   },
   section: {
@@ -351,7 +366,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     marginBottom: 16,
   },
   quickActions: {
@@ -373,11 +387,9 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.6)',
     textAlign: 'center',
   },
   menuList: {
-    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -386,13 +398,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   menuItemIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -403,12 +413,10 @@ const styles = StyleSheet.create({
   menuItemTitle: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   menuItemSubtitle: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
     marginTop: 2,
   },
 });

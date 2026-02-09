@@ -16,6 +16,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -85,6 +86,7 @@ export function FeedMediaPlayer({
   containerWidth = SCREEN_WIDTH * 0.85,
   maxHeight: propMaxHeight,
 }: FeedMediaPlayerProps) {
+  const { colors, isDark } = useAppTheme();
   const lastTapRef = React.useRef<number>(0);
   const [showHeartAnimation, setShowHeartAnimation] = React.useState(false);
   const [detectedAspectRatio, setDetectedAspectRatio] = React.useState<number | null>(null);
@@ -245,14 +247,18 @@ export function FeedMediaPlayer({
   }));
 
   // Dynamic media wrapper style based on calculated dimensions
-  // Background matches original flyerOutline style (#f5f5f5)
+  // Background uses theme-aware secondary background color
   const mediaWrapperStyle = {
     width: mediaDimensions.width,
     height: mediaDimensions.height,
     borderRadius: 0, // No border radius - card has its own
     overflow: 'hidden' as const,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.backgroundSecondary,
   };
+
+  // Theme-aware loading overlay color
+  const loadingOverlayColor = isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)';
+  const loadingIndicatorColor = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.7)';
 
   // Image display
   if (mediaType === 'image' && imageUrl) {
@@ -267,8 +273,8 @@ export function FeedMediaPlayer({
             />
             {/* Loading indicator while detecting aspect ratio */}
             {isLoadingImageRatio && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="small" color="rgba(255, 255, 255, 0.7)" />
+              <View style={[styles.loadingOverlay, { backgroundColor: loadingOverlayColor }]}>
+                <ActivityIndicator size="small" color={loadingIndicatorColor} />
               </View>
             )}
             {/* Overlay (e.g., organizer info) */}
@@ -300,8 +306,8 @@ export function FeedMediaPlayer({
             />
             {/* Loading indicator while detecting aspect ratio */}
             {isLoadingVideoRatio && (
-              <View style={styles.loadingOverlay}>
-                <ActivityIndicator size="small" color="rgba(255, 255, 255, 0.7)" />
+              <View style={[styles.loadingOverlay, { backgroundColor: loadingOverlayColor }]}>
+                <ActivityIndicator size="small" color={loadingIndicatorColor} />
               </View>
             )}
             {/* Overlay (e.g., organizer info) */}
@@ -323,7 +329,7 @@ export function FeedMediaPlayer({
   return (
     <View style={styles.container}>
       <View style={styles.fallback}>
-        <Text style={styles.fallbackText}>Media not available</Text>
+        <Text style={[styles.fallbackText, { color: colors.textTertiary }]}>Media not available</Text>
       </View>
     </View>
   );
@@ -341,7 +347,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   heartContainer: {
     position: 'absolute',
@@ -361,7 +366,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fallbackText: {
-    color: 'rgba(0, 0, 0, 0.4)',
     fontSize: 16,
   },
 });

@@ -33,6 +33,7 @@ import { GlassOverlay } from '@/components/glass/glass-overlay';
 import { LocationVisibilitySheet } from '@/components/map/location-visibility-sheet';
 import { useLocationVisibility } from '@/hooks/use-location-visibility';
 import { VISIBILITY_MODE_LABELS } from '@/lib/types/location-visibility.types';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import {
   spacing,
   radius,
@@ -62,6 +63,7 @@ function formatRemainingTime(seconds: number): string {
 export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const {
     sharingState,
     remainingTime,
@@ -153,6 +155,25 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
 
   const visibilityLabel = VISIBILITY_MODE_LABELS[settings.mode];
 
+  // Theme-aware colors
+  const sheetBackgroundColor = isDark ? 'rgba(20, 20, 22, 0.97)' : 'rgba(255, 255, 255, 0.97)';
+  const sheetBorderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+  const indicatorColor = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
+  const iconColor = isDark ? '#ffffff' : '#1a1a1a';
+  const subtleIconColor = isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)';
+  const mutedIconColor = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)';
+  const faintIconColor = isDark ? 'rgba(255, 255, 255, 0.3)' : textColor.faint;
+  const separatorColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+  const iconBgColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
+  const optionIconBgColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+  const optionIconBorderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+  const glowGradientColors = isDark
+    ? ['rgba(255, 255, 255, 0.06)', 'rgba(255, 255, 255, 0.02)', 'transparent'] as const
+    : ['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)', 'transparent'] as const;
+  const highlightGradientColors = isDark
+    ? ['rgba(255, 255, 255, 0.02)', 'transparent'] as const
+    : ['rgba(0, 0, 0, 0.02)', 'transparent'] as const;
+
   return (
     <>
       <BottomSheet
@@ -161,8 +182,11 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
         snapPoints={[sharingState.isSharing ? 440 : 500]}
         enablePanDownToClose
         onClose={onClose}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.sheetIndicator}
+        backgroundStyle={[
+          styles.sheetBackground,
+          { backgroundColor: sheetBackgroundColor, borderColor: sheetBorderColor },
+        ]}
+        handleIndicatorStyle={[styles.sheetIndicator, { backgroundColor: indicatorColor }]}
         enableDynamicSizing={false}
       >
         <BottomSheetView style={[styles.container, { paddingBottom: Math.max(insets.bottom, spacing.lg) }]}>
@@ -180,12 +204,12 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
               >
                 {isConnecting ? (
                   <View style={styles.connectionContent}>
-                    <ActivityIndicator size="small" color="rgba(0, 0, 0, 0.5)" />
+                    <ActivityIndicator size="small" color={subtleIconColor} />
                     <GlassText hierarchy="secondary" size={13}>Connecting...</GlassText>
                   </View>
                 ) : (
                   <View style={styles.connectionContent}>
-                    <Ionicons name="cloud-offline-outline" size={14} color="rgba(0, 0, 0, 0.4)" />
+                    <Ionicons name="cloud-offline-outline" size={14} color={mutedIconColor} />
                     <GlassText hierarchy="secondary" size={13}>
                       No connection
                     </GlassText>
@@ -200,7 +224,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
             <View style={styles.activeContainer}>
               {/* Live badge with pulse ring */}
               <View style={styles.liveBadgeWrap}>
-                <Animated.View style={[styles.livePulseRing, livePulseStyle]} />
+                <Animated.View style={[styles.livePulseRing, livePulseStyle, { borderColor: iconColor }]} />
                 <GlassOverlay
                   blurIntensity="medium"
                   fillLevel="light"
@@ -208,8 +232,8 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                   borderRadius={radius.md}
                   style={styles.liveBadge}
                 >
-                  <View style={styles.liveDot} />
-                  <GlassText weight="bold" size={11} style={styles.liveText}>LIVE</GlassText>
+                  <View style={[styles.liveDot, { backgroundColor: iconColor }]} />
+                  <GlassText weight="bold" size={11} style={{ ...styles.liveText, color: iconColor }}>LIVE</GlassText>
                 </GlassOverlay>
               </View>
 
@@ -226,7 +250,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                 {/* Ambient glow behind timer */}
                 <Animated.View style={[styles.timerGlow, timerGlowStyle]}>
                   <LinearGradient
-                    colors={['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)', 'transparent']}
+                    colors={glowGradientColors}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}
                     style={StyleSheet.absoluteFill}
@@ -242,7 +266,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                 >
                   {/* Inner gradient highlight */}
                   <LinearGradient
-                    colors={['rgba(0, 0, 0, 0.02)', 'transparent']}
+                    colors={highlightGradientColors}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 0.6 }}
                     style={styles.innerHighlight}
@@ -250,7 +274,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                   <View style={styles.timerContent}>
                     {sharingState.duration === 0 ? (
                       <>
-                        <Ionicons name="infinite" size={52} color="#1a1a1a" style={{ marginBottom: 4 }} />
+                        <Ionicons name="infinite" size={52} color={iconColor} style={{ marginBottom: 4 }} />
                         <GlassText hierarchy="secondary" size={14}>Always on</GlassText>
                       </>
                     ) : (
@@ -282,13 +306,13 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                   }}
                   activeOpacity={0.6}
                 >
-                  <View style={styles.visibilityIcon}>
-                    <Ionicons name="eye-outline" size={15} color="rgba(0, 0, 0, 0.6)" />
+                  <View style={[styles.visibilityIcon, { backgroundColor: iconBgColor }]}>
+                    <Ionicons name="eye-outline" size={15} color={isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)'} />
                   </View>
                   <GlassText hierarchy="secondary" size={14} style={{ flex: 1 }}>
                     {visibilityLabel}
                   </GlassText>
-                  <Ionicons name="chevron-forward" size={14} color={textColor.faint} />
+                  <Ionicons name="chevron-forward" size={14} color={faintIconColor} />
                 </TouchableOpacity>
               </GlassCard>
 
@@ -299,7 +323,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                 size="lg"
                 fullWidth
                 onPress={handleStopSharing}
-                icon={<Ionicons name="stop-circle" size={18} color="#1a1a1a" />}
+                icon={<Ionicons name="stop-circle" size={18} color={iconColor} />}
               />
             </View>
           ) : (
@@ -309,7 +333,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
               <View style={styles.headerIconWrap}>
                 <View style={styles.headerGlow}>
                   <LinearGradient
-                    colors={['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)', 'transparent']}
+                    colors={glowGradientColors}
                     style={StyleSheet.absoluteFill}
                     start={{ x: 0.5, y: 0.3 }}
                     end={{ x: 0.5, y: 1 }}
@@ -322,7 +346,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                   borderRadius={radius['2xl']}
                   style={styles.headerIcon}
                 >
-                  <Ionicons name="location" size={26} color="#1a1a1a" />
+                  <Ionicons name="location" size={26} color={iconColor} />
                 </GlassOverlay>
               </View>
 
@@ -344,7 +368,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
               >
                 {/* Top highlight */}
                 <LinearGradient
-                  colors={['rgba(0, 0, 0, 0.02)', 'transparent']}
+                  colors={highlightGradientColors}
                   start={{ x: 0.5, y: 0 }}
                   end={{ x: 0.5, y: 0.5 }}
                   style={styles.innerHighlight}
@@ -357,9 +381,14 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                       onPress={() => handleDurationSelect(option.value)}
                       disabled={!isConnected || isStarting}
                       isStarting={isStarting}
+                      isDark={isDark}
+                      iconColor={iconColor}
+                      optionIconBgColor={optionIconBgColor}
+                      optionIconBorderColor={optionIconBorderColor}
+                      faintIconColor={faintIconColor}
                     />
                     {index < SHARE_DURATION_OPTIONS.length - 1 && (
-                      <View style={styles.separator} />
+                      <View style={[styles.separator, { backgroundColor: separatorColor }]} />
                     )}
                   </React.Fragment>
                 ))}
@@ -382,14 +411,14 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                   }}
                   activeOpacity={0.6}
                 >
-                  <View style={styles.whoCanSeeIcon}>
-                    <Ionicons name="eye-outline" size={16} color="rgba(0, 0, 0, 0.6)" />
+                  <View style={[styles.whoCanSeeIcon, { backgroundColor: optionIconBgColor, borderColor: optionIconBorderColor }]}>
+                    <Ionicons name="eye-outline" size={16} color={isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)'} />
                   </View>
                   <View style={styles.whoCanSeeContent}>
                     <GlassText hierarchy="secondary" size={14}>Who can see</GlassText>
                     <GlassText hierarchy="muted" size={12}>{visibilityLabel}</GlassText>
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={textColor.faint} />
+                  <Ionicons name="chevron-forward" size={16} color={faintIconColor} />
                 </TouchableOpacity>
               </GlassCard>
 
@@ -418,13 +447,24 @@ function DurationRow({
   onPress,
   disabled,
   isStarting,
+  isDark,
+  iconColor,
+  optionIconBgColor,
+  optionIconBorderColor,
+  faintIconColor,
 }: {
   label: string;
   icon: string;
   onPress: () => void;
   disabled: boolean;
   isStarting: boolean;
+  isDark: boolean;
+  iconColor: string;
+  optionIconBgColor: string;
+  optionIconBorderColor: string;
+  faintIconColor: string;
 }) {
+  const mutedColor = isDark ? 'rgba(255, 255, 255, 0.5)' : textColor.muted;
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -432,11 +472,11 @@ function DurationRow({
       activeOpacity={0.6}
     >
       <View style={[styles.optionRow, disabled && styles.optionRowDisabled]}>
-        <View style={styles.optionIcon}>
+        <View style={[styles.optionIcon, { backgroundColor: optionIconBgColor, borderColor: optionIconBorderColor }]}>
           <Ionicons
             name={icon as any}
             size={18}
-            color={disabled ? textColor.muted : '#1a1a1a'}
+            color={disabled ? mutedColor : iconColor}
           />
         </View>
         <GlassText
@@ -447,9 +487,9 @@ function DurationRow({
           {label}
         </GlassText>
         {isStarting ? (
-          <ActivityIndicator size="small" color={textColor.muted} />
+          <ActivityIndicator size="small" color={mutedColor} />
         ) : (
-          <Ionicons name="chevron-forward" size={16} color={textColor.faint} />
+          <Ionicons name="chevron-forward" size={16} color={faintIconColor} />
         )}
       </View>
     </TouchableOpacity>
@@ -458,14 +498,11 @@ function DurationRow({
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: 'rgba(255, 255, 255, 0.97)',
     borderTopLeftRadius: radius['2xl'],
     borderTopRightRadius: radius['2xl'],
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   sheetIndicator: {
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
     width: 36,
     height: 4,
     borderRadius: 2,
@@ -508,7 +545,6 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: radius.md,
     borderWidth: 1.5,
-    borderColor: '#1a1a1a',
   },
   liveBadge: {
     flexDirection: 'row',
@@ -521,10 +557,8 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: '#1a1a1a',
   },
   liveText: {
-    color: '#1a1a1a',
     letterSpacing: 1.5,
   },
   activeTitle: {
@@ -583,7 +617,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -638,9 +671,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -649,7 +680,6 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
     marginLeft: spacing.lg + 34 + spacing.md,
   },
 
@@ -669,9 +699,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },

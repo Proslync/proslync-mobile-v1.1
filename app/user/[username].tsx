@@ -23,6 +23,7 @@ import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { LinkifiedText } from '@/components/shared/linkified-text';
 import type { PublicUserProfile } from '@/lib/types/auth.types';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -32,10 +33,12 @@ function StatButton({
   value,
   label,
   onPress,
+  colors,
 }: {
   value: number | string;
   label: string;
   onPress?: () => void;
+  colors: any;
 }) {
   return (
     <TouchableOpacity
@@ -44,8 +47,8 @@ function StatButton({
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
     >
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
+      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -57,6 +60,7 @@ export default function UserProfileScreen() {
   const { showSuccess, showError } = useToast();
   const { client, status: chatStatus } = useChat();
   const { channelData } = useChannels();
+  const { colors, isDark } = useAppTheme();
   const [user, setUser] = React.useState<PublicUserProfile | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isCreatingChat, setIsCreatingChat] = React.useState(false);
@@ -190,33 +194,73 @@ export default function UserProfileScreen() {
     showSuccess('More options coming soon');
   };
 
+  // Dynamic styles based on theme
+  const dynamicStyles = {
+    container: {
+      backgroundColor: colors.background,
+    },
+    headerUsername: {
+      color: colors.text,
+    },
+    avatar: {
+      borderColor: colors.borderStrong,
+    },
+    displayName: {
+      color: colors.text,
+    },
+    bio: {
+      color: colors.textSecondary,
+    },
+    gridHeader: {
+      borderTopColor: colors.border,
+    },
+    gridTabActive: {
+      borderBottomColor: colors.text,
+    },
+    postImage: {
+      backgroundColor: colors.backgroundSecondary,
+    },
+    noPostsText: {
+      color: colors.textTertiary,
+    },
+    errorIconContainer: {
+      borderColor: colors.borderStrong,
+    },
+    errorTitle: {
+      color: colors.text,
+    },
+    errorSubtitle: {
+      color: colors.textTertiary,
+    },
+  };
+
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#fff" />
+      <View style={[styles.container, styles.loadingContainer, dynamicStyles.container]}>
+        <ActivityIndicator size="large" color={colors.text} />
       </View>
     );
   }
 
   if (error || !user) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.container, dynamicStyles.container, { paddingTop: insets.top + 8 }]}>
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.headerIcon}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerUsername}>Profile</Text>
+          <Text style={[styles.headerUsername, dynamicStyles.headerUsername]}>Profile</Text>
           <View style={styles.headerIcon} />
         </View>
         <View style={styles.errorContainer}>
-          <View style={styles.errorIconContainer}>
-            <Ionicons name="person-outline" size={48} color="rgba(255,255,255,0.4)" />
+          <View style={[styles.errorIconContainer, dynamicStyles.errorIconContainer]}>
+            <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
           </View>
-          <Text style={styles.errorTitle}>User Not Found</Text>
-          <Text style={styles.errorSubtitle}>
+          <Text style={[styles.errorTitle, dynamicStyles.errorTitle]}>User Not Found</Text>
+          <Text style={[styles.errorSubtitle, dynamicStyles.errorSubtitle]}>
             @{username} doesn't exist or has been removed
           </Text>
           <TouchableOpacity
@@ -231,8 +275,8 @@ export default function UserProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, dynamicStyles.container]}>
+      {isDark && <DarkGradientBg />}
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -249,10 +293,10 @@ export default function UserProfileScreen() {
             activeOpacity={0.7}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
 
-          <Text style={styles.headerUsername} numberOfLines={1}>
+          <Text style={[styles.headerUsername, dynamicStyles.headerUsername]} numberOfLines={1}>
             {user.userName || username}
           </Text>
 
@@ -261,7 +305,7 @@ export default function UserProfileScreen() {
             activeOpacity={0.7}
             onPress={handleMoreOptions}
           >
-            <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
+            <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -271,14 +315,14 @@ export default function UserProfileScreen() {
           style={styles.profileRow}
         >
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: avatarUrl }} style={[styles.avatar, dynamicStyles.avatar]} />
           ) : (
-            <Image source={DEFAULT_AVATAR} style={styles.avatar} />
+            <Image source={DEFAULT_AVATAR} style={[styles.avatar, dynamicStyles.avatar]} />
           )}
           <View style={styles.statsRow}>
-            <StatButton value={userPosts.length} label="Posts" />
-            <StatButton value={followerCount} label="Followers" />
-            <StatButton value={followingCount} label="Following" />
+            <StatButton value={userPosts.length} label="Posts" colors={colors} />
+            <StatButton value={followerCount} label="Followers" colors={colors} />
+            <StatButton value={followingCount} label="Following" colors={colors} />
           </View>
         </Animated.View>
 
@@ -287,8 +331,8 @@ export default function UserProfileScreen() {
           entering={FadeInDown.delay(200).duration(500).springify()}
           style={styles.bioSection}
         >
-          <Text style={styles.displayName}>{displayName}</Text>
-          {user.bio ? <LinkifiedText style={styles.bio}>{user.bio}</LinkifiedText> : null}
+          <Text style={[styles.displayName, dynamicStyles.displayName]}>{displayName}</Text>
+          {user.bio ? <LinkifiedText style={[styles.bio, dynamicStyles.bio]}>{user.bio}</LinkifiedText> : null}
         </Animated.View>
 
         {/* Action Buttons - Follow + Message */}
@@ -299,7 +343,7 @@ export default function UserProfileScreen() {
           <TouchableOpacity
             style={[
               styles.actionButton,
-              isFollowing ? styles.actionButtonSecondary : styles.actionButtonPrimary,
+              isFollowing ? [styles.actionButtonSecondary, { backgroundColor: colors.buttonSecondary }] : styles.actionButtonPrimary,
               (isFollowInProgress || isUnfollowInProgress) && styles.actionButtonDisabled,
             ]}
             onPress={handleFollow}
@@ -307,12 +351,12 @@ export default function UserProfileScreen() {
             disabled={isFollowInProgress || isUnfollowInProgress}
           >
             {isFollowInProgress || isUnfollowInProgress ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <Text
                 style={[
                   styles.actionButtonText,
-                  !isFollowing && styles.actionButtonTextPrimary,
+                  isFollowing ? { color: colors.text } : styles.actionButtonTextPrimary,
                 ]}
               >
                 {isFollowing ? 'Following' : 'Follow'}
@@ -323,6 +367,7 @@ export default function UserProfileScreen() {
             style={[
               styles.actionButton,
               styles.actionButtonSecondary,
+              { backgroundColor: colors.buttonSecondary },
               isCreatingChat && styles.actionButtonDisabled,
             ]}
             onPress={handleMessage}
@@ -330,9 +375,9 @@ export default function UserProfileScreen() {
             disabled={isCreatingChat}
           >
             {isCreatingChat ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={colors.text} />
             ) : (
-              <Text style={styles.actionButtonText}>Message</Text>
+              <Text style={[styles.actionButtonText, { color: colors.text }]}>Message</Text>
             )}
           </TouchableOpacity>
         </Animated.View>
@@ -340,10 +385,10 @@ export default function UserProfileScreen() {
         {/* Grid Header - Same as own profile */}
         <Animated.View
           entering={FadeInDown.delay(400).duration(500).springify()}
-          style={styles.gridHeader}
+          style={[styles.gridHeader, dynamicStyles.gridHeader]}
         >
-          <View style={[styles.gridTab, styles.gridTabActive]}>
-            <Ionicons name="grid-outline" size={24} color="#fff" />
+          <View style={[styles.gridTab, styles.gridTabActive, dynamicStyles.gridTabActive]}>
+            <Ionicons name="grid-outline" size={24} color={colors.text} />
           </View>
         </Animated.View>
 
@@ -354,14 +399,14 @@ export default function UserProfileScreen() {
         >
           {postsLoading ? (
             <View style={styles.postsLoadingContainer}>
-              <ActivityIndicator color="#fff" size="small" />
+              <ActivityIndicator color={colors.text} size="small" />
             </View>
           ) : userPosts.length > 0 ? (
             userPosts.map((post) => (
               <TouchableOpacity key={post.id} activeOpacity={0.9} style={styles.postContainer}>
                 <Image
                   source={{ uri: post.imageUrl || post.videoUrl }}
-                  style={styles.postImage}
+                  style={[styles.postImage, dynamicStyles.postImage]}
                 />
                 {post.mediaType === 'video' && (
                   <View style={styles.videoIndicator}>
@@ -372,8 +417,8 @@ export default function UserProfileScreen() {
             ))
           ) : (
             <View style={styles.noPostsContainer}>
-              <Ionicons name="images-outline" size={48} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.noPostsText}>No posts yet</Text>
+              <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.noPostsText, dynamicStyles.noPostsText]}>No posts yet</Text>
             </View>
           )}
         </Animated.View>
@@ -388,7 +433,6 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -411,7 +455,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 22,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     textAlign: 'center',
     marginHorizontal: 8,
   },
@@ -431,7 +474,6 @@ const styles = StyleSheet.create({
     height: 86,
     borderRadius: 43,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
   },
   statsRow: {
     flex: 1,
@@ -445,12 +487,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   statLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.8)',
     marginTop: 2,
   },
   bioSection: {
@@ -460,13 +500,11 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.9)',
     lineHeight: 20,
   },
   actionButtons: {
@@ -487,7 +525,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0095f6',
   },
   actionButtonSecondary: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    // backgroundColor set dynamically
   },
   actionButtonDisabled: {
     opacity: 0.7,
@@ -495,7 +533,6 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   actionButtonTextPrimary: {
     color: '#fff',
@@ -503,7 +540,6 @@ const styles = StyleSheet.create({
   gridHeader: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
   },
   gridTab: {
     flex: 1,
@@ -512,7 +548,6 @@ const styles = StyleSheet.create({
   },
   gridTabActive: {
     borderBottomWidth: 1,
-    borderBottomColor: '#fff',
   },
   postsGrid: {
     flexDirection: 'row',
@@ -526,7 +561,6 @@ const styles = StyleSheet.create({
     width: POST_SIZE,
     height: POST_SIZE,
     margin: 1,
-    backgroundColor: '#1a1a1a',
   },
   videoIndicator: {
     position: 'absolute',
@@ -550,7 +584,6 @@ const styles = StyleSheet.create({
   noPostsText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   errorContainer: {
     flex: 1,
@@ -563,7 +596,6 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -571,13 +603,11 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 22,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 8,
   },
   errorSubtitle: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
     marginBottom: 24,
   },

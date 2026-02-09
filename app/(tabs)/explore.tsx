@@ -21,6 +21,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useChat } from '@/lib/providers/chat-provider';
 import { useChannels, type ChannelData } from '@/hooks/use-channels';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 // Local default avatar with white background
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
@@ -186,14 +187,14 @@ function ConversationRow({
   );
 }
 
-function EmptyMessages({ onSendMessage }: { onSendMessage: () => void }) {
+function EmptyMessages({ onSendMessage, colors }: { onSendMessage: () => void; colors: any }) {
   return (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
-        <Ionicons name="chatbubbles-outline" size={64} color="rgba(0,0,0,0.2)" />
+        <Ionicons name="chatbubbles-outline" size={64} color={colors.textTertiary} />
       </View>
-      <Text style={styles.emptyTitle}>Your Messages</Text>
-      <Text style={styles.emptySubtitle}>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Your Messages</Text>
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         Send private photos and messages to a friend
       </Text>
       <TouchableOpacity style={styles.sendMessageButton} onPress={onSendMessage}>
@@ -203,24 +204,24 @@ function EmptyMessages({ onSendMessage }: { onSendMessage: () => void }) {
   );
 }
 
-function SearchEmptyState({ query }: { query: string }) {
+function SearchEmptyState({ query, colors }: { query: string; colors: any }) {
   return (
     <View style={styles.emptyContainer}>
-      <Ionicons name="search-outline" size={64} color="rgba(0,0,0,0.2)" />
-      <Text style={styles.emptyTitle}>No results</Text>
-      <Text style={styles.emptySubtitle}>
+      <Ionicons name="search-outline" size={64} color={colors.textTertiary} />
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>No results</Text>
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         No messages or conversations found for "{query}"
       </Text>
     </View>
   );
 }
 
-function ConnectionError({ onRetry }: { onRetry: () => void }) {
+function ConnectionError({ onRetry, colors }: { onRetry: () => void; colors: any }) {
   return (
     <View style={styles.emptyContainer}>
-      <Ionicons name="cloud-offline-outline" size={64} color="rgba(0,0,0,0.2)" />
-      <Text style={styles.emptyTitle}>Connection Error</Text>
-      <Text style={styles.emptySubtitle}>
+      <Ionicons name="cloud-offline-outline" size={64} color={colors.textTertiary} />
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Connection Error</Text>
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         Unable to connect to chat. Please try again.
       </Text>
       <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -230,11 +231,11 @@ function ConnectionError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function LoadingState() {
+function LoadingState({ colors }: { colors: any }) {
   return (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#1a1a1a" />
-      <Text style={styles.loadingText}>Connecting...</Text>
+      <ActivityIndicator size="large" color={colors.text} />
+      <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Connecting...</Text>
     </View>
   );
 }
@@ -244,6 +245,7 @@ export default function MessagesScreen() {
   const router = useRouter();
   const { client, status, reconnect } = useChat();
   const { channelData, isLoading, refetch, deleteChannel } = useChannels();
+  const { colors, isDark } = useAppTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -419,23 +421,23 @@ export default function MessagesScreen() {
 
   const renderEmptyState = useCallback(() => {
     if (searchQuery) {
-      return <SearchEmptyState query={searchQuery} />;
+      return <SearchEmptyState query={searchQuery} colors={colors} />;
     }
-    return <EmptyMessages onSendMessage={handleNewMessage} />;
-  }, [searchQuery, handleNewMessage]);
+    return <EmptyMessages onSendMessage={handleNewMessage} colors={colors} />;
+  }, [searchQuery, handleNewMessage, colors]);
 
   // Show loading while connecting
   if (status === 'connecting') {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={styles.header}>
-          <Text style={styles.title}>Messages</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
           <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
-            <Ionicons name="create-outline" size={24} color="#1a1a1a" />
+            <Ionicons name="create-outline" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
-        <LoadingState />
+        <LoadingState colors={colors} />
       </View>
     );
   }
@@ -443,13 +445,13 @@ export default function MessagesScreen() {
   // Show error state
   if (status === 'error') {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={styles.header}>
-          <Text style={styles.title}>Messages</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
           <View style={styles.headerButton} />
         </View>
-        <ConnectionError onRetry={reconnect} />
+        <ConnectionError onRetry={reconnect} colors={colors} />
       </View>
     );
   }
@@ -457,54 +459,54 @@ export default function MessagesScreen() {
   // Show loading while fetching channels
   if (status === 'connected' && isLoading && channelData.length === 0) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={styles.header}>
-          <Text style={styles.title}>Messages</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
           <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
-            <Ionicons name="create-outline" size={24} color="#1a1a1a" />
+            <Ionicons name="create-outline" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1a1a1a" />
-          <Text style={styles.loadingText}>Loading messages...</Text>
+          <ActivityIndicator size="large" color={colors.text} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading messages...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <DarkGradientBg />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Messages</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
         <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
-          <Ionicons name="create-outline" size={24} color="#1a1a1a" />
+          <Ionicons name="create-outline" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, isSearchFocused && styles.searchBarFocused]}>
-          <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
+        <View style={[styles.searchBar, { backgroundColor: colors.input, borderColor: 'transparent' }, isSearchFocused && { borderColor: colors.inputBorder }]}>
+          <Ionicons name="search" size={18} color={colors.placeholder} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search messages..."
-            placeholderTextColor="rgba(0,0,0,0.4)"
+            placeholderTextColor={colors.placeholder}
             autoCapitalize="none"
             autoCorrect={false}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => setIsSearchFocused(false)}
           />
           {isSearching && (
-            <ActivityIndicator size="small" color="rgba(0,0,0,0.4)" />
+            <ActivityIndicator size="small" color={colors.placeholder} />
           )}
           {searchQuery.length > 0 && !isSearching && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.4)" />
+              <Ionicons name="close-circle" size={18} color={colors.placeholder} />
             </TouchableOpacity>
           )}
         </View>
@@ -532,7 +534,6 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -544,7 +545,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   headerButton: {
     width: 44,
@@ -559,22 +559,19 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 40,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'transparent',
   },
   searchBarFocused: {
-    borderColor: 'rgba(0,0,0,0.15)',
+    // borderColor set dynamically
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#1a1a1a',
   },
   listContainer: {
     flex: 1,
@@ -697,13 +694,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 22,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -728,7 +723,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
   },
   retryButton: {
     marginTop: 20,

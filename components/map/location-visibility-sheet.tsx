@@ -20,6 +20,7 @@ import { GlassOverlay } from '@/components/glass/glass-overlay';
 import { GlassCard } from '@/components/glass/glass-card';
 import { GlassText } from '@/components/glass/glass-text';
 import { GlassButton } from '@/components/glass/glass-button';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import {
   spacing,
   radius,
@@ -45,11 +46,20 @@ interface LocationVisibilitySheetProps {
 type Screen = 'modes' | 'picker';
 type PickerTarget = 'allow' | 'block';
 
-const MODE_ACCENT: Record<LocationVisibilityMode, string> = {
+// Mode accent colors for dark theme
+const MODE_ACCENT_DARK: Record<LocationVisibilityMode, string> = {
   everyone: '#ffffff',
   friends: 'rgba(255, 255, 255, 0.8)',
   only: 'rgba(255, 255, 255, 0.7)',
   except: 'rgba(255, 255, 255, 0.6)',
+};
+
+// Mode accent colors for light theme
+const MODE_ACCENT_LIGHT: Record<LocationVisibilityMode, string> = {
+  everyone: '#1a1a1a',
+  friends: 'rgba(0, 0, 0, 0.8)',
+  only: 'rgba(0, 0, 0, 0.7)',
+  except: 'rgba(0, 0, 0, 0.6)',
 };
 
 const MODE_DESCRIPTIONS: Record<LocationVisibilityMode, string> = {
@@ -65,6 +75,7 @@ export function LocationVisibilitySheet({
 }: LocationVisibilitySheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const { user } = useAuth();
   const {
     settings,
@@ -72,6 +83,31 @@ export function LocationVisibilitySheet({
     toggleAllowList,
     toggleBlockList,
   } = useLocationVisibility();
+
+  // Theme-aware colors
+  const MODE_ACCENT = isDark ? MODE_ACCENT_DARK : MODE_ACCENT_LIGHT;
+  const sheetBackgroundColor = isDark ? 'rgba(20, 20, 22, 0.85)' : 'rgba(255, 255, 255, 0.97)';
+  const sheetBorderColor = isDark ? `rgba(255, 255, 255, ${glassBorder.medium.opacity})` : 'rgba(0, 0, 0, 0.08)';
+  const indicatorColor = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
+  const iconColor = isDark ? '#ffffff' : '#1a1a1a';
+  const checkmarkColor = isDark ? '#ffffff' : '#1a1a1a';
+  const checkCircleBgActive = isDark ? '#ffffff' : '#1a1a1a';
+  const checkCircleBorderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
+  const checkIconColor = isDark ? '#000' : '#fff';
+  const separatorColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+  const modeRowActiveBg = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)';
+  const friendRowSelectedBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
+  const avatarRingColor = isDark ? '#ffffff' : '#1a1a1a';
+  const searchInputColor = isDark ? '#fff' : '#1a1a1a';
+  const headerGlowGradientColors = isDark
+    ? ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.05)', 'transparent'] as const
+    : ['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)', 'transparent'] as const;
+  const innerHighlightGradientColors = isDark
+    ? ['rgba(255, 255, 255, 0.05)', 'transparent'] as const
+    : ['rgba(0, 0, 0, 0.02)', 'transparent'] as const;
+  const faintIconColor = isDark ? 'rgba(255, 255, 255, 0.3)' : textColor.faint;
+  const mutedIconColor = isDark ? 'rgba(255, 255, 255, 0.5)' : textColor.muted;
+  const primaryIconColor = isDark ? '#ffffff' : textColor.primary;
 
   const [screen, setScreen] = React.useState<Screen>('modes');
   const [pickerTarget, setPickerTarget] = React.useState<PickerTarget>('allow');
@@ -168,8 +204,11 @@ export function LocationVisibilitySheet({
       snapPoints={['85%']}
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.sheetIndicator}
+      backgroundStyle={[
+        styles.sheetBackground,
+        { backgroundColor: sheetBackgroundColor, borderColor: sheetBorderColor },
+      ]}
+      handleIndicatorStyle={[styles.sheetIndicator, { backgroundColor: indicatorColor }]}
       enableDynamicSizing={false}
     >
       <BottomSheetView
@@ -185,7 +224,7 @@ export function LocationVisibilitySheet({
             <View style={styles.headerIconWrap}>
               <View style={styles.headerGlow}>
                 <LinearGradient
-                  colors={['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.05)', 'transparent']}
+                  colors={headerGlowGradientColors}
                   style={StyleSheet.absoluteFill}
                   start={{ x: 0.5, y: 0.3 }}
                   end={{ x: 0.5, y: 1 }}
@@ -198,7 +237,7 @@ export function LocationVisibilitySheet({
                 borderRadius={radius['2xl']}
                 style={styles.headerIcon}
               >
-                <Ionicons name="eye" size={26} color="#ffffff" />
+                <Ionicons name="eye" size={26} color={iconColor} />
               </GlassOverlay>
             </View>
 
@@ -220,7 +259,7 @@ export function LocationVisibilitySheet({
             >
               {/* Top highlight */}
               <LinearGradient
-                colors={['rgba(255, 255, 255, 0.05)', 'transparent']}
+                colors={innerHighlightGradientColors}
                 start={{ x: 0.5, y: 0 }}
                 end={{ x: 0.5, y: 0.5 }}
                 style={styles.innerHighlight}
@@ -241,7 +280,7 @@ export function LocationVisibilitySheet({
                       onPress={() => handleModePress(mode)}
                       activeOpacity={0.6}
                     >
-                      <View style={[styles.modeRow, isActive && styles.modeRowActive]}>
+                      <View style={[styles.modeRow, isActive && [styles.modeRowActive, { backgroundColor: modeRowActiveBg }]]}>
                         <View
                           style={[
                             styles.modeIcon,
@@ -278,26 +317,26 @@ export function LocationVisibilitySheet({
                               <Ionicons
                                 name="checkmark-circle"
                                 size={20}
-                                color="#ffffff"
+                                color={checkmarkColor}
                               />
                             )}
                             <Ionicons
                               name="chevron-forward"
                               size={16}
-                              color={textColor.faint}
+                              color={faintIconColor}
                             />
                           </View>
                         ) : isActive ? (
                           <Ionicons
                             name="checkmark-circle"
                             size={20}
-                            color="#ffffff"
+                            color={checkmarkColor}
                           />
                         ) : null}
                       </View>
                     </TouchableOpacity>
                     {index < modes.length - 1 && (
-                      <View style={styles.separator} />
+                      <View style={[styles.separator, { backgroundColor: separatorColor }]} />
                     )}
                   </React.Fragment>
                 );
@@ -320,7 +359,7 @@ export function LocationVisibilitySheet({
                   <Ionicons
                     name="chevron-back"
                     size={20}
-                    color={textColor.primary}
+                    color={primaryIconColor}
                   />
                 </GlassOverlay>
               </TouchableOpacity>
@@ -345,21 +384,21 @@ export function LocationVisibilitySheet({
                 <Ionicons
                   name="search"
                   size={16}
-                  color={textColor.muted}
+                  color={mutedIconColor}
                 />
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { color: searchInputColor }]}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   placeholder="Search..."
-                  placeholderTextColor={textColor.muted}
+                  placeholderTextColor={mutedIconColor}
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
                     <Ionicons
                       name="close-circle"
                       size={16}
-                      color={textColor.muted}
+                      color={mutedIconColor}
                     />
                   </TouchableOpacity>
                 )}
@@ -380,7 +419,7 @@ export function LocationVisibilitySheet({
             {/* Friend list */}
             {isLoadingFollowers ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator color={textColor.muted} />
+                <ActivityIndicator color={mutedIconColor} />
                 <GlassText hierarchy="muted" size={14}>
                   Loading...
                 </GlassText>
@@ -396,7 +435,7 @@ export function LocationVisibilitySheet({
                   <Ionicons
                     name="people-outline"
                     size={32}
-                    color={textColor.faint}
+                    color={faintIconColor}
                   />
                 </GlassOverlay>
                 <GlassText hierarchy="muted" size={14}>
@@ -433,7 +472,7 @@ export function LocationVisibilitySheet({
                           <View
                             style={[
                               styles.friendRow,
-                              isSelected && styles.friendRowSelected,
+                              isSelected && [styles.friendRowSelected, { backgroundColor: friendRowSelectedBg }],
                             ]}
                           >
                             <View style={styles.friendAvatarWrap}>
@@ -446,7 +485,7 @@ export function LocationVisibilitySheet({
                                 style={styles.friendAvatar}
                               />
                               {isSelected && (
-                                <View style={styles.friendAvatarRing} />
+                                <View style={[styles.friendAvatarRing, { borderColor: avatarRingColor }]} />
                               )}
                             </View>
                             <GlassText
@@ -458,20 +497,21 @@ export function LocationVisibilitySheet({
                             </GlassText>
                             <View style={[
                               styles.checkCircle,
-                              isSelected && styles.checkCircleActive,
+                              { borderColor: checkCircleBorderColor },
+                              isSelected && [styles.checkCircleActive, { backgroundColor: checkCircleBgActive, borderColor: checkCircleBgActive }],
                             ]}>
                               {isSelected && (
                                 <Ionicons
                                   name="checkmark"
                                   size={14}
-                                  color="#000"
+                                  color={checkIconColor}
                                 />
                               )}
                             </View>
                           </View>
                         </TouchableOpacity>
                         {index < filteredFollowers.length - 1 && (
-                          <View style={styles.friendSeparator} />
+                          <View style={[styles.friendSeparator, { backgroundColor: separatorColor }]} />
                         )}
                       </React.Fragment>
                     );
@@ -499,14 +539,11 @@ export function LocationVisibilitySheet({
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: 'rgba(20, 20, 22, 0.85)',
     borderTopLeftRadius: radius['2xl'],
     borderTopRightRadius: radius['2xl'],
     borderWidth: 1,
-    borderColor: `rgba(255, 255, 255, ${glassBorder.medium.opacity})`,
   },
   sheetIndicator: {
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     width: 36,
     height: 4,
     borderRadius: 2,
@@ -568,7 +605,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   modeRowActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    // backgroundColor set dynamically
   },
   modeIcon: {
     width: 34,
@@ -589,7 +626,6 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginLeft: spacing.lg + 34 + spacing.md,
   },
 
@@ -632,7 +668,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
   },
   selectedCount: {
     marginBottom: spacing.sm,
@@ -673,7 +708,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   friendRowSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    // backgroundColor set dynamically
   },
   friendAvatarWrap: {
     position: 'relative',
@@ -692,7 +727,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 2,
-    borderColor: '#ffffff',
   },
   friendName: {
     flex: 1,
@@ -702,17 +736,14 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkCircleActive: {
-    backgroundColor: '#ffffff',
-    borderColor: '#ffffff',
+    // backgroundColor and borderColor set dynamically
   },
   friendSeparator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     marginLeft: spacing.lg + 40 + spacing.md,
   },
   doneButtonContainer: {

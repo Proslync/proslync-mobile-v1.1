@@ -22,6 +22,7 @@ import { eventsApi, UpdateEventDto } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import type { Event } from '@/lib/types/events.types';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 type Step = 'basic' | 'datetime' | 'location' | 'details';
 
@@ -37,6 +38,7 @@ export default function EditEventScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { showSuccess, showError } = useToast();
+  const { colors, isDark } = useAppTheme();
 
   const [currentStep, setCurrentStep] = React.useState<Step>('basic');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -222,32 +224,85 @@ export default function EditEventScreen() {
 
   const displayFlyerUri = flyerUri || existingFlyerUrl;
 
+  // Dynamic styles
+  const dynamicStyles = {
+    container: {
+      backgroundColor: colors.background,
+    },
+    loadingText: {
+      color: colors.textTertiary,
+    },
+    headerTitle: {
+      color: colors.text,
+    },
+    stepTitle: {
+      color: colors.text,
+    },
+    input: {
+      backgroundColor: colors.input,
+      color: colors.text,
+      borderColor: colors.inputBorder,
+    },
+    helperText: {
+      color: colors.textTertiary,
+    },
+    dateButton: {
+      backgroundColor: colors.input,
+      borderColor: colors.inputBorder,
+    },
+    dateButtonText: {
+      color: colors.text,
+    },
+    switchLabel: {
+      color: colors.text,
+    },
+    switchDescription: {
+      color: colors.textTertiary,
+    },
+    progressDot: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+    },
+    progressLine: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+    },
+    bottomActions: {
+      borderTopColor: colors.border,
+    },
+    flyerPickerButton: {
+      backgroundColor: colors.input,
+      borderColor: 'rgba(139, 92, 246, 0.3)',
+    },
+    flyerPickerHint: {
+      color: colors.textTertiary,
+    },
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 'basic':
         return (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={styles.stepTitle}>What's your event called?</Text>
+            <Text style={[styles.stepTitle, dynamicStyles.stepTitle]}>What's your event called?</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, dynamicStyles.input]}
               value={name}
               onChangeText={setName}
               placeholder="Event name"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
             />
-            <Text style={[styles.stepTitle, { marginTop: 24 }]}>Describe your event</Text>
+            <Text style={[styles.stepTitle, dynamicStyles.stepTitle, { marginTop: 24 }]}>Describe your event</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, dynamicStyles.input]}
               value={description}
               onChangeText={setDescription}
               placeholder="Tell people what to expect..."
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
             />
 
-            <Text style={[styles.stepTitle, { marginTop: 24 }]}>Event Flyer</Text>
+            <Text style={[styles.stepTitle, dynamicStyles.stepTitle, { marginTop: 24 }]}>Event Flyer</Text>
             {displayFlyerUri ? (
               <View style={styles.flyerPreviewContainer}>
                 <Image source={{ uri: displayFlyerUri }} style={styles.flyerPreview} />
@@ -260,10 +315,10 @@ export default function EditEventScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.flyerPickerButton} onPress={pickFlyer}>
+              <TouchableOpacity style={[styles.flyerPickerButton, dynamicStyles.flyerPickerButton]} onPress={pickFlyer}>
                 <Ionicons name="image-outline" size={32} color="#8b5cf6" />
                 <Text style={styles.flyerPickerText}>Add Event Flyer</Text>
-                <Text style={styles.flyerPickerHint}>Tap to upload an image</Text>
+                <Text style={[styles.flyerPickerHint, dynamicStyles.flyerPickerHint]}>Tap to upload an image</Text>
               </TouchableOpacity>
             )}
           </Animated.View>
@@ -272,24 +327,24 @@ export default function EditEventScreen() {
       case 'datetime':
         return (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={styles.stepTitle}>When does it start?</Text>
+            <Text style={[styles.stepTitle, dynamicStyles.stepTitle]}>When does it start?</Text>
             <TouchableOpacity
-              style={styles.dateButton}
+              style={[styles.dateButton, dynamicStyles.dateButton]}
               onPress={() => setShowStartPicker(true)}
             >
               <Ionicons name="calendar-outline" size={20} color="#8b5cf6" />
-              <Text style={styles.dateButtonText}>
+              <Text style={[styles.dateButtonText, dynamicStyles.dateButtonText]}>
                 {formatDate(startDate)} at {formatTime(startDate)}
               </Text>
             </TouchableOpacity>
 
-            <Text style={[styles.stepTitle, { marginTop: 24 }]}>When does it end?</Text>
+            <Text style={[styles.stepTitle, dynamicStyles.stepTitle, { marginTop: 24 }]}>When does it end?</Text>
             <TouchableOpacity
-              style={styles.dateButton}
+              style={[styles.dateButton, dynamicStyles.dateButton]}
               onPress={() => setShowEndPicker(true)}
             >
               <Ionicons name="calendar-outline" size={20} color="#8b5cf6" />
-              <Text style={styles.dateButtonText}>
+              <Text style={[styles.dateButtonText, dynamicStyles.dateButtonText]}>
                 {formatDate(endDate)} at {formatTime(endDate)}
               </Text>
             </TouchableOpacity>
@@ -308,8 +363,8 @@ export default function EditEventScreen() {
                     }
                   }
                 }}
-                textColor="#fff"
-                themeVariant="dark"
+                textColor={colors.text}
+                themeVariant={isDark ? 'dark' : 'light'}
               />
             )}
 
@@ -323,8 +378,8 @@ export default function EditEventScreen() {
                   setShowEndPicker(false);
                   if (date) setEndDate(date);
                 }}
-                textColor="#fff"
-                themeVariant="dark"
+                textColor={colors.text}
+                themeVariant={isDark ? 'dark' : 'light'}
               />
             )}
           </Animated.View>
@@ -333,15 +388,15 @@ export default function EditEventScreen() {
       case 'location':
         return (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Where is it happening?</Text>
+            <Text style={[styles.stepTitle, dynamicStyles.stepTitle]}>Where is it happening?</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, dynamicStyles.input]}
               value={location}
               onChangeText={setLocation}
               placeholder="Enter address or venue name"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
             />
-            <Text style={styles.helperText}>
+            <Text style={[styles.helperText, dynamicStyles.helperText]}>
               Enter the full address where your event will take place
             </Text>
           </Animated.View>
@@ -350,37 +405,37 @@ export default function EditEventScreen() {
       case 'details':
         return (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Capacity</Text>
+            <Text style={[styles.stepTitle, dynamicStyles.stepTitle]}>Capacity</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, dynamicStyles.input]}
               value={maxCapacity}
               onChangeText={setMaxCapacity}
               placeholder="Max attendees (optional)"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
             />
 
-            <Text style={[styles.stepTitle, { marginTop: 24 }]}>Minimum Age</Text>
+            <Text style={[styles.stepTitle, dynamicStyles.stepTitle, { marginTop: 24 }]}>Minimum Age</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, dynamicStyles.input]}
               value={minimumAge}
               onChangeText={setMinimumAge}
               placeholder="21"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
             />
 
             <View style={styles.switchRow}>
               <View>
-                <Text style={styles.switchLabel}>Public Event</Text>
-                <Text style={styles.switchDescription}>
+                <Text style={[styles.switchLabel, dynamicStyles.switchLabel]}>Public Event</Text>
+                <Text style={[styles.switchDescription, dynamicStyles.switchDescription]}>
                   Anyone can see and RSVP to your event
                 </Text>
               </View>
               <Switch
                 value={isPublic}
                 onValueChange={setIsPublic}
-                trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#8b5cf6' }}
+                trackColor={{ false: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', true: '#8b5cf6' }}
                 thumbColor="#fff"
               />
             </View>
@@ -394,25 +449,25 @@ export default function EditEventScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
+      <View style={[styles.container, styles.loadingContainer, dynamicStyles.container]}>
         <ActivityIndicator size="large" color="#8b5cf6" />
-        <Text style={styles.loadingText}>Loading event...</Text>
+        <Text style={[styles.loadingText, dynamicStyles.loadingText]}>Loading event...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, dynamicStyles.container]}>
+      {isDark && <DarkGradientBg />}
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity style={styles.backButton} onPress={goBack}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Event</Text>
+        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Edit Event</Text>
         <View style={styles.headerSpacer} />
       </Animated.View>
 
@@ -423,19 +478,21 @@ export default function EditEventScreen() {
             <View
               style={[
                 styles.progressDot,
+                dynamicStyles.progressDot,
                 index <= currentStepIndex && styles.progressDotActive,
               ]}
             >
               <Ionicons
                 name={step.icon}
                 size={16}
-                color={index <= currentStepIndex ? '#fff' : 'rgba(255,255,255,0.4)'}
+                color={index <= currentStepIndex ? '#fff' : colors.textTertiary}
               />
             </View>
             {index < STEPS.length - 1 && (
               <View
                 style={[
                   styles.progressLine,
+                  dynamicStyles.progressLine,
                   index < currentStepIndex && styles.progressLineActive,
                 ]}
               />
@@ -458,7 +515,7 @@ export default function EditEventScreen() {
         </ScrollView>
 
         {/* Bottom Actions */}
-        <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.bottomActions, dynamicStyles.bottomActions, { paddingBottom: insets.bottom + 16 }]}>
           {currentStepIndex === STEPS.length - 1 ? (
             <TouchableOpacity
               style={[styles.submitButton, !canGoNext() && styles.buttonDisabled]}
@@ -493,7 +550,6 @@ export default function EditEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -503,7 +559,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
   },
   header: {
     flexDirection: 'row',
@@ -521,7 +576,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   headerSpacer: {
     width: 40,
@@ -541,7 +595,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -551,7 +604,6 @@ const styles = StyleSheet.create({
   progressLine: {
     width: 40,
     height: 2,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     marginHorizontal: 4,
   },
   progressLineActive: {
@@ -572,19 +624,15 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 12,
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
   textArea: {
     minHeight: 120,
@@ -593,24 +641,20 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
     marginTop: 8,
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
   dateButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
   },
   switchRow: {
     flexDirection: 'row',
@@ -622,19 +666,16 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   switchDescription: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
     marginTop: 2,
   },
   bottomActions: {
     paddingHorizontal: 24,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   nextButton: {
     flexDirection: 'row',
@@ -668,10 +709,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   flyerPickerButton: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
     borderStyle: 'dashed',
     paddingVertical: 32,
     alignItems: 'center',
@@ -686,7 +725,6 @@ const styles = StyleSheet.create({
   flyerPickerHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
     marginTop: 4,
   },
   flyerPreviewContainer: {

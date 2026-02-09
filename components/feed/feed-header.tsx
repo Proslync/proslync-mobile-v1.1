@@ -8,6 +8,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { FeedTab } from '@/lib/types/feed.types';
 
 interface FeedHeaderProps {
@@ -20,6 +21,7 @@ export function FeedHeader({
   onTabChange,
 }: FeedHeaderProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
 
   return (
     <Animated.View
@@ -32,10 +34,10 @@ export function FeedHeader({
           activeOpacity={0.7}
           style={styles.tab}
         >
-          <Text style={[styles.tabText, activeTab === 'foryou' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textTertiary }, activeTab === 'foryou' && { color: colors.text }]}>
             For You
           </Text>
-          {activeTab === 'foryou' && <View style={styles.tabIndicator} />}
+          {activeTab === 'foryou' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -43,10 +45,10 @@ export function FeedHeader({
           activeOpacity={0.7}
           style={styles.tab}
         >
-          <Text style={[styles.tabText, activeTab === 'following' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textTertiary }, activeTab === 'following' && { color: colors.text }]}>
             Following
           </Text>
-          {activeTab === 'following' && <View style={styles.tabIndicator} />}
+          {activeTab === 'following' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -76,16 +78,11 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 16,
     fontFamily: 'Lato_600SemiBold',
-    color: 'rgba(0, 0, 0, 0.4)',
-  },
-  tabTextActive: {
-    color: '#1a1a1a',
   },
   tabIndicator: {
     marginTop: 4,
     width: 28,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: '#1a1a1a',
   },
 });

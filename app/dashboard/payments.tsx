@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useWallet } from '@/lib/providers/wallet-provider';
 import { WithdrawalSheet } from '@/components/wallet';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -24,6 +25,7 @@ function formatCents(cents: number): string {
 export default function PaymentsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
   const {
     balances,
     payoutMethods,
@@ -73,30 +75,139 @@ export default function PaymentsScreen() {
   // Filter transactions to show only earnings and withdrawals
   const recentTransactions = transactions.slice(0, 10);
 
+  // Dynamic styles based on theme
+  const dynamicStyles = {
+    container: {
+      backgroundColor: colors.background,
+    },
+    loadingText: {
+      color: colors.textTertiary,
+    },
+    header: {
+      borderBottomColor: colors.border,
+    },
+    headerTitle: {
+      color: colors.text,
+    },
+    setupContainer: {
+      backgroundColor: isDark ? 'rgba(56, 151, 240, 0.1)' : 'rgba(56, 151, 240, 0.06)',
+      borderColor: isDark ? 'rgba(56, 151, 240, 0.3)' : 'rgba(56, 151, 240, 0.2)',
+    },
+    setupIconContainer: {
+      backgroundColor: isDark ? 'rgba(56, 151, 240, 0.15)' : 'rgba(56, 151, 240, 0.1)',
+    },
+    setupTitle: {
+      color: colors.text,
+    },
+    setupDescription: {
+      color: colors.textSecondary,
+    },
+    setupFeatureText: {
+      color: colors.textSecondary,
+    },
+    setupHint: {
+      color: colors.textTertiary,
+    },
+    balanceCard: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+    },
+    availableCard: {
+      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.08)',
+      borderColor: isDark ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)',
+    },
+    balanceLabel: {
+      color: colors.textTertiary,
+    },
+    balanceHint: {
+      color: colors.textTertiary,
+    },
+    lifetimeCard: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+    },
+    lifetimeLabel: {
+      color: colors.textTertiary,
+    },
+    lifetimeAmount: {
+      color: colors.text,
+    },
+    sectionTitle: {
+      color: colors.text,
+    },
+    methodsList: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+    },
+    methodItem: {
+      borderBottomColor: colors.border,
+    },
+    methodIcon: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    },
+    methodIconColor: {
+      color: colors.text,
+    },
+    methodLabel: {
+      color: colors.text,
+    },
+    methodLast4: {
+      color: colors.textTertiary,
+    },
+    defaultBadge: {
+      backgroundColor: isDark ? 'rgba(56, 151, 240, 0.15)' : 'rgba(56, 151, 240, 0.1)',
+    },
+    addMethodButton: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+      borderColor: isDark ? 'rgba(56, 151, 240, 0.4)' : 'rgba(56, 151, 240, 0.3)',
+    },
+    transactionsList: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+    },
+    transactionItem: {
+      borderBottomColor: colors.border,
+    },
+    transactionTitle: {
+      color: colors.text,
+    },
+    transactionDate: {
+      color: colors.textTertiary,
+    },
+    emptyActivity: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+    },
+    emptyActivityText: {
+      color: colors.textTertiary,
+    },
+    emptyActivityHint: {
+      color: colors.textTertiary,
+    },
+    withdrawButtonDisabled: {
+      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+    },
+  };
+
   if (isLoading && !isRefreshing) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#1a1a1a" />
-        <Text style={styles.loadingText}>Loading payments...</Text>
+      <View style={[styles.container, styles.loadingContainer, dynamicStyles.container]}>
+        <ActivityIndicator size="large" color={colors.text} />
+        <Text style={[styles.loadingText, dynamicStyles.loadingText]}>Loading payments...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, dynamicStyles.container]}>
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, dynamicStyles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#1a1a1a" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payments</Text>
+        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Payments</Text>
         <TouchableOpacity
           style={styles.headerButton}
           onPress={openStripeDashboard}
@@ -106,7 +217,7 @@ export default function PaymentsScreen() {
           <Ionicons
             name="open-outline"
             size={22}
-            color={needsStripeSetup ? 'rgba(0,0,0,0.2)' : '#3897F0'}
+            color={needsStripeSetup ? colors.textTertiary : '#3897F0'}
           />
         </TouchableOpacity>
       </Animated.View>
@@ -119,7 +230,7 @@ export default function PaymentsScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={handleRefresh}
-            tintColor="#1a1a1a"
+            tintColor={colors.text}
           />
         }
       >
@@ -127,28 +238,28 @@ export default function PaymentsScreen() {
           /* Stripe Connect Setup */
           <Animated.View
             entering={FadeInDown.duration(400)}
-            style={styles.setupContainer}
+            style={[styles.setupContainer, dynamicStyles.setupContainer]}
           >
-            <View style={styles.setupIconContainer}>
+            <View style={[styles.setupIconContainer, dynamicStyles.setupIconContainer]}>
               <Ionicons name="wallet-outline" size={56} color="#3897F0" />
             </View>
-            <Text style={styles.setupTitle}>Set Up Payouts</Text>
-            <Text style={styles.setupDescription}>
+            <Text style={[styles.setupTitle, dynamicStyles.setupTitle]}>Set Up Payouts</Text>
+            <Text style={[styles.setupDescription, dynamicStyles.setupDescription]}>
               Connect your bank account or debit card to receive earnings from ticket sales and tips.
             </Text>
 
             <View style={styles.setupFeatures}>
               <View style={styles.setupFeature}>
                 <Ionicons name="shield-checkmark" size={20} color="#22c55e" />
-                <Text style={styles.setupFeatureText}>Secure payments via Stripe</Text>
+                <Text style={[styles.setupFeatureText, dynamicStyles.setupFeatureText]}>Secure payments via Stripe</Text>
               </View>
               <View style={styles.setupFeature}>
                 <Ionicons name="flash" size={20} color="#f59e0b" />
-                <Text style={styles.setupFeatureText}>Instant payouts to debit cards</Text>
+                <Text style={[styles.setupFeatureText, dynamicStyles.setupFeatureText]}>Instant payouts to debit cards</Text>
               </View>
               <View style={styles.setupFeature}>
                 <Ionicons name="calendar" size={20} color="#3b82f6" />
-                <Text style={styles.setupFeatureText}>1-3 day bank transfers</Text>
+                <Text style={[styles.setupFeatureText, dynamicStyles.setupFeatureText]}>1-3 day bank transfers</Text>
               </View>
             </View>
 
@@ -168,7 +279,7 @@ export default function PaymentsScreen() {
             </TouchableOpacity>
 
             {stripeAccountStatus?.hasAccount && !stripeAccountStatus?.detailsSubmitted && (
-              <Text style={styles.setupHint}>
+              <Text style={[styles.setupHint, dynamicStyles.setupHint]}>
                 You have a pending setup. Tap above to complete it.
               </Text>
             )}
@@ -181,13 +292,13 @@ export default function PaymentsScreen() {
               style={styles.balanceSection}
             >
               <View style={styles.balanceCards}>
-                <View style={[styles.balanceCard, styles.availableCard]}>
-                  <Text style={styles.balanceLabel}>Available</Text>
+                <View style={[styles.balanceCard, styles.availableCard, dynamicStyles.availableCard]}>
+                  <Text style={[styles.balanceLabel, dynamicStyles.balanceLabel]}>Available</Text>
                   <Text style={styles.balanceAmount}>
                     {formatCents(balances?.availableCents ?? 0)}
                   </Text>
                   <TouchableOpacity
-                    style={[styles.withdrawButton, !canWithdraw && styles.withdrawButtonDisabled]}
+                    style={[styles.withdrawButton, !canWithdraw && [styles.withdrawButtonDisabled, dynamicStyles.withdrawButtonDisabled]]}
                     onPress={() => setWithdrawalSheetVisible(true)}
                     disabled={!canWithdraw}
                   >
@@ -196,20 +307,20 @@ export default function PaymentsScreen() {
                   </TouchableOpacity>
                 </View>
 
-                <View style={styles.balanceCard}>
-                  <Text style={styles.balanceLabel}>Pending</Text>
+                <View style={[styles.balanceCard, dynamicStyles.balanceCard]}>
+                  <Text style={[styles.balanceLabel, dynamicStyles.balanceLabel]}>Pending</Text>
                   <Text style={[styles.balanceAmount, styles.pendingAmount]}>
                     {formatCents(balances?.pendingCents ?? 0)}
                   </Text>
-                  <Text style={styles.balanceHint}>Clears after events</Text>
+                  <Text style={[styles.balanceHint, dynamicStyles.balanceHint]}>Clears after events</Text>
                 </View>
               </View>
 
-              <View style={styles.lifetimeCard}>
+              <View style={[styles.lifetimeCard, dynamicStyles.lifetimeCard]}>
                 <Ionicons name="trending-up" size={20} color="#22c55e" />
                 <View style={styles.lifetimeContent}>
-                  <Text style={styles.lifetimeLabel}>Lifetime Earnings</Text>
-                  <Text style={styles.lifetimeAmount}>
+                  <Text style={[styles.lifetimeLabel, dynamicStyles.lifetimeLabel]}>Lifetime Earnings</Text>
+                  <Text style={[styles.lifetimeAmount, dynamicStyles.lifetimeAmount]}>
                     {formatCents(balances?.lifetimeCents ?? 0)}
                   </Text>
                 </View>
@@ -222,29 +333,29 @@ export default function PaymentsScreen() {
               style={styles.section}
             >
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Payout Methods</Text>
+                <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>Payout Methods</Text>
                 <TouchableOpacity onPress={openStripeDashboard}>
                   <Text style={styles.manageLink}>Manage</Text>
                 </TouchableOpacity>
               </View>
 
               {payoutMethods.length > 0 ? (
-                <View style={styles.methodsList}>
+                <View style={[styles.methodsList, dynamicStyles.methodsList]}>
                   {payoutMethods.map((method) => (
-                    <View key={method.id} style={styles.methodItem}>
-                      <View style={styles.methodIcon}>
+                    <View key={method.id} style={[styles.methodItem, dynamicStyles.methodItem]}>
+                      <View style={[styles.methodIcon, dynamicStyles.methodIcon]}>
                         <Ionicons
                           name={method.type === 'bank' ? 'business' : 'card'}
                           size={20}
-                          color="#1a1a1a"
+                          color={colors.text}
                         />
                       </View>
                       <View style={styles.methodInfo}>
-                        <Text style={styles.methodLabel}>{method.label}</Text>
-                        <Text style={styles.methodLast4}>••••{method.last4}</Text>
+                        <Text style={[styles.methodLabel, dynamicStyles.methodLabel]}>{method.label}</Text>
+                        <Text style={[styles.methodLast4, dynamicStyles.methodLast4]}>••••{method.last4}</Text>
                       </View>
                       {method.isDefault && (
-                        <View style={styles.defaultBadge}>
+                        <View style={[styles.defaultBadge, dynamicStyles.defaultBadge]}>
                           <Text style={styles.defaultBadgeText}>Default</Text>
                         </View>
                       )}
@@ -252,7 +363,7 @@ export default function PaymentsScreen() {
                   ))}
                 </View>
               ) : (
-                <TouchableOpacity style={styles.addMethodButton} onPress={openStripeDashboard}>
+                <TouchableOpacity style={[styles.addMethodButton, dynamicStyles.addMethodButton]} onPress={openStripeDashboard}>
                   <Ionicons name="add-circle-outline" size={24} color="#3897F0" />
                   <Text style={styles.addMethodText}>Add payout method</Text>
                 </TouchableOpacity>
@@ -264,12 +375,12 @@ export default function PaymentsScreen() {
               entering={FadeInDown.delay(300).duration(400)}
               style={styles.section}
             >
-              <Text style={styles.sectionTitle}>Recent Activity</Text>
+              <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>Recent Activity</Text>
 
               {recentTransactions.length > 0 ? (
-                <View style={styles.transactionsList}>
+                <View style={[styles.transactionsList, dynamicStyles.transactionsList]}>
                   {recentTransactions.map((tx) => (
-                    <View key={tx.id} style={styles.transactionItem}>
+                    <View key={tx.id} style={[styles.transactionItem, dynamicStyles.transactionItem]}>
                       <View style={[
                         styles.transactionIcon,
                         tx.type === 'withdrawal' ? styles.withdrawalIcon : styles.earningIcon
@@ -281,8 +392,8 @@ export default function PaymentsScreen() {
                         />
                       </View>
                       <View style={styles.transactionInfo}>
-                        <Text style={styles.transactionTitle}>{tx.title}</Text>
-                        <Text style={styles.transactionDate}>
+                        <Text style={[styles.transactionTitle, dynamicStyles.transactionTitle]}>{tx.title}</Text>
+                        <Text style={[styles.transactionDate, dynamicStyles.transactionDate]}>
                           {new Date(tx.createdAt).toLocaleDateString()}
                         </Text>
                       </View>
@@ -296,10 +407,10 @@ export default function PaymentsScreen() {
                   ))}
                 </View>
               ) : (
-                <View style={styles.emptyActivity}>
-                  <Ionicons name="receipt-outline" size={40} color="rgba(0,0,0,0.2)" />
-                  <Text style={styles.emptyActivityText}>No activity yet</Text>
-                  <Text style={styles.emptyActivityHint}>
+                <View style={[styles.emptyActivity, dynamicStyles.emptyActivity]}>
+                  <Ionicons name="receipt-outline" size={40} color={colors.textTertiary} />
+                  <Text style={[styles.emptyActivityText, dynamicStyles.emptyActivityText]}>No activity yet</Text>
+                  <Text style={[styles.emptyActivityHint, dynamicStyles.emptyActivityHint]}>
                     Your earnings and withdrawals will appear here
                   </Text>
                 </View>
@@ -325,7 +436,6 @@ export default function PaymentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -335,7 +445,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
   },
   header: {
     flexDirection: 'row',
@@ -344,7 +453,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   backButton: {
     width: 40,
@@ -355,7 +463,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   headerButton: {
     width: 40,
@@ -371,18 +478,15 @@ const styles = StyleSheet.create({
   },
   // Setup Container
   setupContainer: {
-    backgroundColor: 'rgba(56, 151, 240, 0.06)',
     borderRadius: 20,
     padding: 28,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(56, 151, 240, 0.2)',
   },
   setupIconContainer: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: 'rgba(56, 151, 240, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -390,13 +494,11 @@ const styles = StyleSheet.create({
   setupTitle: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     marginBottom: 12,
   },
   setupDescription: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.6)',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -414,7 +516,6 @@ const styles = StyleSheet.create({
   setupFeatureText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.7)',
   },
   setupButton: {
     flexDirection: 'row',
@@ -438,7 +539,6 @@ const styles = StyleSheet.create({
   setupHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
     marginTop: 16,
     textAlign: 'center',
   },
@@ -453,19 +553,15 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 16,
     padding: 16,
   },
   availableCard: {
-    backgroundColor: 'rgba(34, 197, 94, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.2)',
   },
   balanceLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
     marginBottom: 4,
   },
   balanceAmount: {
@@ -480,7 +576,6 @@ const styles = StyleSheet.create({
   balanceHint: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
   },
   withdrawButton: {
     flexDirection: 'row',
@@ -492,7 +587,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   withdrawButtonDisabled: {
-    backgroundColor: 'rgba(0,0,0,0.1)',
+    // backgroundColor set dynamically
   },
   withdrawButtonText: {
     fontSize: 14,
@@ -502,7 +597,6 @@ const styles = StyleSheet.create({
   lifetimeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     padding: 16,
     gap: 12,
@@ -513,12 +607,10 @@ const styles = StyleSheet.create({
   lifetimeLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
   },
   lifetimeAmount: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   // Section
   section: {
@@ -533,7 +625,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   manageLink: {
     fontSize: 14,
@@ -542,7 +633,6 @@ const styles = StyleSheet.create({
   },
   // Payout Methods
   methodsList: {
-    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -551,13 +641,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   methodIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -568,15 +656,12 @@ const styles = StyleSheet.create({
   methodLabel: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   methodLast4: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
   },
   defaultBadge: {
-    backgroundColor: 'rgba(56, 151, 240, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -590,10 +675,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(56, 151, 240, 0.3)',
     borderStyle: 'dashed',
     padding: 16,
     gap: 10,
@@ -605,7 +688,6 @@ const styles = StyleSheet.create({
   },
   // Transactions
   transactionsList: {
-    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -614,7 +696,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
   transactionIcon: {
     width: 32,
@@ -636,12 +717,10 @@ const styles = StyleSheet.create({
   transactionTitle: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: '#1a1a1a',
   },
   transactionDate: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
     marginTop: 2,
   },
   transactionAmount: {
@@ -657,19 +736,16 @@ const styles = StyleSheet.create({
   emptyActivity: {
     alignItems: 'center',
     padding: 32,
-    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: 12,
   },
   emptyActivityText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(0,0,0,0.5)',
     marginTop: 12,
   },
   emptyActivityHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
     marginTop: 4,
     textAlign: 'center',
   },

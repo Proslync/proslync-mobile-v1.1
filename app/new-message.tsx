@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '@/lib/providers/chat-provider';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useChannels, type ChannelData } from '@/hooks/use-channels';
+import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 
 interface SearchUser {
   id: string;
@@ -29,9 +30,11 @@ interface SearchUser {
 function ContactRow({
   user,
   onPress,
+  colors,
 }: {
   user: SearchUser;
   onPress: () => void;
+  colors: ThemeColors;
 }) {
   return (
     <TouchableOpacity style={styles.contactRow} onPress={onPress} activeOpacity={0.7}>
@@ -40,21 +43,21 @@ function ContactRow({
           source={{ uri: user.image || 'https://picsum.photos/100' }}
           style={styles.avatar}
         />
-        {user.online && <View style={styles.onlineIndicator} />}
+        {user.online && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
       </View>
       <View style={styles.contactInfo}>
-        <Text style={styles.contactName}>{user.name}</Text>
+        <Text style={[styles.contactName, { color: colors.text }]}>{user.name}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
-function EmptyState({ query }: { query: string }) {
+function EmptyState({ query, colors }: { query: string; colors: ThemeColors }) {
   return (
     <View style={styles.emptyContainer}>
-      <Ionicons name="search-outline" size={48} color="rgba(0,0,0,0.25)" />
-      <Text style={styles.emptyTitle}>No results</Text>
-      <Text style={styles.emptySubtitle}>
+      <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>No results</Text>
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         {query ? `No users found for "${query}"` : 'Search for someone to message'}
       </Text>
     </View>
@@ -66,6 +69,7 @@ export default function NewMessageScreen() {
   const router = useRouter();
   const { client, status } = useChat();
   const { channelData } = useChannels();
+  const { colors, isDark } = useAppTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
@@ -191,9 +195,9 @@ export default function NewMessageScreen() {
 
   const renderSearchResult = useCallback(
     ({ item }: { item: SearchUser }) => (
-      <ContactRow user={item} onPress={() => handleSelectUser(item)} />
+      <ContactRow user={item} onPress={() => handleSelectUser(item)} colors={colors} />
     ),
-    [handleSelectUser]
+    [handleSelectUser, colors]
   );
 
   const renderRecentContact = useCallback(
@@ -206,36 +210,37 @@ export default function NewMessageScreen() {
           online: item.isOnline,
         }}
         onPress={() => handleSelectConversation(item)}
+        colors={colors}
       />
     ),
-    [handleSelectConversation]
+    [handleSelectConversation, colors]
   );
 
   const renderSectionHeader = useCallback(
     (title: string) => (
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{title}</Text>
+      <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+        <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>{title}</Text>
       </View>
     ),
-    []
+    [colors]
   );
 
   // Show loading while chat is connecting
   if (status === 'connecting') {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <DarkGradientBg />
-        <StatusBar barStyle="dark-content" />
-        <View style={styles.header}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        {isDark && <DarkGradientBg />}
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>New Message</Text>
+          <Text style={[styles.title, { color: colors.text }]}>New Message</Text>
           <View style={styles.cancelButton} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1a1a1a" />
-          <Text style={styles.loadingText}>Connecting...</Text>
+          <ActivityIndicator size="large" color={colors.text} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Connecting...</Text>
         </View>
       </View>
     );
@@ -245,46 +250,46 @@ export default function NewMessageScreen() {
   const showOverlay = isCreating;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <DarkGradientBg />
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Creating overlay */}
       {showOverlay && (
-        <View style={styles.overlay}>
-          <ActivityIndicator size="large" color="#1a1a1a" />
-          <Text style={styles.overlayText}>Creating conversation...</Text>
+        <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(15, 9, 12, 0.85)' : 'rgba(255, 255, 255, 0.85)' }]}>
+          <ActivityIndicator size="large" color={colors.text} />
+          <Text style={[styles.overlayText, { color: colors.text }]}>Creating conversation...</Text>
         </View>
       )}
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>New Message</Text>
+        <Text style={[styles.title, { color: colors.text }]}>New Message</Text>
         <View style={styles.cancelButton} />
       </View>
 
       {/* Search */}
-      <View style={styles.searchContainer}>
-        <Text style={styles.toLabel}>To:</Text>
+      <View style={[styles.searchContainer, { borderBottomColor: colors.border }]}>
+        <Text style={[styles.toLabel, { color: colors.textSecondary }]}>To:</Text>
         <View style={styles.searchBar}>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search"
-            placeholderTextColor="rgba(0,0,0,0.35)"
+            placeholderTextColor={colors.placeholder}
             autoCapitalize="none"
             autoCorrect={false}
           />
           {isSearching && (
-            <ActivityIndicator size="small" color="rgba(0,0,0,0.4)" />
+            <ActivityIndicator size="small" color={colors.iconSecondary} />
           )}
           {searchQuery.length > 0 && !isSearching && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.4)" />
+              <Ionicons name="close-circle" size={18} color={colors.iconSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -298,13 +303,13 @@ export default function NewMessageScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderSearchResult}
           ListEmptyComponent={
-            isSearching ? null : <EmptyState query={searchQuery} />
+            isSearching ? null : <EmptyState query={searchQuery} colors={colors} />
           }
           contentContainerStyle={
             searchResults.length === 0 && !isSearching ? styles.emptyListContainer : undefined
           }
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.separator }]} />}
         />
       ) : (
         // Recent conversations
@@ -315,12 +320,12 @@ export default function NewMessageScreen() {
           ListHeaderComponent={
             recentContacts.length > 0 ? renderSectionHeader('Recent') : null
           }
-          ListEmptyComponent={<EmptyState query="" />}
+          ListEmptyComponent={<EmptyState query="" colors={colors} />}
           contentContainerStyle={
             recentContacts.length === 0 ? styles.emptyListContainer : undefined
           }
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.separator }]} />}
         />
       )}
     </View>

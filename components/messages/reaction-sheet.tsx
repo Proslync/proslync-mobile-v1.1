@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '😡'];
 
@@ -39,6 +40,7 @@ export function ReactionSheet({
   messageText,
 }: ReactionSheetProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
 
   return (
     <Modal
@@ -48,13 +50,22 @@ export function ReactionSheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[
+          styles.container,
+          {
+            paddingBottom: insets.bottom + 16,
+            backgroundColor: isDark ? '#1c1c1e' : colors.card,
+          }
+        ]}>
           {/* Reactions Row */}
-          <View style={styles.reactionsRow}>
+          <View style={[styles.reactionsRow, { borderBottomColor: colors.border }]}>
             {REACTIONS.map((emoji) => (
               <TouchableOpacity
                 key={emoji}
-                style={styles.reactionButton}
+                style={[
+                  styles.reactionButton,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
+                ]}
                 onPress={() => {
                   onReaction(emoji);
                   onClose();
@@ -77,8 +88,8 @@ export function ReactionSheet({
                 }}
                 activeOpacity={0.7}
               >
-                <Ionicons name="arrow-undo" size={20} color="#fff" />
-                <Text style={styles.actionText}>Reply</Text>
+                <Ionicons name="arrow-undo" size={20} color={colors.text} />
+                <Text style={[styles.actionText, { color: colors.text }]}>Reply</Text>
               </TouchableOpacity>
             )}
 
@@ -91,8 +102,8 @@ export function ReactionSheet({
                 }}
                 activeOpacity={0.7}
               >
-                <Ionicons name="copy-outline" size={20} color="#fff" />
-                <Text style={styles.actionText}>Copy</Text>
+                <Ionicons name="copy-outline" size={20} color={colors.text} />
+                <Text style={[styles.actionText, { color: colors.text }]}>Copy</Text>
               </TouchableOpacity>
             )}
 
@@ -127,7 +138,10 @@ export function ReactionSheet({
 
           {/* Cancel Button */}
           <TouchableOpacity
-            style={styles.cancelButton}
+            style={[
+              styles.cancelButton,
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
+            ]}
             onPress={onClose}
             activeOpacity={0.7}
           >
@@ -146,7 +160,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#1c1c1e',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 16,
@@ -157,13 +170,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   reactionButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -183,13 +194,11 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 17,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
   },
   deleteText: {
     color: '#ff3b30',
   },
   cancelButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,

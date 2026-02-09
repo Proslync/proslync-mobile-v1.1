@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface FeedBottomCTAProps {
   onRsvp: () => void;
@@ -18,6 +19,7 @@ export function FeedBottomCTA({
   price,
 }: FeedBottomCTAProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const tabBarHeight = 50 + insets.bottom + 2;
 
   // Don't show CTA for non-event posts
@@ -34,11 +36,11 @@ export function FeedBottomCTA({
   return (
     <View style={[styles.container, { bottom: tabBarHeight }]}>
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, { backgroundColor: colors.buttonPrimary }]}
         onPress={onRsvp}
         activeOpacity={0.85}
       >
-        <Text style={styles.buttonText}>{label}</Text>
+        <Text style={[styles.buttonText, { color: colors.buttonPrimaryText }]}>{label}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -53,7 +55,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   button: {
-    backgroundColor: '#3897F0',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -62,7 +63,6 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     letterSpacing: 0.3,
   },
 });

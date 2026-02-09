@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { eventsApi, CreateEventDto } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 type Step = 'basic' | 'datetime' | 'location' | 'details';
 
@@ -35,6 +36,7 @@ export default function CreateEventScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { showSuccess, showError } = useToast();
+  const { colors, isDark } = useAppTheme();
 
   const [currentStep, setCurrentStep] = React.useState<Step>('basic');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -169,33 +171,36 @@ export default function CreateEventScreen() {
     });
   };
 
+  // Accent color for primary actions
+  const accentColor = '#8b5cf6';
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 'basic':
         return (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={styles.stepTitle}>What's your event called?</Text>
+            <Text style={[styles.stepTitle, { color: colors.text }]}>What's your event called?</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               value={name}
               onChangeText={setName}
               placeholder="Event name"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
               autoFocus
             />
-            <Text style={[styles.stepTitle, { marginTop: 24 }]}>Describe your event</Text>
+            <Text style={[styles.stepTitle, { marginTop: 24, color: colors.text }]}>Describe your event</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               value={description}
               onChangeText={setDescription}
               placeholder="Tell people what to expect..."
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
               multiline
               numberOfLines={4}
               textAlignVertical="top"
             />
 
-            <Text style={[styles.stepTitle, { marginTop: 24 }]}>Event Flyer</Text>
+            <Text style={[styles.stepTitle, { marginTop: 24, color: colors.text }]}>Event Flyer</Text>
             {flyerUri ? (
               <View style={styles.flyerPreviewContainer}>
                 <Image source={{ uri: flyerUri }} style={styles.flyerPreview} />
@@ -208,10 +213,13 @@ export default function CreateEventScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.flyerPickerButton} onPress={pickFlyer}>
-                <Ionicons name="image-outline" size={32} color="#8b5cf6" />
-                <Text style={styles.flyerPickerText}>Add Event Flyer</Text>
-                <Text style={styles.flyerPickerHint}>Tap to upload an image</Text>
+              <TouchableOpacity
+                style={[styles.flyerPickerButton, { backgroundColor: colors.input, borderColor: isDark ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.3)' }]}
+                onPress={pickFlyer}
+              >
+                <Ionicons name="image-outline" size={32} color={accentColor} />
+                <Text style={[styles.flyerPickerText, { color: accentColor }]}>Add Event Flyer</Text>
+                <Text style={[styles.flyerPickerHint, { color: colors.textTertiary }]}>Tap to upload an image</Text>
               </TouchableOpacity>
             )}
           </Animated.View>
@@ -220,24 +228,24 @@ export default function CreateEventScreen() {
       case 'datetime':
         return (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={styles.stepTitle}>When does it start?</Text>
+            <Text style={[styles.stepTitle, { color: colors.text }]}>When does it start?</Text>
             <TouchableOpacity
-              style={styles.dateButton}
+              style={[styles.dateButton, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}
               onPress={() => setShowStartPicker(true)}
             >
-              <Ionicons name="calendar-outline" size={20} color="#8b5cf6" />
-              <Text style={styles.dateButtonText}>
+              <Ionicons name="calendar-outline" size={20} color={accentColor} />
+              <Text style={[styles.dateButtonText, { color: colors.text }]}>
                 {formatDate(startDate)} at {formatTime(startDate)}
               </Text>
             </TouchableOpacity>
 
-            <Text style={[styles.stepTitle, { marginTop: 24 }]}>When does it end?</Text>
+            <Text style={[styles.stepTitle, { marginTop: 24, color: colors.text }]}>When does it end?</Text>
             <TouchableOpacity
-              style={styles.dateButton}
+              style={[styles.dateButton, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}
               onPress={() => setShowEndPicker(true)}
             >
-              <Ionicons name="calendar-outline" size={20} color="#8b5cf6" />
-              <Text style={styles.dateButtonText}>
+              <Ionicons name="calendar-outline" size={20} color={accentColor} />
+              <Text style={[styles.dateButtonText, { color: colors.text }]}>
                 {formatDate(endDate)} at {formatTime(endDate)}
               </Text>
             </TouchableOpacity>
@@ -257,8 +265,8 @@ export default function CreateEventScreen() {
                     }
                   }
                 }}
-                textColor="#fff"
-                themeVariant="dark"
+                textColor={colors.text}
+                themeVariant={isDark ? 'dark' : 'light'}
               />
             )}
 
@@ -272,8 +280,8 @@ export default function CreateEventScreen() {
                   setShowEndPicker(false);
                   if (date) setEndDate(date);
                 }}
-                textColor="#fff"
-                themeVariant="dark"
+                textColor={colors.text}
+                themeVariant={isDark ? 'dark' : 'light'}
               />
             )}
           </Animated.View>
@@ -282,16 +290,16 @@ export default function CreateEventScreen() {
       case 'location':
         return (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Where is it happening?</Text>
+            <Text style={[styles.stepTitle, { color: colors.text }]}>Where is it happening?</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               value={location}
               onChangeText={setLocation}
               placeholder="Enter address or venue name"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
               autoFocus
             />
-            <Text style={styles.helperText}>
+            <Text style={[styles.helperText, { color: colors.textTertiary }]}>
               Enter the full address where your event will take place
             </Text>
           </Animated.View>
@@ -300,37 +308,37 @@ export default function CreateEventScreen() {
       case 'details':
         return (
           <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Capacity</Text>
+            <Text style={[styles.stepTitle, { color: colors.text }]}>Capacity</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               value={maxCapacity}
               onChangeText={setMaxCapacity}
               placeholder="Max attendees (optional)"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
             />
 
-            <Text style={[styles.stepTitle, { marginTop: 24 }]}>Minimum Age</Text>
+            <Text style={[styles.stepTitle, { marginTop: 24, color: colors.text }]}>Minimum Age</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               value={minimumAge}
               onChangeText={setMinimumAge}
               placeholder="21"
-              placeholderTextColor="rgba(255,255,255,0.4)"
+              placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
             />
 
             <View style={styles.switchRow}>
               <View>
-                <Text style={styles.switchLabel}>Public Event</Text>
-                <Text style={styles.switchDescription}>
+                <Text style={[styles.switchLabel, { color: colors.text }]}>Public Event</Text>
+                <Text style={[styles.switchDescription, { color: colors.textTertiary }]}>
                   Anyone can see and RSVP to your event
                 </Text>
               </View>
               <Switch
                 value={isPublic}
                 onValueChange={setIsPublic}
-                trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#8b5cf6' }}
+                trackColor={{ false: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', true: accentColor }}
                 thumbColor="#fff"
               />
             </View>
@@ -343,17 +351,17 @@ export default function CreateEventScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity style={styles.backButton} onPress={goBack}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Event</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Create Event</Text>
         <View style={styles.headerSpacer} />
       </Animated.View>
 
@@ -364,19 +372,21 @@ export default function CreateEventScreen() {
             <View
               style={[
                 styles.progressDot,
+                { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
                 index <= currentStepIndex && styles.progressDotActive,
               ]}
             >
               <Ionicons
                 name={step.icon}
                 size={16}
-                color={index <= currentStepIndex ? '#fff' : 'rgba(255,255,255,0.4)'}
+                color={index <= currentStepIndex ? '#fff' : colors.textTertiary}
               />
             </View>
             {index < STEPS.length - 1 && (
               <View
                 style={[
                   styles.progressLine,
+                  { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
                   index < currentStepIndex && styles.progressLineActive,
                 ]}
               />
@@ -399,7 +409,7 @@ export default function CreateEventScreen() {
         </ScrollView>
 
         {/* Bottom Actions */}
-        <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 16, borderTopColor: colors.border }]}>
           {currentStepIndex === STEPS.length - 1 ? (
             <TouchableOpacity
               style={[styles.submitButton, !canGoNext() && styles.buttonDisabled]}
@@ -434,7 +444,6 @@ export default function CreateEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -452,7 +461,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   headerSpacer: {
     width: 40,
@@ -472,7 +480,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -482,7 +489,6 @@ const styles = StyleSheet.create({
   progressLine: {
     width: 40,
     height: 2,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     marginHorizontal: 4,
   },
   progressLineActive: {
@@ -503,19 +509,15 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 12,
   },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
   textArea: {
     minHeight: 120,
@@ -524,24 +526,20 @@ const styles = StyleSheet.create({
   helperText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
     marginTop: 8,
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
   },
   dateButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
   },
   switchRow: {
     flexDirection: 'row',
@@ -553,19 +551,16 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   switchDescription: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
     marginTop: 2,
   },
   bottomActions: {
     paddingHorizontal: 24,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   nextButton: {
     flexDirection: 'row',
@@ -599,10 +594,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   flyerPickerButton: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
     borderStyle: 'dashed',
     paddingVertical: 32,
     alignItems: 'center',
@@ -611,13 +604,11 @@ const styles = StyleSheet.create({
   flyerPickerText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#8b5cf6',
     marginTop: 8,
   },
   flyerPickerHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
     marginTop: 4,
   },
   flyerPreviewContainer: {

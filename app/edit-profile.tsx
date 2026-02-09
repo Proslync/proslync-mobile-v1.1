@@ -20,6 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { UpdateProfileRequest } from '@/lib/types/auth.types';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
@@ -37,6 +38,7 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const { user, refreshUser } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { colors, isDark } = useAppTheme();
   const [isSaving, setIsSaving] = React.useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = React.useState(false);
   const [hasChanges, setHasChanges] = React.useState(false);
@@ -259,23 +261,23 @@ export default function EditProfileScreen() {
   const avatarUrl = selectedImage || user?.avatar?.url;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
           <TouchableOpacity
             style={styles.headerButton}
             onPress={handleCancel}
             disabled={isSaving || isUploadingPhoto}
           >
-            <Text style={styles.cancelText}>Cancel</Text>
+            <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Profile</Text>
 
           <TouchableOpacity
             style={[styles.headerButton, styles.saveButton]}
@@ -283,9 +285,9 @@ export default function EditProfileScreen() {
             disabled={isSaving || isUploadingPhoto}
           >
             {isSaving ? (
-              <ActivityIndicator color="#1a1a1a" size="small" />
+              <ActivityIndicator color={colors.text} size="small" />
             ) : (
-              <Text style={[styles.saveText, !hasChanges && styles.saveTextDisabled]}>
+              <Text style={[styles.saveText, { color: colors.buttonPrimary }, !hasChanges && { opacity: 0.5 }]}>
                 Done
               </Text>
             )}
@@ -306,11 +308,11 @@ export default function EditProfileScreen() {
               disabled={isUploadingPhoto}
             >
               {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: colors.borderStrong }]} />
               ) : (
-                <Image source={DEFAULT_AVATAR} style={styles.avatar} />
+                <Image source={DEFAULT_AVATAR} style={[styles.avatar, { borderColor: colors.borderStrong }]} />
               )}
-              <View style={styles.editPhotoOverlay}>
+              <View style={[styles.editPhotoOverlay, { borderColor: colors.background }]}>
                 {isUploadingPhoto ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
@@ -319,7 +321,7 @@ export default function EditProfileScreen() {
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleChangePhoto} disabled={isUploadingPhoto}>
-              <Text style={styles.changePhotoText}>
+              <Text style={[styles.changePhotoText, { color: colors.buttonPrimary }]}>
                 {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
               </Text>
             </TouchableOpacity>
@@ -327,42 +329,42 @@ export default function EditProfileScreen() {
 
           {/* Form Fields */}
           <View style={styles.formSection}>
-            <Text style={styles.sectionTitle}>About You</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>About You</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>First Name</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>First Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
                 value={formData.firstName}
                 onChangeText={(text) => updateField('firstName', text)}
                 placeholder="Enter your first name"
-                placeholderTextColor="rgba(0,0,0,0.35)"
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="words"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Last Name</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Last Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
                 value={formData.lastName}
                 onChangeText={(text) => updateField('lastName', text)}
                 placeholder="Enter your last name"
-                placeholderTextColor="rgba(0,0,0,0.35)"
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="words"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Username</Text>
-              <View style={styles.usernameInputContainer}>
-                <Text style={styles.usernamePrefix}>@</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Username</Text>
+              <View style={[styles.usernameInputContainer, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
+                <Text style={[styles.usernamePrefix, { color: colors.textSecondary }]}>@</Text>
                 <TextInput
-                  style={[styles.input, styles.usernameInput]}
+                  style={[styles.input, styles.usernameInput, { color: colors.text }]}
                   value={formData.userName}
                   onChangeText={(text) => updateField('userName', text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   placeholder="username"
-                  placeholderTextColor="rgba(0,0,0,0.35)"
+                  placeholderTextColor={colors.placeholder}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
@@ -370,13 +372,13 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Email</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
                 value={formData.email}
                 onChangeText={(text) => updateField('email', text)}
                 placeholder="your@email.com"
-                placeholderTextColor="rgba(0,0,0,0.35)"
+                placeholderTextColor={colors.placeholder}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -384,19 +386,19 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Bio</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Bio</Text>
               <TextInput
-                style={[styles.input, styles.bioInput]}
+                style={[styles.input, styles.bioInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
                 value={formData.bio}
                 onChangeText={(text) => updateField('bio', text)}
                 placeholder="Tell us about yourself"
-                placeholderTextColor="rgba(0,0,0,0.35)"
+                placeholderTextColor={colors.placeholder}
                 multiline
                 numberOfLines={4}
                 maxLength={150}
                 textAlignVertical="top"
               />
-              <Text style={styles.charCount}>{formData.bio.length}/150</Text>
+              <Text style={[styles.charCount, { color: colors.textTertiary }]}>{formData.bio.length}/150</Text>
             </View>
           </View>
 
@@ -411,7 +413,6 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   keyboardView: {
     flex: 1,
@@ -423,7 +424,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   headerButton: {
     minWidth: 60,
@@ -434,20 +434,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   cancelText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#1a1a1a',
   },
   saveText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
-  },
-  saveTextDisabled: {
-    color: 'rgba(0, 149, 246, 0.5)',
   },
   scrollView: {
     flex: 1,
@@ -464,7 +458,6 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.15)',
   },
   editPhotoOverlay: {
     position: 'absolute',
@@ -473,16 +466,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#0095f6',
+    backgroundColor: '#3897F0',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
   },
   changePhotoText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
     marginTop: 12,
   },
   formSection: {
@@ -492,7 +483,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(0,0,0,0.4)',
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 16,
@@ -503,19 +493,15 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.6)',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#1a1a1a',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
   },
   bioInput: {
     minHeight: 100,
@@ -524,22 +510,18 @@ const styles = StyleSheet.create({
   charCount: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
     textAlign: 'right',
     marginTop: 4,
   },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
   },
   usernamePrefix: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
     paddingLeft: 16,
   },
   usernameInput: {

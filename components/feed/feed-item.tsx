@@ -14,6 +14,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { FeedBottomCTA } from './feed-bottom-cta';
 import { FeedMediaPlayer } from './feed-media-player';
 import { useFollowUser } from '@/hooks/use-follow-user';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -83,6 +84,7 @@ export function FeedItem({
   onEventPress,
 }: FeedItemProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const {
     isFollowing,
     isLoading: followLoading,
@@ -119,8 +121,13 @@ export function FeedItem({
     }
   };
 
+  // Theme-aware gradient colors
+  const gradientColors = isDark
+    ? ['rgba(15, 9, 12, 0.35)', 'rgba(15, 9, 12, 0.35)', 'rgba(15, 9, 12, 0.6)', 'rgba(15, 9, 12, 0.9)', colors.background, colors.background] as const
+    : ['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0.9)', colors.background, colors.background] as const;
+
   return (
-    <View style={[styles.container, { height: SCREEN_HEIGHT }]}>
+    <View style={[styles.container, { height: SCREEN_HEIGHT, backgroundColor: colors.background }]}>
       {/* Background wrapper with rounded bottom corners */}
       <View style={styles.backgroundWrapper}>
         {/* Background with flyer image - blurred */}
@@ -135,13 +142,13 @@ export function FeedItem({
         {/* Blur layer over background */}
         <BlurView
           intensity={60}
-          tint="light"
+          tint={isDark ? 'dark' : 'light'}
           style={styles.blurOverlay}
         />
 
         {/* Gradient dark overlay - darker toward the bottom */}
         <LinearGradient
-          colors={['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0.9)', '#fff', '#fff']}
+          colors={gradientColors}
           locations={[0, 0.7, 0.8, 0.88, 0.93, 1]}
           style={styles.gradientOverlay}
         />
@@ -158,11 +165,11 @@ export function FeedItem({
         ]}
       >
         {/* Instagram Story Card - Liquid Glass */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {/* Glass blur background for card */}
           <BlurView
             intensity={25}
-            tint="light"
+            tint={isDark ? 'dark' : 'light'}
             style={styles.cardBlurBackground}
           />
           {/* Card Header - Organizer info + Follow button */}
@@ -175,14 +182,14 @@ export function FeedItem({
               {item.userAvatar && (
                 <Image
                   source={{ uri: item.userAvatar }}
-                  style={styles.organizerAvatar}
+                  style={[styles.organizerAvatar, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
                 />
               )}
               <View style={styles.organizerNameRow}>
-                <Text style={styles.organizerName} numberOfLines={1}>
+                <Text style={[styles.organizerName, { color: colors.text }]} numberOfLines={1}>
                   {item.username}
                 </Text>
-                <MaterialCommunityIcons name="check-decagram" size={16} color="#3897F0" />
+                <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
               </View>
             </TouchableOpacity>
 
@@ -191,13 +198,13 @@ export function FeedItem({
               activeOpacity={0.8}
               style={[
                 styles.followButton,
-                isFollowing && styles.followButtonFollowing,
+                isFollowing && [styles.followButtonFollowing, { backgroundColor: colors.buttonSecondary, borderColor: colors.border }],
               ]}
             >
               <Text
                 style={[
                   styles.followButtonText,
-                  isFollowing && styles.followButtonTextFollowing,
+                  isFollowing && { color: colors.textSecondary },
                 ]}
               >
                 {isFollowing ? 'Following' : 'Follow'}
@@ -227,11 +234,11 @@ export function FeedItem({
 
           {/* Card Footer - Event title + date */}
           <View style={styles.cardFooter}>
-            <Text style={styles.eventTitle} numberOfLines={2}>
+            <Text style={[styles.eventTitle, { color: colors.text }]} numberOfLines={2}>
               {item.eventTitle || item.description || 'Untitled Event'}
             </Text>
             {item.eventDate && (
-              <Text style={styles.eventDate}>
+              <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
                 {formatEventDate(item.eventDate)}
               </Text>
             )}
@@ -254,7 +261,6 @@ export function FeedItem({
 const styles = StyleSheet.create({
   container: {
     width: SCREEN_WIDTH,
-    backgroundColor: '#fff',
   },
   backgroundWrapper: {
     position: 'absolute',
@@ -297,11 +303,9 @@ const styles = StyleSheet.create({
   // Card container - Liquid Glass
   card: {
     width: CARD_WIDTH,
-    backgroundColor: '#fff',
     borderRadius: CARD_BORDER_RADIUS,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
     // Soft shadow for lift
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -336,9 +340,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#e0e0e0',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   organizerNameRow: {
     flexDirection: 'row',
@@ -349,7 +351,6 @@ const styles = StyleSheet.create({
   organizerName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     flexShrink: 1,
   },
 
@@ -365,16 +366,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(56, 151, 240, 0.3)',
   },
   followButtonFollowing: {
-    backgroundColor: '#e0e0e0',
-    borderColor: 'rgba(0, 0, 0, 0.06)',
+    // Colors applied via inline styles for theming
   },
   followButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
-  },
-  followButtonTextFollowing: {
-    color: 'rgba(0, 0, 0, 0.5)',
   },
 
   // Flyer/Media container
@@ -392,13 +389,11 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     lineHeight: 26,
   },
   eventDate: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.55)',
   },
 
 });

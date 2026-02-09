@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { MembershipCard } from './membership-card';
 import { generateAppleWalletToken } from '../../lib/api/wallet';
 import { WalletUser, TIER_PERKS } from '../../lib/types/wallet.types';
@@ -37,9 +38,24 @@ export function StatusCardMenuSheet({
 }: StatusCardMenuSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const [isAddingToWallet, setIsAddingToWallet] = useState(false);
   const perks = TIER_PERKS[user.statusTier] || [];
   const displayPerks = perks.slice(0, 3);
+
+  // Theme-aware colors
+  const sheetBackgroundColor = isDark ? 'rgba(20, 20, 22, 0.97)' : 'rgba(255, 255, 255, 0.97)';
+  const sheetBorderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : `rgba(0, 0, 0, ${glassBorder.medium.opacity * 0.3})`;
+  const indicatorColor = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)';
+  const iconColor = isDark ? '#ffffff' : '#1a1a1a';
+  const buttonBgColor = isDark ? 'rgba(255, 255, 255, 0.15)' : '#D3D3D3';
+  const buttonBorderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)';
+  const separatorColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
+  const perksIconBg = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
+  const perksIconBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
+  const highlightGradientColors = isDark
+    ? ['rgba(255, 255, 255, 0.02)', 'transparent'] as const
+    : ['rgba(0, 0, 0, 0.02)', 'transparent'] as const;
 
   React.useEffect(() => {
     if (visible) {
@@ -76,8 +92,11 @@ export function StatusCardMenuSheet({
       enablePanDownToClose
       enableDynamicSizing
       onClose={onClose}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.sheetIndicator}
+      backgroundStyle={[
+        styles.sheetBackground,
+        { backgroundColor: sheetBackgroundColor, borderColor: sheetBorderColor }
+      ]}
+      handleIndicatorStyle={[styles.sheetIndicator, { backgroundColor: indicatorColor }]}
     >
       <BottomSheetView style={[styles.container, { paddingBottom: insets.bottom || 8 }]}>
         {/* Enlarged Card */}
@@ -96,14 +115,14 @@ export function StatusCardMenuSheet({
         >
           {/* Inner highlight */}
           <LinearGradient
-            colors={['rgba(0, 0, 0, 0.02)', 'transparent']}
+            colors={highlightGradientColors}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 0.5 }}
             style={styles.innerHighlight}
           />
 
           <View style={styles.perksTitleRow}>
-            <View style={styles.perksIcon}>
+            <View style={[styles.perksIcon, { backgroundColor: perksIconBg, borderColor: perksIconBorder }]}>
               <Ionicons name="star-outline" size={14} color="#FFD700" />
             </View>
             <GlassText weight="bold" size={15}>{user.statusTier} Perks</GlassText>
@@ -111,7 +130,7 @@ export function StatusCardMenuSheet({
 
           {displayPerks.map((perk, index) => (
             <React.Fragment key={index}>
-              {index > 0 && <View style={styles.perkSeparator} />}
+              {index > 0 && <View style={[styles.perkSeparator, { backgroundColor: separatorColor }]} />}
               <View style={styles.perkRow}>
                 <View style={styles.checkCircle}>
                   <Ionicons name="checkmark" size={12} color="#fff" />
@@ -127,28 +146,28 @@ export function StatusCardMenuSheet({
         {/* Wallet Actions */}
         <View style={styles.actionsSection}>
           <TouchableOpacity
-            style={styles.walletButton}
+            style={[styles.walletButton, { borderColor: buttonBorderColor }]}
             onPress={handleViewOnWallet}
             activeOpacity={0.7}
           >
-            <View style={styles.walletButtonFill} />
-            <Ionicons name="wallet-outline" size={18} color="#1a1a1a" />
-            <Text style={styles.walletButtonText}>View on Apple Wallet</Text>
+            <View style={[styles.walletButtonFill, { backgroundColor: buttonBgColor }]} />
+            <Ionicons name="wallet-outline" size={18} color={iconColor} />
+            <Text style={[styles.walletButtonText, { color: iconColor }]}>View on Apple Wallet</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.walletButton}
+            style={[styles.walletButton, { borderColor: buttonBorderColor }]}
             onPress={handleAddToWallet}
             activeOpacity={0.7}
             disabled={isAddingToWallet}
           >
-            <View style={styles.walletButtonFill} />
+            <View style={[styles.walletButtonFill, { backgroundColor: buttonBgColor }]} />
             {isAddingToWallet ? (
-              <ActivityIndicator size="small" color="#1a1a1a" />
+              <ActivityIndicator size="small" color={iconColor} />
             ) : (
               <>
-                <Ionicons name="logo-apple" size={18} color="#1a1a1a" />
-                <Text style={styles.walletButtonText}>Add to Apple Wallet</Text>
+                <Ionicons name="logo-apple" size={18} color={iconColor} />
+                <Text style={[styles.walletButtonText, { color: iconColor }]}>Add to Apple Wallet</Text>
               </>
             )}
           </TouchableOpacity>
@@ -160,14 +179,11 @@ export function StatusCardMenuSheet({
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: 'rgba(255, 255, 255, 0.97)',
     borderTopLeftRadius: radius['2xl'],
     borderTopRightRadius: radius['2xl'],
     borderWidth: 1,
-    borderColor: `rgba(0, 0, 0, ${glassBorder.medium.opacity * 0.3})`,
   },
   sheetIndicator: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
     width: 36,
     height: 4,
     borderRadius: 2,
@@ -206,9 +222,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -221,7 +235,6 @@ const styles = StyleSheet.create({
   },
   perkSeparator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
     marginLeft: spacing.lg + 22 + spacing.md,
   },
   checkCircle: {
@@ -250,16 +263,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   walletButtonFill: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#D3D3D3',
   },
   walletButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     letterSpacing: 0.5,
   },
 });

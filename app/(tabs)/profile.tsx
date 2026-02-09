@@ -31,6 +31,7 @@ import { SwipeableTabView } from '@/components/shared/swipeable-tab-view';
 import { LinkifiedText } from '@/components/shared/linkified-text';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const POST_SIZE = (SCREEN_WIDTH - 6) / 3; // 3 columns with 2px gaps
@@ -305,6 +306,7 @@ export default function ProfileScreen() {
   const { user, isLoading, logout, switchAccount } = useAuth();
   const { showSuccess, showError } = useToast();
   const { isAccountSwitcherOpen, closeAccountSwitcher, openAccountSwitcher } = useTabNavigation();
+  const { colors, isDark } = useAppTheme();
   const [showFollowers, setShowFollowers] = React.useState(false);
   const [showFollowing, setShowFollowing] = React.useState(false);
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
@@ -468,9 +470,9 @@ export default function ProfileScreen() {
   if (isLoading) {
     return (
       <SwipeableTabView>
-        <View style={[styles.container, styles.loadingContainer]}>
+        <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
           <DarkGradientBg />
-          <ActivityIndicator size="large" color="#1a1a1a" />
+          <ActivityIndicator size="large" color={colors.text} />
         </View>
       </SwipeableTabView>
     );
@@ -478,7 +480,7 @@ export default function ProfileScreen() {
 
   return (
     <SwipeableTabView>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
       <DarkGradientBg />
       <ScrollView
         style={styles.scrollView}
@@ -492,7 +494,7 @@ export default function ProfileScreen() {
         {/* Header - Centered Username */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="lock-closed-outline" size={20} color="#1a1a1a" />
+            <Ionicons name="lock-closed-outline" size={20} color={colors.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -500,12 +502,16 @@ export default function ProfileScreen() {
             onPress={openAccountSwitcher}
             activeOpacity={0.7}
           >
-            <Text style={styles.headerUsername}>{username}</Text>
-            <Ionicons name="chevron-down" size={20} color="#1a1a1a" />
+            <Text style={[styles.headerUsername, { color: colors.text }]}>{username}</Text>
+            <Ionicons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="menu-outline" size={28} color="#1a1a1a" />
+          <TouchableOpacity
+            style={styles.headerIcon}
+            activeOpacity={0.7}
+            onPress={() => router.push('/settings')}
+          >
+            <Ionicons name="settings-outline" size={24} color={colors.text} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -515,20 +521,29 @@ export default function ProfileScreen() {
           style={styles.profileRow}
         >
           <TouchableOpacity onPress={handleAvatarDoubleTap} activeOpacity={0.9}>
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: colors.border }]} />
           </TouchableOpacity>
           <View style={styles.statsRow}>
-            <StatButton value={postsCount} label="Posts" />
-            <StatButton
-              value={followerCount}
-              label="Followers"
+            <TouchableOpacity style={styles.statButton} activeOpacity={1}>
+              <Text style={[styles.statValue, { color: colors.text }]}>{postsCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Posts</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.statButton}
+              activeOpacity={0.7}
               onPress={() => setShowFollowers(true)}
-            />
-            <StatButton
-              value={followingCount}
-              label="Following"
+            >
+              <Text style={[styles.statValue, { color: colors.text }]}>{followerCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Followers</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.statButton}
+              activeOpacity={0.7}
               onPress={() => setShowFollowing(true)}
-            />
+            >
+              <Text style={[styles.statValue, { color: colors.text }]}>{followingCount}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Following</Text>
+            </TouchableOpacity>
           </View>
         </Animated.View>
 
@@ -537,8 +552,8 @@ export default function ProfileScreen() {
           entering={FadeInDown.delay(200).duration(500).springify()}
           style={styles.bioSection}
         >
-          <Text style={styles.displayName}>{displayName}</Text>
-          {bio ? <LinkifiedText style={styles.bio}>{bio}</LinkifiedText> : null}
+          <Text style={[styles.displayName, { color: colors.text }]}>{displayName}</Text>
+          {bio ? <LinkifiedText style={{ ...styles.bio, color: colors.textSecondary }}>{bio}</LinkifiedText> : null}
         </Animated.View>
 
         {/* Dashboard Button */}
@@ -547,12 +562,12 @@ export default function ProfileScreen() {
           style={styles.dashboardButtonContainer}
         >
           <TouchableOpacity
-            style={styles.dashboardButton}
+            style={[styles.dashboardButton, { backgroundColor: colors.buttonSecondary }]}
             activeOpacity={0.8}
             onPress={() => router.push('/dashboard')}
           >
-            <Ionicons name="grid-outline" size={18} color="#1a1a1a" />
-            <Text style={styles.dashboardButtonText}>Dashboard</Text>
+            <Ionicons name="grid-outline" size={18} color={colors.text} />
+            <Text style={[styles.dashboardButtonText, { color: colors.text }]}>Dashboard</Text>
           </TouchableOpacity>
         </Animated.View>
 
@@ -562,11 +577,11 @@ export default function ProfileScreen() {
           style={styles.actionButtons}
         >
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: colors.buttonSecondary }]}
             activeOpacity={0.8}
             onPress={() => router.push('/edit-profile')}
           >
-            <Text style={styles.actionButtonText}>Edit Profile</Text>
+            <Text style={[styles.actionButtonText, { color: colors.text }]}>Edit Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.shareButton]}
@@ -580,10 +595,10 @@ export default function ProfileScreen() {
         {/* Posts Grid Header */}
         <Animated.View
           entering={FadeInDown.delay(400).duration(500).springify()}
-          style={styles.gridHeader}
+          style={[styles.gridHeader, { borderTopColor: colors.border }]}
         >
-          <View style={[styles.gridTab, styles.gridTabActive]}>
-            <Ionicons name="grid-outline" size={24} color="#1a1a1a" />
+          <View style={[styles.gridTab, styles.gridTabActive, { borderBottomColor: colors.text }]}>
+            <Ionicons name="grid-outline" size={24} color={colors.text} />
           </View>
         </Animated.View>
 
@@ -594,14 +609,14 @@ export default function ProfileScreen() {
         >
           {postsLoading ? (
             <View style={styles.postsLoadingContainer}>
-              <ActivityIndicator color="#1a1a1a" size="small" />
+              <ActivityIndicator color={colors.text} size="small" />
             </View>
           ) : userPosts.length > 0 ? (
             userPosts.map((post) => (
               <TouchableOpacity key={post.id} activeOpacity={0.9} style={styles.postContainer}>
                 <Image
                   source={{ uri: post.imageUrl || post.videoUrl }}
-                  style={styles.postImage}
+                  style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
                 />
                 {post.mediaType === 'video' && (
                   <View style={styles.videoIndicator}>
@@ -612,8 +627,8 @@ export default function ProfileScreen() {
             ))
           ) : (
             <View style={styles.noPostsContainer}>
-              <Ionicons name="images-outline" size={48} color="rgba(0,0,0,0.2)" />
-              <Text style={styles.noPostsText}>No posts yet</Text>
+              <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.noPostsText, { color: colors.textTertiary }]}>No posts yet</Text>
             </View>
           )}
         </Animated.View>
@@ -673,7 +688,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -700,7 +714,6 @@ const styles = StyleSheet.create({
   headerUsername: {
     fontSize: 22,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   headerIcon: {
     padding: 4,
@@ -718,7 +731,6 @@ const styles = StyleSheet.create({
     height: 86,
     borderRadius: 43,
     borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.15)',
   },
   statsRow: {
     flex: 1,
@@ -732,12 +744,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   statLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.6)',
     marginTop: 2,
   },
   bioSection: {
@@ -747,13 +757,11 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.7)',
     lineHeight: 20,
   },
   dashboardButtonContainer: {
@@ -764,7 +772,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#D3D3D3',
     borderRadius: 8,
     paddingVertical: 10,
     gap: 8,
@@ -772,7 +779,6 @@ const styles = StyleSheet.create({
   dashboardButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -782,7 +788,6 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    backgroundColor: '#D3D3D3',
     borderRadius: 8,
     paddingVertical: 8,
     alignItems: 'center',
@@ -790,7 +795,6 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   shareButton: {
     backgroundColor: '#3897F0',
@@ -801,7 +805,6 @@ const styles = StyleSheet.create({
   gridHeader: {
     flexDirection: 'row',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   gridTab: {
     flex: 1,
@@ -810,7 +813,6 @@ const styles = StyleSheet.create({
   },
   gridTabActive: {
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a1a',
   },
   postsGrid: {
     flexDirection: 'row',
@@ -824,7 +826,6 @@ const styles = StyleSheet.create({
     width: POST_SIZE,
     height: POST_SIZE,
     margin: 1,
-    backgroundColor: '#f5f5f5',
   },
   videoIndicator: {
     position: 'absolute',
@@ -848,7 +849,6 @@ const styles = StyleSheet.create({
   noPostsText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
   },
   logoutButton: {
     flexDirection: 'row',

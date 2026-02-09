@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { BottomSheet } from './bottom-sheet';
 import { WalletBalances, PayoutMethod } from '../../lib/types/wallet.types';
 
@@ -43,6 +44,7 @@ export function WithdrawalSheet({
   onWithdraw,
   onAddPayoutMethod,
 }: WithdrawalSheetProps) {
+  const { colors, isDark } = useAppTheme();
   const [view, setView] = useState<SheetView>('withdraw');
   const [amountInput, setAmountInput] = useState('');
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(
@@ -107,25 +109,28 @@ export function WithdrawalSheet({
   // Render different views
   const renderWithdrawView = () => (
     <>
-      <Text style={styles.title}>Withdraw</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Withdraw</Text>
 
       {/* Available Balance */}
       <View style={styles.balanceSection}>
-        <Text style={styles.balanceLabel}>Available balance</Text>
+        <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Available balance</Text>
         <Text style={styles.balanceAmount}>{formatCents(balances.availableCents)}</Text>
       </View>
 
       {/* Amount Input */}
       <View style={styles.inputSection}>
-        <Text style={styles.inputLabel}>Amount</Text>
-        <View style={styles.inputContainer}>
-          <Text style={styles.currencySymbol}>$</Text>
+        <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Amount</Text>
+        <View style={[
+          styles.inputContainer,
+          { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
+        ]}>
+          <Text style={[styles.currencySymbol, { color: colors.textTertiary }]}>$</Text>
           <TextInput
-            style={styles.amountInput}
+            style={[styles.amountInput, { color: colors.text }]}
             value={amountInput}
             onChangeText={setAmountInput}
             placeholder="0.00"
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor={colors.placeholder}
             keyboardType="decimal-pad"
             returnKeyType="done"
           />
@@ -136,7 +141,10 @@ export function WithdrawalSheet({
           {QUICK_AMOUNTS.map((qa) => (
             <TouchableOpacity
               key={qa.label}
-              style={styles.quickAmountButton}
+              style={[
+                styles.quickAmountButton,
+                { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)' }
+              ]}
               onPress={() => handleQuickAmount(qa.multiplier)}
             >
               <Text style={styles.quickAmountText}>{qa.label}</Text>
@@ -147,9 +155,12 @@ export function WithdrawalSheet({
 
       {/* Payout Method Selector */}
       <View style={styles.methodSection}>
-        <Text style={styles.inputLabel}>Payout method</Text>
+        <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Payout method</Text>
         <TouchableOpacity
-          style={styles.methodSelector}
+          style={[
+            styles.methodSelector,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
+          ]}
           onPress={() => setView('select-method')}
         >
           {selectedMethod ? (
@@ -157,25 +168,25 @@ export function WithdrawalSheet({
               <Ionicons
                 name={selectedMethod.type === 'bank' ? 'business-outline' : 'card-outline'}
                 size={20}
-                color="#fff"
+                color={colors.text}
               />
               <View style={styles.selectedMethodInfo}>
-                <Text style={styles.selectedMethodLabel}>{selectedMethod.label}</Text>
-                <Text style={styles.selectedMethodLast4}>••••{selectedMethod.last4}</Text>
+                <Text style={[styles.selectedMethodLabel, { color: colors.text }]}>{selectedMethod.label}</Text>
+                <Text style={[styles.selectedMethodLast4, { color: colors.textTertiary }]}>••••{selectedMethod.last4}</Text>
               </View>
             </View>
           ) : (
-            <Text style={styles.addMethodText}>Select payout method</Text>
+            <Text style={[styles.addMethodText, { color: colors.textTertiary }]}>Select payout method</Text>
           )}
-          <Ionicons name="chevron-down" size={20} color="rgba(255,255,255,0.5)" />
+          <Ionicons name="chevron-down" size={20} color={colors.textTertiary} />
         </TouchableOpacity>
       </View>
 
       {/* Estimated Arrival */}
       {selectedMethod && (
         <View style={styles.arrivalSection}>
-          <Ionicons name="time-outline" size={16} color="rgba(255,255,255,0.5)" />
-          <Text style={styles.arrivalText}>
+          <Ionicons name="time-outline" size={16} color={colors.textTertiary} />
+          <Text style={[styles.arrivalText, { color: colors.textTertiary }]}>
             {selectedMethod.type === 'debit' ? 'Instant' : '1-3 business days'}
           </Text>
         </View>
@@ -183,7 +194,13 @@ export function WithdrawalSheet({
 
       {/* Withdraw Button */}
       <TouchableOpacity
-        style={[styles.withdrawButton, (!canWithdraw || isProcessing) && styles.withdrawButtonDisabled]}
+        style={[
+          styles.withdrawButton,
+          (!canWithdraw || isProcessing) && [
+            styles.withdrawButtonDisabled,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)' }
+          ]
+        ]}
         onPress={handleWithdraw}
         disabled={!canWithdraw || isProcessing}
       >
@@ -206,7 +223,7 @@ export function WithdrawalSheet({
         <TouchableOpacity onPress={() => setView('withdraw')} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#0095f6" />
         </TouchableOpacity>
-        <Text style={styles.viewTitle}>Select Payout Method</Text>
+        <Text style={[styles.viewTitle, { color: colors.text }]}>Select Payout Method</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -216,6 +233,7 @@ export function WithdrawalSheet({
             key={method.id}
             style={[
               styles.methodOption,
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' },
               selectedMethodId === method.id && styles.methodOptionSelected,
             ]}
             onPress={() => handleSelectMethod(method.id)}
@@ -223,11 +241,11 @@ export function WithdrawalSheet({
             <Ionicons
               name={method.type === 'bank' ? 'business-outline' : 'card-outline'}
               size={22}
-              color={selectedMethodId === method.id ? '#0095f6' : 'rgba(255,255,255,0.6)'}
+              color={selectedMethodId === method.id ? '#0095f6' : colors.textSecondary}
             />
             <View style={styles.methodOptionInfo}>
-              <Text style={styles.methodOptionLabel}>{method.label}</Text>
-              <Text style={styles.methodOptionLast4}>••••{method.last4}</Text>
+              <Text style={[styles.methodOptionLabel, { color: colors.text }]}>{method.label}</Text>
+              <Text style={[styles.methodOptionLast4, { color: colors.textTertiary }]}>••••{method.last4}</Text>
             </View>
             {selectedMethodId === method.id && (
               <Ionicons name="checkmark-circle" size={22} color="#0095f6" />
@@ -253,15 +271,15 @@ export function WithdrawalSheet({
         <TouchableOpacity onPress={() => setView('select-method')} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#0095f6" />
         </TouchableOpacity>
-        <Text style={styles.viewTitle}>Add Payout Method</Text>
+        <Text style={[styles.viewTitle, { color: colors.text }]}>Add Payout Method</Text>
         <View style={styles.backButton} />
       </View>
 
       <View style={styles.methodChoices}>
         <View style={styles.stripeInfoContainer}>
           <Ionicons name="shield-checkmark" size={32} color="#8b5cf6" />
-          <Text style={styles.stripeInfoTitle}>Secure Setup via Stripe</Text>
-          <Text style={styles.stripeInfoText}>
+          <Text style={[styles.stripeInfoTitle, { color: colors.text }]}>Secure Setup via Stripe</Text>
+          <Text style={[styles.stripeInfoText, { color: colors.textSecondary }]}>
             To add a bank account or debit card, you'll be redirected to Stripe's secure dashboard where you can manage your payout methods.
           </Text>
         </View>
@@ -297,7 +315,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -308,7 +325,6 @@ const styles = StyleSheet.create({
   balanceLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
   },
   balanceAmount: {
     fontSize: 32,
@@ -322,28 +338,24 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     paddingHorizontal: 16,
   },
   currencySymbol: {
     fontSize: 24,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginRight: 4,
   },
   amountInput: {
     flex: 1,
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     paddingVertical: 16,
   },
   quickAmounts: {
@@ -353,7 +365,6 @@ const styles = StyleSheet.create({
   },
   quickAmountButton: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -372,7 +383,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     padding: 14,
     minHeight: 56,
@@ -388,17 +398,14 @@ const styles = StyleSheet.create({
   selectedMethodLabel: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   selectedMethodLast4: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   addMethodText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   arrivalSection: {
     flexDirection: 'row',
@@ -410,7 +417,6 @@ const styles = StyleSheet.create({
   arrivalText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   withdrawButton: {
     backgroundColor: '#34c759',
@@ -420,9 +426,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     justifyContent: 'center',
   },
-  withdrawButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
+  withdrawButtonDisabled: {},
   withdrawButtonText: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
@@ -438,7 +442,6 @@ const styles = StyleSheet.create({
   viewTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   backButton: {
     width: 44,
@@ -454,7 +457,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 2,
@@ -471,12 +473,10 @@ const styles = StyleSheet.create({
   methodOptionLabel: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   methodOptionLast4: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   addMethodOption: {
     flexDirection: 'row',
@@ -508,14 +508,12 @@ const styles = StyleSheet.create({
   stripeInfoTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginTop: 12,
     marginBottom: 8,
   },
   stripeInfoText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     lineHeight: 20,
   },

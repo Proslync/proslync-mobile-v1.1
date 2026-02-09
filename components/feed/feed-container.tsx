@@ -7,6 +7,7 @@ import {
   RefreshControlProps,
 } from 'react-native';
 import { FeedItem } from './feed-item';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -49,6 +50,7 @@ export function FeedContainer({
   refreshControl,
 }: FeedContainerProps) {
   const flatListRef = React.useRef<FlatList>(null);
+  const { colors } = useAppTheme();
 
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 50,
@@ -131,7 +133,7 @@ export function FeedContainer({
       initialNumToRender={2}
       bounces={false}
       overScrollMode="never"
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       refreshControl={refreshControl}
     />
   );
@@ -140,6 +142,5 @@ export function FeedContainer({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
 });

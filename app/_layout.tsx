@@ -1,14 +1,13 @@
-import { useEffect } from 'react';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useEffect, useState } from 'react';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
-import { useCallback, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ThemeProvider, useAppTheme } from '@/lib/providers/theme-provider';
 import { AuthProvider } from '@/lib/providers/auth-provider';
 import { QueryProvider } from '@/lib/providers/query-provider';
 import { StreamProvider } from '@/lib/providers/stream-provider';
@@ -20,8 +19,42 @@ import { LiveLocationProvider } from '@/lib/providers/live-location-provider';
 
 SplashScreen.preventAutoHideAsync();
 
+/**
+ * Inner layout component that uses theme context
+ */
+function RootLayoutNav() {
+  const { isDark } = useAppTheme();
+
+  return (
+    <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="signin" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="chat/[conversationId]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="new-message" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="user-profile/[userId]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen
+          name="event/[id]"
+          options={{
+            animation: 'slide_from_right',
+          }}
+        />
+        <Stack.Screen name="edit-profile" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="dashboard" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="create-event" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="my-events" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="create-post" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="scan-qr" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+      </Stack>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+    </NavigationThemeProvider>
+  );
+}
+
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   const [fontsLoaded, setFontsLoaded] = useState(false);
 
   useEffect(() => {
@@ -54,46 +87,25 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <LiveLocationProvider>
-              <TabNavigationProvider>
-                <StreamProvider>
-                  <ChatProvider>
-                    <WalletProvider>
-                  <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                    <Stack screenOptions={{ headerShown: false }}>
-                      <Stack.Screen name="index" />
-                      <Stack.Screen name="signin" />
-                      <Stack.Screen name="(tabs)" />
-                      <Stack.Screen name="chat/[conversationId]" options={{ animation: 'slide_from_right' }} />
-                      <Stack.Screen name="new-message" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-                      <Stack.Screen name="user-profile/[userId]" options={{ animation: 'slide_from_right' }} />
-                      <Stack.Screen
-                        name="event/[id]"
-                        options={{
-                          animation: 'slide_from_right',
-                        }}
-                      />
-                      <Stack.Screen name="edit-profile" options={{ animation: 'slide_from_right' }} />
-                      <Stack.Screen name="dashboard" options={{ animation: 'slide_from_right' }} />
-                      <Stack.Screen name="create-event" options={{ animation: 'slide_from_right' }} />
-                      <Stack.Screen name="my-events" options={{ animation: 'slide_from_right' }} />
-                      <Stack.Screen name="create-post" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-                      <Stack.Screen name="scan-qr" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-                      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-                    </Stack>
-                    <StatusBar style="light" />
-                  </ThemeProvider>
-                  </WalletProvider>
-                </ChatProvider>
-              </StreamProvider>
-            </TabNavigationProvider>
-          </LiveLocationProvider>
-          </AuthProvider>
-        </ToastProvider>
-      </QueryProvider>
+      <ThemeProvider defaultTheme="light">
+        <QueryProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <LiveLocationProvider>
+                <TabNavigationProvider>
+                  <StreamProvider>
+                    <ChatProvider>
+                      <WalletProvider>
+                        <RootLayoutNav />
+                      </WalletProvider>
+                    </ChatProvider>
+                  </StreamProvider>
+                </TabNavigationProvider>
+              </LiveLocationProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </QueryProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }

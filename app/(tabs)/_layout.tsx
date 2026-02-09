@@ -9,17 +9,22 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 // Safe imports - MapScreen uses @rnmapbox/maps native module which crashes in Expo Go
 let MapScreen: React.ComponentType<any>;
 try {
   MapScreen = require('./search').default;
 } catch {
-  MapScreen = () => (
-    <View style={{ flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ color: '#1a1a1a' }}>Map requires a development build</Text>
-    </View>
-  );
+  // Fallback component defined inline - will use theme colors at render time
+  MapScreen = () => {
+    const { colors } = useAppTheme();
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: colors.text }}>Map requires a development build</Text>
+      </View>
+    );
+  };
 }
 
 import MessagesScreen from './explore';
@@ -44,6 +49,16 @@ const DEFAULT_AVATAR = 'https://picsum.photos/200';
 // Screen components array
 const SCREENS = [MapScreen, MessagesScreen, HomeScreen, WalletScreen, ProfileScreen];
 
+// Error boundary fallback component that uses theme
+function ErrorFallback() {
+  const { colors } = useAppTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ color: colors.text, fontSize: 16 }}>Something went wrong</Text>
+    </View>
+  );
+}
+
 // Error boundary to prevent one screen from crashing the entire tab layout
 class ScreenErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -53,11 +68,7 @@ class ScreenErrorBoundary extends React.Component<
   static getDerivedStateFromError() { return { hasError: true }; }
   render() {
     if (this.state.hasError) {
-      return (
-        <View style={{ flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ color: '#1a1a1a', fontSize: 16 }}>Something went wrong</Text>
-        </View>
-      );
+      return <ErrorFallback />;
     }
     return this.props.children;
   }
@@ -67,17 +78,18 @@ class ScreenErrorBoundary extends React.Component<
 interface TabPageWrapperProps {
   index: number;
   shouldRender: boolean;
+  backgroundColor: string;
 }
 
-const TabPageWrapper = React.memo(function TabPageWrapper({ index, shouldRender }: TabPageWrapperProps) {
+const TabPageWrapper = React.memo(function TabPageWrapper({ index, shouldRender, backgroundColor }: TabPageWrapperProps) {
   const ScreenComponent = SCREENS[index];
 
   if (!shouldRender) {
-    return <View style={styles.pageContainer} collapsable={false} />;
+    return <View style={[styles.pageContainer, { backgroundColor }]} collapsable={false} />;
   }
 
   return (
-    <View style={styles.pageContainer} collapsable={false}>
+    <View style={[styles.pageContainer, { backgroundColor }]} collapsable={false}>
       <ScreenErrorBoundary>
         <ScreenComponent />
       </ScreenErrorBoundary>
@@ -86,9 +98,9 @@ const TabPageWrapper = React.memo(function TabPageWrapper({ index, shouldRender 
 });
 
 // Profile Tab Icon with avatar
-function ProfileTabIcon({ focused, avatarUrl }: { focused: boolean; avatarUrl?: string }) {
+function ProfileTabIcon({ focused, avatarUrl, activeColor }: { focused: boolean; avatarUrl?: string; activeColor: string }) {
   return (
-    <View style={[styles.profileWrapper, focused && styles.profileWrapperActive]}>
+    <View style={[styles.profileWrapper, focused && [styles.profileWrapperActive, { borderColor: activeColor }]]}>
       <Image
         source={avatarUrl ? { uri: avatarUrl } : require('@/assets/images/default-avatar.png')}
         style={styles.profileImage}
@@ -115,6 +127,7 @@ export default function SwipeableTabLayout() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { openAccountSwitcher } = useTabNavigation();
+  const { colors, isDark } = useAppTheme();
 
   const pagerRef = React.useRef<PagerView>(null);
   const [currentIndex, setCurrentIndex] = React.useState(DEFAULT_TAB_INDEX);
@@ -184,7 +197,7 @@ export default function SwipeableTabLayout() {
   const TAB_BAR_HEIGHT = 50 + insets.bottom;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Pager View - constrained to leave room for tab bar */}
       <View style={{ flex: 1, marginBottom: TAB_BAR_HEIGHT }}>
         <PagerView
@@ -197,17 +210,17 @@ export default function SwipeableTabLayout() {
         >
           {TAB_CONFIG.map((_, index) => (
             <View key={index} style={styles.pageWrapper} collapsable={false}>
-              <TabPageWrapper index={index} shouldRender={loadedPages.has(index)} />
+              <TabPageWrapper index={index} shouldRender={loadedPages.has(index)} backgroundColor={colors.background} />
             </View>
           ))}
         </PagerView>
       </View>
 
       {/* Custom Tab Bar - absolutely positioned over the reserved margin space */}
-      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4, height: TAB_BAR_HEIGHT }]}>
+      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4, height: TAB_BAR_HEIGHT, backgroundColor: colors.tabBar, borderTopColor: colors.tabBarBorder }]}>
         {TAB_CONFIG.map((tab, index) => {
           const isFocused = currentIndex === index;
-          const color = isFocused ? '#1a1a1a' : 'rgba(0, 0, 0, 0.35)';
+          const color = isFocused ? colors.tabIconSelected : colors.tabIconDefault;
 
           return (
             <Pressable
@@ -219,7 +232,7 @@ export default function SwipeableTabLayout() {
               accessibilityLabel={tab.title}
             >
               {tab.name === 'profile' ? (
-                <ProfileTabIcon focused={isFocused} avatarUrl={avatarUrl} />
+                <ProfileTabIcon focused={isFocused} avatarUrl={avatarUrl} activeColor={colors.tabIconSelected} />
               ) : (
                 <TabIcon index={index} focused={isFocused} color={color} />
               )}
@@ -234,7 +247,6 @@ export default function SwipeableTabLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   pager: {
     flex: 1,
@@ -246,7 +258,6 @@ const styles = StyleSheet.create({
   pageContainer: {
     flex: 1,
     width: SCREEN_WIDTH,
-    backgroundColor: '#fff',
   },
   tabBar: {
     position: 'absolute',
@@ -254,7 +265,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    backgroundColor: '#fff',
     borderTopWidth: 0,
     paddingTop: 4,
     paddingHorizontal: 20,
@@ -276,7 +286,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   profileWrapperActive: {
-    borderColor: '#1a1a1a',
+    // borderColor set dynamically
   },
   profileImage: {
     width: 26,

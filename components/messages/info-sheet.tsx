@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Conversation, User } from '../../lib/types/messages.types';
 
 interface InfoSheetProps {
@@ -49,6 +50,7 @@ export function InfoSheet({
   onViewEvent,
 }: InfoSheetProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
 
   if (!conversation) return null;
 
@@ -62,13 +64,19 @@ export function InfoSheet({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[
+          styles.container,
+          {
+            paddingBottom: insets.bottom + 16,
+            backgroundColor: isDark ? '#1c1c1e' : colors.card,
+          }
+        ]}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#fff" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Details</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Details</Text>
             <View style={styles.closeButton} />
           </View>
 
@@ -77,7 +85,7 @@ export function InfoSheet({
             showsVerticalScrollIndicator={false}
           >
             {/* Profile Section */}
-            <View style={styles.profileSection}>
+            <View style={[styles.profileSection, { borderBottomColor: colors.border }]}>
               <Image
                 source={{
                   uri: participant?.avatarUrl || 'https://i.pravatar.cc/150?u=default',
@@ -85,7 +93,7 @@ export function InfoSheet({
                 style={styles.avatar}
               />
               <View style={styles.nameRow}>
-                <Text style={styles.name}>{conversation.title}</Text>
+                <Text style={[styles.name, { color: colors.text }]}>{conversation.title}</Text>
                 {participant?.isVerified && (
                   <Ionicons
                     name="checkmark-circle"
@@ -95,7 +103,7 @@ export function InfoSheet({
                   />
                 )}
               </View>
-              <Text style={styles.roleText}>
+              <Text style={[styles.roleText, { color: colors.textSecondary }]}>
                 {participant?.role === 'venue'
                   ? 'Venue'
                   : participant?.role === 'promoter'
@@ -105,9 +113,9 @@ export function InfoSheet({
                   : 'Guest'}
               </Text>
               {participant?.isOnline ? (
-                <Text style={styles.statusText}>Active now</Text>
+                <Text style={[styles.statusText, { color: colors.textTertiary }]}>Active now</Text>
               ) : (
-                <Text style={styles.statusText}>
+                <Text style={[styles.statusText, { color: colors.textTertiary }]}>
                   Last seen {participant?.lastSeen ? 'recently' : 'a while ago'}
                 </Text>
               )}
@@ -115,10 +123,13 @@ export function InfoSheet({
 
             {/* Event Context Card */}
             {conversation.context && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Event</Text>
+              <View style={[styles.section, { borderBottomColor: colors.border }]}>
+                <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Event</Text>
                 <TouchableOpacity
-                  style={styles.eventCard}
+                  style={[
+                    styles.eventCard,
+                    { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)' }
+                  ]}
                   onPress={() => onViewEvent?.(conversation.context!.eventId)}
                   activeOpacity={0.8}
                 >
@@ -127,14 +138,14 @@ export function InfoSheet({
                     style={styles.eventFlyer}
                   />
                   <View style={styles.eventInfo}>
-                    <Text style={styles.eventTitle} numberOfLines={2}>
+                    <Text style={[styles.eventTitle, { color: colors.text }]} numberOfLines={2}>
                       {conversation.context.eventTitle}
                     </Text>
-                    <Text style={styles.eventVenue}>
+                    <Text style={[styles.eventVenue, { color: colors.textSecondary }]}>
                       {conversation.context.venueName}
                     </Text>
                     {conversation.context.dateTimeLabel && (
-                      <Text style={styles.eventDate}>
+                      <Text style={[styles.eventDate, { color: colors.textTertiary }]}>
                         {conversation.context.dateTimeLabel}
                       </Text>
                     )}
@@ -142,29 +153,32 @@ export function InfoSheet({
                   <Ionicons
                     name="chevron-forward"
                     size={20}
-                    color="rgba(255, 255, 255, 0.5)"
+                    color={colors.textTertiary}
                   />
                 </TouchableOpacity>
               </View>
             )}
 
             {/* Settings */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Settings</Text>
+            <View style={[styles.section, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Settings</Text>
 
               <View style={styles.settingRow}>
                 <View style={styles.settingLeft}>
                   <Ionicons
                     name="pin"
                     size={20}
-                    color="rgba(255, 255, 255, 0.8)"
+                    color={colors.textSecondary}
                   />
-                  <Text style={styles.settingText}>Pin Conversation</Text>
+                  <Text style={[styles.settingText, { color: colors.text }]}>Pin Conversation</Text>
                 </View>
                 <Switch
                   value={conversation.isPinned}
                   onValueChange={onPinToggle}
-                  trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: '#0095f6' }}
+                  trackColor={{
+                    false: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                    true: '#0095f6'
+                  }}
                   thumbColor="#fff"
                 />
               </View>
@@ -174,23 +188,26 @@ export function InfoSheet({
                   <Ionicons
                     name="notifications-off"
                     size={20}
-                    color="rgba(255, 255, 255, 0.8)"
+                    color={colors.textSecondary}
                   />
-                  <Text style={styles.settingText}>Mute Notifications</Text>
+                  <Text style={[styles.settingText, { color: colors.text }]}>Mute Notifications</Text>
                 </View>
                 <Switch
                   value={conversation.isMuted}
                   onValueChange={onMuteToggle}
-                  trackColor={{ false: 'rgba(255, 255, 255, 0.2)', true: '#0095f6' }}
+                  trackColor={{
+                    false: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                    true: '#0095f6'
+                  }}
                   thumbColor="#fff"
                 />
               </View>
             </View>
 
             {/* Shared Media */}
-            <View style={styles.section}>
+            <View style={[styles.section, { borderBottomColor: colors.border }]}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Shared Media</Text>
+                <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Shared Media</Text>
                 <TouchableOpacity>
                   <Text style={styles.seeAllText}>See All</Text>
                 </TouchableOpacity>
@@ -209,7 +226,7 @@ export function InfoSheet({
             </View>
 
             {/* Danger Zone */}
-            <View style={styles.section}>
+            <View style={[styles.section, { borderBottomColor: colors.border }]}>
               <TouchableOpacity
                 style={styles.dangerButton}
                 onPress={() => {
@@ -268,7 +285,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#1c1c1e',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '90%',
@@ -280,7 +296,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   closeButton: {
     width: 40,
@@ -291,7 +306,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   scrollView: {
     flex: 1,
@@ -300,7 +314,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   avatar: {
     width: 80,
@@ -315,7 +328,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   verifiedIcon: {
     marginLeft: 6,
@@ -323,20 +335,17 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
     marginTop: 4,
   },
   statusText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 4,
   },
   section: {
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -347,7 +356,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -360,7 +368,6 @@ const styles = StyleSheet.create({
   eventCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 12,
     padding: 12,
   },
@@ -376,18 +383,15 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 4,
   },
   eventVenue: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.7)',
   },
   eventDate: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
   },
   settingRow: {
@@ -404,7 +408,6 @@ const styles = StyleSheet.create({
   settingText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
   },
   mediaGrid: {
     flexDirection: 'row',

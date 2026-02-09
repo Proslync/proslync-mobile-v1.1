@@ -10,6 +10,7 @@ import {
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { followsApi } from '@/lib/api/follows';
 import type { UserFollowItem, VenueFollowItem } from '@/lib/types/follows.types';
 
@@ -44,6 +45,7 @@ export function FollowersSheet({
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
   const snapPoints = React.useMemo(() => ['55%', '85%'], []);
 
   const [activeTab, setActiveTab] = React.useState<SheetTab>(initialTab);
@@ -158,32 +160,32 @@ export function FollowersSheet({
         onPress={() => handleUserPress(item)}
         activeOpacity={0.6}
       >
-        <View style={styles.avatarWrap}>
+        <View style={[styles.avatarWrap, { backgroundColor: colors.backgroundSecondary }]}>
           <Image
             source={item.imageUrl ? { uri: item.imageUrl } : DefaultAvatarImage}
             style={styles.avatar}
           />
         </View>
         <View style={styles.rowInfo}>
-          <Text style={styles.rowName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.rowType}>{item.type === 'venue' ? 'Venue' : 'User'}</Text>
+          <Text style={[styles.rowName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
+          <Text style={[styles.rowType, { color: colors.textTertiary }]}>{item.type === 'venue' ? 'Venue' : 'User'}</Text>
         </View>
       </TouchableOpacity>
     ),
-    []
+    [colors]
   );
 
   const ListEmpty = () => {
     if (isLoading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="rgba(0,0,0,0.3)" />
+          <ActivityIndicator size="large" color={colors.textTertiary} />
         </View>
       );
     }
     return (
       <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
+        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
           {activeTab === 'followers' ? 'No followers yet' : 'Not following anyone yet'}
         </Text>
       </View>
@@ -197,33 +199,61 @@ export function FollowersSheet({
       snapPoints={snapPoints}
       enablePanDownToClose
       onClose={handleClose}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.sheetIndicator}
+      backgroundStyle={[
+        styles.sheetBackground,
+        { backgroundColor: isDark ? '#1c1c1e' : '#fff' }
+      ]}
+      handleIndicatorStyle={[
+        styles.sheetIndicator,
+        { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)' }
+      ]}
       enableDynamicSizing={false}
     >
       {/* Tabs */}
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'followers' && styles.tabActive]}
+          style={[
+            styles.tab,
+            activeTab === 'followers' && [styles.tabActive, { borderBottomColor: colors.text }]
+          ]}
           onPress={() => setActiveTab('followers')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabCount, activeTab === 'followers' && styles.tabCountActive]}>
+          <Text style={[
+            styles.tabCount,
+            { color: colors.textTertiary },
+            activeTab === 'followers' && { color: colors.text }
+          ]}>
             {followersCount}
           </Text>
-          <Text style={[styles.tabLabel, activeTab === 'followers' && styles.tabLabelActive]}>
+          <Text style={[
+            styles.tabLabel,
+            { color: colors.textTertiary },
+            activeTab === 'followers' && { color: colors.text }
+          ]}>
             Followers
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'following' && styles.tabActive]}
+          style={[
+            styles.tab,
+            activeTab === 'following' && [styles.tabActive, { borderBottomColor: colors.text }]
+          ]}
           onPress={() => setActiveTab('following')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabCount, activeTab === 'following' && styles.tabCountActive]}>
+          <Text style={[
+            styles.tabCount,
+            { color: colors.textTertiary },
+            activeTab === 'following' && { color: colors.text }
+          ]}>
             {followingCount}
           </Text>
-          <Text style={[styles.tabLabel, activeTab === 'following' && styles.tabLabelActive]}>
+          <Text style={[
+            styles.tabLabel,
+            { color: colors.textTertiary },
+            activeTab === 'following' && { color: colors.text }
+          ]}>
             Following
           </Text>
         </TouchableOpacity>
@@ -232,7 +262,7 @@ export function FollowersSheet({
       {/* List */}
       <BottomSheetFlatList
         data={data}
-        keyExtractor={(item) => `${item.type}-${item.id}`}
+        keyExtractor={(item: ListItem) => `${item.type}-${item.id}`}
         renderItem={renderItem}
         ListEmptyComponent={ListEmpty}
         contentContainerStyle={[
@@ -241,7 +271,7 @@ export function FollowersSheet({
           { paddingBottom: insets.bottom + 20 },
         ]}
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.separator }]} />}
       />
     </BottomSheet>
   );
@@ -249,12 +279,10 @@ export function FollowersSheet({
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   sheetIndicator: {
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
     width: 40,
     height: 4,
     borderRadius: 2,
@@ -264,7 +292,6 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   tab: {
     flex: 1,
@@ -273,26 +300,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabActive: {
-    borderBottomColor: '#1a1a1a',
-  },
+  tabActive: {},
   tabCount: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(0, 0, 0, 0.35)',
   },
-  tabCountActive: {
-    color: '#1a1a1a',
-  },
+  tabCountActive: {},
   tabLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.35)',
     marginTop: 1,
   },
-  tabLabelActive: {
-    color: '#1a1a1a',
-  },
+  tabLabelActive: {},
 
   // List
   listContent: {
@@ -312,7 +331,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#fff',
     overflow: 'hidden',
   },
   avatar: {
@@ -327,17 +345,14 @@ const styles = StyleSheet.create({
   rowName: {
     fontSize: 15,
     fontFamily: 'Lato_600SemiBold',
-    color: '#1a1a1a',
   },
   rowType: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
     marginTop: 1,
   },
   separator: {
     height: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     marginLeft: 76,
   },
 
@@ -350,6 +365,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
   },
 });

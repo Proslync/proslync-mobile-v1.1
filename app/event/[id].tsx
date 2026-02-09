@@ -24,6 +24,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -72,6 +73,7 @@ export default function EventPage() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { showSuccess, showError } = useToast();
+  const { colors, isDark } = useAppTheme();
   const params = useLocalSearchParams<{
     id: string;
     title?: string;
@@ -156,6 +158,11 @@ export default function EventPage() {
     transform: [{ scale: buttonScale.value }],
   }));
 
+  // Dynamic gradient colors based on theme
+  const gradientColors: [string, string, string, string] = isDark
+    ? ['transparent', 'rgba(15, 9, 12, 0.3)', 'rgba(15, 9, 12, 0.7)', 'rgba(15, 9, 12, 0.97)']
+    : ['transparent', 'rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.7)', 'rgba(255, 255, 255, 0.97)'];
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
@@ -170,19 +177,19 @@ export default function EventPage() {
                 {userAvatar && (
                   <Image
                     source={{ uri: userAvatar }}
-                    style={styles.posterAvatar}
+                    style={[styles.posterAvatar, { borderColor: colors.borderStrong }]}
                   />
                 )}
-                <Text style={styles.posterName}>@{username}</Text>
+                <Text style={[styles.posterName, { color: colors.text }]}>@{username}</Text>
               </TouchableOpacity>
             )}
-            <Text style={styles.tabContentTitle}>{eventTitle}</Text>
+            <Text style={[styles.tabContentTitle, { color: colors.text }]}>{eventTitle}</Text>
             {eventDate && (
-              <Text style={styles.tabContentDate}>
+              <Text style={[styles.tabContentDate, { color: colors.textSecondary }]}>
                 {formatEventDate(eventDate, venueName)}
               </Text>
             )}
-            <Text style={styles.tabContentDescription}>
+            <Text style={[styles.tabContentDescription, { color: colors.textTertiary }]}>
               Join us for an unforgettable night filled with great music, amazing vibes, and incredible people.
             </Text>
           </Animated.View>
@@ -193,11 +200,11 @@ export default function EventPage() {
             entering={FadeInUp.duration(400).springify()}
             style={styles.tabContent}
           >
-            <Text style={styles.tabContentTitle}>Venue Location</Text>
+            <Text style={[styles.tabContentTitle, { color: colors.text }]}>Venue Location</Text>
             {venueName && (
-              <Text style={styles.tabContentDescription}>{venueName}</Text>
+              <Text style={[styles.tabContentDescription, { color: colors.textTertiary }]}>{venueName}</Text>
             )}
-            <Text style={styles.tabContentDescription}>
+            <Text style={[styles.tabContentDescription, { color: colors.textTertiary }]}>
               Map and directions coming soon.
             </Text>
           </Animated.View>
@@ -208,7 +215,7 @@ export default function EventPage() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Blurred background */}
       {flyerImage && (
         <ImageBackground
@@ -216,13 +223,13 @@ export default function EventPage() {
           style={styles.backgroundImage}
           blurRadius={12}
         >
-          <View style={styles.backgroundOverlay} />
+          <View style={[styles.backgroundOverlay, { backgroundColor: isDark ? 'rgba(15, 9, 12, 0.5)' : 'rgba(255, 255, 255, 0.5)' }]} />
         </ImageBackground>
       )}
 
       {/* Gradient overlay - darker at bottom */}
       <LinearGradient
-        colors={['transparent', 'rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.7)', 'rgba(255, 255, 255, 0.97)']}
+        colors={gradientColors}
         locations={[0, 0.4, 0.7, 1]}
         style={styles.background}
       />
@@ -234,7 +241,7 @@ export default function EventPage() {
           style={styles.backButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="chevron-back" size={28} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -249,7 +256,7 @@ export default function EventPage() {
       >
         {/* Flyer Card */}
         <Animated.View entering={FadeInDown.duration(500).springify()} style={styles.flyerContainer}>
-          <View style={styles.flyerCard}>
+          <View style={[styles.flyerCard, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
             {flyerImage ? (
               <Image
                 source={{ uri: flyerImage }}
@@ -257,9 +264,9 @@ export default function EventPage() {
                 resizeMode="cover"
               />
             ) : (
-              <View style={styles.flyerPlaceholder}>
-                <Ionicons name="image-outline" size={64} color="rgba(0,0,0,0.2)" />
-                <Text style={styles.flyerPlaceholderText}>No flyer available</Text>
+              <View style={[styles.flyerPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
+                <Ionicons name="image-outline" size={64} color={colors.textTertiary} />
+                <Text style={[styles.flyerPlaceholderText, { color: colors.textTertiary }]}>No flyer available</Text>
               </View>
             )}
           </View>
@@ -282,14 +289,16 @@ export default function EventPage() {
                   onPress={() => setActiveTab(tab.key)}
                   style={[
                     styles.tabButton,
-                    isActive && styles.tabButtonActive,
+                    { borderColor: colors.borderStrong },
+                    isActive && { borderColor: colors.text },
                   ]}
                   activeOpacity={0.7}
                 >
                   <Text
                     style={[
                       styles.tabButtonText,
-                      isActive && styles.tabButtonTextActive,
+                      { color: colors.textTertiary },
+                      isActive && { color: colors.text },
                     ]}
                   >
                     {tab.label}
@@ -316,8 +325,17 @@ export default function EventPage() {
           activeOpacity={0.8}
           disabled={isLoading || isRsvpd}
         >
-          <Animated.View style={[styles.rsvpButton, buttonAnimatedStyle, isRsvpd && styles.rsvpButtonSuccess]}>
-            <Text style={[styles.rsvpButtonText, isRsvpd && styles.rsvpButtonTextSuccess]}>
+          <Animated.View style={[
+            styles.rsvpButton,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#D3D3D3' },
+            buttonAnimatedStyle,
+            isRsvpd && styles.rsvpButtonSuccess,
+          ]}>
+            <Text style={[
+              styles.rsvpButtonText,
+              { color: colors.text },
+              isRsvpd && styles.rsvpButtonTextSuccess,
+            ]}>
               {isLoading ? 'Processing...' : isRsvpd ? "RSVP'd" : isPaid ? 'Buy' : 'RSVP'}
             </Text>
           </Animated.View>
@@ -330,7 +348,6 @@ export default function EventPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   backgroundImage: {
     position: 'absolute',
@@ -341,7 +358,6 @@ const styles = StyleSheet.create({
   },
   backgroundOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   background: {
     position: 'absolute',
@@ -380,7 +396,6 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH - 32,
     height: SCREEN_HEIGHT * 0.55,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     overflow: 'hidden',
     // Subtle shadow effect
     shadowColor: 'rgba(0, 0, 0, 0.2)',
@@ -398,13 +413,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
   },
   flyerPlaceholderText: {
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.3)',
   },
   tabContentContainer: {
     paddingHorizontal: 8,
@@ -415,19 +428,16 @@ const styles = StyleSheet.create({
   tabContentTitle: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     marginBottom: 8,
   },
   tabContentDate: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.6)',
     marginBottom: 16,
   },
   tabContentDescription: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.5)',
     lineHeight: 22,
   },
   posterContainer: {
@@ -441,12 +451,10 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.15)',
   },
   posterName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   tabBarInner: {
     flexDirection: 'row',
@@ -460,20 +468,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.15)',
     backgroundColor: 'transparent',
     alignItems: 'center',
-  },
-  tabButtonActive: {
-    borderColor: '#1a1a1a',
   },
   tabButtonText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(0, 0, 0, 0.4)',
-  },
-  tabButtonTextActive: {
-    color: '#1a1a1a',
   },
   rsvpContainer: {
     position: 'absolute',
@@ -483,7 +483,6 @@ const styles = StyleSheet.create({
   rsvpButton: {
     height: 48,
     borderRadius: 8,
-    backgroundColor: '#D3D3D3',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -495,7 +494,6 @@ const styles = StyleSheet.create({
   rsvpButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     letterSpacing: 0.5,
   },
   rsvpButtonTextSuccess: {

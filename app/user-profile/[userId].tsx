@@ -12,6 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 
 // Mock recent events for venue/promoter profiles
@@ -65,6 +66,7 @@ function getRoleColor(role: string): string {
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
   const params = useLocalSearchParams<{
     userId: string;
     name: string;
@@ -83,16 +85,16 @@ export default function UserProfileScreen() {
   const roleLabel = getRoleLabel(user.role);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={28} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
         <View style={styles.backButton} />
       </View>
 
@@ -105,7 +107,7 @@ export default function UserProfileScreen() {
         <View style={styles.profileHeader}>
           <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
           <View style={styles.nameRow}>
-            <Text style={styles.name}>{user.name}</Text>
+            <Text style={[styles.name, { color: colors.text }]}>{user.name}</Text>
           </View>
           {roleLabel && (
             <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) + '20' }]}>
@@ -118,19 +120,19 @@ export default function UserProfileScreen() {
 
         {/* Action Buttons - Only Message button */}
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.actionButton, styles.actionButtonDisabled]}>
-            <Ionicons name="chatbubble" size={20} color="rgba(0, 0, 0, 0.3)" />
-            <Text style={[styles.actionButtonText, styles.actionButtonTextDisabled]}>Message</Text>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.buttonSecondary }, styles.actionButtonDisabled]}>
+            <Ionicons name="chatbubble" size={20} color={colors.buttonDisabledText} />
+            <Text style={[styles.actionButtonText, { color: colors.buttonDisabledText }]}>Message</Text>
           </TouchableOpacity>
         </View>
 
         {/* Recent Events (for venue/promoter) */}
         {showEvents && (
-          <View style={styles.section}>
+          <View style={[styles.section, { borderTopColor: colors.border }]}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent Events</Text>
+              <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Recent Events</Text>
               <TouchableOpacity>
-                <Text style={styles.seeAllText}>See All</Text>
+                <Text style={[styles.seeAllText, { color: colors.buttonPrimary }]}>See All</Text>
               </TouchableOpacity>
             </View>
             <ScrollView
@@ -141,7 +143,7 @@ export default function UserProfileScreen() {
               {MOCK_RECENT_EVENTS.map((event) => (
                 <TouchableOpacity
                   key={event.id}
-                  style={styles.eventCard}
+                  style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
                   onPress={() => router.push({
                     pathname: '/event/[id]',
                     params: { id: event.id },
@@ -149,8 +151,8 @@ export default function UserProfileScreen() {
                 >
                   <Image source={{ uri: event.imageUrl }} style={styles.eventImage} />
                   <View style={styles.eventInfo}>
-                    <Text style={styles.eventTitle} numberOfLines={1}>{event.title}</Text>
-                    <Text style={styles.eventDate}>{event.date}</Text>
+                    <Text style={[styles.eventTitle, { color: colors.text }]} numberOfLines={1}>{event.title}</Text>
+                    <Text style={[styles.eventDate, { color: colors.textTertiary }]}>{event.date}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -167,7 +169,6 @@ export default function UserProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -176,7 +177,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   backButton: {
     width: 44,
@@ -187,7 +187,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   scrollView: {
     flex: 1,
@@ -213,7 +212,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   roleBadge: {
     paddingHorizontal: 14,
@@ -237,7 +235,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     paddingVertical: 12,
     borderRadius: 12,
     gap: 8,
@@ -248,16 +245,11 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
-  },
-  actionButtonTextDisabled: {
-    color: 'rgba(0, 0, 0, 0.3)',
   },
   section: {
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -268,14 +260,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(0, 0, 0, 0.45)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   seeAllText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: '#0095f6',
   },
   eventsScroll: {
     paddingRight: 16,
@@ -283,7 +273,6 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     width: 140,
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -297,12 +286,10 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     marginBottom: 2,
   },
   eventDate: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.45)',
   },
 });

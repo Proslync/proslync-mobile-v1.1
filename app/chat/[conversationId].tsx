@@ -37,6 +37,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useChannel, type ChatMessage } from '@/hooks/use-channel';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.75;
@@ -79,10 +80,10 @@ function formatMessageTime(date: Date): string {
 }
 
 // Day Separator Component
-function DaySeparator({ date }: { date: Date }) {
+function DaySeparator({ date, colors }: { date: Date; colors: ThemeColors }) {
   return (
     <Animated.View entering={FadeIn} style={styles.daySeparator}>
-      <Text style={styles.daySeparatorText}>{formatDayHeader(date)}</Text>
+      <Text style={[styles.daySeparatorText, { color: colors.textTertiary }]}>{formatDayHeader(date)}</Text>
     </Animated.View>
   );
 }
@@ -93,11 +94,15 @@ function MessageBubble({
   isGroupStart,
   showTime,
   onImagePress,
+  colors,
+  isDark,
 }: {
   message: ChatMessage;
   isGroupStart?: boolean;
   showTime?: boolean;
   onImagePress?: (url: string) => void;
+  colors: ThemeColors;
+  isDark: boolean;
 }) {
   const isOwn = message.isOwn;
   const hasAttachments = message.attachments && message.attachments.length > 0;
@@ -148,7 +153,7 @@ function MessageBubble({
     <View style={[styles.messageRow, isOwn && styles.messageRowOwn]}>
       {/* Avatar for other user */}
       {!isOwn && isGroupStart && (
-        <Avatar uri={message.userImage} size={28} />
+        <Avatar uri={message.userImage} size={28} colors={colors} />
       )}
       {!isOwn && !isGroupStart && <View style={styles.messageAvatarPlaceholder} />}
 
@@ -160,6 +165,8 @@ function MessageBubble({
               audioUrl={audioAttachment.url}
               duration={audioAttachment.duration}
               isOwn={isOwn}
+              colors={colors}
+              isDark={isDark}
             />
           </View>
         )}
@@ -177,11 +184,11 @@ function MessageBubble({
             <View
               style={[
                 styles.messageBubble,
-                isOwn ? styles.messageBubbleOwn : styles.messageBubbleOther,
+                isOwn ? styles.messageBubbleOwn : [styles.messageBubbleOther, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' }],
                 !isGroupStart && (isOwn ? styles.messageBubbleGroupOwn : styles.messageBubbleGroupOther),
               ]}
             >
-              <Text style={isOwn ? styles.messageTextOwn : styles.messageText}>
+              <Text style={isOwn ? styles.messageTextOwn : [styles.messageText, { color: colors.text }]}>
                 {message.text}
               </Text>
             </View>
@@ -190,7 +197,7 @@ function MessageBubble({
 
         {/* Timestamp */}
         {showTime && (
-          <Text style={[styles.messageTime, isOwn && styles.messageTimeOwn]}>
+          <Text style={[styles.messageTime, { color: colors.textTertiary }, isOwn && styles.messageTimeOwn]}>
             {formatMessageTime(message.createdAt)}
           </Text>
         )}
@@ -200,7 +207,7 @@ function MessageBubble({
 }
 
 // Animated Typing Dot
-function AnimatedDot({ delay }: { delay: number }) {
+function AnimatedDot({ delay, isDark }: { delay: number; isDark: boolean }) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(0.4);
 
@@ -234,31 +241,31 @@ function AnimatedDot({ delay }: { delay: number }) {
     opacity: opacity.value,
   }));
 
-  return <Animated.View style={[styles.typingDot, animatedStyle]} />;
+  return <Animated.View style={[styles.typingDot, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }, animatedStyle]} />;
 }
 
 // Typing Indicator Component
-function TypingIndicator({ visible, userName }: { visible: boolean; userName?: string }) {
+function TypingIndicator({ visible, userName, colors, isDark }: { visible: boolean; userName?: string; colors: ThemeColors; isDark: boolean }) {
   if (!visible) return null;
 
   return (
     <Animated.View entering={FadeInDown} exiting={FadeOut} style={styles.typingContainer}>
-      <View style={styles.typingBubble}>
-        <AnimatedDot delay={0} />
-        <AnimatedDot delay={200} />
-        <AnimatedDot delay={400} />
+      <View style={[styles.typingBubble, { backgroundColor: isDark ? colors.cardElevated : 'rgba(0, 0, 0, 0.06)' }]}>
+        <AnimatedDot delay={0} isDark={isDark} />
+        <AnimatedDot delay={200} isDark={isDark} />
+        <AnimatedDot delay={400} isDark={isDark} />
       </View>
-      {userName && <Text style={styles.typingText}>{userName} is typing...</Text>}
+      {userName && <Text style={[styles.typingText, { color: colors.textTertiary }]}>{userName} is typing...</Text>}
     </Animated.View>
   );
 }
 
 // Avatar component with white background for default avatar
-function Avatar({ uri, size = 28 }: { uri?: string; size?: number }) {
+function Avatar({ uri, size = 28, colors }: { uri?: string; size?: number; colors: ThemeColors }) {
   const hasCustomAvatar = uri && uri.length > 0;
 
   return (
-    <View style={[styles.avatarWrapper, { width: size, height: size, borderRadius: size / 2 }]}>
+    <View style={[styles.avatarWrapper, { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.background }]}>
       <Image
         source={hasCustomAvatar ? { uri } : DefaultAvatarImage}
         style={{ width: size, height: size, borderRadius: size / 2 }}
@@ -272,10 +279,14 @@ function VoiceMessagePlayer({
   audioUrl,
   duration,
   isOwn,
+  colors,
+  isDark,
 }: {
   audioUrl: string;
   duration?: number;
   isOwn: boolean;
+  colors: ThemeColors;
+  isDark: boolean;
 }) {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -385,7 +396,7 @@ function VoiceMessagePlayer({
   }));
 
   return (
-    <View style={[styles.voiceMessageContainer, isOwn ? styles.voiceMessageOwn : styles.voiceMessageOther]}>
+    <View style={[styles.voiceMessageContainer, isOwn ? styles.voiceMessageOwn : [styles.voiceMessageOther, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' }]]}>
       <TouchableOpacity
         style={[styles.voicePlayButton, isOwn ? styles.voicePlayButtonOwn : styles.voicePlayButtonOther]}
         onPress={loadAndPlayAudio}
@@ -438,7 +449,7 @@ function VoiceMessagePlayer({
         </View>
 
         {/* Duration */}
-        <Text style={[styles.voiceDuration, isOwn && styles.voiceDurationOwn]}>
+        <Text style={[styles.voiceDuration, { color: isDark && !isOwn ? colors.textSecondary : undefined }, isOwn && styles.voiceDurationOwn]}>
           {isPlaying ? formatTime(position) : formatTime(audioDuration)}
         </Text>
       </View>
@@ -457,6 +468,8 @@ function Composer({
   pendingMedia,
   onClearMedia,
   isSending,
+  colors,
+  isDark,
 }: {
   onSend: (text: string) => void;
   onTyping?: () => void;
@@ -467,6 +480,8 @@ function Composer({
   pendingMedia: PendingMedia[];
   onClearMedia: (index: number) => void;
   isSending: boolean;
+  colors: ThemeColors;
+  isDark: boolean;
 }) {
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -629,14 +644,14 @@ function Composer({
   const canSend = text.trim().length > 0 || pendingMedia.length > 0;
 
   return (
-    <View style={[styles.composerContainer, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View style={[styles.composerContainer, { paddingBottom: Math.max(insets.bottom, 8), backgroundColor: colors.background, borderTopColor: colors.border }]}>
       {/* Recording indicator */}
       {isRecording && (
         <View style={styles.recordingIndicator}>
           <Animated.View style={[styles.recordingDot, recordingAnimatedStyle]} />
           <Text style={styles.recordingText}>Recording {formatDuration(recordingDuration)}</Text>
           <TouchableOpacity onPress={cancelRecording} style={styles.cancelRecordingButton}>
-            <Text style={styles.cancelRecordingText}>Cancel</Text>
+            <Text style={[styles.cancelRecordingText, { color: colors.textSecondary }]}>Cancel</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -648,7 +663,7 @@ function Composer({
             <View key={index} style={styles.pendingMediaItem}>
               <Image source={{ uri: media.uri }} style={styles.pendingMediaImage} />
               <TouchableOpacity
-                style={styles.pendingMediaRemove}
+                style={[styles.pendingMediaRemove, { backgroundColor: colors.background }]}
                 onPress={() => onClearMedia(index)}
               >
                 <Ionicons name="close-circle" size={20} color="#fff" />
@@ -677,14 +692,14 @@ function Composer({
 
         {/* Input area */}
         {!isRecording ? (
-          <View style={styles.inputWrapper}>
+          <View style={[styles.inputWrapper, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
             <TextInput
               ref={inputRef}
-              style={styles.composerInput}
+              style={[styles.composerInput, { color: colors.text }]}
               value={text}
               onChangeText={handleChangeText}
               placeholder={placeholder || 'Message...'}
-              placeholderTextColor="rgba(0,0,0,0.35)"
+              placeholderTextColor={colors.placeholder}
               multiline
               maxLength={1000}
             />
@@ -695,12 +710,12 @@ function Composer({
               onPress={onPickImage}
               activeOpacity={0.7}
             >
-              <Ionicons name="image-outline" size={24} color="rgba(0,0,0,0.45)" />
+              <Ionicons name="image-outline" size={24} color={colors.iconSecondary} />
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.recordingInputWrapper}>
-            <Text style={styles.recordingInputText}>
+            <Text style={[styles.recordingInputText, { color: colors.textSecondary }]}>
               Tap mic to send, or cancel
             </Text>
           </View>
@@ -729,7 +744,7 @@ function Composer({
             <Ionicons
               name={isRecording ? 'stop' : 'mic'}
               size={24}
-              color={isRecording ? '#fff' : 'rgba(0,0,0,0.45)'}
+              color={isRecording ? '#fff' : colors.iconSecondary}
             />
           </TouchableOpacity>
         )}
@@ -739,7 +754,7 @@ function Composer({
 }
 
 // Empty Chat State
-function EmptyChat({ userName }: { userName?: string }) {
+function EmptyChat({ userName, colors }: { userName?: string; colors: ThemeColors }) {
   return (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyAvatarContainer}>
@@ -750,8 +765,8 @@ function EmptyChat({ userName }: { userName?: string }) {
           <Ionicons name="chatbubbles" size={40} color="#fff" />
         </LinearGradient>
       </View>
-      <Text style={styles.emptyTitle}>Start a conversation</Text>
-      <Text style={styles.emptySubtitle}>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>Start a conversation</Text>
+      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         {userName ? `Say hi to ${userName}!` : 'Send a message or share a photo'}
       </Text>
     </View>
@@ -790,13 +805,13 @@ function ImageViewerModal({
 }
 
 // Loading Screen
-function LoadingScreen({ insets }: { insets: { top: number } }) {
+function LoadingScreen({ insets, colors, isDark }: { insets: { top: number }; colors: ThemeColors; isDark: boolean }) {
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1a1a1a" />
-        <Text style={styles.loadingText}>Loading chat...</Text>
+        <ActivityIndicator size="large" color={colors.text} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading chat...</Text>
       </View>
     </View>
   );
@@ -807,27 +822,31 @@ function ErrorScreen({
   insets,
   onBack,
   error,
+  colors,
+  isDark,
 }: {
   insets: { top: number };
   onBack: () => void;
   error: string;
+  colors: ThemeColors;
+  isDark: boolean;
 }) {
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <Ionicons name="chevron-back" size={28} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Chat</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Chat</Text>
         </View>
         <View style={styles.headerRight} />
       </View>
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={64} color="rgba(0,0,0,0.25)" />
-        <Text style={styles.emptyTitle}>Unable to load chat</Text>
-        <Text style={styles.emptySubtitle}>{error}</Text>
+        <Ionicons name="alert-circle-outline" size={64} color={colors.textTertiary} />
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>Unable to load chat</Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>{error}</Text>
       </View>
     </View>
   );
@@ -840,6 +859,7 @@ export default function ChatThreadScreen() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const flatListRef = useRef<FlatList>(null);
   const scrollToBottomOpacity = useSharedValue(0);
+  const { colors, isDark } = useAppTheme();
 
   const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
   const [isSending, setIsSending] = useState(false);
@@ -1015,7 +1035,7 @@ export default function ChatThreadScreen() {
   const renderItem = useCallback(
     ({ item }: { item: MessageGroup }) => {
       if (item.type === 'day' && item.date) {
-        return <DaySeparator date={item.date} />;
+        return <DaySeparator date={item.date} colors={colors} />;
       }
 
       if (item.type === 'message' && item.message) {
@@ -1025,17 +1045,19 @@ export default function ChatThreadScreen() {
             isGroupStart={item.isGroupStart}
             showTime={item.showTime}
             onImagePress={setViewerImage}
+            colors={colors}
+            isDark={isDark}
           />
         );
       }
 
       return null;
     },
-    []
+    [colors, isDark]
   );
 
   if (isLoading) {
-    return <LoadingScreen insets={insets} />;
+    return <LoadingScreen insets={insets} colors={colors} isDark={isDark} />;
   }
 
   if (error) {
@@ -1044,19 +1066,21 @@ export default function ChatThreadScreen() {
         insets={insets}
         onBack={() => router.back()}
         error={error.message}
+        colors={colors}
+        isDark={isDark}
       />
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <DarkGradientBg />
-      <StatusBar barStyle="dark-content" />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Header - Instagram style */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#1a1a1a" />
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1065,24 +1089,24 @@ export default function ChatThreadScreen() {
           activeOpacity={0.7}
         >
           <View style={styles.headerAvatarContainer}>
-            <Avatar uri={channelInfo?.otherMember?.image} size={40} />
-            {channelInfo?.isOnline && <View style={styles.onlineIndicator} />}
+            <Avatar uri={channelInfo?.otherMember?.image} size={40} colors={colors} />
+            {channelInfo?.isOnline && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
           </View>
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle} numberOfLines={1}>
+            <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
               {channelInfo?.name || 'Chat'}
             </Text>
-            <Text style={styles.headerStatus}>
+            <Text style={[styles.headerStatus, { color: colors.textSecondary }]}>
               {channelInfo?.isOnline ? 'Active now' : 'Tap to view profile'}
             </Text>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.headerRight}>
-          <Ionicons name="call-outline" size={24} color="#1a1a1a" />
+          <Ionicons name="call-outline" size={24} color={colors.text} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerRight}>
-          <Ionicons name="videocam-outline" size={26} color="#1a1a1a" />
+          <Ionicons name="videocam-outline" size={26} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -1115,20 +1139,20 @@ export default function ChatThreadScreen() {
               flatListRef.current.scrollToEnd({ animated: false });
             }
           }}
-          ListEmptyComponent={<EmptyChat userName={channelInfo?.name} />}
+          ListEmptyComponent={<EmptyChat userName={channelInfo?.name} colors={colors} />}
           ListFooterComponent={
-            isTyping ? <TypingIndicator visible={isTyping} userName={channelInfo?.name} /> : null
+            isTyping ? <TypingIndicator visible={isTyping} userName={channelInfo?.name} colors={colors} isDark={isDark} /> : null
           }
         />
 
         {/* Scroll to Bottom Button */}
         <Animated.View style={[styles.scrollToBottom, scrollToBottomStyle]}>
           <TouchableOpacity
-            style={styles.scrollToBottomButton}
+            style={[styles.scrollToBottomButton, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0', borderColor: colors.border }]}
             onPress={() => flatListRef.current?.scrollToEnd({ animated: true })}
             activeOpacity={0.8}
           >
-            <Ionicons name="chevron-down" size={20} color="#1a1a1a" />
+            <Ionicons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -1143,6 +1167,8 @@ export default function ChatThreadScreen() {
           pendingMedia={pendingMedia}
           onClearMedia={handleClearMedia}
           isSending={isSending}
+          colors={colors}
+          isDark={isDark}
         />
       </KeyboardAvoidingView>
 

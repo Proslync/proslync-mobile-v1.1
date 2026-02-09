@@ -9,6 +9,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 type ToastType = 'success' | 'error' | 'info';
 
@@ -44,6 +45,7 @@ function ToastItem({
   onHide: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark, baseColors } = useAppTheme();
   const translateY = useSharedValue(-100);
   const opacity = useSharedValue(0);
   const isDismissing = useSharedValue(false);
@@ -107,10 +109,10 @@ function ToastItem({
 
   const backgroundColor =
     type === 'success'
-      ? '#22c55e'
+      ? baseColors.success
       : type === 'error'
-      ? '#ef4444'
-      : '#3b82f6';
+      ? baseColors.error
+      : baseColors.info;
 
   const iconName =
     type === 'success'
@@ -124,12 +126,12 @@ function ToastItem({
       <Animated.View
         style={[
           styles.toastContainer,
-          { top: insets.top + 10, backgroundColor },
+          { top: insets.top + 10, backgroundColor, shadowColor: colors.shadow },
           animatedStyle,
         ]}
       >
-        <Ionicons name={iconName} size={20} color="#fff" />
-        <Text style={styles.toastText}>{message}</Text>
+        <Ionicons name={iconName} size={20} color={colors.textInverse} />
+        <Text style={[styles.toastText, { color: colors.textInverse }]}>{message}</Text>
       </Animated.View>
     </GestureDetector>
   );
@@ -195,7 +197,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -206,6 +207,5 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
 });

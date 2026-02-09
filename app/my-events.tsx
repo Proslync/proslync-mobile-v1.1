@@ -26,6 +26,7 @@ import * as Haptics from 'expo-haptics';
 import { eventsApi } from '@/lib/api/events';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
 
@@ -90,35 +91,41 @@ function getStatusLabel(status: EventStatus): string {
 interface EventCardProps {
   event: Event;
   onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
 }
 
-function EventCard({ event, onPress }: EventCardProps) {
+function EventCard({ event, onPress, colors, isDark }: EventCardProps) {
   const statusColor = getStatusColor(event.status);
   const statusLabel = getStatusLabel(event.status);
 
   return (
-    <TouchableOpacity style={styles.eventCard} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity
+      style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
       <Image
         source={{ uri: event.flyer?.url || event.imageUrl || 'https://picsum.photos/200/300' }}
-        style={styles.eventImage}
+        style={[styles.eventImage, { backgroundColor: colors.backgroundSecondary }]}
       />
       <View style={styles.eventContent}>
         <View style={styles.eventHeader}>
-          <Text style={styles.eventName} numberOfLines={1}>{event.name}</Text>
+          <Text style={[styles.eventName, { color: colors.text }]} numberOfLines={1}>{event.name}</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
             <Text style={styles.statusText}>{statusLabel}</Text>
           </View>
         </View>
-        <Text style={styles.eventDate}>
+        <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
           {formatEventDate(event.startDate)} at {formatEventTime(event.startDate)}
         </Text>
-        <Text style={styles.eventLocation} numberOfLines={1}>
+        <Text style={[styles.eventLocation, { color: colors.textTertiary }]} numberOfLines={1}>
           {event.venue?.name || event.location || 'Location TBA'}
         </Text>
         <View style={styles.eventStats}>
           <View style={styles.eventStat}>
-            <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.6)" />
-            <Text style={styles.eventStatText}>{event.attendeeCount || 0} RSVPs</Text>
+            <Ionicons name="people-outline" size={14} color={colors.textTertiary} />
+            <Text style={[styles.eventStatText, { color: colors.textTertiary }]}>{event.attendeeCount || 0} RSVPs</Text>
           </View>
         </View>
       </View>
@@ -130,6 +137,7 @@ export default function MyEventsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
+  const { colors, isDark } = useAppTheme();
   const pagerRef = React.useRef<PagerView>(null);
   const [events, setEvents] = React.useState<Event[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -244,47 +252,54 @@ export default function MyEventsScreen() {
 
   const renderEvent = ({ item, index }: { item: Event; index: number }) => (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-      <EventCard event={item} onPress={() => handleEventPress(item)} />
+      <EventCard event={item} onPress={() => handleEventPress(item)} colors={colors} isDark={isDark} />
     </Animated.View>
   );
 
   const currentCount = currentEvents.length;
   const pastCount = pastEvents.length;
 
+  // Accent color for primary actions
+  const accentColor = '#8b5cf6';
+
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
       >
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Events</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>My Events</Text>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => router.push('/create-event')}
         >
-          <Ionicons name="add" size={24} color="#fff" />
+          <Ionicons name="add" size={24} color={colors.text} />
         </TouchableOpacity>
       </Animated.View>
 
       {/* Tab Bar */}
-      <View style={styles.tabBar}>
-        <Animated.View style={[styles.tabIndicator, { width: tabWidth }, indicatorStyle]} />
+      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
+        <Animated.View style={[styles.tabIndicator, { width: tabWidth, backgroundColor: colors.text }, indicatorStyle]} />
         <TouchableOpacity
           style={styles.tab}
           onPress={() => handleTabPress('current')}
           activeOpacity={0.7}
         >
-          <Animated.Text style={[styles.tabText, currentTabTextStyle]}>
+          <Animated.Text style={[styles.tabText, { color: colors.text }, currentTabTextStyle]}>
             Current
           </Animated.Text>
           {currentCount > 0 && (
-            <View style={[styles.tabBadge, activeTab === 'current' && styles.tabBadgeActive]}>
-              <Text style={styles.tabBadgeText}>{currentCount}</Text>
+            <View style={[
+              styles.tabBadge,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' },
+              activeTab === 'current' && { backgroundColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)' },
+            ]}>
+              <Text style={[styles.tabBadgeText, { color: colors.text }]}>{currentCount}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -293,12 +308,16 @@ export default function MyEventsScreen() {
           onPress={() => handleTabPress('past')}
           activeOpacity={0.7}
         >
-          <Animated.Text style={[styles.tabText, pastTabTextStyle]}>
+          <Animated.Text style={[styles.tabText, { color: colors.text }, pastTabTextStyle]}>
             Past
           </Animated.Text>
           {pastCount > 0 && (
-            <View style={[styles.tabBadge, activeTab === 'past' && styles.tabBadgeActive]}>
-              <Text style={styles.tabBadgeText}>{pastCount}</Text>
+            <View style={[
+              styles.tabBadge,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' },
+              activeTab === 'past' && { backgroundColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)' },
+            ]}>
+              <Text style={[styles.tabBadgeText, { color: colors.text }]}>{pastCount}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -306,7 +325,7 @@ export default function MyEventsScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color={colors.text} />
         </View>
       ) : (
         <AnimatedPagerView
@@ -324,14 +343,14 @@ export default function MyEventsScreen() {
                 <Ionicons
                   name="calendar-outline"
                   size={64}
-                  color="rgba(255,255,255,0.3)"
+                  color={colors.textTertiary}
                 />
-                <Text style={styles.emptyTitle}>No current events</Text>
-                <Text style={styles.emptySubtitle}>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No current events</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
                   Create your first event to get started
                 </Text>
                 <TouchableOpacity
-                  style={styles.createButton}
+                  style={[styles.createButton, { backgroundColor: accentColor }]}
                   onPress={() => router.push('/create-event')}
                 >
                   <Ionicons name="add" size={20} color="#fff" />
@@ -357,10 +376,10 @@ export default function MyEventsScreen() {
                 <Ionicons
                   name="time-outline"
                   size={64}
-                  color="rgba(255,255,255,0.3)"
+                  color={colors.textTertiary}
                 />
-                <Text style={styles.emptyTitle}>No past events</Text>
-                <Text style={styles.emptySubtitle}>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No past events</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
                   Your completed events will appear here
                 </Text>
               </View>
@@ -384,7 +403,6 @@ export default function MyEventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   pagerView: {
     flex: 1,
@@ -399,7 +417,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   backButton: {
     width: 40,
@@ -410,7 +427,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   addButton: {
     width: 40,
@@ -421,7 +437,6 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
     position: 'relative',
   },
   tabIndicator: {
@@ -429,7 +444,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     height: 2,
-    backgroundColor: '#fff',
   },
   tab: {
     flex: 1,
@@ -442,21 +456,15 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
   },
   tabBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  tabBadgeActive: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
   tabBadgeText: {
     fontSize: 12,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   loadingContainer: {
     flex: 1,
@@ -472,20 +480,17 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
     marginTop: 8,
     textAlign: 'center',
   },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#8b5cf6',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 24,
@@ -502,7 +507,6 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 12,
     overflow: 'hidden',
     marginBottom: 12,
@@ -510,7 +514,6 @@ const styles = StyleSheet.create({
   eventImage: {
     width: 100,
     height: 100,
-    backgroundColor: '#1a1a1a',
   },
   eventContent: {
     flex: 1,
@@ -527,7 +530,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -543,13 +545,11 @@ const styles = StyleSheet.create({
   eventDate: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.8)',
     marginTop: 4,
   },
   eventLocation: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
   },
   eventStats: {
     flexDirection: 'row',
@@ -563,6 +563,5 @@ const styles = StyleSheet.create({
   eventStatText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
   },
 });

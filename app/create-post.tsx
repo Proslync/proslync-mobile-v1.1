@@ -19,6 +19,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useToast } from '@/components/shared/toast';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const DEFAULT_AVATAR = 'https://picsum.photos/200';
 
@@ -27,6 +28,7 @@ export default function CreatePostScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { colors, isDark } = useAppTheme();
 
   const [mediaUri, setMediaUri] = React.useState<string | null>(null);
   const [mediaType, setMediaType] = React.useState<'image' | 'video'>('image');
@@ -102,26 +104,31 @@ export default function CreatePostScreen() {
     setMediaUri(null);
   };
 
+  // Accent colors
+  const primaryAccent = '#8b5cf6';
+  const secondaryAccent = '#22c55e';
+  const shareButtonColor = '#0095f6';
+
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
       >
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => router.back()}
           disabled={isSubmitting}
         >
-          <Ionicons name="close" size={28} color="#fff" />
+          <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>New Post</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>New Post</Text>
 
         <TouchableOpacity
-          style={[styles.postButton, (!mediaUri || isSubmitting) && styles.postButtonDisabled]}
+          style={[styles.postButton, { backgroundColor: shareButtonColor }, (!mediaUri || isSubmitting) && styles.postButtonDisabled]}
           onPress={handlePost}
           disabled={!mediaUri || isSubmitting}
         >
@@ -146,25 +153,25 @@ export default function CreatePostScreen() {
             style={styles.mediaPickerContainer}
           >
             <TouchableOpacity
-              style={styles.mediaPickerOption}
+              style={[styles.mediaPickerOption, { backgroundColor: colors.cardElevated }]}
               onPress={() => pickMedia('library')}
             >
-              <View style={styles.mediaPickerIconContainer}>
-                <Ionicons name="images" size={32} color="#8b5cf6" />
+              <View style={[styles.mediaPickerIconContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <Ionicons name="images" size={32} color={primaryAccent} />
               </View>
-              <Text style={styles.mediaPickerTitle}>Choose from Library</Text>
-              <Text style={styles.mediaPickerSubtitle}>Select a photo or video</Text>
+              <Text style={[styles.mediaPickerTitle, { color: colors.text }]}>Choose from Library</Text>
+              <Text style={[styles.mediaPickerSubtitle, { color: colors.textTertiary }]}>Select a photo or video</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.mediaPickerOption}
+              style={[styles.mediaPickerOption, { backgroundColor: colors.cardElevated }]}
               onPress={() => pickMedia('camera')}
             >
-              <View style={styles.mediaPickerIconContainer}>
-                <Ionicons name="camera" size={32} color="#22c55e" />
+              <View style={[styles.mediaPickerIconContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <Ionicons name="camera" size={32} color={secondaryAccent} />
               </View>
-              <Text style={styles.mediaPickerTitle}>Take Photo</Text>
-              <Text style={styles.mediaPickerSubtitle}>Use your camera</Text>
+              <Text style={[styles.mediaPickerTitle, { color: colors.text }]}>Take Photo</Text>
+              <Text style={[styles.mediaPickerSubtitle, { color: colors.textTertiary }]}>Use your camera</Text>
             </TouchableOpacity>
           </Animated.View>
         ) : (
@@ -175,12 +182,12 @@ export default function CreatePostScreen() {
             {/* User Info */}
             <View style={styles.userRow}>
               <Image source={{ uri: avatarUrl }} style={styles.userAvatar} />
-              <Text style={styles.username}>{username}</Text>
+              <Text style={[styles.username, { color: colors.text }]}>{username}</Text>
             </View>
 
             {/* Media Preview */}
             <View style={styles.mediaPreviewWrapper}>
-              <Image source={{ uri: mediaUri }} style={styles.mediaPreview} />
+              <Image source={{ uri: mediaUri }} style={[styles.mediaPreview, { backgroundColor: colors.backgroundSecondary }]} />
               {mediaType === 'video' && (
                 <View style={styles.videoIndicator}>
                   <Ionicons name="videocam" size={20} color="#fff" />
@@ -192,11 +199,11 @@ export default function CreatePostScreen() {
             </View>
 
             {/* Caption Input */}
-            <View style={styles.captionContainer}>
+            <View style={[styles.captionContainer, { backgroundColor: colors.input }]}>
               <TextInput
-                style={styles.captionInput}
+                style={[styles.captionInput, { color: colors.text }]}
                 placeholder="Write a caption..."
-                placeholderTextColor="rgba(255,255,255,0.4)"
+                placeholderTextColor={colors.placeholder}
                 value={caption}
                 onChangeText={setCaption}
                 multiline
@@ -205,23 +212,23 @@ export default function CreatePostScreen() {
             </View>
 
             {/* Options */}
-            <View style={styles.optionsList}>
-              <TouchableOpacity style={styles.optionItem}>
-                <Ionicons name="location-outline" size={22} color="#fff" />
-                <Text style={styles.optionText}>Add location</Text>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+            <View style={[styles.optionsList, { backgroundColor: colors.cardElevated }]}>
+              <TouchableOpacity style={[styles.optionItem, { borderBottomColor: colors.border }]}>
+                <Ionicons name="location-outline" size={22} color={colors.text} />
+                <Text style={[styles.optionText, { color: colors.text }]}>Add location</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.optionItem}>
-                <Ionicons name="person-outline" size={22} color="#fff" />
-                <Text style={styles.optionText}>Tag people</Text>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+              <TouchableOpacity style={[styles.optionItem, { borderBottomColor: colors.border }]}>
+                <Ionicons name="person-outline" size={22} color={colors.text} />
+                <Text style={[styles.optionText, { color: colors.text }]}>Tag people</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.optionItem}>
-                <Ionicons name="musical-notes-outline" size={22} color="#fff" />
-                <Text style={styles.optionText}>Add music</Text>
-                <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.4)" />
+              <TouchableOpacity style={[styles.optionItem, { borderBottomColor: 'transparent' }]}>
+                <Ionicons name="musical-notes-outline" size={22} color={colors.text} />
+                <Text style={[styles.optionText, { color: colors.text }]}>Add music</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -234,7 +241,6 @@ export default function CreatePostScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -243,7 +249,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   headerButton: {
     width: 40,
@@ -254,10 +259,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   postButton: {
-    backgroundColor: '#0095f6',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -284,7 +287,6 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   mediaPickerOption: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
@@ -293,7 +295,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -301,13 +302,11 @@ const styles = StyleSheet.create({
   mediaPickerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 4,
   },
   mediaPickerSubtitle: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
   },
   // Preview
   previewContainer: {
@@ -326,7 +325,6 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   mediaPreviewWrapper: {
     position: 'relative',
@@ -336,7 +334,6 @@ const styles = StyleSheet.create({
   mediaPreview: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: '#1a1a1a',
   },
   videoIndicator: {
     position: 'absolute',
@@ -354,19 +351,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   captionContainer: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     padding: 16,
   },
   captionInput: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
     minHeight: 80,
     textAlignVertical: 'top',
   },
   optionsList: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -375,13 +369,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
     gap: 12,
   },
   optionText: {
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
   },
 });

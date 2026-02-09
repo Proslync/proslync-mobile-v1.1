@@ -8,6 +8,7 @@ import Animated, {
 import { PhoneStep } from '@/components/auth/phone-step';
 import { OtpStep } from '@/components/auth/otp-step';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function SignInScreen() {
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
@@ -15,6 +16,7 @@ export default function SignInScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const redirectUrl = (params.redirect as string) || '/(tabs)';
+  const { colors, isDark } = useAppTheme();
 
   const handlePhoneSuccess = (phone: string) => {
     setPhoneNumber(phone);
@@ -30,7 +32,7 @@ export default function SignInScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <DarkGradientBg />
       {step === 'phone' && (
         <Animated.View
@@ -62,7 +64,6 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
   },

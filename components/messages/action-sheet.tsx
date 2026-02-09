@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { Conversation } from '../../lib/types/messages.types';
 
 interface ActionSheetProps {
@@ -33,6 +34,7 @@ export function ActionSheet({
   onDelete,
 }: ActionSheetProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
 
   if (!conversation) return null;
 
@@ -41,19 +43,19 @@ export function ActionSheet({
       icon: conversation.isPinned ? 'pin-outline' : 'pin',
       label: conversation.isPinned ? 'Unpin' : 'Pin',
       onPress: onPin,
-      color: '#fff',
+      color: colors.text,
     },
     {
       icon: conversation.isMuted ? 'notifications' : 'notifications-off',
       label: conversation.isMuted ? 'Unmute' : 'Mute',
       onPress: onMute,
-      color: '#fff',
+      color: colors.text,
     },
     {
       icon: 'archive',
       label: 'Archive',
       onPress: onArchive,
-      color: '#fff',
+      color: colors.text,
     },
     {
       icon: 'trash',
@@ -71,10 +73,16 @@ export function ActionSheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={[styles.container, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[
+          styles.container,
+          {
+            paddingBottom: insets.bottom + 16,
+            backgroundColor: isDark ? '#1c1c1e' : colors.card,
+          }
+        ]}>
           {/* Conversation Preview */}
-          <View style={styles.preview}>
-            <Text style={styles.previewTitle} numberOfLines={1}>
+          <View style={[styles.preview, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.previewTitle, { color: colors.text }]} numberOfLines={1}>
               {conversation.title}
             </Text>
           </View>
@@ -86,6 +94,7 @@ export function ActionSheet({
                 key={action.label}
                 style={[
                   styles.actionRow,
+                  { borderBottomColor: colors.border },
                   index === actions.length - 1 && styles.actionRowLast,
                 ]}
                 onPress={() => {
@@ -108,7 +117,10 @@ export function ActionSheet({
 
           {/* Cancel Button */}
           <TouchableOpacity
-            style={styles.cancelButton}
+            style={[
+              styles.cancelButton,
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
+            ]}
             onPress={onClose}
             activeOpacity={0.7}
           >
@@ -127,7 +139,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: '#1c1c1e',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 8,
@@ -136,12 +147,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   previewTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     textAlign: 'center',
   },
   actionsContainer: {
@@ -154,7 +163,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   actionRowLast: {
     borderBottomWidth: 0,
@@ -164,7 +172,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
   },
   cancelButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,

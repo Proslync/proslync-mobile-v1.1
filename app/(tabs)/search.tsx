@@ -39,6 +39,7 @@ import { ShareLocationSheet } from '@/components/map/share-location-sheet';
 import { FriendProfileSheet } from '@/components/map/friend-profile-sheet';
 import { config } from '@/lib/config';
 import { useAuth } from '@/lib/providers/auth-provider';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -359,6 +360,7 @@ function MapPreview() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>('events');
+  const { colors, isDark } = useAppTheme();
 
   const snapPoints = useMemo(() => [140, '45%'], []);
 
@@ -437,10 +439,10 @@ function MapPreview() {
   const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Map placeholder background */}
       <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
+        colors={isDark ? ['#0F090C', '#1A1215', '#251A1F'] : ['#1a1a2e', '#16213e', '#0f3460']}
         style={StyleSheet.absoluteFill}
       />
 
@@ -494,37 +496,37 @@ function MapPreview() {
         ref={bottomSheetRef}
         index={1}
         snapPoints={snapPoints}
-        backgroundStyle={styles.bottomSheetBackground}
-        handleIndicatorStyle={styles.bottomSheetIndicator}
+        backgroundStyle={[styles.bottomSheetBackground, { backgroundColor: colors.background }]}
+        handleIndicatorStyle={[styles.bottomSheetIndicator, { backgroundColor: colors.textTertiary }]}
         enablePanDownToClose={false}
         animateOnMount={true}
       >
         <View style={styles.bottomSheetHeader}>
-          <Text style={styles.bottomSheetTitle}>Nearby</Text>
-          <View style={styles.filterTabs}>
+          <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>Nearby</Text>
+          <View style={[styles.filterTabs, { backgroundColor: colors.input }]}>
             <TouchableOpacity
-              style={[styles.filterTab, nearbyFilter === 'events' && styles.filterTabActive]}
+              style={[styles.filterTab, nearbyFilter === 'events' && [styles.filterTabActive, { backgroundColor: colors.buttonSecondary }]]}
               onPress={() => handleFilterChange('events')}
             >
-              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? '#1a1a1a' : 'rgba(0,0,0,0.4)'} />
-              <Text style={[styles.filterTabText, nearbyFilter === 'events' && styles.filterTabTextActive]}>Events</Text>
+              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? colors.text : colors.textTertiary} />
+              <Text style={[styles.filterTabText, { color: colors.textTertiary }, nearbyFilter === 'events' && { color: colors.text }]}>Events</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.filterTab, nearbyFilter === 'friends' && styles.filterTabActive]}
+              style={[styles.filterTab, nearbyFilter === 'friends' && [styles.filterTabActive, { backgroundColor: colors.buttonSecondary }]]}
               onPress={() => handleFilterChange('friends')}
             >
-              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? '#1a1a1a' : 'rgba(0,0,0,0.4)'} />
-              <Text style={[styles.filterTabText, nearbyFilter === 'friends' && styles.filterTabTextActive]}>Friends</Text>
+              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? colors.text : colors.textTertiary} />
+              <Text style={[styles.filterTabText, { color: colors.textTertiary }, nearbyFilter === 'friends' && { color: colors.text }]}>Friends</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.liveIndicator}>
             {nearbyFilter === 'events' && liveCount > 0 && (
               <>
                 <View style={styles.liveIndicatorDot} />
-                <Text style={styles.liveIndicatorText}>{liveCount} Live</Text>
+                <Text style={[styles.liveIndicatorText, { color: colors.textSecondary }]}>{liveCount} Live</Text>
               </>
             )}
-            {isLoading && <ActivityIndicator size="small" color="rgba(0,0,0,0.4)" />}
+            {isLoading && <ActivityIndicator size="small" color={colors.textTertiary} />}
           </View>
         </View>
 
@@ -535,27 +537,27 @@ function MapPreview() {
         >
           {nearbyFilter === 'friends' ? (
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={48} color="rgba(0,0,0,0.2)" />
-              <Text style={styles.emptyStateText}>No friends nearby</Text>
-              <Text style={styles.emptyStateSubtext}>Friends will appear here when they're at events near you</Text>
+              <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No friends nearby</Text>
+              <Text style={[styles.emptyStateSubtext, { color: colors.textTertiary }]}>Friends will appear here when they're at events near you</Text>
             </View>
           ) : isLoading && events.length === 0 ? (
             <View style={styles.loadingState}>
-              <ActivityIndicator size="large" color="#1a1a1a" />
-              <Text style={styles.loadingStateText}>Loading events...</Text>
+              <ActivityIndicator size="large" color={colors.text} />
+              <Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text>
             </View>
           ) : error && events.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="cloud-offline-outline" size={48} color="rgba(0,0,0,0.2)" />
-              <Text style={styles.emptyStateText}>{error}</Text>
-              <TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()}>
-                <Text style={styles.retryButtonText}>Retry</Text>
+              <Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text>
+              <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.buttonSecondary }]} onPress={() => fetchEvents()}>
+                <Text style={[styles.retryButtonText, { color: colors.text }]}>Retry</Text>
               </TouchableOpacity>
             </View>
           ) : filteredEvents.length === 0 ? (
             <View style={styles.emptyState}>
-              <Ionicons name="map-outline" size={48} color="rgba(0,0,0,0.2)" />
-              <Text style={styles.emptyStateText}>{searchQuery ? 'No events found' : 'No events available'}</Text>
+              <Ionicons name="map-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{searchQuery ? 'No events found' : 'No events available'}</Text>
             </View>
           ) : (
             filteredEvents.map((event) => (
@@ -583,6 +585,7 @@ function FullMapScreen() {
   const [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>('events');
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendMarker | null>(null);
+  const { colors, isDark } = useAppTheme();
 
   // Live location hook
   const { friendLocations, sharingState } = useLiveLocation();
@@ -668,7 +671,7 @@ function FullMapScreen() {
   const defaultCenter: [number, number] = userLocation || [-73.9855, 40.7580];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <MapView style={StyleSheet.absoluteFill} styleURL={DARK_STYLE_URL} logoEnabled={false} attributionEnabled={false} compassEnabled={false} scaleBarEnabled={false} zoomEnabled={true} pitchEnabled={true} rotateEnabled={true}>
         <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12 }} minZoomLevel={2} maxZoomLevel={20} />
         {/* Override POI/business label colors to white */}
@@ -704,7 +707,7 @@ function FullMapScreen() {
       {/* Share location button - only show when feature is enabled */}
       {config.websocket.enabled && (
         <TouchableOpacity
-          style={[styles.shareLocationButton, { bottom: 240 }]}
+          style={[styles.shareLocationButton, { bottom: 240, backgroundColor: colors.mapOverlay, borderColor: colors.border }]}
           onPress={async () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             // Request location permission before opening the sheet
@@ -719,32 +722,32 @@ function FullMapScreen() {
           <Ionicons
             name={sharingState.isSharing ? 'location' : 'location-outline'}
             size={22}
-            color={sharingState.isSharing ? '#34c759' : '#1a1a1a'}
+            color={sharingState.isSharing ? '#34c759' : colors.text}
           />
           {sharingState.isSharing && <View style={styles.sharingIndicator} />}
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity style={[styles.recenterButton, { bottom: 180 }]} onPress={handleRecenter}>
-        <Ionicons name="locate" size={22} color="#1a1a1a" />
+      <TouchableOpacity style={[styles.recenterButton, { bottom: 180, backgroundColor: colors.mapOverlay, borderColor: colors.border }]} onPress={handleRecenter}>
+        <Ionicons name="locate" size={22} color={colors.text} />
       </TouchableOpacity>
 
-      <BottomSheet ref={bottomSheetRef} index={0} snapPoints={snapPoints} backgroundStyle={styles.bottomSheetBackground} handleIndicatorStyle={styles.bottomSheetIndicator} enablePanDownToClose={false} animateOnMount={true}>
+      <BottomSheet ref={bottomSheetRef} index={0} snapPoints={snapPoints} backgroundStyle={[styles.bottomSheetBackground, { backgroundColor: colors.background }]} handleIndicatorStyle={[styles.bottomSheetIndicator, { backgroundColor: colors.textTertiary }]} enablePanDownToClose={false} animateOnMount={true}>
         <View style={styles.bottomSheetHeader}>
-          <Text style={styles.bottomSheetTitle}>Nearby</Text>
-          <View style={styles.filterTabs}>
-            <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'events' && styles.filterTabActive]} onPress={() => handleFilterChange('events')}>
-              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? '#1a1a1a' : 'rgba(0,0,0,0.4)'} />
-              <Text style={[styles.filterTabText, nearbyFilter === 'events' && styles.filterTabTextActive]}>Events</Text>
+          <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>Nearby</Text>
+          <View style={[styles.filterTabs, { backgroundColor: colors.input }]}>
+            <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'events' && [styles.filterTabActive, { backgroundColor: colors.buttonSecondary }]]} onPress={() => handleFilterChange('events')}>
+              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? colors.text : colors.textTertiary} />
+              <Text style={[styles.filterTabText, { color: colors.textTertiary }, nearbyFilter === 'events' && { color: colors.text }]}>Events</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'friends' && styles.filterTabActive]} onPress={() => handleFilterChange('friends')}>
-              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? '#1a1a1a' : 'rgba(0,0,0,0.4)'} />
-              <Text style={[styles.filterTabText, nearbyFilter === 'friends' && styles.filterTabTextActive]}>Friends</Text>
+            <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'friends' && [styles.filterTabActive, { backgroundColor: colors.buttonSecondary }]]} onPress={() => handleFilterChange('friends')}>
+              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? colors.text : colors.textTertiary} />
+              <Text style={[styles.filterTabText, { color: colors.textTertiary }, nearbyFilter === 'friends' && { color: colors.text }]}>Friends</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.liveIndicator}>
-            {nearbyFilter === 'events' && liveCount > 0 && (<><View style={styles.liveIndicatorDot} /><Text style={styles.liveIndicatorText}>{liveCount} Live</Text></>)}
-            {isLoading && <ActivityIndicator size="small" color="rgba(0,0,0,0.4)" />}
+            {nearbyFilter === 'events' && liveCount > 0 && (<><View style={styles.liveIndicatorDot} /><Text style={[styles.liveIndicatorText, { color: colors.textSecondary }]}>{liveCount} Live</Text></>)}
+            {isLoading && <ActivityIndicator size="small" color={colors.textTertiary} />}
           </View>
         </View>
         <BottomSheetScrollView contentContainerStyle={styles.bottomSheetContent} showsVerticalScrollIndicator={false} refreshControl={refreshControl}>
@@ -754,7 +757,7 @@ function FullMapScreen() {
                 {nearbyFriends.map((friend) => (
                   <TouchableOpacity
                     key={friend.id}
-                    style={styles.friendListItem}
+                    style={[styles.friendListItem, { backgroundColor: colors.card }]}
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       cameraRef.current?.setCamera({
@@ -766,46 +769,46 @@ function FullMapScreen() {
                   >
                     <Image source={{ uri: friend.imageUrl }} style={styles.friendListAvatar} />
                     <View style={styles.friendListInfo}>
-                      <Text style={styles.friendListName}>{friend.name}</Text>
+                      <Text style={[styles.friendListName, { color: colors.text }]}>{friend.name}</Text>
                       <View style={styles.friendListStatus}>
                         <View style={styles.friendListLiveDot} />
-                        <Text style={styles.friendListStatusText}>Sharing location</Text>
+                        <Text style={[styles.friendListStatusText, { color: colors.textSecondary }]}>Sharing location</Text>
                       </View>
                     </View>
-                    <Ionicons name="navigate-outline" size={20} color="rgba(0,0,0,0.4)" />
+                    <Ionicons name="navigate-outline" size={20} color={colors.textTertiary} />
                   </TouchableOpacity>
                 ))}
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={48} color="rgba(0,0,0,0.2)" />
-                <Text style={styles.emptyStateText}>No friends sharing location</Text>
-                <Text style={styles.emptyStateSubtext}>
+                <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
+                <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No friends sharing location</Text>
+                <Text style={[styles.emptyStateSubtext, { color: colors.textTertiary }]}>
                   {sharingState.isSharing
                     ? 'Friends will appear here when they share their location'
                     : 'Share your location to let friends see you on the map'}
                 </Text>
                 {!sharingState.isSharing && (
                   <TouchableOpacity
-                    style={styles.shareButton}
+                    style={[styles.shareButton, { backgroundColor: colors.buttonSecondary }]}
                     onPress={async () => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       await Location.requestForegroundPermissionsAsync();
                       setShowShareSheet(true);
                     }}
                   >
-                    <Ionicons name="location-outline" size={18} color="#1a1a1a" />
-                    <Text style={styles.shareButtonText}>Share My Location</Text>
+                    <Ionicons name="location-outline" size={18} color={colors.text} />
+                    <Text style={[styles.shareButtonText, { color: colors.text }]}>Share My Location</Text>
                   </TouchableOpacity>
                 )}
               </View>
             )
           ) : isLoading && events.length === 0 ? (
-            <View style={styles.loadingState}><ActivityIndicator size="large" color="#1a1a1a" /><Text style={styles.loadingStateText}>Loading events...</Text></View>
+            <View style={styles.loadingState}><ActivityIndicator size="large" color={colors.text} /><Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text></View>
           ) : error && events.length === 0 ? (
-            <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color="rgba(0,0,0,0.2)" /><Text style={styles.emptyStateText}>{error}</Text><TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()}><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity></View>
+            <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text><TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.buttonSecondary }]} onPress={() => fetchEvents()}><Text style={[styles.retryButtonText, { color: colors.text }]}>Retry</Text></TouchableOpacity></View>
           ) : filteredEvents.length === 0 ? (
-            <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color="rgba(0,0,0,0.2)" /><Text style={styles.emptyStateText}>{searchQuery ? 'No events found' : 'No events available'}</Text></View>
+            <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{searchQuery ? 'No events found' : 'No events available'}</Text></View>
           ) : (
             <>{selectedEvent && <EventCard key={`selected-${selectedEvent.id}`} event={selectedEvent} onPress={() => handleEventPress(selectedEvent)} />}{filteredEvents.filter(e => !selectedEvent || e.id !== selectedEvent.id).map((event) => (<EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />))}</>
           )}
@@ -839,7 +842,6 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   // Map grid decoration
   mapGrid: {
@@ -945,12 +947,10 @@ const styles = StyleSheet.create({
   },
   // Bottom sheet
   bottomSheetBackground: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   bottomSheetIndicator: {
-    backgroundColor: 'rgba(0,0,0,0.2)',
     width: 40,
   },
   bottomSheetHeader: {
@@ -963,12 +963,10 @@ const styles = StyleSheet.create({
   bottomSheetTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     marginBottom: 12,
   },
   filterTabs: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(0,0,0,0.05)',
     borderRadius: 10,
     padding: 4,
     gap: 4,
@@ -982,15 +980,14 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   filterTabActive: {
-    backgroundColor: '#D3D3D3',
+    // backgroundColor set dynamically
   },
   filterTabText: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: 'rgba(0,0,0,0.4)',
   },
   filterTabTextActive: {
-    color: '#1a1a1a',
+    // color set dynamically
   },
   liveIndicator: {
     flexDirection: 'row',
@@ -1090,7 +1087,6 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
   },
   // Empty state
   emptyState: {
@@ -1101,13 +1097,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
   },
   emptyStateSubtext: {
     marginTop: 8,
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.3)',
     textAlign: 'center',
     paddingHorizontal: 40,
   },
@@ -1115,13 +1109,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    backgroundColor: '#D3D3D3',
     borderRadius: 8,
   },
   retryButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: '#1a1a1a',
   },
   // Pulsing animation
   pulsingContainer: {
@@ -1254,11 +1246,9 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
   },
   // Share location button
   shareLocationButton: {
@@ -1267,11 +1257,9 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
   },
   sharingIndicator: {
     position: 'absolute',
@@ -1291,7 +1279,6 @@ const styles = StyleSheet.create({
   friendListItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 12,
@@ -1310,7 +1297,6 @@ const styles = StyleSheet.create({
   friendListName: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     marginBottom: 2,
   },
   friendListStatus: {
@@ -1327,14 +1313,12 @@ const styles = StyleSheet.create({
   friendListStatusText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
   },
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#D3D3D3',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
@@ -1343,6 +1327,5 @@ const styles = StyleSheet.create({
   shareButtonText: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
 });

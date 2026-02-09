@@ -5,6 +5,7 @@ import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '@/lib/providers/wallet-provider';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import {
   MembershipCard,
   StatusCardMenuSheet,
@@ -16,6 +17,7 @@ import {
 export default function WalletScreen() {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
+  const { colors, isDark } = useAppTheme();
   const {
     user,
     offers,
@@ -37,8 +39,8 @@ export default function WalletScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
 
       <ScrollView
         ref={scrollRef}
@@ -79,7 +81,6 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollView: {
     flex: 1,
