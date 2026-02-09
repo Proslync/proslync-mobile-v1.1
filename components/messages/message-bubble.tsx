@@ -12,6 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Message, User } from '../../lib/types/messages.types';
 
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.72;
 const MAX_IMAGE_WIDTH = SCREEN_WIDTH * 0.65;
@@ -162,7 +164,7 @@ export function MessageBubble({
       <View style={[styles.container, isOwn && styles.containerOwn, { marginTop: topMargin }]}>
         {!isOwn && isGroupStart && sender && (
           <Image
-            source={{ uri: sender.avatarUrl || 'https://i.pravatar.cc/150?u=default' }}
+            source={sender.avatarUrl ? { uri: sender.avatarUrl } : DefaultAvatarImage}
             style={styles.senderAvatar}
           />
         )}
@@ -204,7 +206,7 @@ export function MessageBubble({
     <View style={[styles.container, isOwn && styles.containerOwn, { marginTop: topMargin }]}>
       {!isOwn && isGroupStart && sender && (
         <Image
-          source={{ uri: sender.avatarUrl || 'https://i.pravatar.cc/150?u=default' }}
+          source={sender.avatarUrl ? { uri: sender.avatarUrl } : DefaultAvatarImage}
           style={styles.senderAvatar}
         />
       )}

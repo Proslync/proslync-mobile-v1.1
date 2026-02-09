@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/providers/auth-provider';
 import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet';
 import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
 
 export default function FeedScreen() {
@@ -26,6 +27,7 @@ export default function FeedScreen() {
   const [purchasedItems, setPurchasedItems] = useState<Set<string>>(new Set());
   const [showDoubleTapHeart, setShowDoubleTapHeart] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<FeedTab>('foryou');
+  const [purchaseItem, setPurchaseItem] = useState<FeedItem | null>(null);
 
   // Liked items still tracked for double-tap heart animation
   const likedItems = new Set<string>();
@@ -131,10 +133,25 @@ export default function FeedScreen() {
     }
   }, [feedItems, showSuccess, showError]);
 
-  const handlePurchase = (id: string) => {
-    // TODO: Open buy ticket modal/drawer
-    console.log('Purchase ticket for:', id);
-  };
+  const handlePurchase = useCallback((id: string) => {
+    const item = feedItems.find(i => i.id === id);
+    if (!item?.eventId) {
+      console.warn('[Feed] No eventId found for item:', id);
+      return;
+    }
+    setPurchaseItem(item);
+  }, [feedItems]);
+
+  const handlePurchaseSuccess = useCallback((ticketCount: number) => {
+    if (purchaseItem) {
+      setPurchasedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.add(purchaseItem.id);
+        return newSet;
+      });
+      showSuccess(`${ticketCount} ticket${ticketCount > 1 ? 's' : ''} purchased!`);
+    }
+  }, [purchaseItem, showSuccess]);
 
   const handleRefer = (id: string) => {
     // TODO: Open refer/earn drawer
@@ -144,11 +161,17 @@ export default function FeedScreen() {
   const handleUserClick = (item: FeedItem) => {
     if (item.userId) {
       router.push({
-        pathname: '/user-profile/[userId]',
+        pathname: '/user/[username]',
         params: {
-          userId: item.userId,
-          name: item.username || '',
-          avatarUrl: item.userAvatar || '',
+          username: item.username || String(item.userId),
+          userId: String(item.userId),
+        },
+      });
+    } else if (item.username) {
+      router.push({
+        pathname: '/user/[username]',
+        params: {
+          username: item.username,
         },
       });
     }
@@ -168,7 +191,9 @@ export default function FeedScreen() {
         venueName: item.venueName || '',
         username: item.username || '',
         userAvatar: item.userAvatar || '',
+        userId: item.userId || '',
         isPaid: item.isPaid ? 'true' : 'false',
+        price: item.price != null ? item.price.toString() : '',
         isUserRegistered: (item.isUserRegistered || localRsvp) ? 'true' : 'false',
       },
     });
@@ -227,6 +252,16 @@ export default function FeedScreen() {
       <FeedHeader
         activeTab={activeTab}
         onTabChange={setActiveTab}
+      />
+      <PurchaseTicketSheet
+        visible={!!purchaseItem}
+        onClose={() => setPurchaseItem(null)}
+        onSuccess={handlePurchaseSuccess}
+        eventId={purchaseItem?.eventId ?? 0}
+        eventTitle={purchaseItem?.eventTitle || purchaseItem?.description || 'Event'}
+        eventDate={purchaseItem?.eventDate}
+        eventImage={purchaseItem?.imageUrl || purchaseItem?.thumbnail}
+        price={purchaseItem?.price}
       />
     </View>
   );

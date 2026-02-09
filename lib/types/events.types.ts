@@ -65,3 +65,18 @@ export interface EventsSearchResponse {
   page?: number;
   limit?: number;
 }
+
+export interface EventAttendee {
+  id: number;
+  userId: number;
+  firstName?: string;
+  lastName?: string;
+  userName?: string;
+  avatarUrl?: string;
+  registeredAt?: string;
+}
+
+export interface EventAttendeesResponse {
+  attendees: EventAttendee[];
+  total: number;
+}

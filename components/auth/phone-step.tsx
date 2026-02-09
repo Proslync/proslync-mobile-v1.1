@@ -124,7 +124,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
         >
           <Image
             source={require('@/assets/images/status_logo.png')}
-            style={styles.logo}
+            style={[styles.logo, { tintColor: '#1a1a1a' }]}
             resizeMode="contain"
           />
         </Animated.View>
@@ -158,14 +158,14 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
           <TextInput
             style={styles.phoneInput}
             placeholder="(555) 555-5555"
-            placeholderTextColor="rgba(255, 255, 255, 0.3)"
+            placeholderTextColor="rgba(0, 0, 0, 0.3)"
             keyboardType="phone-pad"
             value={phoneNumber}
             onChangeText={handlePhoneChange}
             maxLength={14}
             autoFocus
-            selectionColor="rgba(255, 255, 255, 0.5)"
-            cursorColor="rgba(255, 255, 255, 0.7)"
+            selectionColor="rgba(0, 0, 0, 0.3)"
+            cursorColor="rgba(0, 0, 0, 0.5)"
             // Autofill support
             textContentType="telephoneNumber"
             autoComplete="tel"
@@ -224,7 +224,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
@@ -244,13 +244,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#fff',
+    color: '#1a1a1a',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.5)',
     textAlign: 'center',
     marginBottom: 40,
   },
@@ -258,17 +258,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 12,
-    // Subtle glow
-    shadowColor: 'rgba(255, 255, 255, 0.15)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    elevation: 8,
   },
   dialCode: {
-    color: '#fff',
+    color: '#1a1a1a',
     fontSize: 17,
     fontWeight: '500',
     paddingHorizontal: 8,
@@ -277,7 +271,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     fontSize: 17,
-    color: '#fff',
+    color: '#1a1a1a',
     paddingRight: 16,
   },
   errorText: {
@@ -296,7 +290,7 @@ const styles = StyleSheet.create({
   button: {
     width: '100%',
     height: 56,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#3897F0',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -314,12 +308,12 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0, 0, 0, 0.4)',
     textAlign: 'center',
     lineHeight: 20,
   },
   termsLink: {
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.6)',
     textDecorationLine: 'underline',
   },
 });

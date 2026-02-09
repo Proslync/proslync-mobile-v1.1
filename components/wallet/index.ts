@@ -10,4 +10,5 @@ export { OfferCarousel } from './offer-carousel';
 export { ExploreEvents } from './explore-events';
 export { WithdrawalSheet } from './withdrawal-sheet';
 export { TicketCarousel } from './ticket-carousel';
+export { TicketActionSheet } from './ticket-action-sheet';
 export { WalletSkeleton } from './wallet-skeleton';

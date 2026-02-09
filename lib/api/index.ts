@@ -8,4 +8,8 @@ export { streamApi } from './stream';
 export type { StreamTokenResponse, StreamTokensResponse } from './stream';
 export { addToGoogleWallet, updateGoogleWalletCard, generateAppleWalletToken, generateAppleWalletTicketToken, getMembershipCard } from './wallet';
 export { followsApi } from './follows';
+export { postsApi } from './posts';
+export { usersApi } from './users';
+export { venuesApi } from './venues';
+export { ticketsApi } from './tickets';
 export type { FollowersResponse, FollowingResponse } from '../types/follows.types';

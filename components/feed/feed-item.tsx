@@ -19,7 +19,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { useStream } from '@/lib/providers/stream-provider';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 16;
 const CARD_WIDTH = SCREEN_WIDTH - (CARD_MARGIN * 2);
 const CARD_BORDER_RADIUS = 20;
@@ -57,6 +57,7 @@ function formatEventDate(dateString: string): string {
 interface FeedItemProps {
   item: FeedItemType;
   index: number;
+  itemHeight: number;
   isActive: boolean;
   isLiked: boolean;
   isRsvp: boolean;
@@ -74,9 +75,11 @@ interface FeedItemProps {
 
 export function FeedItem({
   item,
+  itemHeight,
   isActive,
   isLiked,
   isRsvp,
+  isPurchased,
   // showDoubleTapHeart - handled by FeedMediaPlayer's internal animation
   onDoubleTap,
   onRsvp,
@@ -105,9 +108,9 @@ export function FeedItem({
 
   // Calculate maximum height for media to ensure card fits within available space
   // with adequate spacing between card and bottom CTA button
-  const availableHeight = SCREEN_HEIGHT
+  const availableHeight = itemHeight
     - (insets.top + HEADER_HEIGHT + 8)  // Top: safe area + header + margin
-    - (insets.bottom + BOTTOM_CTA_HEIGHT)  // Bottom: safe area + CTA
+    - 80  // Bottom: CTA area
     - CARD_HEADER_HEIGHT  // Card header
     - CARD_FOOTER_HEIGHT  // Card footer
     - 32;  // Gap between card and bottom CTA
@@ -133,7 +136,7 @@ export function FeedItem({
     : ['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0.9)', colors.background, colors.background] as const;
 
   return (
-    <View style={[styles.container, { height: SCREEN_HEIGHT, backgroundColor: colors.background }]}>
+    <View style={[styles.container, { height: itemHeight, backgroundColor: colors.background }]}>
       {/* Background wrapper with rounded bottom corners */}
       <View style={styles.backgroundWrapper}>
         {/* Background with flyer image - blurred */}
@@ -166,7 +169,7 @@ export function FeedItem({
           styles.content,
           {
             paddingTop: insets.top + HEADER_HEIGHT + 8,
-            paddingBottom: insets.bottom + 105,
+            paddingBottom: 80,
           },
         ]}
       >
@@ -264,6 +267,7 @@ export function FeedItem({
         onRsvp={item.isPaid ? onPurchase : (item.isPrivate ? onPendingRsvp : onRsvp)}
         isPaid={item.isPaid}
         isRsvpd={isRsvp || item.isUserRegistered}
+        isPurchased={isPurchased}
         isEvent={item.isEvent}
         price={item.price}
       />

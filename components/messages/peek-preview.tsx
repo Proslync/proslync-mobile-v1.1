@@ -19,6 +19,8 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { Conversation, Message } from '../../lib/types/messages.types';
 
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PREVIEW_WIDTH = SCREEN_WIDTH * 0.85;
 
@@ -137,7 +139,7 @@ export function PeekPreview({
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Image
-              source={{ uri: participant?.avatarUrl || 'https://i.pravatar.cc/150?u=default' }}
+              source={participant?.avatarUrl ? { uri: participant.avatarUrl } : DefaultAvatarImage}
               style={styles.avatar}
             />
             <View>

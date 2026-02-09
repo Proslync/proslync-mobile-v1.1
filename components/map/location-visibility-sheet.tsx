@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassOverlay } from '@/components/glass/glass-overlay';
 import { GlassCard } from '@/components/glass/glass-card';
+
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 import { GlassText } from '@/components/glass/glass-text';
 import { GlassButton } from '@/components/glass/glass-button';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -477,11 +479,7 @@ export function LocationVisibilitySheet({
                           >
                             <View style={styles.friendAvatarWrap}>
                               <Image
-                                source={{
-                                  uri:
-                                    follower.avatarUrl ??
-                                    'https://i.pravatar.cc/150?u=default',
-                                }}
+                                source={follower.avatarUrl ? { uri: follower.avatarUrl } : DefaultAvatarImage}
                                 style={styles.friendAvatar}
                               />
                               {isSelected && (

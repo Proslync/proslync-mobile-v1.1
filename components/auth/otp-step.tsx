@@ -144,7 +144,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
         >
           <Image
             source={require('@/assets/images/status_logo.png')}
-            style={styles.logo}
+            style={[styles.logo, { tintColor: '#1a1a1a' }]}
             resizeMode="contain"
           />
         </Animated.View>
@@ -197,7 +197,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
               entering={FadeInDown.duration(200)}
               style={styles.loadingContainer}
             >
-              <ActivityIndicator color="rgba(255, 255, 255, 0.5)" size="small" />
+              <ActivityIndicator color="rgba(0, 0, 0, 0.5)" size="small" />
               <Text style={styles.loadingText}>Verifying...</Text>
             </Animated.View>
           )}
@@ -227,7 +227,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
             activeOpacity={0.7}
           >
             {isResending ? (
-              <ActivityIndicator color="rgba(255, 255, 255, 0.7)" size="small" />
+              <ActivityIndicator color="rgba(0, 0, 0, 0.5)" size="small" />
             ) : (
               <Text style={styles.resendLink}>Resend</Text>
             )}
@@ -241,7 +241,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
@@ -254,13 +254,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backIcon: {
     fontSize: 22,
-    color: '#fff',
+    color: '#1a1a1a',
   },
   topSpacer: {
     height: 40,
@@ -276,13 +276,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#fff',
+    color: '#1a1a1a',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.5)',
     textAlign: 'center',
     marginBottom: 40,
   },
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.5)',
     fontSize: 16,
   },
   errorText: {
@@ -325,11 +325,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   resendText: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.5)',
     fontSize: 16,
   },
   resendLink: {
-    color: '#fff',
+    color: '#1a1a1a',
     fontSize: 16,
     textDecorationLine: 'underline',
   },

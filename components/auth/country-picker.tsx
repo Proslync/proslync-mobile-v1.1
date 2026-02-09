@@ -141,7 +141,7 @@ export function CountryPicker({ selectedCode, onSelect }: CountryPickerProps) {
             <TextInput
               style={styles.searchInput}
               placeholder="Search country..."
-              placeholderTextColor="rgba(255, 255, 255, 0.4)"
+              placeholderTextColor="rgba(0, 0, 0, 0.35)"
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCorrect={false}
@@ -179,11 +179,11 @@ const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#0f090c',
+    backgroundColor: '#fff',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -192,24 +192,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeButtonText: {
     fontSize: 16,
-    color: '#fff',
+    color: '#1a1a1a',
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -217,13 +217,13 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     height: 48,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#fff',
+    color: '#1a1a1a',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   listContent: {
     paddingHorizontal: 20,
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   countryItemSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   countryFlag: {
     fontSize: 32,
@@ -248,13 +248,13 @@ const styles = StyleSheet.create({
   },
   countryName: {
     fontSize: 17,
-    color: '#fff',
+    color: '#1a1a1a',
     fontWeight: '500',
     marginBottom: 2,
   },
   countryDialCode: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
   checkmark: {
     fontSize: 18,

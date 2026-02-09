@@ -18,6 +18,8 @@ import Animated, {
 import { Ionicons } from '@expo/vector-icons';
 import { Conversation } from '../../lib/types/messages.types';
 
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PEEK_THRESHOLD = -SCREEN_WIDTH * 0.25;
 const OPEN_THRESHOLD = -SCREEN_WIDTH * 0.5;
@@ -136,7 +138,7 @@ export function SwipeableConversationRow({
       <Animated.View style={[styles.container, animatedRowStyle]}>
         <View style={styles.avatarContainer}>
           <Image
-            source={{ uri: participant?.avatarUrl || 'https://i.pravatar.cc/150?u=default' }}
+            source={participant?.avatarUrl ? { uri: participant.avatarUrl } : DefaultAvatarImage}
             style={styles.avatar}
           />
         </View>

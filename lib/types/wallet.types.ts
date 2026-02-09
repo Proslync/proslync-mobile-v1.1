@@ -4,7 +4,7 @@ export type StatusTier =
   | 'Newcomer'
   | 'Regular'
   | 'Preferred'
-  | 'Insider'
+  | 'VIP'
   | 'A-List'
   | 'Icon'
   | 'Phantom';
@@ -98,7 +98,7 @@ export const TIER_PERKS: Record<StatusTier, string[]> = {
   Newcomer: ['Early access to select events', 'Birthday reward'],
   Regular: ['5% cashback on tickets', 'Early access to select events'],
   Preferred: ['Line skip at select venues', '10% cashback on tickets', 'Priority support'],
-  Insider: ['Line skip at all venues', '15% cashback', 'VIP lounge access', 'Priority support'],
+  VIP: ['Line skip at all venues', '15% cashback', 'VIP lounge access', 'Priority support'],
   'A-List': ['Complimentary entry', '20% cashback', 'VIP table upgrades', 'Dedicated concierge'],
   Icon: ['All A-List perks', 'Private event invites', '25% cashback', 'Exclusive merch'],
   Phantom: ['Unlimited access', 'Maximum cashback', 'Owner-level treatment', 'Secret events'],

@@ -1022,11 +1022,10 @@ export default function ChatThreadScreen() {
   const handleProfilePress = useCallback(() => {
     if (channelInfo?.otherMember) {
       router.push({
-        pathname: '/user-profile/[userId]',
+        pathname: '/user/[username]',
         params: {
+          username: channelInfo.otherMember.name || channelInfo.otherMember.id,
           userId: channelInfo.otherMember.id,
-          name: channelInfo.otherMember.name,
-          avatarUrl: channelInfo.otherMember.image || '',
         },
       });
     }

@@ -60,7 +60,12 @@ export const authApi = {
    * Get current authenticated user
    */
   getCurrentUser: async (): Promise<User> => {
-    return apiClient.get<User>('/api/auth/me');
+    const raw = await apiClient.get<Record<string, unknown>>('/api/auth/me');
+    // Normalize: backend may return userName or username
+    if (!raw.userName && raw.username) {
+      raw.userName = raw.username;
+    }
+    return raw as unknown as User;
   },
 
   /**
@@ -123,8 +128,19 @@ export const authApi = {
    */
   getUserById: async (userId: number): Promise<PublicUserProfile | null> => {
     try {
-      const response = await apiClient.get<PublicUserProfile>(`/api/users/${userId}`);
-      return response;
+      const response = await apiClient.get<Record<string, unknown>>(`/api/users/${userId}`);
+      // Normalize field names — backend may return userName or username
+      const raw = response as Record<string, unknown>;
+      return {
+        id: (raw.id as number),
+        userName: (raw.userName ?? raw.username) as string | undefined,
+        firstName: (raw.firstName ?? raw.firstname) as string | undefined,
+        lastName: (raw.lastName ?? raw.lastname) as string | undefined,
+        bio: (raw.bio) as string | undefined,
+        avatar: (raw.avatar) as PublicUserProfile['avatar'],
+        eventStats: (raw.eventStats) as PublicUserProfile['eventStats'],
+        followStats: (raw.followStats) as PublicUserProfile['followStats'],
+      };
     } catch (error) {
       console.error('[Auth] Error fetching user by ID:', error);
       return null;

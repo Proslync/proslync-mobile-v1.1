@@ -120,7 +120,7 @@ function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
     const borderColor = interpolateColor(
       animatedValue.value,
       [0, 1, 2],
-      ['rgba(255, 255, 255, 0.2)', '#ff6b6b', '#4ade80']
+      ['rgba(0, 0, 0, 0.15)', '#ff6b6b', '#4ade80']
     );
 
     return {
@@ -157,19 +157,19 @@ const styles = StyleSheet.create({
     width: 48,
     height: 56,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   digit: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#fff',
+    color: '#1a1a1a',
   },
   cursor: {
     width: 2,
     height: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#1a1a1a',
     borderRadius: 1,
   },
   hiddenInput: {

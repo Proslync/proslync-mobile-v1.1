@@ -399,10 +399,10 @@ export default function ScannerScreen() {
         <Animated.View
           entering={FadeInUp.duration(300)}
           exiting={FadeOutDown.duration(200)}
-          style={[styles.resultOverlay, { paddingBottom: insets.bottom + 20 }]}
+          style={styles.resultOverlay}
         >
           <BlurView intensity={80} tint="light" style={styles.resultBlur}>
-            <View style={[styles.resultCard]}>
+            <View style={[styles.resultCard, { paddingBottom: insets.bottom + 28 }]}>
               {/* Status indicator */}
               <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(scanResult.status) }]}>
                 <Ionicons name={getStatusIcon(scanResult.status)} size={32} color="#fff" />

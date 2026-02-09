@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/providers/auth-provider';
 
-const DEFAULT_AVATAR = 'https://picsum.photos/200';
+const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
 
 type TabName = 'search' | 'explore' | 'index' | 'activity' | 'profile';
 
@@ -27,12 +27,12 @@ const TABS: TabConfig[] = [
 
 function ProfileTabIcon({ focused }: { focused: boolean }) {
   const { user } = useAuth();
-  const avatarUrl = user?.avatar?.url || DEFAULT_AVATAR;
+  const avatarUrl = user?.avatar?.url;
 
   return (
     <View style={[styles.profileWrapper, focused && styles.profileWrapperActive]}>
       <Image
-        source={{ uri: avatarUrl }}
+        source={avatarUrl ? { uri: avatarUrl } : DEFAULT_AVATAR}
         style={styles.profileImage}
       />
     </View>

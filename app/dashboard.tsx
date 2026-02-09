@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -76,7 +77,7 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { stats, isLoading: statsLoading, error, refetch } = useDashboard();
+  const { stats, venues, isLoading: statsLoading, error, refetch } = useDashboard();
   const { colors, isDark } = useAppTheme();
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -181,9 +182,53 @@ export default function DashboardScreen() {
           />
         </Animated.View>
 
+        {/* My Venues */}
+        {venues.length > 0 && (
+          <Animated.View
+            entering={FadeInDown.delay(150).duration(500).springify()}
+            style={styles.section}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>My Venues</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.venueList}
+            >
+              {venues.map((venue) => (
+                <View
+                  key={venue.id}
+                  style={[styles.venueCard, { backgroundColor: colors.cardElevated }]}
+                >
+                  {venue.imageUrl ? (
+                    <Image
+                      source={{ uri: venue.imageUrl }}
+                      style={styles.venueImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={[styles.venueImagePlaceholder, { backgroundColor: colors.backgroundSecondary || colors.cardElevated }]}>
+                      <Ionicons name="business-outline" size={28} color={colors.textSecondary} />
+                    </View>
+                  )}
+                  <View style={styles.venueInfo}>
+                    <Text style={[styles.venueName, { color: colors.text }]} numberOfLines={1}>
+                      {venue.name}
+                    </Text>
+                    {(venue.city || venue.address) && (
+                      <Text style={[styles.venueLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                        {venue.city || venue.address}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </Animated.View>
+        )}
+
         {/* Quick Actions */}
         <Animated.View
-          entering={FadeInDown.delay(200).duration(500).springify()}
+          entering={FadeInDown.delay(venues.length > 0 ? 250 : 200).duration(500).springify()}
           style={styles.section}
         >
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
@@ -219,7 +264,7 @@ export default function DashboardScreen() {
 
         {/* Menu Items */}
         <Animated.View
-          entering={FadeInDown.delay(300).duration(500).springify()}
+          entering={FadeInDown.delay(venues.length > 0 ? 350 : 300).duration(500).springify()}
           style={styles.section}
         >
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Manage</Text>
@@ -388,6 +433,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
     textAlign: 'center',
+  },
+  venueList: {
+    gap: 12,
+    paddingRight: 4,
+  },
+  venueCard: {
+    width: 160,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  venueImage: {
+    width: '100%',
+    height: 100,
+  },
+  venueImagePlaceholder: {
+    width: '100%',
+    height: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  venueInfo: {
+    padding: 10,
+    gap: 2,
+  },
+  venueName: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+  },
+  venueLocation: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
   },
   menuList: {
     borderRadius: 12,

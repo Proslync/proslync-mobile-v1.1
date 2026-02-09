@@ -1,5 +1,5 @@
 // Ticket List - Shows user's upcoming RSVP'd event tickets
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { WalletEventCard } from '../../lib/types/wallet.types';
+import { TicketActionSheet } from './ticket-action-sheet';
+import type { WalletEventCard } from '../../lib/types/wallet.types';
 
 interface TicketCarouselProps {
   events: WalletEventCard[];
@@ -19,11 +21,12 @@ interface TicketCarouselProps {
 interface TicketCardProps {
   event: WalletEventCard;
   onView: () => void;
+  onActions: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
   isDark: boolean;
 }
 
-function TicketCard({ event, onView, colors, isDark }: TicketCardProps) {
+function TicketCard({ event, onView, onActions, colors, isDark }: TicketCardProps) {
   return (
     <TouchableOpacity
       style={[
@@ -41,12 +44,24 @@ function TicketCard({ event, onView, colors, isDark }: TicketCardProps) {
         <Text style={[styles.ticketDate, { color: colors.textSecondary }]}>{event.dateTimeLabel}</Text>
         <Text style={[styles.ticketVenue, { color: colors.textTertiary }]}>{event.venueName}</Text>
       </View>
+      <TouchableOpacity
+        style={styles.viewBtn}
+        onPress={(e) => {
+          e.stopPropagation();
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onActions();
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.viewBtnText}>View</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
 
 export function TicketCarousel({ events, onViewEvent }: TicketCarouselProps) {
   const { colors, isDark } = useAppTheme();
+  const [selectedEvent, setSelectedEvent] = useState<WalletEventCard | null>(null);
 
   // Filter upcoming events and sort soonest first
   const upcomingEvents = useMemo(() => {
@@ -71,12 +86,18 @@ export function TicketCarousel({ events, onViewEvent }: TicketCarouselProps) {
               key={event.id}
               event={event}
               onView={() => onViewEvent(event.id)}
+              onActions={() => setSelectedEvent(event)}
               colors={colors}
               isDark={isDark}
             />
           ))}
         </View>
       )}
+      <TicketActionSheet
+        visible={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        event={selectedEvent}
+      />
     </View>
   );
 }
@@ -126,6 +147,19 @@ const styles = StyleSheet.create({
   ticketVenue: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
+  },
+  viewBtn: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    alignSelf: 'center',
+    marginRight: 12,
+  },
+  viewBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
   },
   emptyState: {
     alignItems: 'center',

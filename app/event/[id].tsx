@@ -25,6 +25,7 @@ import Animated, {
 import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -83,12 +84,14 @@ export default function EventPage() {
     username?: string;
     userAvatar?: string;
     isPaid?: string;
+    price?: string;
     isUserRegistered?: string;
   }>();
 
   const [activeTab, setActiveTab] = React.useState<TabType>('overview');
   const [isRsvpd, setIsRsvpd] = React.useState(params.isUserRegistered === 'true');
   const [isLoading, setIsLoading] = React.useState(false);
+  const [showPurchaseSheet, setShowPurchaseSheet] = React.useState(false);
   const buttonScale = useSharedValue(1);
 
   const eventId = params.id;
@@ -99,6 +102,7 @@ export default function EventPage() {
   const username = params.username;
   const userAvatar = params.userAvatar;
   const isPaid = params.isPaid === 'true';
+  const eventPrice = params.price ? parseFloat(params.price) : undefined;
 
   // Fetch event details to get current registration status
   React.useEffect(() => {
@@ -127,6 +131,12 @@ export default function EventPage() {
   const handleRsvp = async () => {
     if (isLoading || !eventId) return;
 
+    // For paid events, open the purchase sheet instead
+    if (isPaid) {
+      setShowPurchaseSheet(true);
+      return;
+    }
+
     buttonScale.value = withSequence(
       withTiming(0.95, { duration: 100 }),
       withSpring(1, { damping: 15, stiffness: 400 })
@@ -152,6 +162,11 @@ export default function EventPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePurchaseSuccess = (ticketCount: number) => {
+    setIsRsvpd(true);
+    showSuccess(`${ticketCount} ticket${ticketCount > 1 ? 's' : ''} purchased!`);
   };
 
   const buttonAnimatedStyle = useAnimatedStyle(() => ({
@@ -341,6 +356,17 @@ export default function EventPage() {
           </Animated.View>
         </TouchableOpacity>
       </View>
+
+      <PurchaseTicketSheet
+        visible={showPurchaseSheet}
+        onClose={() => setShowPurchaseSheet(false)}
+        onSuccess={handlePurchaseSuccess}
+        eventId={eventId ? parseInt(eventId, 10) : 0}
+        eventTitle={eventTitle}
+        eventDate={eventDate}
+        eventImage={flyerImage}
+        price={eventPrice}
+      />
     </View>
   );
 }

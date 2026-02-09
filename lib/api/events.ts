@@ -1,6 +1,6 @@
 // Events API client for fetching event details
 import { apiClient } from './client';
-import type { Event, EventsSearchResponse } from '../types/events.types';
+import type { Event, EventsSearchResponse, EventAttendeesResponse } from '../types/events.types';
 
 export interface RsvpResponse {
   success: boolean;
@@ -225,6 +225,15 @@ export const eventsApi = {
       `/api/events/search?q=${encodeURIComponent(query)}`,
     );
     return response.events;
+  },
+
+  /**
+   * Get attendees for an event
+   * Backend endpoint: GET /api/events/:id/attendees
+   */
+  getEventAttendees: async (eventId: number, limit?: number): Promise<EventAttendeesResponse> => {
+    const query = limit ? `?limit=${limit}` : '';
+    return apiClient.get<EventAttendeesResponse>(`/api/events/${eventId}/attendees${query}`);
   },
 
   /**

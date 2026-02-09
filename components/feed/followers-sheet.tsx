@@ -144,8 +144,8 @@ export function FollowersSheet({
   const handleUserPress = (item: ListItem) => {
     if (item.type === 'user') {
       router.push({
-        pathname: '/user-profile/[userId]',
-        params: { userId: item.id.toString(), name: item.name, avatarUrl: item.imageUrl || '' },
+        pathname: '/user/[username]',
+        params: { username: item.name || item.id.toString(), userId: item.id.toString() },
       });
       handleClose();
     }

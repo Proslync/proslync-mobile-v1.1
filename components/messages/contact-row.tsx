@@ -11,6 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { User } from '../../lib/types/messages.types';
 
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
 interface ContactRowProps {
   user: User;
   onPress: () => void;
@@ -41,7 +43,7 @@ export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
     >
       <View style={styles.avatarContainer}>
         <Image
-          source={{ uri: user.avatarUrl || 'https://i.pravatar.cc/150?u=default' }}
+          source={user.avatarUrl ? { uri: user.avatarUrl } : DefaultAvatarImage}
           style={styles.avatar}
         />
         {user.isOnline && <View style={styles.onlineIndicator} />}

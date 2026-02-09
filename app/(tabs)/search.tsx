@@ -283,7 +283,7 @@ function PulsingBorder({ children }: { children: React.ReactNode }) {
 }
 
 // Event flyer card marker for map (rectangular flyer style)
-function EventMarker({ event, onPress }: { event: MapEvent; onPress: () => void }) {
+const EventMarker = React.memo(function EventMarker({ event, onPress }: { event: MapEvent; onPress: () => void }) {
   const marker = (
     <TouchableOpacity onPress={onPress} style={styles.eventMarkerContainer}>
       <View style={[styles.eventMarker, event.isLive && styles.eventMarkerLive]}>
@@ -303,10 +303,10 @@ function EventMarker({ event, onPress }: { event: MapEvent; onPress: () => void 
   }
 
   return marker;
-}
+});
 
 // Friend profile marker for map (circular profile photo)
-function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: () => void }) {
+const FriendMarkerView = React.memo(function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: () => void }) {
   return (
     <TouchableOpacity onPress={onPress} style={styles.friendMarkerContainer}>
       <View style={styles.friendMarker}>
@@ -315,10 +315,10 @@ function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: 
       <View style={styles.friendMarkerPointer} />
     </TouchableOpacity>
   );
-}
+});
 
 // Current user's own location marker (green, pulsing)
-function MyLocationMarker({ imageUrl }: { imageUrl: string }) {
+const MyLocationMarker = React.memo(function MyLocationMarker({ imageUrl }: { imageUrl: string }) {
   const pulseAnim = useSharedValue(1);
 
   useEffect(() => {
@@ -348,7 +348,7 @@ function MyLocationMarker({ imageUrl }: { imageUrl: string }) {
       <View style={styles.myLocationPointer} />
     </View>
   );
-}
+});
 
 // Fallback/Preview screen for Expo Go
 function MapPreview() {
@@ -663,6 +663,12 @@ function FullMapScreen() {
     bottomSheetRef.current?.snapToIndex(1);
   }, []);
 
+  const handleFriendMarkerPress = useCallback((friend: FriendMarker) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setSelectedFriend(friend);
+    cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, animationDuration: 500 });
+  }, []);
+
   const handleFilterPress = useCallback(() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }, []);
   const handleFilterChange = useCallback((filter: NearbyFilter) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNearbyFilter(filter); }, []);
   const handleRecenter = useCallback(() => { if (userLocation) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); cameraRef.current?.setCamera({ centerCoordinate: userLocation, zoomLevel: 13, animationDuration: 500 }); } }, [userLocation]);
@@ -681,22 +687,18 @@ function FullMapScreen() {
           <LocationPuck puckBearing="heading" puckBearingEnabled={true} pulsing={{ isEnabled: true, color: '#34c759' }} />
         )}
         {filteredEvents.map((event) => (
-          <MarkerView key={event.id} coordinate={[event.longitude, event.latitude]} anchor={{ x: 0.5, y: 1 }}>
+          <MarkerView key={event.id} coordinate={[event.longitude, event.latitude]} anchor={{ x: 0.5, y: 1 }} allowOverlap={true} allowOverlapWithPuck={true}>
             <EventMarker event={event} onPress={() => handleMarkerPress(event)} />
           </MarkerView>
         ))}
         {nearbyFriends.map((friend) => (
-          <MarkerView key={friend.id} coordinate={[friend.longitude, friend.latitude]} anchor={{ x: 0.5, y: 1 }}>
-            <FriendMarkerView friend={friend} onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setSelectedFriend(friend);
-              cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, animationDuration: 500 });
-            }} />
+          <MarkerView key={`friend-${friend.id}`} coordinate={[friend.longitude, friend.latitude]} anchor={{ x: 0.5, y: 1 }} allowOverlap={true} allowOverlapWithPuck={true}>
+            <FriendMarkerView friend={friend} onPress={() => handleFriendMarkerPress(friend)} />
           </MarkerView>
         ))}
         {/* Show current user's marker when sharing location */}
         {sharingState.isSharing && userLocation && user?.avatar?.url && (
-          <MarkerView coordinate={userLocation} anchor={{ x: 0.5, y: 1 }}>
+          <MarkerView coordinate={userLocation} anchor={{ x: 0.5, y: 1 }} allowOverlap={true} allowOverlapWithPuck={true}>
             <MyLocationMarker imageUrl={user.avatar.url} />
           </MarkerView>
         )}
