@@ -17,3 +17,12 @@ export {
   useCreateEventActivity,
 } from './use-stream-activity';
 export type { ActivityMedia } from './use-stream-activity';
+
+// Activity/Post detail hooks
+export { useActivity, ACTIVITY_QUERY_KEY } from './use-activity';
+export type { ActivityResponse } from './use-activity';
+export { useActivityComments, COMMENTS_QUERY_KEY } from './use-activity-comments';
+export type { CommentData } from './use-activity-comments';
+export { useAddComment } from './use-add-comment';
+export { useActivityReaction } from './use-activity-reaction';
+export { useCommentReaction } from './use-comment-reaction';

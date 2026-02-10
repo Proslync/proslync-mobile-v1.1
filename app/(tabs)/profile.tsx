@@ -622,7 +622,12 @@ export default function ProfileScreen() {
                 : post.imageUrl;
 
               return (
-                <TouchableOpacity key={post.id} activeOpacity={0.9} style={styles.postContainer}>
+                <TouchableOpacity
+                  key={post.id}
+                  activeOpacity={0.9}
+                  style={styles.postContainer}
+                  onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
+                >
                   <Image
                     source={{ uri: displayUri }}
                     style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
