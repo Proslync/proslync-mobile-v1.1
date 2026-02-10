@@ -1,0 +1,52 @@
+// React Query hooks for fetching events
+
+import { useQuery } from '@tanstack/react-query';
+import { eventsApi } from '@/lib/api/events';
+import type { Event } from '@/lib/types/events.types';
+
+/**
+ * Query hook for fetching the current user's events
+ * Uses queryKey: ['myEvents'] - invalidated by create/update/delete mutations
+ */
+export function useMyEvents() {
+  return useQuery<Event[], Error>({
+    queryKey: ['myEvents'],
+    queryFn: async () => {
+      const events = await eventsApi.getMyEvents();
+      // Sort by start date, newest first
+      events.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+      return events;
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+/**
+ * Query hook for fetching a single event by ID
+ * Uses queryKey: ['event', eventId] - invalidated by update mutations
+ */
+export function useEvent(eventId: number | undefined) {
+  return useQuery<Event, Error>({
+    queryKey: ['event', eventId],
+    queryFn: async () => {
+      if (!eventId) throw new Error('Event ID required');
+      return eventsApi.getEvent(eventId);
+    },
+    enabled: !!eventId,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}
+
+/**
+ * Query hook for fetching nearby/all events
+ * Uses queryKey: ['events', params] - invalidated by create/update/delete mutations
+ */
+export function useEvents(params?: Parameters<typeof eventsApi.getEvents>[0]) {
+  return useQuery<Event[], Error>({
+    queryKey: ['events', params],
+    queryFn: async () => {
+      return eventsApi.getEvents(params);
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}

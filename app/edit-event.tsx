@@ -1,32 +1,42 @@
-import * as React from 'react';
+// Edit Event Screen - Multi-step form with FormProvider pattern
+
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useToast } from '@/components/shared/toast';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
+  BasicInfoStep,
+  DateTimeStep,
+  LocationStep,
+  DetailsStep,
+} from '@/components/event-form';
+import type { EventFormStep } from '@/hooks';
+import { useEditEventForm, useUpdateEvent } from '@/hooks';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { eventsApi } from '@/lib/api/events';
+import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
+import type { Event } from '@/lib/types/events.types';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as React from 'react';
+import { FormProvider } from 'react-hook-form';
+import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Switch,
-  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as ImagePicker from 'expo-image-picker';
-import { eventsApi, UpdateEventDto } from '@/lib/api/events';
-import { useToast } from '@/components/shared/toast';
-import type { Event } from '@/lib/types/events.types';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useAppTheme } from '@/hooks/use-app-theme';
 
-type Step = 'basic' | 'datetime' | 'location' | 'details';
-
-const STEPS: { key: Step; title: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+// Step configuration
+const STEPS: {
+  key: EventFormStep;
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
   { key: 'basic', title: 'Basic Info', icon: 'create-outline' },
   { key: 'datetime', title: 'Date & Time', icon: 'calendar-outline' },
   { key: 'location', title: 'Location', icon: 'location-outline' },
@@ -40,24 +50,25 @@ export default function EditEventScreen() {
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
 
-  const [currentStep, setCurrentStep] = React.useState<Step>('basic');
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  // Loading and event state
   const [isLoading, setIsLoading] = React.useState(true);
   const [event, setEvent] = React.useState<Event | null>(null);
-
-  // Form state
-  const [name, setName] = React.useState('');
-  const [description, setDescription] = React.useState('');
-  const [flyerUri, setFlyerUri] = React.useState<string | null>(null);
   const [existingFlyerUrl, setExistingFlyerUrl] = React.useState<string | null>(null);
-  const [startDate, setStartDate] = React.useState(new Date());
-  const [endDate, setEndDate] = React.useState(new Date(Date.now() + 4 * 60 * 60 * 1000));
-  const [showStartPicker, setShowStartPicker] = React.useState(false);
-  const [showEndPicker, setShowEndPicker] = React.useState(false);
-  const [location, setLocation] = React.useState('');
-  const [maxCapacity, setMaxCapacity] = React.useState('');
-  const [minimumAge, setMinimumAge] = React.useState('21');
-  const [isPublic, setIsPublic] = React.useState(true);
+
+  // Form hook
+  const {
+    form,
+    currentStepIndex,
+    isFirstStep,
+    isLastStep,
+    goNext,
+    goBack: formGoBack,
+    canGoNext,
+    resetWithEvent,
+  } = useEditEventForm();
+
+  // Mutation hook
+  const updateEvent = useUpdateEvent();
 
   // Load event data
   React.useEffect(() => {
@@ -78,20 +89,17 @@ export default function EditEventScreen() {
         const eventData = await eventsApi.getEvent(eventId);
         setEvent(eventData);
 
-        // Populate form fields
-        setName(eventData.name || '');
-        setDescription(eventData.description || '');
-        setLocation(eventData.location || '');
-        setMaxCapacity(eventData.maxCapacity?.toString() || '');
-        setMinimumAge(eventData.minimumAge?.toString() || '21');
-        setIsPublic(eventData.isPublic ?? true);
-
-        if (eventData.startDate) {
-          setStartDate(new Date(eventData.startDate));
-        }
-        if (eventData.endDate) {
-          setEndDate(new Date(eventData.endDate));
-        }
+        // Populate form with event data
+        resetWithEvent({
+          name: eventData.name,
+          description: eventData.description,
+          startDate: eventData.startDate,
+          endDate: eventData.endDate,
+          location: eventData.location,
+          maxCapacity: eventData.maxCapacity,
+          minimumAge: eventData.minimumAge,
+          isPublic: eventData.isPublic,
+        });
 
         // Set existing flyer URL
         if (eventData.flyer?.url) {
@@ -111,439 +119,200 @@ export default function EditEventScreen() {
     loadEvent();
   }, [id]);
 
-  const currentStepIndex = STEPS.findIndex((s) => s.key === currentStep);
-
-  const canGoNext = () => {
-    switch (currentStep) {
-      case 'basic':
-        return name.trim().length > 0;
-      case 'datetime':
-        return startDate < endDate;
-      case 'location':
-        return location.trim().length > 0;
-      case 'details':
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  const goNext = () => {
-    if (currentStepIndex < STEPS.length - 1) {
-      setCurrentStep(STEPS[currentStepIndex + 1].key);
-    }
-  };
-
-  const goBack = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStep(STEPS[currentStepIndex - 1].key);
-    } else {
+  const handleBack = () => {
+    if (isFirstStep) {
       router.back();
+    } else {
+      formGoBack();
     }
   };
 
-  const pickFlyer = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      showError('Permission to access photos is required');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [3, 4],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      setFlyerUri(result.assets[0].uri);
-      setExistingFlyerUrl(null); // Clear existing flyer when new one is selected
-    }
+  const handleNext = async () => {
+    await goNext();
   };
 
-  const removeFlyer = () => {
-    setFlyerUri(null);
+  // Clear existing flyer when user removes it
+  const handleFlyerRemoved = () => {
     setExistingFlyerUrl(null);
   };
 
-  const handleSubmit = async () => {
-    if (isSubmitting || !event) return;
+  // Final submit handler - called only when form is valid
+  const onSubmit = (data: EventFormData) => {
+    if (!event) return;
 
-    setIsSubmitting(true);
-    try {
-      const eventData: UpdateEventDto = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        location: location.trim(),
-        maxCapacity: maxCapacity ? parseInt(maxCapacity, 10) : undefined,
-        minimumAge: minimumAge ? parseInt(minimumAge, 10) : undefined,
-        isPublic,
-      };
+    console.log('[EditEvent] Submitting:', JSON.stringify(data, null, 2));
 
-      await eventsApi.updateEvent(event.id, eventData);
-
-      // Upload new flyer if selected
-      if (flyerUri) {
-        try {
-          await eventsApi.uploadFlyer(event.id, flyerUri);
-          console.log('[EditEvent] Flyer uploaded successfully');
-        } catch (flyerError) {
-          console.log('[EditEvent] Could not upload flyer:', flyerError);
-        }
+    const parsedData = parseEventFormData(data);
+    updateEvent.mutate(
+      {
+        eventId: event.id,
+        data: parsedData,
+        flyerUri: data.flyerUri,
+      },
+      {
+        onSuccess: () => {
+          showSuccess('Event updated successfully!');
+          router.back();
+        },
+        onError: (error) => {
+          console.error('[EditEvent] Mutation error:', error);
+          showError(error.message || 'Failed to update event. Please try again.');
+        },
       }
-
-      showSuccess('Event updated successfully!');
-      router.back();
-    } catch (error: any) {
-      console.error('[EditEvent] Error:', error);
-      showError(error?.message || 'Failed to update event. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString([], {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
+  // Error handler for invalid submit
+  const onSubmitError = (errors: Record<string, any>) => {
+    console.log('[EditEvent] Validation errors:', errors);
+
+    const errorMessages = Object.entries(errors)
+      .map(([field, error]) => {
+        const fieldName =
+          field === 'name'
+            ? 'Event name'
+            : field === 'location'
+              ? 'Location'
+              : field === 'startDate'
+                ? 'Start date'
+                : field === 'endDate'
+                  ? 'End date'
+                  : field;
+        return `${fieldName}: ${error?.message || 'Invalid'}`;
+      })
+      .filter(Boolean)
+      .join(', ');
+
+    showError(errorMessages || 'Please fix errors in the form');
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
-
-  const displayFlyerUri = flyerUri || existingFlyerUrl;
-
-  // Dynamic styles
-  const dynamicStyles = {
-    container: {
-      backgroundColor: colors.background,
-    },
-    loadingText: {
-      color: colors.textTertiary,
-    },
-    headerTitle: {
-      color: colors.text,
-    },
-    stepTitle: {
-      color: colors.text,
-    },
-    input: {
-      backgroundColor: colors.input,
-      color: colors.text,
-      borderColor: colors.inputBorder,
-    },
-    helperText: {
-      color: colors.textTertiary,
-    },
-    dateButton: {
-      backgroundColor: colors.input,
-      borderColor: colors.inputBorder,
-    },
-    dateButtonText: {
-      color: colors.text,
-    },
-    switchLabel: {
-      color: colors.text,
-    },
-    switchDescription: {
-      color: colors.textTertiary,
-    },
-    progressDot: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-    },
-    progressLine: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-    },
-    bottomActions: {
-      borderTopColor: colors.border,
-    },
-    flyerPickerButton: {
-      backgroundColor: colors.input,
-      borderColor: 'rgba(139, 92, 246, 0.3)',
-    },
-    flyerPickerHint: {
-      color: colors.textTertiary,
-    },
-  };
-
+  // Render current step component
   const renderStepContent = () => {
-    switch (currentStep) {
+    switch (STEPS[currentStepIndex]?.key) {
       case 'basic':
         return (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={[styles.stepTitle, dynamicStyles.stepTitle]}>What's your event called?</Text>
-            <TextInput
-              style={[styles.input, dynamicStyles.input]}
-              value={name}
-              onChangeText={setName}
-              placeholder="Event name"
-              placeholderTextColor={colors.placeholder}
-            />
-            <Text style={[styles.stepTitle, dynamicStyles.stepTitle, { marginTop: 24 }]}>Describe your event</Text>
-            <TextInput
-              style={[styles.input, styles.textArea, dynamicStyles.input]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Tell people what to expect..."
-              placeholderTextColor={colors.placeholder}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-
-            <Text style={[styles.stepTitle, dynamicStyles.stepTitle, { marginTop: 24 }]}>Event Flyer</Text>
-            {displayFlyerUri ? (
-              <View style={styles.flyerPreviewContainer}>
-                <Image source={{ uri: displayFlyerUri }} style={styles.flyerPreview} />
-                <TouchableOpacity style={styles.flyerRemoveButton} onPress={removeFlyer}>
-                  <Ionicons name="close-circle" size={28} color="#fff" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.flyerChangeButton} onPress={pickFlyer}>
-                  <Ionicons name="camera" size={18} color="#fff" />
-                  <Text style={styles.flyerChangeText}>Change</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity style={[styles.flyerPickerButton, dynamicStyles.flyerPickerButton]} onPress={pickFlyer}>
-                <Ionicons name="image-outline" size={32} color="#8b5cf6" />
-                <Text style={styles.flyerPickerText}>Add Event Flyer</Text>
-                <Text style={[styles.flyerPickerHint, dynamicStyles.flyerPickerHint]}>Tap to upload an image</Text>
-              </TouchableOpacity>
-            )}
-          </Animated.View>
+          <BasicInfoStep
+            existingFlyerUrl={existingFlyerUrl}
+            onFlyerRemoved={handleFlyerRemoved}
+          />
         );
-
       case 'datetime':
-        return (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={[styles.stepTitle, dynamicStyles.stepTitle]}>When does it start?</Text>
-            <TouchableOpacity
-              style={[styles.dateButton, dynamicStyles.dateButton]}
-              onPress={() => setShowStartPicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color="#8b5cf6" />
-              <Text style={[styles.dateButtonText, dynamicStyles.dateButtonText]}>
-                {formatDate(startDate)} at {formatTime(startDate)}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={[styles.stepTitle, dynamicStyles.stepTitle, { marginTop: 24 }]}>When does it end?</Text>
-            <TouchableOpacity
-              style={[styles.dateButton, dynamicStyles.dateButton]}
-              onPress={() => setShowEndPicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color="#8b5cf6" />
-              <Text style={[styles.dateButtonText, dynamicStyles.dateButtonText]}>
-                {formatDate(endDate)} at {formatTime(endDate)}
-              </Text>
-            </TouchableOpacity>
-
-            {showStartPicker && (
-              <DateTimePicker
-                value={startDate}
-                mode="datetime"
-                display="spinner"
-                onChange={(_, date) => {
-                  setShowStartPicker(false);
-                  if (date) {
-                    setStartDate(date);
-                    if (date >= endDate) {
-                      setEndDate(new Date(date.getTime() + 4 * 60 * 60 * 1000));
-                    }
-                  }
-                }}
-                textColor={colors.text}
-                themeVariant={isDark ? 'dark' : 'light'}
-              />
-            )}
-
-            {showEndPicker && (
-              <DateTimePicker
-                value={endDate}
-                mode="datetime"
-                display="spinner"
-                minimumDate={startDate}
-                onChange={(_, date) => {
-                  setShowEndPicker(false);
-                  if (date) setEndDate(date);
-                }}
-                textColor={colors.text}
-                themeVariant={isDark ? 'dark' : 'light'}
-              />
-            )}
-          </Animated.View>
-        );
-
+        return <DateTimeStep />;
       case 'location':
-        return (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={[styles.stepTitle, dynamicStyles.stepTitle]}>Where is it happening?</Text>
-            <TextInput
-              style={[styles.input, dynamicStyles.input]}
-              value={location}
-              onChangeText={setLocation}
-              placeholder="Enter address or venue name"
-              placeholderTextColor={colors.placeholder}
-            />
-            <Text style={[styles.helperText, dynamicStyles.helperText]}>
-              Enter the full address where your event will take place
-            </Text>
-          </Animated.View>
-        );
-
+        return <LocationStep />;
       case 'details':
-        return (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={[styles.stepTitle, dynamicStyles.stepTitle]}>Capacity</Text>
-            <TextInput
-              style={[styles.input, dynamicStyles.input]}
-              value={maxCapacity}
-              onChangeText={setMaxCapacity}
-              placeholder="Max attendees (optional)"
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-            />
-
-            <Text style={[styles.stepTitle, dynamicStyles.stepTitle, { marginTop: 24 }]}>Minimum Age</Text>
-            <TextInput
-              style={[styles.input, dynamicStyles.input]}
-              value={minimumAge}
-              onChangeText={setMinimumAge}
-              placeholder="21"
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-            />
-
-            <View style={styles.switchRow}>
-              <View>
-                <Text style={[styles.switchLabel, dynamicStyles.switchLabel]}>Public Event</Text>
-                <Text style={[styles.switchDescription, dynamicStyles.switchDescription]}>
-                  Anyone can see and RSVP to your event
-                </Text>
-              </View>
-              <Switch
-                value={isPublic}
-                onValueChange={setIsPublic}
-                trackColor={{ false: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', true: '#8b5cf6' }}
-                thumbColor="#fff"
-              />
-            </View>
-          </Animated.View>
-        );
-
+        return <DetailsStep />;
       default:
         return null;
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer, dynamicStyles.container]}>
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#8b5cf6" />
-        <Text style={[styles.loadingText, dynamicStyles.loadingText]}>Loading event...</Text>
+        <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Loading event...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
-      {isDark && <DarkGradientBg />}
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
-      >
-        <TouchableOpacity style={styles.backButton} onPress={goBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Edit Event</Text>
-        <View style={styles.headerSpacer} />
-      </Animated.View>
+    <FormProvider {...form}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {isDark && <DarkGradientBg />}
 
-      {/* Progress Indicator */}
-      <View style={styles.progressContainer}>
-        {STEPS.map((step, index) => (
-          <View key={step.key} style={styles.progressStep}>
-            <View
-              style={[
-                styles.progressDot,
-                dynamicStyles.progressDot,
-                index <= currentStepIndex && styles.progressDotActive,
-              ]}
-            >
-              <Ionicons
-                name={step.icon}
-                size={16}
-                color={index <= currentStepIndex ? '#fff' : colors.textTertiary}
-              />
-            </View>
-            {index < STEPS.length - 1 && (
+        {/* Header */}
+        <Animated.View
+          entering={FadeIn.duration(400)}
+          style={[styles.header, { paddingTop: insets.top + 8 }]}
+        >
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Event</Text>
+          <View style={styles.headerSpacer} />
+        </Animated.View>
+
+        {/* Progress Indicator */}
+        <View style={styles.progressContainer}>
+          {STEPS.map((step, index) => (
+            <View key={step.key} style={styles.progressStep}>
               <View
                 style={[
-                  styles.progressLine,
-                  dynamicStyles.progressLine,
-                  index < currentStepIndex && styles.progressLineActive,
+                  styles.progressDot,
+                  { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
+                  index <= currentStepIndex && styles.progressDotActive,
                 ]}
-              />
+              >
+                <Ionicons
+                  name={step.icon}
+                  size={16}
+                  color={index <= currentStepIndex ? '#fff' : colors.textTertiary}
+                />
+              </View>
+              {index < STEPS.length - 1 && (
+                <View
+                  style={[
+                    styles.progressLine,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
+                    index < currentStepIndex && styles.progressLineActive,
+                  ]}
+                />
+              )}
+            </View>
+          ))}
+        </View>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {renderStepContent()}
+          </ScrollView>
+
+          {/* Bottom Actions */}
+          <View
+            style={[
+              styles.bottomActions,
+              { paddingBottom: insets.bottom + 16, borderTopColor: colors.border },
+            ]}
+          >
+            {isLastStep ? (
+              <TouchableOpacity
+                style={[styles.submitButton, !canGoNext && styles.buttonDisabled]}
+                onPress={form.handleSubmit(onSubmit, onSubmitError)}
+                disabled={!canGoNext || updateEvent.isPending}
+              >
+                {updateEvent.isPending ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                    <Text style={styles.submitButtonText}>Save Changes</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.nextButton, !canGoNext && styles.buttonDisabled]}
+                onPress={handleNext}
+                disabled={!canGoNext}
+              >
+                <Text style={styles.nextButtonText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+              </TouchableOpacity>
             )}
           </View>
-        ))}
+        </KeyboardAvoidingView>
       </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {renderStepContent()}
-        </ScrollView>
-
-        {/* Bottom Actions */}
-        <View style={[styles.bottomActions, dynamicStyles.bottomActions, { paddingBottom: insets.bottom + 16 }]}>
-          {currentStepIndex === STEPS.length - 1 ? (
-            <TouchableOpacity
-              style={[styles.submitButton, !canGoNext() && styles.buttonDisabled]}
-              onPress={handleSubmit}
-              disabled={!canGoNext() || isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                  <Text style={styles.submitButtonText}>Save Changes</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.nextButton, !canGoNext() && styles.buttonDisabled]}
-              onPress={goNext}
-              disabled={!canGoNext()}
-            >
-              <Text style={styles.nextButtonText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+    </FormProvider>
   );
 }
 
@@ -618,60 +387,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
   },
-  stepContent: {
-    flex: 1,
-  },
-  stepTitle: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    marginBottom: 12,
-  },
-  input: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-    borderWidth: 1,
-  },
-  textArea: {
-    minHeight: 120,
-    paddingTop: 14,
-  },
-  helperText: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 8,
-  },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-    borderWidth: 1,
-  },
-  dateButtonText: {
-    fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 24,
-    paddingVertical: 12,
-  },
-  switchLabel: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-  },
-  switchDescription: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 2,
-  },
   bottomActions: {
     paddingHorizontal: 24,
     paddingTop: 16,
@@ -707,59 +422,5 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
-  },
-  flyerPickerButton: {
-    borderRadius: 12,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    paddingVertical: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flyerPickerText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#8b5cf6',
-    marginTop: 8,
-  },
-  flyerPickerHint: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 4,
-  },
-  flyerPreviewContainer: {
-    position: 'relative',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  flyerPreview: {
-    width: '100%',
-    height: 280,
-    borderRadius: 12,
-    resizeMode: 'cover',
-  },
-  flyerRemoveButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 14,
-  },
-  flyerChangeButton: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-  },
-  flyerChangeText: {
-    fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
   },
 });

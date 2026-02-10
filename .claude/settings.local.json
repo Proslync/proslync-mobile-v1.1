@@ -19,7 +19,10 @@
       "Bash(npm run build:*)",
       "Bash(npx eslint:*)",
       "Bash(npm run typecheck:*)",
-      "Bash(npx expo-lint:*)"
+      "Bash(npx expo-lint:*)",
+      "Bash(grep:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(ls:*)"
     ]
   }
 }

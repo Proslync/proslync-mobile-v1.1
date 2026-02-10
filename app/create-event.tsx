@@ -1,35 +1,45 @@
-import * as React from 'react';
+// Create Event Screen - Multi-step form with FormProvider pattern
+
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useToast } from '@/components/shared/toast';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
+  BasicInfoStep,
+  DateTimeStep,
+  LocationStep,
+  DetailsStep,
+} from '@/components/event-form';
+import type { EventFormStep } from '@/hooks';
+import { useCreateEvent, useEventForm } from '@/hooks';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import * as React from 'react';
+import { FormProvider } from 'react-hook-form';
+import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Switch,
-  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as ImagePicker from 'expo-image-picker';
-import { eventsApi, CreateEventDto } from '@/lib/api/events';
-import { useToast } from '@/components/shared/toast';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useAppTheme } from '@/hooks/use-app-theme';
 
-type Step = 'basic' | 'datetime' | 'location' | 'details';
-
-const STEPS: { key: Step; title: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'basic', title: 'Basic Info', icon: 'create-outline' },
-  { key: 'datetime', title: 'Date & Time', icon: 'calendar-outline' },
-  { key: 'location', title: 'Location', icon: 'location-outline' },
-  { key: 'details', title: 'Details', icon: 'settings-outline' },
+// Step configuration
+const STEPS: {
+  key: EventFormStep;
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  component: React.ComponentType;
+}[] = [
+  { key: 'basic', title: 'Basic Info', icon: 'create-outline', component: BasicInfoStep },
+  { key: 'datetime', title: 'Date & Time', icon: 'calendar-outline', component: DateTimeStep },
+  { key: 'location', title: 'Location', icon: 'location-outline', component: LocationStep },
+  { key: 'details', title: 'Details', icon: 'settings-outline', component: DetailsStep },
 ];
 
 export default function CreateEventScreen() {
@@ -38,406 +48,179 @@ export default function CreateEventScreen() {
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
 
-  const [currentStep, setCurrentStep] = React.useState<Step>('basic');
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  // Form hook
+  const {
+    form,
+    currentStepIndex,
+    isFirstStep,
+    isLastStep,
+    goNext,
+    goBack: formGoBack,
+    canGoNext,
+  } = useEventForm();
 
-  // Form state
-  const [name, setName] = React.useState('');
-  const [description, setDescription] = React.useState('');
-  const [flyerUri, setFlyerUri] = React.useState<string | null>(null);
-  const [startDate, setStartDate] = React.useState(new Date());
-  const [endDate, setEndDate] = React.useState(new Date(Date.now() + 4 * 60 * 60 * 1000)); // 4 hours later
-  const [showStartPicker, setShowStartPicker] = React.useState(false);
-  const [showEndPicker, setShowEndPicker] = React.useState(false);
-  const [location, setLocation] = React.useState('');
-  const [maxCapacity, setMaxCapacity] = React.useState('');
-  const [minimumAge, setMinimumAge] = React.useState('21');
-  const [isPublic, setIsPublic] = React.useState(true);
+  // Mutation hook
+  const createEvent = useCreateEvent();
 
-  const currentStepIndex = STEPS.findIndex((s) => s.key === currentStep);
+  // Get current step component
+  const CurrentStepComponent = STEPS[currentStepIndex]?.component;
 
-  const canGoNext = () => {
-    switch (currentStep) {
-      case 'basic':
-        return name.trim().length > 0;
-      case 'datetime':
-        return startDate < endDate;
-      case 'location':
-        return location.trim().length > 0;
-      case 'details':
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  const goNext = () => {
-    if (currentStepIndex < STEPS.length - 1) {
-      setCurrentStep(STEPS[currentStepIndex + 1].key);
-    }
-  };
-
-  const goBack = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStep(STEPS[currentStepIndex - 1].key);
-    } else {
+  const handleBack = () => {
+    if (isFirstStep) {
       router.back();
+    } else {
+      formGoBack();
     }
   };
 
-  const pickFlyer = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permissionResult.granted) {
-      showError('Permission to access photos is required');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [3, 4], // Portrait aspect ratio for flyers
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      setFlyerUri(result.assets[0].uri);
-    }
+  const handleNext = async () => {
+    await goNext();
   };
 
-  const removeFlyer = () => {
-    setFlyerUri(null);
-  };
+  // Final submit handler - called only when form is valid
+  const onSubmit = (data: EventFormData) => {
+    console.log('[CreateEvent] Submitting:', JSON.stringify(data, null, 2));
 
-  const handleSubmit = async () => {
-    if (isSubmitting) return;
-
-    setIsSubmitting(true);
-    try {
-      const eventData: CreateEventDto = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        location: location.trim(),
-        maxCapacity: maxCapacity ? parseInt(maxCapacity, 10) : undefined,
-        minimumAge: minimumAge ? parseInt(minimumAge, 10) : undefined,
-        isPublic,
-      };
-
-      const event = await eventsApi.createEvent(eventData);
-
-      // Upload flyer if selected
-      if (flyerUri) {
-        try {
-          await eventsApi.uploadFlyer(event.id, flyerUri);
-          console.log('[CreateEvent] Flyer uploaded successfully');
-        } catch (flyerError) {
-          console.log('[CreateEvent] Could not upload flyer:', flyerError);
-          // Continue anyway - event is created
-        }
+    const parsedData = parseEventFormData(data);
+    createEvent.mutate(
+      {
+        data: parsedData,
+        flyerUri: data.flyerUri,
+        shouldPublish: true,
+      },
+      {
+        onSuccess: ({ event }) => {
+          showSuccess('Event created successfully!');
+          router.replace(`/event/${event.id}`);
+        },
+        onError: (error) => {
+          console.error('[CreateEvent] Mutation error:', error);
+          showError(error.message || 'Failed to create event. Please try again.');
+        },
       }
-
-      // Auto-publish the event so it appears in feed
-      try {
-        await eventsApi.publishEvent(event.id);
-      } catch (publishError) {
-        console.log('[CreateEvent] Could not auto-publish:', publishError);
-      }
-
-      showSuccess('Event created successfully!');
-      router.replace(`/event/${event.id}`);
-    } catch (error: any) {
-      console.error('[CreateEvent] Error:', error);
-      showError(error?.message || 'Failed to create event. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString([], {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  // Error handler for invalid submit
+  const onSubmitError = (errors: Record<string, any>) => {
+    console.log('[CreateEvent] Validation errors:', errors);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  };
+    const errorMessages = Object.entries(errors)
+      .map(([field, error]) => {
+        const fieldName =
+          field === 'name'
+            ? 'Event name'
+            : field === 'location'
+              ? 'Location'
+              : field === 'startDate'
+                ? 'Start date'
+                : field === 'endDate'
+                  ? 'End date'
+                  : field;
+        return `${fieldName}: ${error?.message || 'Invalid'}`;
+      })
+      .filter(Boolean)
+      .join(', ');
 
-  // Accent color for primary actions
-  const accentColor = '#8b5cf6';
-
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 'basic':
-        return (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={[styles.stepTitle, { color: colors.text }]}>What's your event called?</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              value={name}
-              onChangeText={setName}
-              placeholder="Event name"
-              placeholderTextColor={colors.placeholder}
-              autoFocus
-            />
-            <Text style={[styles.stepTitle, { marginTop: 24, color: colors.text }]}>Describe your event</Text>
-            <TextInput
-              style={[styles.input, styles.textArea, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Tell people what to expect..."
-              placeholderTextColor={colors.placeholder}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-
-            <Text style={[styles.stepTitle, { marginTop: 24, color: colors.text }]}>Event Flyer</Text>
-            {flyerUri ? (
-              <View style={styles.flyerPreviewContainer}>
-                <Image source={{ uri: flyerUri }} style={styles.flyerPreview} />
-                <TouchableOpacity style={styles.flyerRemoveButton} onPress={removeFlyer}>
-                  <Ionicons name="close-circle" size={28} color="#fff" />
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.flyerChangeButton} onPress={pickFlyer}>
-                  <Ionicons name="camera" size={18} color="#fff" />
-                  <Text style={styles.flyerChangeText}>Change</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[styles.flyerPickerButton, { backgroundColor: colors.input, borderColor: isDark ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.3)' }]}
-                onPress={pickFlyer}
-              >
-                <Ionicons name="image-outline" size={32} color={accentColor} />
-                <Text style={[styles.flyerPickerText, { color: accentColor }]}>Add Event Flyer</Text>
-                <Text style={[styles.flyerPickerHint, { color: colors.textTertiary }]}>Tap to upload an image</Text>
-              </TouchableOpacity>
-            )}
-          </Animated.View>
-        );
-
-      case 'datetime':
-        return (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={[styles.stepTitle, { color: colors.text }]}>When does it start?</Text>
-            <TouchableOpacity
-              style={[styles.dateButton, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}
-              onPress={() => setShowStartPicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color={accentColor} />
-              <Text style={[styles.dateButtonText, { color: colors.text }]}>
-                {formatDate(startDate)} at {formatTime(startDate)}
-              </Text>
-            </TouchableOpacity>
-
-            <Text style={[styles.stepTitle, { marginTop: 24, color: colors.text }]}>When does it end?</Text>
-            <TouchableOpacity
-              style={[styles.dateButton, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}
-              onPress={() => setShowEndPicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={20} color={accentColor} />
-              <Text style={[styles.dateButtonText, { color: colors.text }]}>
-                {formatDate(endDate)} at {formatTime(endDate)}
-              </Text>
-            </TouchableOpacity>
-
-            {showStartPicker && (
-              <DateTimePicker
-                value={startDate}
-                mode="datetime"
-                display="spinner"
-                onChange={(_, date) => {
-                  setShowStartPicker(false);
-                  if (date) {
-                    setStartDate(date);
-                    // Auto-adjust end date if needed
-                    if (date >= endDate) {
-                      setEndDate(new Date(date.getTime() + 4 * 60 * 60 * 1000));
-                    }
-                  }
-                }}
-                textColor={colors.text}
-                themeVariant={isDark ? 'dark' : 'light'}
-              />
-            )}
-
-            {showEndPicker && (
-              <DateTimePicker
-                value={endDate}
-                mode="datetime"
-                display="spinner"
-                minimumDate={startDate}
-                onChange={(_, date) => {
-                  setShowEndPicker(false);
-                  if (date) setEndDate(date);
-                }}
-                textColor={colors.text}
-                themeVariant={isDark ? 'dark' : 'light'}
-              />
-            )}
-          </Animated.View>
-        );
-
-      case 'location':
-        return (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={[styles.stepTitle, { color: colors.text }]}>Where is it happening?</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              value={location}
-              onChangeText={setLocation}
-              placeholder="Enter address or venue name"
-              placeholderTextColor={colors.placeholder}
-              autoFocus
-            />
-            <Text style={[styles.helperText, { color: colors.textTertiary }]}>
-              Enter the full address where your event will take place
-            </Text>
-          </Animated.View>
-        );
-
-      case 'details':
-        return (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.stepContent}>
-            <Text style={[styles.stepTitle, { color: colors.text }]}>Capacity</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              value={maxCapacity}
-              onChangeText={setMaxCapacity}
-              placeholder="Max attendees (optional)"
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-            />
-
-            <Text style={[styles.stepTitle, { marginTop: 24, color: colors.text }]}>Minimum Age</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              value={minimumAge}
-              onChangeText={setMinimumAge}
-              placeholder="21"
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-            />
-
-            <View style={styles.switchRow}>
-              <View>
-                <Text style={[styles.switchLabel, { color: colors.text }]}>Public Event</Text>
-                <Text style={[styles.switchDescription, { color: colors.textTertiary }]}>
-                  Anyone can see and RSVP to your event
-                </Text>
-              </View>
-              <Switch
-                value={isPublic}
-                onValueChange={setIsPublic}
-                trackColor={{ false: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', true: accentColor }}
-                thumbColor="#fff"
-              />
-            </View>
-          </Animated.View>
-        );
-
-      default:
-        return null;
-    }
+    showError(errorMessages || 'Please fix errors in the form');
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
-      >
-        <TouchableOpacity style={styles.backButton} onPress={goBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Create Event</Text>
-        <View style={styles.headerSpacer} />
-      </Animated.View>
+    <FormProvider {...form}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {isDark && <DarkGradientBg />}
 
-      {/* Progress Indicator */}
-      <View style={styles.progressContainer}>
-        {STEPS.map((step, index) => (
-          <View key={step.key} style={styles.progressStep}>
-            <View
-              style={[
-                styles.progressDot,
-                { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
-                index <= currentStepIndex && styles.progressDotActive,
-              ]}
-            >
-              <Ionicons
-                name={step.icon}
-                size={16}
-                color={index <= currentStepIndex ? '#fff' : colors.textTertiary}
-              />
-            </View>
-            {index < STEPS.length - 1 && (
+        {/* Header */}
+        <Animated.View
+          entering={FadeIn.duration(400)}
+          style={[styles.header, { paddingTop: insets.top + 8 }]}
+        >
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Create Event</Text>
+          <View style={styles.headerSpacer} />
+        </Animated.View>
+
+        {/* Progress Indicator */}
+        <View style={styles.progressContainer}>
+          {STEPS.map((step, index) => (
+            <View key={step.key} style={styles.progressStep}>
               <View
                 style={[
-                  styles.progressLine,
+                  styles.progressDot,
                   { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
-                  index < currentStepIndex && styles.progressLineActive,
+                  index <= currentStepIndex && styles.progressDotActive,
                 ]}
-              />
+              >
+                <Ionicons
+                  name={step.icon}
+                  size={16}
+                  color={index <= currentStepIndex ? '#fff' : colors.textTertiary}
+                />
+              </View>
+              {index < STEPS.length - 1 && (
+                <View
+                  style={[
+                    styles.progressLine,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
+                    index < currentStepIndex && styles.progressLineActive,
+                  ]}
+                />
+              )}
+            </View>
+          ))}
+        </View>
+
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {CurrentStepComponent && <CurrentStepComponent />}
+          </ScrollView>
+
+          {/* Bottom Actions */}
+          <View
+            style={[
+              styles.bottomActions,
+              { paddingBottom: insets.bottom + 16, borderTopColor: colors.border },
+            ]}
+          >
+            {isLastStep ? (
+              <TouchableOpacity
+                style={[styles.submitButton, !canGoNext && styles.buttonDisabled]}
+                onPress={form.handleSubmit(onSubmit, onSubmitError)}
+                disabled={!canGoNext || createEvent.isPending}
+              >
+                {createEvent.isPending ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                    <Text style={styles.submitButtonText}>Create Event</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.nextButton, !canGoNext && styles.buttonDisabled]}
+                onPress={handleNext}
+                disabled={!canGoNext}
+              >
+                <Text style={styles.nextButtonText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={20} color="#fff" />
+              </TouchableOpacity>
             )}
           </View>
-        ))}
+        </KeyboardAvoidingView>
       </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {renderStepContent()}
-        </ScrollView>
-
-        {/* Bottom Actions */}
-        <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 16, borderTopColor: colors.border }]}>
-          {currentStepIndex === STEPS.length - 1 ? (
-            <TouchableOpacity
-              style={[styles.submitButton, !canGoNext() && styles.buttonDisabled]}
-              onPress={handleSubmit}
-              disabled={!canGoNext() || isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                  <Text style={styles.submitButtonText}>Create Event</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.nextButton, !canGoNext() && styles.buttonDisabled]}
-              onPress={goNext}
-              disabled={!canGoNext()}
-            >
-              <Text style={styles.nextButtonText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+    </FormProvider>
   );
 }
 
@@ -503,60 +286,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 24,
   },
-  stepContent: {
-    flex: 1,
-  },
-  stepTitle: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    marginBottom: 12,
-  },
-  input: {
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-    borderWidth: 1,
-  },
-  textArea: {
-    minHeight: 120,
-    paddingTop: 14,
-  },
-  helperText: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 8,
-  },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-    borderWidth: 1,
-  },
-  dateButtonText: {
-    fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 24,
-    paddingVertical: 12,
-  },
-  switchLabel: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-  },
-  switchDescription: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 2,
-  },
   bottomActions: {
     paddingHorizontal: 24,
     paddingTop: 16,
@@ -592,58 +321,5 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
-  },
-  flyerPickerButton: {
-    borderRadius: 12,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    paddingVertical: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flyerPickerText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    marginTop: 8,
-  },
-  flyerPickerHint: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 4,
-  },
-  flyerPreviewContainer: {
-    position: 'relative',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  flyerPreview: {
-    width: '100%',
-    height: 280,
-    borderRadius: 12,
-    resizeMode: 'cover',
-  },
-  flyerRemoveButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 14,
-  },
-  flyerChangeButton: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-  },
-  flyerChangeText: {
-    fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
   },
 });

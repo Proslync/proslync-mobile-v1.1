@@ -23,8 +23,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import PagerView, { PagerViewOnPageScrollEventData } from 'react-native-pager-view';
 import * as Haptics from 'expo-haptics';
-import { eventsApi } from '@/lib/api/events';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { useMyEvents } from '@/hooks';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { Event } from '@/lib/types/events.types';
@@ -139,35 +139,18 @@ export default function MyEventsScreen() {
   const { width: screenWidth } = useWindowDimensions();
   const { colors, isDark } = useAppTheme();
   const pagerRef = React.useRef<PagerView>(null);
-  const [events, setEvents] = React.useState<Event[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState<EventTab>('current');
+
+  // Fetch events using React Query - auto-invalidated when events are created/updated
+  const { data: events = [], isLoading, refetch } = useMyEvents();
 
   // Shared value for smooth tab indicator animation
   const scrollPosition = useSharedValue(0);
 
-  const fetchEvents = React.useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const myEvents = await eventsApi.getMyEvents();
-      // Sort by start date, newest first
-      myEvents.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-      setEvents(myEvents);
-    } catch (error) {
-      console.error('[MyEvents] Error fetching events:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
-    onRefresh: fetchEvents,
+    onRefresh: refetch,
   });
-
-  React.useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
 
   // Filter events for current tab
   const currentEvents = React.useMemo(() => {
