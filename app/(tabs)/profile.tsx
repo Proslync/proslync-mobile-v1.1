@@ -22,7 +22,7 @@ import Animated, {
   FadeInDown,
 } from 'react-native-reanimated';
 import { useAuth } from '@/lib/providers/auth-provider';
-import { useUserActivities } from '@/hooks/use-user-activities';
+import { useUserFeed } from '@/hooks';
 import { useUserFollowers, useUserFollowing } from '@/hooks/use-user-follows';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useToast } from '@/components/shared/toast';
@@ -34,7 +34,9 @@ import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const POST_SIZE = (SCREEN_WIDTH - 6) / 3; // 3 columns with 2px gaps
+// 3 columns with 2px gaps between them (2 gaps × 2px = 4px total)
+const POST_GAP = 2;
+const POST_SIZE = (SCREEN_WIDTH - POST_GAP * 2) / 3;
 
 // Default avatar placeholder
 const DEFAULT_AVATAR = 'https://picsum.photos/200';
@@ -312,8 +314,8 @@ export default function ProfileScreen() {
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
   const lastTapRef = React.useRef<number>(0);
 
-  // Fetch posts/activities from GetStream
-  const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserActivities(user?.id);
+  // Fetch posts/activities from GetStream - uses React Query for proper cache invalidation
+  const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserFeed(user?.id);
 
   // Fetch followers/following from backend API
   // Fetches on mount to get counts, data is cached for modal
@@ -612,19 +614,27 @@ export default function ProfileScreen() {
               <ActivityIndicator color={colors.text} size="small" />
             </View>
           ) : userPosts.length > 0 ? (
-            userPosts.map((post) => (
-              <TouchableOpacity key={post.id} activeOpacity={0.9} style={styles.postContainer}>
-                <Image
-                  source={{ uri: post.imageUrl || post.videoUrl }}
-                  style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
-                />
-                {post.mediaType === 'video' && (
-                  <View style={styles.videoIndicator}>
-                    <Ionicons name="play" size={16} color="#fff" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))
+            userPosts.map((post) => {
+              // For videos, prefer thumbnail, then fall back to videoUrl
+              // For images, use imageUrl
+              const displayUri = post.mediaType === 'video'
+                ? (post.thumbUrl || post.videoUrl)
+                : post.imageUrl;
+
+              return (
+                <TouchableOpacity key={post.id} activeOpacity={0.9} style={styles.postContainer}>
+                  <Image
+                    source={{ uri: displayUri }}
+                    style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
+                  />
+                  {post.mediaType === 'video' && (
+                    <View style={styles.videoIndicator}>
+                      <Ionicons name="play" size={16} color="#fff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })
           ) : (
             <View style={styles.noPostsContainer}>
               <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
@@ -817,15 +827,16 @@ const styles = StyleSheet.create({
   postsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 1,
+    gap: POST_GAP,
   },
   postContainer: {
     position: 'relative',
-  },
-  postImage: {
     width: POST_SIZE,
     height: POST_SIZE,
-    margin: 1,
+  },
+  postImage: {
+    width: '100%',
+    height: '100%',
   },
   videoIndicator: {
     position: 'absolute',

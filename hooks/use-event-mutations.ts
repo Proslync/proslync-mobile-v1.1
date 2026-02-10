@@ -7,6 +7,7 @@ import { useStream } from '@/lib/providers/stream-provider';
 import { useAuth } from '@/lib/providers/auth-provider';
 import type { Event } from '@/lib/types/events.types';
 import type { ActivityMedia } from './use-stream-activity';
+import { USER_FEED_QUERY_KEY } from './use-user-feed';
 
 // Helper to get file info from URI
 function getFileInfoFromUri(uri: string): { name: string; type: string } {
@@ -187,6 +188,8 @@ export function useCreateEvent() {
       // Invalidate feed queries
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      // Invalidate user feed (for profile screen)
+      queryClient.invalidateQueries({ queryKey: [USER_FEED_QUERY_KEY] });
     },
   });
 }
@@ -234,6 +237,8 @@ export function useUpdateEvent() {
       // Invalidate feed queries so updated event appears with new data
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      // Invalidate user feed (for profile screen)
+      queryClient.invalidateQueries({ queryKey: [USER_FEED_QUERY_KEY] });
     },
   });
 }
@@ -289,6 +294,8 @@ export function usePublishEvent() {
       // Invalidate feed queries so published event appears in feed
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      // Invalidate user feed (for profile screen)
+      queryClient.invalidateQueries({ queryKey: [USER_FEED_QUERY_KEY] });
     },
   });
 }
@@ -315,6 +322,8 @@ export function useDeleteEvent() {
       // Invalidate feed queries so deleted event is removed from feed
       queryClient.invalidateQueries({ queryKey: ['feed'] });
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      // Invalidate user feed (for profile screen)
+      queryClient.invalidateQueries({ queryKey: [USER_FEED_QUERY_KEY] });
     },
   });
 }
