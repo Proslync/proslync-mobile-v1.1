@@ -1,21 +1,21 @@
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { useDashboard } from '@/hooks/use-dashboard';
+import { useAuth } from '@/lib/providers/auth-provider';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
-  RefreshControl,
   Image,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { useAuth } from '@/lib/providers/auth-provider';
-import { useDashboard } from '@/hooks/use-dashboard';
-import { useAppTheme } from '@/hooks/use-app-theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface StatCardProps {
   title: string;
@@ -77,8 +77,8 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { stats, venues, isLoading: statsLoading, error, refetch } = useDashboard();
-  const { colors, isDark } = useAppTheme();
+  const { stats, venues = [], isLoading: statsLoading, error, refetch } = useDashboard();
+  const { colors } = useAppTheme();
   const [refreshing, setRefreshing] = React.useState(false);
 
   const onRefresh = React.useCallback(async () => {
