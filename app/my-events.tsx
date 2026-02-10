@@ -1,36 +1,33 @@
-import * as React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  useWindowDimensions,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  interpolate,
-  Easing,
-} from 'react-native-reanimated';
-import PagerView, { PagerViewOnPageScrollEventData } from 'react-native-pager-view';
-import * as Haptics from 'expo-haptics';
-import { useRefreshControl } from '@/hooks/use-refresh-control';
-import { useMyEvents } from '@/hooks';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useMyEvents } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
-
-const AnimatedPagerView = Animated.createAnimatedComponent(PagerView);
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import * as React from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type EventTab = 'current' | 'past';
 
@@ -138,7 +135,6 @@ export default function MyEventsScreen() {
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
   const { colors, isDark } = useAppTheme();
-  const pagerRef = React.useRef<PagerView>(null);
   const [activeTab, setActiveTab] = React.useState<EventTab>('current');
 
   // Fetch events using React Query - auto-invalidated when events are created/updated
@@ -149,7 +145,9 @@ export default function MyEventsScreen() {
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
-    onRefresh: refetch,
+    onRefresh: async () => {
+      await refetch();
+    },
   });
 
   // Filter events for current tab
@@ -174,32 +172,18 @@ export default function MyEventsScreen() {
     });
   }, [events]);
 
-  // Handle tab press - navigate pager to the corresponding page
+  // Handle tab press
   const handleTabPress = React.useCallback((tab: EventTab) => {
     const pageIndex = tab === 'current' ? 0 : 1;
-    pagerRef.current?.setPageWithoutAnimation(pageIndex);
     scrollPosition.value = withTiming(pageIndex, {
       duration: 200,
       easing: Easing.out(Easing.cubic),
     });
-    setActiveTab(tab);
-  }, [scrollPosition]);
-
-  // Handle page scroll for smooth indicator animation
-  const handlePageScroll = React.useCallback((event: { nativeEvent: PagerViewOnPageScrollEventData }) => {
-    const { position, offset } = event.nativeEvent;
-    scrollPosition.value = position + offset;
-  }, [scrollPosition]);
-
-  // Handle page change from swipe - sync tab selection with haptic feedback
-  const handlePageSelected = React.useCallback((event: { nativeEvent: { position: number } }) => {
-    const pageIndex = event.nativeEvent.position;
-    const newTab: EventTab = pageIndex === 0 ? 'current' : 'past';
-    if (newTab !== activeTab) {
+    if (tab !== activeTab) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setActiveTab(newTab);
     }
-  }, [activeTab]);
+    setActiveTab(tab);
+  }, [scrollPosition, activeTab]);
 
   // Animated style for tab indicator
   const tabWidth = screenWidth / 2;
@@ -310,74 +294,63 @@ export default function MyEventsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.text} />
         </View>
+      ) : activeTab === 'current' ? (
+        <View style={styles.pageContainer}>
+          {currentEvents.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons
+                name="calendar-outline"
+                size={64}
+                color={colors.textTertiary}
+              />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No current events</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
+                Create your first event to get started
+              </Text>
+              <TouchableOpacity
+                style={[styles.createButton, { backgroundColor: accentColor }]}
+                onPress={() => router.push('/create-event')}
+              >
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={styles.createButtonText}>Create Event</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={currentEvents}
+              renderItem={renderEvent}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={refreshControl}
+            />
+          )}
+        </View>
       ) : (
-        <AnimatedPagerView
-          ref={pagerRef}
-          style={styles.pagerView}
-          initialPage={0}
-          onPageScroll={handlePageScroll}
-          onPageSelected={handlePageSelected}
-          overdrag
-        >
-          {/* Current Events Page */}
-          <View key="current" style={styles.pageContainer}>
-            {currentEvents.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={64}
-                  color={colors.textTertiary}
-                />
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>No current events</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
-                  Create your first event to get started
-                </Text>
-                <TouchableOpacity
-                  style={[styles.createButton, { backgroundColor: accentColor }]}
-                  onPress={() => router.push('/create-event')}
-                >
-                  <Ionicons name="add" size={20} color="#fff" />
-                  <Text style={styles.createButtonText}>Create Event</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <FlatList
-                data={currentEvents}
-                renderItem={renderEvent}
-                keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
-                showsVerticalScrollIndicator={false}
-                refreshControl={refreshControl}
+        <View style={styles.pageContainer}>
+          {pastEvents.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons
+                name="time-outline"
+                size={64}
+                color={colors.textTertiary}
               />
-            )}
-          </View>
-
-          {/* Past Events Page */}
-          <View key="past" style={styles.pageContainer}>
-            {pastEvents.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Ionicons
-                  name="time-outline"
-                  size={64}
-                  color={colors.textTertiary}
-                />
-                <Text style={[styles.emptyTitle, { color: colors.text }]}>No past events</Text>
-                <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
-                  Your completed events will appear here
-                </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={pastEvents}
-                renderItem={renderEvent}
-                keyExtractor={(item) => `past-${item.id.toString()}`}
-                contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
-                showsVerticalScrollIndicator={false}
-                refreshControl={refreshControl}
-              />
-            )}
-          </View>
-        </AnimatedPagerView>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>No past events</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
+                Your completed events will appear here
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={pastEvents}
+              renderItem={renderEvent}
+              keyExtractor={(item) => `past-${item.id.toString()}`}
+              contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+              showsVerticalScrollIndicator={false}
+              refreshControl={refreshControl}
+            />
+          )}
+        </View>
       )}
     </View>
   );
@@ -385,9 +358,6 @@ export default function MyEventsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  pagerView: {
     flex: 1,
   },
   pageContainer: {

@@ -222,7 +222,7 @@ export default function EditProfileScreen() {
         lastName: formData.lastName || undefined,
         userName: formData.userName || undefined,
         email: formData.email || undefined,
-        bio: formData.bio || undefined,
+        bio: formData.bio,
       };
 
       const response = await authApi.updateProfile(updateData);

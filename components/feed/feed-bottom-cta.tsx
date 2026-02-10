@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface FeedBottomCTAProps {
   onRsvp: () => void;
   isPaid?: boolean;
   isRsvpd?: boolean;
+  isPurchased?: boolean;
   isEvent?: boolean;
   price?: number | null;
 }
@@ -15,32 +15,43 @@ export function FeedBottomCTA({
   onRsvp,
   isPaid,
   isRsvpd,
+  isPurchased,
   isEvent = true,
   price,
 }: FeedBottomCTAProps) {
-  const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const tabBarHeight = 50 + insets.bottom + 2;
 
   // Don't show CTA for non-event posts
   if (!isEvent) {
     return null;
   }
 
-  // Determine button label
+  // Determine button label and state
+  const isDone = isPurchased || isRsvpd;
   let label = 'RSVP';
-  if (isPaid) {
+  if (isDone) {
+    label = isPurchased ? 'Purchased' : "RSVP'd";
+  } else if (isPaid) {
     label = price != null ? `From $${price.toFixed(2)}` : 'Tickets';
   }
 
   return (
-    <View style={[styles.container, { bottom: tabBarHeight }]}>
+    <View style={styles.container}>
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: colors.buttonPrimary }]}
+        style={[
+          styles.button,
+          { backgroundColor: colors.buttonPrimary },
+          isDone && styles.buttonDone,
+        ]}
         onPress={onRsvp}
         activeOpacity={0.85}
+        disabled={isDone}
       >
-        <Text style={[styles.buttonText, { color: colors.buttonPrimaryText }]}>{label}</Text>
+        <Text style={[
+          styles.buttonText,
+          { color: colors.buttonPrimaryText },
+          isDone && styles.buttonTextDone,
+        ]}>{label}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -51,6 +62,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    bottom: 0,
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
@@ -64,5 +76,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     letterSpacing: 0.3,
+  },
+  buttonDone: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#22c55e',
+  },
+  buttonTextDone: {
+    color: '#22c55e',
   },
 });

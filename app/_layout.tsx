@@ -34,6 +34,7 @@ function RootLayoutNav() {
         <Stack.Screen name="chat/[conversationId]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="new-message" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="user-profile/[userId]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="user/[username]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen
           name="event/[id]"
           options={{

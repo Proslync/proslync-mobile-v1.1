@@ -1,16 +1,21 @@
 import * as React from 'react';
 import {
   FlatList,
-  Dimensions,
+  View,
   ViewToken,
   StyleSheet,
   RefreshControlProps,
+  LayoutChangeEvent,
 } from 'react-native';
 import { FeedItem } from './feed-item';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+// ── Infinite loop config ────────────────────────────────────────────────
+// We repeat the real data many times so the user can scroll endlessly in
+// both directions. With getItemLayout defined, only the visible window is
+// ever rendered so the extra virtual slots cost nothing.
+const LOOP_REPEATS = 200;
 
 interface FeedContainerProps {
   items: FeedItemType[];
@@ -50,46 +55,99 @@ export function FeedContainer({
   refreshControl,
 }: FeedContainerProps) {
   const flatListRef = React.useRef<FlatList>(null);
+  const [containerHeight, setContainerHeight] = React.useState(0);
   const { colors } = useAppTheme();
+  const hasScrolledRef = React.useRef(false);
 
+  const realCount = items.length;
+  const canLoop = realCount > 1;
+
+  // ── Virtual data ────────────────────────────────────────────────────
+  // Each entry is just an index into the virtual list. The real item is
+  // resolved via `virtualIndex % realCount`.
+  const virtualCount = canLoop ? realCount * LOOP_REPEATS : realCount;
+  const midStart = canLoop ? Math.floor(LOOP_REPEATS / 2) * realCount : 0;
+
+  const virtualData = React.useMemo(() => {
+    const arr: number[] = new Array(virtualCount);
+    for (let i = 0; i < virtualCount; i++) arr[i] = i;
+    return arr;
+  }, [virtualCount]);
+
+  // Track the current virtual index so isActive works correctly
+  const [activeVirtualIndex, setActiveVirtualIndex] = React.useState(midStart);
+
+  // ── Layout ──────────────────────────────────────────────────────────
+  const handleLayout = React.useCallback((e: LayoutChangeEvent) => {
+    const h = e.nativeEvent.layout.height;
+    if (h > 0 && h !== containerHeight) {
+      setContainerHeight(h);
+    }
+  }, [containerHeight]);
+
+  // ── Scroll to middle on mount ───────────────────────────────────────
+  // We use initialScrollIndex for the initial render, but also ensure
+  // subsequent data changes re-center if needed.
+  React.useEffect(() => {
+    if (containerHeight > 0 && canLoop && !hasScrolledRef.current) {
+      hasScrolledRef.current = true;
+    }
+  }, [containerHeight, canLoop]);
+
+  // ── Viewability ─────────────────────────────────────────────────────
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 50,
   }).current;
 
   const onViewableItemsChanged = React.useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0) {
-        const visibleIndex = viewableItems[0].index;
-        if (visibleIndex !== null && visibleIndex !== currentIndex) {
-          onIndexChange(visibleIndex);
+      if (viewableItems.length > 0 && realCount > 0) {
+        const virtualIndex = viewableItems[0].index;
+        if (virtualIndex !== null) {
+          setActiveVirtualIndex(virtualIndex);
+          const realIndex = virtualIndex % realCount;
+          if (realIndex !== currentIndex) {
+            onIndexChange(realIndex);
+          }
         }
       }
     },
-    [currentIndex, onIndexChange]
+    [currentIndex, onIndexChange, realCount]
   );
 
+  // ── Render item ─────────────────────────────────────────────────────
   const renderItem = React.useCallback(
-    ({ item, index }: { item: FeedItemType; index: number }) => (
-      <FeedItem
-        item={item}
-        index={index}
-        isActive={index === currentIndex}
-        isLiked={likedItems.has(item.id)}
-        isRsvp={rsvpItems.get(item.id) ?? false}
-        isPendingRsvp={pendingRsvpItems.get(item.id) ?? false}
-        isPurchased={purchasedItems.has(item.id)}
-        showDoubleTapHeart={showDoubleTapHeart === item.id}
-        onDoubleTap={() => onDoubleTap(item.id)}
-        onRsvp={() => onRsvp(item.id)}
-        onPendingRsvp={() => onPendingRsvp(item.id)}
-        onPurchase={() => onPurchase(item.id)}
-        onRefer={() => onRefer(item.id)}
-        onUserClick={() => onUserClick(item)}
-        onEventPress={() => onEventPress(item)}
-      />
-    ),
+    ({ item: virtualIndex, index }: { item: number; index: number }) => {
+      const realIndex = realCount > 0 ? virtualIndex % realCount : 0;
+      const realItem = items[realIndex];
+      if (!realItem) return null;
+
+      return (
+        <FeedItem
+          item={realItem}
+          index={realIndex}
+          itemHeight={containerHeight}
+          isActive={index === activeVirtualIndex}
+          isLiked={likedItems.has(realItem.id)}
+          isRsvp={rsvpItems.get(realItem.id) ?? false}
+          isPendingRsvp={pendingRsvpItems.get(realItem.id) ?? false}
+          isPurchased={purchasedItems.has(realItem.id)}
+          showDoubleTapHeart={showDoubleTapHeart === realItem.id}
+          onDoubleTap={() => onDoubleTap(realItem.id)}
+          onRsvp={() => onRsvp(realItem.id)}
+          onPendingRsvp={() => onPendingRsvp(realItem.id)}
+          onPurchase={() => onPurchase(realItem.id)}
+          onRefer={() => onRefer(realItem.id)}
+          onUserClick={() => onUserClick(realItem)}
+          onEventPress={() => onEventPress(realItem)}
+        />
+      );
+    },
     [
-      currentIndex,
+      activeVirtualIndex,
+      containerHeight,
+      realCount,
+      items,
       likedItems,
       rsvpItems,
       pendingRsvpItems,
@@ -105,42 +163,63 @@ export function FeedContainer({
     ]
   );
 
+  // ── Item layout ─────────────────────────────────────────────────────
   const getItemLayout = React.useCallback(
     (_: any, index: number) => ({
-      length: SCREEN_HEIGHT,
-      offset: SCREEN_HEIGHT * index,
+      length: containerHeight,
+      offset: containerHeight * index,
       index,
     }),
+    [containerHeight]
+  );
+
+  // ── Key extractor ───────────────────────────────────────────────────
+  // Each virtual slot gets a unique key based on its position.
+  const keyExtractor = React.useCallback(
+    (virtualIndex: number) => `v${virtualIndex}`,
     []
   );
 
+  // ── Waiting for layout measurement ──────────────────────────────────
+  if (containerHeight === 0) {
+    return <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout} />;
+  }
+
   return (
-    <FlatList
-      ref={flatListRef}
-      data={items}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id}
-      showsVerticalScrollIndicator={false}
-      snapToInterval={SCREEN_HEIGHT}
-      snapToAlignment="start"
-      decelerationRate="fast"
-      viewabilityConfig={viewabilityConfig}
-      onViewableItemsChanged={onViewableItemsChanged}
-      getItemLayout={getItemLayout}
-      removeClippedSubviews
-      maxToRenderPerBatch={3}
-      windowSize={5}
-      initialNumToRender={2}
-      bounces={false}
-      overScrollMode="never"
-      style={[styles.container, { backgroundColor: colors.background }]}
-      refreshControl={refreshControl}
-    />
+    <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout}>
+      <FlatList
+        ref={flatListRef}
+        data={virtualData}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        showsVerticalScrollIndicator={false}
+        pagingEnabled
+        snapToInterval={containerHeight}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum
+        viewabilityConfig={viewabilityConfig}
+        onViewableItemsChanged={onViewableItemsChanged}
+        getItemLayout={getItemLayout}
+        initialScrollIndex={midStart}
+        removeClippedSubviews
+        maxToRenderPerBatch={3}
+        windowSize={5}
+        initialNumToRender={3}
+        bounces={false}
+        overScrollMode="never"
+        style={styles.list}
+        refreshControl={refreshControl}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  list: {
     flex: 1,
   },
 });

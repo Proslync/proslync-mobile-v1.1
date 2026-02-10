@@ -117,8 +117,8 @@ function UserListItem({
 
   const handleUserPress = () => {
     router.push({
-      pathname: '/user-profile/[userId]',
-      params: { userId: user.id },
+      pathname: '/user/[username]',
+      params: { username: user.userName || String(user.id), userId: String(user.id) },
     });
   };
 

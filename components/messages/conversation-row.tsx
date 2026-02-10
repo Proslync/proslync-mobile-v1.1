@@ -11,6 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Conversation } from '../../lib/types/messages.types';
 
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
 interface ConversationRowProps {
   conversation: Conversation;
   onPress: () => void;
@@ -73,7 +75,7 @@ export function ConversationRow({
     >
       <View style={styles.avatarContainer}>
         <Image
-          source={{ uri: participant?.avatarUrl || 'https://i.pravatar.cc/150?u=default' }}
+          source={participant?.avatarUrl ? { uri: participant.avatarUrl } : DefaultAvatarImage}
           style={styles.avatar}
         />
       </View>

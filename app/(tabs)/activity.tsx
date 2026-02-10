@@ -1,6 +1,7 @@
 // Wallet Screen - Membership card, offers, and events
 import React, { useRef } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +16,7 @@ import {
 } from '@/components/wallet';
 
 export default function WalletScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const { colors, isDark } = useAppTheme();
@@ -63,7 +65,21 @@ export default function WalletScreen() {
         {/* Tickets */}
         <TicketCarousel
           events={events}
-          onViewEvent={(eventId) => console.log('View event:', eventId)}
+          onViewEvent={(eventId) => {
+            const event = events.find(e => e.id === eventId);
+            router.push({
+              pathname: '/event/[id]',
+              params: {
+                id: eventId,
+                ...(event && {
+                  title: event.title,
+                  date: event.dateTime,
+                  imageUrl: event.flyerUrl,
+                  venueName: event.venueName,
+                }),
+              },
+            });
+          }}
         />
 
       </ScrollView>

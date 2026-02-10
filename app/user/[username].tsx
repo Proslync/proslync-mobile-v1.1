@@ -16,7 +16,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
 import { useChat } from '@/lib/providers/chat-provider';
-import { useChannels } from '@/hooks/use-channels';
+
 import { useUserFeedStats } from '@/hooks/use-user-feed-stats';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -56,10 +56,10 @@ function StatButton({
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { username } = useLocalSearchParams<{ username: string }>();
+  const { username, userId } = useLocalSearchParams<{ username: string; userId?: string }>();
   const { showSuccess, showError } = useToast();
   const { client, status: chatStatus } = useChat();
-  const { channelData } = useChannels();
+
   const { colors, isDark } = useAppTheme();
   const [user, setUser] = React.useState<PublicUserProfile | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -86,7 +86,7 @@ export default function UserProfileScreen() {
 
   React.useEffect(() => {
     async function loadUser() {
-      if (!username) {
+      if (!username && !userId) {
         setError('No username provided');
         setIsLoading(false);
         return;
@@ -95,18 +95,29 @@ export default function UserProfileScreen() {
       try {
         setIsLoading(true);
         setError(null);
-        const searchResult = await authApi.getUserByUsername(username);
-        if (!searchResult) {
+
+        let profile: PublicUserProfile | null = null;
+
+        if (userId) {
+          // Look up directly by ID when userId is provided
+          const numericId = Number(userId);
+          if (!isNaN(numericId)) {
+            profile = await authApi.getUserById(numericId);
+          }
+        } else if (username) {
+          // Look up by username (original @mention flow)
+          const searchResult = await authApi.getUserByUsername(username);
+          if (searchResult) {
+            profile = await authApi.getUserById(searchResult.id) || searchResult;
+          }
+        }
+
+        if (!profile) {
           setError('User not found');
           return;
         }
 
-        const fullProfile = await authApi.getUserById(searchResult.id);
-        if (fullProfile) {
-          setUser(fullProfile);
-        } else {
-          setUser(searchResult);
-        }
+        setUser(profile);
       } catch (err: any) {
         console.error('[UserProfile] Error loading user:', err);
         setError(err?.message || 'User not found');
@@ -116,7 +127,7 @@ export default function UserProfileScreen() {
     }
 
     loadUser();
-  }, [username]);
+  }, [username, userId]);
 
   const displayName = user?.firstName
     ? `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`
@@ -161,17 +172,28 @@ export default function UserProfileScreen() {
       }
 
       const targetUserId = String(user.id);
-      const channelId = [currentUserId, targetUserId].sort().join('-');
 
-      const existingChannel = channelData.find((c) => c.id === channelId);
-      if (existingChannel) {
+      // Query Stream Chat for existing 1:1 channel with this user
+      const existingChannels = await client.queryChannels(
+        {
+          type: 'messaging',
+          members: { $eq: [currentUserId, targetUserId] },
+        },
+        {},
+        { limit: 1 },
+      );
+
+      if (existingChannels.length > 0) {
+        const existing = existingChannels[0];
         router.push({
           pathname: '/chat/[conversationId]',
-          params: { conversationId: existingChannel.id },
+          params: { conversationId: existing.id || existing.cid },
         });
         return;
       }
 
+      // No existing channel — create one
+      const channelId = [currentUserId, targetUserId].sort().join('-');
       const channel = client.channel('messaging', channelId, {
         members: [currentUserId, targetUserId],
       });
@@ -297,7 +319,7 @@ export default function UserProfileScreen() {
           </TouchableOpacity>
 
           <Text style={[styles.headerUsername, dynamicStyles.headerUsername]} numberOfLines={1}>
-            {user.userName || username}
+            {user.userName ? `@${user.userName}` : displayName}
           </Text>
 
           <TouchableOpacity

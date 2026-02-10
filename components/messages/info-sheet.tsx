@@ -18,6 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Conversation, User } from '../../lib/types/messages.types';
 
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
 interface InfoSheetProps {
   visible: boolean;
   onClose: () => void;
@@ -87,9 +89,7 @@ export function InfoSheet({
             {/* Profile Section */}
             <View style={[styles.profileSection, { borderBottomColor: colors.border }]}>
               <Image
-                source={{
-                  uri: participant?.avatarUrl || 'https://i.pravatar.cc/150?u=default',
-                }}
+                source={participant?.avatarUrl ? { uri: participant.avatarUrl } : DefaultAvatarImage}
                 style={styles.avatar}
               />
               <View style={styles.nameRow}>

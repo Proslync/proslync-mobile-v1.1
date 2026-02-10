@@ -1,6 +1,6 @@
 // New Message Screen - Start a new conversation with Stream Chat
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,9 +16,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '@/lib/providers/chat-provider';
+import { useAuth } from '@/lib/providers/auth-provider';
+import { followsApi } from '@/lib/api/follows';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useChannels, type ChannelData } from '@/hooks/use-channels';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
+import type { UserFollowItem } from '@/lib/types/follows.types';
+
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
+interface ContactItem {
+  id: number;
+  name: string;
+  userName?: string | null;
+  image?: string | null;
+  /** 0 = mutual, 1 = following, 2 = follower */
+  sortGroup: number;
+}
 
 interface SearchUser {
   id: string;
@@ -28,6 +41,33 @@ interface SearchUser {
 }
 
 function ContactRow({
+  contact,
+  onPress,
+  colors,
+}: {
+  contact: ContactItem;
+  onPress: () => void;
+  colors: ThemeColors;
+}) {
+  return (
+    <TouchableOpacity style={styles.contactRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.avatarContainer}>
+        <Image
+          source={contact.image ? { uri: contact.image } : DefaultAvatarImage}
+          style={styles.avatar}
+        />
+      </View>
+      <View style={styles.contactInfo}>
+        <Text style={[styles.contactName, { color: colors.text }]}>{contact.name}</Text>
+        {contact.userName ? (
+          <Text style={[styles.contactUsername, { color: colors.textSecondary }]}>@{contact.userName}</Text>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function SearchResultRow({
   user,
   onPress,
   colors,
@@ -40,7 +80,7 @@ function ContactRow({
     <TouchableOpacity style={styles.contactRow} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.avatarContainer}>
         <Image
-          source={{ uri: user.image || 'https://picsum.photos/100' }}
+          source={user.image ? { uri: user.image } : DefaultAvatarImage}
           style={styles.avatar}
         />
         {user.online && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
@@ -64,29 +104,92 @@ function EmptyState({ query, colors }: { query: string; colors: ThemeColors }) {
   );
 }
 
+function buildDisplayName(item: UserFollowItem): string {
+  const parts = [item.firstName, item.lastName].filter(Boolean);
+  return parts.length > 0 ? parts.join(' ') : item.userName || `User ${item.id}`;
+}
+
 export default function NewMessageScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { client, status } = useChat();
-  const { channelData } = useChannels();
+  const { user: currentUser } = useAuth();
   const { colors, isDark } = useAppTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [contacts, setContacts] = useState<ContactItem[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(true);
 
-  // Get recent contacts from existing channels
-  const recentContacts = useMemo((): SearchUser[] => {
-    if (!client) return [];
+  // Fetch following + followers and build sorted contact list
+  useEffect(() => {
+    if (!currentUser?.id) return;
 
-    return channelData.slice(0, 10).map((channel) => ({
-      id: channel.id,
-      name: channel.name,
-      image: channel.imageUrl,
-      online: channel.isOnline,
-    }));
-  }, [channelData, client]);
+    let cancelled = false;
+
+    async function fetchContacts() {
+      setIsLoadingContacts(true);
+      try {
+        const [followingRes, followersRes] = await Promise.all([
+          followsApi.getUserFollowing(currentUser!.id),
+          followsApi.getUserFollowers(currentUser!.id),
+        ]);
+
+        if (cancelled) return;
+
+        const followingUsers = followingRes.followingUsers || [];
+        const followerUsers = followersRes.userFollowers || [];
+
+        // Build sets for quick lookup
+        const followingIds = new Set(followingUsers.map((u) => u.id));
+        const followerIds = new Set(followerUsers.map((u) => u.id));
+
+        const contactMap = new Map<number, ContactItem>();
+
+        // Add all following users
+        for (const u of followingUsers) {
+          const isMutual = followerIds.has(u.id);
+          contactMap.set(u.id, {
+            id: u.id,
+            name: buildDisplayName(u),
+            userName: u.userName,
+            image: u.avatarUrl,
+            sortGroup: isMutual ? 0 : 1,
+          });
+        }
+
+        // Add followers not already in the map
+        for (const u of followerUsers) {
+          if (!contactMap.has(u.id)) {
+            contactMap.set(u.id, {
+              id: u.id,
+              name: buildDisplayName(u),
+              userName: u.userName,
+              image: u.avatarUrl,
+              sortGroup: 2,
+            });
+          }
+        }
+
+        // Sort: mutuals (0), following (1), followers (2), then alphabetical within each
+        const sorted = Array.from(contactMap.values()).sort((a, b) => {
+          if (a.sortGroup !== b.sortGroup) return a.sortGroup - b.sortGroup;
+          return a.name.localeCompare(b.name);
+        });
+
+        setContacts(sorted);
+      } catch (err) {
+        console.error('[NewMessage] Error fetching contacts:', err);
+      } finally {
+        if (!cancelled) setIsLoadingContacts(false);
+      }
+    }
+
+    fetchContacts();
+    return () => { cancelled = true; };
+  }, [currentUser?.id]);
 
   // Search users via Stream Chat
   useEffect(() => {
@@ -130,37 +233,39 @@ export default function NewMessageScreen() {
     return () => clearTimeout(debounce);
   }, [client, status, searchQuery]);
 
-  // Find existing channel with user
-  const findExistingChannel = useCallback(
-    (userId: string): ChannelData | undefined => {
-      return channelData.find((c) => c.id.includes(userId));
-    },
-    [channelData]
-  );
-
-  // Create or get channel with user
-  const handleSelectUser = useCallback(
-    async (user: SearchUser) => {
+  // Open or create channel with a user (by numeric userId)
+  const openChannelWithUser = useCallback(
+    async (targetUserId: string) => {
       if (!client || isCreating) return;
 
       setIsCreating(true);
       try {
-        // Check for existing channel
-        const existing = findExistingChannel(user.id);
-        if (existing) {
+        const currentUserId = client.userID;
+        if (!currentUserId) return;
+
+        // Query Stream Chat for existing 1:1 channel
+        const existingChannels = await client.queryChannels(
+          {
+            type: 'messaging',
+            members: { $eq: [currentUserId, targetUserId] },
+          },
+          {},
+          { limit: 1 },
+        );
+
+        if (existingChannels.length > 0) {
+          const existing = existingChannels[0];
           router.replace({
             pathname: '/chat/[conversationId]',
-            params: { conversationId: existing.id },
+            params: { conversationId: existing.id || existing.cid },
           });
           return;
         }
 
-        // Create new channel
-        const channelId = [client.userID, user.id].sort().join('-');
+        // No existing channel — create one
+        const channelId = [currentUserId, targetUserId].sort().join('-');
         const channel = client.channel('messaging', channelId, {
-          members: [client.userID || '', user.id],
-          name: user.name,
-          image: user.image,
+          members: [currentUserId, targetUserId],
         });
 
         await channel.create();
@@ -175,54 +280,39 @@ export default function NewMessageScreen() {
         setIsCreating(false);
       }
     },
-    [client, findExistingChannel, isCreating, router]
+    [client, isCreating, router]
   );
 
-  // Navigate to existing conversation
-  const handleSelectConversation = useCallback(
-    (channel: ChannelData) => {
-      router.replace({
-        pathname: '/chat/[conversationId]',
-        params: { conversationId: channel.id },
-      });
+  const handleSelectContact = useCallback(
+    (contact: ContactItem) => {
+      openChannelWithUser(String(contact.id));
     },
-    [router]
+    [openChannelWithUser]
+  );
+
+  const handleSelectSearchResult = useCallback(
+    (user: SearchUser) => {
+      openChannelWithUser(user.id);
+    },
+    [openChannelWithUser]
   );
 
   const handleClose = useCallback(() => {
     router.back();
   }, [router]);
 
+  const renderContact = useCallback(
+    ({ item }: { item: ContactItem }) => (
+      <ContactRow contact={item} onPress={() => handleSelectContact(item)} colors={colors} />
+    ),
+    [handleSelectContact, colors]
+  );
+
   const renderSearchResult = useCallback(
     ({ item }: { item: SearchUser }) => (
-      <ContactRow user={item} onPress={() => handleSelectUser(item)} colors={colors} />
+      <SearchResultRow user={item} onPress={() => handleSelectSearchResult(item)} colors={colors} />
     ),
-    [handleSelectUser, colors]
-  );
-
-  const renderRecentContact = useCallback(
-    ({ item }: { item: ChannelData }) => (
-      <ContactRow
-        user={{
-          id: item.id,
-          name: item.name,
-          image: item.imageUrl,
-          online: item.isOnline,
-        }}
-        onPress={() => handleSelectConversation(item)}
-        colors={colors}
-      />
-    ),
-    [handleSelectConversation, colors]
-  );
-
-  const renderSectionHeader = useCallback(
-    (title: string) => (
-      <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
-        <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>{title}</Text>
-      </View>
-    ),
-    [colors]
+    [handleSelectSearchResult, colors]
   );
 
   // Show loading while chat is connecting
@@ -246,19 +336,16 @@ export default function NewMessageScreen() {
     );
   }
 
-  // Show creating overlay
-  const showOverlay = isCreating;
-
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       {/* Creating overlay */}
-      {showOverlay && (
+      {isCreating && (
         <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(15, 9, 12, 0.85)' : 'rgba(255, 255, 255, 0.85)' }]}>
           <ActivityIndicator size="large" color={colors.text} />
-          <Text style={[styles.overlayText, { color: colors.text }]}>Creating conversation...</Text>
+          <Text style={[styles.overlayText, { color: colors.text }]}>Opening conversation...</Text>
         </View>
       )}
 
@@ -297,7 +384,6 @@ export default function NewMessageScreen() {
 
       {/* Results */}
       {searchQuery.trim() ? (
-        // Search results
         <FlatList
           data={searchResults}
           keyExtractor={(item) => item.id}
@@ -312,17 +398,28 @@ export default function NewMessageScreen() {
           ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.separator }]} />}
         />
       ) : (
-        // Recent conversations
         <FlatList
-          data={channelData.slice(0, 20)}
-          keyExtractor={(item) => item.id}
-          renderItem={renderRecentContact}
+          data={contacts}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderContact}
           ListHeaderComponent={
-            recentContacts.length > 0 ? renderSectionHeader('Recent') : null
+            contacts.length > 0 ? (
+              <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+                <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Suggested</Text>
+              </View>
+            ) : null
           }
-          ListEmptyComponent={<EmptyState query="" colors={colors} />}
+          ListEmptyComponent={
+            isLoadingContacts ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={colors.text} />
+              </View>
+            ) : (
+              <EmptyState query="" colors={colors} />
+            )
+          }
           contentContainerStyle={
-            recentContacts.length === 0 ? styles.emptyListContainer : undefined
+            contacts.length === 0 ? styles.emptyListContainer : undefined
           }
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.separator }]} />}
@@ -429,8 +526,13 @@ const styles = StyleSheet.create({
   },
   contactName: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: 'Lato_700Bold',
     color: '#1a1a1a',
+  },
+  contactUsername: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 1,
   },
   separator: {
     height: 1,
@@ -464,6 +566,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 40,
   },
   loadingText: {
     marginTop: 16,

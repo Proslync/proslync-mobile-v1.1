@@ -15,7 +15,7 @@ const hoursAgo = (hours: number) => new Date(Date.now() - hours * 3600000).toISO
 export const MOCK_WALLET_USER: WalletUser = {
   id: 'user-1',
   name: 'Alex Rivera',
-  statusTier: 'Insider',
+  statusTier: 'VIP',
   memberSince: '2024-03-15',
   membershipCardId: 123, // Mock ID for testing
 };
@@ -96,7 +96,7 @@ export const MOCK_TRANSACTIONS: WalletTransaction[] = [
     id: 'tx-6',
     type: 'adjustment',
     title: 'Tier upgrade bonus',
-    subtitle: 'Welcome to Insider tier!',
+    subtitle: 'Welcome to VIP tier!',
     amountCents: 1500,
     status: 'completed',
     createdAt: daysAgo(7),
@@ -135,7 +135,7 @@ export const MOCK_OFFERS: Offer[] = [
     id: 'offer-1',
     title: '$10 off Uber rides',
     subtitle: 'Get home safe after events',
-    eligibility: 'Insider+',
+    eligibility: 'VIP+',
     isClaimed: false,
     expiresAt: daysAgo(-7), // 7 days from now
   },
@@ -172,7 +172,7 @@ export const MOCK_OFFERS: Offer[] = [
     id: 'offer-6',
     title: 'Skip the line',
     subtitle: 'Priority entry all weekend',
-    eligibility: 'Insider+',
+    eligibility: 'VIP+',
     isClaimed: false,
   },
 ];

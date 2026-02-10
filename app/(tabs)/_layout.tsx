@@ -44,7 +44,7 @@ const TAB_CONFIG = [
 ] as const;
 
 const DEFAULT_TAB_INDEX = 2; // 'index' (Home) tab
-const DEFAULT_AVATAR = 'https://picsum.photos/200';
+const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
 
 // Screen components array
 const SCREENS = [MapScreen, MessagesScreen, HomeScreen, WalletScreen, ProfileScreen];
@@ -144,7 +144,7 @@ export default function SwipeableTabLayout() {
     return () => clearTimeout(timer);
   }, []);
 
-  const avatarUrl = user?.avatar?.url || DEFAULT_AVATAR;
+  const avatarUrl = user?.avatar?.url;
 
   // Handle page selection (from swipe gesture or programmatic)
   const handlePageSelected = React.useCallback((e: PagerViewOnPageSelectedEvent) => {
