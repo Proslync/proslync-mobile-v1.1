@@ -26,3 +26,13 @@ export type { CommentData } from './use-activity-comments';
 export { useAddComment } from './use-add-comment';
 export { useActivityReaction } from './use-activity-reaction';
 export { useCommentReaction } from './use-comment-reaction';
+
+// Search/Discover hooks
+export { useDebounce } from './use-debounce';
+export {
+  useSearch,
+  SEARCH_QUERY_KEY,
+  mapPersonToDiscover,
+  mapEventToDiscover,
+  mapVenueToDiscover,
+} from './use-search';

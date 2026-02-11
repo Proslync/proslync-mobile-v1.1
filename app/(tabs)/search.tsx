@@ -226,6 +226,7 @@ function SearchOverlay({
   onFilterPress: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <Animated.View
@@ -247,6 +248,12 @@ function SearchOverlay({
           </TouchableOpacity>
         )}
       </View>
+      <TouchableOpacity
+        style={styles.filterButton}
+        onPress={() => router.push('/search-screen')}
+      >
+        <Ionicons name="people-outline" size={20} color="#1a1a1a" />
+      </TouchableOpacity>
       <TouchableOpacity style={styles.filterButton} onPress={onFilterPress}>
         <Ionicons name="options-outline" size={20} color="#1a1a1a" />
       </TouchableOpacity>
