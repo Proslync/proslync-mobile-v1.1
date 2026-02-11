@@ -16,6 +16,7 @@ import { ToastProvider } from '@/components/shared/toast';
 import { TabNavigationProvider } from '@/lib/providers/tab-navigation-provider';
 import { ChatProvider } from '@/lib/providers/chat-provider';
 import { LiveLocationProvider } from '@/lib/providers/live-location-provider';
+import { StripeProvider } from '@/lib/providers/stripe-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -90,21 +91,23 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider defaultTheme="light">
         <QueryProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <LiveLocationProvider>
-                <TabNavigationProvider>
-                  <StreamProvider>
-                    <ChatProvider>
-                      <WalletProvider>
-                        <RootLayoutNav />
-                      </WalletProvider>
-                    </ChatProvider>
-                  </StreamProvider>
-                </TabNavigationProvider>
-              </LiveLocationProvider>
-            </AuthProvider>
-          </ToastProvider>
+          <StripeProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <LiveLocationProvider>
+                  <TabNavigationProvider>
+                    <StreamProvider>
+                      <ChatProvider>
+                        <WalletProvider>
+                          <RootLayoutNav />
+                        </WalletProvider>
+                      </ChatProvider>
+                    </StreamProvider>
+                  </TabNavigationProvider>
+                </LiveLocationProvider>
+              </AuthProvider>
+            </ToastProvider>
+          </StripeProvider>
         </QueryProvider>
       </ThemeProvider>
     </GestureHandlerRootView>

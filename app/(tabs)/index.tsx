@@ -261,7 +261,6 @@ export default function FeedScreen() {
         eventTitle={purchaseItem?.eventTitle || purchaseItem?.description || 'Event'}
         eventDate={purchaseItem?.eventDate}
         eventImage={purchaseItem?.imageUrl || purchaseItem?.thumbnail}
-        price={purchaseItem?.price}
       />
     </View>
   );

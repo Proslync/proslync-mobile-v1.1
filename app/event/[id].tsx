@@ -365,7 +365,6 @@ export default function EventPage() {
         eventTitle={eventTitle}
         eventDate={eventDate}
         eventImage={flyerImage}
-        price={eventPrice}
       />
     </View>
   );

@@ -63,6 +63,13 @@
           "cameraPermissionText": "Status needs camera access to scan IDs and membership cards",
           "enableCodeScanner": true
         }
+      ],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.status.app",
+          "enableGooglePay": true
+        }
       ]
     ],
     "experiments": {

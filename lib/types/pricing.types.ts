@@ -1,0 +1,55 @@
+// Pricing types for ticket tiers and promo codes
+
+export interface PricingRule {
+  id: number;
+  name: string;
+  price: number;
+  currency: string;
+  capacity?: number;
+  availableFrom?: string | null;
+  availableUntil?: string | null;
+  displayOrder: number;
+  isAvailable: boolean;
+  soldCount: number;
+}
+
+export interface TicketTier {
+  id: number;
+  name: string;
+  description?: string;
+  displayOrder: number;
+  isActive: boolean;
+  currentPricing?: PricingRule;
+  pricing: PricingRule[];
+  soldCount: number;
+  capacity?: number;
+}
+
+export interface PromoCode {
+  id: number;
+  eventId: number;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxUses: number | null;
+  usedCount: number;
+  validFrom: string;
+  validUntil: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ValidatePromoCodeRequest {
+  code: string;
+  tierId?: number;
+}
+
+export interface ValidatePromoCodeResponse {
+  isValid: boolean;
+  promoCode?: PromoCode;
+  discountAmount?: number;
+  originalPrice?: number;
+  finalPrice?: number;
+  error?: string;
+}
