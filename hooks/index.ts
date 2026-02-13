@@ -11,6 +11,7 @@ export {
   useRegisterForEvent,
 } from './use-event-mutations';
 export { useMyEvents, useEvent, useEvents } from './use-events-query';
+export { useMyVenues } from './use-venues-query';
 export {
   useUploadActivityMedia,
   useCreateStreamActivity,

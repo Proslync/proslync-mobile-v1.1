@@ -4,11 +4,15 @@
 // Local development override
 // Set to true to use local backend (requires backend running on your machine)
 const USE_LOCAL_BACKEND = false;
-const LOCAL_IP = '192.168.31.112'; // Update with your IP: ifconfig (Mac) or ipconfig (Windows)
+const LOCAL_IP = "192.168.31.112"; // Update with your IP: ifconfig (Mac) or ipconfig (Windows)
 
 // API URLs
-const PROD_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://status-social-api-dev-699705646196.us-east4.run.app';
-const PROD_WS_URL = process.env.EXPO_PUBLIC_WS_URL || 'wss://status-social-api-dev-699705646196.us-east4.run.app';
+const PROD_API_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  "https://status-social-api-dev-699705646196.us-east4.run.app";
+const PROD_WS_URL =
+  process.env.EXPO_PUBLIC_WS_URL ||
+  "wss://status-social-api-dev-699705646196.us-east4.run.app";
 
 export const config = {
   api: {
@@ -20,17 +24,17 @@ export const config = {
     enabled: true,
   },
   auth: {
-    tokenKey: 'accessToken',
-    refreshTokenKey: 'refreshToken',
+    tokenKey: "accessToken",
+    refreshTokenKey: "refreshToken",
   },
   stripe: {
-    publishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+    publishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
   },
   stream: {
-    apiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY || 'wnyzcwhxkjsf',
+    apiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY || "wnyzcwhxkjsf",
   },
   mapbox: {
-    accessToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN || '',
+    accessToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN || "",
   },
 } as const;
 

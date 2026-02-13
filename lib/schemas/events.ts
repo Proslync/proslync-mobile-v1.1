@@ -21,6 +21,7 @@ export const eventFormSchema = z
     endDate: z.date(),
 
     // Location (Step 3)
+    venueId: z.number().optional(),
     location: z
       .string()
       .min(1, 'Location is required')
@@ -61,6 +62,7 @@ export const dateTimeSchema = z
   });
 
 export const locationSchema = z.object({
+  venueId: z.number().optional(),
   location: z
     .string()
     .min(1, 'Location is required')
@@ -88,6 +90,7 @@ export function parseEventFormData(data: EventFormData) {
     startDate: data.startDate.toISOString(),
     endDate: data.endDate.toISOString(),
     location: data.location.trim(),
+    venueId: data.venueId || undefined,
     maxCapacity: data.maxCapacity && data.maxCapacity.trim() !== ''
       ? parseInt(data.maxCapacity, 10)
       : undefined,
