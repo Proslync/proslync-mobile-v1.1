@@ -14,7 +14,7 @@ const STEPS: EventFormStep[] = ['basic', 'datetime', 'location', 'details'];
 const STEP_FIELDS: Record<EventFormStep, (keyof EventFormData)[]> = {
   basic: ['name', 'description', 'flyerUri'],
   datetime: ['startDate', 'endDate'],
-  location: ['venueId', 'location'],
+  location: ['venueId', 'location', 'locationDetails'],
   details: ['maxCapacity', 'minimumAge', 'isPublic'],
 };
 
@@ -27,6 +27,7 @@ export const DEFAULT_EVENT_FORM_VALUES: EventFormData = {
   endDate: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours later
   venueId: undefined,
   location: '',
+  locationDetails: undefined,
   maxCapacity: '',
   minimumAge: '21',
   isPublic: true,

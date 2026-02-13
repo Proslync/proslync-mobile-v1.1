@@ -26,7 +26,10 @@
       "Bash(git add:*)",
       "Bash(gcloud run services logs read:*)",
       "Bash(gcloud run services describe:*)",
-      "Bash(gcloud logging read:*)"
+      "Bash(gcloud logging read:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.mapbox.com)",
+      "WebFetch(domain:blogs.perficient.com)"
     ]
   }
 }

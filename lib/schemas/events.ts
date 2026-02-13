@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+const locationDetailsSchema = z.object({
+  addressLine1: z.string(),
+  city: z.string(),
+  state: z.string(),
+  postalCode: z.string(),
+  country: z.string(),
+  formattedAddress: z.string().optional(),
+  coordinates: z.object({ lat: z.number(), lng: z.number() }).optional(),
+}).optional();
+
 // Base event form schema with all validations
 // Keep values as strings for form inputs, convert in submit handler
 export const eventFormSchema = z
@@ -26,6 +36,7 @@ export const eventFormSchema = z
       .string()
       .min(1, 'Location is required')
       .max(500, 'Location must not exceed 500 characters'),
+    locationDetails: locationDetailsSchema,
 
     // Details (Step 4) - keep as strings for form state
     maxCapacity: z.string().optional().or(z.literal('')),
@@ -67,6 +78,7 @@ export const locationSchema = z.object({
     .string()
     .min(1, 'Location is required')
     .max(500, 'Location must not exceed 500 characters'),
+  locationDetails: locationDetailsSchema,
 });
 
 export const detailsSchema = z.object({
@@ -91,6 +103,7 @@ export function parseEventFormData(data: EventFormData) {
     endDate: data.endDate.toISOString(),
     location: data.location.trim(),
     venueId: data.venueId || undefined,
+    locationDetails: data.locationDetails || undefined,
     maxCapacity: data.maxCapacity && data.maxCapacity.trim() !== ''
       ? parseInt(data.maxCapacity, 10)
       : undefined,

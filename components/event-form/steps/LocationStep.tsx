@@ -1,23 +1,26 @@
-// Step 3: Location - Venue selection + address
+// Step 3: Location - Venue selection + address autocomplete
 
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFormContext } from 'react-hook-form';
-import { FormTextInput } from '@/components/forms';
+import { AddressAutocomplete } from '@/components/event-form/address-autocomplete';
 import { VenuePickerModal } from '@/components/event-form/venue-picker-modal';
 import { useMyVenues } from '@/hooks';
+import type { AddressSuggestion } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import type { LocationDetails } from '@/lib/api/events';
 import type { EventFormData } from '@/lib/schemas/events';
 import type { Venue } from '@/lib/types/events.types';
 
 export function LocationStep() {
   const { colors } = useAppTheme();
-  const { setValue, watch } = useFormContext<EventFormData>();
+  const { setValue, watch, formState: { errors } } = useFormContext<EventFormData>();
   const [pickerVisible, setPickerVisible] = useState(false);
   const { data: venues = [], isLoading } = useMyVenues();
 
   const venueId = watch('venueId');
+  const location = watch('location');
   const selectedVenue = venues.find((v) => v.id === venueId);
   const hasVenues = venues.length > 0 || isLoading;
 
@@ -26,9 +29,21 @@ export function LocationStep() {
       setValue('venueId', venue.id, { shouldValidate: true });
       const address = venue.address || venue.name;
       setValue('location', address, { shouldValidate: true });
+      setValue('locationDetails', undefined);
     } else {
       setValue('venueId', undefined, { shouldValidate: true });
     }
+  };
+
+  const handleAddressChange = (text: string) => {
+    setValue('location', text, { shouldValidate: true });
+    // Clear locationDetails when user types manually
+    setValue('locationDetails', undefined);
+  };
+
+  const handleAddressSelect = (suggestion: AddressSuggestion, details: LocationDetails) => {
+    setValue('location', details.formattedAddress || suggestion.fullAddress, { shouldValidate: true });
+    setValue('locationDetails', details);
   };
 
   return (
@@ -71,10 +86,13 @@ export function LocationStep() {
         </View>
       )}
 
-      <FormTextInput<EventFormData>
-        name="location"
+      <AddressAutocomplete
+        value={location || ''}
+        onChangeText={handleAddressChange}
+        onSelect={handleAddressSelect}
         label="Where is it happening?"
-        placeholder="Enter address or venue name"
+        placeholder="Search for an address..."
+        error={errors.location?.message}
       />
       <Text style={[styles.helperText, { color: colors.textTertiary }]}>
         Enter the full address where your event will take place
