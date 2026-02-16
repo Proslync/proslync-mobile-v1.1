@@ -1,9 +1,10 @@
-// Step 3: Location - Venue selection + address autocomplete
+// Step 3: Location - Venue selection + address autocomplete + map preview
 
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFormContext } from 'react-hook-form';
+import { MapView, Camera, MarkerView } from '@rnmapbox/maps';
 import { AddressAutocomplete } from '@/components/event-form/address-autocomplete';
 import { VenuePickerModal } from '@/components/event-form/venue-picker-modal';
 import { useMyVenues } from '@/hooks';
@@ -13,6 +14,8 @@ import type { LocationDetails } from '@/lib/api/events';
 import type { EventFormData } from '@/lib/schemas/events';
 import type { Venue } from '@/lib/types/events.types';
 
+const DARK_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';
+
 export function LocationStep() {
   const { colors } = useAppTheme();
   const { setValue, watch, formState: { errors } } = useFormContext<EventFormData>();
@@ -21,8 +24,11 @@ export function LocationStep() {
 
   const venueId = watch('venueId');
   const location = watch('location');
+  const locationDetails = watch('locationDetails');
   const selectedVenue = venues.find((v) => v.id === venueId);
   const hasVenues = venues.length > 0 || isLoading;
+
+  const coordinates = locationDetails?.coordinates;
 
   const handleVenueSelect = (venue: Venue | null) => {
     if (venue) {
@@ -37,7 +43,6 @@ export function LocationStep() {
 
   const handleAddressChange = (text: string) => {
     setValue('location', text, { shouldValidate: true });
-    // Clear locationDetails when user types manually
     setValue('locationDetails', undefined);
   };
 
@@ -91,12 +96,43 @@ export function LocationStep() {
         onChangeText={handleAddressChange}
         onSelect={handleAddressSelect}
         label="Where is it happening?"
-        placeholder="Search for an address..."
+        placeholder="Search for an address or venue..."
         error={errors.location?.message}
       />
       <Text style={[styles.helperText, { color: colors.textTertiary }]}>
         Enter the full address where your event will take place
       </Text>
+
+      {coordinates && (
+        <Animated.View entering={FadeInDown.duration(300)} style={styles.mapContainer}>
+          <MapView
+            style={styles.map}
+            styleURL={DARK_STYLE_URL}
+            logoEnabled={false}
+            attributionEnabled={false}
+            compassEnabled={false}
+            scaleBarEnabled={false}
+            scrollEnabled={false}
+            pitchEnabled={false}
+            rotateEnabled={false}
+            zoomEnabled={false}
+          >
+            <Camera
+              centerCoordinate={[coordinates.lng, coordinates.lat]}
+              zoomLevel={14}
+              animationDuration={0}
+            />
+            <MarkerView
+              coordinate={[coordinates.lng, coordinates.lat]}
+              anchor={{ x: 0.5, y: 1 }}
+            >
+              <View style={styles.marker}>
+                <View style={styles.markerDot} />
+              </View>
+            </MarkerView>
+          </MapView>
+        </Animated.View>
+      )}
     </Animated.View>
   );
 }
@@ -134,5 +170,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
     marginTop: 8,
+  },
+  mapContainer: {
+    marginTop: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
+    height: 180,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  map: {
+    flex: 1,
+  },
+  marker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderWidth: 3,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
   },
 });
