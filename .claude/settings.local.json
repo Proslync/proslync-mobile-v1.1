@@ -29,7 +29,8 @@
       "Bash(gcloud logging read:*)",
       "WebSearch",
       "WebFetch(domain:docs.mapbox.com)",
-      "WebFetch(domain:blogs.perficient.com)"
+      "WebFetch(domain:blogs.perficient.com)",
+      "Bash(git diff:*)"
     ]
   }
 }

@@ -40,6 +40,34 @@ export interface PromoCode {
   updatedAt: string;
 }
 
+// Request types for CRUD operations
+
+export interface CreateTierRequest {
+  name: string;
+  description?: string;
+  displayOrder?: number;
+}
+
+export interface CreatePricingRuleRequest {
+  name: string;
+  price: number;
+  currency?: string;
+  capacity?: number;
+  availableFrom?: string;
+  availableUntil?: string;
+  displayOrder?: number;
+}
+
+export interface CreatePromoCodeRequest {
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxUses?: number | null;
+  validFrom: string;
+  validUntil?: string | null;
+  isActive?: boolean;
+}
+
 export interface ValidatePromoCodeRequest {
   code: string;
   tierId?: number;
