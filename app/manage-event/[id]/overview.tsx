@@ -65,6 +65,7 @@ export default function OverviewScreen() {
   };
 
   const isDraft = event?.status === EventStatus.DRAFT;
+  const isPastEvent = event?.status === EventStatus.FINISHED || event?.status === EventStatus.CANCELLED;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -125,13 +126,15 @@ export default function OverviewScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
 
         <Animated.View entering={FadeInDown.delay(250).duration(300)} style={styles.actions}>
-          <TouchableOpacity activeOpacity={0.7} onPress={handleEdit}>
-            <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.actionRow}>
-              <Ionicons name="create-outline" size={20} color={colors.text} />
-              <Text style={[styles.actionLabel, { color: colors.text }]}>Edit Event</Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-            </GlassSurface>
-          </TouchableOpacity>
+          {!isPastEvent && (
+            <TouchableOpacity activeOpacity={0.7} onPress={handleEdit}>
+              <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.actionRow}>
+                <Ionicons name="create-outline" size={20} color={colors.text} />
+                <Text style={[styles.actionLabel, { color: colors.text }]}>Edit Event</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              </GlassSurface>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity activeOpacity={0.7} onPress={handleShare}>
             <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.actionRow}>

@@ -2,7 +2,7 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useEvent } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import type { EventStatus } from '@/lib/types/events.types';
+import { EventStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -91,6 +91,7 @@ export default function ManageEventScreen() {
   }
 
   const flyerUrl = event.flyer?.url || event.imageUrl;
+  const isPastEvent = event.status === EventStatus.FINISHED || event.status === EventStatus.CANCELLED;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -105,12 +106,16 @@ export default function ManageEventScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Manage Event</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.push({ pathname: '/edit-event', params: { id: id! } })}
-        >
-          <Ionicons name="create-outline" size={22} color={colors.text} />
-        </TouchableOpacity>
+        {isPastEvent ? (
+          <View style={styles.headerButton} />
+        ) : (
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => router.push({ pathname: '/edit-event', params: { id: id! } })}
+          >
+            <Ionicons name="create-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+        )}
       </Animated.View>
 
       <ScrollView

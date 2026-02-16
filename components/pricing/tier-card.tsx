@@ -8,6 +8,7 @@ import type { TicketTier, PricingRule } from '@/lib/types/pricing.types';
 
 interface TierCardProps {
   tier: TicketTier;
+  readOnly?: boolean;
   onAddPricing: (tierId: number) => void;
   onEditTier: (tier: TicketTier) => void;
   onDeleteTier: (tierId: number) => void;
@@ -22,6 +23,7 @@ function formatPrice(price: number, currency = 'USD'): string {
 
 export function TierCard({
   tier,
+  readOnly,
   onAddPricing,
   onEditTier,
   onDeleteTier,
@@ -64,14 +66,16 @@ export function TierCard({
             {tier.soldCount} sold{tier.capacity ? ` / ${tier.capacity}` : ''}
           </Text>
         </View>
-        <View style={styles.tierActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => onEditTier(tier)}>
-            <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={handleDeleteTier}>
-            <Ionicons name="trash-outline" size={18} color="#ef4444" />
-          </TouchableOpacity>
-        </View>
+        {!readOnly && (
+          <View style={styles.tierActions}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => onEditTier(tier)}>
+              <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleDeleteTier}>
+              <Ionicons name="trash-outline" size={18} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Pricing Rules */}
@@ -91,34 +95,38 @@ export function TierCard({
                   <Text style={styles.unavailableText}>Unavailable</Text>
                 </View>
               )}
-              <View style={styles.pricingActions}>
-                <TouchableOpacity
-                  style={styles.smallAction}
-                  onPress={() => onEditPricing(tier.id, rule)}
-                >
-                  <Ionicons name="create-outline" size={16} color={colors.textTertiary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.smallAction}
-                  onPress={() => handleDeletePricing(rule)}
-                >
-                  <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                </TouchableOpacity>
-              </View>
+              {!readOnly && (
+                <View style={styles.pricingActions}>
+                  <TouchableOpacity
+                    style={styles.smallAction}
+                    onPress={() => onEditPricing(tier.id, rule)}
+                  >
+                    <Ionicons name="create-outline" size={16} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.smallAction}
+                    onPress={() => handleDeletePricing(rule)}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           ))}
         </View>
       )}
 
       {/* Add Pricing Button */}
-      <TouchableOpacity
-        style={styles.addPricingButton}
-        onPress={() => onAddPricing(tier.id)}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="add" size={16} color={colors.textSecondary} />
-        <Text style={[styles.addPricingText, { color: colors.textSecondary }]}>Add Pricing</Text>
-      </TouchableOpacity>
+      {!readOnly && (
+        <TouchableOpacity
+          style={styles.addPricingButton}
+          onPress={() => onAddPricing(tier.id)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={16} color={colors.textSecondary} />
+          <Text style={[styles.addPricingText, { color: colors.textSecondary }]}>Add Pricing</Text>
+        </TouchableOpacity>
+      )}
     </GlassSurface>
   );
 }

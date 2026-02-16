@@ -6,6 +6,7 @@ import { CreatePromoCodeModal } from '@/components/pricing/create-promo-code-mod
 import { TierCard } from '@/components/pricing/tier-card';
 import { PromoCodeCard } from '@/components/pricing/promo-code-card';
 import {
+  useEvent,
   useGetTiers,
   useGetPromoCodes,
   useCreateTier,
@@ -17,6 +18,7 @@ import {
   useTogglePromoCodeActive,
 } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { EventStatus } from '@/lib/types/events.types';
 import type { TicketTier, PricingRule } from '@/lib/types/pricing.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -38,8 +40,11 @@ export default function PricingScreen() {
   const { colors, isDark } = useAppTheme();
 
   const eventId = id ? Number(id) : 0;
+  const { data: event } = useEvent(eventId || undefined);
   const { data: tiers = [], isLoading: tiersLoading } = useGetTiers(eventId);
   const { data: promoCodes = [], isLoading: promosLoading } = useGetPromoCodes(eventId);
+
+  const isPastEvent = event?.status === EventStatus.FINISHED || event?.status === EventStatus.CANCELLED;
 
   // Mutations
   const createTier = useCreateTier(eventId);
@@ -139,14 +144,16 @@ export default function PricingScreen() {
           <Animated.View entering={FadeInDown.duration(300)}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Ticket Pricing</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddTier}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={18} color={colors.text} />
-                <Text style={[styles.addButtonText, { color: colors.text }]}>Add Tier</Text>
-              </TouchableOpacity>
+              {!isPastEvent && (
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={handleAddTier}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={18} color={colors.text} />
+                  <Text style={[styles.addButtonText, { color: colors.text }]}>Add Tier</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {tiers.length === 0 ? (
@@ -164,6 +171,7 @@ export default function PricingScreen() {
                 <TierCard
                   key={tier.id}
                   tier={tier}
+                  readOnly={isPastEvent}
                   onAddPricing={handleAddPricing}
                   onEditTier={handleEditTier}
                   onDeleteTier={(tierId) => deleteTier.mutate(tierId)}
@@ -180,14 +188,16 @@ export default function PricingScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.promoSection}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Promo Codes</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={handleAddPromo}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={18} color={colors.text} />
-                <Text style={[styles.addButtonText, { color: colors.text }]}>Add Code</Text>
-              </TouchableOpacity>
+              {!isPastEvent && (
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={handleAddPromo}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={18} color={colors.text} />
+                  <Text style={[styles.addButtonText, { color: colors.text }]}>Add Code</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             {promoCodes.length === 0 ? (
@@ -205,6 +215,7 @@ export default function PricingScreen() {
                 <PromoCodeCard
                   key={code.id}
                   promoCode={code}
+                  readOnly={isPastEvent}
                   onToggleActive={(promoId) => togglePromoActive.mutate(promoId)}
                   onEdit={() => {}}
                   onDelete={(promoId) => deletePromoCode.mutate(promoId)}

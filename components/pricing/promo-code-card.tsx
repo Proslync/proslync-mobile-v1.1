@@ -8,6 +8,7 @@ import type { PromoCode } from '@/lib/types/pricing.types';
 
 interface PromoCodeCardProps {
   promoCode: PromoCode;
+  readOnly?: boolean;
   onToggleActive: (promoId: number) => void;
   onEdit: (promoCode: PromoCode) => void;
   onDelete: (promoId: number) => void;
@@ -22,7 +23,7 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-export function PromoCodeCard({ promoCode, onToggleActive, onEdit, onDelete }: PromoCodeCardProps) {
+export function PromoCodeCard({ promoCode, readOnly, onToggleActive, onEdit, onDelete }: PromoCodeCardProps) {
   const { colors } = useAppTheme();
 
   const handleDelete = () => {
@@ -45,12 +46,14 @@ export function PromoCodeCard({ promoCode, onToggleActive, onEdit, onDelete }: P
             {formatDiscount(promoCode)}
           </Text>
         </View>
-        <Switch
-          value={promoCode.isActive}
-          onValueChange={() => onToggleActive(promoCode.id)}
-          trackColor={{ false: 'rgba(255,255,255,0.15)', true: 'rgba(34,197,94,0.5)' }}
-          thumbColor="#fff"
-        />
+        {!readOnly && (
+          <Switch
+            value={promoCode.isActive}
+            onValueChange={() => onToggleActive(promoCode.id)}
+            trackColor={{ false: 'rgba(255,255,255,0.15)', true: 'rgba(34,197,94,0.5)' }}
+            thumbColor="#fff"
+          />
+        )}
       </View>
 
       <View style={styles.detailsRow}>
@@ -61,16 +64,18 @@ export function PromoCodeCard({ promoCode, onToggleActive, onEdit, onDelete }: P
         </Text>
       </View>
 
-      <View style={styles.actionsRow}>
-        <TouchableOpacity style={styles.actionButton} onPress={() => onEdit(promoCode)} activeOpacity={0.7}>
-          <Ionicons name="create-outline" size={16} color={colors.textSecondary} />
-          <Text style={[styles.actionText, { color: colors.textSecondary }]}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={handleDelete} activeOpacity={0.7}>
-          <Ionicons name="trash-outline" size={16} color="#ef4444" />
-          <Text style={[styles.actionText, { color: '#ef4444' }]}>Delete</Text>
-        </TouchableOpacity>
-      </View>
+      {!readOnly && (
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => onEdit(promoCode)} activeOpacity={0.7}>
+            <Ionicons name="create-outline" size={16} color={colors.textSecondary} />
+            <Text style={[styles.actionText, { color: colors.textSecondary }]}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={handleDelete} activeOpacity={0.7}>
+            <Ionicons name="trash-outline" size={16} color="#ef4444" />
+            <Text style={[styles.actionText, { color: '#ef4444' }]}>Delete</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </GlassSurface>
   );
 }

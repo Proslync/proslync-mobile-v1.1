@@ -266,7 +266,7 @@ export const eventsApi = {
    * Backend endpoint: GET /api/events?myEvents=true
    */
   getMyEvents: async (): Promise<Event[]> => {
-    const response = await apiClient.get<EventsSearchResponse>('/api/events?myEvents=true');
+    const response = await apiClient.get<EventsSearchResponse>('/api/events?myEvents=true&limit=100');
     return response.events;
   },
 

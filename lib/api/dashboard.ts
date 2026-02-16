@@ -22,7 +22,7 @@ export const dashboardApi = {
    * Get events created by the current user
    */
   getMyEvents: async (): Promise<Event[]> => {
-    const response = await apiClient.get<EventsSearchResponse>('/api/events?myEvents=true');
+    const response = await apiClient.get<EventsSearchResponse>('/api/events?myEvents=true&limit=100');
     return response.events;
   },
 

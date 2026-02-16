@@ -150,26 +150,17 @@ export default function MyEventsScreen() {
     },
   });
 
-  // Filter events for current tab
+  // Filter events by status: finished/cancelled → past, everything else → current
   const currentEvents = React.useMemo(() => {
-    const now = new Date();
-    return events.filter(event => {
-      const isPastEvent = event.status === EventStatus.FINISHED || event.status === EventStatus.CANCELLED;
-      const eventDate = new Date(event.endDate || event.startDate);
-      const hasEnded = eventDate < now && event.status !== EventStatus.ACTIVE;
-      return !isPastEvent && !hasEnded;
-    });
+    return events.filter(event =>
+      event.status !== EventStatus.FINISHED && event.status !== EventStatus.CANCELLED
+    );
   }, [events]);
 
-  // Filter events for past tab
   const pastEvents = React.useMemo(() => {
-    const now = new Date();
-    return events.filter(event => {
-      const isPastEvent = event.status === EventStatus.FINISHED || event.status === EventStatus.CANCELLED;
-      const eventDate = new Date(event.endDate || event.startDate);
-      const hasEnded = eventDate < now && event.status !== EventStatus.ACTIVE;
-      return isPastEvent || hasEnded;
-    });
+    return events.filter(event =>
+      event.status === EventStatus.FINISHED || event.status === EventStatus.CANCELLED
+    );
   }, [events]);
 
   // Handle tab press
