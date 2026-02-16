@@ -46,6 +46,7 @@ function RootLayoutNav() {
         <Stack.Screen name="dashboard" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="create-event" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="my-events" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="manage-event/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="create-post" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="scan-qr" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />

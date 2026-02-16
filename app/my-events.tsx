@@ -205,16 +205,7 @@ export default function MyEventsScreen() {
   });
 
   const handleEventPress = (event: Event) => {
-    router.push({
-      pathname: '/event/[id]',
-      params: {
-        id: event.id.toString(),
-        title: event.name,
-        date: event.startDate,
-        imageUrl: event.flyer?.url || event.imageUrl || '',
-        venueName: event.venue?.name || event.location || '',
-      },
-    });
+    router.push(`/manage-event/${event.id}`);
   };
 
   const renderEvent = ({ item, index }: { item: Event; index: number }) => (
