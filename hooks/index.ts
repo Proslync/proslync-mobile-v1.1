@@ -12,6 +12,7 @@ export {
 } from './use-event-mutations';
 export { useMyEvents, useEvent, useEvents } from './use-events-query';
 export { useEventMarketingStats } from './use-dashboard-query';
+export { useEventAttendees } from './use-event-attendees';
 export { useMyVenues } from './use-venues-query';
 export { useAddressSuggestions } from './use-address-suggestions';
 export type { AddressSuggestion } from './use-address-suggestions';

@@ -66,17 +66,41 @@ export interface EventsSearchResponse {
   limit?: number;
 }
 
+export enum EventUserStatus {
+  REQUESTED = 'requested',
+  PENDING = 'pending',
+  VERIFIED = 'verified',
+  REJECTED = 'rejected',
+  CONFIRMED = 'confirmed',
+  SEATED = 'seated',
+  CHECKED_IN = 'checked_in',
+  CANCELLED = 'cancelled',
+  NO_SHOW = 'no_show',
+}
+
 export interface EventAttendee {
   id: number;
-  userId: number;
+  userId?: number;
   firstName?: string;
   lastName?: string;
   userName?: string;
   avatarUrl?: string;
+  avatar?: string;
+  phoneNumber?: string;
+  email?: string;
+  guestName?: string;
+  isGuest?: boolean;
+  isRegistered?: boolean;
+  status?: EventUserStatus;
   registeredAt?: string;
+  createdAt?: string;
 }
 
 export interface EventAttendeesResponse {
   attendees: EventAttendee[];
   total: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  hasNext?: boolean;
 }

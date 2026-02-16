@@ -228,12 +228,22 @@ export const eventsApi = {
   },
 
   /**
-   * Get attendees for an event
+   * Get attendees for an event with pagination, search, and status filtering
    * Backend endpoint: GET /api/events/:id/attendees
    */
-  getEventAttendees: async (eventId: number, limit?: number): Promise<EventAttendeesResponse> => {
-    const query = limit ? `?limit=${limit}` : '';
-    return apiClient.get<EventAttendeesResponse>(`/api/events/${eventId}/attendees${query}`);
+  getEventAttendees: async (
+    eventId: number,
+    params?: { page?: number; limit?: number; search?: string; status?: string[] },
+  ): Promise<EventAttendeesResponse> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    if (params?.status?.length) params.status.forEach((s) => query.append('status', s));
+    const qs = query.toString();
+    return apiClient.get<EventAttendeesResponse>(
+      `/api/events/${eventId}/attendees${qs ? `?${qs}` : ''}`,
+    );
   },
 
   /**
