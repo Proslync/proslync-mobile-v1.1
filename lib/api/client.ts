@@ -1,4 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { config } from '../config';
 import { ApiClientError } from './errors';
 
@@ -53,7 +53,7 @@ class ApiClient {
    */
   async getAccessToken(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(config.auth.tokenKey);
+      return await SecureStore.getItemAsync(config.auth.tokenKey);
     } catch {
       return null;
     }
@@ -67,7 +67,7 @@ class ApiClient {
       return;
     }
     try {
-      await AsyncStorage.setItem(config.auth.tokenKey, token);
+      await SecureStore.setItemAsync(config.auth.tokenKey, token);
     } catch (error) {
       console.error('Failed to store access token:', error);
     }
@@ -78,7 +78,7 @@ class ApiClient {
    */
   async clearAccessToken(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(config.auth.tokenKey);
+      await SecureStore.deleteItemAsync(config.auth.tokenKey);
     } catch (error) {
       console.error('Failed to clear access token:', error);
     }
@@ -89,7 +89,7 @@ class ApiClient {
    */
   async getRefreshToken(): Promise<string | null> {
     try {
-      return await AsyncStorage.getItem(config.auth.refreshTokenKey);
+      return await SecureStore.getItemAsync(config.auth.refreshTokenKey);
     } catch {
       return null;
     }
@@ -103,7 +103,7 @@ class ApiClient {
       return;
     }
     try {
-      await AsyncStorage.setItem(config.auth.refreshTokenKey, token);
+      await SecureStore.setItemAsync(config.auth.refreshTokenKey, token);
     } catch (error) {
       console.error('Failed to store refresh token:', error);
     }
@@ -114,7 +114,7 @@ class ApiClient {
    */
   async clearRefreshToken(): Promise<void> {
     try {
-      await AsyncStorage.removeItem(config.auth.refreshTokenKey);
+      await SecureStore.deleteItemAsync(config.auth.refreshTokenKey);
     } catch (error) {
       console.error('Failed to clear refresh token:', error);
     }

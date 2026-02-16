@@ -70,7 +70,8 @@
           "merchantIdentifier": "merchant.com.status.app",
           "enableGooglePay": true
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
