@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { FeedItem } from './feed-item';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { analyticsApi } from '@/lib/api/analytics';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
 // ── Infinite loop config ────────────────────────────────────────────────
@@ -99,6 +100,9 @@ export function FeedContainer({
     itemVisiblePercentThreshold: 50,
   }).current;
 
+  // Track which eventIds have been viewed this session to avoid re-firing
+  const viewedEventIds = React.useRef(new Set<number>());
+
   const onViewableItemsChanged = React.useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && realCount > 0) {
@@ -109,10 +113,17 @@ export function FeedContainer({
           if (realIndex !== currentIndex) {
             onIndexChange(realIndex);
           }
+
+          // Track event view when post becomes visible in feed
+          const visibleItem = items[realIndex];
+          if (visibleItem?.eventId && !viewedEventIds.current.has(visibleItem.eventId)) {
+            viewedEventIds.current.add(visibleItem.eventId);
+            analyticsApi.trackEventView(visibleItem.eventId, 'mobile').catch(() => {});
+          }
         }
       }
     },
-    [currentIndex, onIndexChange, realCount]
+    [currentIndex, onIndexChange, realCount, items]
   );
 
   // ── Render item ─────────────────────────────────────────────────────

@@ -139,6 +139,7 @@ export default function FeedScreen() {
       console.warn('[Feed] No eventId found for item:', id);
       return;
     }
+
     setPurchaseItem(item);
   }, [feedItems]);
 
