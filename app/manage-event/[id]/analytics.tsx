@@ -1,46 +1,112 @@
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+// Event Analytics — Per-event analytics with real time series
+import * as React from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { analyticsApi } from '@/lib/api/analytics';
+import {
+  AnalyticsScreenShell,
+  calcDelta,
+  getRangeLabel,
+  EMPTY_EVENT_SERIES,
+  EVENT_TIME_RANGES,
+  type AnalyticsMetric,
+  type TimeRange,
+} from '@/components/analytics/analytics-chart';
 
-export default function AnalyticsScreen() {
+const EVENT_TIMESERIES_KEY = 'event-timeseries';
+
+export default function EventAnalyticsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { colors, isDark } = useAppTheme();
+  const eventId = id ? parseInt(id, 10) : 0;
+  const queryClient = useQueryClient();
+
+  const [selectedRange, setSelectedRange] = React.useState<TimeRange>('1M');
+
+  // Fetch time series + range-filtered totals for the selected range
+  const timeSeriesQuery = useQuery({
+    queryKey: [EVENT_TIMESERIES_KEY, eventId, selectedRange],
+    queryFn: () => analyticsApi.getEventTimeSeries(eventId, selectedRange),
+    enabled: eventId > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
+  // Build 4 metrics: Views, Unique Visitors, RSVPs, Conversion Rate
+  // Primary values come from range-filtered totals (not all-time stats)
+  const metrics = React.useMemo((): AnalyticsMetric[] => {
+    const totals = timeSeriesQuery.data?.totals;
+    const totalViews = totals?.views ?? 0;
+    const uniqueVisitors = totals?.uniqueVisitors ?? 0;
+    const totalRSVPs = totals?.rsvps ?? 0;
+    const conversionRate = totals?.conversionRate ?? 0;
+
+    const tsData = timeSeriesQuery.data?.data;
+    const hasTimeSeries = tsData && tsData.length >= 2;
+
+    const viewsSeries = hasTimeSeries ? tsData.map((d) => d.views) : [0, 0];
+    const uniqueSeries = hasTimeSeries ? tsData.map((d) => d.uniqueVisitors) : [0, 0];
+    const rsvpsSeries = hasTimeSeries ? tsData.map((d) => d.rsvps) : [0, 0];
+    const conversionSeries = hasTimeSeries
+      ? tsData.map((d) =>
+          d.uniqueVisitors > 0 ? (d.rsvps / d.uniqueVisitors) * 100 : 0,
+        )
+      : [0, 0];
+
+    const viewsDelta = calcDelta(viewsSeries);
+    const uniqueDelta = calcDelta(uniqueSeries);
+    const rsvpsDelta = calcDelta(rsvpsSeries);
+    const conversionDelta = calcDelta(conversionSeries);
+
+    const rangeLabel = getRangeLabel(selectedRange);
+
+    return [
+      {
+        id: 'views',
+        label: 'Event Views',
+        primaryValue: totalViews.toLocaleString(),
+        deltaText: hasTimeSeries ? `${viewsDelta.text} ${rangeLabel}` : 'No data yet',
+        isPositive: viewsDelta.isPositive,
+        seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: viewsSeries },
+      },
+      {
+        id: 'unique',
+        label: 'Unique Visitors',
+        primaryValue: uniqueVisitors.toLocaleString(),
+        deltaText: hasTimeSeries ? `${uniqueDelta.text} ${rangeLabel}` : 'No data yet',
+        isPositive: uniqueDelta.isPositive,
+        seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: uniqueSeries },
+      },
+      {
+        id: 'rsvps',
+        label: 'RSVPs',
+        primaryValue: totalRSVPs.toLocaleString(),
+        deltaText: hasTimeSeries ? `${rsvpsDelta.text} ${rangeLabel}` : 'No data yet',
+        isPositive: rsvpsDelta.isPositive,
+        seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: rsvpsSeries },
+      },
+      {
+        id: 'conversion',
+        label: 'Conversion Rate',
+        primaryValue: `${conversionRate.toFixed(1)}%`,
+        deltaText: hasTimeSeries ? `${conversionDelta.text} ${rangeLabel}` : '—',
+        isPositive: conversionDelta.isPositive,
+        seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: conversionSeries },
+      },
+    ];
+  }, [timeSeriesQuery.data, selectedRange]);
+
+  const handleRefresh = React.useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: [EVENT_TIMESERIES_KEY, eventId] });
+  }, [queryClient, eventId]);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Analytics</Text>
-        <View style={styles.headerButton} />
-      </View>
-      <View style={styles.placeholder}>
-        <Ionicons name="stats-chart-outline" size={48} color={colors.textTertiary} />
-        <Text style={[styles.placeholderText, { color: colors.textTertiary }]}>Coming Soon</Text>
-      </View>
-    </View>
+    <AnalyticsScreenShell
+      metrics={metrics}
+      isLoading={timeSeriesQuery.isLoading}
+      onRefresh={handleRefresh}
+      onRangeChange={setSelectedRange}
+      ranges={EVENT_TIME_RANGES}
+      emptyMessage="No views yet for this event"
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  headerButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Lato_700Bold' },
-  placeholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  placeholderText: { fontSize: 16, fontFamily: 'Lato_400Regular' },
-});

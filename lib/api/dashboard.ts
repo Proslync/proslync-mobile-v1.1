@@ -13,6 +13,7 @@ export interface DashboardStats {
   totalEvents: number;
   totalRSVPs: number;
   totalViews: number;
+  totalUniqueVisitors: number;
   engagementRate: number;
   events: Event[];
 }
@@ -45,6 +46,7 @@ export const dashboardApi = {
         totalEvents: 0,
         totalRSVPs: 0,
         totalViews: 0,
+        totalUniqueVisitors: 0,
         engagementRate: 0,
         events: [],
       };
@@ -82,6 +84,7 @@ export const dashboardApi = {
       totalEvents: events.length,
       totalRSVPs,
       totalViews,
+      totalUniqueVisitors,
       engagementRate: parseFloat(engagementRate.toFixed(1)),
       events,
     };

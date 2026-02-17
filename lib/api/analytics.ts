@@ -15,8 +15,17 @@ export interface TimeSeriesPoint {
   newEvents: number;
 }
 
+export interface TimeSeriesTotals {
+  views: number;
+  uniqueVisitors: number;
+  rsvps: number;
+  conversionRate: number;
+  newEvents?: number;
+}
+
 export interface TimeSeriesResponse {
   data: TimeSeriesPoint[];
+  totals?: TimeSeriesTotals;
   range: string;
   eventId?: number;
 }
