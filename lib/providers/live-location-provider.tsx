@@ -6,6 +6,7 @@ import { AppState, AppStateStatus } from 'react-native';
 import * as Location from 'expo-location';
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiClient } from '../api/client';
 import { config } from '../config';
 import { useAuth } from './auth-provider';
 import type {
@@ -225,8 +226,8 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     setConnectionState('connecting');
 
     try {
-      // Get auth token
-      const token = await AsyncStorage.getItem(config.auth.tokenKey);
+      // Get auth token from secure storage
+      const token = await apiClient.getAccessToken();
       if (!token) {
         console.error('[LiveLocation] No auth token available');
         setConnectionState('error');

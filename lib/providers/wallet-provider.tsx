@@ -140,8 +140,12 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const balanceData = await stripeConnectApi.getBalance();
 
       // Sum up available and pending amounts (usually just USD)
-      const availableCents = balanceData.available.reduce((sum, b) => sum + b.amount, 0);
-      const pendingCents = balanceData.pending.reduce((sum, b) => sum + b.amount, 0);
+      const availableCents = Array.isArray(balanceData.available)
+        ? balanceData.available.reduce((sum, b) => sum + b.amount, 0)
+        : 0;
+      const pendingCents = Array.isArray(balanceData.pending)
+        ? balanceData.pending.reduce((sum, b) => sum + b.amount, 0)
+        : 0;
 
       setBalances(prev => ({
         ...prev,
@@ -157,7 +161,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
   const fetchPayoutMethods = useCallback(async () => {
     try {
       const response = await stripeConnectApi.getExternalAccounts();
-      const methods = response.data.map(externalAccountToPayoutMethod);
+      const methods = (response.data ?? []).map(externalAccountToPayoutMethod);
       setPayoutMethods(methods);
     } catch (error) {
       console.log('[Wallet] Error fetching payout methods:', error);
