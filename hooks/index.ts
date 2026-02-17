@@ -51,6 +51,9 @@ export {
   PAYMENT_STATUS_QUERY_KEY,
 } from './use-payment-intent';
 
+// Analytics hooks
+export { useTrackEventView, clearTrackingCache } from './use-track-event-view';
+
 // Pricing CRUD hooks
 export {
   useGetPromoCodes,

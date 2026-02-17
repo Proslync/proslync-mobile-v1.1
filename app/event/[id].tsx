@@ -26,6 +26,7 @@ import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet';
+import { useTrackEventView } from '@/hooks/use-track-event-view';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -123,6 +124,18 @@ export default function EventPage() {
     }
     checkRegistrationStatus();
   }, [eventId]);
+
+  // Track event page view
+  const numericId = eventId ? parseInt(eventId, 10) : undefined;
+  const { trackView } = useTrackEventView(
+    numericId && !isNaN(numericId) ? numericId : undefined,
+  );
+
+  React.useEffect(() => {
+    if (numericId && !isNaN(numericId)) {
+      trackView();
+    }
+  }, [numericId, trackView]);
 
   const handleBack = () => {
     router.back();

@@ -280,7 +280,7 @@ export default function DashboardScreen() {
               title="Analytics"
               subtitle="View detailed insights"
               icon="bar-chart-outline"
-              onPress={() => {}}
+              onPress={() => router.push('/dashboard/analytics')}
               colors={colors}
             />
             <MenuItem
