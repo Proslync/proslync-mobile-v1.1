@@ -494,14 +494,7 @@ export default function AnalyticsScreen() {
         >
           <Ionicons name="chevron-back" size={22} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.navRight}>
-          <TouchableOpacity style={styles.navIcon} activeOpacity={0.7}>
-            <Ionicons name="search-outline" size={20} color="rgba(255,255,255,0.6)" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navIcon} activeOpacity={0.7}>
-            <Ionicons name="notifications-outline" size={20} color="rgba(255,255,255,0.6)" />
-          </TouchableOpacity>
-        </View>
+        <View style={styles.navRight} />
       </View>
 
       <ScrollView
@@ -579,15 +572,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
-  navIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
   // ── Scroll ──
   scroll: {
     flex: 1,
