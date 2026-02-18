@@ -91,6 +91,9 @@ export {
   useCancelInvitation,
 } from './use-team-mutations';
 
+// Permission hooks
+export { useEventPermissions, EVENT_PERMISSIONS_KEY } from './use-event-permissions';
+
 // Notification hooks
 export {
   useMyTeamInvitations,

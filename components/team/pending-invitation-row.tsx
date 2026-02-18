@@ -7,7 +7,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 interface PendingInvitationRowProps {
   invitation: InvitationResponseDto;
   roleName?: string;
-  onCancel: (invitationId: number) => void;
+  onCancel?: (invitationId: number) => void;
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -40,12 +40,14 @@ export function PendingInvitationRow({
           Sent {formatTimeAgo(invitation.createdAt)}
         </Text>
       </View>
-      <TouchableOpacity
-        onPress={() => onCancel(invitation.id)}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <Ionicons name="close-circle-outline" size={22} color={colors.textTertiary} />
-      </TouchableOpacity>
+      {onCancel && (
+        <TouchableOpacity
+          onPress={() => onCancel(invitation.id)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="close-circle-outline" size={22} color={colors.textTertiary} />
+        </TouchableOpacity>
+      )}
     </GlassSurface>
   );
 }

@@ -21,6 +21,7 @@ import {
   useDeleteRole,
   useUpdateRolePermissions,
   useCancelInvitation,
+  useEventPermissions,
 } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -49,6 +50,9 @@ export default function TeamScreen() {
   const { colors, isDark } = useAppTheme();
 
   const eventId = id ? Number(id) : 0;
+
+  // ── Permissions ──────────────────────────────────────────
+  const { canInviteTeam, canManageTeam, canRemoveTeam } = useEventPermissions(eventId);
 
   // ── Queries ────────────────────────────────────────────
   const membersQuery = useTeamMembers(eventId);
@@ -177,12 +181,16 @@ export default function TeamScreen() {
             </View>
           )}
         </View>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => setInviteModalVisible(true)}
-        >
-          <Ionicons name="person-add-outline" size={22} color={colors.text} />
-        </TouchableOpacity>
+        {canInviteTeam() ? (
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => setInviteModalVisible(true)}
+          >
+            <Ionicons name="person-add-outline" size={22} color={colors.text} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerButton} />
+        )}
       </Animated.View>
 
       {isLoading ? (
@@ -238,8 +246,8 @@ export default function TeamScreen() {
                     key={member.id}
                     member={member}
                     isOwner={member.isOwner || member.role.name === 'Owner'}
-                    onChangeRole={handleMemberAction}
-                    onRemove={handleMemberAction}
+                    onChangeRole={(canManageTeam() || canRemoveTeam()) ? handleMemberAction : undefined}
+                    onRemove={(canManageTeam() || canRemoveTeam()) ? handleMemberAction : undefined}
                   />
                 ))}
               </View>
@@ -256,7 +264,7 @@ export default function TeamScreen() {
                     key={inv.id}
                     invitation={inv}
                     roleName={roleNameMap.get(inv.roleId)}
-                    onCancel={handleCancelInvitation}
+                    onCancel={canInviteTeam() ? handleCancelInvitation : undefined}
                   />
                 ))}
               </View>
@@ -267,22 +275,24 @@ export default function TeamScreen() {
           <Animated.View entering={FadeInDown.delay(300).duration(300)} style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Roles</Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setCreateRoleModalVisible(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="add" size={18} color={colors.text} />
-                <Text style={[styles.addButtonText, { color: colors.text }]}>Add Role</Text>
-              </TouchableOpacity>
+              {canManageTeam() && (
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() => setCreateRoleModalVisible(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={18} color={colors.text} />
+                  <Text style={[styles.addButtonText, { color: colors.text }]}>Add Role</Text>
+                </TouchableOpacity>
+              )}
             </View>
             <View style={styles.rolesList}>
               {roles.map((role) => (
                 <RoleCard
                   key={role.id}
                   role={role}
-                  onEditPermissions={setEditPermissionsRole}
-                  onDelete={handleDeleteRole}
+                  onEditPermissions={canManageTeam() ? setEditPermissionsRole : undefined}
+                  onDelete={canManageTeam() ? handleDeleteRole : undefined}
                 />
               ))}
             </View>
@@ -332,19 +342,19 @@ export default function TeamScreen() {
         visible={!!actionSheetMember}
         title={actionSheetMember?.user.firstName || 'Member'}
         options={[
-          {
+          ...(canManageTeam() ? [{
             label: 'Change Role',
             onPress: () => {
               if (actionSheetMember) setChangeRoleMember(actionSheetMember);
             },
-          },
-          {
+          }] : []),
+          ...(canRemoveTeam() ? [{
             label: 'Remove',
             destructive: true,
             onPress: () => {
               if (actionSheetMember) setConfirmRemoveMember(actionSheetMember);
             },
-          },
+          }] : []),
         ]}
         onClose={() => setActionSheetMember(null)}
       />

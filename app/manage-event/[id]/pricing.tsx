@@ -16,6 +16,7 @@ import {
   useCreatePromoCode,
   useDeletePromoCode,
   useTogglePromoCodeActive,
+  useEventPermissions,
 } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { EventStatus } from '@/lib/types/events.types';
@@ -44,7 +45,9 @@ export default function PricingScreen() {
   const { data: tiers = [], isLoading: tiersLoading } = useGetTiers(eventId);
   const { data: promoCodes = [], isLoading: promosLoading } = useGetPromoCodes(eventId);
 
+  const { canEditBilling } = useEventPermissions(eventId || undefined);
   const isPastEvent = event?.status === EventStatus.FINISHED || event?.status === EventStatus.CANCELLED;
+  const readOnly = isPastEvent || !canEditBilling();
 
   // Mutations
   const createTier = useCreateTier(eventId);
@@ -144,7 +147,7 @@ export default function PricingScreen() {
           <Animated.View entering={FadeInDown.duration(300)}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Ticket Pricing</Text>
-              {!isPastEvent && (
+              {!readOnly && (
                 <TouchableOpacity
                   style={styles.addButton}
                   onPress={handleAddTier}
@@ -171,7 +174,7 @@ export default function PricingScreen() {
                 <TierCard
                   key={tier.id}
                   tier={tier}
-                  readOnly={isPastEvent}
+                  readOnly={readOnly}
                   onAddPricing={handleAddPricing}
                   onEditTier={handleEditTier}
                   onDeleteTier={(tierId) => deleteTier.mutate(tierId)}
@@ -188,7 +191,7 @@ export default function PricingScreen() {
           <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.promoSection}>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Promo Codes</Text>
-              {!isPastEvent && (
+              {!readOnly && (
                 <TouchableOpacity
                   style={styles.addButton}
                   onPress={handleAddPromo}
@@ -215,7 +218,7 @@ export default function PricingScreen() {
                 <PromoCodeCard
                   key={code.id}
                   promoCode={code}
-                  readOnly={isPastEvent}
+                  readOnly={readOnly}
                   onToggleActive={(promoId) => togglePromoActive.mutate(promoId)}
                   onEdit={() => {}}
                   onDelete={(promoId) => deletePromoCode.mutate(promoId)}

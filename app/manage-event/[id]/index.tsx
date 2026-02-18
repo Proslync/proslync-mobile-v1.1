@@ -1,8 +1,10 @@
+import { useMemo } from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
-import { useEvent } from '@/hooks';
+import { useEvent, useEventPermissions } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { EventStatus } from '@/lib/types/events.types';
+import type { RolePermissions } from '@/lib/types/team.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -18,15 +20,15 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SECTIONS = [
-  { key: 'overview', label: 'Overview', icon: 'grid-outline' as const },
-  { key: 'attendees', label: 'Attendees', icon: 'people-outline' as const },
-  { key: 'analytics', label: 'Analytics', icon: 'stats-chart-outline' as const },
-  { key: 'pricing', label: 'Pricing', icon: 'pricetag-outline' as const },
-  { key: 'marketing', label: 'Marketing', icon: 'megaphone-outline' as const },
-  { key: 'payments', label: 'Payments', icon: 'card-outline' as const },
-  { key: 'team', label: 'Team', icon: 'person-add-outline' as const },
-  { key: 'artists', label: 'Artists', icon: 'musical-notes-outline' as const },
-] as const;
+  { key: 'overview', label: 'Overview', icon: 'grid-outline' as const, permission: { resource: 'events' as keyof RolePermissions, action: 'view' } },
+  { key: 'attendees', label: 'Attendees', icon: 'people-outline' as const, permission: { resource: 'attendees' as keyof RolePermissions, action: 'view' } },
+  { key: 'analytics', label: 'Analytics', icon: 'stats-chart-outline' as const, permission: { resource: 'analytics' as keyof RolePermissions, action: 'view' } },
+  { key: 'pricing', label: 'Pricing', icon: 'pricetag-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
+  { key: 'marketing', label: 'Marketing', icon: 'megaphone-outline' as const, permission: { resource: 'marketing' as keyof RolePermissions, action: 'view' } },
+  { key: 'payments', label: 'Payments', icon: 'card-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
+  { key: 'team', label: 'Team', icon: 'person-add-outline' as const, permission: { resource: 'team' as keyof RolePermissions, action: 'view' } },
+  { key: 'artists', label: 'Artists', icon: 'musical-notes-outline' as const, permission: { resource: 'events' as keyof RolePermissions, action: 'edit' } },
+];
 
 function getStatusColor(status: EventStatus): string {
   switch (status) {
@@ -67,6 +69,15 @@ export default function ManageEventScreen() {
 
   const eventId = id ? Number(id) : undefined;
   const { data: event, isLoading } = useEvent(eventId);
+  const { hasPermission, canEditEvents, isLoading: permissionsLoading } = useEventPermissions(eventId);
+
+  const visibleSections = useMemo(() => {
+    // Show all sections while permissions are loading to avoid flash
+    if (permissionsLoading) return SECTIONS;
+    return SECTIONS.filter((section) =>
+      hasPermission(section.permission.resource, section.permission.action),
+    );
+  }, [permissionsLoading, hasPermission]);
 
   const handleSectionPress = (sectionKey: string) => {
     router.push(`/manage-event/${id}/${sectionKey}`);
@@ -106,15 +117,15 @@ export default function ManageEventScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Manage Event</Text>
-        {isPastEvent ? (
-          <View style={styles.headerButton} />
-        ) : (
+        {!isPastEvent && canEditEvents() ? (
           <TouchableOpacity
             style={styles.headerButton}
             onPress={() => router.push({ pathname: '/edit-event', params: { id: id! } })}
           >
             <Ionicons name="create-outline" size={22} color={colors.text} />
           </TouchableOpacity>
+        ) : (
+          <View style={styles.headerButton} />
         )}
       </Animated.View>
 
@@ -167,7 +178,7 @@ export default function ManageEventScreen() {
 
         {/* Section Navigation Grid */}
         <View style={styles.grid}>
-          {SECTIONS.map((section, index) => (
+          {visibleSections.map((section, index) => (
             <Animated.View
               key={section.key}
               entering={FadeInDown.delay(index * 40).duration(300)}

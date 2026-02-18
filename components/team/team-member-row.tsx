@@ -7,8 +7,8 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 interface TeamMemberRowProps {
   member: TeamMemberResponseDto;
   isOwner?: boolean;
-  onChangeRole: (member: TeamMemberResponseDto) => void;
-  onRemove: (member: TeamMemberResponseDto) => void;
+  onChangeRole?: (member: TeamMemberResponseDto) => void;
+  onRemove?: (member: TeamMemberResponseDto) => void;
 }
 
 function getInitials(member: TeamMemberResponseDto): string {
@@ -49,16 +49,13 @@ export function TeamMemberRow({ member, isOwner, onChangeRole, onRemove }: TeamM
           </Text>
         ) : null}
       </View>
-      <View style={styles.roleBadge}>
-        <Text style={styles.roleText}>{member.role.name}</Text>
+      <View style={[styles.roleBadge, { backgroundColor: colors.backgroundSecondary }]}>
+        <Text style={[styles.roleText, { color: colors.textSecondary }]}>{member.role.name}</Text>
       </View>
-      {!isOwner && (
+      {!isOwner && onChangeRole && (
         <TouchableOpacity
           style={styles.menuButton}
-          onPress={() => {
-            // Show action sheet via parent handler
-            onChangeRole(member);
-          }}
+          onPress={() => onChangeRole(member)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
@@ -109,12 +106,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   roleText: {
     fontSize: 11,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     textTransform: 'uppercase',
   },
   menuButton: {

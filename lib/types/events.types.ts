@@ -1,4 +1,5 @@
 // Event types for the mobile app
+import type { RolePermissions } from './team.types';
 
 export interface Flyer {
   id: string;
@@ -103,4 +104,9 @@ export interface EventAttendeesResponse {
   limit?: number;
   totalPages?: number;
   hasNext?: boolean;
+}
+
+export interface EventPermissionsResponse {
+  isOwner: boolean;
+  permissions: RolePermissions;
 }

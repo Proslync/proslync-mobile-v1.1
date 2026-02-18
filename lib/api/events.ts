@@ -1,6 +1,6 @@
 // Events API client for fetching event details
 import { apiClient } from './client';
-import type { Event, EventsSearchResponse, EventAttendeesResponse } from '../types/events.types';
+import type { Event, EventsSearchResponse, EventAttendeesResponse, EventPermissionsResponse } from '../types/events.types';
 
 export interface RsvpResponse {
   success: boolean;
@@ -334,5 +334,13 @@ export const eventsApi = {
    */
   validateMembershipCard: async (eventId: number, data: ValidateMembershipCardRequest): Promise<ValidateMembershipCardResponse> => {
     return apiClient.post<ValidateMembershipCardResponse>(`/api/events/${eventId}/attendees/validate-membership-card`, data);
+  },
+
+  /**
+   * Get current user's permissions for an event
+   * Backend endpoint: GET /api/events/:eventId/permissions
+   */
+  getEventPermissions: async (eventId: number): Promise<EventPermissionsResponse> => {
+    return apiClient.get<EventPermissionsResponse>(`/api/events/${eventId}/permissions`);
   },
 };

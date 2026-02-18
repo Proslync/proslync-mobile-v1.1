@@ -31,7 +31,8 @@
       "WebFetch(domain:docs.mapbox.com)",
       "WebFetch(domain:blogs.perficient.com)",
       "Bash(git diff:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(xcrun simctl listapps:*)"
     ]
   }
 }

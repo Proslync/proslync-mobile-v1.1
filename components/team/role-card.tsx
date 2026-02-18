@@ -6,8 +6,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface RoleCardProps {
   role: RoleResponseDto;
-  onEditPermissions: (role: RoleResponseDto) => void;
-  onDelete: (role: RoleResponseDto) => void;
+  onEditPermissions?: (role: RoleResponseDto) => void;
+  onDelete?: (role: RoleResponseDto) => void;
 }
 
 function countPermissions(permissions: RolePermissions): number {
@@ -33,13 +33,13 @@ export function RoleCard({ role, onEditPermissions, onDelete }: RoleCardProps) {
             {role.name}
           </Text>
           {role.isSystem && (
-            <View style={styles.systemBadge}>
-              <Text style={styles.systemText}>SYSTEM</Text>
+            <View style={[styles.systemBadge, { backgroundColor: colors.backgroundSecondary }]}>
+              <Text style={[styles.systemText, { color: colors.textTertiary }]}>SYSTEM</Text>
             </View>
           )}
         </View>
         <View style={styles.actions}>
-          {role.canEdit && (
+          {role.canEdit && onEditPermissions && (
             <TouchableOpacity
               onPress={() => onEditPermissions(role)}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -47,7 +47,7 @@ export function RoleCard({ role, onEditPermissions, onDelete }: RoleCardProps) {
               <Ionicons name="settings-outline" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
-          {role.canDelete && (
+          {role.canDelete && onDelete && (
             <TouchableOpacity
               onPress={() => onDelete(role)}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
@@ -94,12 +94,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.12)',
   },
   systemText: {
     fontSize: 9,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.5)',
     letterSpacing: 0.5,
   },
   actions: {

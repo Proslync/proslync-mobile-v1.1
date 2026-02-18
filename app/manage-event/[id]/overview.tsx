@@ -1,6 +1,6 @@
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
-import { useEvent, useEventMarketingStats, usePublishEvent } from '@/hooks';
+import { useEvent, useEventMarketingStats, usePublishEvent, useEventPermissions } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { EventStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +35,7 @@ export default function OverviewScreen() {
   const { data: event } = useEvent(eventId);
   const { data: stats, isLoading: statsLoading } = useEventMarketingStats(eventId);
   const publishEvent = usePublishEvent();
+  const { canEditEvents } = useEventPermissions(eventId);
 
   const handleEdit = () => {
     router.push({ pathname: '/edit-event', params: { id: id! } });
@@ -126,7 +127,7 @@ export default function OverviewScreen() {
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
 
         <Animated.View entering={FadeInDown.delay(250).duration(300)} style={styles.actions}>
-          {!isPastEvent && (
+          {!isPastEvent && canEditEvents() && (
             <TouchableOpacity activeOpacity={0.7} onPress={handleEdit}>
               <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.actionRow}>
                 <Ionicons name="create-outline" size={20} color={colors.text} />
@@ -144,7 +145,7 @@ export default function OverviewScreen() {
             </GlassSurface>
           </TouchableOpacity>
 
-          {isDraft && (
+          {isDraft && canEditEvents() && (
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={handlePublish}
