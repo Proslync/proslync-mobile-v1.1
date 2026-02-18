@@ -14,6 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import type { ThemeColors } from '@/hooks/use-app-theme';
 import {
   useMyTeamInvitations,
   useAcceptTeamInvitation,
@@ -67,80 +69,112 @@ function TeamInvitationRow({
   onDecline,
   accepting,
   declining,
+  colors,
+  isDark,
 }: {
   invitation: MyTeamInvitation;
   onAccept: (id: number) => void;
   onDecline: (id: number) => void;
   accepting: boolean;
   declining: boolean;
+  colors: ThemeColors;
+  isDark: boolean;
 }) {
   const busy = accepting || declining;
 
-  return (
+  const card = isDark ? (
     <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.invitationCard}>
-      <View style={styles.invitationTop}>
-        {invitation.eventFlyer ? (
-          <Image source={{ uri: invitation.eventFlyer }} style={styles.eventImage} />
-        ) : (
-          <View style={[styles.eventImage, styles.eventImagePlaceholder]}>
-            <Ionicons name="calendar" size={20} color="rgba(255,255,255,0.3)" />
-          </View>
-        )}
-        <View style={styles.invitationInfo}>
-          <Text style={styles.eventName} numberOfLines={1}>{invitation.eventName}</Text>
-          <Text style={styles.roleLine} numberOfLines={1}>Role: {invitation.roleName}</Text>
-          <Text style={styles.fromLine} numberOfLines={1}>
-            From: {invitation.invitedByName} · {timeAgo(invitation.createdAt)}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.invitationActions}>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.acceptButton]}
-          onPress={() => onAccept(invitation.id)}
-          disabled={busy}
-          activeOpacity={0.7}
-        >
-          {accepting ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.actionText}>Accept</Text>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.actionButton, styles.declineButton]}
-          onPress={() => onDecline(invitation.id)}
-          disabled={busy}
-          activeOpacity={0.7}
-        >
-          {declining ? (
-            <ActivityIndicator color="#fff" size="small" />
-          ) : (
-            <Text style={styles.actionText}>Decline</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      {renderContent()}
     </GlassSurface>
+  ) : (
+    <View style={[styles.invitationCard, styles.invitationCardLight, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      {renderContent()}
+    </View>
   );
+
+  function renderContent() {
+    return (
+      <>
+        <View style={styles.invitationTop}>
+          {invitation.eventFlyer ? (
+            <Image source={{ uri: invitation.eventFlyer }} style={styles.eventImage} />
+          ) : (
+            <View style={[styles.eventImage, styles.eventImagePlaceholder, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : colors.backgroundSecondary }]}>
+              <Ionicons name="calendar" size={20} color={colors.textTertiary} />
+            </View>
+          )}
+          <View style={styles.invitationInfo}>
+            <Text style={[styles.eventName, { color: colors.text }]} numberOfLines={1}>{invitation.eventName}</Text>
+            <Text style={[styles.roleLine, { color: colors.textSecondary }]} numberOfLines={1}>Role: {invitation.roleName}</Text>
+            <Text style={[styles.fromLine, { color: colors.textTertiary }]} numberOfLines={1}>
+              From: {invitation.invitedByName} · {timeAgo(invitation.createdAt)}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.invitationActions}>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              isDark
+                ? styles.acceptButtonDark
+                : { backgroundColor: colors.text, borderColor: colors.text },
+            ]}
+            onPress={() => onAccept(invitation.id)}
+            disabled={busy}
+            activeOpacity={0.7}
+          >
+            {accepting ? (
+              <ActivityIndicator color={isDark ? '#fff' : colors.textInverse} size="small" />
+            ) : (
+              <Text style={[styles.actionText, { color: isDark ? '#fff' : colors.textInverse }]}>Accept</Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              isDark
+                ? styles.declineButtonDark
+                : { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+            ]}
+            onPress={() => onDecline(invitation.id)}
+            disabled={busy}
+            activeOpacity={0.7}
+          >
+            {declining ? (
+              <ActivityIndicator color={colors.text} size="small" />
+            ) : (
+              <Text style={[styles.actionText, { color: colors.text }]}>Decline</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </>
+    );
+  }
+
+  return card;
 }
 
 // ── Activity Row ─────────────────────────────────────────
 
-function ActivityRow({ item }: { item: ActivityNotification }) {
+function ActivityRow({ item, colors, isDark }: { item: ActivityNotification; colors: ThemeColors; isDark: boolean }) {
   return (
-    <View style={[styles.activityRow, !item.read && styles.activityUnread]}>
-      <View style={styles.activityIcon}>
-        <Ionicons name={item.icon} size={18} color="rgba(255,255,255,0.5)" />
+    <View style={[
+      styles.activityRow,
+      { borderBottomColor: colors.separator },
+      !item.read && { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' },
+    ]}>
+      <View style={[styles.activityIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : colors.backgroundSecondary }]}>
+        <Ionicons name={item.icon} size={18} color={colors.textTertiary} />
       </View>
       <View style={styles.activityContent}>
-        <Text style={styles.activityText} numberOfLines={2}>
-          <Text style={styles.activityTitle}>{item.title}</Text>
+        <Text style={[styles.activityText, { color: colors.textSecondary }]} numberOfLines={2}>
+          <Text style={[styles.activityTitle, { color: colors.text }]}>{item.title}</Text>
           {'  '}
           {item.body}
         </Text>
-        <Text style={styles.activityTime}>{item.time}</Text>
+        <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{item.time}</Text>
       </View>
-      {!item.read && <View style={styles.unreadDot} />}
+      {!item.read && <View style={[styles.unreadDot, { backgroundColor: colors.text }]} />}
     </View>
   );
 }
@@ -150,6 +184,7 @@ function ActivityRow({ item }: { item: ActivityNotification }) {
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
   const [activeTab, setActiveTab] = useState<NotificationTab>('activity');
 
   const invitationsQuery = useMyTeamInvitations();
@@ -203,35 +238,51 @@ export default function NotificationsScreen() {
   }, []);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
 
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#fff" />
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Notifications</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
         <View style={styles.backButton} />
       </View>
 
       {/* Tabs */}
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'activity' && styles.tabActive]}
+          style={[
+            styles.tab,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.backgroundSecondary, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border },
+            activeTab === 'activity' && (isDark ? styles.tabActiveDark : { backgroundColor: colors.text, borderColor: colors.text }),
+          ]}
           onPress={() => setActiveTab('activity')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'activity' && styles.tabTextActive]}>
+          <Text style={[
+            styles.tabText,
+            { color: colors.textTertiary },
+            activeTab === 'activity' && { fontFamily: 'Lato_700Bold', color: isDark ? '#fff' : colors.textInverse },
+          ]}>
             Activity
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'teams' && styles.tabActive]}
+          style={[
+            styles.tab,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.backgroundSecondary, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border },
+            activeTab === 'teams' && (isDark ? styles.tabActiveDark : { backgroundColor: colors.text, borderColor: colors.text }),
+          ]}
           onPress={() => setActiveTab('teams')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'teams' && styles.tabTextActive]}>
+          <Text style={[
+            styles.tabText,
+            { color: colors.textTertiary },
+            activeTab === 'teams' && { fontFamily: 'Lato_700Bold', color: isDark ? '#fff' : colors.textInverse },
+          ]}>
             Teams
           </Text>
           {invitations.length > 0 && (
@@ -250,7 +301,7 @@ export default function NotificationsScreen() {
           showsVerticalScrollIndicator={false}
         >
           {PLACEHOLDER_ACTIVITY.map((item) => (
-            <ActivityRow key={item.id} item={item} />
+            <ActivityRow key={item.id} item={item} colors={colors} isDark={isDark} />
           ))}
         </ScrollView>
       ) : (
@@ -261,7 +312,7 @@ export default function NotificationsScreen() {
           refreshControl={refreshControl}
         >
           {invitationsQuery.isLoading ? (
-            <ActivityIndicator color="rgba(255,255,255,0.5)" style={{ marginVertical: 40 }} />
+            <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />
           ) : invitations.length > 0 ? (
             <View style={styles.invitationsList}>
               {invitations.map((inv) => (
@@ -272,14 +323,16 @@ export default function NotificationsScreen() {
                   onDecline={handleDecline}
                   accepting={actionId === inv.id && actionType === 'accept'}
                   declining={actionId === inv.id && actionType === 'decline'}
+                  colors={colors}
+                  isDark={isDark}
                 />
               ))}
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={40} color="rgba(255,255,255,0.15)" />
-              <Text style={styles.emptyTitle}>No team invitations</Text>
-              <Text style={styles.emptySubtitle}>
+              <Ionicons name="people-outline" size={40} color={colors.textTertiary} />
+              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No team invitations</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
                 When someone invites you to their event team, it will appear here.
               </Text>
             </View>
@@ -307,7 +360,6 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -325,7 +377,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
 
   // Tabs
@@ -334,7 +385,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 6,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
     paddingBottom: 12,
   },
   tab: {
@@ -343,23 +393,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
     gap: 6,
   },
-  tabActive: {
+  tabActiveDark: {
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderColor: 'rgba(255,255,255,0.25)',
   },
   tabText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
-  },
-  tabTextActive: {
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   tabBadge: {
     backgroundColor: '#FF3B30',
@@ -392,6 +435,10 @@ const styles = StyleSheet.create({
   invitationCard: {
     padding: 14,
   },
+  invitationCardLight: {
+    borderRadius: 16,
+    borderWidth: 1,
+  },
   invitationTop: {
     flexDirection: 'row',
     gap: 12,
@@ -403,7 +450,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   eventImagePlaceholder: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -414,17 +460,14 @@ const styles = StyleSheet.create({
   eventName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   roleLine: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
   },
   fromLine: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
   },
   invitationActions: {
     flexDirection: 'row',
@@ -438,18 +481,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
   },
-  acceptButton: {
+  acceptButtonDark: {
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderColor: 'rgba(255,255,255,0.25)',
   },
-  declineButton: {
+  declineButtonDark: {
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderColor: 'rgba(255,255,255,0.12)',
   },
   actionText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
 
   // Empty state
@@ -462,12 +504,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.6)',
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.3)',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -480,16 +520,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  activityUnread: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
   },
   activityIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -499,23 +534,19 @@ const styles = StyleSheet.create({
   activityText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
     lineHeight: 20,
   },
   activityTitle: {
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   activityTime: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.3)',
     marginTop: 4,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#fff',
   },
 });
