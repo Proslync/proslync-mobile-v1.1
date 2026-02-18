@@ -1,8 +1,45 @@
+import { useState, useCallback, useMemo } from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { GlassSurface } from '@/components/glass/glass-surface';
+import { ActionSheet } from '@/components/shared/action-sheet';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { TeamMemberRow } from '@/components/team/team-member-row';
+import { PendingInvitationRow } from '@/components/team/pending-invitation-row';
+import { RoleCard } from '@/components/team/role-card';
+import { InviteModal } from '@/components/team/invite-modal';
+import { ChangeRoleModal } from '@/components/team/change-role-modal';
+import { CreateRoleModal } from '@/components/team/create-role-modal';
+import { EditPermissionsModal } from '@/components/team/edit-permissions-modal';
+import {
+  useTeamMembers,
+  useTeamRoles,
+  useTeamInvitations,
+  useTeamStats,
+  useUpdateMemberRole,
+  useRemoveTeamMember,
+  useCreateRole,
+  useDeleteRole,
+  useUpdateRolePermissions,
+  useCancelInvitation,
+} from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
+import type {
+  TeamMemberResponseDto,
+  RoleResponseDto,
+  RolePermissions,
+} from '@/lib/types/team.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TeamScreen() {
@@ -11,26 +48,368 @@ export default function TeamScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
+  const eventId = id ? Number(id) : 0;
+
+  // ── Queries ────────────────────────────────────────────
+  const membersQuery = useTeamMembers(eventId);
+  const rolesQuery = useTeamRoles(eventId);
+  const invitationsQuery = useTeamInvitations(eventId);
+  const statsQuery = useTeamStats(eventId);
+
+  const members = membersQuery.data?.members ?? [];
+  const roles = rolesQuery.data ?? [];
+  const invitations = invitationsQuery.data?.invitations ?? [];
+  const stats = statsQuery.data;
+
+  // ── Mutations ──────────────────────────────────────────
+  const updateMemberRole = useUpdateMemberRole(eventId);
+  const removeMember = useRemoveTeamMember(eventId);
+  const createRole = useCreateRole(eventId);
+  const deleteRole = useDeleteRole(eventId);
+  const updatePermissions = useUpdateRolePermissions(eventId);
+  const cancelInvitation = useCancelInvitation(eventId);
+
+  // ── Modal state ────────────────────────────────────────
+  const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  const [changeRoleMember, setChangeRoleMember] = useState<TeamMemberResponseDto | null>(null);
+  const [createRoleModalVisible, setCreateRoleModalVisible] = useState(false);
+  const [editPermissionsRole, setEditPermissionsRole] = useState<RoleResponseDto | null>(null);
+  const [actionSheetMember, setActionSheetMember] = useState<TeamMemberResponseDto | null>(null);
+  const [confirmRemoveMember, setConfirmRemoveMember] = useState<TeamMemberResponseDto | null>(null);
+  const [confirmDeleteRole, setConfirmDeleteRole] = useState<RoleResponseDto | null>(null);
+  const [confirmCancelInvitation, setConfirmCancelInvitation] = useState<number | null>(null);
+
+  // ── Role name lookup for invitations ───────────────────
+  const roleNameMap = useMemo(() => {
+    const map = new Map<number, string>();
+    roles.forEach((r) => map.set(r.id, r.name));
+    return map;
+  }, [roles]);
+
+  // ── Pull-to-refresh ────────────────────────────────────
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await Promise.all([
+        membersQuery.refetch(),
+        rolesQuery.refetch(),
+        invitationsQuery.refetch(),
+        statsQuery.refetch(),
+      ]);
+    },
+  });
+
+  // ── Member action sheet ────────────────────────────────
+  const handleMemberAction = useCallback(
+    (member: TeamMemberResponseDto) => {
+      setActionSheetMember(member);
+    },
+    [],
+  );
+
+  // ── Change role handler ────────────────────────────────
+  const handleChangeRole = useCallback(
+    (roleId: number) => {
+      if (!changeRoleMember) return;
+      updateMemberRole.mutate(
+        { memberId: changeRoleMember.id, data: { roleId } },
+        { onSuccess: () => setChangeRoleMember(null) },
+      );
+    },
+    [changeRoleMember, updateMemberRole],
+  );
+
+  // ── Create role handler ────────────────────────────────
+  const handleCreateRole = useCallback(
+    (data: Parameters<typeof createRole.mutate>[0]) => {
+      createRole.mutate(data, {
+        onSuccess: () => setCreateRoleModalVisible(false),
+      });
+    },
+    [createRole],
+  );
+
+  // ── Delete role handler ────────────────────────────────
+  const handleDeleteRole = useCallback(
+    (role: RoleResponseDto) => {
+      setConfirmDeleteRole(role);
+    },
+    [],
+  );
+
+  // ── Update permissions handler ─────────────────────────
+  const handleSavePermissions = useCallback(
+    (roleId: number, permissions: RolePermissions) => {
+      updatePermissions.mutate(
+        { roleId, data: { permissions } },
+        { onSuccess: () => setEditPermissionsRole(null) },
+      );
+    },
+    [updatePermissions],
+  );
+
+  // ── Cancel invitation handler ──────────────────────────
+  const handleCancelInvitation = useCallback(
+    (invitationId: number) => {
+      setConfirmCancelInvitation(invitationId);
+    },
+    [],
+  );
+
+  const isLoading = membersQuery.isLoading || rolesQuery.isLoading;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
+
+      {/* Header */}
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+      >
         <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Team</Text>
-        <View style={styles.headerButton} />
-      </View>
-      <View style={styles.placeholder}>
-        <Ionicons name="person-add-outline" size={48} color={colors.textTertiary} />
-        <Text style={[styles.placeholderText, { color: colors.textTertiary }]}>Coming Soon</Text>
-      </View>
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Team</Text>
+          {stats && (
+            <View style={styles.countBadge}>
+              <Text style={[styles.countText, { color: colors.text }]}>{stats.totalMembers}</Text>
+            </View>
+          )}
+        </View>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => setInviteModalVisible(true)}
+        >
+          <Ionicons name="person-add-outline" size={22} color={colors.text} />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.text} />
+        </View>
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        >
+          {/* Stats Grid */}
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.statsGrid}>
+            <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.statCard}>
+              <View style={styles.statHeader}>
+                <Ionicons name="people-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Members</Text>
+              </View>
+              <Text style={[styles.statValue, { color: colors.text }]}>
+                {stats?.totalMembers ?? members.length}
+              </Text>
+            </GlassSurface>
+            <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.statCard}>
+              <View style={styles.statHeader}>
+                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Pending Invites</Text>
+              </View>
+              <Text style={[styles.statValue, { color: colors.text }]}>
+                {stats?.pendingInvitations ?? invitations.length}
+              </Text>
+            </GlassSurface>
+          </Animated.View>
+
+          {/* Team Members Section */}
+          <Animated.View entering={FadeInDown.delay(100).duration(300)}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Team Members</Text>
+            {members.length === 0 ? (
+              <View style={styles.emptySection}>
+                <Ionicons name="people-outline" size={32} color={colors.textTertiary} />
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+                  No team members yet
+                </Text>
+                <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
+                  Invite people to help manage your event
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.membersList}>
+                {members.map((member) => (
+                  <TeamMemberRow
+                    key={member.id}
+                    member={member}
+                    isOwner={member.isOwner || member.role.name === 'Owner'}
+                    onChangeRole={handleMemberAction}
+                    onRemove={handleMemberAction}
+                  />
+                ))}
+              </View>
+            )}
+          </Animated.View>
+
+          {/* Pending Invitations Section */}
+          {invitations.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(200).duration(300)} style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Pending Invitations</Text>
+              <View style={styles.membersList}>
+                {invitations.map((inv) => (
+                  <PendingInvitationRow
+                    key={inv.id}
+                    invitation={inv}
+                    roleName={roleNameMap.get(inv.roleId)}
+                    onCancel={handleCancelInvitation}
+                  />
+                ))}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Roles & Permissions Section */}
+          <Animated.View entering={FadeInDown.delay(300).duration(300)} style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Roles</Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => setCreateRoleModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add" size={18} color={colors.text} />
+                <Text style={[styles.addButtonText, { color: colors.text }]}>Add Role</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.rolesList}>
+              {roles.map((role) => (
+                <RoleCard
+                  key={role.id}
+                  role={role}
+                  onEditPermissions={setEditPermissionsRole}
+                  onDelete={handleDeleteRole}
+                />
+              ))}
+            </View>
+          </Animated.View>
+        </ScrollView>
+      )}
+
+      {/* Modals */}
+      <InviteModal
+        visible={inviteModalVisible}
+        onClose={() => setInviteModalVisible(false)}
+        roles={roles}
+        eventId={eventId}
+      />
+
+      <ChangeRoleModal
+        visible={!!changeRoleMember}
+        onClose={() => setChangeRoleMember(null)}
+        roles={roles}
+        currentRoleId={changeRoleMember?.role.id ?? 0}
+        memberName={
+          changeRoleMember
+            ? `${changeRoleMember.user.firstName || ''} ${changeRoleMember.user.lastName || ''}`.trim()
+            : ''
+        }
+        onSave={handleChangeRole}
+        loading={updateMemberRole.isPending}
+      />
+
+      <CreateRoleModal
+        visible={createRoleModalVisible}
+        onClose={() => setCreateRoleModalVisible(false)}
+        onSubmit={handleCreateRole}
+        loading={createRole.isPending}
+      />
+
+      <EditPermissionsModal
+        visible={!!editPermissionsRole}
+        onClose={() => setEditPermissionsRole(null)}
+        role={editPermissionsRole}
+        onSave={handleSavePermissions}
+        loading={updatePermissions.isPending}
+      />
+
+      {/* Member Action Sheet */}
+      <ActionSheet
+        visible={!!actionSheetMember}
+        title={actionSheetMember?.user.firstName || 'Member'}
+        options={[
+          {
+            label: 'Change Role',
+            onPress: () => {
+              if (actionSheetMember) setChangeRoleMember(actionSheetMember);
+            },
+          },
+          {
+            label: 'Remove',
+            destructive: true,
+            onPress: () => {
+              if (actionSheetMember) setConfirmRemoveMember(actionSheetMember);
+            },
+          },
+        ]}
+        onClose={() => setActionSheetMember(null)}
+      />
+
+      {/* Remove Member Confirmation */}
+      <ConfirmDialog
+        visible={!!confirmRemoveMember}
+        title="Remove Member"
+        message={`Remove ${confirmRemoveMember?.user.firstName || 'this member'} from the team?`}
+        confirmLabel="Remove"
+        destructive
+        loading={removeMember.isPending}
+        onConfirm={() => {
+          if (confirmRemoveMember) {
+            removeMember.mutate(confirmRemoveMember.id, {
+              onSettled: () => setConfirmRemoveMember(null),
+            });
+          }
+        }}
+        onCancel={() => setConfirmRemoveMember(null)}
+      />
+
+      {/* Delete Role Confirmation */}
+      <ConfirmDialog
+        visible={!!confirmDeleteRole}
+        title="Delete Role"
+        message={`Delete "${confirmDeleteRole?.name}"? Members with this role will need to be reassigned.`}
+        confirmLabel="Delete"
+        destructive
+        loading={deleteRole.isPending}
+        onConfirm={() => {
+          if (confirmDeleteRole) {
+            deleteRole.mutate(confirmDeleteRole.id, {
+              onSettled: () => setConfirmDeleteRole(null),
+            });
+          }
+        }}
+        onCancel={() => setConfirmDeleteRole(null)}
+      />
+
+      {/* Cancel Invitation Confirmation */}
+      <ConfirmDialog
+        visible={!!confirmCancelInvitation}
+        title="Cancel Invitation"
+        message="Cancel this pending invitation?"
+        confirmLabel="Cancel Invite"
+        destructive
+        loading={cancelInvitation.isPending}
+        onConfirm={() => {
+          if (confirmCancelInvitation) {
+            cancelInvitation.mutate(confirmCancelInvitation, {
+              onSettled: () => setConfirmCancelInvitation(null),
+            });
+          }
+        }}
+        onCancel={() => setConfirmCancelInvitation(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -39,8 +418,112 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: 1,
   },
-  headerButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Lato_700Bold' },
-  placeholder: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  placeholderText: { fontSize: 16, fontFamily: 'Lato_400Regular' },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+  },
+  countBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  countText: {
+    fontSize: 12,
+    fontFamily: 'Lato_700Bold',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    padding: 16,
+  },
+  statHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  statLabel: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+  },
+  statValue: {
+    fontSize: 28,
+    fontFamily: 'Lato_700Bold',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    marginBottom: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  section: {
+    marginTop: 24,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  addButtonText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+  },
+  membersList: {
+    gap: 8,
+  },
+  rolesList: {
+    gap: 10,
+  },
+  emptySection: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 8,
+  },
+  emptyText: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+  },
+  emptySubtext: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    textAlign: 'center',
+  },
 });
