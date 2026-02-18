@@ -91,6 +91,15 @@ export {
   useCancelInvitation,
 } from './use-team-mutations';
 
+// Artist hooks
+export {
+  useEventArtists,
+  useCreateEventArtist,
+  useUpdateEventArtist,
+  useDeleteEventArtist,
+  EVENT_ARTISTS_KEY,
+} from './use-event-artists';
+
 // Permission hooks
 export { useEventPermissions, EVENT_PERMISSIONS_KEY } from './use-event-permissions';
 

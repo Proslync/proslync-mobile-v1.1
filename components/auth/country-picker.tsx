@@ -7,9 +7,9 @@ import {
   Modal,
   FlatList,
   TextInput,
-  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface Country {
   code: string;
@@ -67,6 +67,7 @@ export function CountryPicker({ selectedCode, onSelect }: CountryPickerProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
 
   const selectedCountry = COUNTRIES.find(c => c.dialCode === selectedCode) || COUNTRIES[0];
 
@@ -91,15 +92,15 @@ export function CountryPicker({ selectedCode, onSelect }: CountryPickerProps) {
     <TouchableOpacity
       style={[
         styles.countryItem,
-        item.dialCode === selectedCode && styles.countryItemSelected,
+        item.dialCode === selectedCode && { backgroundColor: colors.backgroundSecondary },
       ]}
       onPress={() => handleSelect(item)}
       activeOpacity={0.7}
     >
       <Text style={styles.countryFlag}>{item.flag}</Text>
       <View style={styles.countryInfo}>
-        <Text style={styles.countryName}>{item.name}</Text>
-        <Text style={styles.countryDialCode}>{item.dialCode}</Text>
+        <Text style={[styles.countryName, { color: colors.text }]}>{item.name}</Text>
+        <Text style={[styles.countryDialCode, { color: colors.textTertiary }]}>{item.dialCode}</Text>
       </View>
       {item.dialCode === selectedCode && (
         <Text style={styles.checkmark}>✓</Text>
@@ -115,7 +116,7 @@ export function CountryPicker({ selectedCode, onSelect }: CountryPickerProps) {
         activeOpacity={0.7}
       >
         <Text style={styles.selectorFlag}>{selectedCountry.flag}</Text>
-        <Text style={styles.chevron}>▼</Text>
+        <Text style={[styles.chevron, { color: colors.textTertiary }]}>▼</Text>
       </TouchableOpacity>
 
       <Modal
@@ -124,24 +125,24 @@ export function CountryPicker({ selectedCode, onSelect }: CountryPickerProps) {
         presentationStyle="pageSheet"
         onRequestClose={() => setIsOpen(false)}
       >
-        <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+        <View style={[styles.modalContainer, { paddingTop: insets.top, backgroundColor: colors.background }]}>
           {/* Header */}
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Country</Text>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Select Country</Text>
             <TouchableOpacity
-              style={styles.closeButton}
+              style={[styles.closeButton, { backgroundColor: colors.backgroundSecondary }]}
               onPress={() => setIsOpen(false)}
             >
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
           {/* Search */}
           <View style={styles.searchContainer}>
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
               placeholder="Search country..."
-              placeholderTextColor="rgba(0, 0, 0, 0.35)"
+              placeholderTextColor={colors.placeholder}
               value={searchQuery}
               onChangeText={setSearchQuery}
               autoCorrect={false}
@@ -179,11 +180,9 @@ const styles = StyleSheet.create({
   },
   chevron: {
     fontSize: 10,
-    color: 'rgba(0, 0, 0, 0.4)',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -192,24 +191,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1a1a1a',
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   closeButtonText: {
     fontSize: 16,
-    color: '#1a1a1a',
   },
   searchContainer: {
     paddingHorizontal: 20,
@@ -217,13 +212,10 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     height: 48,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 12,
     paddingHorizontal: 16,
     fontSize: 16,
-    color: '#1a1a1a',
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
   },
   listContent: {
     paddingHorizontal: 20,
@@ -236,9 +228,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 4,
   },
-  countryItemSelected: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-  },
   countryFlag: {
     fontSize: 32,
     marginRight: 16,
@@ -248,13 +237,11 @@ const styles = StyleSheet.create({
   },
   countryName: {
     fontSize: 17,
-    color: '#1a1a1a',
     fontWeight: '500',
     marginBottom: 2,
   },
   countryDialCode: {
     fontSize: 14,
-    color: 'rgba(0, 0, 0, 0.4)',
   },
   checkmark: {
     fontSize: 18,
