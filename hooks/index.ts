@@ -110,3 +110,19 @@ export {
   useDeclineTeamInvitation,
   MY_TEAM_INVITATIONS_KEY,
 } from './use-notifications';
+
+// Wallet / Stripe Connect hooks
+export {
+  useStripeAccountStatus,
+  useStripeBalance,
+  useExternalAccounts,
+  useEarnings,
+  usePayouts,
+  useCreatePayout,
+  useSetupStripeAccount,
+  STRIPE_ACCOUNT_STATUS_KEY,
+  STRIPE_BALANCE_KEY,
+  STRIPE_EXTERNAL_ACCOUNTS_KEY,
+  STRIPE_EARNINGS_KEY,
+  STRIPE_PAYOUTS_KEY,
+} from './use-wallet-queries';

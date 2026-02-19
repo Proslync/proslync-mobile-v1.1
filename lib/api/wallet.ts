@@ -285,20 +285,37 @@ export const stripeConnectApi = {
 
   /**
    * Get account balance (available and pending)
+   * Backend returns flat { available, pending, currency } — normalize to array format
    */
   getBalance: async (): Promise<BalanceResponse> => {
-    return apiClient.get<BalanceResponse>('/api/stripe-connect/payouts/balance');
+    const raw: any = await apiClient.get('/api/stripe-connect/payouts/balance');
+    const currency = raw.currency ?? 'usd';
+
+    return {
+      available: Array.isArray(raw.available)
+        ? raw.available
+        : [{ amount: raw.available ?? 0, currency }],
+      pending: Array.isArray(raw.pending)
+        ? raw.pending
+        : [{ amount: raw.pending ?? 0, currency }],
+    };
   },
 
   /**
    * Get external accounts (bank accounts & debit cards)
    */
   getExternalAccounts: async (): Promise<ExternalAccountsResponse> => {
-    return apiClient.get<ExternalAccountsResponse>('/api/stripe-connect/payouts/external-accounts');
+    const raw: any = await apiClient.get('/api/stripe-connect/payouts/external-accounts');
+    // Backend may return flat array or { data: [...] }
+    return {
+      data: Array.isArray(raw) ? raw : (raw.data ?? []),
+      hasMore: raw.hasMore ?? false,
+    };
   },
 
   /**
    * Get earnings list with filtering and pagination
+   * Maps backend field names to our app's interface
    */
   getEarnings: async (params?: GetEarningsParams): Promise<EarningsListResponse> => {
     const queryParams = new URLSearchParams();
@@ -314,7 +331,30 @@ export const stripeConnectApi = {
       ? `/api/stripe-connect/earnings?${queryString}`
       : '/api/stripe-connect/earnings';
 
-    return apiClient.get<EarningsListResponse>(endpoint);
+    const raw: any = await apiClient.get(endpoint);
+
+    // Map backend fields → app fields
+    return {
+      earnings: (raw.earnings ?? []).map((e: any): EarningsItem => ({
+        id: e.id,
+        eventId: e.eventId,
+        eventName: e.eventName,
+        grossAmount: e.totalAmount ?? e.grossAmount ?? 0,
+        platformFee: e.platformFee ?? 0,
+        netAmount: e.organizerAmount ?? e.netAmount ?? 0,
+        status: e.status,
+        createdAt: e.createdAt,
+        transferredAt: e.transferredAt,
+      })),
+      pagination: raw.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 0 },
+      summary: {
+        totalGross: raw.summary?.totalEarnings ?? raw.summary?.totalGross ?? 0,
+        totalPlatformFees: raw.summary?.totalPlatformFees ?? 0,
+        totalNet: (raw.summary?.totalEarnings ?? 0) - (raw.summary?.totalPlatformFees ?? 0),
+        pendingAmount: raw.summary?.totalPending ?? raw.summary?.pendingAmount ?? 0,
+        transferredAmount: raw.summary?.totalTransferred ?? raw.summary?.transferredAmount ?? 0,
+      },
+    };
   },
 
   /**

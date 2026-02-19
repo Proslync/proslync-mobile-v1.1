@@ -1,5 +1,6 @@
-// Dashboard Payments Screen - Earnings, Payouts, and Stripe Connect management
-import * as React from 'react';
+// Dashboard Payments Screen - Tabbed wallet dashboard with earnings, payouts, and overview
+
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,46 +14,98 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { useWallet } from '@/lib/providers/wallet-provider';
-import { WithdrawalSheet } from '@/components/wallet';
-import { useAppTheme } from '@/hooks/use-app-theme';
+import Animated, { FadeIn } from 'react-native-reanimated';
+import { useQueryClient } from '@tanstack/react-query';
+import * as Linking from 'expo-linking';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { SegmentedControl } from '@/components/shared/segmented-control';
+import {
+  BalanceCard,
+  OnboardingCard,
+  EarningsList,
+  PayoutsList,
+  WithdrawalSheet,
+  AccountStatusCard,
+} from '@/components/wallet';
+import { GlassSurface } from '@/components/glass/glass-surface';
+import {
+  useStripeAccountStatus,
+  useStripeBalance,
+  useExternalAccounts,
+  useEarnings,
+  usePayouts,
+  useSetupStripeAccount,
+  STRIPE_ACCOUNT_STATUS_KEY,
+  STRIPE_BALANCE_KEY,
+  STRIPE_EXTERNAL_ACCOUNTS_KEY,
+  STRIPE_EARNINGS_KEY,
+  STRIPE_PAYOUTS_KEY,
+} from '@/hooks/use-wallet-queries';
+import { stripeConnectApi, type EarningsItem, type PayoutItem } from '@/lib/api/wallet';
+import type { WalletBalances, PayoutMethod } from '@/lib/types/wallet.types';
+
+const TAB_SEGMENTS = ['Overview', 'Earnings', 'Payouts'];
 
 function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+// Helper: convert ExternalAccount to PayoutMethod for WithdrawalSheet
+// Backend returns camelCase (type, bankName, defaultForCurrency)
+function toPayoutMethod(account: any): PayoutMethod {
+  return {
+    id: account.id,
+    type: (account.type ?? account.object) === 'bank_account' ? 'bank' : 'debit',
+    label: account.bankName ?? account.bank_name ?? account.brand ?? 'Account',
+    last4: account.last4,
+    isDefault: account.defaultForCurrency ?? account.default_for_currency ?? false,
+  };
+}
+
 export default function PaymentsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { colors, isDark } = useAppTheme();
-  const {
-    balances,
-    payoutMethods,
-    transactions,
-    isLoading,
-    withdraw,
-    refreshWallet,
-    stripeAccountStatus,
-    setupStripeAccount,
-    openStripeDashboard,
-    addPayoutMethod,
-  } = useWallet();
+  const queryClient = useQueryClient();
 
-  const [isRefreshing, setIsRefreshing] = React.useState(false);
-  const [isSettingUp, setIsSettingUp] = React.useState(false);
-  const [withdrawalSheetVisible, setWithdrawalSheetVisible] = React.useState(false);
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const [withdrawalSheetVisible, setWithdrawalSheetVisible] = useState(false);
 
-  const handleRefresh = React.useCallback(async () => {
-    setIsRefreshing(true);
-    await refreshWallet();
-    setIsRefreshing(false);
-  }, [refreshWallet]);
+  // React Query hooks — all fetch independently (matching web app pattern)
+  const { data: accountStatus, isLoading: statusLoading } = useStripeAccountStatus();
+  const { data: balance } = useStripeBalance();
+  const { data: externalAccounts } = useExternalAccounts();
+  const { data: earningsData } = useEarnings();
+  const { data: payoutsData } = usePayouts();
+  const setupMutation = useSetupStripeAccount();
 
-  const handleSetupStripeAccount = async () => {
+  // Account active = chargesEnabled && payoutsEnabled (matches web app)
+  const isAccountActive = !!accountStatus?.chargesEnabled && !!accountStatus?.payoutsEnabled;
+  const needsSetup = !isAccountActive;
+
+  // Derived data
+  const availableCents = Array.isArray(balance?.available)
+    ? balance.available.reduce((sum, b) => sum + b.amount, 0)
+    : 0;
+  const pendingCents = Array.isArray(balance?.pending)
+    ? balance.pending.reduce((sum, b) => sum + b.amount, 0)
+    : 0;
+  const payoutMethods = (externalAccounts?.data ?? []).map(toPayoutMethod);
+  const canWithdraw = availableCents >= 100;
+
+  // Build balances object for WithdrawalSheet
+  const balancesForSheet: WalletBalances = {
+    availableCents,
+    pendingCents,
+    lifetimeCents: earningsData?.summary?.totalNet ?? 0,
+    minimumCashOutCents: 100,
+  };
+
+  const handleSetup = async () => {
     try {
       setIsSettingUp(true);
-      await setupStripeAccount();
+      await setupMutation.mutateAsync();
     } catch (error: any) {
       Alert.alert('Error', error?.message || 'Failed to set up payout account');
     } finally {
@@ -60,382 +113,225 @@ export default function PaymentsScreen() {
     }
   };
 
+  const handleOpenDashboard = async () => {
+    try {
+      const response = await stripeConnectApi.getDashboardLink();
+      await Linking.openURL(response.url);
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to open Stripe dashboard');
+    }
+  };
+
   const handleWithdraw = async (amountCents: number, methodId: string) => {
     try {
-      await withdraw(amountCents, methodId);
+      await stripeConnectApi.createPayout({ amount: amountCents, destinationId: methodId });
+      queryClient.invalidateQueries({ queryKey: [STRIPE_BALANCE_KEY] });
+      queryClient.invalidateQueries({ queryKey: [STRIPE_PAYOUTS_KEY] });
       Alert.alert('Success', 'Your withdrawal has been submitted!');
     } catch (error: any) {
       Alert.alert('Error', error?.message || 'Failed to process withdrawal');
     }
   };
 
-  const needsStripeSetup = !stripeAccountStatus?.hasAccount || !stripeAccountStatus?.payoutsEnabled;
-  const canWithdraw = balances && balances.availableCents >= balances.minimumCashOutCents;
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] }),
+      queryClient.invalidateQueries({ queryKey: [STRIPE_BALANCE_KEY] }),
+      queryClient.invalidateQueries({ queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY] }),
+      queryClient.invalidateQueries({ queryKey: [STRIPE_EARNINGS_KEY] }),
+      queryClient.invalidateQueries({ queryKey: [STRIPE_PAYOUTS_KEY] }),
+    ]);
+    setIsRefreshing(false);
+  }, [queryClient]);
 
-  // Filter transactions to show only earnings and withdrawals
-  const recentTransactions = transactions.slice(0, 10);
-
-  // Dynamic styles based on theme
-  const dynamicStyles = {
-    container: {
-      backgroundColor: colors.background,
-    },
-    loadingText: {
-      color: colors.textTertiary,
-    },
-    header: {
-      borderBottomColor: colors.border,
-    },
-    headerTitle: {
-      color: colors.text,
-    },
-    setupContainer: {
-      backgroundColor: isDark ? 'rgba(56, 151, 240, 0.1)' : 'rgba(56, 151, 240, 0.06)',
-      borderColor: isDark ? 'rgba(56, 151, 240, 0.3)' : 'rgba(56, 151, 240, 0.2)',
-    },
-    setupIconContainer: {
-      backgroundColor: isDark ? 'rgba(56, 151, 240, 0.15)' : 'rgba(56, 151, 240, 0.1)',
-    },
-    setupTitle: {
-      color: colors.text,
-    },
-    setupDescription: {
-      color: colors.textSecondary,
-    },
-    setupFeatureText: {
-      color: colors.textSecondary,
-    },
-    setupHint: {
-      color: colors.textTertiary,
-    },
-    balanceCard: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-    },
-    availableCard: {
-      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.08)',
-      borderColor: isDark ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)',
-    },
-    balanceLabel: {
-      color: colors.textTertiary,
-    },
-    balanceHint: {
-      color: colors.textTertiary,
-    },
-    lifetimeCard: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-    },
-    lifetimeLabel: {
-      color: colors.textTertiary,
-    },
-    lifetimeAmount: {
-      color: colors.text,
-    },
-    sectionTitle: {
-      color: colors.text,
-    },
-    methodsList: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-    },
-    methodItem: {
-      borderBottomColor: colors.border,
-    },
-    methodIcon: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-    },
-    methodIconColor: {
-      color: colors.text,
-    },
-    methodLabel: {
-      color: colors.text,
-    },
-    methodLast4: {
-      color: colors.textTertiary,
-    },
-    defaultBadge: {
-      backgroundColor: isDark ? 'rgba(56, 151, 240, 0.15)' : 'rgba(56, 151, 240, 0.1)',
-    },
-    addMethodButton: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-      borderColor: isDark ? 'rgba(56, 151, 240, 0.4)' : 'rgba(56, 151, 240, 0.3)',
-    },
-    transactionsList: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-    },
-    transactionItem: {
-      borderBottomColor: colors.border,
-    },
-    transactionTitle: {
-      color: colors.text,
-    },
-    transactionDate: {
-      color: colors.textTertiary,
-    },
-    emptyActivity: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-    },
-    emptyActivityText: {
-      color: colors.textTertiary,
-    },
-    emptyActivityHint: {
-      color: colors.textTertiary,
-    },
-    withdrawButtonDisabled: {
-      backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-    },
-  };
-
-  if (isLoading && !isRefreshing) {
+  // Loading state
+  if (statusLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer, dynamicStyles.container]}>
-        <ActivityIndicator size="large" color={colors.text} />
-        <Text style={[styles.loadingText, dynamicStyles.loadingText]}>Loading payments...</Text>
+      <View style={[styles.container, styles.loadingContainer]}>
+        <DarkGradientBg />
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={styles.loadingText}>Loading payments...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
+    <View style={styles.container}>
+      <DarkGradientBg />
+
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, dynamicStyles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
-          style={styles.backButton}
+          style={styles.headerButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, dynamicStyles.headerTitle]}>Payments</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={openStripeDashboard}
-          activeOpacity={0.7}
-          disabled={needsStripeSetup}
-        >
-          <Ionicons
-            name="open-outline"
-            size={22}
-            color={needsStripeSetup ? colors.textTertiary : '#3897F0'}
-          />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Payments</Text>
+        <View style={styles.headerButton} />
       </Animated.View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={handleRefresh}
-            tintColor={colors.text}
+      {/* Account Status - always visible (matches web app) */}
+      {accountStatus && (
+        <AccountStatusCard
+          accountStatus={accountStatus}
+          onContinueSetup={needsSetup ? handleSetup : undefined}
+          isSettingUp={isSettingUp}
+        />
+      )}
+
+      {needsSetup ? (
+        /* Onboarding */
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#fff" />
+          }
+        >
+          <OnboardingCard
+            onSetup={handleSetup}
+            isSettingUp={isSettingUp}
+            accountStatus={accountStatus}
           />
-        }
-      >
-        {needsStripeSetup ? (
-          /* Stripe Connect Setup */
-          <Animated.View
-            entering={FadeInDown.duration(400)}
-            style={[styles.setupContainer, dynamicStyles.setupContainer]}
-          >
-            <View style={[styles.setupIconContainer, dynamicStyles.setupIconContainer]}>
-              <Ionicons name="wallet-outline" size={56} color="#3897F0" />
-            </View>
-            <Text style={[styles.setupTitle, dynamicStyles.setupTitle]}>Set Up Payouts</Text>
-            <Text style={[styles.setupDescription, dynamicStyles.setupDescription]}>
-              Connect your bank account or debit card to receive earnings from ticket sales and tips.
-            </Text>
+        </ScrollView>
+      ) : (
+        /* Main tabbed content — single ScrollView so everything scrolls together */
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#fff" />
+          }
+        >
+          <BalanceCard
+            availableCents={availableCents}
+            pendingCents={balancesForSheet.pendingCents}
+            lifetimeCents={balancesForSheet.lifetimeCents}
+            onWithdraw={() => setWithdrawalSheetVisible(true)}
+          />
+          <SegmentedControl
+            segments={TAB_SEGMENTS}
+            selectedIndex={selectedTab}
+            onSelect={setSelectedTab}
+          />
 
-            <View style={styles.setupFeatures}>
-              <View style={styles.setupFeature}>
-                <Ionicons name="shield-checkmark" size={20} color="#22c55e" />
-                <Text style={[styles.setupFeatureText, dynamicStyles.setupFeatureText]}>Secure payments via Stripe</Text>
-              </View>
-              <View style={styles.setupFeature}>
-                <Ionicons name="flash" size={20} color="#f59e0b" />
-                <Text style={[styles.setupFeatureText, dynamicStyles.setupFeatureText]}>Instant payouts to debit cards</Text>
-              </View>
-              <View style={styles.setupFeature}>
-                <Ionicons name="calendar" size={20} color="#3b82f6" />
-                <Text style={[styles.setupFeatureText, dynamicStyles.setupFeatureText]}>1-3 day bank transfers</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.setupButton, isSettingUp && styles.setupButtonDisabled]}
-              onPress={handleSetupStripeAccount}
-              disabled={isSettingUp}
-            >
-              {isSettingUp ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="link" size={20} color="#fff" />
-                  <Text style={styles.setupButtonText}>Connect Payout Account</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {stripeAccountStatus?.hasAccount && !stripeAccountStatus?.detailsSubmitted && (
-              <Text style={[styles.setupHint, dynamicStyles.setupHint]}>
-                You have a pending setup. Tap above to complete it.
-              </Text>
-            )}
-          </Animated.View>
-        ) : (
-          <>
-            {/* Balance Cards */}
-            <Animated.View
-              entering={FadeInDown.delay(100).duration(400)}
-              style={styles.balanceSection}
-            >
-              <View style={styles.balanceCards}>
-                <View style={[styles.balanceCard, styles.availableCard, dynamicStyles.availableCard]}>
-                  <Text style={[styles.balanceLabel, dynamicStyles.balanceLabel]}>Available</Text>
-                  <Text style={styles.balanceAmount}>
-                    {formatCents(balances?.availableCents ?? 0)}
-                  </Text>
-                  <TouchableOpacity
-                    style={[styles.withdrawButton, !canWithdraw && [styles.withdrawButtonDisabled, dynamicStyles.withdrawButtonDisabled]]}
-                    onPress={() => setWithdrawalSheetVisible(true)}
-                    disabled={!canWithdraw}
-                  >
-                    <Ionicons name="arrow-down-circle" size={18} color="#fff" />
-                    <Text style={styles.withdrawButtonText}>Withdraw</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={[styles.balanceCard, dynamicStyles.balanceCard]}>
-                  <Text style={[styles.balanceLabel, dynamicStyles.balanceLabel]}>Pending</Text>
-                  <Text style={[styles.balanceAmount, styles.pendingAmount]}>
-                    {formatCents(balances?.pendingCents ?? 0)}
-                  </Text>
-                  <Text style={[styles.balanceHint, dynamicStyles.balanceHint]}>Clears after events</Text>
-                </View>
-              </View>
-
-              <View style={[styles.lifetimeCard, dynamicStyles.lifetimeCard]}>
-                <Ionicons name="trending-up" size={20} color="#22c55e" />
-                <View style={styles.lifetimeContent}>
-                  <Text style={[styles.lifetimeLabel, dynamicStyles.lifetimeLabel]}>Lifetime Earnings</Text>
-                  <Text style={[styles.lifetimeAmount, dynamicStyles.lifetimeAmount]}>
-                    {formatCents(balances?.lifetimeCents ?? 0)}
-                  </Text>
-                </View>
-              </View>
-            </Animated.View>
-
-            {/* Payout Methods */}
-            <Animated.View
-              entering={FadeInDown.delay(200).duration(400)}
-              style={styles.section}
-            >
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>Payout Methods</Text>
-                <TouchableOpacity onPress={openStripeDashboard}>
-                  <Text style={styles.manageLink}>Manage</Text>
-                </TouchableOpacity>
-              </View>
-
-              {payoutMethods.length > 0 ? (
-                <View style={[styles.methodsList, dynamicStyles.methodsList]}>
-                  {payoutMethods.map((method) => (
-                    <View key={method.id} style={[styles.methodItem, dynamicStyles.methodItem]}>
-                      <View style={[styles.methodIcon, dynamicStyles.methodIcon]}>
-                        <Ionicons
-                          name={method.type === 'bank' ? 'business' : 'card'}
-                          size={20}
-                          color={colors.text}
-                        />
-                      </View>
-                      <View style={styles.methodInfo}>
-                        <Text style={[styles.methodLabel, dynamicStyles.methodLabel]}>{method.label}</Text>
-                        <Text style={[styles.methodLast4, dynamicStyles.methodLast4]}>••••{method.last4}</Text>
-                      </View>
-                      {method.isDefault && (
-                        <View style={[styles.defaultBadge, dynamicStyles.defaultBadge]}>
-                          <Text style={styles.defaultBadgeText}>Default</Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <TouchableOpacity style={[styles.addMethodButton, dynamicStyles.addMethodButton]} onPress={openStripeDashboard}>
-                  <Ionicons name="add-circle-outline" size={24} color="#3897F0" />
-                  <Text style={styles.addMethodText}>Add payout method</Text>
-                </TouchableOpacity>
-              )}
-            </Animated.View>
-
-            {/* Recent Activity */}
-            <Animated.View
-              entering={FadeInDown.delay(300).duration(400)}
-              style={styles.section}
-            >
-              <Text style={[styles.sectionTitle, dynamicStyles.sectionTitle]}>Recent Activity</Text>
-
-              {recentTransactions.length > 0 ? (
-                <View style={[styles.transactionsList, dynamicStyles.transactionsList]}>
-                  {recentTransactions.map((tx) => (
-                    <View key={tx.id} style={[styles.transactionItem, dynamicStyles.transactionItem]}>
-                      <View style={[
-                        styles.transactionIcon,
-                        tx.type === 'withdrawal' ? styles.withdrawalIcon : styles.earningIcon
-                      ]}>
-                        <Ionicons
-                          name={tx.type === 'withdrawal' ? 'arrow-up' : 'arrow-down'}
-                          size={16}
-                          color="#fff"
-                        />
-                      </View>
-                      <View style={styles.transactionInfo}>
-                        <Text style={[styles.transactionTitle, dynamicStyles.transactionTitle]}>{tx.title}</Text>
-                        <Text style={[styles.transactionDate, dynamicStyles.transactionDate]}>
-                          {new Date(tx.createdAt).toLocaleDateString()}
-                        </Text>
-                      </View>
-                      <Text style={[
-                        styles.transactionAmount,
-                        tx.amountCents < 0 ? styles.negativeAmount : styles.positiveAmount
-                      ]}>
-                        {tx.amountCents < 0 ? '-' : '+'}{formatCents(Math.abs(tx.amountCents))}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={[styles.emptyActivity, dynamicStyles.emptyActivity]}>
-                  <Ionicons name="receipt-outline" size={40} color={colors.textTertiary} />
-                  <Text style={[styles.emptyActivityText, dynamicStyles.emptyActivityText]}>No activity yet</Text>
-                  <Text style={[styles.emptyActivityHint, dynamicStyles.emptyActivityHint]}>
-                    Your earnings and withdrawals will appear here
-                  </Text>
-                </View>
-              )}
-            </Animated.View>
-          </>
-        )}
-      </ScrollView>
+          {selectedTab === 0 && (
+            <OverviewTab
+              earnings={earningsData?.earnings ?? []}
+              payouts={payoutsData?.payouts ?? []}
+            />
+          )}
+          {selectedTab === 1 && <EarningsList />}
+          {selectedTab === 2 && (
+            <PayoutsList
+              onWithdraw={() => setWithdrawalSheetVisible(true)}
+              canWithdraw={canWithdraw}
+            />
+          )}
+        </ScrollView>
+      )}
 
       {/* Withdrawal Sheet */}
       <WithdrawalSheet
         visible={withdrawalSheetVisible}
         onClose={() => setWithdrawalSheetVisible(false)}
-        balances={balances ?? { availableCents: 0, pendingCents: 0, lifetimeCents: 0, minimumCashOutCents: 100 }}
+        balances={balancesForSheet}
         payoutMethods={payoutMethods}
         onWithdraw={handleWithdraw}
-        onAddPayoutMethod={addPayoutMethod}
+        onAddPayoutMethod={handleOpenDashboard}
       />
     </View>
   );
 }
 
+// ── Overview Tab ────────────────────────────────────────────
+
+interface OverviewTabProps {
+  earnings: EarningsItem[];
+  payouts: PayoutItem[];
+}
+
+function OverviewTab({
+  earnings,
+  payouts,
+}: OverviewTabProps) {
+  // Combine and sort recent activity (last 10)
+  type ActivityItem = { id: string; type: 'earning' | 'payout'; title: string; date: string; amount: number; positive: boolean };
+
+  const recentActivity: ActivityItem[] = [
+    ...earnings.slice(0, 10).map((e): ActivityItem => ({
+      id: `e-${e.id}`,
+      type: 'earning',
+      title: e.eventName,
+      date: e.createdAt,
+      amount: e.netAmount,
+      positive: true,
+    })),
+    ...payouts.slice(0, 10).map((p): ActivityItem => ({
+      id: `p-${p.id}`,
+      type: 'payout',
+      title: `${p.destination.bankName || p.destination.brand || 'Account'} ••${p.destination.last4}`,
+      date: p.created,
+      amount: p.amount,
+      positive: false,
+    })),
+  ]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 10);
+
+  return (
+    <View style={styles.overviewContent}>
+      {/* Recent Activity */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        {recentActivity.length > 0 ? (
+          <GlassSurface fill="subtle" cornerRadius="md" style={styles.activityList}>
+            {recentActivity.map((item) => (
+              <View key={item.id} style={styles.activityItem}>
+                <View style={[styles.activityIcon, item.positive ? styles.earningIcon : styles.payoutIcon]}>
+                  <Ionicons
+                    name={item.positive ? 'arrow-down' : 'arrow-up'}
+                    size={14}
+                    color="#fff"
+                  />
+                </View>
+                <View style={styles.activityInfo}>
+                  <Text style={styles.activityTitle} numberOfLines={1}>{item.title}</Text>
+                  <Text style={styles.activityDate}>
+                    {new Date(item.date).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text style={[styles.activityAmount, item.positive ? styles.positiveAmount : styles.negativeAmount]}>
+                  {item.positive ? '+' : '-'}{formatCents(item.amount)}
+                </Text>
+              </View>
+            ))}
+          </GlassSurface>
+        ) : (
+          <GlassSurface fill="subtle" cornerRadius="md" style={styles.emptyActivity}>
+            <Ionicons name="receipt-outline" size={40} color="rgba(255,255,255,0.3)" />
+            <Text style={styles.emptyText}>No activity yet</Text>
+            <Text style={styles.emptyHint}>Your earnings and withdrawals will appear here</Text>
+          </GlassSurface>
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ── Styles ──────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000',
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -445,16 +341,18 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
-  backButton: {
+  headerButton: {
     width: 40,
     height: 40,
     justifyContent: 'center',
@@ -463,243 +361,39 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    color: '#fff',
   },
   scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 16,
+  overviewContent: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
-  // Setup Container
-  setupContainer: {
-    borderRadius: 20,
-    padding: 28,
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  setupIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  setupTitle: {
-    fontSize: 24,
-    fontFamily: 'Lato_700Bold',
-    marginBottom: 12,
-  },
-  setupDescription: {
-    fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
-  },
-  setupFeatures: {
-    alignSelf: 'stretch',
-    gap: 12,
-    marginBottom: 24,
-  },
-  setupFeature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  setupFeatureText: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-  },
-  setupButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#3897F0',
-    paddingVertical: 16,
-    paddingHorizontal: 28,
-    borderRadius: 14,
-    gap: 10,
-    alignSelf: 'stretch',
-  },
-  setupButtonDisabled: {
-    opacity: 0.6,
-  },
-  setupButtonText: {
-    fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  setupHint: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  // Balance Section
-  balanceSection: {
-    marginBottom: 24,
-  },
-  balanceCards: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  balanceCard: {
-    flex: 1,
-    borderRadius: 16,
-    padding: 16,
-  },
-  availableCard: {
-    borderWidth: 1,
-  },
-  balanceLabel: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    marginBottom: 4,
-  },
-  balanceAmount: {
-    fontSize: 28,
-    fontFamily: 'Lato_700Bold',
-    color: '#22c55e',
-    marginBottom: 12,
-  },
-  pendingAmount: {
-    color: '#f59e0b',
-  },
-  balanceHint: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-  },
-  withdrawButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#22c55e',
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 6,
-  },
-  withdrawButtonDisabled: {
-    // backgroundColor set dynamically
-  },
-  withdrawButtonText: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  lifetimeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-  },
-  lifetimeContent: {
-    flex: 1,
-  },
-  lifetimeLabel: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-  },
-  lifetimeAmount: {
-    fontSize: 20,
-    fontFamily: 'Lato_700Bold',
-  },
-  // Section
+  // Sections
   section: {
-    marginBottom: 24,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+    marginTop: 20,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    marginBottom: 10,
   },
-  manageLink: {
-    fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-    color: '#3897F0',
-  },
-  // Payout Methods
-  methodsList: {
-    borderRadius: 12,
+  // Activity
+  activityList: {
     overflow: 'hidden',
   },
-  methodItem: {
+  activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
-  methodIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  methodInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  methodLabel: {
-    fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-  },
-  methodLast4: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-  },
-  defaultBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  defaultBadgeText: {
-    fontSize: 11,
-    fontFamily: 'Lato_700Bold',
-    color: '#3897F0',
-  },
-  addMethodButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    padding: 16,
-    gap: 10,
-  },
-  addMethodText: {
-    fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
-    color: '#3897F0',
-  },
-  // Transactions
-  transactionsList: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  transactionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    borderBottomWidth: 1,
-  },
-  transactionIcon: {
-    width: 32,
-    height: 32,
+  activityIcon: {
+    width: 30,
+    height: 30,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -707,23 +401,25 @@ const styles = StyleSheet.create({
   earningIcon: {
     backgroundColor: 'rgba(34, 197, 94, 0.15)',
   },
-  withdrawalIcon: {
+  payoutIcon: {
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
   },
-  transactionInfo: {
+  activityInfo: {
     flex: 1,
     marginLeft: 12,
   },
-  transactionTitle: {
+  activityTitle: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
+    color: '#fff',
   },
-  transactionDate: {
+  activityDate: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
   },
-  transactionAmount: {
+  activityAmount: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
   },
@@ -736,16 +432,17 @@ const styles = StyleSheet.create({
   emptyActivity: {
     alignItems: 'center',
     padding: 32,
-    borderRadius: 12,
   },
-  emptyActivityText: {
+  emptyText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
+    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 12,
   },
-  emptyActivityHint: {
+  emptyHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.3)',
     marginTop: 4,
     textAlign: 'center',
   },

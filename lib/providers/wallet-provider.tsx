@@ -30,7 +30,6 @@ interface ExtendedWalletContextType extends WalletContextType {
   stripeAccountStatus: StripeAccountStatus | null;
   setupStripeAccount: () => Promise<void>;
   openStripeDashboard: () => Promise<void>;
-  transferPendingFunds: () => Promise<void>;
 }
 
 const WalletContext = createContext<ExtendedWalletContextType | null>(null);
@@ -271,23 +270,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
   }, []);
 
-  // Transfer pending funds (from held to available)
-  const transferPendingFunds = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const response = await stripeConnectApi.transferFunds();
-      console.log('[Wallet] Transferred funds:', response);
-
-      // Refresh balance and transactions
-      await Promise.all([fetchBalance(), fetchTransactions()]);
-    } catch (error) {
-      console.error('[Wallet] Error transferring funds:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchBalance, fetchTransactions]);
-
   // Withdraw (create payout)
   const withdraw = useCallback(async (amountCents: number, methodId: string) => {
     const method = payoutMethods.find((m) => m.id === methodId);
@@ -428,7 +410,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
     stripeAccountStatus,
     setupStripeAccount,
     openStripeDashboard,
-    transferPendingFunds,
   };
 
   return (
