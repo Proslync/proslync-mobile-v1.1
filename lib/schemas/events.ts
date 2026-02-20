@@ -25,6 +25,7 @@ export const eventFormSchema = z
       .optional()
       .or(z.literal('')),
     flyerUri: z.string().nullable().optional(),
+    flyerMediaType: z.enum(['image', 'video']).nullable().optional(),
 
     // Date & Time (Step 2)
     startDate: z.date(),
@@ -60,6 +61,7 @@ export const basicInfoSchema = z.object({
     .optional()
     .or(z.literal('')),
   flyerUri: z.string().nullable().optional(),
+  flyerMediaType: z.enum(['image', 'video']).nullable().optional(),
 });
 
 export const dateTimeSchema = z

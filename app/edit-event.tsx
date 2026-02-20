@@ -54,6 +54,7 @@ export default function EditEventScreen() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [event, setEvent] = React.useState<Event | null>(null);
   const [existingFlyerUrl, setExistingFlyerUrl] = React.useState<string | null>(null);
+  const [existingFlyerMediaType, setExistingFlyerMediaType] = React.useState<'image' | 'video' | null>(null);
 
   // Form hook
   const {
@@ -101,11 +102,14 @@ export default function EditEventScreen() {
           isPublic: eventData.isPublic,
         });
 
-        // Set existing flyer URL
+        // Set existing flyer URL and media type
         if (eventData.flyer?.url) {
           setExistingFlyerUrl(eventData.flyer.url);
+          const isVideo = eventData.flyer.mimeType?.startsWith('video/');
+          setExistingFlyerMediaType(isVideo ? 'video' : 'image');
         } else if (eventData.imageUrl) {
           setExistingFlyerUrl(eventData.imageUrl);
+          setExistingFlyerMediaType('image');
         }
       } catch (error: any) {
         console.error('[EditEvent] Error loading event:', error);
@@ -134,6 +138,7 @@ export default function EditEventScreen() {
   // Clear existing flyer when user removes it
   const handleFlyerRemoved = () => {
     setExistingFlyerUrl(null);
+    setExistingFlyerMediaType(null);
   };
 
   // Final submit handler - called only when form is valid
@@ -193,6 +198,7 @@ export default function EditEventScreen() {
         return (
           <BasicInfoStep
             existingFlyerUrl={existingFlyerUrl}
+            existingFlyerMediaType={existingFlyerMediaType}
             onFlyerRemoved={handleFlyerRemoved}
           />
         );

@@ -4,26 +4,47 @@ import { useFormContext, useWatch } from 'react-hook-form';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { FormTextInput } from '@/components/forms';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useToast } from '@/components/shared/toast';
 import type { EventFormData } from '@/lib/schemas/events';
 
+function FlyerVideoPreview({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (player) => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
+
+  return (
+    <VideoView
+      player={player}
+      style={styles.flyerPreview}
+      contentFit="cover"
+      nativeControls={false}
+    />
+  );
+}
+
 interface BasicInfoStepProps {
   existingFlyerUrl?: string | null;
+  existingFlyerMediaType?: 'image' | 'video' | null;
   onFlyerRemoved?: () => void;
 }
 
-export function BasicInfoStep({ existingFlyerUrl, onFlyerRemoved }: BasicInfoStepProps = {}) {
+export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlyerRemoved }: BasicInfoStepProps = {}) {
   const { colors, isDark } = useAppTheme();
   const { showError } = useToast();
   const { setValue, control } = useFormContext<EventFormData>();
   const accentColor = isDark ? '#FFFFFF' : '#3897F0';
 
-  // Watch flyerUri for preview - use existing URL as fallback
+  // Watch flyerUri and mediaType for preview - use existing values as fallback
   const flyerUri = useWatch({ control, name: 'flyerUri' });
+  const flyerMediaType = useWatch({ control, name: 'flyerMediaType' });
   const displayFlyerUri = flyerUri || existingFlyerUrl;
+  const displayMediaType = flyerMediaType || existingFlyerMediaType || 'image';
 
   const pickFlyer = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -34,14 +55,20 @@ export function BasicInfoStep({ existingFlyerUrl, onFlyerRemoved }: BasicInfoSte
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [3, 4],
+      mediaTypes: ['images', 'videos'],
       quality: 0.8,
+      videoMaxDuration: 60,
     });
 
     if (!result.canceled && result.assets[0]) {
-      setValue('flyerUri', result.assets[0].uri, {
+      const asset = result.assets[0];
+      const mediaType = asset.type === 'video' ? 'video' : 'image';
+
+      setValue('flyerUri', asset.uri, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      setValue('flyerMediaType', mediaType, {
         shouldValidate: true,
         shouldDirty: true,
       });
@@ -50,6 +77,10 @@ export function BasicInfoStep({ existingFlyerUrl, onFlyerRemoved }: BasicInfoSte
 
   const removeFlyer = () => {
     setValue('flyerUri', null, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+    setValue('flyerMediaType', null, {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -80,7 +111,11 @@ export function BasicInfoStep({ existingFlyerUrl, onFlyerRemoved }: BasicInfoSte
         <Text style={[styles.label, { color: colors.text }]}>Event Flyer</Text>
         {displayFlyerUri ? (
           <View style={styles.flyerPreviewContainer}>
-            <Image source={{ uri: displayFlyerUri }} style={styles.flyerPreview} />
+            {displayMediaType === 'video' ? (
+              <FlyerVideoPreview uri={displayFlyerUri} />
+            ) : (
+              <Image source={{ uri: displayFlyerUri }} style={styles.flyerPreview} />
+            )}
             <TouchableOpacity style={styles.flyerRemoveButton} onPress={removeFlyer}>
               <Ionicons name="close-circle" size={28} color="#fff" />
             </TouchableOpacity>
@@ -103,7 +138,7 @@ export function BasicInfoStep({ existingFlyerUrl, onFlyerRemoved }: BasicInfoSte
             <Ionicons name="image-outline" size={32} color={accentColor} />
             <Text style={[styles.flyerPickerText, { color: accentColor }]}>Add Event Flyer</Text>
             <Text style={[styles.flyerPickerHint, { color: colors.textTertiary }]}>
-              Tap to upload an image
+              Tap to upload an image or video
             </Text>
           </TouchableOpacity>
         )}

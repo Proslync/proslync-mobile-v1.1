@@ -12,7 +12,7 @@ const STEPS: EventFormStep[] = ['basic', 'datetime', 'location', 'details'];
 
 // Map step to its field names for validation
 const STEP_FIELDS: Record<EventFormStep, (keyof EventFormData)[]> = {
-  basic: ['name', 'description', 'flyerUri'],
+  basic: ['name', 'description', 'flyerUri', 'flyerMediaType'],
   datetime: ['startDate', 'endDate'],
   location: ['venueId', 'location', 'locationDetails'],
   details: ['maxCapacity', 'minimumAge', 'isPublic'],
@@ -23,6 +23,7 @@ export const DEFAULT_EVENT_FORM_VALUES: EventFormData = {
   name: '',
   description: '',
   flyerUri: null,
+  flyerMediaType: null,
   startDate: new Date(),
   endDate: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4 hours later
   venueId: undefined,
@@ -148,6 +149,7 @@ export function useEditEventForm(options: UseEventFormOptions = {}) {
         name: eventData.name || '',
         description: eventData.description || '',
         flyerUri: null, // Only set if user picks new flyer
+        flyerMediaType: null,
         startDate: eventData.startDate ? new Date(eventData.startDate) : new Date(),
         endDate: eventData.endDate
           ? new Date(eventData.endDate)

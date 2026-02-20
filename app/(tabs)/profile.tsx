@@ -634,7 +634,7 @@ export default function ProfileScreen() {
                   />
                   {post.mediaType === 'video' && (
                     <View style={styles.videoIndicator}>
-                      <Ionicons name="play" size={16} color="#fff" />
+                      <Ionicons name="play" size={32} color="#fff" />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -845,11 +845,13 @@ const styles = StyleSheet.create({
   },
   videoIndicator: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 4,
-    padding: 4,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
   postsLoadingContainer: {
     width: '100%',
