@@ -282,7 +282,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
       const response = await stripeConnectApi.createPayout({
         amount: amountCents,
-        destinationId: methodId,
+        destination: methodId,
       });
 
       console.log('[Wallet] Payout created:', response);

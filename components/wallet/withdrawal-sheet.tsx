@@ -6,12 +6,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Alert,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useToast } from '@/components/shared/toast';
 import { BottomSheet } from './bottom-sheet';
 import { WalletBalances, PayoutMethod } from '../../lib/types/wallet.types';
 
@@ -24,7 +24,7 @@ interface WithdrawalSheetProps {
   onAddPayoutMethod: (method: Omit<PayoutMethod, 'id'>) => void | Promise<void>;
 }
 
-type SheetView = 'withdraw' | 'select-method' | 'add-method-choice';
+type SheetView = 'withdraw' | 'confirm' | 'select-method' | 'add-method-choice';
 
 function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -45,6 +45,7 @@ export function WithdrawalSheet({
   onAddPayoutMethod,
 }: WithdrawalSheetProps) {
   const { colors, isDark } = useAppTheme();
+  const toast = useToast();
   const [view, setView] = useState<SheetView>('withdraw');
   const [amountInput, setAmountInput] = useState('');
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(
@@ -77,28 +78,21 @@ export function WithdrawalSheet({
 
   const handleWithdraw = () => {
     if (!canWithdraw || !selectedMethodId || isProcessing) return;
+    setView('confirm');
+  };
 
-    Alert.alert(
-      'Confirm Withdrawal',
-      `Withdraw ${formatCents(amountCents)} to ${selectedMethod?.label} ••${selectedMethod?.last4}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Withdraw',
-          onPress: async () => {
-            try {
-              setIsProcessing(true);
-              await onWithdraw(amountCents, selectedMethodId);
-              handleClose();
-            } catch (error: any) {
-              Alert.alert('Error', error?.message || 'Failed to process withdrawal');
-            } finally {
-              setIsProcessing(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleConfirmWithdraw = async () => {
+    if (!selectedMethodId || isProcessing) return;
+    try {
+      setIsProcessing(true);
+      await onWithdraw(amountCents, selectedMethodId);
+      handleClose();
+    } catch (error: any) {
+      toast.showError(error?.message || 'Failed to process withdrawal');
+      setView('withdraw');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleSelectMethod = (methodId: string) => {
@@ -265,6 +259,57 @@ export function WithdrawalSheet({
     </>
   );
 
+  const renderConfirmView = () => (
+    <>
+      <View style={styles.confirmContainer}>
+        <View style={styles.confirmIconWrapper}>
+          <Ionicons name="arrow-down-circle" size={48} color="#22c55e" />
+        </View>
+        <Text style={[styles.confirmTitle, { color: colors.text }]}>Confirm Withdrawal</Text>
+        <Text style={[styles.confirmAmount, { color: colors.text }]}>{formatCents(amountCents)}</Text>
+        {selectedMethod && (
+          <View style={styles.confirmDestination}>
+            <Ionicons
+              name={selectedMethod.type === 'bank' ? 'business-outline' : 'card-outline'}
+              size={18}
+              color={colors.textSecondary}
+            />
+            <Text style={[styles.confirmDestText, { color: colors.textSecondary }]}>
+              {selectedMethod.label} ••••{selectedMethod.last4}
+            </Text>
+          </View>
+        )}
+        <Text style={[styles.confirmArrival, { color: colors.textTertiary }]}>
+          Estimated arrival: {selectedMethod?.type === 'debit' ? 'Instant' : '1-3 business days'}
+        </Text>
+      </View>
+
+      <View style={styles.confirmButtons}>
+        <TouchableOpacity
+          style={[
+            styles.confirmCancelButton,
+            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' },
+          ]}
+          onPress={() => setView('withdraw')}
+          disabled={isProcessing}
+        >
+          <Text style={[styles.confirmCancelText, { color: colors.text }]}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.confirmWithdrawButton, isProcessing && { opacity: 0.6 }]}
+          onPress={handleConfirmWithdraw}
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.confirmWithdrawText}>Withdraw</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
   const renderAddMethodChoiceView = () => (
     <>
       <View style={styles.viewHeader}>
@@ -305,6 +350,7 @@ export function WithdrawalSheet({
   return (
     <BottomSheet visible={visible} onClose={handleClose} maxHeight="90%">
       {view === 'withdraw' && renderWithdrawView()}
+      {view === 'confirm' && renderConfirmView()}
       {view === 'select-method' && renderSelectMethodView()}
       {view === 'add-method-choice' && renderAddMethodChoiceView()}
     </BottomSheet>
@@ -527,6 +573,69 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   openStripeButtonText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  // Confirm view
+  confirmContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+    gap: 8,
+  },
+  confirmIconWrapper: {
+    marginBottom: 4,
+  },
+  confirmTitle: {
+    fontSize: 20,
+    fontFamily: 'Lato_700Bold',
+  },
+  confirmAmount: {
+    fontSize: 36,
+    fontFamily: 'Lato_700Bold',
+    color: '#22c55e',
+    marginVertical: 4,
+  },
+  confirmDestination: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  confirmDestText: {
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+  },
+  confirmArrival: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 4,
+  },
+  confirmButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  confirmCancelButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmCancelText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+  },
+  confirmWithdrawButton: {
+    flex: 1,
+    backgroundColor: '#22c55e',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmWithdrawText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     color: '#fff',

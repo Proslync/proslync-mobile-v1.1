@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useToast } from '@/components/shared/toast';
 import { SegmentedControl } from '@/components/shared/segmented-control';
 import {
   BalanceCard,
@@ -65,6 +65,7 @@ function toPayoutMethod(account: any): PayoutMethod {
 export default function PaymentsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const toast = useToast();
   const queryClient = useQueryClient();
 
   const [selectedTab, setSelectedTab] = useState(0);
@@ -107,7 +108,7 @@ export default function PaymentsScreen() {
       setIsSettingUp(true);
       await setupMutation.mutateAsync();
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to set up payout account');
+      toast.showError(error?.message || 'Failed to set up payout account');
     } finally {
       setIsSettingUp(false);
     }
@@ -118,18 +119,18 @@ export default function PaymentsScreen() {
       const response = await stripeConnectApi.getDashboardLink();
       await Linking.openURL(response.url);
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to open Stripe dashboard');
+      toast.showError(error?.message || 'Failed to open Stripe dashboard');
     }
   };
 
   const handleWithdraw = async (amountCents: number, methodId: string) => {
     try {
-      await stripeConnectApi.createPayout({ amount: amountCents, destinationId: methodId });
+      await stripeConnectApi.createPayout({ amount: amountCents, destination: methodId });
       queryClient.invalidateQueries({ queryKey: [STRIPE_BALANCE_KEY] });
       queryClient.invalidateQueries({ queryKey: [STRIPE_PAYOUTS_KEY] });
-      Alert.alert('Success', 'Your withdrawal has been submitted!');
+      toast.showSuccess('Your withdrawal has been submitted!');
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to process withdrawal');
+      toast.showError(error?.message || 'Failed to process withdrawal');
     }
   };
 

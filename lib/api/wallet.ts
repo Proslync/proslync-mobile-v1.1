@@ -188,7 +188,7 @@ export interface GetEarningsParams {
 export interface CreatePayoutDto {
   amount: number; // in cents
   currency?: string;
-  destinationId?: string; // external account ID
+  destination?: string; // external account ID
 }
 
 export interface PayoutItem {

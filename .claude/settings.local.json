@@ -32,7 +32,14 @@
       "WebFetch(domain:blogs.perficient.com)",
       "Bash(git diff:*)",
       "Bash(git status:*)",
-      "Bash(xcrun simctl listapps:*)"
+      "Bash(xcrun simctl listapps:*)",
+      "WebFetch(domain:developer.spotify.com)",
+      "WebFetch(domain:community.spotify.com)",
+      "Bash(git -C /Users/alex/Projects/Work/ios-app status)",
+      "Bash(git -C /Users/alex/Projects/Work/ios-app log --oneline -5)",
+      "Bash(git -C /Users/alex/Projects/Work/ios-app diff -- app/manage-event/[id]/artists.tsx components/auth/country-picker.tsx hooks/index.ts package.json)",
+      "Bash(git -C /Users/alex/Projects/Work/ios-app diff -- 'app/manage-event/*/artists.tsx' 'components/auth/country-picker.tsx' 'hooks/index.ts' 'package.json')",
+      "Bash(git -C /Users/alex/Projects/Work/ios-app add 'app/manage-event/[id]/artists.tsx' components/artists/ components/auth/country-picker.tsx hooks/index.ts hooks/use-event-artists.ts lib/api/artists.ts lib/types/artists.types.ts package.json package-lock.json)"
     ]
   }
 }
