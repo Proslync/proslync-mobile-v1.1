@@ -80,6 +80,7 @@ export default function WalletScreen() {
               },
             });
           }}
+          onActionComplete={refreshWallet}
         />
 
       </ScrollView>

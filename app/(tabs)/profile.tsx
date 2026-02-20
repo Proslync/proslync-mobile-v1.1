@@ -191,7 +191,7 @@ function UserListModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+      <View style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
             <Ionicons name="close" size={28} color="#1a1a1a" />

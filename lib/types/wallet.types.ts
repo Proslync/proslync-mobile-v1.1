@@ -59,12 +59,16 @@ export interface Offer {
 
 export interface WalletEventCard {
   id: string;
+  ticketId?: number;
+  ticketStatus?: 'active' | 'redeemed' | 'cancelled' | 'transferred' | 'listed';
   title: string;
   dateTime: string;
   dateTimeLabel: string;
   venueName: string;
   flyerUrl: string;
   isEarningEnabled: boolean;
+  pricePaid?: number;
+  listedPrice?: number;
   perksLabel?: string;
   isRecommended?: boolean;
 }

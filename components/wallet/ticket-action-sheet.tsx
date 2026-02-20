@@ -22,9 +22,10 @@ interface TicketActionSheetProps {
   visible: boolean;
   onClose: () => void;
   event: WalletEventCard | null;
+  onActionComplete?: () => void;
 }
 
-export function TicketActionSheet({ visible, onClose, event }: TicketActionSheetProps) {
+export function TicketActionSheet({ visible, onClose, event, onActionComplete }: TicketActionSheetProps) {
   const { colors, isDark } = useAppTheme();
   const [mode, setMode] = React.useState<SheetMode>('actions');
   const [isLoading, setIsLoading] = React.useState(false);
@@ -42,7 +43,7 @@ export function TicketActionSheet({ visible, onClose, event }: TicketActionSheet
   }, [visible]);
 
   const handleSell = async () => {
-    if (!event || !sellPrice || isLoading) return;
+    if (!event?.ticketId || !sellPrice || isLoading) return;
     const price = parseFloat(sellPrice);
     if (isNaN(price) || price <= 0) {
       Alert.alert('Invalid price', 'Please enter a valid price.');
@@ -51,11 +52,12 @@ export function TicketActionSheet({ visible, onClose, event }: TicketActionSheet
     setIsLoading(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const res = await ticketsApi.listTicketForSale(event.id, { price });
+      const res = await ticketsApi.listTicketForSale(event.ticketId, { price });
       if (res.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setSuccessMessage('Your ticket has been listed for sale!');
+        setSuccessMessage(`Your ticket has been listed for $${price.toFixed(2)}!`);
         setMode('success');
+        onActionComplete?.();
       } else {
         Alert.alert('Error', res.message || 'Could not list ticket.');
       }
@@ -67,17 +69,39 @@ export function TicketActionSheet({ visible, onClose, event }: TicketActionSheet
   };
 
   const handleTransfer = async () => {
-    if (!event || !transferPhone.trim() || isLoading) return;
+    if (!event?.ticketId || !transferPhone.trim() || isLoading) return;
     setIsLoading(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const res = await ticketsApi.transferTicket(event.id, { recipientPhone: transferPhone.trim() });
+      const res = await ticketsApi.transferTicket(event.ticketId, { recipientPhone: transferPhone.trim() });
       if (res.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setSuccessMessage('Ticket transferred successfully!');
+        setSuccessMessage(res.message || 'Ticket transferred successfully!');
         setMode('success');
+        onActionComplete?.();
       } else {
         Alert.alert('Error', res.message || 'Could not transfer ticket.');
+      }
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Something went wrong.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancelListing = async () => {
+    if (!event?.ticketId || isLoading) return;
+    setIsLoading(true);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      const res = await ticketsApi.cancelListing(event.ticketId);
+      if (res.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setSuccessMessage('Listing cancelled — ticket is active again.');
+        setMode('success');
+        onActionComplete?.();
+      } else {
+        Alert.alert('Error', res.message || 'Could not cancel listing.');
       }
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Something went wrong.');
@@ -97,6 +121,9 @@ export function TicketActionSheet({ visible, onClose, event }: TicketActionSheet
   };
 
   if (!event) return null;
+
+  const isListed = event.ticketStatus === 'listed';
+  const hasTicket = !!event.ticketId;
 
   return (
     <BottomSheet visible={visible} onClose={handleClose} maxHeight="65%">
@@ -195,38 +222,82 @@ export function TicketActionSheet({ visible, onClose, event }: TicketActionSheet
             </View>
           </View>
 
+          {/* Listed badge */}
+          {isListed && (
+            <View style={styles.listedBadgeRow}>
+              <View style={styles.listedBadge}>
+                <Ionicons name="pricetag" size={14} color="#22c55e" />
+                <Text style={styles.listedBadgeText}>
+                  Listed for ${event.listedPrice?.toFixed(2) ?? '—'}
+                </Text>
+              </View>
+            </View>
+          )}
+
           <View style={[styles.divider, { backgroundColor: colors.separator }]} />
 
           {/* Action buttons */}
-          <TouchableOpacity
-            style={[styles.optionRow, glassBtn]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMode('sell'); }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.optionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
-              <Ionicons name="pricetag-outline" size={20} color={colors.text} />
+          {!hasTicket ? (
+            <View style={styles.noTicketState}>
+              <Text style={[styles.noTicketText, { color: colors.textTertiary }]}>
+                No ticket linked — RSVP only
+              </Text>
             </View>
-            <View style={styles.optionText}>
-              <Text style={[styles.optionTitle, { color: colors.text }]}>Sell Ticket</Text>
-              <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>List on the marketplace</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-          </TouchableOpacity>
+          ) : isListed ? (
+            <>
+              <TouchableOpacity
+                style={[styles.optionRow, glassBtn, isLoading && { opacity: 0.6 }]}
+                onPress={handleCancelListing}
+                activeOpacity={0.7}
+                disabled={isLoading}
+              >
+                <View style={[styles.optionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color={colors.text} />
+                  ) : (
+                    <Ionicons name="close-circle-outline" size={20} color={colors.text} />
+                  )}
+                </View>
+                <View style={styles.optionText}>
+                  <Text style={[styles.optionTitle, { color: colors.text }]}>Cancel Listing</Text>
+                  <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>Remove from marketplace</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[styles.optionRow, glassBtn]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMode('sell'); }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.optionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
+                  <Ionicons name="pricetag-outline" size={20} color={colors.text} />
+                </View>
+                <View style={styles.optionText}>
+                  <Text style={[styles.optionTitle, { color: colors.text }]}>Sell Ticket</Text>
+                  <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>List on the marketplace</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.optionRow, glassBtn]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMode('transfer'); }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.optionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
-              <Ionicons name="send-outline" size={20} color={colors.text} />
-            </View>
-            <View style={styles.optionText}>
-              <Text style={[styles.optionTitle, { color: colors.text }]}>Transfer Ticket</Text>
-              <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>Send to a friend</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.optionRow, glassBtn]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMode('transfer'); }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.optionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
+                  <Ionicons name="send-outline" size={20} color={colors.text} />
+                </View>
+                <View style={styles.optionText}>
+                  <Text style={[styles.optionTitle, { color: colors.text }]}>Transfer Ticket</Text>
+                  <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>Send to a friend</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
     </BottomSheet>
@@ -267,6 +338,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
+  listedBadgeRow: {
+    marginBottom: 4,
+  },
+  listedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  listedBadgeText: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    color: '#22c55e',
+  },
   divider: {
     height: 1,
     marginVertical: 12,
@@ -298,6 +387,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
     marginTop: 1,
+  },
+  noTicketState: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  noTicketText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
   },
   // Forms
   formContainer: {

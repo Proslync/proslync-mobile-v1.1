@@ -25,12 +25,13 @@ export default function DashboardAnalyticsScreen() {
     gcTime: 10 * 60 * 1000,
   });
 
-  // Build all 6 metrics from range-filtered totals + time series
+  // Build all 7 metrics from range-filtered totals + time series
   const metrics = React.useMemo((): AnalyticsMetric[] => {
     const totals = timeSeriesQuery.data?.totals;
     const totalViews = totals?.views ?? 0;
     const totalUniqueVisitors = totals?.uniqueVisitors ?? 0;
     const totalRSVPs = totals?.rsvps ?? 0;
+    const totalCheckIns = totals?.checkIns ?? 0;
     const totalNewEvents = totals?.newEvents ?? 0;
     const conversionRate = totals?.conversionRate ?? 0;
 
@@ -40,6 +41,7 @@ export default function DashboardAnalyticsScreen() {
     const viewsSeries = hasTimeSeries ? tsData.map((d) => d.views) : [0, 0];
     const uniqueSeries = hasTimeSeries ? tsData.map((d) => d.uniqueVisitors) : [0, 0];
     const rsvpsSeries = hasTimeSeries ? tsData.map((d) => d.rsvps) : [0, 0];
+    const checkInsSeries = hasTimeSeries ? tsData.map((d) => d.checkIns ?? 0) : [0, 0];
     const conversionSeries = hasTimeSeries
       ? tsData.map((d) =>
           d.uniqueVisitors > 0 ? (d.rsvps / d.uniqueVisitors) * 100 : 0,
@@ -71,6 +73,7 @@ export default function DashboardAnalyticsScreen() {
     const viewsDelta = calcDelta(viewsSeries);
     const uniqueDelta = calcDelta(uniqueSeries);
     const rsvpsDelta = calcDelta(rsvpsSeries);
+    const checkInsDelta = calcDelta(checkInsSeries);
     const conversionDelta = calcDelta(conversionSeries);
     const eventsDelta = calcDelta(eventsSeries);
     const perEventDelta = calcDelta(perEventSeries);
@@ -101,6 +104,14 @@ export default function DashboardAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${rsvpsDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: rsvpsDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: rsvpsSeries },
+      },
+      {
+        id: 'checkIns',
+        label: 'Check-Ins',
+        primaryValue: totalCheckIns.toLocaleString(),
+        deltaText: hasTimeSeries ? `${checkInsDelta.text} ${rangeLabel}` : 'No data yet',
+        isPositive: checkInsDelta.isPositive,
+        seriesByRange: { ...EMPTY_SERIES, [selectedRange]: checkInsSeries },
       },
       {
         id: 'conversion',

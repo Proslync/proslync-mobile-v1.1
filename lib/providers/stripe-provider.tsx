@@ -23,7 +23,7 @@ export function StripeProvider({ children }: StripeProviderProps) {
   return (
     <StripeProviderNative
       publishableKey={publishableKey}
-      merchantIdentifier="merchant.com.status.app" // Required for Apple Pay
+      merchantIdentifier="merchant.statusdigitalinc.status" // Required for Apple Pay
       urlScheme="status" // For redirect-based payment methods
     >
       <View style={{ flex: 1 }}>{children}</View>

@@ -6,12 +6,14 @@ export interface MarketingStats {
   eventLinkViews: number;
   uniqueVisitors: number;
   totalRSVPs: number;
+  totalCheckIns: number;
   conversionRate: number;
 }
 
 export interface DashboardStats {
   totalEvents: number;
   totalRSVPs: number;
+  totalCheckIns: number;
   totalViews: number;
   totalUniqueVisitors: number;
   engagementRate: number;
@@ -45,6 +47,7 @@ export const dashboardApi = {
       return {
         totalEvents: 0,
         totalRSVPs: 0,
+        totalCheckIns: 0,
         totalViews: 0,
         totalUniqueVisitors: 0,
         engagementRate: 0,
@@ -63,6 +66,7 @@ export const dashboardApi = {
           eventLinkViews: 0,
           uniqueVisitors: 0,
           totalRSVPs: event.attendeeCount || 0,
+          totalCheckIns: 0,
           conversionRate: 0,
         };
       }
@@ -73,6 +77,7 @@ export const dashboardApi = {
     // Aggregate stats
     const totalViews = allStats.reduce((sum, stats) => sum + stats.eventLinkViews, 0);
     const totalRSVPs = allStats.reduce((sum, stats) => sum + stats.totalRSVPs, 0);
+    const totalCheckIns = allStats.reduce((sum, stats) => sum + (stats.totalCheckIns || 0), 0);
     const totalUniqueVisitors = allStats.reduce((sum, stats) => sum + stats.uniqueVisitors, 0);
 
     // Calculate overall engagement rate (RSVPs / unique visitors)
@@ -83,6 +88,7 @@ export const dashboardApi = {
     return {
       totalEvents: events.length,
       totalRSVPs,
+      totalCheckIns,
       totalViews,
       totalUniqueVisitors,
       engagementRate: parseFloat(engagementRate.toFixed(1)),

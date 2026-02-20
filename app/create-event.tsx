@@ -125,9 +125,11 @@ export default function CreateEventScreen() {
     showError(errorMessages || 'Please fix errors in the form');
   };
 
+  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
+
   return (
     <FormProvider {...form}>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#FFFFFF' }]}>
         {isDark && <DarkGradientBg />}
 
         {/* Header */}
@@ -149,22 +151,30 @@ export default function CreateEventScreen() {
               <View
                 style={[
                   styles.progressDot,
-                  { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
-                  index <= currentStepIndex && styles.progressDotActive,
+                  { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
+                  index <= currentStepIndex && {
+                    backgroundColor: accentColor,
+                  },
                 ]}
               >
                 <Ionicons
                   name={step.icon}
                   size={16}
-                  color={index <= currentStepIndex ? '#fff' : colors.textTertiary}
+                  color={
+                    index <= currentStepIndex
+                      ? isDark ? '#000' : '#fff'
+                      : colors.textTertiary
+                  }
                 />
               </View>
               {index < STEPS.length - 1 && (
                 <View
                   style={[
                     styles.progressLine,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' },
-                    index < currentStepIndex && styles.progressLineActive,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
+                    index < currentStepIndex && {
+                      backgroundColor: accentColor,
+                    },
                   ]}
                 />
               )}
@@ -194,27 +204,43 @@ export default function CreateEventScreen() {
           >
             {isLastStep ? (
               <TouchableOpacity
-                style={[styles.submitButton, !canGoNext && styles.buttonDisabled]}
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: accentColor,
+                  },
+                  !canGoNext && styles.buttonDisabled,
+                ]}
                 onPress={form.handleSubmit(onSubmit, onSubmitError)}
                 disabled={!canGoNext || createEvent.isPending}
               >
                 {createEvent.isPending ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={isDark ? '#000' : '#fff'} />
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text style={styles.submitButtonText}>Create Event</Text>
+                    <Ionicons name="checkmark-circle" size={20} color={isDark ? '#000' : '#fff'} />
+                    <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#fff' }]}>
+                      Create Event
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[styles.nextButton, !canGoNext && styles.buttonDisabled]}
+                style={[
+                  styles.actionButton,
+                  {
+                    backgroundColor: accentColor,
+                  },
+                  !canGoNext && styles.buttonDisabled,
+                ]}
                 onPress={handleNext}
                 disabled={!canGoNext}
               >
-                <Text style={styles.nextButtonText}>Continue</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" />
+                <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#fff' }]}>
+                  Continue
+                </Text>
+                <Ionicons name="arrow-forward" size={20} color={isDark ? '#000' : '#fff'} />
               </TouchableOpacity>
             )}
           </View>
@@ -266,16 +292,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  progressDotActive: {
-    backgroundColor: '#8b5cf6',
-  },
   progressLine: {
     width: 40,
     height: 2,
     marginHorizontal: 4,
-  },
-  progressLineActive: {
-    backgroundColor: '#8b5cf6',
   },
   keyboardView: {
     flex: 1,
@@ -291,33 +311,17 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
   },
-  nextButton: {
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#8b5cf6',
     borderRadius: 12,
     paddingVertical: 16,
     gap: 8,
   },
-  nextButtonText: {
+  actionButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  submitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#22c55e',
-    borderRadius: 12,
-    paddingVertical: 16,
-    gap: 8,
-  },
-  submitButtonText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   buttonDisabled: {
     opacity: 0.5,

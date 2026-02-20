@@ -16,6 +16,7 @@ import {
   MOCK_OFFERS,
 } from '../data/wallet-mock';
 import { eventsApi } from '../api/events';
+import { ticketsApi } from '../api/tickets';
 import { useAuth } from './auth-provider';
 import {
   stripeConnectApi,
@@ -198,8 +199,59 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
   }, []);
 
-  // Fetch RSVP'd events from the events API
-  const fetchRsvpEvents = useCallback(async () => {
+  // Fetch user's tickets from the tickets API, fallback to events RSVP data
+  const fetchTicketsAndEvents = useCallback(async () => {
+    try {
+      // Try fetching actual tickets first (has ticket IDs for transfer/sell)
+      const ticketsResponse = await ticketsApi.getMyTickets({
+        status: 'upcoming',
+        limit: 100,
+        sortBy: 'eventDate',
+        sortOrder: 'asc',
+      });
+
+      if (ticketsResponse.tickets && ticketsResponse.tickets.length > 0) {
+        const ticketCards: WalletEventCard[] = ticketsResponse.tickets
+          .filter((t) => t.status === 'active' || t.status === 'listed')
+          .map((t) => {
+            const start = new Date(t.event?.startDate || t.createdAt);
+            const dateTimeLabel =
+              start.toLocaleDateString([], {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+              }) +
+              ' \u2022 ' +
+              start.toLocaleTimeString([], {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              });
+            return {
+              id: t.eventId.toString(),
+              ticketId: t.id,
+              ticketStatus: t.status,
+              title: t.event?.name || 'Event',
+              dateTime: t.event?.startDate || t.createdAt,
+              dateTimeLabel,
+              venueName: t.event?.venue?.name || 'TBA',
+              flyerUrl:
+                t.event?.flyer?.url ||
+                t.event?.imageUrl ||
+                'https://picsum.photos/seed/event/400/600',
+              isEarningEnabled: false,
+              pricePaid: t.pricePaid ? Number(t.pricePaid) : undefined,
+              listedPrice: t.listedPrice ? Number(t.listedPrice) : undefined,
+            };
+          });
+        setEvents(ticketCards);
+        return;
+      }
+    } catch (error) {
+      console.log('[Wallet] Error fetching tickets, falling back to events:', error);
+    }
+
+    // Fallback: fetch RSVP'd events from the events API
     try {
       const allEvents = await eventsApi.getEvents({ limit: 100 });
       const now = new Date();
@@ -366,7 +418,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       try {
         const [status] = await Promise.all([
           fetchAccountStatus(),
-          fetchRsvpEvents(),
+          fetchTicketsAndEvents(),
         ]);
 
         // Only fetch financial data if account is set up
@@ -385,14 +437,14 @@ export function WalletProvider({ children }: WalletProviderProps) {
     };
 
     loadWalletData();
-  }, [isAuthenticated, fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchRsvpEvents]);
+  }, [isAuthenticated, fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchTicketsAndEvents]);
 
   const refreshWallet = useCallback(async () => {
     setIsLoading(true);
     try {
       const [status] = await Promise.all([
         fetchAccountStatus(),
-        fetchRsvpEvents(),
+        fetchTicketsAndEvents(),
       ]);
 
       if (status?.hasAccount && status.payoutsEnabled) {
@@ -407,7 +459,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchRsvpEvents]);
+  }, [fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchTicketsAndEvents]);
 
   const value: ExtendedWalletContextType = {
     user,

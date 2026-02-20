@@ -1,12 +1,18 @@
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDashboard } from '@/hooks/use-dashboard';
+import { useMyEvents } from '@/hooks/use-events-query';
 import { useAuth } from '@/lib/providers/auth-provider';
+import type { Event } from '@/lib/types/events.types';
+import { EventStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  FlatList,
   Image,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -78,8 +84,52 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { stats, venues = [], isLoading: statsLoading, error, refetch } = useDashboard();
+  const { data: myEvents = [] } = useMyEvents();
   const { colors } = useAppTheme();
   const [refreshing, setRefreshing] = React.useState(false);
+  const [showEventPicker, setShowEventPicker] = React.useState(false);
+  const [pickerAction, setPickerAction] = React.useState<'scanner' | 'collect'>('scanner');
+
+  // Filter to active/published events for scanning
+  const scannerEvents = React.useMemo(() => {
+    return myEvents.filter(
+      (e) => e.status === EventStatus.PUBLISHED || e.status === EventStatus.ACTIVE
+    );
+  }, [myEvents]);
+
+  const handleScannerPress = React.useCallback(() => {
+    if (scannerEvents.length === 0) {
+      // No active events — open scanner without eventId
+      router.push('/scan-qr');
+    } else if (scannerEvents.length === 1) {
+      // Single active event — go straight to scanner
+      router.push({ pathname: '/scan-qr', params: { eventId: String(scannerEvents[0].id) } });
+    } else {
+      // Multiple events — show picker
+      setPickerAction('scanner');
+      setShowEventPicker(true);
+    }
+  }, [scannerEvents, router]);
+
+  const handleCollectPress = React.useCallback(() => {
+    if (scannerEvents.length === 0) {
+      Alert.alert('No Active Events', 'You need an active or published event to collect payments.');
+    } else if (scannerEvents.length === 1) {
+      router.push({ pathname: '/collect-payments', params: { eventId: String(scannerEvents[0].id) } });
+    } else {
+      setPickerAction('collect');
+      setShowEventPicker(true);
+    }
+  }, [scannerEvents, router]);
+
+  const pickEvent = React.useCallback((event: Event) => {
+    setShowEventPicker(false);
+    if (pickerAction === 'collect') {
+      router.push({ pathname: '/collect-payments', params: { eventId: String(event.id) } });
+    } else {
+      router.push({ pathname: '/scan-qr', params: { eventId: String(event.id) } });
+    }
+  }, [router, pickerAction]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -165,6 +215,14 @@ export default function DashboardScreen() {
             colors={colors}
           />
           <StatCard
+            title="Check-Ins"
+            value={stats?.totalCheckIns ?? 0}
+            icon="checkmark-circle-outline"
+            color="#10b981"
+            subtitle="Verified guests"
+            colors={colors}
+          />
+          <StatCard
             title="Views"
             value={stats?.totalViews ?? 0}
             icon="eye-outline"
@@ -238,7 +296,7 @@ export default function DashboardScreen() {
               activeOpacity={0.8}
               onPress={() => router.push('/create-event')}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#8b5cf6' }]}>
+              <View style={[styles.quickActionIcon, { backgroundColor: '#000' }]}>
                 <Ionicons name="add" size={24} color="#fff" />
               </View>
               <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Create Event</Text>
@@ -246,15 +304,25 @@ export default function DashboardScreen() {
             <TouchableOpacity
               style={styles.quickActionButton}
               activeOpacity={0.8}
-              onPress={() => router.push('/scan-qr')}
+              onPress={handleScannerPress}
             >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#22c55e' }]}>
+              <View style={[styles.quickActionIcon, { backgroundColor: '#000' }]}>
                 <Ionicons name="scan-outline" size={24} color="#fff" />
               </View>
               <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Scanner</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickActionButton}
+              activeOpacity={0.8}
+              onPress={handleCollectPress}
+            >
+              <View style={[styles.quickActionIcon, { backgroundColor: '#000' }]}>
+                <Ionicons name="card-outline" size={24} color="#fff" />
+              </View>
+              <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Collect</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.quickActionButton} activeOpacity={0.8}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#3b82f6' }]}>
+              <View style={[styles.quickActionIcon, { backgroundColor: '#000' }]}>
                 <Ionicons name="share-social-outline" size={24} color="#fff" />
               </View>
               <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Promote</Text>
@@ -310,6 +378,62 @@ export default function DashboardScreen() {
         {/* Bottom spacing */}
         <View style={{ height: insets.bottom + 40 }} />
       </ScrollView>
+
+      {/* Event Picker Modal */}
+      <Modal
+        visible={showEventPicker}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEventPicker(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowEventPicker(false)}
+        >
+          <View style={[styles.modalContent, { backgroundColor: colors.cardElevated }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {pickerAction === 'collect' ? 'Select Event to Collect' : 'Select Event to Scan'}
+            </Text>
+            <FlatList
+              data={scannerEvents}
+              keyExtractor={(item) => String(item.id)}
+              style={styles.modalList}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[styles.eventPickerItem, { borderBottomColor: colors.border }]}
+                  onPress={() => pickEvent(item)}
+                  activeOpacity={0.7}
+                >
+                  {item.imageUrl ? (
+                    <Image source={{ uri: item.imageUrl }} style={styles.eventPickerImage} />
+                  ) : (
+                    <View style={[styles.eventPickerImagePlaceholder, { backgroundColor: colors.backgroundSecondary || colors.cardElevated }]}>
+                      <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+                    </View>
+                  )}
+                  <View style={styles.eventPickerInfo}>
+                    <Text style={[styles.eventPickerName, { color: colors.text }]} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={[styles.eventPickerDate, { color: colors.textSecondary }]}>
+                      {new Date(item.startDate).toLocaleDateString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.iconSecondary} />
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity
+              style={[styles.modalCancelBtn, { borderTopColor: colors.border }]}
+              onPress={() => setShowEventPicker(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
@@ -494,5 +618,69 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
     marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxHeight: 400,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontFamily: 'Lato_700Bold',
+    textAlign: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+  },
+  modalList: {
+    maxHeight: 300,
+  },
+  eventPickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  eventPickerImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+  },
+  eventPickerImagePlaceholder: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eventPickerInfo: {
+    flex: 1,
+    marginLeft: 12,
+    gap: 2,
+  },
+  eventPickerName: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+  },
+  eventPickerDate: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+  },
+  modalCancelBtn: {
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
   },
 });
