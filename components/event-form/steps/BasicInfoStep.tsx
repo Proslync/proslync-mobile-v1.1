@@ -19,7 +19,7 @@ export function BasicInfoStep({ existingFlyerUrl, onFlyerRemoved }: BasicInfoSte
   const { colors, isDark } = useAppTheme();
   const { showError } = useToast();
   const { setValue, control } = useFormContext<EventFormData>();
-  const accentColor = '#8b5cf6';
+  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
 
   // Watch flyerUri for preview - use existing URL as fallback
   const flyerUri = useWatch({ control, name: 'flyerUri' });
@@ -95,7 +95,7 @@ export function BasicInfoStep({ existingFlyerUrl, onFlyerRemoved }: BasicInfoSte
               styles.flyerPickerButton,
               {
                 backgroundColor: colors.input,
-                borderColor: isDark ? 'rgba(139, 92, 246, 0.4)' : 'rgba(139, 92, 246, 0.3)',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(56, 151, 240, 0.3)',
               },
             ]}
             onPress={pickFlyer}

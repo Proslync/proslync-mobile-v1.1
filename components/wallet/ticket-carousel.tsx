@@ -1,4 +1,4 @@
-// Ticket List - Shows user's upcoming RSVP'd event tickets
+// Ticket List - Shows user's upcoming tickets with sell/transfer actions
 import React, { useMemo, useState } from 'react';
 import {
   View,
@@ -16,6 +16,7 @@ import type { WalletEventCard } from '../../lib/types/wallet.types';
 interface TicketCarouselProps {
   events: WalletEventCard[];
   onViewEvent: (eventId: string) => void;
+  onActionComplete?: () => void;
 }
 
 interface TicketCardProps {
@@ -27,6 +28,8 @@ interface TicketCardProps {
 }
 
 function TicketCard({ event, onView, onActions, colors, isDark }: TicketCardProps) {
+  const isListed = event.ticketStatus === 'listed';
+
   return (
     <TouchableOpacity
       style={[
@@ -42,10 +45,24 @@ function TicketCard({ event, onView, onActions, colors, isDark }: TicketCardProp
           {event.title}
         </Text>
         <Text style={[styles.ticketDate, { color: colors.textSecondary }]}>{event.dateTimeLabel}</Text>
-        <Text style={[styles.ticketVenue, { color: colors.textTertiary }]}>{event.venueName}</Text>
+        <View style={styles.ticketMeta}>
+          <Text style={[styles.ticketVenue, { color: colors.textTertiary }]}>{event.venueName}</Text>
+          {isListed && (
+            <View style={styles.listedTag}>
+              <Ionicons name="pricetag" size={10} color="#22c55e" />
+              <Text style={styles.listedTagText}>
+                ${event.listedPrice?.toFixed(2)}
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
       <TouchableOpacity
-        style={styles.viewBtn}
+        style={[
+          styles.viewBtn,
+          { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
+            borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)' }
+        ]}
         onPress={(e) => {
           e.stopPropagation();
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -53,13 +70,15 @@ function TicketCard({ event, onView, onActions, colors, isDark }: TicketCardProp
         }}
         activeOpacity={0.7}
       >
-        <Text style={styles.viewBtnText}>View</Text>
+        <Text style={[styles.viewBtnText, { color: isDark ? '#fff' : '#000' }]}>
+          {isListed ? 'Listed' : 'View'}
+        </Text>
       </TouchableOpacity>
     </TouchableOpacity>
   );
 }
 
-export function TicketCarousel({ events, onViewEvent }: TicketCarouselProps) {
+export function TicketCarousel({ events, onViewEvent, onActionComplete }: TicketCarouselProps) {
   const { colors, isDark } = useAppTheme();
   const [selectedEvent, setSelectedEvent] = useState<WalletEventCard | null>(null);
 
@@ -83,7 +102,7 @@ export function TicketCarousel({ events, onViewEvent }: TicketCarouselProps) {
         <View style={styles.listContent}>
           {upcomingEvents.map((event) => (
             <TicketCard
-              key={event.id}
+              key={`${event.id}-${event.ticketId ?? 'rsvp'}`}
               event={event}
               onView={() => onViewEvent(event.id)}
               onActions={() => setSelectedEvent(event)}
@@ -97,6 +116,7 @@ export function TicketCarousel({ events, onViewEvent }: TicketCarouselProps) {
         visible={!!selectedEvent}
         onClose={() => setSelectedEvent(null)}
         event={selectedEvent}
+        onActionComplete={onActionComplete}
       />
     </View>
   );
@@ -144,20 +164,38 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
+  ticketMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   ticketVenue: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
   },
+  listedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  listedTagText: {
+    fontSize: 10,
+    fontFamily: 'Lato_700Bold',
+    color: '#22c55e',
+  },
   viewBtn: {
-    backgroundColor: '#2563eb',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    borderWidth: 1,
     alignSelf: 'center',
     marginRight: 12,
   },
   viewBtnText: {
-    color: '#fff',
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
   },

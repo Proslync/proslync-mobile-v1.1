@@ -12,7 +12,7 @@ import type { EventFormData } from '@/lib/schemas/events';
 export function DateTimeStep() {
   const { colors, isDark } = useAppTheme();
   const { control, getValues, setValue } = useFormContext<EventFormData>();
-  const accentColor = '#8b5cf6';
+  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
 
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);

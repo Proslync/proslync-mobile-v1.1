@@ -6,12 +6,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { useMyTeamInvitations } from '@/hooks';
 import type { FeedTab } from '@/lib/types/feed.types';
 
 interface FeedHeaderProps {
@@ -25,9 +21,6 @@ export function FeedHeader({
 }: FeedHeaderProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const router = useRouter();
-  const { data: invitations } = useMyTeamInvitations();
-  const hasInvitations = (invitations?.length ?? 0) > 0;
 
   return (
     <Animated.View
@@ -57,14 +50,6 @@ export function FeedHeader({
           {activeTab === 'following' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
         </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={styles.bellButton}
-        onPress={() => router.push('/notifications')}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="notifications-outline" size={22} color={colors.text} />
-        {hasInvitations && <View style={styles.redDot} />}
-      </TouchableOpacity>
     </Animated.View>
   );
 }
@@ -84,24 +69,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 24,
-  },
-  bellButton: {
-    position: 'absolute',
-    right: 16,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    paddingTop: 4,
-  },
-  redDot: {
-    position: 'absolute',
-    top: '50%',
-    right: -2,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF3B30',
-    marginTop: -8,
   },
   tab: {
     alignItems: 'center',

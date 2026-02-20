@@ -15,9 +15,11 @@ import type { EventFormData } from '@/lib/schemas/events';
 import type { Venue } from '@/lib/types/events.types';
 
 const DARK_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';
+const LIGHT_STYLE_URL = 'mapbox://styles/mapbox/light-v11';
 
 export function LocationStep() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
+  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
   const { setValue, watch, formState: { errors } } = useFormContext<EventFormData>();
   const [pickerVisible, setPickerVisible] = useState(false);
   const { data: venues = [], isLoading } = useMyVenues();
@@ -104,10 +106,16 @@ export function LocationStep() {
       </Text>
 
       {coordinates && (
-        <Animated.View entering={FadeInDown.duration(300)} style={styles.mapContainer}>
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[
+            styles.mapContainer,
+            { borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)' },
+          ]}
+        >
           <MapView
             style={styles.map}
-            styleURL={DARK_STYLE_URL}
+            styleURL={isDark ? DARK_STYLE_URL : LIGHT_STYLE_URL}
             logoEnabled={false}
             attributionEnabled={false}
             compassEnabled={false}
@@ -127,7 +135,16 @@ export function LocationStep() {
               anchor={{ x: 0.5, y: 1 }}
             >
               <View style={styles.marker}>
-                <View style={styles.markerDot} />
+                <View
+                  style={[
+                    styles.markerDot,
+                    {
+                      backgroundColor: accentColor,
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(56, 151, 240, 0.3)',
+                      shadowColor: accentColor,
+                    },
+                  ]}
+                />
               </View>
             </MarkerView>
           </MapView>
@@ -177,7 +194,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     height: 180,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   map: {
     flex: 1,
@@ -190,10 +206,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#fff',
     borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    shadowColor: '#fff',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 6,

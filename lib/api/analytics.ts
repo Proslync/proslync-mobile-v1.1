@@ -4,6 +4,7 @@ export interface MarketingStats {
   eventLinkViews: number;
   uniqueVisitors: number;
   totalRSVPs: number;
+  totalCheckIns: number;
   conversionRate: number;
 }
 
@@ -12,6 +13,7 @@ export interface TimeSeriesPoint {
   views: number;
   uniqueVisitors: number;
   rsvps: number;
+  checkIns: number;
   newEvents: number;
 }
 
@@ -19,6 +21,7 @@ export interface TimeSeriesTotals {
   views: number;
   uniqueVisitors: number;
   rsvps: number;
+  checkIns: number;
   conversionRate: number;
   newEvents?: number;
 }

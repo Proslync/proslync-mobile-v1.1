@@ -1,4 +1,4 @@
-// Ticket Purchase API
+// Ticket Purchase & Management API
 import { apiClient } from './client';
 
 export interface TicketPurchaseRequest {
@@ -41,6 +41,8 @@ export interface TicketTransferRequest {
 export interface TicketTransferResponse {
   success: boolean;
   message: string;
+  newTicketId?: number;
+  newTicketNumber?: string;
 }
 
 export interface TicketListingRequest {
@@ -50,10 +52,73 @@ export interface TicketListingRequest {
 export interface TicketListingResponse {
   success: boolean;
   message: string;
-  listingId?: number;
+  ticketId?: number;
+  listedPrice?: number;
+}
+
+export interface UserTicket {
+  id: number;
+  eventId: number;
+  userId: number;
+  ticketNumber: string;
+  status: 'active' | 'redeemed' | 'cancelled' | 'transferred' | 'listed';
+  pricePaid?: number;
+  currency?: string;
+  listedPrice?: number;
+  listedAt?: string;
+  transferredFrom?: number;
+  transferredTo?: number;
+  transferredAt?: string;
+  purchasedAt?: string;
+  createdAt: string;
+  event?: {
+    id: number;
+    name: string;
+    startDate: string;
+    endDate?: string;
+    imageUrl?: string;
+    venue?: {
+      name: string;
+      address?: string;
+    };
+    flyer?: {
+      url: string;
+    };
+  };
+}
+
+export interface UserTicketsResponse {
+  tickets: UserTicket[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export const ticketsApi = {
+  /**
+   * Get current user's tickets with filtering
+   * Backend endpoint: GET /api/tickets/my
+   */
+  getMyTickets: async (params?: {
+    status?: 'upcoming' | 'past' | 'all';
+    page?: number;
+    limit?: number;
+    sortBy?: 'eventDate' | 'createdAt' | 'eventName';
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<UserTicketsResponse> => {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.sortBy) query.set('sortBy', params.sortBy);
+    if (params?.sortOrder) query.set('sortOrder', params.sortOrder);
+    const qs = query.toString();
+    return apiClient.get<UserTicketsResponse>(`/api/tickets/my${qs ? `?${qs}` : ''}`);
+  },
+
   /**
    * Get ticket info/pricing for an event
    * Backend endpoint: GET /api/events/:eventId/tickets/info
@@ -75,15 +140,15 @@ export const ticketsApi = {
    * Transfer a ticket to another user
    * Backend endpoint: POST /api/tickets/:ticketId/transfer
    */
-  transferTicket: async (ticketId: string, data: TicketTransferRequest): Promise<TicketTransferResponse> => {
+  transferTicket: async (ticketId: number, data: TicketTransferRequest): Promise<TicketTransferResponse> => {
     return apiClient.post<TicketTransferResponse>(`/api/tickets/${ticketId}/transfer`, data);
   },
 
   /**
-   * List a ticket for resale
+   * List a ticket for resale on the marketplace
    * Backend endpoint: POST /api/tickets/:ticketId/list
    */
-  listTicketForSale: async (ticketId: string, data: TicketListingRequest): Promise<TicketListingResponse> => {
+  listTicketForSale: async (ticketId: number, data: TicketListingRequest): Promise<TicketListingResponse> => {
     return apiClient.post<TicketListingResponse>(`/api/tickets/${ticketId}/list`, data);
   },
 
@@ -91,7 +156,7 @@ export const ticketsApi = {
    * Cancel a ticket listing
    * Backend endpoint: DELETE /api/tickets/:ticketId/list
    */
-  cancelListing: async (ticketId: string): Promise<TicketTransferResponse> => {
+  cancelListing: async (ticketId: number): Promise<TicketTransferResponse> => {
     return apiClient.delete<TicketTransferResponse>(`/api/tickets/${ticketId}/list`);
   },
 };

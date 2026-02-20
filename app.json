@@ -11,6 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.statusdigitalinc.status",
+      "entitlements": {
+        "com.apple.developer.in-app-payments": [
+          "merchant.statusdigitalinc.status"
+        ]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Status uses your location to show nearby events and share your live location with friends",
@@ -67,7 +72,7 @@
       [
         "@stripe/stripe-react-native",
         {
-          "merchantIdentifier": "merchant.com.status.app",
+          "merchantIdentifier": "merchant.statusdigitalinc.status",
           "enableGooglePay": true
         }
       ],

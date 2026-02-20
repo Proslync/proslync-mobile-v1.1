@@ -4,6 +4,9 @@ import type {
   CreatePaymentIntentRequest,
   CreatePaymentIntentResponse,
   PaymentStatusResponse,
+  UnpaidAttendeesResponse,
+  CollectAtDoorRequest,
+  CollectAtDoorResponse,
 } from '../types/payments.types';
 
 export const paymentsApi = {
@@ -28,6 +31,30 @@ export const paymentsApi = {
   getPaymentStatus: async (paymentIntentId: string): Promise<PaymentStatusResponse> => {
     return apiClient.get<PaymentStatusResponse>(
       `/api/payments/${paymentIntentId}/status`
+    );
+  },
+
+  /**
+   * Get unpaid checked-in attendees for an event
+   * Backend endpoint: GET /api/events/:eventId/attendees/unpaid
+   */
+  getUnpaidAttendees: async (eventId: number): Promise<UnpaidAttendeesResponse> => {
+    return apiClient.get<UnpaidAttendeesResponse>(
+      `/api/events/${eventId}/attendees/unpaid`
+    );
+  },
+
+  /**
+   * Initiate collect-at-door payment for a guest
+   * Backend endpoint: POST /api/events/:eventId/payments/collect-at-door
+   */
+  collectAtDoor: async (
+    eventId: number,
+    data: CollectAtDoorRequest
+  ): Promise<CollectAtDoorResponse> => {
+    return apiClient.post<CollectAtDoorResponse>(
+      `/api/events/${eventId}/payments/collect-at-door`,
+      data
     );
   },
 };

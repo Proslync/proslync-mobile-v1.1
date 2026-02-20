@@ -337,6 +337,22 @@ export const eventsApi = {
   },
 
   /**
+   * Approve a guest for entry (Bouncer only)
+   * Backend endpoint: PUT /api/events/:eventId/attendees/:guestId/approve
+   */
+  approveGuest: async (eventId: number, guestId: number, notes?: string): Promise<any> => {
+    return apiClient.put(`/api/events/${eventId}/attendees/${guestId}/approve`, { notes });
+  },
+
+  /**
+   * Deny a guest entry (Bouncer only)
+   * Backend endpoint: PUT /api/events/:eventId/attendees/:guestId/deny
+   */
+  denyGuest: async (eventId: number, guestId: number, notes: string): Promise<any> => {
+    return apiClient.put(`/api/events/${eventId}/attendees/${guestId}/deny`, { notes });
+  },
+
+  /**
    * Get current user's permissions for an event
    * Backend endpoint: GET /api/events/:eventId/permissions
    */

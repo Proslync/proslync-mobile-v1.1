@@ -89,12 +89,23 @@ export interface EventAttendee {
   avatar?: string;
   phoneNumber?: string;
   email?: string;
+  birthDate?: string;
   guestName?: string;
   isGuest?: boolean;
   isRegistered?: boolean;
   status?: EventUserStatus;
+  notes?: string;
+  verifiedBy?: number;
+  verifiedAt?: string;
+  seatedBy?: number;
+  seatedAt?: string;
+  tableNumber?: string;
   registeredAt?: string;
   createdAt?: string;
+  updatedAt?: string;
+  isBlacklisted?: boolean;
+  blacklistReason?: string;
+  blacklistedAt?: string;
 }
 
 export interface EventAttendeesResponse {
@@ -104,6 +115,12 @@ export interface EventAttendeesResponse {
   limit?: number;
   totalPages?: number;
   hasNext?: boolean;
+  hasPrev?: boolean;
+  statistics?: {
+    totalAttendees: number;
+    verifiedAttendees: number;
+    pendingAttendees: number;
+  };
 }
 
 export interface EventPermissionsResponse {

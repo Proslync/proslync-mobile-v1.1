@@ -17,7 +17,7 @@ export function FormSwitch<T extends FieldValues>({
 }: FormSwitchProps<T>) {
   const { control } = useFormContext<T>();
   const { colors, isDark } = useAppTheme();
-  const accentColor = '#8b5cf6';
+  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
 
   return (
     <Controller

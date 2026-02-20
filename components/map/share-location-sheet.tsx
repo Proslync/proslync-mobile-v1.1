@@ -80,6 +80,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
 
   // Animated pulse for live indicator
   const livePulse = useSharedValue(1);
+  const dotPulse = useSharedValue(1);
   const glowOpacity = useSharedValue(0.3);
 
   React.useEffect(() => {
@@ -88,6 +89,14 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
         withSequence(
           withTiming(1.4, { duration: 1000 }),
           withTiming(1, { duration: 1000 })
+        ),
+        -1,
+        true
+      );
+      dotPulse.value = withRepeat(
+        withSequence(
+          withTiming(0.4, { duration: 800 }),
+          withTiming(1, { duration: 800 })
         ),
         -1,
         true
@@ -106,6 +115,10 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
   const livePulseStyle = useAnimatedStyle(() => ({
     transform: [{ scale: livePulse.value }],
     opacity: 2 - livePulse.value,
+  }));
+
+  const dotPulseStyle = useAnimatedStyle(() => ({
+    opacity: dotPulse.value,
   }));
 
   const timerGlowStyle = useAnimatedStyle(() => ({
@@ -224,17 +237,11 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
             <View style={styles.activeContainer}>
               {/* Live badge with pulse ring */}
               <View style={styles.liveBadgeWrap}>
-                <Animated.View style={[styles.livePulseRing, livePulseStyle, { borderColor: iconColor }]} />
-                <GlassOverlay
-                  blurIntensity="medium"
-                  fillLevel="light"
-                  borderLevel="subtle"
-                  borderRadius={radius.md}
-                  style={styles.liveBadge}
-                >
-                  <View style={[styles.liveDot, { backgroundColor: iconColor }]} />
+                <Animated.View style={[styles.livePulseRing, livePulseStyle, { borderColor: '#00D632' }]} />
+                <View style={styles.liveBadge}>
+                  <Animated.View style={[styles.liveDot, { backgroundColor: '#00D632' }, dotPulseStyle]} />
                   <GlassText weight="bold" size={11} style={{ ...styles.liveText, color: iconColor }}>LIVE</GlassText>
-                </GlassOverlay>
+                </View>
               </View>
 
               {/* Title */}
@@ -550,8 +557,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 6,
   },
   liveDot: {
     width: 7,

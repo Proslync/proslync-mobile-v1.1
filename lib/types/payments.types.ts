@@ -49,3 +49,38 @@ export interface PaymentStatusResponse {
   ticketId?: number;
   error?: string;
 }
+
+// Collect-at-door types
+export interface UnpaidGuest {
+  id: number;
+  userId?: number;
+  firstName: string;
+  lastName: string;
+  age?: number;
+  status: string;
+  checkedInAt?: string;
+  canCollect: boolean;
+  avatar?: string;
+}
+
+export interface UnpaidAttendeesResponse {
+  guests: UnpaidGuest[];
+  defaultTierId?: number;
+  defaultPricingId?: number;
+  defaultPrice?: number;
+  currency?: string;
+}
+
+export interface CollectAtDoorRequest {
+  guestId: number;
+  tierId?: number;
+  pricingId?: number;
+}
+
+export interface CollectAtDoorResponse {
+  clientSecret: string;
+  paymentIntentId: string;
+  amount: number;
+  currency: string;
+  breakdown: PaymentBreakdown;
+}

@@ -12,12 +12,16 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  PanResponder,
+  type GestureResponderEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle, Line } from 'react-native-svg';
+import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -131,24 +135,118 @@ function buildAreaPath(
   return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
 }
 
+// ─── Point Calculator (for tooltip) ─────────────────────────
+function getChartPoints(
+  data: number[],
+  width: number,
+  height: number,
+  padding: number = 0,
+): { x: number; y: number; value: number }[] {
+  if (data.length < 2) return [];
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const chartW = width - padding * 2;
+  const chartH = height - padding * 2;
+
+  return data.map((val, i) => ({
+    x: padding + (i / (data.length - 1)) * chartW,
+    y: padding + chartH - ((val - min) / range) * chartH,
+    value: val,
+  }));
+}
+
 // ─── Hero Line Chart ────────────────────────────────────────
 export function HeroLineChart({
   data,
   isPositive,
+  metricLabel,
+  colors,
+  isDark,
 }: {
   data: number[];
   isPositive: boolean;
+  metricLabel?: string;
+  colors: ThemeColors;
+  isDark: boolean;
 }) {
   const chartWidth = SCREEN_WIDTH - 32;
   const chartHeight = SCREEN_HEIGHT * 0.28;
+  const chartPadding = 4;
   const color = isPositive ? '#00D632' : '#FF3B30';
   const gradientId = 'heroGrad';
 
-  const linePath = buildSmoothPath(data, chartWidth, chartHeight, 4);
-  const areaPath = buildAreaPath(data, chartWidth, chartHeight, 4);
+  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+
+  const linePath = buildSmoothPath(data, chartWidth, chartHeight, chartPadding);
+  const areaPath = buildAreaPath(data, chartWidth, chartHeight, chartPadding);
+  const points = React.useMemo(
+    () => getChartPoints(data, chartWidth, chartHeight, chartPadding),
+    [data, chartWidth, chartHeight],
+  );
+
+  const findNearestIndex = React.useCallback(
+    (touchX: number) => {
+      if (points.length === 0) return null;
+      let nearest = 0;
+      let minDist = Math.abs(points[0].x - touchX);
+      for (let i = 1; i < points.length; i++) {
+        const dist = Math.abs(points[i].x - touchX);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = i;
+        }
+      }
+      return nearest;
+    },
+    [points],
+  );
+
+  const panResponder = React.useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderGrant: (evt: GestureResponderEvent) => {
+          const touchX = evt.nativeEvent.locationX;
+          setActiveIndex(findNearestIndex(touchX));
+        },
+        onPanResponderMove: (evt: GestureResponderEvent) => {
+          const touchX = evt.nativeEvent.locationX;
+          setActiveIndex(findNearestIndex(touchX));
+        },
+        onPanResponderRelease: () => {
+          setActiveIndex(null);
+        },
+        onPanResponderTerminate: () => {
+          setActiveIndex(null);
+        },
+      }),
+    [findNearestIndex],
+  );
+
+  const activePoint = activeIndex !== null ? points[activeIndex] : null;
+
+  // Format tooltip value
+  const tooltipValue = activePoint
+    ? metricLabel?.toLowerCase().includes('rate')
+      ? `${activePoint.value.toFixed(1)}%`
+      : activePoint.value.toLocaleString()
+    : '';
+
+  // Tooltip position — keep it within bounds
+  const tooltipWidth = 80;
+  const tooltipX = activePoint
+    ? Math.max(0, Math.min(activePoint.x - tooltipWidth / 2, chartWidth - tooltipWidth))
+    : 0;
+  const tooltipY = activePoint
+    ? Math.max(0, activePoint.y - 36)
+    : 0;
 
   return (
-    <View style={{ marginHorizontal: 16, marginTop: 8 }}>
+    <View style={{ marginHorizontal: 16, marginTop: 8 }} {...panResponder.panHandlers}>
       <Svg width={chartWidth} height={chartHeight}>
         <Defs>
           <SvgGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -168,7 +266,54 @@ export function HeroLineChart({
             strokeLinejoin="round"
           />
         ) : null}
+
+        {/* Tooltip indicator line + dot */}
+        {activePoint && (
+          <>
+            <Line
+              x1={activePoint.x}
+              y1={0}
+              x2={activePoint.x}
+              y2={chartHeight}
+              stroke={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
+              strokeWidth={1}
+              strokeDasharray="4 3"
+            />
+            <Circle
+              cx={activePoint.x}
+              cy={activePoint.y}
+              r={5}
+              fill={color}
+              stroke={isDark ? '#000' : '#fff'}
+              strokeWidth={2}
+            />
+          </>
+        )}
       </Svg>
+
+      {/* Floating tooltip label */}
+      {activePoint && (
+        <View
+          style={[
+            styles.tooltip,
+            {
+              left: tooltipX,
+              top: tooltipY,
+              backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.75)',
+            },
+          ]}
+          pointerEvents="none"
+        >
+          <Text
+            style={[
+              styles.tooltipText,
+              { color: isDark ? '#fff' : '#fff' },
+            ]}
+          >
+            {tooltipValue}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -207,16 +352,18 @@ function MiniSparkline({
 // ─── Hero Metric Header ─────────────────────────────────────
 export function HeroMetricHeader({
   metric,
+  colors,
 }: {
   metric: AnalyticsMetric;
+  colors: ThemeColors;
 }) {
   return (
     <Animated.View
       entering={FadeIn.duration(300)}
       style={styles.heroHeader}
     >
-      <Text style={styles.heroLabel}>{metric.label}</Text>
-      <Text style={styles.heroValue}>{metric.primaryValue}</Text>
+      <Text style={[styles.heroLabel, { color: colors.textTertiary }]}>{metric.label}</Text>
+      <Text style={[styles.heroValue, { color: colors.text }]}>{metric.primaryValue}</Text>
       <Text style={[styles.heroDelta, { color: metric.isPositive ? '#00D632' : '#FF3B30' }]}>
         {metric.deltaText}
       </Text>
@@ -229,10 +376,12 @@ export function RangeSelector({
   selected,
   onSelect,
   ranges = DASHBOARD_TIME_RANGES,
+  colors,
 }: {
   selected: TimeRange;
   onSelect: (range: TimeRange) => void;
   ranges?: TimeRange[];
+  colors: ThemeColors;
 }) {
   return (
     <View style={styles.rangeRow}>
@@ -245,7 +394,7 @@ export function RangeSelector({
             onPress={() => onSelect(r)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.rangeText, isActive && styles.rangeTextActive]}>
+            <Text style={[styles.rangeText, { color: colors.textTertiary }, isActive && styles.rangeTextActive]}>
               {r}
             </Text>
           </TouchableOpacity>
@@ -260,10 +409,12 @@ export function MetricTile({
   metric,
   selectedRange,
   onPress,
+  colors,
 }: {
   metric: AnalyticsMetric;
   selectedRange: TimeRange;
   onPress: () => void;
+  colors: ThemeColors;
 }) {
   const sparkData = metric.seriesByRange[selectedRange];
 
@@ -274,8 +425,8 @@ export function MetricTile({
       activeOpacity={0.6}
     >
       <View style={styles.metricTileLeft}>
-        <Text style={styles.metricTileLabel}>{metric.label}</Text>
-        <Text style={styles.metricTileValue}>{metric.primaryValue}</Text>
+        <Text style={[styles.metricTileLabel, { color: colors.textSecondary }]}>{metric.label}</Text>
+        <Text style={[styles.metricTileValue, { color: colors.text }]}>{metric.primaryValue}</Text>
         <Text
           style={[
             styles.metricTileDelta,
@@ -314,6 +465,7 @@ export function AnalyticsScreenShell({
 }) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors, isDark } = useAppTheme();
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [heroMetricId, setHeroMetricId] = React.useState<string>(
@@ -357,21 +509,24 @@ export function AnalyticsScreenShell({
 
   const heroData = heroMetric?.seriesByRange[selectedRange] ?? [];
 
+  const navBtnBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
   if (isLoading && !refreshing) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <DarkGradientBg />
         <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
           <TouchableOpacity
-            style={styles.navBackBtn}
+            style={[styles.navBackBtn, { backgroundColor: navBtnBg }]}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.navRight} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color="rgba(255,255,255,0.5)" size="large" />
+          <ActivityIndicator color={colors.textTertiary} size="large" />
         </View>
       </View>
     );
@@ -379,35 +534,37 @@ export function AnalyticsScreenShell({
 
   if (!heroMetric) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <DarkGradientBg />
         <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
           <TouchableOpacity
-            style={styles.navBackBtn}
+            style={[styles.navBackBtn, { backgroundColor: navBtnBg }]}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={22} color="#fff" />
+            <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.navRight} />
         </View>
         <View style={styles.emptyContainer}>
-          <Ionicons name="stats-chart-outline" size={56} color="rgba(255,255,255,0.2)" />
-          <Text style={styles.emptyTitle}>{emptyMessage ?? 'No analytics yet'}</Text>
-          <Text style={styles.emptySub}>Data will appear here once there is activity</Text>
+          <Ionicons name="stats-chart-outline" size={56} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>{emptyMessage ?? 'No analytics yet'}</Text>
+          <Text style={[styles.emptySub, { color: colors.textTertiary }]}>Data will appear here once there is activity</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DarkGradientBg />
       <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
         <TouchableOpacity
-          style={styles.navBackBtn}
+          style={[styles.navBackBtn, { backgroundColor: navBtnBg }]}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={22} color="#fff" />
+          <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.navRight} />
       </View>
@@ -420,30 +577,34 @@ export function AnalyticsScreenShell({
           <RefreshControl
             refreshing={refreshing}
             onRefresh={doRefresh}
-            tintColor="rgba(255,255,255,0.4)"
+            tintColor={colors.textTertiary}
           />
         }
       >
-        <HeroMetricHeader key={heroMetricId} metric={heroMetric} />
+        <HeroMetricHeader key={heroMetricId} metric={heroMetric} colors={colors} />
 
         <HeroLineChart
           key={`chart-${heroMetricId}-${selectedRange}`}
           data={heroData}
           isPositive={heroMetric.isPositive}
+          metricLabel={heroMetric.label}
+          colors={colors}
+          isDark={isDark}
         />
 
-        <RangeSelector selected={selectedRange} onSelect={handleRangeChange} ranges={ranges} />
+        <RangeSelector selected={selectedRange} onSelect={handleRangeChange} ranges={ranges} colors={colors} />
 
-        <View style={styles.sectionDivider} />
+        <View style={[styles.sectionDivider, { backgroundColor: colors.separator }]} />
 
         <View style={styles.tilesContainer}>
           {tileMetrics.map((metric, index) => (
             <React.Fragment key={metric.id}>
-              {index > 0 && <View style={styles.tileSeparator} />}
+              {index > 0 && <View style={[styles.tileSeparator, { backgroundColor: colors.separator }]} />}
               <MetricTile
                 metric={metric}
                 selectedRange={selectedRange}
                 onPress={() => handleSwap(metric.id)}
+                colors={colors}
               />
             </React.Fragment>
           ))}
@@ -459,7 +620,6 @@ export function AnalyticsScreenShell({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   topNav: {
     flexDirection: 'row',
@@ -472,7 +632,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -497,13 +656,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.6)',
     marginTop: 8,
   },
   emptySub: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
   },
   heroHeader: {
@@ -514,13 +671,11 @@ const styles = StyleSheet.create({
   heroLabel: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
     marginBottom: 4,
   },
   heroValue: {
     fontSize: 38,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     letterSpacing: -0.5,
     marginBottom: 4,
   },
@@ -550,14 +705,12 @@ const styles = StyleSheet.create({
   rangeText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.35)',
   },
   rangeTextActive: {
     color: '#00D632',
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     marginHorizontal: 16,
     marginTop: 12,
     marginBottom: 4,
@@ -579,13 +732,11 @@ const styles = StyleSheet.create({
   metricTileLabel: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.55)',
     marginBottom: 3,
   },
   metricTileValue: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 2,
   },
   metricTileDelta: {
@@ -597,6 +748,20 @@ const styles = StyleSheet.create({
   },
   tileSeparator: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  // Tooltip
+  tooltip: {
+    position: 'absolute',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 60,
+  },
+  tooltipText: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    textAlign: 'center',
   },
 });
