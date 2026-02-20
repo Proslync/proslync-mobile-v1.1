@@ -31,7 +31,7 @@ export default function EventAnalyticsScreen() {
     gcTime: 10 * 60 * 1000,
   });
 
-  // Build 5 metrics: Views, Unique Visitors, RSVPs, Check-Ins, Conversion Rate
+  // Build 6 metrics: Views, Unique Visitors, RSVPs, Check-Ins, Check-in Rate, Conversion Rate
   // Primary values come from range-filtered totals (not all-time stats)
   const metrics = React.useMemo((): AnalyticsMetric[] => {
     const totals = timeSeriesQuery.data?.totals;
@@ -57,7 +57,13 @@ export default function EventAnalyticsScreen() {
     const viewsDelta = calcDelta(viewsSeries);
     const uniqueDelta = calcDelta(uniqueSeries);
     const rsvpsDelta = calcDelta(rsvpsSeries);
+    const checkInRateSeries = hasTimeSeries
+      ? tsData.map((d) => (d.rsvps > 0 ? ((d.checkIns ?? 0) / d.rsvps) * 100 : 0))
+      : [0, 0];
+    const checkInRate = totalRSVPs > 0 ? (totalCheckIns / totalRSVPs) * 100 : 0;
+
     const checkInsDelta = calcDelta(checkInsSeries);
+    const checkInRateDelta = calcDelta(checkInRateSeries);
     const conversionDelta = calcDelta(conversionSeries);
 
     const rangeLabel = getRangeLabel(selectedRange);
@@ -94,6 +100,14 @@ export default function EventAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${checkInsDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: checkInsDelta.isPositive,
         seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: checkInsSeries },
+      },
+      {
+        id: 'checkInRate',
+        label: 'Check-in Rate',
+        primaryValue: `${checkInRate.toFixed(1)}%`,
+        deltaText: hasTimeSeries ? `${checkInRateDelta.text} ${rangeLabel}` : '—',
+        isPositive: checkInRateDelta.isPositive,
+        seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: checkInRateSeries },
       },
       {
         id: 'conversion',

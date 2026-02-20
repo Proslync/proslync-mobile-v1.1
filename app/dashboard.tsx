@@ -352,6 +352,13 @@ export default function DashboardScreen() {
               colors={colors}
             />
             <MenuItem
+              title="Revenue"
+              subtitle="Track earnings and trends"
+              icon="trending-up-outline"
+              onPress={() => router.push('/dashboard/revenue')}
+              colors={colors}
+            />
+            <MenuItem
               title="Attendees"
               subtitle="Manage event attendees"
               icon="people-outline"

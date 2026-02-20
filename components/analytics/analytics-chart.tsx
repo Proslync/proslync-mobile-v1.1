@@ -233,7 +233,9 @@ export function HeroLineChart({
   const tooltipValue = activePoint
     ? metricLabel?.toLowerCase().includes('rate')
       ? `${activePoint.value.toFixed(1)}%`
-      : activePoint.value.toLocaleString()
+      : metricLabel?.toLowerCase().includes('revenue') || metricLabel?.toLowerCase().includes('fees')
+        ? `$${(activePoint.value / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : activePoint.value.toLocaleString()
     : '';
 
   // Tooltip position — keep it within bounds

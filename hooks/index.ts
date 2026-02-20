@@ -53,6 +53,7 @@ export {
 
 // Analytics hooks
 export { useTrackEventView, clearTrackingCache } from './use-track-event-view';
+export { useRevenueTimeSeries, REVENUE_TIMESERIES_KEY } from './use-revenue-analytics';
 
 // Pricing CRUD hooks
 export {

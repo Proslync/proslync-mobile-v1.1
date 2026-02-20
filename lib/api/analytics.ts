@@ -33,6 +33,33 @@ export interface TimeSeriesResponse {
   eventId?: number;
 }
 
+// ── Revenue Analytics ────────────────────────────────────────
+
+export interface RevenueTimeSeriesPoint {
+  date: string;
+  grossRevenue: number;   // cents
+  netRevenue: number;     // cents
+  platformFees: number;   // cents
+  transactionCount: number;
+}
+
+export interface RevenueTimeSeriesTotals {
+  grossRevenue: number;
+  netRevenue: number;
+  platformFees: number;
+  transactionCount: number;
+  avgPerTransaction: number;
+  avgPerEvent?: number;     // dashboard only
+  eventCount?: number;      // dashboard only
+}
+
+export interface RevenueTimeSeriesResponse {
+  data: RevenueTimeSeriesPoint[];
+  totals: RevenueTimeSeriesTotals;
+  range: string;
+  eventId?: number;
+}
+
 export const analyticsApi = {
   /**
    * Track event page view
@@ -77,6 +104,29 @@ export const analyticsApi = {
   ): Promise<TimeSeriesResponse> => {
     return apiClient.get<TimeSeriesResponse>(
       `/api/analytics/dashboard/timeseries?range=${range}`,
+    );
+  },
+
+  /**
+   * Get revenue time series for dashboard (all user events)
+   */
+  getRevenueTimeSeries: async (
+    range: string = '1M',
+  ): Promise<RevenueTimeSeriesResponse> => {
+    return apiClient.get<RevenueTimeSeriesResponse>(
+      `/api/analytics/revenue/timeseries?range=${range}`,
+    );
+  },
+
+  /**
+   * Get revenue time series for a specific event
+   */
+  getEventRevenueTimeSeries: async (
+    eventId: number,
+    range: string = '1M',
+  ): Promise<RevenueTimeSeriesResponse> => {
+    return apiClient.get<RevenueTimeSeriesResponse>(
+      `/api/analytics/events/${eventId}/revenue/timeseries?range=${range}`,
     );
   },
 };

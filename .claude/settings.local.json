@@ -44,7 +44,10 @@
       "Bash(git -C /Users/alex/Projects/Work/status.social log --oneline feature/stripe...origin/main)",
       "Bash(git -C /Users/alex/Projects/Work/status.social diff --stat HEAD~5..HEAD)",
       "Bash(head:*)",
-      "WebFetch(domain:docs.stripe.com)"
+      "WebFetch(domain:docs.stripe.com)",
+      "Bash(find:*)",
+      "Bash(xargs cat:*)",
+      "Bash(node_modules/.bin/tsc:*)"
     ]
   }
 }

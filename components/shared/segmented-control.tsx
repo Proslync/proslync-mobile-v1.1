@@ -1,17 +1,53 @@
 // SegmentedControl - Generic animated tab control with glass styling
 
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, LayoutChangeEvent } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  withTiming,
+  interpolateColor,
+  interpolate,
+  Easing,
 } from 'react-native-reanimated';
+
+const ANIMATION_CONFIG = {
+  duration: 300,
+  easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+};
 
 interface SegmentedControlProps {
   segments: string[];
   selectedIndex: number;
   onSelect: (index: number) => void;
+}
+
+function SegmentLabel({ label, index, selectedIndex, segmentCount }: {
+  label: string;
+  index: number;
+  selectedIndex: number;
+  segmentCount: number;
+}) {
+  const progress = useSharedValue(index === selectedIndex ? 1 : 0);
+
+  useEffect(() => {
+    progress.value = withTiming(index === selectedIndex ? 1 : 0, ANIMATION_CONFIG);
+  }, [selectedIndex, index]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    color: interpolateColor(
+      progress.value,
+      [0, 1],
+      ['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 1)']
+    ),
+    transform: [{ scale: interpolate(progress.value, [0, 1], [1, 1.03]) }],
+  }));
+
+  return (
+    <Animated.Text style={[styles.label, animatedStyle, index === selectedIndex && styles.labelActive]}>
+      {label}
+    </Animated.Text>
+  );
 }
 
 export function SegmentedControl({
@@ -27,13 +63,9 @@ export function SegmentedControl({
     setSegmentWidth(containerWidth / segments.length);
   };
 
-  const handlePress = (index: number) => {
-    indicatorPosition.value = withSpring(index, {
-      damping: 20,
-      stiffness: 200,
-    });
-    onSelect(index);
-  };
+  useEffect(() => {
+    indicatorPosition.value = withTiming(selectedIndex, ANIMATION_CONFIG);
+  }, [selectedIndex]);
 
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: indicatorPosition.value * segmentWidth }],
@@ -46,21 +78,18 @@ export function SegmentedControl({
         <Animated.View style={[styles.indicator, indicatorStyle]} />
       )}
       {segments.map((label, index) => (
-        <TouchableOpacity
+        <Pressable
           key={label}
           style={[styles.segment, { width: segmentWidth || undefined, flex: segmentWidth ? undefined : 1 }]}
-          onPress={() => handlePress(index)}
-          activeOpacity={0.7}
+          onPress={() => onSelect(index)}
         >
-          <Text
-            style={[
-              styles.label,
-              selectedIndex === index && styles.labelActive,
-            ]}
-          >
-            {label}
-          </Text>
-        </TouchableOpacity>
+          <SegmentLabel
+            label={label}
+            index={index}
+            selectedIndex={selectedIndex}
+            segmentCount={segments.length}
+          />
+        </Pressable>
       ))}
     </View>
   );
@@ -92,10 +121,8 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
   },
   labelActive: {
-    color: '#fff',
     fontFamily: 'Lato_700Bold',
   },
 });

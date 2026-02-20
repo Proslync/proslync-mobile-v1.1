@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInRight, FadeInLeft, FadeOutRight, FadeOutLeft } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -69,6 +69,7 @@ export default function PaymentsScreen() {
   const queryClient = useQueryClient();
 
   const [selectedTab, setSelectedTab] = useState(0);
+  const previousTabRef = React.useRef(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [withdrawalSheetVisible, setWithdrawalSheetVisible] = useState(false);
@@ -220,22 +221,31 @@ export default function PaymentsScreen() {
           <SegmentedControl
             segments={TAB_SEGMENTS}
             selectedIndex={selectedTab}
-            onSelect={setSelectedTab}
+            onSelect={(index) => {
+              previousTabRef.current = selectedTab;
+              setSelectedTab(index);
+            }}
           />
 
-          {selectedTab === 0 && (
-            <OverviewTab
-              earnings={earningsData?.earnings ?? []}
-              payouts={payoutsData?.payouts ?? []}
-            />
-          )}
-          {selectedTab === 1 && <EarningsList />}
-          {selectedTab === 2 && (
-            <PayoutsList
-              onWithdraw={() => setWithdrawalSheetVisible(true)}
-              canWithdraw={canWithdraw}
-            />
-          )}
+          <Animated.View
+            key={`tab-${selectedTab}`}
+            entering={selectedTab > previousTabRef.current ? FadeInRight.duration(250) : FadeInLeft.duration(250)}
+            exiting={selectedTab > previousTabRef.current ? FadeOutLeft.duration(150) : FadeOutRight.duration(150)}
+          >
+            {selectedTab === 0 && (
+              <OverviewTab
+                earnings={earningsData?.earnings ?? []}
+                payouts={payoutsData?.payouts ?? []}
+              />
+            )}
+            {selectedTab === 1 && <EarningsList />}
+            {selectedTab === 2 && (
+              <PayoutsList
+                onWithdraw={() => setWithdrawalSheetVisible(true)}
+                canWithdraw={canWithdraw}
+              />
+            )}
+          </Animated.View>
         </ScrollView>
       )}
 

@@ -26,6 +26,7 @@ const SECTIONS = [
   { key: 'pricing', label: 'Pricing', icon: 'pricetag-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
   { key: 'marketing', label: 'Marketing', icon: 'megaphone-outline' as const, permission: { resource: 'marketing' as keyof RolePermissions, action: 'view' } },
   { key: 'payments', label: 'Payments', icon: 'card-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
+  { key: 'revenue', label: 'Revenue', icon: 'trending-up-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
   { key: 'team', label: 'Team', icon: 'person-add-outline' as const, permission: { resource: 'team' as keyof RolePermissions, action: 'view' } },
   { key: 'artists', label: 'Artists', icon: 'musical-notes-outline' as const, permission: { resource: 'events' as keyof RolePermissions, action: 'edit' } },
 ];
