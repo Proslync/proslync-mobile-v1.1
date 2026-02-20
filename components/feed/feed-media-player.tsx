@@ -56,15 +56,9 @@ function calculateMediaDimensions(
   containerWidth: number,
   maxHeight: number
 ): { width: number; height: number } {
-  // Calculate height based on aspect ratio
-  let width = containerWidth;
-  let height = containerWidth / aspectRatio;
-
-  // If height exceeds max, scale down
-  if (height > maxHeight) {
-    height = maxHeight;
-    width = height * aspectRatio;
-  }
+  // Always use full container width; cap height at maxHeight
+  const width = containerWidth;
+  const height = Math.min(containerWidth / aspectRatio, maxHeight);
 
   return { width, height };
 }

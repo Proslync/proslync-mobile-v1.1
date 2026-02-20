@@ -12,12 +12,6 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { analyticsApi } from '@/lib/api/analytics';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
-// ── Infinite loop config ────────────────────────────────────────────────
-// We repeat the real data many times so the user can scroll endlessly in
-// both directions. With getItemLayout defined, only the visible window is
-// ever rendered so the extra virtual slots cost nothing.
-const LOOP_REPEATS = 200;
-
 interface FeedContainerProps {
   items: FeedItemType[];
   currentIndex: number;
@@ -58,25 +52,8 @@ export function FeedContainer({
   const flatListRef = React.useRef<FlatList>(null);
   const [containerHeight, setContainerHeight] = React.useState(0);
   const { colors } = useAppTheme();
-  const hasScrolledRef = React.useRef(false);
 
-  const realCount = items.length;
-  const canLoop = realCount > 1;
-
-  // ── Virtual data ────────────────────────────────────────────────────
-  // Each entry is just an index into the virtual list. The real item is
-  // resolved via `virtualIndex % realCount`.
-  const virtualCount = canLoop ? realCount * LOOP_REPEATS : realCount;
-  const midStart = canLoop ? Math.floor(LOOP_REPEATS / 2) * realCount : 0;
-
-  const virtualData = React.useMemo(() => {
-    const arr: number[] = new Array(virtualCount);
-    for (let i = 0; i < virtualCount; i++) arr[i] = i;
-    return arr;
-  }, [virtualCount]);
-
-  // Track the current virtual index so isActive works correctly
-  const [activeVirtualIndex, setActiveVirtualIndex] = React.useState(midStart);
+  const [activeIndex, setActiveIndex] = React.useState(0);
 
   // ── Layout ──────────────────────────────────────────────────────────
   const handleLayout = React.useCallback((e: LayoutChangeEvent) => {
@@ -85,15 +62,6 @@ export function FeedContainer({
       setContainerHeight(h);
     }
   }, [containerHeight]);
-
-  // ── Scroll to middle on mount ───────────────────────────────────────
-  // We use initialScrollIndex for the initial render, but also ensure
-  // subsequent data changes re-center if needed.
-  React.useEffect(() => {
-    if (containerHeight > 0 && canLoop && !hasScrolledRef.current) {
-      hasScrolledRef.current = true;
-    }
-  }, [containerHeight, canLoop]);
 
   // ── Viewability ─────────────────────────────────────────────────────
   const viewabilityConfig = React.useRef({
@@ -105,17 +73,16 @@ export function FeedContainer({
 
   const onViewableItemsChanged = React.useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0 && realCount > 0) {
-        const virtualIndex = viewableItems[0].index;
-        if (virtualIndex !== null) {
-          setActiveVirtualIndex(virtualIndex);
-          const realIndex = virtualIndex % realCount;
-          if (realIndex !== currentIndex) {
-            onIndexChange(realIndex);
+      if (viewableItems.length > 0 && items.length > 0) {
+        const index = viewableItems[0].index;
+        if (index !== null && index !== undefined) {
+          setActiveIndex(index);
+          if (index !== currentIndex) {
+            onIndexChange(index);
           }
 
           // Track event view when post becomes visible in feed
-          const visibleItem = items[realIndex];
+          const visibleItem = items[index];
           if (visibleItem?.eventId && !viewedEventIds.current.has(visibleItem.eventId)) {
             viewedEventIds.current.add(visibleItem.eventId);
             analyticsApi.trackEventView(visibleItem.eventId, 'mobile').catch(() => {});
@@ -123,41 +90,36 @@ export function FeedContainer({
         }
       }
     },
-    [currentIndex, onIndexChange, realCount, items]
+    [currentIndex, onIndexChange, items]
   );
 
   // ── Render item ─────────────────────────────────────────────────────
   const renderItem = React.useCallback(
-    ({ item: virtualIndex, index }: { item: number; index: number }) => {
-      const realIndex = realCount > 0 ? virtualIndex % realCount : 0;
-      const realItem = items[realIndex];
-      if (!realItem) return null;
-
+    ({ item, index }: { item: FeedItemType; index: number }) => {
       return (
         <FeedItem
-          item={realItem}
-          index={realIndex}
+          item={item}
+          index={index}
           itemHeight={containerHeight}
-          isActive={index === activeVirtualIndex}
-          isLiked={likedItems.has(realItem.id)}
-          isRsvp={rsvpItems.get(realItem.id) ?? false}
-          isPendingRsvp={pendingRsvpItems.get(realItem.id) ?? false}
-          isPurchased={purchasedItems.has(realItem.id)}
-          showDoubleTapHeart={showDoubleTapHeart === realItem.id}
-          onDoubleTap={() => onDoubleTap(realItem.id)}
-          onRsvp={() => onRsvp(realItem.id)}
-          onPendingRsvp={() => onPendingRsvp(realItem.id)}
-          onPurchase={() => onPurchase(realItem.id)}
-          onRefer={() => onRefer(realItem.id)}
-          onUserClick={() => onUserClick(realItem)}
-          onEventPress={() => onEventPress(realItem)}
+          isActive={index === activeIndex}
+          isLiked={likedItems.has(item.id)}
+          isRsvp={rsvpItems.get(item.id) ?? false}
+          isPendingRsvp={pendingRsvpItems.get(item.id) ?? false}
+          isPurchased={purchasedItems.has(item.id)}
+          showDoubleTapHeart={showDoubleTapHeart === item.id}
+          onDoubleTap={() => onDoubleTap(item.id)}
+          onRsvp={() => onRsvp(item.id)}
+          onPendingRsvp={() => onPendingRsvp(item.id)}
+          onPurchase={() => onPurchase(item.id)}
+          onRefer={() => onRefer(item.id)}
+          onUserClick={() => onUserClick(item)}
+          onEventPress={() => onEventPress(item)}
         />
       );
     },
     [
-      activeVirtualIndex,
+      activeIndex,
       containerHeight,
-      realCount,
       items,
       likedItems,
       rsvpItems,
@@ -185,9 +147,8 @@ export function FeedContainer({
   );
 
   // ── Key extractor ───────────────────────────────────────────────────
-  // Each virtual slot gets a unique key based on its position.
   const keyExtractor = React.useCallback(
-    (virtualIndex: number) => `v${virtualIndex}`,
+    (item: FeedItemType) => item.id,
     []
   );
 
@@ -200,7 +161,7 @@ export function FeedContainer({
     <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout}>
       <FlatList
         ref={flatListRef}
-        data={virtualData}
+        data={items}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         showsVerticalScrollIndicator={false}
@@ -212,13 +173,11 @@ export function FeedContainer({
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
         getItemLayout={getItemLayout}
-        initialScrollIndex={midStart}
         removeClippedSubviews
         maxToRenderPerBatch={3}
         windowSize={5}
         initialNumToRender={3}
-        bounces={false}
-        overScrollMode="never"
+        bounces
         style={styles.list}
         refreshControl={refreshControl}
       />
