@@ -235,11 +235,13 @@ export function PurchaseTicketSheet({
 
       setPaymentIntent(result);
 
-      // Initialize Stripe PaymentSheet
+      // Initialize Stripe PaymentSheet with Apple Pay and Google Pay
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: result.clientSecret,
         merchantDisplayName: 'Status',
         style: isDark ? 'alwaysDark' : 'alwaysLight',
+        applePay: { merchantCountryCode: 'US' },
+        googlePay: { merchantCountryCode: 'US', testEnv: __DEV__ },
       });
 
       if (initError) {
