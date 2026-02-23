@@ -93,8 +93,9 @@ export default function VenueTablesScreen() {
       setShowAddSection(false);
       setSectionName('');
       setSectionDesc('');
-    } catch {
-      Alert.alert('Error', 'Failed to create section. Please try again.');
+    } catch (err: any) {
+      console.error('[Tables] Failed to create section:', err?.message || err);
+      Alert.alert('Error', err?.message || 'Failed to create section. Please try again.');
     }
   };
 
@@ -104,7 +105,11 @@ export default function VenueTablesScreen() {
     try {
       let imageUrl: string | undefined;
       if (tableImageUri) {
-        imageUrl = await filesApi.uploadTableImage(tableImageUri);
+        try {
+          imageUrl = await filesApi.uploadTableImage(tableImageUri);
+        } catch (uploadErr: any) {
+          console.warn('[Tables] Image upload failed, creating table without image:', uploadErr?.message);
+        }
       }
 
       await createTable.mutateAsync({
@@ -119,8 +124,9 @@ export default function VenueTablesScreen() {
       setTableSeatCount('');
       setTablePrice('');
       setTableImageUri(null);
-    } catch {
-      Alert.alert('Error', 'Failed to create table. Please try again.');
+    } catch (err: any) {
+      console.error('[Tables] Failed to create table:', err?.message || err, err?.response || '');
+      Alert.alert('Error', err?.message || 'Failed to create table. Please try again.');
     } finally {
       setIsUploading(false);
     }

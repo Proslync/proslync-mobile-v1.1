@@ -43,3 +43,6 @@ app-example
 /ios
 /android
 /status/ios/
+
+# Local Claude context
+CLAUDE.local.md

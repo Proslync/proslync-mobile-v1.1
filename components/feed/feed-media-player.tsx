@@ -172,23 +172,31 @@ export function FeedMediaPlayer({
     }
   }, [mediaType, imageUrl, propAspectRatio, mediaWidth]);
 
+  // Safe wrappers — native player may already be released when cleanup runs
+  const safePlay = React.useCallback(() => {
+    try { player?.play(); } catch {}
+  }, [player]);
+
+  const safePause = React.useCallback(() => {
+    try { player?.pause(); } catch {}
+  }, [player]);
+
   // Handle video play/pause based on active state
   React.useEffect(() => {
     if (player && mediaType === 'video') {
       if (isActive) {
-        player.play();
+        safePlay();
       } else {
-        player.pause();
-        player.currentTime = 0;
+        safePause();
+        try { player.currentTime = 0; } catch {}
       }
     }
-    // Ensure player is paused on cleanup (unmount or deps change)
     return () => {
       if (player && mediaType === 'video') {
-        player.pause();
+        safePause();
       }
     };
-  }, [isActive, player, mediaType]);
+  }, [isActive, player, mediaType, safePlay, safePause]);
 
   // Pause video when app goes to background
   React.useEffect(() => {
@@ -196,23 +204,23 @@ export function FeedMediaPlayer({
 
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active') {
-        player.pause();
+        safePause();
       } else if (isActive) {
-        player.play();
+        safePlay();
       }
     });
 
     return () => subscription.remove();
-  }, [player, mediaType, isActive]);
+  }, [player, mediaType, isActive, safePlay, safePause]);
 
   const handleTap = () => {
     if (onSingleTap) {
       onSingleTap();
     } else if (mediaType === 'video' && player) {
       if (player.playing) {
-        player.pause();
+        safePause();
       } else {
-        player.play();
+        safePlay();
       }
     }
   };

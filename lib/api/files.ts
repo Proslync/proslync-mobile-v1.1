@@ -155,9 +155,13 @@ export const filesApi = {
   uploadTableImage: async (fileUri: string): Promise<string> => {
     const { name, type } = getFileInfoFromUri(fileUri);
 
+    console.log('[FilesApi] Table image upload:', { name, type, uri: fileUri.substring(0, 80) });
+
     const fileResponse = await fetch(fileUri);
     const blob = await fileResponse.blob();
     const fileSize = blob.size.toString();
+
+    console.log('[FilesApi] Blob size:', fileSize, 'blob.type:', blob.type);
 
     // Step 1: Get presigned URL
     const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
@@ -167,7 +171,10 @@ export const filesApi = {
       fileSize,
     });
 
-    // Step 2: Upload to S3
+    console.log('[FilesApi] Got presigned URL for table image, fileId:', fileId);
+
+    // Use the same Content-Type that was used to generate the signed URL
+    // Step 2: Upload to GCS/S3
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
       body: blob,
@@ -175,6 +182,8 @@ export const filesApi = {
     });
 
     if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text().catch(() => '');
+      console.error('[FilesApi] Table image upload failed:', uploadResponse.status, errorText);
       throw new Error(`Upload failed: ${uploadResponse.status}`);
     }
 
