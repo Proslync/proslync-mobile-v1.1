@@ -7,6 +7,8 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { FeedTab } from '@/lib/types/feed.types';
 
@@ -21,33 +23,52 @@ export function FeedHeader({
 }: FeedHeaderProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
+  const router = useRouter();
 
   return (
     <Animated.View
       entering={FadeInDown.duration(500)}
       style={[styles.container, { paddingTop: insets.top + 8 }]}
     >
-      <View style={styles.tabRow}>
+      <View style={styles.headerRow}>
         <TouchableOpacity
-          onPress={() => onTabChange('foryou')}
+          style={styles.iconButton}
+          onPress={() => router.push('/search-screen')}
           activeOpacity={0.7}
-          style={styles.tab}
         >
-          <Text style={[styles.tabText, { color: colors.textTertiary }, activeTab === 'foryou' && { color: colors.text }]}>
-            For You
-          </Text>
-          {activeTab === 'foryou' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
+          <Ionicons name="search-outline" size={22} color={colors.text} />
         </TouchableOpacity>
 
+        <View style={styles.tabRow}>
+          <TouchableOpacity
+            onPress={() => onTabChange('foryou')}
+            activeOpacity={0.7}
+            style={styles.tab}
+          >
+            <Text style={[styles.tabText, { color: colors.textTertiary }, activeTab === 'foryou' && { color: colors.text }]}>
+              For You
+            </Text>
+            {activeTab === 'foryou' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => onTabChange('following')}
+            activeOpacity={0.7}
+            style={styles.tab}
+          >
+            <Text style={[styles.tabText, { color: colors.textTertiary }, activeTab === 'following' && { color: colors.text }]}>
+              Following
+            </Text>
+            {activeTab === 'following' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity
-          onPress={() => onTabChange('following')}
+          style={styles.iconButton}
+          onPress={() => router.push('/notifications')}
           activeOpacity={0.7}
-          style={styles.tab}
         >
-          <Text style={[styles.tabText, { color: colors.textTertiary }, activeTab === 'following' && { color: colors.text }]}>
-            Following
-          </Text>
-          {activeTab === 'following' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
+          <Ionicons name="notifications-outline" size={22} color={colors.text} />
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -63,6 +84,17 @@ const styles = StyleSheet.create({
     zIndex: 50,
     paddingHorizontal: 16,
     paddingBottom: 8,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  iconButton: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabRow: {
     flexDirection: 'row',

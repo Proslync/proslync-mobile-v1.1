@@ -21,6 +21,7 @@ import {
   mapEventToDiscover,
   mapVenueToDiscover,
 } from '@/hooks/use-search';
+import { useFollowVenue } from '@/hooks/use-follow-venue';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { DiscoverCategory, DiscoverPerson, DiscoverEvent, DiscoverVenue } from '@/lib/types/search.types';
 
@@ -153,6 +154,29 @@ function VenueCard({
   onPress: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
 }) {
+  const {
+    isFollowing,
+    isLoading: isFollowLoading,
+    follow,
+    unfollow,
+    isFollowInProgress,
+    isUnfollowInProgress,
+  } = useFollowVenue(venue.id);
+
+  const isActionInProgress = isFollowInProgress || isUnfollowInProgress;
+
+  const handleFollowPress = useCallback(async () => {
+    try {
+      if (isFollowing) {
+        await unfollow();
+      } else {
+        await follow();
+      }
+    } catch (error) {
+      console.error('[VenueCard] Follow/unfollow error:', error);
+    }
+  }, [isFollowing, follow, unfollow]);
+
   return (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
       <TouchableOpacity
@@ -182,7 +206,24 @@ function VenueCard({
             </Text>
           </View>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+        <TouchableOpacity
+          style={[
+            styles.followButton,
+            isFollowing && styles.followButtonActive,
+          ]}
+          onPress={handleFollowPress}
+          disabled={isFollowLoading || isActionInProgress}
+          activeOpacity={0.7}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          {isActionInProgress ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.followButtonText}>
+              {isFollowLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+            </Text>
+          )}
+        </TouchableOpacity>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -676,6 +717,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
     flex: 1,
+  },
+  // Venue Follow Button
+  followButton: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    minWidth: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  followButtonActive: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  followButtonText: {
+    fontSize: 12,
+    fontFamily: 'Lato_600SemiBold',
+    color: '#fff',
   },
   // States
   loadingState: {

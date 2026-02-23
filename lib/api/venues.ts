@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import type { Venue } from '../types/events.types';
+import type { VenueFollowersResponse } from '../types/venues.types';
 
 export const venuesApi = {
   /**
@@ -16,5 +17,39 @@ export const venuesApi = {
    */
   getVenue: async (id: number): Promise<Venue> => {
     return apiClient.get<Venue>(`/api/venues/${id}`);
+  },
+
+  /**
+   * Follow a venue (syncs with backend DB after Stream follow)
+   * Backend endpoint: POST /api/venues/:id/follow
+   */
+  followVenue: async (venueId: number): Promise<{ success: boolean; message: string }> => {
+    return apiClient.post<{ success: boolean; message: string }>(`/api/venues/${venueId}/follow`);
+  },
+
+  /**
+   * Unfollow a venue (syncs with backend DB after Stream unfollow)
+   * Backend endpoint: DELETE /api/venues/:id/follow
+   */
+  unfollowVenue: async (venueId: number): Promise<{ success: boolean; message: string }> => {
+    return apiClient.delete<{ success: boolean; message: string }>(`/api/venues/${venueId}/follow`);
+  },
+
+  /**
+   * Get paginated followers for a venue
+   * Backend endpoint: GET /api/venues/:id/followers
+   */
+  getVenueFollowers: async (
+    venueId: number,
+    params?: { page?: number; limit?: number; search?: string },
+  ): Promise<VenueFollowersResponse> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    const qs = query.toString();
+    return apiClient.get<VenueFollowersResponse>(
+      `/api/venues/${venueId}/followers${qs ? `?${qs}` : ''}`,
+    );
   },
 };

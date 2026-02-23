@@ -1,0 +1,338 @@
+import { useState, useCallback } from 'react';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { GlassSurface } from '@/components/glass/glass-surface';
+import { useVenueFollowers, useDebounce } from '@/hooks';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
+import type { VenueFollower } from '@/lib/types/venues.types';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function getInitials(follower: VenueFollower): string {
+  const first = follower.firstName?.[0] || '';
+  const last = follower.lastName?.[0] || '';
+  if (first || last) return `${first}${last}`.toUpperCase();
+  if (follower.userName) return follower.userName[0].toUpperCase();
+  return '?';
+}
+
+function getDisplayName(follower: VenueFollower): string {
+  if (follower.firstName || follower.lastName) {
+    return `${follower.firstName || ''} ${follower.lastName || ''}`.trim();
+  }
+  return follower.userName || 'User';
+}
+
+function getRelativeTime(dateString: string): string {
+  const now = Date.now();
+  const then = new Date(dateString).getTime();
+  const diffMs = now - then;
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) return `${diffDays}d ago`;
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths < 12) return `${diffMonths}mo ago`;
+  const diffYears = Math.floor(diffMonths / 12);
+  return `${diffYears}y ago`;
+}
+
+export default function FollowersScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
+
+  const [searchText, setSearchText] = useState('');
+  const debouncedSearch = useDebounce(searchText, 300);
+
+  const venueId = id ? Number(id) : undefined;
+
+  const {
+    followers,
+    total,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useVenueFollowers({
+    venueId,
+    search: debouncedSearch || undefined,
+  });
+
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
+
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const renderFollower = useCallback(
+    ({ item, index }: { item: VenueFollower; index: number }) => {
+      const name = getDisplayName(item);
+
+      return (
+        <Animated.View entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}>
+          <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.followerRow}>
+            {item.avatarUrl ? (
+              <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatarFallback, { backgroundColor: colors.backgroundSecondary }]}>
+                <Text style={[styles.avatarInitials, { color: colors.text }]}>
+                  {getInitials(item)}
+                </Text>
+              </View>
+            )}
+            <View style={styles.followerInfo}>
+              <Text style={[styles.followerName, { color: colors.text }]} numberOfLines={1}>
+                {name}
+              </Text>
+              {item.userName ? (
+                <Text style={[styles.followerSubtext, { color: colors.textTertiary }]} numberOfLines={1}>
+                  @{item.userName}
+                </Text>
+              ) : null}
+            </View>
+            <Text style={[styles.followedDate, { color: colors.textTertiary }]}>
+              {getRelativeTime(item.followedAt)}
+            </Text>
+          </GlassSurface>
+        </Animated.View>
+      );
+    },
+    [colors],
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
+
+      {/* Header */}
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+      >
+        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Followers</Text>
+          {!isLoading && (
+            <View style={[styles.countBadge, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+              <Text style={[styles.countText, { color: colors.text }]}>{total}</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.headerButton} />
+      </Animated.View>
+
+      {/* Search */}
+      <View style={styles.searchSection}>
+        <View
+          style={[
+            styles.searchBar,
+            { backgroundColor: colors.input, borderColor: colors.inputBorder },
+          ]}
+        >
+          <Ionicons name="search" size={18} color={colors.placeholder} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search followers..."
+            placeholderTextColor={colors.placeholder}
+            value={searchText}
+            onChangeText={setSearchText}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchText('')}>
+              <Ionicons name="close-circle" size={18} color={colors.placeholder} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Followers List */}
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.text} />
+        </View>
+      ) : followers.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>No followers yet</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
+            {searchText
+              ? 'No followers match your search'
+              : 'When people follow your venue, they\u2019ll appear here'}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={followers}
+          renderItem={renderFollower}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.text} />
+              </View>
+            ) : null
+          }
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+  },
+  countBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  countText: {
+    fontSize: 12,
+    fontFamily: 'Lato_700Bold',
+  },
+  searchSection: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    padding: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  listContent: {
+    padding: 16,
+    gap: 8,
+  },
+  followerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 12,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  avatarFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitials: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+  },
+  followerInfo: {
+    flex: 1,
+  },
+  followerName: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+  },
+  followerSubtext: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 1,
+  },
+  followedDate: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+  },
+  footerLoader: {
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+});
