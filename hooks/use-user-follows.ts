@@ -4,8 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { followsApi } from '@/lib/api/follows';
 import type { UserFollowItem, VenueFollowItem } from '@/lib/types/follows.types';
 
-// Default avatar for users without one
-const DEFAULT_AVATAR = 'https://picsum.photos/200';
+// No default — consumers use require('@/assets/images/default-avatar.png') at render
 
 // Interface for display in UI (used by profile screen)
 export interface FollowUser {
@@ -32,7 +31,7 @@ function transformUserItem(item: UserFollowItem): FollowUser {
     userName: item.userName || 'user',
     firstName: item.firstName || '',
     lastName: item.lastName || '',
-    avatar: item.avatarUrl || DEFAULT_AVATAR,
+    avatar: item.avatarUrl || '',
   };
 }
 
@@ -43,7 +42,7 @@ function transformVenueItem(item: VenueFollowItem): FollowVenue {
   return {
     id: item.id.toString(),
     name: item.name,
-    logo: item.logoUrl || DEFAULT_AVATAR,
+    logo: item.logoUrl || '',
   };
 }
 

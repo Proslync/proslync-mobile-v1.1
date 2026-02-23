@@ -129,4 +129,16 @@ export const analyticsApi = {
       `/api/analytics/events/${eventId}/revenue/timeseries?range=${range}`,
     );
   },
+
+  /**
+   * Get aggregated time series for a venue (all events at the venue)
+   */
+  getVenueTimeSeries: async (
+    venueId: number,
+    range: string = '1M',
+  ): Promise<TimeSeriesResponse> => {
+    return apiClient.get<TimeSeriesResponse>(
+      `/api/analytics/venues/${venueId}/timeseries?range=${range}`,
+    );
+  },
 };

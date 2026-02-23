@@ -1,13 +1,17 @@
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useEvent, useEventMarketingStats, usePublishEvent, useEventPermissions } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { EventStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import Constants from 'expo-constants';
+import { useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
   ScrollView,
   Share,
   StyleSheet,
@@ -17,6 +21,14 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Mapbox, { MapView, Camera, MarkerView } from '@rnmapbox/maps';
+
+const isExpoGo = Constants.appOwnership === 'expo';
+const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+if (MAPBOX_TOKEN && !isExpoGo) {
+  Mapbox.setAccessToken(MAPBOX_TOKEN);
+}
+const DARK_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';
 
 const STATS_CONFIG = [
   { key: 'totalRSVPs', label: 'Total RSVPs', icon: 'people-outline' as const },
@@ -27,7 +39,7 @@ const STATS_CONFIG = [
 
 export default function OverviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const router = useStableRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
@@ -165,6 +177,59 @@ export default function OverviewScreen() {
             </TouchableOpacity>
           )}
         </Animated.View>
+
+        {/* Venue Map */}
+        {event?.latitude && event?.longitude && !isExpoGo && MAPBOX_TOKEN && (
+          <Animated.View entering={FadeInDown.delay(350).duration(300)}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Venue</Text>
+            {event.venueName && (
+              <Text style={[styles.venueLabel, { color: colors.textSecondary }]}>{event.venueName}</Text>
+            )}
+            {event.address && (
+              <Text style={[styles.venueAddress, { color: colors.textTertiary }]}>{event.address}</Text>
+            )}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => {
+                const coords = `${event.latitude},${event.longitude}`;
+                const label = encodeURIComponent(event.venueName || event.name || 'Event');
+                const url = Platform.select({
+                  ios: `maps:0,0?q=${label}@${coords}`,
+                  default: `geo:${coords}?q=${coords}(${label})`,
+                });
+                if (url) Linking.openURL(url);
+              }}
+            >
+              <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.mapContainer}>
+                <MapView
+                  style={styles.map}
+                  styleURL={DARK_STYLE_URL}
+                  logoEnabled={false}
+                  attributionEnabled={false}
+                  compassEnabled={false}
+                  scaleBarEnabled={false}
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  pitchEnabled={false}
+                  rotateEnabled={false}
+                >
+                  <Camera
+                    defaultSettings={{
+                      centerCoordinate: [event.longitude, event.latitude],
+                      zoomLevel: 14,
+                    }}
+                  />
+                  <MarkerView coordinate={[event.longitude, event.latitude]}>
+                    <View style={styles.marker}>
+                      <Ionicons name="location" size={28} color="#fff" />
+                    </View>
+                  </MarkerView>
+                </MapView>
+              </GlassSurface>
+            </TouchableOpacity>
+            <Text style={[styles.mapHint, { color: colors.textTertiary }]}>Tap to open in Maps</Text>
+          </Animated.View>
+        )}
       </ScrollView>
     </View>
   );
@@ -250,5 +315,38 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
+  },
+  venueLabel: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    marginBottom: 2,
+  },
+  venueAddress: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginBottom: 12,
+  },
+  mapContainer: {
+    overflow: 'hidden',
+  },
+  map: {
+    height: 200,
+    borderRadius: 12,
+  },
+  marker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mapHint: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });

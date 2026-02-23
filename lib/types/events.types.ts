@@ -15,6 +15,7 @@ export interface Flyer {
 export interface Venue {
   id: number;
   name: string;
+  description?: string;
   address?: string;
   city?: string;
   state?: string;
@@ -22,6 +23,11 @@ export interface Venue {
   latitude?: number;
   longitude?: number;
   imageUrl?: string;
+  phoneNumber?: string;
+  email?: string;
+  website?: string;
+  status?: string;
+  ownerId?: number;
 }
 
 export enum EventStatus {
@@ -58,6 +64,15 @@ export interface Event {
   isPaid?: boolean;
   ticketsAvailableNow?: boolean;
   ticketsAvailableFrom?: string | null;
+  locationDetails?: {
+    addressLine1?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    formattedAddress?: string;
+    coordinates?: { lat: number; lng: number };
+  };
 }
 
 export interface EventsSearchResponse {

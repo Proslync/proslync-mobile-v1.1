@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -16,7 +17,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -39,7 +39,7 @@ const POST_GAP = 2;
 const POST_SIZE = (SCREEN_WIDTH - POST_GAP * 2) / 3;
 
 // Default avatar placeholder
-const DEFAULT_AVATAR = 'https://picsum.photos/200';
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 // Storage key for saved accounts
 const SAVED_ACCOUNTS_KEY = 'saved_accounts';
@@ -92,7 +92,7 @@ function UserListItem({
   user: FollowUser;
   currentUserId?: number;
 }) {
-  const router = useRouter();
+  const router = useStableRouter();
   const {
     isFollowing,
     isLoading: followLoading,
@@ -269,7 +269,7 @@ function AccountSwitcherModal({
                 activeOpacity={isCurrentAccount ? 1 : 0.7}
               >
                 <Image
-                  source={{ uri: account.avatarUrl || DEFAULT_AVATAR }}
+                  source={account.avatarUrl ? { uri: account.avatarUrl } : DefaultAvatarImage}
                   style={styles.accountAvatar}
                 />
                 <View style={styles.accountInfo}>
@@ -304,7 +304,7 @@ function AccountSwitcherModal({
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { user, isLoading, logout, switchAccount } = useAuth();
   const { showSuccess, showError } = useToast();
   const { isAccountSwitcherOpen, closeAccountSwitcher, openAccountSwitcher } = useTabNavigation();
@@ -347,7 +347,7 @@ export default function ProfileScreen() {
     : 'User';
   const username = user?.userName || 'username';
   const bio = user?.bio || '';
-  const avatarUrl = user?.avatar?.url || DEFAULT_AVATAR;
+  const avatarUrl = user?.avatar?.url;
 
   // Use real counts from activities
   const postsCount = userPosts.length;
@@ -433,9 +433,19 @@ export default function ProfileScreen() {
     lastTapRef.current = now;
   };
 
+  // Remove a saved account from storage (expired session)
+  const removeSavedAccount = React.useCallback(async (accountId: number) => {
+    setSavedAccounts((prev) => {
+      const updated = prev.filter((a) => a.id !== accountId);
+      AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated)).catch(() => {});
+      return updated;
+    });
+  }, []);
+
   const handleSelectAccount = async (account: SavedAccount) => {
     if (!account.accessToken) {
       showError(`Session expired for @${account.userName || 'user'}. Please log in again.`);
+      removeSavedAccount(account.id);
       closeAccountSwitcher();
       return;
     }
@@ -449,11 +459,22 @@ export default function ProfileScreen() {
       showSuccess(`Switched to @${account.userName || 'user'}`);
     } else {
       showError(`Session expired for @${account.userName || 'user'}. Please log in again.`);
+      removeSavedAccount(account.id);
     }
   };
 
-  const handleAddAccount = () => {
+  const handleAddAccount = async () => {
     closeAccountSwitcher();
+    // Clear tokens from saved account so it shows as inactive
+    if (user?.id) {
+      setSavedAccounts((prev) => {
+        const updated = prev.map((a) =>
+          a.id === user.id ? { ...a, accessToken: undefined, refreshToken: undefined } : a
+        );
+        AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated)).catch(() => {});
+        return updated;
+      });
+    }
     // Navigate to sign in screen to add new account
     logout();
   };
@@ -496,7 +517,7 @@ export default function ProfileScreen() {
         {/* Header - Centered Username */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="lock-closed-outline" size={20} color={colors.text} />
+            <Ionicons name="add" size={24} color={colors.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -523,7 +544,7 @@ export default function ProfileScreen() {
           style={styles.profileRow}
         >
           <TouchableOpacity onPress={handleAvatarDoubleTap} activeOpacity={0.9}>
-            <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: colors.border }]} />
+            <Image source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage} style={[styles.avatar, { borderColor: colors.border }]} />
           </TouchableOpacity>
           <View style={styles.statsRow}>
             <TouchableOpacity style={styles.statButton} activeOpacity={1}>
@@ -686,11 +707,11 @@ export default function ProfileScreen() {
         currentUserId={user?.id}
       />
 
-      {/* Account Switcher Modal */}
+      {/* Account Switcher Modal - only show accounts with active sessions */}
       <AccountSwitcherModal
         visible={isAccountSwitcherOpen}
         currentUserId={user?.id}
-        savedAccounts={savedAccounts}
+        savedAccounts={savedAccounts.filter((a) => a.id === user?.id || !!a.accessToken)}
         onClose={closeAccountSwitcher}
         onSelectAccount={handleSelectAccount}
         onAddAccount={handleAddAccount}

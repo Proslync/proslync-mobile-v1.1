@@ -6,6 +6,7 @@ export default function ManageEventLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="overview" />
       <Stack.Screen name="attendees" />
+      <Stack.Screen name="check-ins" />
       <Stack.Screen name="analytics" />
       <Stack.Screen name="pricing" />
       <Stack.Screen name="marketing" />

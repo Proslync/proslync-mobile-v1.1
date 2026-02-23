@@ -48,16 +48,18 @@ interface ShareLocationSheetProps {
 }
 
 function formatRemainingTime(seconds: number): string {
-  if (seconds <= 0) return '0:00';
+  if (seconds <= 0) return '0m';
 
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
 
-  if (hours > 0) {
-    return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  if (hours > 0 && mins > 0) {
+    return `${hours}h ${mins}m remaining`;
   }
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  if (hours > 0) {
+    return `${hours}h remaining`;
+  }
+  return `${mins}m remaining`;
 }
 
 export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetProps) {
@@ -78,21 +80,11 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
   const [isStarting, setIsStarting] = React.useState(false);
   const [showVisibility, setShowVisibility] = React.useState(false);
 
-  // Animated pulse for live indicator
-  const livePulse = useSharedValue(1);
+  // Animated pulse for live dot
   const dotPulse = useSharedValue(1);
-  const glowOpacity = useSharedValue(0.3);
 
   React.useEffect(() => {
     if (sharingState.isSharing) {
-      livePulse.value = withRepeat(
-        withSequence(
-          withTiming(1.4, { duration: 1000 }),
-          withTiming(1, { duration: 1000 })
-        ),
-        -1,
-        true
-      );
       dotPulse.value = withRepeat(
         withSequence(
           withTiming(0.4, { duration: 800 }),
@@ -101,28 +93,11 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
         -1,
         true
       );
-      glowOpacity.value = withRepeat(
-        withSequence(
-          withTiming(0.6, { duration: 1500 }),
-          withTiming(0.2, { duration: 1500 })
-        ),
-        -1,
-        true
-      );
     }
   }, [sharingState.isSharing]);
 
-  const livePulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: livePulse.value }],
-    opacity: 2 - livePulse.value,
-  }));
-
   const dotPulseStyle = useAnimatedStyle(() => ({
     opacity: dotPulse.value,
-  }));
-
-  const timerGlowStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
   }));
 
   React.useEffect(() => {
@@ -192,7 +167,7 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
       <BottomSheet
         ref={bottomSheetRef}
         index={-1}
-        snapPoints={[sharingState.isSharing ? 440 : 500]}
+        snapPoints={[sharingState.isSharing ? 340 : 500]}
         enablePanDownToClose
         onClose={onClose}
         backgroundStyle={[
@@ -235,9 +210,8 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
           {/* Active sharing state */}
           {sharingState.isSharing ? (
             <View style={styles.activeContainer}>
-              {/* Live badge with pulse ring */}
+              {/* Live badge */}
               <View style={styles.liveBadgeWrap}>
-                <Animated.View style={[styles.livePulseRing, livePulseStyle, { borderColor: '#00D632' }]} />
                 <View style={styles.liveBadge}>
                   <Animated.View style={[styles.liveDot, { backgroundColor: '#00D632' }, dotPulseStyle]} />
                   <GlassText weight="bold" size={11} style={{ ...styles.liveText, color: iconColor }}>LIVE</GlassText>
@@ -252,45 +226,29 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
                 Visible to: {visibilityLabel}
               </GlassText>
 
-              {/* Timer card with glow */}
+              {/* Timer display */}
               <View style={styles.timerWrap}>
-                {/* Ambient glow behind timer */}
-                <Animated.View style={[styles.timerGlow, timerGlowStyle]}>
-                  <LinearGradient
-                    colors={glowGradientColors}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                </Animated.View>
                 <GlassCard
-                  fill="medium"
-                  border="medium"
-                  cornerRadius="2xl"
-                  shadowLevel="lg"
-                  blurIntensity="strong"
+                  fill="subtle"
+                  border="subtle"
+                  cornerRadius="lg"
+                  shadowLevel="sm"
+                  blurIntensity="light"
                   style={styles.timerCard}
                 >
-                  {/* Inner gradient highlight */}
-                  <LinearGradient
-                    colors={highlightGradientColors}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 0.6 }}
-                    style={styles.innerHighlight}
-                  />
                   <View style={styles.timerContent}>
                     {sharingState.duration === 0 ? (
-                      <>
-                        <Ionicons name="infinite" size={52} color={iconColor} style={{ marginBottom: 4 }} />
-                        <GlassText hierarchy="secondary" size={14}>Always on</GlassText>
-                      </>
+                      <View style={styles.timerRow}>
+                        <Ionicons name="infinite" size={20} color={iconColor} />
+                        <GlassText hierarchy="secondary" size={15}>Sharing permanently</GlassText>
+                      </View>
                     ) : (
-                      <>
-                        <GlassText weight="light" size={56} style={styles.timerValue}>
-                          {remainingTime !== null ? formatRemainingTime(remainingTime) : '--:--'}
+                      <View style={styles.timerRow}>
+                        <Ionicons name="time-outline" size={18} color={subtleIconColor} />
+                        <GlassText hierarchy="secondary" size={15}>
+                          {remainingTime !== null ? formatRemainingTime(remainingTime) : '--'}
                         </GlassText>
-                        <GlassText hierarchy="muted" size={14}>remaining</GlassText>
-                      </>
+                      </View>
                     )}
                   </View>
                 </GlassCard>
@@ -324,14 +282,16 @@ export function ShareLocationSheet({ isVisible, onClose }: ShareLocationSheetPro
               </GlassCard>
 
               {/* Stop button */}
-              <GlassButton
-                label="Stop Sharing"
-                variant="glass"
-                size="lg"
-                fullWidth
+              <TouchableOpacity
                 onPress={handleStopSharing}
-                icon={<Ionicons name="stop-circle" size={18} color={iconColor} />}
-              />
+                activeOpacity={0.7}
+                style={styles.stopButton}
+              >
+                <Ionicons name="stop-circle" size={16} color="#fff" />
+                <GlassText weight="bold" size={14} style={{ color: '#fff' }}>
+                  Stop Sharing
+                </GlassText>
+              </TouchableOpacity>
             </View>
           ) : (
             /* Pick duration */
@@ -541,17 +501,9 @@ const styles = StyleSheet.create({
 
   // Live badge
   liveBadgeWrap: {
-    position: 'relative',
     marginBottom: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  livePulseRing: {
-    position: 'absolute',
-    width: 72,
-    height: 32,
-    borderRadius: radius.md,
-    borderWidth: 1.5,
   },
   liveBadge: {
     flexDirection: 'row',
@@ -573,17 +525,8 @@ const styles = StyleSheet.create({
   // Timer
   timerWrap: {
     width: '100%',
-    marginTop: spacing.xl,
-    marginBottom: spacing.lg,
-    position: 'relative',
-  },
-  timerGlow: {
-    position: 'absolute',
-    top: -20,
-    left: '10%',
-    right: '10%',
-    height: 80,
-    borderRadius: 40,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
   },
   timerCard: {
     width: '100%',
@@ -598,12 +541,26 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius['2xl'],
   },
   timerContent: {
-    alignItems: 'center',
-    paddingVertical: spacing['2xl'],
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  timerValue: {
-    letterSpacing: 2,
-    fontVariant: ['tabular-nums'],
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  // Stop button
+  stopButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(220, 38, 38, 0.85)',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignSelf: 'center',
   },
 
   // Visibility row (active state)

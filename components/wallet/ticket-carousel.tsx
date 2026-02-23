@@ -28,8 +28,6 @@ interface TicketCardProps {
 }
 
 function TicketCard({ event, onView, onActions, colors, isDark }: TicketCardProps) {
-  const isListed = event.ticketStatus === 'listed';
-
   return (
     <TouchableOpacity
       style={[
@@ -47,14 +45,6 @@ function TicketCard({ event, onView, onActions, colors, isDark }: TicketCardProp
         <Text style={[styles.ticketDate, { color: colors.textSecondary }]}>{event.dateTimeLabel}</Text>
         <View style={styles.ticketMeta}>
           <Text style={[styles.ticketVenue, { color: colors.textTertiary }]}>{event.venueName}</Text>
-          {isListed && (
-            <View style={styles.listedTag}>
-              <Ionicons name="pricetag" size={10} color="#22c55e" />
-              <Text style={styles.listedTagText}>
-                ${event.listedPrice?.toFixed(2)}
-              </Text>
-            </View>
-          )}
         </View>
       </View>
       <TouchableOpacity
@@ -71,7 +61,7 @@ function TicketCard({ event, onView, onActions, colors, isDark }: TicketCardProp
         activeOpacity={0.7}
       >
         <Text style={[styles.viewBtnText, { color: isDark ? '#fff' : '#000' }]}>
-          {isListed ? 'Listed' : 'View'}
+          View
         </Text>
       </TouchableOpacity>
     </TouchableOpacity>
@@ -92,7 +82,7 @@ export function TicketCarousel({ events, onViewEvent, onActionComplete }: Ticket
 
   return (
     <View style={[styles.container, { borderTopColor: colors.border }]}>
-      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Upcoming Tickets</Text>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Your Tickets</Text>
       {upcomingEvents.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="ticket-outline" size={40} color={colors.textTertiary} />
@@ -172,20 +162,6 @@ const styles = StyleSheet.create({
   ticketVenue: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-  },
-  listedTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  listedTagText: {
-    fontSize: 10,
-    fontFamily: 'Lato_700Bold',
-    color: '#22c55e',
   },
   viewBtn: {
     paddingHorizontal: 16,

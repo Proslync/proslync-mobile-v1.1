@@ -9,13 +9,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -31,9 +24,7 @@ interface FeedMediaPlayerProps {
   imageUrl?: string;
   poster?: string;
   isActive: boolean;
-  onDoubleTap?: () => void;
   onSingleTap?: () => void;
-  isLiked?: boolean;
   overlay?: React.ReactNode;
   // Dynamic aspect ratio from GetStream
   aspectRatio?: number;
@@ -69,9 +60,7 @@ export function FeedMediaPlayer({
   imageUrl,
   poster,
   isActive,
-  onDoubleTap,
   onSingleTap,
-  isLiked,
   overlay,
   aspectRatio: propAspectRatio,
   mediaWidth,
@@ -81,14 +70,11 @@ export function FeedMediaPlayer({
   maxHeight: propMaxHeight,
 }: FeedMediaPlayerProps) {
   const { colors, isDark } = useAppTheme();
-  const lastTapRef = React.useRef<number>(0);
-  const [showHeartAnimation, setShowHeartAnimation] = React.useState(false);
   const [detectedAspectRatio, setDetectedAspectRatio] = React.useState<number | null>(null);
   const [videoAspectRatio, setVideoAspectRatio] = React.useState<number | null>(null);
   const [isLoadingImageRatio, setIsLoadingImageRatio] = React.useState(
     mediaType === 'image' && !propAspectRatio && !mediaWidth
   );
-  const heartScale = useSharedValue(0);
 
   // Track if video ratio detection is in progress
   const [isLoadingVideoRatio, setIsLoadingVideoRatio] = React.useState(
@@ -198,47 +184,16 @@ export function FeedMediaPlayer({
   }, [isActive, player, mediaType]);
 
   const handleTap = () => {
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTapRef.current;
-
-    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-      // Double tap - trigger like animation
-      if (onDoubleTap) {
-        onDoubleTap();
-        setShowHeartAnimation(true);
-        heartScale.value = withSequence(
-          withSpring(1.2, { damping: 10, stiffness: 400 }),
-          withTiming(1, { duration: 100 }),
-          withTiming(0, { duration: 300 })
-        );
-        setTimeout(() => setShowHeartAnimation(false), 800);
+    if (onSingleTap) {
+      onSingleTap();
+    } else if (mediaType === 'video' && player) {
+      if (player.playing) {
+        player.pause();
+      } else {
+        player.play();
       }
-      lastTapRef.current = 0;
-    } else {
-      // Single tap
-      lastTapRef.current = now;
-      setTimeout(() => {
-        if (lastTapRef.current === now) {
-          // Single tap confirmed - navigate to event
-          if (onSingleTap) {
-            onSingleTap();
-          } else if (mediaType === 'video' && player) {
-            // Fallback: Toggle play/pause for video if no single tap handler
-            if (player.playing) {
-              player.pause();
-            } else {
-              player.play();
-            }
-          }
-        }
-      }, 300);
     }
   };
-
-  const heartAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: heartScale.value }],
-    opacity: heartScale.value,
-  }));
 
   // Dynamic media wrapper style based on calculated dimensions
   // Background uses theme-aware secondary background color
@@ -275,12 +230,6 @@ export function FeedMediaPlayer({
             {overlay}
           </View>
 
-          {/* Heart animation on double tap */}
-          {showHeartAnimation && (
-            <Animated.View style={[styles.heartContainer, heartAnimatedStyle]}>
-              <Text style={styles.heartIcon}>❤️</Text>
-            </Animated.View>
-          )}
         </View>
       </TouchableWithoutFeedback>
     );
@@ -308,12 +257,6 @@ export function FeedMediaPlayer({
             {overlay}
           </View>
 
-          {/* Heart animation on double tap */}
-          {showHeartAnimation && (
-            <Animated.View style={[styles.heartContainer, heartAnimatedStyle]}>
-              <Text style={styles.heartIcon}>❤️</Text>
-            </Animated.View>
-          )}
         </View>
       </TouchableWithoutFeedback>
     );
@@ -341,18 +284,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  heartContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heartIcon: {
-    fontSize: 96,
   },
   fallback: {
     flex: 1,

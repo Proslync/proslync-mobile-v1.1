@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle, Line } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle, Line, Text as SvgText } from 'react-native-svg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
@@ -39,6 +39,7 @@ export interface AnalyticsMetric {
   deltaText: string;
   isPositive: boolean;
   seriesByRange: Record<string, number[]>;
+  datesByRange?: Record<string, string[]>;
 }
 
 export const DASHBOARD_TIME_RANGES: TimeRange[] = ['1D', '1W', '1M', '3M', '1Y', '5Y'];
@@ -158,27 +159,89 @@ function getChartPoints(
   }));
 }
 
+/** Format a date string for the tooltip based on the time range */
+function formatTooltipDate(dateStr: string, range: TimeRange): string {
+  const d = new Date(dateStr);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  if (range === '12H' || range === '1D') {
+    const h = d.getHours();
+    const min = d.getMinutes().toString().padStart(2, '0');
+    return `${months[d.getMonth()]} ${d.getDate()}, ${h % 12 || 12}:${min} ${h >= 12 ? 'PM' : 'AM'}`;
+  }
+  if (range === '1W' || range === '2W' || range === '1M') {
+    return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  }
+  return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+/** Pick ~5 evenly-spaced date strings and format them for the X-axis */
+function formatXAxisDates(dates: string[], range: TimeRange): { label: string; fraction: number }[] {
+  if (dates.length < 2) return [];
+
+  const labelCount = Math.min(5, dates.length);
+  const result: { label: string; fraction: number }[] = [];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  for (let i = 0; i < labelCount; i++) {
+    const fraction = i / (labelCount - 1);
+    const dataIndex = Math.round(fraction * (dates.length - 1));
+    const d = new Date(dates[dataIndex]);
+
+    let label: string;
+    if (range === '12H' || range === '1D') {
+      const h = d.getHours();
+      label = `${h % 12 || 12}${h >= 12 ? 'PM' : 'AM'}`;
+    } else if (range === '1W' || range === '2W') {
+      label = `${days[d.getDay()]}`;
+    } else if (range === '1M' || range === '3M' || range === '6M') {
+      label = `${months[d.getMonth()]} ${d.getDate()}`;
+    } else {
+      label = `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
+    }
+
+    result.push({ label, fraction });
+  }
+
+  return result;
+}
+
 // ─── Hero Line Chart ────────────────────────────────────────
 export function HeroLineChart({
   data,
+  dates,
   isPositive,
   metricLabel,
+  selectedRange = '1M',
   colors,
   isDark,
 }: {
   data: number[];
+  dates?: string[];
   isPositive: boolean;
   metricLabel?: string;
+  selectedRange?: TimeRange;
   colors: ThemeColors;
   isDark: boolean;
 }) {
   const chartWidth = SCREEN_WIDTH - 32;
+  const xAxisHeight = 20;
   const chartHeight = SCREEN_HEIGHT * 0.28;
+  const totalHeight = chartHeight + xAxisHeight;
   const chartPadding = 4;
   const color = isPositive ? '#00D632' : '#FF3B30';
   const gradientId = 'heroGrad';
+  const isRate = !!metricLabel?.toLowerCase().includes('rate');
+  const labelColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)';
 
   const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+
+  // Compute X-axis labels from real date strings
+  const xLabels = React.useMemo(
+    () => dates && dates.length >= 2 ? formatXAxisDates(dates, selectedRange) : [],
+    [dates, selectedRange],
+  );
 
   const linePath = buildSmoothPath(data, chartWidth, chartHeight, chartPadding);
   const areaPath = buildAreaPath(data, chartWidth, chartHeight, chartPadding);
@@ -204,24 +267,27 @@ export function HeroLineChart({
     [points],
   );
 
+  const dismissTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const panResponder = React.useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
+        onStartShouldSetPanResponderCapture: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponderCapture: () => true,
         onPanResponderGrant: (evt: GestureResponderEvent) => {
-          const touchX = evt.nativeEvent.locationX;
-          setActiveIndex(findNearestIndex(touchX));
+          if (dismissTimer.current) clearTimeout(dismissTimer.current);
+          setActiveIndex(findNearestIndex(evt.nativeEvent.locationX));
         },
         onPanResponderMove: (evt: GestureResponderEvent) => {
-          const touchX = evt.nativeEvent.locationX;
-          setActiveIndex(findNearestIndex(touchX));
+          setActiveIndex(findNearestIndex(evt.nativeEvent.locationX));
         },
         onPanResponderRelease: () => {
-          setActiveIndex(null);
+          dismissTimer.current = setTimeout(() => setActiveIndex(null), 2000);
         },
         onPanResponderTerminate: () => {
-          setActiveIndex(null);
+          dismissTimer.current = setTimeout(() => setActiveIndex(null), 2000);
         },
       }),
     [findNearestIndex],
@@ -229,27 +295,29 @@ export function HeroLineChart({
 
   const activePoint = activeIndex !== null ? points[activeIndex] : null;
 
-  // Format tooltip value
+  // Format tooltip: value + date
   const tooltipValue = activePoint
-    ? metricLabel?.toLowerCase().includes('rate')
+    ? isRate
       ? `${activePoint.value.toFixed(1)}%`
       : metricLabel?.toLowerCase().includes('revenue') || metricLabel?.toLowerCase().includes('fees')
         ? `$${(activePoint.value / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
         : activePoint.value.toLocaleString()
     : '';
 
-  // Tooltip position — keep it within bounds
-  const tooltipWidth = 80;
+  const tooltipDate = activeIndex !== null && dates?.[activeIndex]
+    ? formatTooltipDate(dates[activeIndex], selectedRange)
+    : '';
+
+  // Tooltip position — always at top of chart, horizontally centered on point
+  const tooltipW = 140;
   const tooltipX = activePoint
-    ? Math.max(0, Math.min(activePoint.x - tooltipWidth / 2, chartWidth - tooltipWidth))
+    ? Math.max(0, Math.min(activePoint.x - tooltipW / 2, chartWidth - tooltipW))
     : 0;
-  const tooltipY = activePoint
-    ? Math.max(0, activePoint.y - 36)
-    : 0;
+  const tooltipY = 0;
 
   return (
     <View style={{ marginHorizontal: 16, marginTop: 8 }} {...panResponder.panHandlers}>
-      <Svg width={chartWidth} height={chartHeight}>
+      <Svg width={chartWidth} height={totalHeight}>
         <Defs>
           <SvgGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={color} stopOpacity="0.25" />
@@ -291,9 +359,27 @@ export function HeroLineChart({
             />
           </>
         )}
+
+        {/* X-axis labels */}
+        {xLabels.map((item, i) => {
+          const x = chartPadding + item.fraction * (chartWidth - chartPadding * 2);
+          return (
+            <SvgText
+              key={`x-${i}`}
+              x={x}
+              y={chartHeight + 14}
+              fontSize={10}
+              fontFamily="Lato_400Regular"
+              fill={labelColor}
+              textAnchor="middle"
+            >
+              {item.label}
+            </SvgText>
+          );
+        })}
       </Svg>
 
-      {/* Floating tooltip label */}
+      {/* Floating tooltip — shows value + date */}
       {activePoint && (
         <View
           style={[
@@ -306,14 +392,14 @@ export function HeroLineChart({
           ]}
           pointerEvents="none"
         >
-          <Text
-            style={[
-              styles.tooltipText,
-              { color: isDark ? '#fff' : '#fff' },
-            ]}
-          >
-            {tooltipValue}
+          <Text style={[styles.tooltipText, { color: '#fff' }]}>
+            {metricLabel ? `${tooltipValue} ${metricLabel}` : tooltipValue}
           </Text>
+          {tooltipDate ? (
+            <Text style={[styles.tooltipDate, { color: 'rgba(255,255,255,0.6)' }]}>
+              {tooltipDate}
+            </Text>
+          ) : null}
         </View>
       )}
     </View>
@@ -510,6 +596,7 @@ export function AnalyticsScreenShell({
   };
 
   const heroData = heroMetric?.seriesByRange[selectedRange] ?? [];
+  const heroDates = heroMetric?.datesByRange?.[selectedRange] ?? [];
 
   const navBtnBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
 
@@ -588,8 +675,10 @@ export function AnalyticsScreenShell({
         <HeroLineChart
           key={`chart-${heroMetricId}-${selectedRange}`}
           data={heroData}
+          dates={heroDates}
           isPositive={heroMetric.isPositive}
           metricLabel={heroMetric.label}
+          selectedRange={selectedRange}
           colors={colors}
           isDark={isDark}
         />
@@ -765,5 +854,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
     textAlign: 'center',
+  },
+  tooltipDate: {
+    fontSize: 10,
+    fontFamily: 'Lato_400Regular',
+    textAlign: 'center',
+    marginTop: 2,
   },
 });

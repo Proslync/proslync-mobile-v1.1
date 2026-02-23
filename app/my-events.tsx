@@ -1,4 +1,5 @@
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import { useMyEvents } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -6,7 +7,6 @@ import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   ActivityIndicator,
@@ -88,51 +88,65 @@ function getStatusLabel(status: EventStatus): string {
 interface EventCardProps {
   event: Event;
   onPress: () => void;
+  onDashboard: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
   isDark: boolean;
 }
 
-function EventCard({ event, onPress, colors, isDark }: EventCardProps) {
+function EventCard({ event, onPress, onDashboard, colors, isDark }: EventCardProps) {
+  const showStatus = event.status !== EventStatus.PUBLISHED;
   const statusColor = getStatusColor(event.status);
   const statusLabel = getStatusLabel(event.status);
 
   return (
-    <TouchableOpacity
-      style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
-      onPress={onPress}
-      activeOpacity={0.8}
-    >
-      <Image
-        source={{ uri: event.flyer?.url || event.imageUrl || 'https://picsum.photos/200/300' }}
-        style={[styles.eventImage, { backgroundColor: colors.backgroundSecondary }]}
-      />
-      <View style={styles.eventContent}>
-        <View style={styles.eventHeader}>
-          <Text style={[styles.eventName, { color: colors.text }]} numberOfLines={1}>{event.name}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-            <Text style={styles.statusText}>{statusLabel}</Text>
+    <View style={styles.eventRow}>
+      <TouchableOpacity
+        style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
+        onPress={onPress}
+        activeOpacity={0.8}
+      >
+        <Image
+          source={{ uri: event.flyer?.url || event.imageUrl || 'https://picsum.photos/200/300' }}
+          style={[styles.eventImage, { backgroundColor: colors.backgroundSecondary }]}
+        />
+        <View style={styles.eventContent}>
+          <View style={styles.eventHeader}>
+            <Text style={[styles.eventName, { color: colors.text }]} numberOfLines={1}>{event.name}</Text>
+            {showStatus && (
+              <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+                <Text style={styles.statusText}>{statusLabel}</Text>
+              </View>
+            )}
+          </View>
+          <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
+            {formatEventDate(event.startDate)} at {formatEventTime(event.startDate)}
+          </Text>
+          <Text style={[styles.eventLocation, { color: colors.textTertiary }]} numberOfLines={1}>
+            {event.venue?.name || event.location || 'Location TBA'}
+          </Text>
+          <View style={styles.eventStats}>
+            <View style={styles.eventStat}>
+              <Ionicons name="people-outline" size={14} color={colors.textTertiary} />
+              <Text style={[styles.eventStatText, { color: colors.textTertiary }]}>{event.attendeeCount || 0} RSVPs</Text>
+            </View>
           </View>
         </View>
-        <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
-          {formatEventDate(event.startDate)} at {formatEventTime(event.startDate)}
-        </Text>
-        <Text style={[styles.eventLocation, { color: colors.textTertiary }]} numberOfLines={1}>
-          {event.venue?.name || event.location || 'Location TBA'}
-        </Text>
-        <View style={styles.eventStats}>
-          <View style={styles.eventStat}>
-            <Ionicons name="people-outline" size={14} color={colors.textTertiary} />
-            <Text style={[styles.eventStatText, { color: colors.textTertiary }]}>{event.attendeeCount || 0} RSVPs</Text>
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.dashboardButton, { backgroundColor: colors.cardElevated }]}
+        onPress={onDashboard}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="grid-outline" size={16} color={colors.textSecondary} />
+        <Text style={[styles.dashboardButtonText, { color: colors.textSecondary }]}>Dashboard</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 export default function MyEventsScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { width: screenWidth } = useWindowDimensions();
   const { colors, isDark } = useAppTheme();
   const [activeTab, setActiveTab] = React.useState<EventTab>('current');
@@ -201,7 +215,7 @@ export default function MyEventsScreen() {
 
   const renderEvent = ({ item, index }: { item: Event; index: number }) => (
     <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-      <EventCard event={item} onPress={() => handleEventPress(item)} colors={colors} isDark={isDark} />
+      <EventCard event={item} onPress={() => handleEventPress(item)} onDashboard={() => router.push(`/manage-event/${item.id}`)} colors={colors} isDark={isDark} />
     </Animated.View>
   );
 
@@ -440,11 +454,29 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
   },
+  eventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  dashboardButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dashboardButtonText: {
+    fontSize: 10,
+    fontFamily: 'Lato_600SemiBold',
+  },
   eventCard: {
+    flex: 1,
     flexDirection: 'row',
     borderRadius: 12,
     overflow: 'hidden',
-    marginBottom: 12,
   },
   eventImage: {
     width: 100,

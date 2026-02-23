@@ -1,11 +1,11 @@
 import * as React from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { FeedContainer, FeedHeader, FeedLoadingSkeleton } from '@/components/feed';
 import { useFeed } from '@/hooks/use-feed';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -17,7 +17,7 @@ import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet'
 import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
 
 export default function FeedScreen() {
-  const router = useRouter();
+  const router = useStableRouter();
   const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
@@ -25,11 +25,8 @@ export default function FeedScreen() {
   const [rsvpItems, setRsvpItems] = useState<Map<string, boolean>>(new Map());
   const [pendingRsvpItems, setPendingRsvpItems] = useState<Map<string, boolean>>(new Map());
   const [purchasedItems, setPurchasedItems] = useState<Set<string>>(new Set());
-  const [showDoubleTapHeart, setShowDoubleTapHeart] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<FeedTab>('foryou');
   const [purchaseItem, setPurchaseItem] = useState<FeedItem | null>(null);
-
-  // Liked items still tracked for double-tap heart animation
   const likedItems = new Set<string>();
 
   // Fetch feed from API based on active tab
@@ -47,12 +44,6 @@ export default function FeedScreen() {
   const { refreshControl } = useRefreshControl({
     onRefresh: refetch,
   });
-
-  const handleDoubleTap = useCallback((id: string) => {
-    // Show heart animation on double tap
-    setShowDoubleTapHeart(id);
-    setTimeout(() => setShowDoubleTapHeart(null), 1000);
-  }, []);
 
   const toggleRsvp = useCallback(async (id: string) => {
     // Find the item to get the eventId
@@ -239,9 +230,7 @@ export default function FeedScreen() {
         rsvpItems={rsvpItems}
         pendingRsvpItems={pendingRsvpItems}
         purchasedItems={purchasedItems}
-        showDoubleTapHeart={showDoubleTapHeart}
         onIndexChange={setCurrentIndex}
-        onDoubleTap={handleDoubleTap}
         onRsvp={toggleRsvp}
         onPendingRsvp={togglePendingRsvp}
         onPurchase={handlePurchase}

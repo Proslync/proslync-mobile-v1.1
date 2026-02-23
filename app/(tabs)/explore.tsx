@@ -1,6 +1,7 @@
 // Messages Screen - Clean conversations list with message search
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -14,7 +15,6 @@ import {
 } from 'react-native';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -22,6 +22,7 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useChat } from '@/lib/providers/chat-provider';
 import { useChannels, type ChannelData } from '@/hooks/use-channels';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useAuth } from '@/lib/providers/auth-provider';
 
 // Local default avatar with white background
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
@@ -242,10 +243,12 @@ function LoadingState({ colors }: { colors: any }) {
 
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { client, status, reconnect } = useChat();
   const { channelData, isLoading, refetch, deleteChannel } = useChannels();
   const { colors, isDark } = useAppTheme();
+  const { user } = useAuth();
+  const headerTitle = user?.userName ? `@${user.userName}` : 'Messages';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -432,7 +435,8 @@ export default function MessagesScreen() {
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
+          <View style={styles.headerButton} />
+          <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
           <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
             <Ionicons name="create-outline" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -448,7 +452,8 @@ export default function MessagesScreen() {
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
+          <View style={styles.headerButton} />
+          <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
           <View style={styles.headerButton} />
         </View>
         <ConnectionError onRetry={reconnect} colors={colors} />
@@ -462,7 +467,8 @@ export default function MessagesScreen() {
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
+          <View style={styles.headerButton} />
+          <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
           <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
             <Ionicons name="create-outline" size={24} color={colors.text} />
           </TouchableOpacity>
@@ -480,7 +486,8 @@ export default function MessagesScreen() {
       <DarkGradientBg />
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
+        <View style={styles.headerButton} />
+        <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
         <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
           <Ionicons name="create-outline" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -545,6 +552,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
+    flex: 1,
+    textAlign: 'center',
   },
   headerButton: {
     width: 44,
@@ -645,7 +654,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#1a1a1a',
+    color: '#fff',
     marginRight: 8,
   },
   conversationTitleUnread: {

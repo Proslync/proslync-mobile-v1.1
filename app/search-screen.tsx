@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -11,7 +12,6 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -229,7 +229,7 @@ function formatNumber(num: number): string {
 
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { colors } = useAppTheme();
   const [activeCategory, setActiveCategory] = useState<DiscoverCategory>('people');
 

@@ -4,6 +4,7 @@ import type {
   TicketTier,
   PricingRule,
   PromoCode,
+  ActivePromo,
   CreateTierRequest,
   CreatePricingRuleRequest,
   CreatePromoCodeRequest,
@@ -97,10 +98,10 @@ export const pricingApi = {
     return apiClient.delete(`/api/events/${eventId}/promo-codes/${promoId}`);
   },
 
-  togglePromoCodeActive: async (eventId: number, promoId: number): Promise<PromoCode> => {
+  togglePromoCodeActive: async (eventId: number, promoId: number, isActive: boolean): Promise<PromoCode> => {
     return apiClient.patch<PromoCode>(
       `/api/events/${eventId}/promo-codes/${promoId}/toggle-active`,
-      {},
+      { isActive },
     );
   },
 
@@ -112,5 +113,13 @@ export const pricingApi = {
       `/api/events/${eventId}/promo-codes/validate`,
       data,
     );
+  },
+
+  /**
+   * Get active promos across all upcoming events (public)
+   * Backend endpoint: GET /api/promos
+   */
+  getActivePromos: async (): Promise<ActivePromo[]> => {
+    return apiClient.get<ActivePromo[]>('/api/promos');
   },
 };

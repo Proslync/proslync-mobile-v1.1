@@ -19,15 +19,15 @@ interface FeedContainerProps {
   rsvpItems: Map<string, boolean>;
   pendingRsvpItems: Map<string, boolean>;
   purchasedItems: Set<string>;
-  showDoubleTapHeart: string | null;
   onIndexChange: (index: number) => void;
-  onDoubleTap: (id: string) => void;
   onRsvp: (id: string) => void;
   onPendingRsvp: (id: string) => void;
   onPurchase: (id: string) => void;
   onRefer: (id: string) => void;
   onUserClick: (item: FeedItemType) => void;
   onEventPress: (item: FeedItemType) => void;
+  showDoubleTapHeart?: string | null;
+  onDoubleTap: (id: string) => void;
   refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
@@ -38,15 +38,15 @@ export function FeedContainer({
   rsvpItems,
   pendingRsvpItems,
   purchasedItems,
-  showDoubleTapHeart,
   onIndexChange,
-  onDoubleTap,
   onRsvp,
   onPendingRsvp,
   onPurchase,
   onRefer,
   onUserClick,
   onEventPress,
+  showDoubleTapHeart,
+  onDoubleTap,
   refreshControl,
 }: FeedContainerProps) {
   const flatListRef = React.useRef<FlatList>(null);
@@ -125,14 +125,14 @@ export function FeedContainer({
       rsvpItems,
       pendingRsvpItems,
       purchasedItems,
-      showDoubleTapHeart,
-      onDoubleTap,
       onRsvp,
       onPendingRsvp,
       onPurchase,
       onRefer,
       onUserClick,
       onEventPress,
+      showDoubleTapHeart,
+      onDoubleTap,
     ]
   );
 

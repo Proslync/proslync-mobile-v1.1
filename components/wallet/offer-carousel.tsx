@@ -34,10 +34,15 @@ function OfferCard({ offer, onClaim, colors, isDark }: OfferCardProps) {
         {offer.title}
       </Text>
 
-      {/* Middle: Subtitle (max 2 lines) */}
-      <Text style={[styles.offerSubtitle, { color: colors.textSecondary }]} numberOfLines={2}>
+      {/* Middle: Subtitle + code */}
+      <Text style={[styles.offerSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
         {offer.subtitle}
       </Text>
+      {offer.code && (
+        <Text style={[styles.offerCode, { color: colors.text }]} numberOfLines={1}>
+          {offer.code}
+        </Text>
+      )}
 
       {/* Bottom: Claim button */}
       <View style={styles.offerFooter}>
@@ -56,7 +61,7 @@ function OfferCard({ offer, onClaim, colors, isDark }: OfferCardProps) {
               offer.isClaimed && styles.claimButtonTextClaimed,
             ]}
           >
-            {offer.isClaimed ? 'Claimed' : 'Claim'}
+            {offer.isClaimed ? 'Copied!' : 'Copy Code'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -73,7 +78,7 @@ export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Promos</Text>
         <View style={styles.emptyState}>
           <Ionicons name="gift-outline" size={40} color={colors.textTertiary} />
-          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No offers available</Text>
+          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No upcoming promos</Text>
         </View>
       </View>
     );
@@ -136,6 +141,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     lineHeight: 16,
     height: 32,
+  },
+  offerCode: {
+    fontSize: 11,
+    fontFamily: 'Lato_700Bold',
+    letterSpacing: 1,
+    opacity: 0.7,
   },
   offerFooter: {
     flexDirection: 'row',

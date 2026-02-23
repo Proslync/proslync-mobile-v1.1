@@ -1,5 +1,6 @@
 // Chat Thread Screen - Instagram/Snapchat-style messaging
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -18,7 +19,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -38,6 +39,7 @@ import Animated, {
 import { useChannel, type ChatMessage } from '@/hooks/use-channel';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
+import { useCallProvider } from '@/lib/providers/call-provider';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.75;
@@ -94,6 +96,7 @@ function MessageBubble({
   isGroupStart,
   showTime,
   onImagePress,
+  onLongPress,
   colors,
   isDark,
 }: {
@@ -101,6 +104,7 @@ function MessageBubble({
   isGroupStart?: boolean;
   showTime?: boolean;
   onImagePress?: (url: string) => void;
+  onLongPress?: (message: ChatMessage) => void;
   colors: ThemeColors;
   isDark: boolean;
 }) {
@@ -157,7 +161,11 @@ function MessageBubble({
       )}
       {!isOwn && !isGroupStart && <View style={styles.messageAvatarPlaceholder} />}
 
-      <View style={styles.messageContent}>
+      <Pressable
+        style={styles.messageContent}
+        onLongPress={() => onLongPress?.(message)}
+        delayLongPress={500}
+      >
         {/* Audio attachment - Voice message */}
         {hasAudio && audioAttachment && (
           <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
@@ -201,7 +209,7 @@ function MessageBubble({
             {formatMessageTime(message.createdAt)}
           </Text>
         )}
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -682,7 +690,7 @@ function Composer({
             activeOpacity={0.7}
           >
             <LinearGradient
-              colors={['#405DE6', '#833AB4', '#C13584']}
+              colors={['#007AFF', '#0095f6']}
               style={styles.cameraButtonGradient}
             >
               <Ionicons name="camera" size={20} color="#fff" />
@@ -759,7 +767,7 @@ function EmptyChat({ userName, colors }: { userName?: string; colors: ThemeColor
     <View style={styles.emptyContainer}>
       <View style={styles.emptyAvatarContainer}>
         <LinearGradient
-          colors={['#405DE6', '#833AB4', '#C13584', '#E1306C', '#F56040']}
+          colors={['#007AFF', '#0095f6']}
           style={styles.emptyAvatarGradient}
         >
           <Ionicons name="chatbubbles" size={40} color="#fff" />
@@ -855,7 +863,7 @@ function ErrorScreen({
 // Main Chat Screen
 export default function ChatThreadScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const flatListRef = useRef<FlatList>(null);
   const scrollToBottomOpacity = useSharedValue(0);
@@ -864,6 +872,7 @@ export default function ChatThreadScreen() {
   const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
 
   const {
     messages,
@@ -871,10 +880,14 @@ export default function ChatThreadScreen() {
     isLoading,
     error,
     isTyping,
+    currentUserId,
     sendMessage,
     sendVoiceMessage,
     sendTypingStart,
+    deleteMessage,
   } = useChannel(conversationId);
+
+  const { startCall } = useCallProvider();
 
   // Group messages by day and consecutive sender
   const messageGroups = React.useMemo((): MessageGroup[] => {
@@ -910,6 +923,32 @@ export default function ChatThreadScreen() {
 
     return groups;
   }, [messages]);
+
+  const handleStartCall = useCallback(
+    async (video: boolean) => {
+      if (!channelInfo?.otherMember || !currentUserId) {
+        Alert.alert('Error', 'Cannot start call — no other member found.');
+        return;
+      }
+
+      const callId = `${conversationId}-${Date.now()}`;
+      const members = [
+        { userId: currentUserId },
+        { userId: channelInfo.otherMember.id },
+      ];
+
+      const call = await startCall({ callId, members, video });
+      if (call) {
+        router.push({
+          pathname: '/call/[callId]',
+          params: { callId },
+        });
+      } else {
+        Alert.alert('Error', 'Failed to start call. Please try again.');
+      }
+    },
+    [conversationId, channelInfo, currentUserId, startCall, router]
+  );
 
   const handleSend = useCallback(
     async (text: string) => {
@@ -1031,6 +1070,24 @@ export default function ChatThreadScreen() {
     }
   }, [channelInfo, router]);
 
+  const handleDeleteMessage = useCallback(
+    (message: ChatMessage) => {
+      setMessageToDelete(message);
+    },
+    []
+  );
+
+  const confirmDeleteMessage = useCallback(async () => {
+    if (!messageToDelete) return;
+    try {
+      await deleteMessage(messageToDelete.id);
+    } catch {
+      Alert.alert('Error', 'Failed to delete message.');
+    } finally {
+      setMessageToDelete(null);
+    }
+  }, [messageToDelete, deleteMessage]);
+
   const renderItem = useCallback(
     ({ item }: { item: MessageGroup }) => {
       if (item.type === 'day' && item.date) {
@@ -1044,6 +1101,7 @@ export default function ChatThreadScreen() {
             isGroupStart={item.isGroupStart}
             showTime={item.showTime}
             onImagePress={setViewerImage}
+            onLongPress={handleDeleteMessage}
             colors={colors}
             isDark={isDark}
           />
@@ -1052,7 +1110,7 @@ export default function ChatThreadScreen() {
 
       return null;
     },
-    [colors, isDark]
+    [colors, isDark, handleDeleteMessage]
   );
 
   if (isLoading) {
@@ -1101,10 +1159,10 @@ export default function ChatThreadScreen() {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.headerRight}>
+        <TouchableOpacity style={styles.headerRight} onPress={() => handleStartCall(false)}>
           <Ionicons name="call-outline" size={24} color={colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerRight}>
+        <TouchableOpacity style={styles.headerRight} onPress={() => handleStartCall(true)}>
           <Ionicons name="videocam-outline" size={26} color={colors.text} />
         </TouchableOpacity>
       </View>
@@ -1177,6 +1235,42 @@ export default function ChatThreadScreen() {
         imageUrl={viewerImage || ''}
         onClose={() => setViewerImage(null)}
       />
+
+      {/* Delete Message Modal */}
+      <Modal
+        visible={!!messageToDelete}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMessageToDelete(null)}
+      >
+        <Pressable
+          style={styles.deleteModalOverlay}
+          onPress={() => setMessageToDelete(null)}
+        >
+          <Pressable style={[styles.deleteModalContent, { backgroundColor: isDark ? colors.cardElevated : '#fff' }]}>
+            <Text style={[styles.deleteModalTitle, { color: colors.text }]}>Delete Message</Text>
+            <Text style={[styles.deleteModalText, { color: colors.textSecondary }]}>
+              Are you sure you want to delete this message? This cannot be undone.
+            </Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.deleteModalCancel, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.25)' }]}
+                onPress={() => setMessageToDelete(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.deleteModalButtonText, { color: colors.text }]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.deleteModalConfirm]}
+                onPress={confirmDeleteMessage}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.deleteModalButtonText, { color: '#fff' }]}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1686,5 +1780,52 @@ const styles = StyleSheet.create({
   imageViewerImage: {
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT * 0.7,
+  },
+  // Delete message modal
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  deleteModalContent: {
+    width: '100%',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  deleteModalTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    marginBottom: 8,
+  },
+  deleteModalText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  deleteModalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  deleteModalCancel: {
+    borderWidth: 1,
+  },
+  deleteModalConfirm: {
+    backgroundColor: '#ff3b30',
+  },
+  deleteModalButtonText: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
   },
 });

@@ -1,8 +1,9 @@
-// Event Analytics — Per-event analytics with real time series
+// Event Analytics — Per-event analytics with real-time WebSocket updates
 import * as React from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { analyticsApi } from '@/lib/api/analytics';
+import { useAnalyticsSocket } from '@/hooks/use-analytics-socket';
 import {
   AnalyticsScreenShell,
   calcDelta,
@@ -27,9 +28,16 @@ export default function EventAnalyticsScreen() {
     queryKey: [EVENT_TIMESERIES_KEY, eventId, selectedRange],
     queryFn: () => analyticsApi.getEventTimeSeries(eventId, selectedRange),
     enabled: eventId > 0,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0, // Always re-fetch on invalidation for real-time updates
     gcTime: 10 * 60 * 1000,
   });
+
+  // Real-time WebSocket updates — invalidate query cache on analytics events
+  const handleSocketUpdate = React.useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: [EVENT_TIMESERIES_KEY, eventId] });
+  }, [queryClient, eventId]);
+
+  useAnalyticsSocket({ eventId, onUpdate: handleSocketUpdate, enabled: eventId > 0 });
 
   // Build 6 metrics: Views, Unique Visitors, RSVPs, Check-Ins, Check-in Rate, Conversion Rate
   // Primary values come from range-filtered totals (not all-time stats)
@@ -44,6 +52,7 @@ export default function EventAnalyticsScreen() {
     const tsData = timeSeriesQuery.data?.data;
     const hasTimeSeries = tsData && tsData.length >= 2;
 
+    const dateDates = hasTimeSeries ? tsData.map((d) => d.date) : [];
     const viewsSeries = hasTimeSeries ? tsData.map((d) => d.views) : [0, 0];
     const uniqueSeries = hasTimeSeries ? tsData.map((d) => d.uniqueVisitors) : [0, 0];
     const rsvpsSeries = hasTimeSeries ? tsData.map((d) => d.rsvps) : [0, 0];
@@ -68,6 +77,8 @@ export default function EventAnalyticsScreen() {
 
     const rangeLabel = getRangeLabel(selectedRange);
 
+    const dates = { [selectedRange]: dateDates };
+
     return [
       {
         id: 'views',
@@ -76,6 +87,7 @@ export default function EventAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${viewsDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: viewsDelta.isPositive,
         seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: viewsSeries },
+        datesByRange: dates,
       },
       {
         id: 'unique',
@@ -84,6 +96,7 @@ export default function EventAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${uniqueDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: uniqueDelta.isPositive,
         seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: uniqueSeries },
+        datesByRange: dates,
       },
       {
         id: 'rsvps',
@@ -92,6 +105,7 @@ export default function EventAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${rsvpsDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: rsvpsDelta.isPositive,
         seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: rsvpsSeries },
+        datesByRange: dates,
       },
       {
         id: 'checkIns',
@@ -100,6 +114,7 @@ export default function EventAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${checkInsDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: checkInsDelta.isPositive,
         seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: checkInsSeries },
+        datesByRange: dates,
       },
       {
         id: 'checkInRate',
@@ -116,6 +131,7 @@ export default function EventAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${conversionDelta.text} ${rangeLabel}` : '—',
         isPositive: conversionDelta.isPositive,
         seriesByRange: { ...EMPTY_EVENT_SERIES, [selectedRange]: conversionSeries },
+        datesByRange: dates,
       },
     ];
   }, [timeSeriesQuery.data, selectedRange]);

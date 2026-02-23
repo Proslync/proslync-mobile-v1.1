@@ -66,6 +66,7 @@ export function InfoSheet({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
+        <Pressable style={styles.overlayTap} onPress={onClose} />
         <View style={[
           styles.container,
           {
@@ -283,6 +284,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  overlayTap: {
+    flex: 1,
   },
   container: {
     borderTopLeftRadius: 20,

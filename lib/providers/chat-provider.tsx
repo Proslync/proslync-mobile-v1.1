@@ -154,8 +154,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const chatUser = buildChatUserPayload(user);
 
     try {
-      const token = await getToken();
-
       // Check if this connection attempt is still valid
       if (connectionAttemptRef.current !== attemptId) {
         console.log('[Chat] Connection attempt cancelled');
@@ -163,7 +161,13 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      await chatClient.connectUser(chatUser, token);
+      // Use tokenProvider so the SDK can auto-refresh on expiry
+      const tokenProvider = async () => {
+        const freshToken = await getToken(true);
+        return freshToken;
+      };
+
+      await chatClient.connectUser(chatUser, tokenProvider);
 
       connectedUserIdRef.current = userId;
       setClient(chatClient);

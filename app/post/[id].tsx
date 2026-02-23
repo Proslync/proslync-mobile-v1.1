@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -14,7 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/lib/providers/auth-provider';
@@ -30,7 +31,7 @@ import {
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DEFAULT_AVATAR = 'https://picsum.photos/200';
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 // Format number with K/M suffix
 function formatNumber(num: number): string {
@@ -118,7 +119,7 @@ function CommentItem({
   return (
     <View style={[styles.commentItem, isReply && styles.commentReply]}>
       <Image
-        source={{ uri: commentAvatar || DEFAULT_AVATAR }}
+        source={commentAvatar ? { uri: commentAvatar } : DefaultAvatarImage}
         style={styles.commentAvatar}
       />
       <View style={styles.commentContent}>
@@ -185,7 +186,7 @@ function CommentItem({
 
 export default function PostDetailScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { id: activityId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { colors } = useAppTheme();
@@ -357,7 +358,7 @@ export default function PostDetailScreen() {
             }}
           >
             <Image
-              source={{ uri: userAvatar || DEFAULT_AVATAR }}
+              source={userAvatar ? { uri: userAvatar } : DefaultAvatarImage}
               style={styles.authorAvatar}
             />
             <View style={styles.authorInfo}>
@@ -516,7 +517,7 @@ export default function PostDetailScreen() {
         )}
         <View style={styles.commentInputRow}>
           <Image
-            source={{ uri: user?.avatar?.url || DEFAULT_AVATAR }}
+            source={user?.avatar?.url ? { uri: user.avatar.url } : DefaultAvatarImage}
             style={styles.commentInputAvatar}
           />
           <TextInput

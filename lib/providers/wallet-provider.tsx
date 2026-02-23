@@ -1,6 +1,7 @@
 // Wallet Provider - Connects to Stripe Connect API for earnings & payouts
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
+import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
 import {
   WalletContextType,
@@ -13,10 +14,10 @@ import {
 } from '../types/wallet.types';
 import {
   MOCK_WALLET_USER,
-  MOCK_OFFERS,
 } from '../data/wallet-mock';
 import { eventsApi } from '../api/events';
 import { ticketsApi } from '../api/tickets';
+import { pricingApi } from '../api/pricing';
 import { useAuth } from './auth-provider';
 import {
   stripeConnectApi,
@@ -101,6 +102,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
       return {
         id: String(authUser.id),
         name: displayName,
+        userName: authUser.userName,
+        avatarUrl: authUser.avatar?.url,
         statusTier: MOCK_WALLET_USER.statusTier, // TODO: Get from membership API
         memberSince: authUser.createdAt || MOCK_WALLET_USER.memberSince,
         membershipCardId: MOCK_WALLET_USER.membershipCardId, // TODO: Get from membership API
@@ -117,7 +120,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
   });
   const [payoutMethods, setPayoutMethods] = useState<PayoutMethod[]>([]);
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-  const [offers, setOffers] = useState<Offer[]>(MOCK_OFFERS);
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [events, setEvents] = useState<WalletEventCard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -198,83 +201,93 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
   }, []);
 
-  // Fetch user's tickets from the tickets API, fallback to events RSVP data
-  const fetchTicketsAndEvents = useCallback(async () => {
+  // Fetch active promos from backend
+  const fetchPromos = useCallback(async () => {
     try {
-      // Try fetching actual tickets first (has ticket IDs for transfer/sell)
-      const ticketsResponse = await ticketsApi.getMyTickets({
-        status: 'upcoming',
-        limit: 100,
-        sortBy: 'eventDate',
-        sortOrder: 'asc',
+      const promos = await pricingApi.getActivePromos();
+      const mapped: Offer[] = promos.map((p) => {
+        const discount =
+          p.discountType === 'percentage'
+            ? `${p.discountValue}% off`
+            : `$${p.discountValue.toFixed(2)} off`;
+        return {
+          id: String(p.id),
+          code: p.code,
+          title: `${discount} tickets`,
+          subtitle: p.eventName,
+          eventId: p.eventId,
+          isClaimed: false,
+          expiresAt: p.validUntil,
+        };
       });
-
-      if (ticketsResponse.tickets && ticketsResponse.tickets.length > 0) {
-        const ticketCards: WalletEventCard[] = ticketsResponse.tickets
-          .filter((t) => t.status === 'active' || t.status === 'listed')
-          .map((t) => {
-            const start = new Date(t.event?.startDate || t.createdAt);
-            const dateTimeLabel =
-              start.toLocaleDateString([], {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-              }) +
-              ' \u2022 ' +
-              start.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-              });
-            return {
-              id: t.eventId.toString(),
-              ticketId: t.id,
-              ticketStatus: t.status,
-              title: t.event?.name || 'Event',
-              dateTime: t.event?.startDate || t.createdAt,
-              dateTimeLabel,
-              venueName: t.event?.venue?.name || 'TBA',
-              flyerUrl:
-                t.event?.flyer?.url ||
-                t.event?.imageUrl ||
-                'https://picsum.photos/seed/event/400/600',
-              isEarningEnabled: false,
-              pricePaid: t.pricePaid ? Number(t.pricePaid) : undefined,
-              listedPrice: t.listedPrice ? Number(t.listedPrice) : undefined,
-            };
-          });
-        setEvents(ticketCards);
-        return;
-      }
+      setOffers(mapped);
     } catch (error) {
-      console.log('[Wallet] Error fetching tickets, falling back to events:', error);
+      console.log('[Wallet] Error fetching promos:', error);
+      setOffers([]);
+    }
+  }, []);
+
+  // Fetch user's tickets + RSVP-only events and merge into one list
+  const fetchTicketsAndEvents = useCallback(async () => {
+    const formatDateLabel = (date: Date) =>
+      date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+      + ' \u2022 '
+      + date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    let ticketCards: WalletEventCard[] = [];
+    const ticketEventIds = new Set<string>();
+
+    // 1. Tickets (have ticketId for sell/transfer)
+    try {
+      const { tickets = [] } = await ticketsApi.getMyTickets({
+        status: 'upcoming', limit: 100, sortBy: 'eventDate', sortOrder: 'asc',
+      });
+      ticketCards = tickets
+        .filter((t) => t.status === 'active')
+        .map((t) => {
+          const start = new Date(t.event?.startDate || t.createdAt);
+          ticketEventIds.add(t.eventId.toString());
+          return {
+            id: t.eventId.toString(),
+            ticketId: t.id,
+            ticketStatus: t.status,
+            title: t.event?.name || 'Event',
+            dateTime: t.event?.startDate || t.createdAt,
+            dateTimeLabel: formatDateLabel(start),
+            venueName: t.event?.venue?.name || 'TBA',
+            flyerUrl: t.event?.flyer?.url || t.event?.imageUrl || 'https://picsum.photos/seed/event/400/600',
+            isEarningEnabled: false,
+            isPaid: t.event?.isPaid ?? false,
+            pricePaid: t.pricePaid ? Number(t.pricePaid) : undefined,
+          };
+        });
+    } catch (error) {
+      console.log('[Wallet] Error fetching tickets:', error);
     }
 
-    // Fallback: fetch RSVP'd events from the events API
+    // 2. RSVP-only events (no ticket yet)
     try {
       const allEvents = await eventsApi.getEvents({ limit: 100 });
       const now = new Date();
-      const rsvpEvents: WalletEventCard[] = allEvents
-        .filter((e) => e.isUserRegistered && new Date(e.startDate) >= now)
-        .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-        .map((e) => {
-          const start = new Date(e.startDate);
-          const dateTimeLabel = start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
-            + ' \u2022 '
-            + start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-          return {
-            id: e.id.toString(),
-            title: e.name,
-            dateTime: e.startDate,
-            dateTimeLabel,
-            venueName: e.venue?.name || e.location || 'TBA',
-            flyerUrl: e.flyer?.url || e.imageUrl || 'https://picsum.photos/seed/event/400/600',
-            isEarningEnabled: false,
-          };
-        });
-      setEvents(rsvpEvents);
+      const rsvpCards: WalletEventCard[] = allEvents
+        .filter((e) => e.isUserRegistered && new Date(e.startDate) >= now && !ticketEventIds.has(e.id.toString()))
+        .map((e) => ({
+          id: e.id.toString(),
+          title: e.name,
+          dateTime: e.startDate,
+          dateTimeLabel: formatDateLabel(new Date(e.startDate)),
+          venueName: e.venue?.name || e.location || 'TBA',
+          flyerUrl: e.flyer?.url || e.imageUrl || 'https://picsum.photos/seed/event/400/600',
+          isEarningEnabled: false,
+          isPaid: e.isPaid ?? false,
+        }));
+
+      setEvents(
+        [...ticketCards, ...rsvpCards].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()),
+      );
     } catch (error) {
       console.log('[Wallet] Error fetching RSVP events:', error);
+      setEvents(ticketCards);
     }
   }, []);
 
@@ -350,12 +363,16 @@ export function WalletProvider({ children }: WalletProviderProps) {
   }, [payoutMethods, balances.availableCents, fetchBalance, fetchTransactions]);
 
   const claimOffer = useCallback((offerId: string) => {
+    const offer = offers.find((o) => o.id === offerId);
+    if (offer?.code) {
+      Clipboard.setStringAsync(offer.code);
+    }
     setOffers((prev) =>
-      prev.map((offer) =>
-        offer.id === offerId ? { ...offer, isClaimed: true } : offer
+      prev.map((o) =>
+        o.id === offerId ? { ...o, isClaimed: true } : o
       )
     );
-  }, []);
+  }, [offers]);
 
   // Note: Adding payout methods is done through Stripe Dashboard
   const addPayoutMethod = useCallback(async () => {
@@ -401,6 +418,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
         const [status] = await Promise.all([
           fetchAccountStatus(),
           fetchTicketsAndEvents(),
+          fetchPromos(),
         ]);
 
         // Only fetch financial data if account is set up
@@ -419,7 +437,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
     };
 
     loadWalletData();
-  }, [isAuthenticated, fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchTicketsAndEvents]);
+  }, [isAuthenticated, fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchTicketsAndEvents, fetchPromos]);
 
   const refreshWallet = useCallback(async () => {
     setIsLoading(true);
@@ -427,6 +445,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const [status] = await Promise.all([
         fetchAccountStatus(),
         fetchTicketsAndEvents(),
+        fetchPromos(),
       ]);
 
       if (status?.hasAccount && status.payoutsEnabled) {
@@ -441,7 +460,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchTicketsAndEvents]);
+  }, [fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchTicketsAndEvents, fetchPromos]);
 
   const value: ExtendedWalletContextType = {
     user,

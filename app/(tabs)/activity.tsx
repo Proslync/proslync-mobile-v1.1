@@ -1,7 +1,7 @@
 // Wallet Screen - Membership card, offers, and events
 import React, { useRef } from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ import {
 } from '@/components/wallet';
 
 export default function WalletScreen() {
-  const router = useRouter();
+  const router = useStableRouter();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const { colors, isDark } = useAppTheme();
@@ -55,12 +55,10 @@ export default function WalletScreen() {
         <MembershipCard user={user} onPress={() => setCardMenuVisible(true)} />
 
         {/* Promos Carousel */}
-        {offers.length > 0 && (
-          <OfferCarousel
-            offers={offers}
-            onClaimOffer={claimOffer}
-          />
-        )}
+        <OfferCarousel
+          offers={offers}
+          onClaimOffer={claimOffer}
+        />
 
         {/* Tickets */}
         <TicketCarousel
@@ -76,6 +74,8 @@ export default function WalletScreen() {
                   date: event.dateTime,
                   imageUrl: event.flyerUrl,
                   venueName: event.venueName,
+                  isPaid: event.isPaid ? 'true' : 'false',
+                  price: event.pricePaid != null ? event.pricePaid.toString() : '',
                 }),
               },
             });

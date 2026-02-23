@@ -63,8 +63,6 @@ interface FeedItemProps {
   isRsvp: boolean;
   isPendingRsvp: boolean;
   isPurchased: boolean;
-  showDoubleTapHeart: boolean;
-  onDoubleTap: () => void;
   onRsvp: () => void;
   onPendingRsvp: () => void;
   onPurchase: () => void;
@@ -80,8 +78,6 @@ export function FeedItem({
   isLiked,
   isRsvp,
   isPurchased,
-  // showDoubleTapHeart - handled by FeedMediaPlayer's internal animation
-  onDoubleTap,
   onRsvp,
   onPendingRsvp,
   onPurchase,
@@ -111,8 +107,7 @@ export function FeedItem({
   const availableHeight = itemHeight
     - (insets.top + HEADER_HEIGHT + 8)  // Top: safe area + header + margin
     - 80  // Bottom: CTA area
-    - CARD_HEADER_HEIGHT  // Card header
-    - CARD_FOOTER_HEIGHT  // Card footer
+    - CARD_FOOTER_HEIGHT  // Card footer (header is now overlaid on media)
     - 32;  // Gap between card and bottom CTA
 
   const maxMediaHeight = Math.max(availableHeight, 200); // Minimum 200px for media
@@ -181,7 +176,25 @@ export function FeedItem({
             tint={isDark ? 'dark' : 'light'}
             style={styles.cardBlurBackground}
           />
-          {/* Card Header - Organizer info + Follow button */}
+          {/* Media Player - Full bleed from top of card to above footer */}
+          <View style={styles.flyerContainer}>
+            <FeedMediaPlayer
+              mediaType={item.mediaType}
+              videoUrl={item.videoUrl}
+              imageUrl={item.imageUrl || item.thumbnail}
+              poster={item.thumbnail}
+              isActive={isActive}
+              onSingleTap={onEventPress}
+              aspectRatio={item.aspectRatio}
+              mediaWidth={item.mediaWidth}
+              mediaHeight={item.mediaHeight}
+              mediaOrientation={item.mediaOrientation}
+              containerWidth={CARD_WIDTH - 2} // Account for card border
+              maxHeight={maxMediaHeight}
+            />
+          </View>
+
+          {/* Card Header - Overlaid on top of the image */}
           <View style={styles.cardHeader}>
             <TouchableOpacity
               onPress={onUserClick}
@@ -195,10 +208,10 @@ export function FeedItem({
                 />
               )}
               <View style={styles.organizerNameRow}>
-                <Text style={[styles.organizerName, { color: colors.text }]} numberOfLines={1}>
+                <Text style={[styles.organizerName, { color: '#fff' }]} numberOfLines={1}>
                   {item.username}
                 </Text>
-                <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+                <MaterialCommunityIcons name="check-decagram" size={16} color="#fff" />
               </View>
             </TouchableOpacity>
 
@@ -209,16 +222,16 @@ export function FeedItem({
                 disabled={followLoading || isFollowActionInProgress}
                 style={[
                   styles.followButton,
-                  isFollowing && [styles.followButtonFollowing, { backgroundColor: colors.buttonSecondary, borderColor: colors.border }],
+                  isFollowing && [styles.followButtonFollowing, { backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.3)' }],
                 ]}
               >
                 {isFollowActionInProgress ? (
-                  <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : '#fff'} />
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text
                     style={[
                       styles.followButtonText,
-                      isFollowing && { color: colors.textSecondary },
+                      isFollowing && { color: '#fff' },
                     ]}
                   >
                     {isFollowing ? 'Following' : 'Follow'}
@@ -226,26 +239,6 @@ export function FeedItem({
                 )}
               </TouchableOpacity>
             )}
-          </View>
-
-          {/* Media Player - Supports video and image with dynamic aspect ratio */}
-          <View style={styles.flyerContainer}>
-            <FeedMediaPlayer
-              mediaType={item.mediaType}
-              videoUrl={item.videoUrl}
-              imageUrl={item.imageUrl || item.thumbnail}
-              poster={item.thumbnail}
-              isActive={isActive}
-              onDoubleTap={onDoubleTap}
-              onSingleTap={onEventPress}
-              isLiked={isLiked}
-              aspectRatio={item.aspectRatio}
-              mediaWidth={item.mediaWidth}
-              mediaHeight={item.mediaHeight}
-              mediaOrientation={item.mediaOrientation}
-              containerWidth={CARD_WIDTH - 2} // Account for card border
-              maxHeight={maxMediaHeight}
-            />
           </View>
 
           {/* Card Footer - Event title + date */}
@@ -338,13 +331,18 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 
-  // Card Header
+  // Card Header - overlaid on top of media
   cardHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 12,
+    zIndex: 1,
   },
   organizerSection: {
     flexDirection: 'row',
@@ -391,10 +389,13 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
-  // Flyer/Media container
+  // Flyer/Media container - fills from top of card
   flyerContainer: {
     width: '100%',
     alignItems: 'center',
+    borderTopLeftRadius: CARD_BORDER_RADIUS,
+    borderTopRightRadius: CARD_BORDER_RADIUS,
+    overflow: 'hidden',
   },
 
   // Card Footer

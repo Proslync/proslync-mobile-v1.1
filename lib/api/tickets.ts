@@ -34,7 +34,7 @@ export interface TicketInfoResponse {
 }
 
 export interface TicketTransferRequest {
-  recipientPhone?: string;
+  recipientUsername?: string;
   recipientUserId?: number;
 }
 
@@ -45,27 +45,14 @@ export interface TicketTransferResponse {
   newTicketNumber?: string;
 }
 
-export interface TicketListingRequest {
-  price: number;
-}
-
-export interface TicketListingResponse {
-  success: boolean;
-  message: string;
-  ticketId?: number;
-  listedPrice?: number;
-}
-
 export interface UserTicket {
   id: number;
   eventId: number;
   userId: number;
   ticketNumber: string;
-  status: 'active' | 'redeemed' | 'cancelled' | 'transferred' | 'listed';
+  status: 'active' | 'redeemed' | 'cancelled' | 'transferred';
   pricePaid?: number;
   currency?: string;
-  listedPrice?: number;
-  listedAt?: string;
   transferredFrom?: number;
   transferredTo?: number;
   transferredAt?: string;
@@ -76,6 +63,7 @@ export interface UserTicket {
     name: string;
     startDate: string;
     endDate?: string;
+    isPaid?: boolean;
     imageUrl?: string;
     venue?: {
       name: string;
@@ -144,19 +132,4 @@ export const ticketsApi = {
     return apiClient.post<TicketTransferResponse>(`/api/tickets/${ticketId}/transfer`, data);
   },
 
-  /**
-   * List a ticket for resale on the marketplace
-   * Backend endpoint: POST /api/tickets/:ticketId/list
-   */
-  listTicketForSale: async (ticketId: number, data: TicketListingRequest): Promise<TicketListingResponse> => {
-    return apiClient.post<TicketListingResponse>(`/api/tickets/${ticketId}/list`, data);
-  },
-
-  /**
-   * Cancel a ticket listing
-   * Backend endpoint: DELETE /api/tickets/:ticketId/list
-   */
-  cancelListing: async (ticketId: number): Promise<TicketTransferResponse> => {
-    return apiClient.delete<TicketTransferResponse>(`/api/tickets/${ticketId}/list`);
-  },
 };

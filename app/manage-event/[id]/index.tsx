@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useEvent, useEventPermissions } from '@/hooks';
@@ -6,7 +7,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { EventStatus } from '@/lib/types/events.types';
 import type { RolePermissions } from '@/lib/types/team.types';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
   Image,
@@ -20,15 +21,16 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SECTIONS = [
-  { key: 'overview', label: 'Overview', icon: 'grid-outline' as const, permission: { resource: 'events' as keyof RolePermissions, action: 'view' } },
-  { key: 'attendees', label: 'Attendees', icon: 'people-outline' as const, permission: { resource: 'attendees' as keyof RolePermissions, action: 'view' } },
-  { key: 'analytics', label: 'Analytics', icon: 'stats-chart-outline' as const, permission: { resource: 'analytics' as keyof RolePermissions, action: 'view' } },
-  { key: 'pricing', label: 'Pricing', icon: 'pricetag-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
-  { key: 'marketing', label: 'Marketing', icon: 'megaphone-outline' as const, permission: { resource: 'marketing' as keyof RolePermissions, action: 'view' } },
-  { key: 'payments', label: 'Payments', icon: 'card-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
-  { key: 'revenue', label: 'Revenue', icon: 'trending-up-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
-  { key: 'team', label: 'Team', icon: 'person-add-outline' as const, permission: { resource: 'team' as keyof RolePermissions, action: 'view' } },
-  { key: 'artists', label: 'Artists', icon: 'musical-notes-outline' as const, permission: { resource: 'events' as keyof RolePermissions, action: 'edit' } },
+  { key: 'overview', label: 'Overview', subtitle: 'Event details and flyer', icon: 'grid-outline' as const, permission: { resource: 'events' as keyof RolePermissions, action: 'view' } },
+  { key: 'attendees', label: 'Attendees', subtitle: 'View guest list', icon: 'people-outline' as const, permission: { resource: 'attendees' as keyof RolePermissions, action: 'view' } },
+  { key: 'check-ins', label: 'Check Ins', subtitle: 'Scan and verify tickets', icon: 'scan-outline' as const, permission: { resource: 'attendees' as keyof RolePermissions, action: 'view' } },
+  { key: 'analytics', label: 'Analytics', subtitle: 'View detailed insights', icon: 'stats-chart-outline' as const, permission: { resource: 'analytics' as keyof RolePermissions, action: 'view' } },
+  { key: 'pricing', label: 'Pricing', subtitle: 'Tickets and pricing tiers', icon: 'pricetag-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
+  { key: 'marketing', label: 'Marketing', subtitle: 'Promotions and sharing', icon: 'megaphone-outline' as const, permission: { resource: 'marketing' as keyof RolePermissions, action: 'view' } },
+  { key: 'payments', label: 'Payments', subtitle: 'Revenue and transactions', icon: 'card-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
+  { key: 'revenue', label: 'Revenue', subtitle: 'Track earnings and trends', icon: 'trending-up-outline' as const, permission: { resource: 'billing' as keyof RolePermissions, action: 'view' } },
+  { key: 'team', label: 'Team', subtitle: 'Staff and permissions', icon: 'person-add-outline' as const, permission: { resource: 'team' as keyof RolePermissions, action: 'view' } },
+  { key: 'artists', label: 'Artists', subtitle: 'Manage event lineup', icon: 'musical-notes-outline' as const, permission: { resource: 'events' as keyof RolePermissions, action: 'edit' } },
 ];
 
 function getStatusColor(status: EventStatus): string {
@@ -64,7 +66,7 @@ function formatDateRange(startDate: string, endDate: string): string {
 
 export default function ManageEventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const router = useStableRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
@@ -177,34 +179,31 @@ export default function ManageEventScreen() {
           </GlassSurface>
         </Animated.View>
 
-        {/* Section Navigation Grid */}
-        <View style={styles.grid}>
-          {visibleSections.map((section, index) => (
-            <Animated.View
-              key={section.key}
-              entering={FadeInDown.delay(index * 40).duration(300)}
-              style={styles.gridItem}
-            >
+        {/* Menu Items */}
+        <Animated.View
+          entering={FadeInDown.delay(150).duration(500).springify()}
+          style={styles.menuSection}
+        >
+          <View style={[styles.menuList, { backgroundColor: colors.cardElevated }]}>
+            {visibleSections.map((section) => (
               <TouchableOpacity
-                activeOpacity={0.7}
+                key={section.key}
+                style={[styles.menuItem, { borderBottomColor: colors.border }]}
                 onPress={() => handleSectionPress(section.key)}
-                style={styles.gridItemTouchable}
+                activeOpacity={0.7}
               >
-                <GlassSurface
-                  fill="subtle"
-                  border="subtle"
-                  cornerRadius="lg"
-                  style={styles.sectionCard}
-                >
-                  <Ionicons name={section.icon} size={28} color={colors.text} />
-                  <Text style={[styles.sectionLabel, { color: colors.text }]}>
-                    {section.label}
-                  </Text>
-                </GlassSurface>
+                <View style={[styles.menuItemIcon, { backgroundColor: colors.cardElevated }]}>
+                  <Ionicons name={section.icon} size={22} color={colors.text} />
+                </View>
+                <View style={styles.menuItemContent}>
+                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>{section.label}</Text>
+                  <Text style={[styles.menuItemSubtitle, { color: colors.textSecondary }]}>{section.subtitle}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.iconSecondary} />
               </TouchableOpacity>
-            </Animated.View>
-          ))}
-        </View>
+            ))}
+          </View>
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -305,28 +304,37 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  menuSection: {
     marginTop: 20,
-    gap: 12,
   },
-  gridItem: {
-    width: '47%',
-    flexGrow: 1,
+  menuList: {
+    borderRadius: 12,
+    overflow: 'hidden',
   },
-  gridItemTouchable: {
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  menuItemIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  menuItemContent: {
     flex: 1,
   },
-  sectionCard: {
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  sectionLabel: {
-    fontSize: 14,
+  menuItemTitle: {
+    fontSize: 15,
     fontFamily: 'Lato_700Bold',
+  },
+  menuItemSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 2,
   },
 });

@@ -139,7 +139,8 @@ export function useDeletePromoCode(eventId: number) {
 export function useTogglePromoCodeActive(eventId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (promoId: number) => pricingApi.togglePromoCodeActive(eventId, promoId),
+    mutationFn: ({ promoId, isActive }: { promoId: number; isActive: boolean }) =>
+      pricingApi.togglePromoCodeActive(eventId, promoId, isActive),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [PROMO_CODES_QUERY_KEY, eventId] });
     },

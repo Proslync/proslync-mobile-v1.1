@@ -27,12 +27,13 @@ export function FeedBottomCTA({
   }
 
   // Determine button label and state
-  const isDone = isPurchased || isRsvpd;
+  // Paid events always show price — users can always buy more tickets
+  const isDone = !isPaid && (isPurchased || isRsvpd);
   let label = 'RSVP';
-  if (isDone) {
-    label = isPurchased ? 'Purchased' : "RSVP'd";
-  } else if (isPaid) {
+  if (isPaid) {
     label = price != null ? `From $${price.toFixed(2)}` : 'Tickets';
+  } else if (isDone) {
+    label = "RSVP'd";
   }
 
   return (
@@ -40,7 +41,7 @@ export function FeedBottomCTA({
       <TouchableOpacity
         style={[
           styles.button,
-          { backgroundColor: colors.buttonPrimary },
+          { backgroundColor: isDone ? undefined : '#3897F0' },
           isDone && styles.buttonDone,
         ]}
         onPress={onRsvp}
@@ -78,11 +79,9 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   buttonDone: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#22c55e',
+    backgroundColor: '#2a2a2a',
   },
   buttonTextDone: {
-    color: '#22c55e',
+    color: '#888',
   },
 });

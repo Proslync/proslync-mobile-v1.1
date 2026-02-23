@@ -1,11 +1,11 @@
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { useMyEvents } from '@/hooks/use-events-query';
 import { useAuth } from '@/lib/providers/auth-provider';
 import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   ActivityIndicator,
@@ -81,7 +81,7 @@ function MenuItem({ title, subtitle, icon, onPress, colors }: MenuItemProps) {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { stats, venues = [], isLoading: statsLoading, error, refetch } = useDashboard();
   const { data: myEvents = [] } = useMyEvents();
@@ -193,53 +193,6 @@ export default function DashboardScreen() {
           </Animated.View>
         )}
 
-        {/* Stats Grid */}
-        <Animated.View
-          entering={FadeInDown.delay(100).duration(500).springify()}
-          style={styles.statsGrid}
-        >
-          <StatCard
-            title="Total Events"
-            value={stats?.totalEvents ?? 0}
-            icon="calendar-outline"
-            color="#8b5cf6"
-            subtitle="Events created"
-            colors={colors}
-          />
-          <StatCard
-            title="Total RSVPs"
-            value={stats?.totalRSVPs ?? 0}
-            icon="people-outline"
-            color="#22c55e"
-            subtitle="Attendees"
-            colors={colors}
-          />
-          <StatCard
-            title="Check-Ins"
-            value={stats?.totalCheckIns ?? 0}
-            icon="checkmark-circle-outline"
-            color="#10b981"
-            subtitle="Verified guests"
-            colors={colors}
-          />
-          <StatCard
-            title="Views"
-            value={stats?.totalViews ?? 0}
-            icon="eye-outline"
-            color="#3b82f6"
-            subtitle="Event page views"
-            colors={colors}
-          />
-          <StatCard
-            title="Engagement"
-            value={`${stats?.engagementRate ?? 0}%`}
-            icon="trending-up-outline"
-            color="#f59e0b"
-            subtitle="Conversion rate"
-            colors={colors}
-          />
-        </Animated.View>
-
         {/* My Venues */}
         {venues.length > 0 && (
           <Animated.View
@@ -284,64 +237,31 @@ export default function DashboardScreen() {
           </Animated.View>
         )}
 
-        {/* Quick Actions */}
+        {/* Menu Items */}
         <Animated.View
           entering={FadeInDown.delay(venues.length > 0 ? 250 : 200).duration(500).springify()}
           style={styles.section}
         >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              activeOpacity={0.8}
-              onPress={() => router.push('/create-event')}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#000' }]}>
-                <Ionicons name="add" size={24} color="#fff" />
-              </View>
-              <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Create Event</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              activeOpacity={0.8}
-              onPress={handleScannerPress}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#000' }]}>
-                <Ionicons name="scan-outline" size={24} color="#fff" />
-              </View>
-              <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Scanner</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.quickActionButton}
-              activeOpacity={0.8}
-              onPress={handleCollectPress}
-            >
-              <View style={[styles.quickActionIcon, { backgroundColor: '#000' }]}>
-                <Ionicons name="card-outline" size={24} color="#fff" />
-              </View>
-              <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Collect</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.quickActionButton} activeOpacity={0.8}>
-              <View style={[styles.quickActionIcon, { backgroundColor: '#000' }]}>
-                <Ionicons name="share-social-outline" size={24} color="#fff" />
-              </View>
-              <Text style={[styles.quickActionText, { color: colors.textSecondary }]}>Promote</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-
-        {/* Menu Items */}
-        <Animated.View
-          entering={FadeInDown.delay(venues.length > 0 ? 350 : 300).duration(500).springify()}
-          style={styles.section}
-        >
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Manage</Text>
           <View style={[styles.menuList, { backgroundColor: colors.cardElevated }]}>
             <MenuItem
+              title="Create Event"
+              subtitle="Set up a new event"
+              icon="add-circle-outline"
+              onPress={() => router.push('/create-event')}
+              colors={colors}
+            />
+            <MenuItem
               title="My Events"
-              subtitle="View and manage your events"
+              subtitle="View and edit your events"
               icon="calendar-outline"
               onPress={() => router.push('/my-events')}
+              colors={colors}
+            />
+            <MenuItem
+              title="My Venues"
+              subtitle="Manage your venues"
+              icon="business-outline"
+              onPress={() => router.push('/my-venues')}
               colors={colors}
             />
             <MenuItem
@@ -366,7 +286,21 @@ export default function DashboardScreen() {
               colors={colors}
             />
             <MenuItem
-              title="Payments"
+              title="Scanner"
+              subtitle="Scan IDs and membership cards"
+              icon="scan-outline"
+              onPress={handleScannerPress}
+              colors={colors}
+            />
+            <MenuItem
+              title="In Person Payments"
+              subtitle="Collect payments at the door"
+              icon="card-outline"
+              onPress={handleCollectPress}
+              colors={colors}
+            />
+            <MenuItem
+              title="Wallet"
               subtitle="View earnings and payouts"
               icon="wallet-outline"
               onPress={() => router.push('/dashboard/payments')}

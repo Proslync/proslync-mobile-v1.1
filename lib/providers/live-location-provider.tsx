@@ -1,9 +1,16 @@
 // Live Location Provider - Telegram-style temporary location sharing
 // Uses Socket.io for real-time communication with backend
+// Supports background location updates via expo-task-manager
 
 import * as React from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Platform } from 'react-native';
 import * as Location from 'expo-location';
+let TaskManager: typeof import('expo-task-manager') | null = null;
+try {
+  TaskManager = require('expo-task-manager');
+} catch {
+  // Native module not available (Expo Go or missing native rebuild)
+}
 import { io, Socket } from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../api/client';
@@ -21,11 +28,71 @@ import type {
 // Storage key for persisting sharing state across app restarts
 const SHARING_STATE_KEY = 'live_location_sharing_state';
 
+// Background task name
+const BACKGROUND_LOCATION_TASK = 'background-location-task';
+
 // Location update interval (in ms) - balance between accuracy and battery
 const LOCATION_UPDATE_INTERVAL = 5000; // 5 seconds
 
 // Heartbeat interval to keep connection alive
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+
+// Background location update interval (in ms) - less frequent to save battery
+const BACKGROUND_LOCATION_INTERVAL = 15000; // 15 seconds
+const BACKGROUND_LOCATION_DISTANCE = 20; // meters
+
+// Module-level socket ref for background task access
+let backgroundSocket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+
+// Define the background location task at module level (required by expo-task-manager)
+TaskManager?.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
+  if (error) {
+    console.error('[LiveLocation:BG] Background task error:', error.message);
+    return;
+  }
+
+  if (data) {
+    const { locations } = data as { locations: Location.LocationObject[] };
+    const location = locations[0];
+    if (!location) return;
+
+    console.log('[LiveLocation:BG] Background location update:', location.coords.latitude, location.coords.longitude);
+
+    // Send via HTTP fallback if socket not available
+    if (backgroundSocket?.connected) {
+      backgroundSocket.emit('location_update', {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        accuracy: location.coords.accuracy ?? undefined,
+        heading: location.coords.heading ?? undefined,
+        speed: location.coords.speed ?? undefined,
+      });
+    } else {
+      // HTTP fallback for when socket is disconnected in background
+      try {
+        const token = await apiClient.getAccessToken();
+        if (token) {
+          await fetch(`${config.api.baseUrl}/api/location`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              accuracy: location.coords.accuracy,
+              heading: location.coords.heading,
+              speed: location.coords.speed,
+            }),
+          });
+        }
+      } catch (err) {
+        console.error('[LiveLocation:BG] HTTP fallback failed:', err);
+      }
+    }
+  }
+});
 
 interface LiveLocationContextType {
   // Connection state
@@ -44,7 +111,9 @@ interface LiveLocationContextType {
 
   // Permission state
   hasLocationPermission: boolean;
+  hasBackgroundPermission: boolean;
   requestLocationPermission: () => Promise<boolean>;
+  requestBackgroundPermission: () => Promise<boolean>;
 }
 
 const LiveLocationContext =
@@ -102,6 +171,8 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
   >(new Map());
   const [hasLocationPermission, setHasLocationPermission] =
     React.useState(false);
+  const [hasBackgroundPermission, setHasBackgroundPermission] =
+    React.useState(false);
 
   // Check location permission on mount
   React.useEffect(() => {
@@ -140,7 +211,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     return () => {
       subscription.remove();
     };
-  }, [sharingState.isSharing]);
+  }, [sharingState.isSharing, hasBackgroundPermission]);
 
   // Update remaining time every second when sharing
   React.useEffect(() => {
@@ -171,8 +242,11 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
   }, [sharingState.isSharing, sharingState.expiresAt]);
 
   const checkLocationPermission = async () => {
-    const { status } = await Location.getForegroundPermissionsAsync();
-    setHasLocationPermission(status === 'granted');
+    const { status: fgStatus } = await Location.getForegroundPermissionsAsync();
+    setHasLocationPermission(fgStatus === 'granted');
+
+    const { status: bgStatus } = await Location.getBackgroundPermissionsAsync();
+    setHasBackgroundPermission(bgStatus === 'granted');
   };
 
   const requestLocationPermission = async (): Promise<boolean> => {
@@ -182,16 +256,29 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     return granted;
   };
 
+  const requestBackgroundPermission = async (): Promise<boolean> => {
+    // Must have foreground permission first
+    if (!hasLocationPermission) {
+      const fgGranted = await requestLocationPermission();
+      if (!fgGranted) return false;
+    }
+
+    const { status } = await Location.requestBackgroundPermissionsAsync();
+    const granted = status === 'granted';
+    setHasBackgroundPermission(granted);
+    return granted;
+  };
+
   const restoreSharingState = async () => {
     try {
       const stored = await AsyncStorage.getItem(SHARING_STATE_KEY);
       if (stored) {
         const state: SharingState = JSON.parse(stored);
-        // Check if still valid (not expired)
-        if (state.isSharing && state.expiresAt && state.expiresAt > Date.now()) {
+        // Check if still valid (not expired) — permanent shares have null expiresAt
+        if (state.isSharing && (state.expiresAt === null || state.expiresAt > Date.now())) {
           setSharingState(state);
           // Will resume location updates when socket connects
-        } else {
+        } else if (state.isSharing && state.expiresAt && state.expiresAt <= Date.now()) {
           // Expired, clear storage
           await AsyncStorage.removeItem(SHARING_STATE_KEY);
         }
@@ -215,8 +302,60 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
   const handleAppStateChange = (nextState: AppStateStatus) => {
     if (nextState === 'active' && sharingState.isSharing) {
-      // App came to foreground, ensure location updates are running
+      // App came to foreground — switch to foreground location updates (more accurate)
+      stopBackgroundLocationUpdates();
       startLocationUpdates();
+    } else if (nextState === 'background' && sharingState.isSharing) {
+      // App went to background — start background location task
+      stopLocationUpdates();
+      startBackgroundLocationUpdates();
+    }
+  };
+
+  const startBackgroundLocationUpdates = async () => {
+    if (!TaskManager) return; // Native module not available
+    if (!hasBackgroundPermission) {
+      console.log('[LiveLocation] No background location permission');
+      return;
+    }
+
+    const isTaskRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => false);
+    if (isTaskRunning) {
+      console.log('[LiveLocation] Background location task already running');
+      return;
+    }
+
+    try {
+      await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+        accuracy: Location.Accuracy.Balanced,
+        timeInterval: BACKGROUND_LOCATION_INTERVAL,
+        distanceInterval: BACKGROUND_LOCATION_DISTANCE,
+        deferredUpdatesInterval: BACKGROUND_LOCATION_INTERVAL,
+        showsBackgroundLocationIndicator: true,
+        foregroundService: Platform.OS === 'android' ? {
+          notificationTitle: 'Status',
+          notificationBody: 'Sharing your location',
+          notificationColor: '#3897F0',
+        } : undefined,
+        pausesUpdatesAutomatically: false,
+        activityType: Location.ActivityType.Other,
+      });
+      console.log('[LiveLocation] Background location updates started');
+    } catch (error) {
+      console.error('[LiveLocation] Failed to start background location:', error);
+    }
+  };
+
+  const stopBackgroundLocationUpdates = async () => {
+    if (!TaskManager) return; // Native module not available
+    try {
+      const isTaskRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => false);
+      if (isTaskRunning) {
+        await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
+        console.log('[LiveLocation] Background location updates stopped');
+      }
+    } catch (error) {
+      console.error('[LiveLocation] Failed to stop background location:', error);
     }
   };
 
@@ -333,6 +472,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         setSharingState(newState);
         persistSharingState(newState);
         stopLocationUpdates();
+        stopBackgroundLocationUpdates();
       });
 
       // Handle heartbeat response
@@ -345,6 +485,8 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       });
 
       socketRef.current = socket;
+      // Set module-level ref for background task access
+      backgroundSocket = socket;
     } catch (error) {
       console.error('[LiveLocation] Failed to connect socket:', error);
       setConnectionState('error');
@@ -356,6 +498,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
+      backgroundSocket = null;
     }
     setConnectionState('disconnected');
     stopLocationUpdates();
@@ -436,6 +579,12 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       if (!granted) return;
     }
 
+    // Request background permission for persistent location sharing
+    if (!hasBackgroundPermission) {
+      await requestBackgroundPermission();
+      // Don't block sharing if denied — foreground still works
+    }
+
     // Get current location first
     let location = currentLocationRef.current;
     if (!location) {
@@ -463,7 +612,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     };
     setSharingState(optimisticState);
 
-    // Start location updates
+    // Start foreground location updates
     startLocationUpdates();
 
     // Tell server with current location
@@ -478,8 +627,9 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
   };
 
   const stopSharing = async () => {
-    // Stop location updates immediately
+    // Stop all location updates
     stopLocationUpdates();
+    stopBackgroundLocationUpdates();
 
     // Update local state
     const newState: SharingState = {
@@ -505,7 +655,9 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     startSharing,
     stopSharing,
     hasLocationPermission,
+    hasBackgroundPermission,
     requestLocationPermission,
+    requestBackgroundPermission,
   };
 
   return (

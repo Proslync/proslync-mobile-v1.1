@@ -36,8 +36,20 @@ export interface PromoCode {
   validFrom: string;
   validUntil: string | null;
   isActive: boolean;
+  isPublic: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ActivePromo {
+  id: number;
+  code: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  eventId: number;
+  eventName: string;
+  eventFlyerUrl?: string;
+  validUntil?: string;
 }
 
 // Request types for CRUD operations
@@ -66,6 +78,7 @@ export interface CreatePromoCodeRequest {
   validFrom: string;
   validUntil?: string | null;
   isActive?: boolean;
+  isPublic?: boolean;
 }
 
 export interface ValidatePromoCodeRequest {

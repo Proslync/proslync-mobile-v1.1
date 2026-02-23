@@ -1,6 +1,6 @@
 import * as React from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import { Text, StyleSheet, TextStyle } from 'react-native';
-import { useRouter } from 'expo-router';
 
 interface LinkifiedTextProps {
   children: string;
@@ -12,7 +12,7 @@ interface LinkifiedTextProps {
  * Tapping a @username navigates to that user's profile
  */
 export function LinkifiedText({ children, style }: LinkifiedTextProps) {
-  const router = useRouter();
+  const router = useStableRouter();
 
   const handleMentionPress = (username: string) => {
     // Navigate to user profile

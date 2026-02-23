@@ -75,6 +75,7 @@ export interface CollectAtDoorRequest {
   guestId: number;
   tierId?: number;
   pricingId?: number;
+  customAmountCents?: number;
 }
 
 export interface CollectAtDoorResponse {

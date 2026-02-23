@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -9,7 +10,6 @@ import {
 } from 'react-native';
 import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { followsApi } from '@/lib/api/follows';
 import type { UserFollowItem, VenueFollowItem } from '@/lib/types/follows.types';
@@ -44,7 +44,7 @@ export function FollowersSheet({
 }: FollowersSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { colors, isDark } = useAppTheme();
   const snapPoints = React.useMemo(() => ['55%', '85%'], []);
 

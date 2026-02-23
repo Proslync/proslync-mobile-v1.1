@@ -147,6 +147,43 @@ export const filesApi = {
   },
 
   /**
+   * Complete presigned URL upload flow for a table image
+   *
+   * @param fileUri - Local file URI
+   * @returns Public URL of the uploaded image
+   */
+  uploadTableImage: async (fileUri: string): Promise<string> => {
+    const { name, type } = getFileInfoFromUri(fileUri);
+
+    const fileResponse = await fetch(fileUri);
+    const blob = await fileResponse.blob();
+    const fileSize = blob.size.toString();
+
+    // Step 1: Get presigned URL
+    const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
+      fileType: 'table-image',
+      fileName: name,
+      mimeType: type,
+      fileSize,
+    });
+
+    // Step 2: Upload to S3
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: blob,
+      headers: { 'Content-Type': type },
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Upload failed: ${uploadResponse.status}`);
+    }
+
+    // Step 3: Confirm upload
+    const confirmed = await filesApi.confirmUpload(fileId);
+    return confirmed.url;
+  },
+
+  /**
    * Delete a file by ID
    *
    * @param fileId - File ID to delete

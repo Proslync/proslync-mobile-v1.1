@@ -293,6 +293,20 @@ export function useChannel(channelId: string | undefined) {
     [channel]
   );
 
+  // Delete a message
+  const deleteMessage = React.useCallback(
+    async (messageId: string) => {
+      if (!client) return;
+      try {
+        await client.deleteMessage(messageId);
+      } catch (err) {
+        console.error('[Channel] Error deleting message:', err);
+        throw err;
+      }
+    },
+    [client]
+  );
+
   // Send typing indicator
   const sendTypingStart = React.useCallback(async () => {
     if (!channel) return;
@@ -324,5 +338,6 @@ export function useChannel(channelId: string | undefined) {
     sendVoiceMessage,
     sendTypingStart,
     sendTypingStop,
+    deleteMessage,
   };
 }

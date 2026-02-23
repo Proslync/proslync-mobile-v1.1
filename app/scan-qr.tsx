@@ -40,6 +40,7 @@ import { eventsApi } from '@/lib/api/events';
 import { paymentsApi } from '@/lib/api/payments';
 import type { EventAttendee } from '@/lib/types/events.types';
 import { EventUserStatus } from '@/lib/types/events.types';
+import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -230,6 +231,10 @@ export default function ScannerScreen() {
   const [skippedMembership, setSkippedMembership] = React.useState(false);
   const [showMembershipResult, setShowMembershipResult] = React.useState(false);
 
+  // NFC state
+  const [nfcSupported, setNfcSupported] = React.useState(false);
+  const [nfcScanning, setNfcScanning] = React.useState(false);
+
   // ID scan state
   const [idResult, setIdResult] = React.useState<IdScanResult | null>(null);
   const [isValidating, setIsValidating] = React.useState(false);
@@ -314,6 +319,15 @@ export default function ScannerScreen() {
     }).catch(() => {});
   }, [eventId]);
 
+  // ─── NFC support check & cleanup ────────────────────────────────────────
+
+  React.useEffect(() => {
+    NfcManager.isSupported().then(setNfcSupported).catch(() => {});
+    return () => {
+      NfcManager.cancelTechnologyRequest().catch(() => {});
+    };
+  }, []);
+
   // ─── Scan line animation ─────────────────────────────────────────────────
 
   const scanLinePosition = useSharedValue(0);
@@ -355,13 +369,39 @@ export default function ScannerScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
 
+  // ─── NFC membership scan ──────────────────────────────────────────────────
+
+  const startNfcScan = React.useCallback(async () => {
+    if (nfcScanning) return;
+    setNfcScanning(true);
+    try {
+      await NfcManager.requestTechnology(NfcTech.Ndef);
+      const tag = await NfcManager.getTag();
+      if (tag?.ndefMessage?.[0]) {
+        const payload = Ndef.text.decodePayload(
+          new Uint8Array(tag.ndefMessage[0].payload)
+        );
+        if (payload) {
+          handleMembershipScan(payload);
+        }
+      }
+    } catch {
+      // NFC cancelled or failed — ignore
+    } finally {
+      NfcManager.cancelTechnologyRequest().catch(() => {});
+      setNfcScanning(false);
+    }
+  }, [nfcScanning, handleMembershipScan]);
+
   const handleContinueToId = () => {
+    NfcManager.cancelTechnologyRequest().catch(() => {});
     setShowMembershipResult(false);
     setScanStep('id');
     setIsActive(true);
   };
 
   const handleSkipMembership = () => {
+    NfcManager.cancelTechnologyRequest().catch(() => {});
     setSkippedMembership(true);
     setMembershipData(null);
     setShowMembershipResult(false);
@@ -524,11 +564,14 @@ export default function ScannerScreen() {
     try {
       if (eventId && idResult.guestId) {
         await eventsApi.approveGuest(eventId, idResult.guestId, 'Approved at door');
-        fetchGuestList();
-      } else {
-        addToListOptimistic(idResult, 'approved');
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Navigate to Check Ins screen after approval
+      if (eventId) {
+        router.replace(`/manage-event/${eventId}/check-ins`);
+        return;
+      }
     } catch {
       addToListOptimistic(idResult, 'approved');
     } finally {
@@ -838,6 +881,24 @@ export default function ScannerScreen() {
                 : 'Position barcode on back of ID'}
             </Text>
           </View>
+          {/* NFC tap button for membership step */}
+          {scanStep === 'membership' && nfcSupported && (
+            <TouchableOpacity
+              style={styles.nfcButton}
+              onPress={startNfcScan}
+              activeOpacity={0.7}
+              disabled={nfcScanning}
+            >
+              <Ionicons
+                name="phone-portrait-outline"
+                size={18}
+                color="#fff"
+              />
+              <Text style={styles.nfcButtonText}>
+                {nfcScanning ? 'Hold phone near card...' : 'Tap Membership Card'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </Animated.View>
       )}
 
@@ -1090,6 +1151,19 @@ const styles = StyleSheet.create({
   instructionsContainer: { position: 'absolute', top: SCREEN_HEIGHT * 0.22, left: 0, right: 0, alignItems: 'center' },
   instructionsPill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24 },
   instructionText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.8)' },
+  nfcButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  nfcButtonText: { fontSize: 14, fontFamily: 'Lato_600SemiBold', color: '#fff' },
 
   // ─── Membership result (dark glass) ────────────────────────────────────
   resultOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },

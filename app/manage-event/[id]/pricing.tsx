@@ -219,7 +219,10 @@ export default function PricingScreen() {
                   key={code.id}
                   promoCode={code}
                   readOnly={readOnly}
-                  onToggleActive={(promoId) => togglePromoActive.mutate(promoId)}
+                  onToggleActive={(promoId) => {
+                    const promo = promoCodes.find((p) => p.id === promoId);
+                    togglePromoActive.mutate({ promoId, isActive: !promo?.isActive });
+                  }}
                   onEdit={() => {}}
                   onDelete={(promoId) => deletePromoCode.mutate(promoId)}
                 />

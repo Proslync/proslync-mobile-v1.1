@@ -21,7 +21,7 @@ import { useToast } from '@/components/shared/toast';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
-const DEFAULT_AVATAR = 'https://picsum.photos/200';
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 export default function CreatePostScreen() {
   const insets = useSafeAreaInsets();
@@ -35,7 +35,7 @@ export default function CreatePostScreen() {
   const [caption, setCaption] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const avatarUrl = user?.avatar?.url || DEFAULT_AVATAR;
+  const avatarUrl = user?.avatar?.url;
   const username = user?.userName || 'username';
 
   const pickMedia = async (type: 'library' | 'camera') => {
@@ -181,7 +181,7 @@ export default function CreatePostScreen() {
           >
             {/* User Info */}
             <View style={styles.userRow}>
-              <Image source={{ uri: avatarUrl }} style={styles.userAvatar} />
+              <Image source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage} style={styles.userAvatar} />
               <Text style={[styles.username, { color: colors.text }]}>{username}</Text>
             </View>
 

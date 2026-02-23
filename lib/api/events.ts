@@ -254,6 +254,13 @@ export const eventsApi = {
   },
 
   /**
+   * Cancel RSVP / registration for an event
+   */
+  cancelRegistration: async (eventId: number): Promise<RsvpResponse> => {
+    return apiClient.delete<RsvpResponse>(`/api/events/${eventId}/register`);
+  },
+
+  /**
    * Create a new event
    * Backend endpoint: POST /api/events
    */

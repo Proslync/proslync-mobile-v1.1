@@ -12,6 +12,8 @@ export type StatusTier =
 export interface WalletUser {
   id: string;
   name: string;
+  userName?: string;
+  avatarUrl?: string;
   statusTier: StatusTier;
   memberSince: string;
   membershipCardId?: number;
@@ -50,9 +52,10 @@ export interface WalletTransaction {
 
 export interface Offer {
   id: string;
+  code: string;
   title: string;
   subtitle: string;
-  eligibility: string;
+  eventId: number;
   isClaimed: boolean;
   expiresAt?: string;
 }
@@ -60,15 +63,15 @@ export interface Offer {
 export interface WalletEventCard {
   id: string;
   ticketId?: number;
-  ticketStatus?: 'active' | 'redeemed' | 'cancelled' | 'transferred' | 'listed';
+  ticketStatus?: 'active' | 'redeemed' | 'cancelled' | 'transferred';
   title: string;
   dateTime: string;
   dateTimeLabel: string;
   venueName: string;
   flyerUrl: string;
   isEarningEnabled: boolean;
+  isPaid?: boolean;
   pricePaid?: number;
-  listedPrice?: number;
   perksLabel?: string;
   isRecommended?: boolean;
 }

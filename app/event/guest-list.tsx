@@ -1,4 +1,5 @@
 import React from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -8,7 +9,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -16,7 +17,7 @@ import { eventsApi } from '@/lib/api/events';
 import type { EventAttendee } from '@/lib/types/events.types';
 
 export default function GuestListPage() {
-  const router = useRouter();
+  const router = useStableRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ eventId?: string; eventTitle?: string }>();
 

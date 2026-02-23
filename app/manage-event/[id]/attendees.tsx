@@ -22,11 +22,12 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const STATUS_FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'confirmed', label: 'Confirmed' },
-  { key: 'requested', label: 'Requested' },
-  { key: 'checked_in', label: 'Checked In' },
-  { key: 'rejected', label: 'Rejected' },
+  { key: 'all', label: 'All', statuses: [] },
+  { key: 'confirmed', label: 'Confirmed', statuses: ['confirmed', 'verified'] },
+  { key: 'pending', label: 'Pending', statuses: ['pending'] },
+  { key: 'requested', label: 'Requested', statuses: ['requested'] },
+  { key: 'checked_in', label: 'Checked In', statuses: ['checked_in', 'seated'] },
+  { key: 'rejected', label: 'Rejected', statuses: ['rejected', 'cancelled', 'no_show'] },
 ] as const;
 
 function getStatusColor(status?: EventUserStatus): string {
@@ -95,7 +96,10 @@ export default function AttendeesScreen() {
   const debouncedSearch = useDebounce(searchText, 300);
 
   const eventId = id ? Number(id) : undefined;
-  const statusFilter = activeFilter === 'all' ? undefined : [activeFilter];
+  const activeFilterObj = STATUS_FILTERS.find((f) => f.key === activeFilter);
+  const statusFilter = activeFilterObj && activeFilterObj.statuses.length > 0
+    ? [...activeFilterObj.statuses]
+    : undefined;
 
   const {
     attendees,

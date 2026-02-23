@@ -133,47 +133,29 @@ export const MOCK_TRANSACTIONS: WalletTransaction[] = [
 export const MOCK_OFFERS: Offer[] = [
   {
     id: 'offer-1',
+    code: 'UBER10',
     title: '$10 off Uber rides',
     subtitle: 'Get home safe after events',
-    eligibility: 'VIP+',
+    eventId: 1,
     isClaimed: false,
-    expiresAt: daysAgo(-7), // 7 days from now
+    expiresAt: daysAgo(-7),
   },
   {
     id: 'offer-2',
+    code: 'EARLYBIRD',
     title: 'Free entry before 11PM',
     subtitle: 'At partner venues this weekend',
-    eligibility: 'Any member',
+    eventId: 2,
     isClaimed: false,
     expiresAt: daysAgo(-3),
   },
   {
     id: 'offer-3',
+    code: 'COCKTAILS',
     title: '2-for-1 cocktails',
     subtitle: 'At The Velvet Room',
-    eligibility: 'Preferred+',
+    eventId: 3,
     isClaimed: true,
-  },
-  {
-    id: 'offer-4',
-    title: 'VIP upgrade',
-    subtitle: 'Complimentary for your next booking',
-    eligibility: 'A-List+',
-    isClaimed: false,
-  },
-  {
-    id: 'offer-5',
-    title: '20% off merch',
-    subtitle: 'Status branded gear',
-    eligibility: 'Any member',
-    isClaimed: false,
-  },
-  {
-    id: 'offer-6',
-    title: 'Skip the line',
-    subtitle: 'Priority entry all weekend',
-    eligibility: 'VIP+',
-    isClaimed: false,
   },
 ];
 

@@ -14,9 +14,10 @@ import * as Haptics from 'expo-haptics';
 import { BottomSheet } from './bottom-sheet';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { ticketsApi } from '@/lib/api/tickets';
+import { eventsApi } from '@/lib/api/events';
 import type { WalletEventCard } from '@/lib/types/wallet.types';
 
-type SheetMode = 'actions' | 'sell' | 'transfer' | 'success';
+type SheetMode = 'actions' | 'transfer' | 'success';
 
 interface TicketActionSheetProps {
   visible: boolean;
@@ -29,37 +30,31 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
   const { colors, isDark } = useAppTheme();
   const [mode, setMode] = React.useState<SheetMode>('actions');
   const [isLoading, setIsLoading] = React.useState(false);
-  const [sellPrice, setSellPrice] = React.useState('');
-  const [transferPhone, setTransferPhone] = React.useState('');
+  const [transferUsername, setTransferUsername] = React.useState('');
   const [successMessage, setSuccessMessage] = React.useState('');
 
   React.useEffect(() => {
     if (visible) {
       setMode('actions');
-      setSellPrice('');
-      setTransferPhone('');
+      setTransferUsername('');
       setSuccessMessage('');
     }
   }, [visible]);
 
-  const handleSell = async () => {
-    if (!event?.ticketId || !sellPrice || isLoading) return;
-    const price = parseFloat(sellPrice);
-    if (isNaN(price) || price <= 0) {
-      Alert.alert('Invalid price', 'Please enter a valid price.');
-      return;
-    }
+  // Shared action runner: haptic, call API, show success or error
+  const runAction = async (fn: () => Promise<{ success: boolean; message?: string }>, msg: string) => {
+    if (isLoading) return;
     setIsLoading(true);
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const res = await ticketsApi.listTicketForSale(event.ticketId, { price });
+      const res = await fn();
       if (res.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setSuccessMessage(`Your ticket has been listed for $${price.toFixed(2)}!`);
+        setSuccessMessage(res.message || msg);
         setMode('success');
         onActionComplete?.();
       } else {
-        Alert.alert('Error', res.message || 'Could not list ticket.');
+        Alert.alert('Error', res.message || 'Something went wrong.');
       }
     } catch (err: any) {
       Alert.alert('Error', err?.message || 'Something went wrong.');
@@ -68,46 +63,20 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
     }
   };
 
-  const handleTransfer = async () => {
-    if (!event?.ticketId || !transferPhone.trim() || isLoading) return;
-    setIsLoading(true);
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const res = await ticketsApi.transferTicket(event.ticketId, { recipientPhone: transferPhone.trim() });
-      if (res.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setSuccessMessage(res.message || 'Ticket transferred successfully!');
-        setMode('success');
-        onActionComplete?.();
-      } else {
-        Alert.alert('Error', res.message || 'Could not transfer ticket.');
-      }
-    } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Something went wrong.');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleTransfer = () => {
+    if (!event?.ticketId || !transferUsername.trim()) return;
+    runAction(
+      () => ticketsApi.transferTicket(event.ticketId!, { recipientUsername: transferUsername.trim() }),
+      'Ticket transferred successfully!',
+    );
   };
 
-  const handleCancelListing = async () => {
-    if (!event?.ticketId || isLoading) return;
-    setIsLoading(true);
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const res = await ticketsApi.cancelListing(event.ticketId);
-      if (res.success) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setSuccessMessage('Listing cancelled — ticket is active again.');
-        setMode('success');
-        onActionComplete?.();
-      } else {
-        Alert.alert('Error', res.message || 'Could not cancel listing.');
-      }
-    } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Something went wrong.');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleCancelRsvp = () => {
+    if (!event?.id) return;
+    runAction(
+      () => eventsApi.cancelRegistration(parseInt(event.id, 10)),
+      'Your RSVP has been cancelled.',
+    );
   };
 
   const handleClose = () => {
@@ -119,11 +88,40 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
     backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
     borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)',
   };
+  const redBtn = {
+    backgroundColor: isDark ? 'rgba(255,59,48,0.12)' : 'rgba(255,59,48,0.08)',
+    borderColor: isDark ? 'rgba(255,59,48,0.25)' : 'rgba(255,59,48,0.15)',
+  };
+  const iconBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
+  const redIconBg = isDark ? 'rgba(255,59,48,0.15)' : 'rgba(255,59,48,0.1)';
 
   if (!event) return null;
 
-  const isListed = event.ticketStatus === 'listed';
   const hasTicket = !!event.ticketId;
+
+  const renderOptionRow = (
+    opts: { icon: string; title: string; desc: string; onPress: () => void; red?: boolean },
+  ) => (
+    <TouchableOpacity
+      style={[styles.optionRow, opts.red ? redBtn : glassBtn, isLoading && { opacity: 0.6 }]}
+      onPress={opts.onPress}
+      activeOpacity={0.7}
+      disabled={isLoading}
+    >
+      <View style={[styles.optionIcon, { backgroundColor: opts.red ? redIconBg : iconBg }]}>
+        {isLoading && opts.red ? (
+          <ActivityIndicator size="small" color="#ff3b30" />
+        ) : (
+          <Ionicons name={opts.icon as any} size={20} color={opts.red ? '#ff3b30' : colors.text} />
+        )}
+      </View>
+      <View style={styles.optionText}>
+        <Text style={[styles.optionTitle, { color: opts.red ? '#ff3b30' : colors.text }]}>{opts.title}</Text>
+        <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>{opts.desc}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+    </TouchableOpacity>
+  );
 
   return (
     <BottomSheet visible={visible} onClose={handleClose} maxHeight="65%">
@@ -138,41 +136,6 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
             <Text style={[styles.actionBtnText, { color: colors.text }]}>Close</Text>
           </TouchableOpacity>
         </View>
-      ) : mode === 'sell' ? (
-        <View style={styles.formContainer}>
-          <TouchableOpacity onPress={() => setMode('actions')} style={styles.backRow} activeOpacity={0.7}>
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-            <Text style={[styles.backText, { color: colors.text }]}>Back</Text>
-          </TouchableOpacity>
-          <Text style={[styles.formTitle, { color: colors.text }]}>Sell Ticket</Text>
-          <Text style={[styles.formDesc, { color: colors.textSecondary }]}>
-            Set your asking price. The ticket will be listed on the marketplace.
-          </Text>
-          <View style={[styles.inputWrap, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
-            <Text style={[styles.inputPrefix, { color: colors.textSecondary }]}>$</Text>
-            <TextInput
-              style={[styles.input, { color: colors.text }]}
-              placeholder="0.00"
-              placeholderTextColor={colors.placeholder}
-              keyboardType="decimal-pad"
-              value={sellPrice}
-              onChangeText={setSellPrice}
-              autoFocus
-            />
-          </View>
-          <TouchableOpacity
-            style={[styles.actionBtn, glassBtn, isLoading && { opacity: 0.6 }]}
-            onPress={handleSell}
-            activeOpacity={0.8}
-            disabled={isLoading || !sellPrice}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color={colors.text} />
-            ) : (
-              <Text style={[styles.actionBtnText, { color: colors.text }]}>List for Sale</Text>
-            )}
-          </TouchableOpacity>
-        </View>
       ) : mode === 'transfer' ? (
         <View style={styles.formContainer}>
           <TouchableOpacity onPress={() => setMode('actions')} style={styles.backRow} activeOpacity={0.7}>
@@ -181,17 +144,19 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
           </TouchableOpacity>
           <Text style={[styles.formTitle, { color: colors.text }]}>Transfer Ticket</Text>
           <Text style={[styles.formDesc, { color: colors.textSecondary }]}>
-            Enter the recipient's phone number to transfer this ticket.
+            Enter the recipient's username to transfer this ticket.
           </Text>
           <View style={[styles.inputWrap, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
-            <Ionicons name="call-outline" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
+            <Ionicons name="person-outline" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
             <TextInput
               style={[styles.input, { color: colors.text }]}
-              placeholder="Phone number"
+              placeholder="Username"
               placeholderTextColor={colors.placeholder}
-              keyboardType="phone-pad"
-              value={transferPhone}
-              onChangeText={setTransferPhone}
+              keyboardType="default"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={transferUsername}
+              onChangeText={setTransferUsername}
               autoFocus
             />
           </View>
@@ -199,7 +164,7 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
             style={[styles.actionBtn, glassBtn, isLoading && { opacity: 0.6 }]}
             onPress={handleTransfer}
             activeOpacity={0.8}
-            disabled={isLoading || !transferPhone.trim()}
+            disabled={isLoading || !transferUsername.trim()}
           >
             {isLoading ? (
               <ActivityIndicator size="small" color={colors.text} />
@@ -222,82 +187,17 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
             </View>
           </View>
 
-          {/* Listed badge */}
-          {isListed && (
-            <View style={styles.listedBadgeRow}>
-              <View style={styles.listedBadge}>
-                <Ionicons name="pricetag" size={14} color="#22c55e" />
-                <Text style={styles.listedBadgeText}>
-                  Listed for ${event.listedPrice?.toFixed(2) ?? '—'}
-                </Text>
-              </View>
-            </View>
-          )}
-
           <View style={[styles.divider, { backgroundColor: colors.separator }]} />
 
           {/* Action buttons */}
-          {!hasTicket ? (
-            <View style={styles.noTicketState}>
-              <Text style={[styles.noTicketText, { color: colors.textTertiary }]}>
-                No ticket linked — RSVP only
-              </Text>
-            </View>
-          ) : isListed ? (
-            <>
-              <TouchableOpacity
-                style={[styles.optionRow, glassBtn, isLoading && { opacity: 0.6 }]}
-                onPress={handleCancelListing}
-                activeOpacity={0.7}
-                disabled={isLoading}
-              >
-                <View style={[styles.optionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color={colors.text} />
-                  ) : (
-                    <Ionicons name="close-circle-outline" size={20} color={colors.text} />
-                  )}
-                </View>
-                <View style={styles.optionText}>
-                  <Text style={[styles.optionTitle, { color: colors.text }]}>Cancel Listing</Text>
-                  <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>Remove from marketplace</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={[styles.optionRow, glassBtn]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMode('sell'); }}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.optionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
-                  <Ionicons name="pricetag-outline" size={20} color={colors.text} />
-                </View>
-                <View style={styles.optionText}>
-                  <Text style={[styles.optionTitle, { color: colors.text }]}>Sell Ticket</Text>
-                  <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>List on the marketplace</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.optionRow, glassBtn]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMode('transfer'); }}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.optionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
-                  <Ionicons name="send-outline" size={20} color={colors.text} />
-                </View>
-                <View style={styles.optionText}>
-                  <Text style={[styles.optionTitle, { color: colors.text }]}>Transfer Ticket</Text>
-                  <Text style={[styles.optionDesc, { color: colors.textTertiary }]}>Send to a friend</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-              </TouchableOpacity>
-            </>
-          )}
+          {hasTicket && renderOptionRow({
+            icon: 'send-outline', title: 'Transfer Ticket', desc: 'Send to a friend',
+            onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMode('transfer'); },
+          })}
+          {!event.isPaid && renderOptionRow({
+            icon: 'close-circle-outline', title: 'Cancel RSVP', desc: 'Remove your registration',
+            onPress: handleCancelRsvp, red: true,
+          })}
         </View>
       )}
     </BottomSheet>
@@ -338,24 +238,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
-  listedBadgeRow: {
-    marginBottom: 4,
-  },
-  listedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  listedBadgeText: {
-    fontSize: 13,
-    fontFamily: 'Lato_700Bold',
-    color: '#22c55e',
-  },
   divider: {
     height: 1,
     marginVertical: 12,
@@ -388,15 +270,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
-  noTicketState: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-  noTicketText: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-  },
-  // Forms
   formContainer: {
     paddingHorizontal: 4,
   },
@@ -419,7 +292,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     lineHeight: 20,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   inputWrap: {
     flexDirection: 'row',
@@ -429,11 +302,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 50,
     marginBottom: 20,
-  },
-  inputPrefix: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    marginRight: 4,
   },
   input: {
     flex: 1,
@@ -451,7 +319,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
   },
-  // Success
   successContainer: {
     alignItems: 'center',
     paddingVertical: 16,

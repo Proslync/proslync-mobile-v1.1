@@ -1,7 +1,8 @@
-// Dashboard Analytics — Aggregated analytics across all user events
+// Dashboard Analytics — Aggregated analytics across all user events with real-time WebSocket updates
 import * as React from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { analyticsApi } from '@/lib/api/analytics';
+import { useAnalyticsSocket } from '@/hooks/use-analytics-socket';
 import {
   AnalyticsScreenShell,
   calcDelta,
@@ -21,9 +22,16 @@ export default function DashboardAnalyticsScreen() {
   const timeSeriesQuery = useQuery({
     queryKey: [DASHBOARD_TIMESERIES_KEY, selectedRange],
     queryFn: () => analyticsApi.getDashboardTimeSeries(selectedRange),
-    staleTime: 2 * 60 * 1000,
+    staleTime: 0, // Always re-fetch on invalidation for real-time updates
     gcTime: 10 * 60 * 1000,
   });
+
+  // Real-time WebSocket updates — listens on user room for all event updates
+  const handleSocketUpdate = React.useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: [DASHBOARD_TIMESERIES_KEY] });
+  }, [queryClient]);
+
+  useAnalyticsSocket({ onUpdate: handleSocketUpdate });
 
   // Build all 8 metrics from range-filtered totals + time series
   const metrics = React.useMemo((): AnalyticsMetric[] => {
@@ -38,6 +46,7 @@ export default function DashboardAnalyticsScreen() {
     const tsData = timeSeriesQuery.data?.data;
     const hasTimeSeries = tsData && tsData.length >= 2;
 
+    const dateDates = hasTimeSeries ? tsData.map((d) => d.date) : [];
     const viewsSeries = hasTimeSeries ? tsData.map((d) => d.views) : [0, 0];
     const uniqueSeries = hasTimeSeries ? tsData.map((d) => d.uniqueVisitors) : [0, 0];
     const rsvpsSeries = hasTimeSeries ? tsData.map((d) => d.rsvps) : [0, 0];
@@ -86,6 +95,8 @@ export default function DashboardAnalyticsScreen() {
 
     const rangeLabel = getRangeLabel(selectedRange);
 
+    const dates = { [selectedRange]: dateDates };
+
     return [
       {
         id: 'views',
@@ -94,6 +105,7 @@ export default function DashboardAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${viewsDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: viewsDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: viewsSeries },
+        datesByRange: dates,
       },
       {
         id: 'unique',
@@ -102,6 +114,7 @@ export default function DashboardAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${uniqueDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: uniqueDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: uniqueSeries },
+        datesByRange: dates,
       },
       {
         id: 'rsvps',
@@ -110,6 +123,7 @@ export default function DashboardAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${rsvpsDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: rsvpsDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: rsvpsSeries },
+        datesByRange: dates,
       },
       {
         id: 'checkIns',
@@ -118,6 +132,7 @@ export default function DashboardAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${checkInsDelta.text} ${rangeLabel}` : 'No data yet',
         isPositive: checkInsDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: checkInsSeries },
+        datesByRange: dates,
       },
       {
         id: 'checkInRate',
@@ -134,6 +149,7 @@ export default function DashboardAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${conversionDelta.text} ${rangeLabel}` : '—',
         isPositive: conversionDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: conversionSeries },
+        datesByRange: dates,
       },
       {
         id: 'events',
@@ -142,6 +158,7 @@ export default function DashboardAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${eventsDelta.text} ${rangeLabel}` : totalNewEvents > 0 ? `${totalNewEvents} total` : 'No events yet',
         isPositive: eventsDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: eventsSeries },
+        datesByRange: dates,
       },
       {
         id: 'perEvent',
@@ -150,6 +167,7 @@ export default function DashboardAnalyticsScreen() {
         deltaText: hasTimeSeries ? `${perEventDelta.text} ${rangeLabel}` : totalNewEvents > 0 ? `Avg across ${totalNewEvents} events` : '—',
         isPositive: perEventDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: perEventSeries },
+        datesByRange: dates,
       },
     ];
   }, [timeSeriesQuery.data, selectedRange]);

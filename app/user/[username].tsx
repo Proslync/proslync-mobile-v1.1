@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -11,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
@@ -21,6 +22,7 @@ import { useUserFeedStats } from '@/hooks/use-user-feed-stats';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { LinkifiedText } from '@/components/shared/linkified-text';
+import { FollowersSheet } from '@/components/feed/followers-sheet';
 import type { PublicUserProfile } from '@/lib/types/auth.types';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -55,7 +57,7 @@ function StatButton({
 
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { username, userId } = useLocalSearchParams<{ username: string; userId?: string }>();
   const { showSuccess, showError } = useToast();
   const { client, status: chatStatus } = useChat();
@@ -65,6 +67,8 @@ export default function UserProfileScreen() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isCreatingChat, setIsCreatingChat] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
+  const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
 
   // Fetch follower/following counts and activities from Stream
   const { followerCount, followingCount, activities: userPosts, isLoading: statsLoading, refetch: refetchStats } = useUserFeedStats(user?.id);
@@ -343,8 +347,18 @@ export default function UserProfileScreen() {
           )}
           <View style={styles.statsRow}>
             <StatButton value={userPosts.length} label="Posts" colors={colors} />
-            <StatButton value={followerCount} label="Followers" colors={colors} />
-            <StatButton value={followingCount} label="Following" colors={colors} />
+            <StatButton
+              value={followerCount}
+              label="Followers"
+              colors={colors}
+              onPress={() => { setFollowersSheetTab('followers'); setFollowersSheetVisible(true); }}
+            />
+            <StatButton
+              value={followingCount}
+              label="Following"
+              colors={colors}
+              onPress={() => { setFollowersSheetTab('following'); setFollowersSheetVisible(true); }}
+            />
           </View>
         </Animated.View>
 
@@ -448,6 +462,17 @@ export default function UserProfileScreen() {
         {/* Bottom spacing */}
         <View style={{ height: insets.bottom + 100 }} />
       </ScrollView>
+
+      {user?.id && (
+        <FollowersSheet
+          visible={followersSheetVisible}
+          onClose={() => setFollowersSheetVisible(false)}
+          initialTab={followersSheetTab}
+          userId={user.id}
+          followersCount={followerCount}
+          followingCount={followingCount}
+        />
+      )}
     </View>
   );
 }

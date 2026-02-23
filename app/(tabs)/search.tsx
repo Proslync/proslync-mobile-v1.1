@@ -2,6 +2,7 @@
 // Requires development build: expo run:ios or expo run:android
 
 import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -9,8 +10,8 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  TextInput,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,14 +22,11 @@ import Constants from 'expo-constants';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
-  FadeIn,
   withRepeat,
   withSequence,
 } from 'react-native-reanimated';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { eventsApi } from '@/lib/api/events';
 import type { Event } from '@/lib/types/events.types';
@@ -54,9 +52,6 @@ if (MAPBOX_TOKEN && !isExpoGo) {
 
 // Custom dark nightlife map style URL for Mapbox
 const DARK_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';
-
-// Filter type for nearby modal
-type NearbyFilter = 'events' | 'friends';
 
 // Friend marker interface
 interface FriendMarker {
@@ -178,20 +173,20 @@ function transformEventToMapEvent(event: Event): MapEvent {
   };
 }
 
-// Event card for bottom sheet
+// Horizontal event card for bottom sheet
 function EventCard({ event, onPress }: { event: MapEvent; onPress: () => void }) {
   return (
     <TouchableOpacity style={styles.eventCard} onPress={onPress} activeOpacity={0.9}>
       <Image source={{ uri: event.imageUrl }} style={styles.eventCardImage} />
       <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.9)']}
+        colors={['transparent', 'rgba(0,0,0,0.85)']}
         style={styles.eventCardGradient}
       />
       <View style={styles.eventCardContent}>
         {event.isLive && (
           <View style={styles.eventCardLive}>
             <View style={styles.eventCardLiveDot} />
-            <Text style={styles.eventCardLiveText}>LIVE NOW</Text>
+            <Text style={styles.eventCardLiveText}>LIVE</Text>
           </View>
         )}
         <Text style={styles.eventCardTitle} numberOfLines={1}>
@@ -200,100 +195,30 @@ function EventCard({ event, onPress }: { event: MapEvent; onPress: () => void })
         <Text style={styles.eventCardVenue} numberOfLines={1}>
           {event.venue}
         </Text>
-        <View style={styles.eventCardMeta}>
-          <View style={styles.eventCardMetaItem}>
-            <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.eventCardMetaText}>{event.date} @ {event.time}</Text>
-          </View>
-          <View style={styles.eventCardMetaItem}>
-            <Ionicons name="people-outline" size={12} color="rgba(255,255,255,0.7)" />
-            <Text style={styles.eventCardMetaText}>{event.attendees}</Text>
-          </View>
-        </View>
+        <Text style={styles.eventCardMetaText}>{event.date} @ {event.time}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
-// Search overlay
-function SearchOverlay({
-  searchQuery,
-  onSearchChange,
-  onFilterPress,
-}: {
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  onFilterPress: () => void;
-}) {
-  const insets = useSafeAreaInsets();
-  const router = useRouter();
-
+// Horizontal friend avatar for bottom sheet
+function FriendAvatarItem({ friend, onPress, colors }: { friend: FriendMarker; onPress: () => void; colors: any }) {
   return (
-    <Animated.View
-      entering={FadeIn.duration(300)}
-      style={[styles.searchOverlay, { top: insets.top + 12 }]}
-    >
-      <View style={styles.searchBar}>
-        <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
-        <TextInput
-          style={styles.searchInput}
-          value={searchQuery}
-          onChangeText={onSearchChange}
-          placeholder="Search events, venues..."
-          placeholderTextColor="rgba(0,0,0,0.4)"
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => onSearchChange('')}>
-            <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.4)" />
-          </TouchableOpacity>
-        )}
-      </View>
-      <TouchableOpacity
-        style={styles.filterButton}
-        onPress={() => router.push('/search-screen')}
-      >
-        <Ionicons name="people-outline" size={20} color="#1a1a1a" />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.filterButton} onPress={onFilterPress}>
-        <Ionicons name="options-outline" size={20} color="#1a1a1a" />
-      </TouchableOpacity>
-    </Animated.View>
+    <TouchableOpacity style={styles.friendAvatarItem} onPress={onPress} activeOpacity={0.8}>
+      <Image source={{ uri: friend.imageUrl }} style={[styles.friendAvatarImage, { borderColor: colors.border }]} />
+      <Text style={[styles.friendAvatarName, { color: colors.text }]} numberOfLines={1}>
+        {friend.name.split(' ')[0]}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
-// Pulsing border animation for live events
-function PulsingBorder({ children }: { children: React.ReactNode }) {
-  const pulseAnim = useSharedValue(1);
-
-  useEffect(() => {
-    pulseAnim.value = withRepeat(
-      withSequence(
-        withTiming(1.15, { duration: 800 }),
-        withTiming(1, { duration: 800 })
-      ),
-      -1,
-      false
-    );
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseAnim.value }],
-    opacity: 2 - pulseAnim.value,
-  }));
-
-  return (
-    <View style={styles.pulsingContainer}>
-      <Animated.View style={[styles.pulsingBorder, animatedStyle]} />
-      {children}
-    </View>
-  );
-}
 
 // Event flyer card marker for map (rectangular flyer style)
 const EventMarker = React.memo(function EventMarker({ event, onPress }: { event: MapEvent; onPress: () => void }) {
-  const marker = (
+  return (
     <TouchableOpacity onPress={onPress} style={styles.eventMarkerContainer}>
-      <View style={[styles.eventMarker, event.isLive && styles.eventMarkerLive]}>
+      <View style={styles.eventMarker}>
         <Image source={{ uri: event.imageUrl }} style={styles.eventMarkerImage} />
         {event.isLive && (
           <View style={styles.eventMarkerLiveBadge}>
@@ -301,15 +226,9 @@ const EventMarker = React.memo(function EventMarker({ event, onPress }: { event:
           </View>
         )}
       </View>
-      <View style={[styles.eventMarkerPointer, event.isLive && styles.eventMarkerPointerLive]} />
+      <View style={styles.eventMarkerPointer} />
     </TouchableOpacity>
   );
-
-  if (event.isLive) {
-    return <PulsingBorder>{marker}</PulsingBorder>;
-  }
-
-  return marker;
 });
 
 // Friend profile marker for map (circular profile photo)
@@ -360,16 +279,14 @@ const MyLocationMarker = React.memo(function MyLocationMarker({ imageUrl }: { im
 // Fallback/Preview screen for Expo Go
 function MapPreview() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [events, setEvents] = useState<MapEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>('events');
   const { colors, isDark } = useAppTheme();
 
-  const snapPoints = useMemo(() => [140, '45%'], []);
+  const snapPoints = useMemo(() => [75, '45%'], []);
 
   // Fetch events from API
   const fetchEvents = useCallback(async () => {
@@ -401,19 +318,8 @@ function MapPreview() {
   });
 
   const filteredEvents = useMemo(() => {
-    // Filter out past events
-    let filtered = events.filter(e => e.date !== 'Past');
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (e) =>
-          e.title.toLowerCase().includes(query) ||
-          e.venue.toLowerCase().includes(query)
-      );
-    }
-    return filtered;
-  }, [searchQuery, events]);
+    return events.filter(e => e.date !== 'Past');
+  }, [events]);
 
   const handleEventPress = useCallback(
     (event: MapEvent) => {
@@ -433,15 +339,6 @@ function MapPreview() {
     },
     [router]
   );
-
-  const handleFilterPress = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
-
-  const handleFilterChange = useCallback((filter: NearbyFilter) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setNearbyFilter(filter);
-  }, []);
 
   const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
 
@@ -484,21 +381,14 @@ function MapPreview() {
       </View>
 
       {/* Development build notice */}
-      <View style={[styles.devNotice, { top: insets.top + 70 }]}>
+      <View style={[styles.devNotice, { top: insets.top + 12 }]}>
         <Ionicons name="information-circle" size={16} color="#8b5cf6" />
         <Text style={styles.devNoticeText}>
           Full map requires dev build
         </Text>
       </View>
 
-      {/* Search Overlay */}
-      <SearchOverlay
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onFilterPress={handleFilterPress}
-      />
-
-      {/* Bottom Sheet with events */}
+      {/* Bottom Sheet with friends + events together */}
       <BottomSheet
         ref={bottomSheetRef}
         index={1}
@@ -510,24 +400,8 @@ function MapPreview() {
       >
         <View style={styles.bottomSheetHeader}>
           <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>Nearby</Text>
-          <View style={[styles.filterTabs, { backgroundColor: colors.input }]}>
-            <TouchableOpacity
-              style={[styles.filterTab, nearbyFilter === 'events' && [styles.filterTabActive, { backgroundColor: colors.buttonSecondary }]]}
-              onPress={() => handleFilterChange('events')}
-            >
-              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? colors.text : colors.textTertiary} />
-              <Text style={[styles.filterTabText, { color: colors.textTertiary }, nearbyFilter === 'events' && { color: colors.text }]}>Events</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.filterTab, nearbyFilter === 'friends' && [styles.filterTabActive, { backgroundColor: colors.buttonSecondary }]]}
-              onPress={() => handleFilterChange('friends')}
-            >
-              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? colors.text : colors.textTertiary} />
-              <Text style={[styles.filterTabText, { color: colors.textTertiary }, nearbyFilter === 'friends' && { color: colors.text }]}>Friends</Text>
-            </TouchableOpacity>
-          </View>
           <View style={styles.liveIndicator}>
-            {nearbyFilter === 'events' && liveCount > 0 && (
+            {liveCount > 0 && (
               <>
                 <View style={styles.liveIndicatorDot} />
                 <Text style={[styles.liveIndicatorText, { color: colors.textSecondary }]}>{liveCount} Live</Text>
@@ -542,35 +416,43 @@ function MapPreview() {
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
         >
-          {nearbyFilter === 'friends' ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
-              <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No friends nearby</Text>
-              <Text style={[styles.emptyStateSubtext, { color: colors.textTertiary }]}>Friends will appear here when they're at events near you</Text>
+          {/* Friends section - horizontal scroll (placeholder in preview) */}
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Friends</Text>
+            <View style={styles.emptyFriendsRow}>
+              <Text style={[styles.emptyFriendsText, { color: colors.textTertiary }]}>No friends nearby</Text>
             </View>
-          ) : isLoading && events.length === 0 ? (
-            <View style={styles.loadingState}>
-              <ActivityIndicator size="large" color={colors.text} />
-              <Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text>
-            </View>
-          ) : error && events.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} />
-              <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text>
-              <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.buttonSecondary }]} onPress={() => fetchEvents()}>
-                <Text style={[styles.retryButtonText, { color: colors.text }]}>Retry</Text>
-              </TouchableOpacity>
-            </View>
-          ) : filteredEvents.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="map-outline" size={48} color={colors.textTertiary} />
-              <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{searchQuery ? 'No events found' : 'No events available'}</Text>
-            </View>
-          ) : (
-            filteredEvents.map((event) => (
-              <EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />
-            ))
-          )}
+          </View>
+
+          {/* Events section - horizontal scroll */}
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Events</Text>
+            {isLoading && events.length === 0 ? (
+              <View style={styles.loadingState}>
+                <ActivityIndicator size="large" color={colors.text} />
+                <Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text>
+              </View>
+            ) : error && events.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} />
+                <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text>
+                <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.buttonSecondary }]} onPress={() => fetchEvents()}>
+                  <Text style={[styles.retryButtonText, { color: colors.text }]}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : filteredEvents.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="map-outline" size={48} color={colors.textTertiary} />
+                <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No events available</Text>
+              </View>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalEventsContent}>
+                {filteredEvents.map((event) => (
+                  <EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />
+                ))}
+              </ScrollView>
+            )}
+          </View>
         </BottomSheetScrollView>
       </BottomSheet>
     </View>
@@ -580,16 +462,14 @@ function MapPreview() {
 // Full Mapbox Map Screen
 function FullMapScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const cameraRef = useRef<Camera>(null);
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [events, setEvents] = useState<MapEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<MapEvent | null>(null);
-  const [nearbyFilter, setNearbyFilter] = useState<NearbyFilter>('events');
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendMarker | null>(null);
   const { colors, isDark } = useAppTheme();
@@ -600,7 +480,7 @@ function FullMapScreen() {
   // Auth hook for current user's avatar
   const { user } = useAuth();
 
-  const snapPoints = useMemo(() => [140, '45%', '85%'], []);
+  const snapPoints = useMemo(() => [75, '45%', '85%'], []);
 
   useEffect(() => {
     (async () => {
@@ -632,13 +512,8 @@ function FullMapScreen() {
   const { refreshControl } = useRefreshControl({ onRefresh: fetchEvents });
 
   const filteredEvents = useMemo(() => {
-    let filtered = events.filter(e => e.date !== 'Past');
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(e => e.title.toLowerCase().includes(query) || e.venue.toLowerCase().includes(query));
-    }
-    return filtered;
-  }, [searchQuery, events]);
+    return events.filter(e => e.date !== 'Past');
+  }, [events]);
 
   // Convert live location data to friend markers
   const nearbyFriends = useMemo<FriendMarker[]>(() => {
@@ -676,8 +551,6 @@ function FullMapScreen() {
     cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, animationDuration: 500 });
   }, []);
 
-  const handleFilterPress = useCallback(() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }, []);
-  const handleFilterChange = useCallback((filter: NearbyFilter) => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNearbyFilter(filter); }, []);
   const handleRecenter = useCallback(() => { if (userLocation) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); cameraRef.current?.setCamera({ centerCoordinate: userLocation, zoomLevel: 13, animationDuration: 500 }); } }, [userLocation]);
 
   const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
@@ -711,8 +584,6 @@ function FullMapScreen() {
         )}
       </MapView>
 
-      <SearchOverlay searchQuery={searchQuery} onSearchChange={setSearchQuery} onFilterPress={handleFilterPress} />
-
       {/* Share location button - only show when feature is enabled */}
       {config.websocket.enabled && (
         <TouchableOpacity
@@ -744,29 +615,22 @@ function FullMapScreen() {
       <BottomSheet ref={bottomSheetRef} index={0} snapPoints={snapPoints} backgroundStyle={[styles.bottomSheetBackground, { backgroundColor: colors.background }]} handleIndicatorStyle={[styles.bottomSheetIndicator, { backgroundColor: colors.textTertiary }]} enablePanDownToClose={false} animateOnMount={true}>
         <View style={styles.bottomSheetHeader}>
           <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>Nearby</Text>
-          <View style={[styles.filterTabs, { backgroundColor: colors.input }]}>
-            <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'events' && [styles.filterTabActive, { backgroundColor: colors.buttonSecondary }]]} onPress={() => handleFilterChange('events')}>
-              <Ionicons name="calendar" size={16} color={nearbyFilter === 'events' ? colors.text : colors.textTertiary} />
-              <Text style={[styles.filterTabText, { color: colors.textTertiary }, nearbyFilter === 'events' && { color: colors.text }]}>Events</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.filterTab, nearbyFilter === 'friends' && [styles.filterTabActive, { backgroundColor: colors.buttonSecondary }]]} onPress={() => handleFilterChange('friends')}>
-              <Ionicons name="people" size={16} color={nearbyFilter === 'friends' ? colors.text : colors.textTertiary} />
-              <Text style={[styles.filterTabText, { color: colors.textTertiary }, nearbyFilter === 'friends' && { color: colors.text }]}>Friends</Text>
-            </TouchableOpacity>
-          </View>
           <View style={styles.liveIndicator}>
-            {nearbyFilter === 'events' && liveCount > 0 && (<><View style={styles.liveIndicatorDot} /><Text style={[styles.liveIndicatorText, { color: colors.textSecondary }]}>{liveCount} Live</Text></>)}
+            {liveCount > 0 && (<><View style={styles.liveIndicatorDot} /><Text style={[styles.liveIndicatorText, { color: colors.textSecondary }]}>{liveCount} Live</Text></>)}
             {isLoading && <ActivityIndicator size="small" color={colors.textTertiary} />}
           </View>
         </View>
         <BottomSheetScrollView contentContainerStyle={styles.bottomSheetContent} showsVerticalScrollIndicator={false} refreshControl={refreshControl}>
-          {nearbyFilter === 'friends' ? (
-            nearbyFriends.length > 0 ? (
-              <View style={styles.friendsListContainer}>
+          {/* Friends section - horizontal scroll of avatars */}
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Friends</Text>
+            {nearbyFriends.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendsScrollContent}>
                 {nearbyFriends.map((friend) => (
-                  <TouchableOpacity
+                  <FriendAvatarItem
                     key={friend.id}
-                    style={[styles.friendListItem, { backgroundColor: colors.card }]}
+                    friend={friend}
+                    colors={colors}
                     onPress={() => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       cameraRef.current?.setCamera({
@@ -774,53 +638,49 @@ function FullMapScreen() {
                         zoomLevel: 15,
                         animationDuration: 500,
                       });
+                      bottomSheetRef.current?.snapToIndex(0);
                     }}
-                  >
-                    <Image source={{ uri: friend.imageUrl }} style={styles.friendListAvatar} />
-                    <View style={styles.friendListInfo}>
-                      <Text style={[styles.friendListName, { color: colors.text }]}>{friend.name}</Text>
-                      <View style={styles.friendListStatus}>
-                        <View style={styles.friendListLiveDot} />
-                        <Text style={[styles.friendListStatusText, { color: colors.textSecondary }]}>Sharing location</Text>
-                      </View>
-                    </View>
-                    <Ionicons name="navigate-outline" size={20} color={colors.textTertiary} />
-                  </TouchableOpacity>
+                  />
                 ))}
-              </View>
+              </ScrollView>
             ) : (
-              <View style={styles.emptyState}>
-                <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
-                <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No friends sharing location</Text>
-                <Text style={[styles.emptyStateSubtext, { color: colors.textTertiary }]}>
-                  {sharingState.isSharing
-                    ? 'Friends will appear here when they share their location'
-                    : 'Share your location to let friends see you on the map'}
+              <View style={styles.emptyFriendsRow}>
+                <Text style={[styles.emptyFriendsText, { color: colors.textTertiary }]}>
+                  {sharingState.isSharing ? 'No friends sharing location' : 'Share your location to see friends'}
                 </Text>
                 {!sharingState.isSharing && (
                   <TouchableOpacity
-                    style={[styles.shareButton, { backgroundColor: colors.buttonSecondary }]}
+                    style={[styles.shareLocationInline, { backgroundColor: colors.buttonSecondary }]}
                     onPress={async () => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       await Location.requestForegroundPermissionsAsync();
                       setShowShareSheet(true);
                     }}
                   >
-                    <Ionicons name="location-outline" size={18} color={colors.text} />
-                    <Text style={[styles.shareButtonText, { color: colors.text }]}>Share My Location</Text>
+                    <Ionicons name="location-outline" size={14} color={colors.text} />
+                    <Text style={[styles.shareLocationInlineText, { color: colors.text }]}>Share</Text>
                   </TouchableOpacity>
                 )}
               </View>
-            )
-          ) : isLoading && events.length === 0 ? (
-            <View style={styles.loadingState}><ActivityIndicator size="large" color={colors.text} /><Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text></View>
-          ) : error && events.length === 0 ? (
-            <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text><TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.buttonSecondary }]} onPress={() => fetchEvents()}><Text style={[styles.retryButtonText, { color: colors.text }]}>Retry</Text></TouchableOpacity></View>
-          ) : filteredEvents.length === 0 ? (
-            <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{searchQuery ? 'No events found' : 'No events available'}</Text></View>
-          ) : (
-            <>{selectedEvent && <EventCard key={`selected-${selectedEvent.id}`} event={selectedEvent} onPress={() => handleEventPress(selectedEvent)} />}{filteredEvents.filter(e => !selectedEvent || e.id !== selectedEvent.id).map((event) => (<EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />))}</>
-          )}
+            )}
+          </View>
+
+          {/* Events section - horizontal scroll cards */}
+          <View style={styles.sectionContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Events</Text>
+            {isLoading && events.length === 0 ? (
+              <View style={styles.loadingState}><ActivityIndicator size="large" color={colors.text} /><Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text></View>
+            ) : error && events.length === 0 ? (
+              <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text><TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.buttonSecondary }]} onPress={() => fetchEvents()}><Text style={[styles.retryButtonText, { color: colors.text }]}>Retry</Text></TouchableOpacity></View>
+            ) : filteredEvents.length === 0 ? (
+              <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No events available</Text></View>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalEventsContent}>
+                {selectedEvent && <EventCard key={`selected-${selectedEvent.id}`} event={selectedEvent} onPress={() => handleEventPress(selectedEvent)} />}
+                {filteredEvents.filter(e => !selectedEvent || e.id !== selectedEvent.id).map((event) => (<EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />))}
+              </ScrollView>
+            )}
+          </View>
         </BottomSheetScrollView>
       </BottomSheet>
 
@@ -917,43 +777,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     color: '#8b5cf6',
   },
-  // Search overlay
-  searchOverlay: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    height: 46,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    color: '#1a1a1a',
-  },
-  filterButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
   // Bottom sheet
   bottomSheetBackground: {
     borderTopLeftRadius: 24,
@@ -973,30 +796,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
     marginBottom: 12,
-  },
-  filterTabs: {
-    flexDirection: 'row',
-    borderRadius: 10,
-    padding: 4,
-    gap: 4,
-  },
-  filterTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    gap: 6,
-  },
-  filterTabActive: {
-    // backgroundColor set dynamically
-  },
-  filterTabText: {
-    fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-  },
-  filterTabTextActive: {
-    // color set dynamically
   },
   liveIndicator: {
     flexDirection: 'row',
@@ -1019,12 +818,70 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 100,
   },
-  // Event card
+  // Section headers for bottom sheet
+  sectionContainer: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  // Friends horizontal scroll
+  friendsScrollContent: {
+    gap: 16,
+    paddingRight: 16,
+  },
+  friendAvatarItem: {
+    alignItems: 'center',
+    width: 64,
+  },
+  friendAvatarImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 2,
+    marginBottom: 6,
+  },
+  friendAvatarName: {
+    fontSize: 11,
+    fontFamily: 'Lato_400Regular',
+    textAlign: 'center',
+  },
+  emptyFriendsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+  },
+  emptyFriendsText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+  },
+  shareLocationInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  shareLocationInlineText: {
+    fontSize: 12,
+    fontFamily: 'Lato_600SemiBold',
+  },
+  // Event card - horizontal scrollable
+  horizontalEventsContent: {
+    gap: 12,
+    paddingRight: 16,
+  },
   eventCard: {
-    height: 160,
+    width: 200,
+    height: 260,
     borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 12,
   },
   eventCardImage: {
     ...StyleSheet.absoluteFillObject,
@@ -1036,54 +893,45 @@ const styles = StyleSheet.create({
   eventCardContent: {
     flex: 1,
     justifyContent: 'flex-end',
-    padding: 14,
+    padding: 12,
   },
   eventCardLive: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     backgroundColor: '#ff3b30',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 8,
-    gap: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+    marginBottom: 6,
+    gap: 4,
   },
   eventCardLiveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: '#fff',
   },
   eventCardLiveText: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
     letterSpacing: 0.5,
   },
   eventCardTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
     marginBottom: 2,
   },
   eventCardVenue: {
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.8)',
-    marginBottom: 8,
-  },
-  eventCardMeta: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  eventCardMetaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    marginBottom: 4,
   },
   eventCardMetaText: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.7)',
   },
@@ -1124,19 +972,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
   },
-  // Pulsing animation
-  pulsingContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pulsingBorder: {
-    position: 'absolute',
-    width: 76,
-    height: 106,
-    borderRadius: 10,
-    backgroundColor: '#ff3b30',
-    opacity: 0.5,
-  },
   // Event flyer card markers
   eventMarkerContainer: {
     alignItems: 'center',
@@ -1149,9 +984,6 @@ const styles = StyleSheet.create({
     borderColor: '#ffffff',
     overflow: 'hidden',
     backgroundColor: '#000',
-  },
-  eventMarkerLive: {
-    borderColor: '#ff3b30',
   },
   eventMarkerImage: {
     width: '100%',
@@ -1183,9 +1015,6 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     borderTopColor: '#ffffff',
     marginTop: -1,
-  },
-  eventMarkerPointerLive: {
-    borderTopColor: '#ff3b30',
   },
   // Friend profile markers
   friendMarkerContainer: {
@@ -1280,61 +1109,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#34c759',
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.95)',
-  },
-  // Friends list
-  friendsListContainer: {
-    gap: 8,
-  },
-  friendListItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    gap: 12,
-  },
-  friendListAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: '#34c759',
-  },
-  friendListInfo: {
-    flex: 1,
-  },
-  friendListName: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    marginBottom: 2,
-  },
-  friendListStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  friendListLiveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#34c759',
-  },
-  friendListStatusText: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    marginTop: 16,
-  },
-  shareButtonText: {
-    fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
 });

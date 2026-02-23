@@ -19,8 +19,13 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Status uses your location to show nearby events and share your live location with friends",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Status uses your location to show nearby events and share your live location with friends",
-        "NSCameraUsageDescription": "Status needs camera access to scan IDs and membership cards"
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Status uses your location to keep your location on the map updated, even when the app is closed",
+        "NSCameraUsageDescription": "Status needs camera access for video calls and scanning IDs",
+        "NSMicrophoneUsageDescription": "Status needs microphone access for voice and video calls",
+        "UIBackgroundModes": [
+          "location",
+          "voip"
+        ]
       }
     },
     "android": {
@@ -52,8 +57,9 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Status uses your location to show nearby events and share your live location with friends",
-          "locationWhenInUsePermission": "Status uses your location to show nearby events and share your live location with friends"
+          "locationAlwaysAndWhenInUsePermission": "Status uses your location to keep your location on the map updated, even when the app is closed",
+          "locationWhenInUsePermission": "Status uses your location to show nearby events and share your live location with friends",
+          "isBackgroundLocationEnabled": true
         }
       ],
       [
@@ -76,7 +82,23 @@
           "enableGooglePay": true
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ],
+      "@stream-io/video-react-native-sdk",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "Status needs camera access for video calls and scanning IDs",
+          "microphonePermission": "Status needs microphone access for voice and video calls"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

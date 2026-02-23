@@ -37,6 +37,7 @@ export function CreatePromoCodeModal({
   const [discountValue, setDiscountValue] = useState('');
   const [maxUses, setMaxUses] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -45,6 +46,7 @@ export function CreatePromoCodeModal({
       setDiscountValue(initialValues?.discountValue != null ? String(initialValues.discountValue) : '');
       setMaxUses(initialValues?.maxUses != null ? String(initialValues.maxUses) : '');
       setIsActive(initialValues?.isActive ?? true);
+      setIsPublic(initialValues?.isPublic ?? false);
     }
   }, [visible, initialValues]);
 
@@ -66,6 +68,7 @@ export function CreatePromoCodeModal({
       maxUses: !isNaN(parsedMaxUses) && parsedMaxUses >= 1 ? parsedMaxUses : null,
       validFrom: new Date().toISOString(),
       isActive,
+      isPublic,
     });
   };
 
@@ -145,6 +148,19 @@ export function CreatePromoCodeModal({
             <Switch
               value={isActive}
               onValueChange={setIsActive}
+              trackColor={{ false: 'rgba(255,255,255,0.15)', true: 'rgba(255,255,255,0.4)' }}
+              thumbColor="#fff"
+            />
+          </View>
+
+          <View style={styles.switchRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.switchLabel}>Public</Text>
+              <Text style={styles.switchHint}>Show this promo to everyone in the promos feed</Text>
+            </View>
+            <Switch
+              value={isPublic}
+              onValueChange={setIsPublic}
               trackColor={{ false: 'rgba(255,255,255,0.15)', true: 'rgba(255,255,255,0.4)' }}
               thumbColor="#fff"
             />
@@ -248,6 +264,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
     color: 'rgba(255,255,255,0.7)',
+  },
+  switchHint: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: 2,
   },
   footer: { padding: 20 },
   submitButton: {

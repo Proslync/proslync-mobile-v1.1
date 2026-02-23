@@ -39,27 +39,28 @@ const feedCaches: Map<FeedTab, FeedCache> = new Map();
 let globalInitializingFeed: FeedTab | null = null;
 let globalInitPromise: Promise<Feed | null> | null = null;
 
+const EMPTY_CACHE: Omit<FeedCache, never> = { feed: null, userId: null, items: [], hasMore: true, lastFetch: 0 };
+
 function getFeedCache(feedType: FeedTab): FeedCache {
   if (!feedCaches.has(feedType)) {
-    feedCaches.set(feedType, {
-      feed: null,
-      userId: null,
-      items: [],
-      hasMore: true,
-      lastFetch: 0,
-    });
+    feedCaches.set(feedType, { ...EMPTY_CACHE });
   }
   return feedCaches.get(feedType)!;
 }
 
 function clearFeedCache(feedType: FeedTab) {
-  feedCaches.set(feedType, {
-    feed: null,
-    userId: null,
-    items: [],
-    hasMore: true,
-    lastFetch: 0,
-  });
+  feedCaches.set(feedType, { ...EMPTY_CACHE });
+  // Also clear the global init lock if it was for this feed type
+  if (globalInitializingFeed === feedType) {
+    globalInitializingFeed = null;
+    globalInitPromise = null;
+  }
+}
+
+function clearAllFeedCaches() {
+  feedCaches.clear();
+  globalInitializingFeed = null;
+  globalInitPromise = null;
 }
 
 // ============================================================================
@@ -81,6 +82,7 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
 
   const mountedRef = React.useRef(true);
   const lastUserIdRef = React.useRef<string | null>(null);
+  const [fetchTrigger, setFetchTrigger] = React.useState(0);
 
   // Cleanup on unmount
   React.useEffect(() => {
@@ -90,25 +92,25 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
     };
   }, []);
 
-  // Check for account switch and clear cache if needed
+  // Check for account switch and clear all caches
   React.useEffect(() => {
     if (!userId) return;
 
-    const cache = getFeedCache(feedType);
-
-    // Only log and reset if we're actually switching users (not initial mount)
-    if (cache.userId !== null && cache.userId !== userId) {
-      console.log('[Feed] Account switched from', cache.userId, 'to', userId, '- clearing cache');
-      clearFeedCache(feedType);
+    // On actual account switch (not initial mount), clear everything and re-fetch
+    if (lastUserIdRef.current !== null && lastUserIdRef.current !== userId) {
+      console.log('[Feed] Account switched from', lastUserIdRef.current, 'to', userId, '- clearing all caches');
+      clearAllFeedCaches();
       setItems([]);
       setHasMore(true);
       setIsLoading(true);
       setIsError(false);
       setError(null);
+      // Bump trigger so the fetch effect re-runs after cache is cleared
+      setFetchTrigger((n) => n + 1);
     }
 
     lastUserIdRef.current = userId;
-  }, [userId, feedType]);
+  }, [userId]);
 
   /**
    * Initialize feed with global serialization guard
@@ -176,7 +178,7 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
     return {
       id: `event-${event.id}`,
       username: event.venue?.name || 'You',
-      userAvatar: event.venue?.imageUrl || 'https://picsum.photos/200',
+      userAvatar: event.venue?.imageUrl || '',
       description: event.description || '',
       likes: 0,
       comments: 0,
@@ -250,38 +252,6 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
         });
 
       console.log(`[Feed] Mapped ${feedItems.length} items with media (filtered past events)`);
-
-      // Also fetch user's own published events (since backend doesn't post to Stream)
-      try {
-        console.log('[Feed] Fetching user\'s own events...');
-        const myEvents = await eventsApi.getMyEvents();
-        // Filter to only published events that haven't passed yet
-        const publishedEvents = myEvents.filter(e => {
-          const isPublished = e.status === 'published' || e.status === 'active';
-          if (!isPublished) return false;
-          // Filter out past events
-          if (e.startDate) {
-            const eventDate = new Date(e.startDate);
-            if (eventDate < now) return false;
-          }
-          return true;
-        });
-        console.log(`[Feed] Found ${publishedEvents.length} user's upcoming published events`);
-
-        // Convert to feed items and add to beginning if not already present
-        const myEventIds = new Set(feedItems.filter(f => f.isEvent).map(f => f.eventId));
-        const newEventItems = publishedEvents
-          .filter(e => !myEventIds.has(e.id))
-          .map(eventToFeedItem);
-
-        if (newEventItems.length > 0) {
-          console.log(`[Feed] Adding ${newEventItems.length} user events to feed`);
-          // Add user's events to the beginning of the feed
-          return [...newEventItems, ...feedItems];
-        }
-      } catch (myEventsError) {
-        console.warn('[Feed] Failed to fetch user events:', myEventsError);
-      }
 
       return feedItems;
     } catch (err) {
@@ -443,7 +413,7 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
     }
 
     fetchFeed();
-  }, [feedType, enabled, isReady, userId]); // Removed fetchFeed from deps to prevent loops
+  }, [feedType, enabled, isReady, userId, fetchTrigger]); // fetchTrigger forces re-fetch on account switch
 
   /**
    * Refetch function - clears cache and re-fetches

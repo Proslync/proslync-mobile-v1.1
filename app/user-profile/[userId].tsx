@@ -1,6 +1,7 @@
 // User Profile Screen — Instagram/TikTok-style with full actions
 
 import React from 'react';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
   Text,
@@ -19,7 +20,7 @@ import Animated, {
   FadeInUp,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -46,7 +47,7 @@ const REPORT_REASONS = [
 
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
+  const router = useStableRouter();
   const { colors } = useAppTheme();
   const { showSuccess, showError } = useToast();
   const { user: currentUser } = useAuth();

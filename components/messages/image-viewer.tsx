@@ -5,6 +5,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   Modal,
   Image,
   Dimensions,
@@ -34,7 +35,7 @@ export function ImageViewer({ visible, imageUrl, onClose }: ImageViewerProps) {
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <View style={styles.container}>
+      <Pressable style={styles.container} onPress={onClose}>
         <StatusBar barStyle="dark-content" backgroundColor="transparent" />
 
         {/* Close Button */}
@@ -54,7 +55,7 @@ export function ImageViewer({ visible, imageUrl, onClose }: ImageViewerProps) {
           style={styles.image}
           resizeMode="contain"
         />
-      </View>
+      </Pressable>
     </Modal>
   );
 }
