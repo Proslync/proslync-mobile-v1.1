@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 
 interface StatCardProps {
   title: string;
@@ -327,11 +328,9 @@ export default function DashboardScreen() {
         animationType="fade"
         onRequestClose={() => setShowEventPicker(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowEventPicker(false)}
-        >
+        <View style={styles.modalOverlay}>
+          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowEventPicker(false)} />
           <View style={[styles.modalContent, { backgroundColor: colors.cardElevated }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {pickerAction === 'collect' ? 'Select Event to Collect' : 'Select Event to Scan'}
@@ -373,7 +372,7 @@ export default function DashboardScreen() {
               <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
