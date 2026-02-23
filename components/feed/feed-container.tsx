@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { FeedItem } from './feed-item';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 import { analyticsApi } from '@/lib/api/analytics';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
@@ -52,6 +53,8 @@ export function FeedContainer({
   const flatListRef = React.useRef<FlatList>(null);
   const [containerHeight, setContainerHeight] = React.useState(0);
   const { colors } = useAppTheme();
+  const { currentTab } = useTabNavigation();
+  const isFeedTab = currentTab === 'index';
 
   const [activeIndex, setActiveIndex] = React.useState(0);
 
@@ -101,7 +104,7 @@ export function FeedContainer({
           item={item}
           index={index}
           itemHeight={containerHeight}
-          isActive={index === activeIndex}
+          isActive={index === activeIndex && isFeedTab}
           isLiked={likedItems.has(item.id)}
           isRsvp={rsvpItems.get(item.id) ?? false}
           isPendingRsvp={pendingRsvpItems.get(item.id) ?? false}
@@ -119,6 +122,7 @@ export function FeedContainer({
     },
     [
       activeIndex,
+      isFeedTab,
       containerHeight,
       items,
       likedItems,

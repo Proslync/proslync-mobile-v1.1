@@ -126,7 +126,7 @@ function TabIcon({ index, focused, color }: { index: number; focused: boolean; c
 export default function SwipeableTabLayout() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { openAccountSwitcher } = useTabNavigation();
+  const { openAccountSwitcher, syncTabIndex } = useTabNavigation();
   const { colors, isDark } = useAppTheme();
 
   const pagerRef = React.useRef<PagerView>(null);
@@ -154,13 +154,15 @@ export default function SwipeableTabLayout() {
     if (newIndex === currentIndex) return;
 
     setCurrentIndex(newIndex);
+    // Sync with TabNavigationProvider so other components know which tab is active
+    syncTabIndex(newIndex);
 
     // Haptic feedback on page change (only if from swipe, not programmatic)
     if (!isNavigatingProgrammatically.current) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     isNavigatingProgrammatically.current = false;
-  }, [currentIndex]);
+  }, [currentIndex, syncTabIndex]);
 
   // Navigate to tab programmatically (from tab bar tap)
   const goToPage = React.useCallback((index: number) => {

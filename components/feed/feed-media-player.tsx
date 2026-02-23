@@ -7,6 +7,7 @@ import {
   TouchableWithoutFeedback,
   Image,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -181,7 +182,28 @@ export function FeedMediaPlayer({
         player.currentTime = 0;
       }
     }
+    // Ensure player is paused on cleanup (unmount or deps change)
+    return () => {
+      if (player && mediaType === 'video') {
+        player.pause();
+      }
+    };
   }, [isActive, player, mediaType]);
+
+  // Pause video when app goes to background
+  React.useEffect(() => {
+    if (!player || mediaType !== 'video') return;
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') {
+        player.pause();
+      } else if (isActive) {
+        player.play();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [player, mediaType, isActive]);
 
   const handleTap = () => {
     if (onSingleTap) {

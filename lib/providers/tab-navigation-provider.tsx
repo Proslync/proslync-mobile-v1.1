@@ -12,6 +12,7 @@ interface TabNavigationContextType {
   goToPreviousTab: () => void;
   goToTab: (index: number) => void;
   goToTabByName: (name: TabName) => void;
+  syncTabIndex: (index: number) => void;
   openAccountSwitcher: () => void;
   isAccountSwitcherOpen: boolean;
   closeAccountSwitcher: () => void;
@@ -46,6 +47,12 @@ export function TabNavigationProvider({ children }: { children: React.ReactNode 
     if (control) {
       setCurrentTabIndex(control.getCurrentIndex());
     }
+  }, []);
+
+  // Allow _layout.tsx to sync the current tab index when PagerView page changes
+  const syncTabIndex = React.useCallback((index: number) => {
+    const clamped = Math.max(0, Math.min(index, TAB_ORDER.length - 1));
+    setCurrentTabIndex(clamped);
   }, []);
 
   const navigateToTab = React.useCallback((index: number) => {
@@ -103,6 +110,7 @@ export function TabNavigationProvider({ children }: { children: React.ReactNode 
     goToPreviousTab,
     goToTab,
     goToTabByName,
+    syncTabIndex,
     openAccountSwitcher,
     isAccountSwitcherOpen,
     closeAccountSwitcher,
@@ -114,6 +122,7 @@ export function TabNavigationProvider({ children }: { children: React.ReactNode 
     goToPreviousTab,
     goToTab,
     goToTabByName,
+    syncTabIndex,
     openAccountSwitcher,
     isAccountSwitcherOpen,
     closeAccountSwitcher,

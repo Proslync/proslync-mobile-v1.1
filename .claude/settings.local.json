@@ -47,7 +47,8 @@
       "WebFetch(domain:docs.stripe.com)",
       "Bash(find:*)",
       "Bash(xargs cat:*)",
-      "Bash(node_modules/.bin/tsc:*)"
+      "Bash(node_modules/.bin/tsc:*)",
+      "Bash(node:*)"
     ]
   }
 }
