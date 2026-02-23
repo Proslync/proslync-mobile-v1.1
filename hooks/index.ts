@@ -13,6 +13,7 @@ export {
 export { useMyEvents, useEvent, useEvents } from './use-events-query';
 export { useEventMarketingStats } from './use-dashboard-query';
 export { useEventAttendees } from './use-event-attendees';
+export { useAllAttendees, ALL_ATTENDEES_KEY } from './use-all-attendees';
 export { useMyVenues } from './use-venues-query';
 export { useVenueFollowers, VENUE_FOLLOWERS_KEY } from './use-venue-followers';
 export { useFollowVenue } from './use-follow-venue';

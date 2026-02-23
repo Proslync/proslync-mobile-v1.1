@@ -282,7 +282,7 @@ export default function DashboardScreen() {
               title="Attendees"
               subtitle="Manage event attendees"
               icon="people-outline"
-              onPress={() => {}}
+              onPress={() => router.push('/dashboard/attendees')}
               colors={colors}
             />
             <MenuItem

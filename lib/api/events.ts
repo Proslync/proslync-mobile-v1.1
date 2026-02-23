@@ -366,4 +366,21 @@ export const eventsApi = {
   getEventPermissions: async (eventId: number): Promise<EventPermissionsResponse> => {
     return apiClient.get<EventPermissionsResponse>(`/api/events/${eventId}/permissions`);
   },
+
+  /**
+   * Get attendees across ALL events owned by a user
+   * Backend endpoint: GET /api/events/attendees?ownerId=x
+   */
+  getAllAttendees: async (
+    ownerId: number,
+    params?: { page?: number; limit?: number; search?: string; status?: string[] },
+  ): Promise<EventAttendeesResponse> => {
+    const query = new URLSearchParams();
+    query.set('ownerId', String(ownerId));
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    if (params?.status?.length) params.status.forEach((s) => query.append('status', s));
+    return apiClient.get<EventAttendeesResponse>(`/api/events/attendees?${query.toString()}`);
+  },
 };
