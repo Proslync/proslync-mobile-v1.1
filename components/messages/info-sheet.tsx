@@ -31,15 +31,17 @@ interface InfoSheetProps {
   onViewEvent?: (eventId: string) => void;
 }
 
-// Mock shared media
-const MOCK_SHARED_MEDIA = [
-  'https://picsum.photos/seed/media1/200/200',
-  'https://picsum.photos/seed/media2/200/200',
-  'https://picsum.photos/seed/media3/200/200',
-  'https://picsum.photos/seed/media4/200/200',
-  'https://picsum.photos/seed/media5/200/200',
-  'https://picsum.photos/seed/media6/200/200',
-];
+// Only show mock shared media in development
+const MOCK_SHARED_MEDIA: string[] = __DEV__
+  ? [
+      'https://picsum.photos/seed/media1/200/200',
+      'https://picsum.photos/seed/media2/200/200',
+      'https://picsum.photos/seed/media3/200/200',
+      'https://picsum.photos/seed/media4/200/200',
+      'https://picsum.photos/seed/media5/200/200',
+      'https://picsum.photos/seed/media6/200/200',
+    ]
+  : [];
 
 export function InfoSheet({
   visible,

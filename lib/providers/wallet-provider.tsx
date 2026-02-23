@@ -12,9 +12,6 @@ import {
   Offer,
   WalletEventCard,
 } from '../types/wallet.types';
-import {
-  MOCK_WALLET_USER,
-} from '../data/wallet-mock';
 import { eventsApi } from '../api/events';
 import { ticketsApi } from '../api/tickets';
 import { pricingApi } from '../api/pricing';
@@ -104,12 +101,18 @@ export function WalletProvider({ children }: WalletProviderProps) {
         name: displayName,
         userName: authUser.userName,
         avatarUrl: authUser.avatar?.url,
-        statusTier: MOCK_WALLET_USER.statusTier, // TODO: Get from membership API
-        memberSince: authUser.createdAt || MOCK_WALLET_USER.memberSince,
-        membershipCardId: MOCK_WALLET_USER.membershipCardId, // TODO: Get from membership API
+        statusTier: 'Standard',
+        memberSince: authUser.createdAt || new Date().toISOString(),
+        membershipCardId: authUser.id || 0,
       };
     }
-    return MOCK_WALLET_USER;
+    return {
+      id: '0',
+      name: 'Status Member',
+      statusTier: 'Standard',
+      memberSince: new Date().toISOString(),
+      membershipCardId: 0,
+    };
   }, [authUser]);
 
   const [balances, setBalances] = useState<WalletBalances>({
@@ -255,7 +258,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
             dateTime: t.event?.startDate || t.createdAt,
             dateTimeLabel: formatDateLabel(start),
             venueName: t.event?.venue?.name || 'TBA',
-            flyerUrl: t.event?.flyer?.url || t.event?.imageUrl || 'https://picsum.photos/seed/event/400/600',
+            flyerUrl: t.event?.flyer?.url || t.event?.imageUrl || undefined,
             isEarningEnabled: false,
             isPaid: t.event?.isPaid ?? false,
             pricePaid: t.pricePaid ? Number(t.pricePaid) : undefined,
@@ -277,7 +280,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
           dateTime: e.startDate,
           dateTimeLabel: formatDateLabel(new Date(e.startDate)),
           venueName: e.venue?.name || e.location || 'TBA',
-          flyerUrl: e.flyer?.url || e.imageUrl || 'https://picsum.photos/seed/event/400/600',
+          flyerUrl: e.flyer?.url || e.imageUrl || undefined,
           isEarningEnabled: false,
           isPaid: e.isPaid ?? false,
         }));

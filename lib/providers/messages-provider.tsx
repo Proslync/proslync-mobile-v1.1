@@ -7,12 +7,14 @@ import {
   Message,
   User,
 } from '../types/messages.types';
-import {
-  MOCK_CONVERSATIONS,
-  MOCK_MESSAGES,
-  CURRENT_USER,
-  MOCK_USERS,
-} from '../data/messages-mock';
+// Only import mock data in development
+const {
+  MOCK_CONVERSATIONS: _MOCK_CONVERSATIONS,
+  MOCK_MESSAGES: _MOCK_MESSAGES,
+  CURRENT_USER: _CURRENT_USER,
+} = __DEV__
+  ? require('../data/messages-mock')
+  : { MOCK_CONVERSATIONS: [], MOCK_MESSAGES: {}, CURRENT_USER: { id: 'current-user' } };
 
 const MessagesContext = createContext<MessagesContextType | null>(null);
 
@@ -21,10 +23,10 @@ interface MessagesProviderProps {
 }
 
 export function MessagesProvider({ children }: MessagesProviderProps) {
-  const [conversations, setConversations] = useState<Conversation[]>(MOCK_CONVERSATIONS);
-  const [messages, setMessages] = useState<Record<string, Message[]>>(MOCK_MESSAGES);
+  const [conversations, setConversations] = useState<Conversation[]>(_MOCK_CONVERSATIONS);
+  const [messages, setMessages] = useState<Record<string, Message[]>>(_MOCK_MESSAGES);
   const [isLoading, setIsLoading] = useState(false);
-  const currentUserId = CURRENT_USER.id;
+  const currentUserId = _CURRENT_USER.id;
 
   const generateId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -57,33 +59,35 @@ export function MessagesProvider({ children }: MessagesProviderProps) {
       )
     );
 
-    // Simulate message status progression
-    setTimeout(() => {
-      setMessages((prev) => ({
-        ...prev,
-        [conversationId]: prev[conversationId].map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: 'sent' } : msg
-        ),
-      }));
-    }, 500);
+    // Simulate message status progression (dev only)
+    if (__DEV__) {
+      setTimeout(() => {
+        setMessages((prev) => ({
+          ...prev,
+          [conversationId]: prev[conversationId]?.map((msg) =>
+            msg.id === newMessage.id ? { ...msg, status: 'sent' } : msg
+          ) || [],
+        }));
+      }, 500);
 
-    setTimeout(() => {
-      setMessages((prev) => ({
-        ...prev,
-        [conversationId]: prev[conversationId].map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
-        ),
-      }));
-    }, 1500);
+      setTimeout(() => {
+        setMessages((prev) => ({
+          ...prev,
+          [conversationId]: prev[conversationId]?.map((msg) =>
+            msg.id === newMessage.id ? { ...msg, status: 'delivered' } : msg
+          ) || [],
+        }));
+      }, 1500);
 
-    setTimeout(() => {
-      setMessages((prev) => ({
-        ...prev,
-        [conversationId]: prev[conversationId].map((msg) =>
-          msg.id === newMessage.id ? { ...msg, status: 'seen' } : msg
-        ),
-      }));
-    }, 3000);
+      setTimeout(() => {
+        setMessages((prev) => ({
+          ...prev,
+          [conversationId]: prev[conversationId]?.map((msg) =>
+            msg.id === newMessage.id ? { ...msg, status: 'seen' } : msg
+          ) || [],
+        }));
+      }, 3000);
+    }
   }, [currentUserId]);
 
   const markAsRead = useCallback((conversationId: string) => {
@@ -264,8 +268,10 @@ export function MessagesProvider({ children }: MessagesProviderProps) {
 
   const refreshConversations = useCallback(async (): Promise<void> => {
     setIsLoading(true);
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // TODO: Replace with real API call when messages backend is ready
+    if (__DEV__) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
     setIsLoading(false);
   }, []);
 

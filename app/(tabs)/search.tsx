@@ -162,7 +162,7 @@ function transformEventToMapEvent(event: Event): MapEvent {
     venue: event.venue?.name || event.location || 'TBA',
     latitude: event.venue?.latitude || 40.7580, // Default to NYC
     longitude: event.venue?.longitude || -73.9855,
-    imageUrl: event.flyer?.url || event.imageUrl || 'https://picsum.photos/seed/event/400/600',
+    imageUrl: event.flyer?.url || event.imageUrl || '',
     date: dateStr,
     time: timeStr,
     rawDate: event.startDate, // Keep original ISO date for event page
@@ -526,7 +526,7 @@ function FullMapScreen() {
       return {
         id: String(loc.userId),
         name: displayName,
-        imageUrl: loc.avatarUrl || 'https://picsum.photos/200',
+        imageUrl: loc.avatarUrl || '',
         latitude: loc.latitude,
         longitude: loc.longitude,
       };

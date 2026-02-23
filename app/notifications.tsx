@@ -50,16 +50,19 @@ interface ActivityNotification {
   icon: keyof typeof Ionicons.glyphMap;
 }
 
-const PLACEHOLDER_ACTIVITY: ActivityNotification[] = [
-  { id: '1', title: 'Sarah Chen', body: 'started following you', time: '2m ago', read: false, icon: 'person-add' },
-  { id: '2', title: 'Friday Night Live', body: "You're confirmed! Event starts at 9 PM tonight", time: '15m ago', read: false, icon: 'checkmark-circle' },
-  { id: '3', title: 'Mike Torres', body: 'liked your event post', time: '1h ago', read: false, icon: 'heart' },
-  { id: '4', title: 'Rooftop Sessions', body: "is happening tomorrow. Don't forget!", time: '2h ago', read: true, icon: 'calendar' },
-  { id: '5', title: 'Jess Kim', body: 'commented: "This is going to be amazing!"', time: '3h ago', read: true, icon: 'chatbubble' },
-  { id: '6', title: 'DJ Snake', body: 'started following you', time: '5h ago', read: true, icon: 'person-add' },
-  { id: '7', title: 'Summer Music Festival', body: 'Early bird tickets are now available', time: '8h ago', read: true, icon: 'ticket' },
-  { id: '8', title: 'Marcus J.', body: 'mentioned you in a comment', time: '12h ago', read: true, icon: 'at' },
-];
+// Only show placeholder notifications in development
+const PLACEHOLDER_ACTIVITY: ActivityNotification[] = __DEV__
+  ? [
+      { id: '1', title: 'Sarah Chen', body: 'started following you', time: '2m ago', read: false, icon: 'person-add' },
+      { id: '2', title: 'Friday Night Live', body: "You're confirmed! Event starts at 9 PM tonight", time: '15m ago', read: false, icon: 'checkmark-circle' },
+      { id: '3', title: 'Mike Torres', body: 'liked your event post', time: '1h ago', read: false, icon: 'heart' },
+      { id: '4', title: 'Rooftop Sessions', body: "is happening tomorrow. Don't forget!", time: '2h ago', read: true, icon: 'calendar' },
+      { id: '5', title: 'Jess Kim', body: 'commented: "This is going to be amazing!"', time: '3h ago', read: true, icon: 'chatbubble' },
+      { id: '6', title: 'DJ Snake', body: 'started following you', time: '5h ago', read: true, icon: 'person-add' },
+      { id: '7', title: 'Summer Music Festival', body: 'Early bird tickets are now available', time: '8h ago', read: true, icon: 'ticket' },
+      { id: '8', title: 'Marcus J.', body: 'mentioned you in a comment', time: '12h ago', read: true, icon: 'at' },
+    ]
+  : [];
 
 // ── Team Invitation Row ──────────────────────────────────
 
@@ -300,9 +303,15 @@ export default function NotificationsScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
           showsVerticalScrollIndicator={false}
         >
-          {PLACEHOLDER_ACTIVITY.map((item) => (
-            <ActivityRow key={item.id} item={item} colors={colors} isDark={isDark} />
-          ))}
+          {PLACEHOLDER_ACTIVITY.length > 0 ? (
+            PLACEHOLDER_ACTIVITY.map((item) => (
+              <ActivityRow key={item.id} item={item} colors={colors} isDark={isDark} />
+            ))
+          ) : (
+            <View style={{ alignItems: 'center', paddingTop: 60 }}>
+              <Text style={{ color: colors.textTertiary, fontSize: 15 }}>No notifications yet</Text>
+            </View>
+          )}
         </ScrollView>
       ) : (
         <ScrollView

@@ -106,7 +106,7 @@ function EventCard({ event, onPress, onDashboard, colors, isDark }: EventCardPro
         activeOpacity={0.8}
       >
         <Image
-          source={{ uri: event.flyer?.url || event.imageUrl || 'https://picsum.photos/200/300' }}
+          source={{ uri: event.flyer?.url || event.imageUrl || undefined }}
           style={[styles.eventImage, { backgroundColor: colors.backgroundSecondary }]}
         />
         <View style={styles.eventContent}>

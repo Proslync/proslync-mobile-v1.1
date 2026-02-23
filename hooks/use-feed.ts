@@ -174,7 +174,7 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
    * Convert a backend Event to a FeedItem for display
    */
   const eventToFeedItem = (event: Event): FeedItem => {
-    const flyerUrl = event.flyer?.url || event.imageUrl || `https://picsum.photos/seed/event-${event.id}/400/600`;
+    const flyerUrl = event.flyer?.url || event.imageUrl || '';
     return {
       id: `event-${event.id}`,
       username: event.venue?.name || 'You',

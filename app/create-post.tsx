@@ -20,6 +20,7 @@ import { useAuth } from '@/lib/providers/auth-provider';
 import { useToast } from '@/components/shared/toast';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { postsApi } from '@/lib/api/posts';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
@@ -86,9 +87,13 @@ export default function CreatePostScreen() {
 
     setIsSubmitting(true);
     try {
-      // TODO: Implement actual post creation API
-      // For now, simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Upload media then create post
+      const uploadResult = await postsApi.uploadMedia(mediaUri, mediaType);
+      await postsApi.createPost({
+        caption: caption.trim() || undefined,
+        mediaUrl: uploadResult.url,
+        mediaType,
+      });
 
       showSuccess('Post created!');
       router.back();

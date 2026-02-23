@@ -405,8 +405,8 @@ export default function UserProfileScreen() {
           </Animated.View>
         )}
 
-        {/* Mutual Connections */}
-        {!isSelf && isFollowing && (
+        {/* Mutual Connections - only shown in dev until real mutual followers API is available */}
+        {__DEV__ && !isSelf && isFollowing && (
           <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.mutualSection}>
             <View style={styles.mutualAvatars}>
               {[1, 2, 3].map((_, i) => (
@@ -446,7 +446,7 @@ export default function UserProfileScreen() {
                   })}
                 >
                   <Image
-                    source={{ uri: event.flyerUrl || event.imageUrl || `https://picsum.photos/seed/ev${event.id}/300/400` }}
+                    source={{ uri: event.flyerUrl || event.imageUrl || undefined }}
                     style={styles.eventImage}
                   />
                   <LinearGradient
