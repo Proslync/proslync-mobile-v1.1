@@ -19,11 +19,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { usePaymentSheet } from '@stripe/stripe-react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassButton } from '@/components/glass/glass-button';
 import { paymentsApi } from '@/lib/api/payments';
 import { useEventSocket } from '@/hooks/use-event-socket';
+import { useTerminalPayment } from '@/lib/providers/terminal-provider';
 import type { UnpaidGuest, UnpaidAttendeesResponse } from '@/lib/types/payments.types';
 
 function formatTimeAgo(dateStr?: string): string {
@@ -43,12 +43,28 @@ export default function CollectPaymentsScreen() {
   const { eventId: eventIdParam } = useLocalSearchParams<{ eventId: string }>();
   const eventId = eventIdParam ? Number(eventIdParam) : null;
 
-  const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
+  const {
+    readerStatus,
+    isReaderConnected,
+    isInitialized,
+    connectReader,
+    collectPayment,
+    cancelCollect,
+  } = useTerminalPayment();
 
   const [guests, setGuests] = React.useState<UnpaidGuest[]>([]);
   const [eventData, setEventData] = React.useState<Omit<UnpaidAttendeesResponse, 'guests'> | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [collectingGuestId, setCollectingGuestId] = React.useState<number | null>(null);
+
+  // Connect to Tap to Pay reader once SDK is initialized
+  React.useEffect(() => {
+    if (isInitialized && readerStatus === 'disconnected') {
+      connectReader().catch((err) => {
+        console.warn('[CollectPayments] Reader connect failed:', err?.message);
+      });
+    }
+  }, [isInitialized]);
 
   // Fetch unpaid guests
   const fetchUnpaid = React.useCallback(async () => {
@@ -85,61 +101,41 @@ export default function CollectPaymentsScreen() {
   useEventSocket({
     eventId,
     onGuestCheckedIn: React.useCallback(() => {
-      // New guest checked in — refetch the list to get full data
       fetchUnpaid();
     }, [fetchUnpaid]),
     onPaymentReceived: React.useCallback((data: { userId: number }) => {
-      // Remove the paid guest from the list
       setGuests((prev) => prev.filter((g) => g.userId !== data.userId));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }, []),
   });
 
-  // Handle collect payment for a guest
+  // Handle collect payment via Tap to Pay
   const handleCollect = React.useCallback(
     async (guest: UnpaidGuest) => {
-      if (!eventId || !guest.canCollect) return;
+      if (!eventId || !guest.canCollect || !isReaderConnected) return;
 
       setCollectingGuestId(guest.id);
 
       try {
-        // 1. Create payment intent on the backend
+        // 1. Create payment intent on the backend with terminal flag
         const result = await paymentsApi.collectAtDoor(eventId, {
           guestId: guest.id,
           tierId: eventData?.defaultTierId,
           pricingId: eventData?.defaultPricingId,
+          useTerminal: true,
         });
 
-        // 2. Init Stripe Payment Sheet (supports Apple Pay / Google Pay NFC tap)
-        const { error: initError } = await initPaymentSheet({
-          paymentIntentClientSecret: result.clientSecret,
-          merchantDisplayName: 'Status',
-          style: 'alwaysDark',
-          applePay: { merchantCountryCode: 'US' },
-          googlePay: { merchantCountryCode: 'US', testEnv: true },
-        });
+        // 2. Collect and confirm payment via Terminal (NFC tap)
+        await collectPayment(result.clientSecret);
 
-        if (initError) {
-          throw new Error(initError.message);
-        }
-
-        // 3. Present the Payment Sheet — guest taps their phone/card
-        const { error: paymentError } = await presentPaymentSheet();
-
-        if (paymentError) {
-          if (paymentError.code === 'Canceled') {
-            // User cancelled
-            setCollectingGuestId(null);
-            return;
-          }
-          throw new Error(paymentError.message);
-        }
-
-        // 4. Success! Guest will be removed via WebSocket event
+        // 3. Success!
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // Optimistically remove from list
         setGuests((prev) => prev.filter((g) => g.id !== guest.id));
       } catch (err: any) {
+        if (err?.message?.includes('canceled') || err?.message?.includes('Canceled')) {
+          setCollectingGuestId(null);
+          return;
+        }
         console.error('[CollectPayments] Payment error:', err);
         Alert.alert('Payment Failed', err?.message || 'Something went wrong.');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -147,8 +143,14 @@ export default function CollectPaymentsScreen() {
         setCollectingGuestId(null);
       }
     },
-    [eventId, eventData, initPaymentSheet, presentPaymentSheet]
+    [eventId, eventData, isReaderConnected, collectPayment]
   );
+
+  const handleRetryConnect = React.useCallback(() => {
+    connectReader().catch((err) => {
+      Alert.alert('Connection Failed', err?.message || 'Could not connect to reader.');
+    });
+  }, [connectReader]);
 
   const priceDisplay = React.useMemo(() => {
     if (!eventData?.defaultPrice) return null;
@@ -203,7 +205,7 @@ export default function CollectPaymentsScreen() {
               size="sm"
               variant="glass"
               onPress={() => handleCollect(item)}
-              disabled={isCollecting || collectingGuestId !== null}
+              disabled={isCollecting || collectingGuestId !== null || !isReaderConnected}
             />
           ) : (
             <View style={styles.disabledBadge}>
@@ -213,7 +215,7 @@ export default function CollectPaymentsScreen() {
         </Animated.View>
       );
     },
-    [collectingGuestId, handleCollect]
+    [collectingGuestId, handleCollect, isReaderConnected]
   );
 
   const keyExtractor = React.useCallback(
@@ -241,7 +243,10 @@ export default function CollectPaymentsScreen() {
       >
         <TouchableOpacity
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => {
+            cancelCollect();
+            router.back();
+          }}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
@@ -260,6 +265,31 @@ export default function CollectPaymentsScreen() {
           <View style={styles.headerSpacer} />
         )}
       </Animated.View>
+
+      {/* Reader Status Banner */}
+      <View style={styles.readerBanner}>
+        {readerStatus === 'connecting' && (
+          <>
+            <ActivityIndicator size="small" color="rgba(255,255,255,0.6)" />
+            <Text style={styles.readerBannerText}>Connecting to reader...</Text>
+          </>
+        )}
+        {readerStatus === 'connected' && (
+          <>
+            <View style={styles.statusDotConnected} />
+            <Text style={styles.readerBannerText}>Ready to accept payments</Text>
+          </>
+        )}
+        {readerStatus === 'disconnected' && (
+          <>
+            <View style={styles.statusDotDisconnected} />
+            <Text style={styles.readerBannerText}>Reader not connected</Text>
+            <TouchableOpacity onPress={handleRetryConnect} activeOpacity={0.7}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
 
       {/* Content */}
       {loading ? (
@@ -343,6 +373,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
+  },
+  readerBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  readerBannerText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  statusDotConnected: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#22c55e',
+  },
+  statusDotDisconnected: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#ef4444',
+  },
+  retryText: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    textDecorationLine: 'underline',
   },
   centerContent: {
     flex: 1,

@@ -14,7 +14,8 @@
       "entitlements": {
         "com.apple.developer.in-app-payments": [
           "merchant.statusdigitalinc.status"
-        ]
+        ],
+        "com.apple.developer.proximity-reader.payment.acceptance": true
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -80,6 +81,12 @@
         {
           "merchantIdentifier": "merchant.statusdigitalinc.status",
           "enableGooglePay": true
+        }
+      ],
+      [
+        "@stripe/stripe-terminal-react-native",
+        {
+          "tapToPayCheck": true
         }
       ],
       "expo-secure-store",

@@ -45,6 +45,15 @@ export const paymentsApi = {
   },
 
   /**
+   * Fetch a Stripe Terminal connection token for Tap to Pay
+   * Backend endpoint: POST /api/terminal/connection-token
+   */
+  fetchConnectionToken: async (): Promise<string> => {
+    const res = await apiClient.post<{ secret: string }>('/api/terminal/connection-token', {});
+    return res.secret;
+  },
+
+  /**
    * Initiate collect-at-door payment for a guest
    * Backend endpoint: POST /api/events/:eventId/payments/collect-at-door
    */

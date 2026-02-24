@@ -76,6 +76,7 @@ export interface CollectAtDoorRequest {
   tierId?: number;
   pricingId?: number;
   customAmountCents?: number;
+  useTerminal?: boolean;
 }
 
 export interface CollectAtDoorResponse {

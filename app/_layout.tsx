@@ -19,6 +19,7 @@ import { ChatProvider } from '@/lib/providers/chat-provider';
 import { CallProvider } from '@/lib/providers/call-provider';
 import { LiveLocationProvider } from '@/lib/providers/live-location-provider';
 import { StripeProvider } from '@/lib/providers/stripe-provider';
+import { TerminalProvider } from '@/lib/providers/terminal-provider';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -100,23 +101,25 @@ export default function RootLayout() {
       <ThemeProvider defaultTheme="light">
         <QueryProvider>
           <StripeProvider>
-            <ToastProvider>
-              <AuthProvider>
-                <LiveLocationProvider>
-                  <TabNavigationProvider>
-                    <StreamProvider>
-                      <ChatProvider>
-                        <CallProvider>
-                          <WalletProvider>
-                            <RootLayoutNav />
-                          </WalletProvider>
-                        </CallProvider>
-                      </ChatProvider>
-                    </StreamProvider>
-                  </TabNavigationProvider>
-                </LiveLocationProvider>
-              </AuthProvider>
-            </ToastProvider>
+            <TerminalProvider>
+              <ToastProvider>
+                <AuthProvider>
+                  <LiveLocationProvider>
+                    <TabNavigationProvider>
+                      <StreamProvider>
+                        <ChatProvider>
+                          <CallProvider>
+                            <WalletProvider>
+                              <RootLayoutNav />
+                            </WalletProvider>
+                          </CallProvider>
+                        </ChatProvider>
+                      </StreamProvider>
+                    </TabNavigationProvider>
+                  </LiveLocationProvider>
+                </AuthProvider>
+              </ToastProvider>
+            </TerminalProvider>
           </StripeProvider>
         </QueryProvider>
       </ThemeProvider>

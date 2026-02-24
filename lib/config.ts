@@ -29,6 +29,7 @@ export const config = {
   },
   stripe: {
     publishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
+    terminalLocationId: process.env.EXPO_PUBLIC_STRIPE_TERMINAL_LOCATION_ID || "",
   },
   stream: {
     apiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY || "wnyzcwhxkjsf",
