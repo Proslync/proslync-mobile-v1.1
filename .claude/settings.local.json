@@ -48,7 +48,8 @@
       "Bash(find:*)",
       "Bash(xargs cat:*)",
       "Bash(node_modules/.bin/tsc:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(/Users/alex/Projects/Work/status.social/node_modules/.bin/tsc:*)"
     ]
   }
 }

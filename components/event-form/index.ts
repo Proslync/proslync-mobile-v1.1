@@ -1,1 +1,1 @@
-export { BasicInfoStep, DateTimeStep, LocationStep, DetailsStep } from './steps';
+export { BasicInfoStep, DateTimeStep, LocationStep, DetailsStep, PricingStep } from './steps';

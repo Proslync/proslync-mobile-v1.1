@@ -3,19 +3,18 @@
 
 import { EventFormData, eventFormSchema } from '@/lib/schemas/events';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-export type EventFormStep = 'basic' | 'datetime' | 'location' | 'details';
-
-const STEPS: EventFormStep[] = ['basic', 'datetime', 'location', 'details'];
+export type EventFormStep = 'basic' | 'datetime' | 'location' | 'details' | 'pricing';
 
 // Map step to its field names for validation
 const STEP_FIELDS: Record<EventFormStep, (keyof EventFormData)[]> = {
   basic: ['name', 'description', 'flyerUri', 'flyerMediaType'],
   datetime: ['startDate', 'endDate'],
   location: ['venueId', 'location', 'locationDetails'],
-  details: ['maxCapacity', 'minimumAge', 'isPublic'],
+  details: ['maxCapacity', 'minimumAge', 'isPublic', 'isPaid'],
+  pricing: ['tiers'],
 };
 
 // Default values for the form - exported for reuse
@@ -32,6 +31,8 @@ export const DEFAULT_EVENT_FORM_VALUES: EventFormData = {
   maxCapacity: '',
   minimumAge: '21',
   isPublic: true,
+  isPaid: false,
+  tiers: [],
 };
 
 interface UseEventFormOptions {
@@ -57,9 +58,25 @@ export function useEventForm(options: UseEventFormOptions = {}) {
     shouldFocusError: true,
   });
 
-  const currentStepIndex = STEPS.indexOf(currentStep);
+  // Watch isPaid to build dynamic steps
+  const isPaid = form.watch('isPaid');
+
+  const steps = useMemo((): EventFormStep[] => {
+    const base: EventFormStep[] = ['basic', 'datetime', 'location', 'details'];
+    if (isPaid) base.push('pricing');
+    return base;
+  }, [isPaid]);
+
+  // If current step is removed (e.g. toggled isPaid off while on pricing), go back
+  useEffect(() => {
+    if (!steps.includes(currentStep)) {
+      setCurrentStep('details');
+    }
+  }, [steps, currentStep]);
+
+  const currentStepIndex = steps.indexOf(currentStep);
   const isFirstStep = currentStepIndex === 0;
-  const isLastStep = currentStepIndex === STEPS.length - 1;
+  const isLastStep = currentStepIndex === steps.length - 1;
 
   // Validate only fields for current step
   const validateCurrentStep = useCallback(async (): Promise<boolean> => {
@@ -73,6 +90,7 @@ export function useEventForm(options: UseEventFormOptions = {}) {
   const startDate = form.watch('startDate');
   const endDate = form.watch('endDate');
   const location = form.watch('location');
+  const tiers = form.watch('tiers');
 
   const canGoNext = (() => {
     switch (currentStep) {
@@ -84,6 +102,12 @@ export function useEventForm(options: UseEventFormOptions = {}) {
         return (location?.trim().length ?? 0) > 0;
       case 'details':
         return true;
+      case 'pricing':
+        return (
+          Array.isArray(tiers) &&
+          tiers.length > 0 &&
+          tiers.every((t) => t.pricing?.length > 0)
+        );
       default:
         return false;
     }
@@ -94,16 +118,16 @@ export function useEventForm(options: UseEventFormOptions = {}) {
     if (!isValid) return false;
 
     if (!isLastStep) {
-      setCurrentStep(STEPS[currentStepIndex + 1]);
+      setCurrentStep(steps[currentStepIndex + 1]);
     }
     return true;
-  }, [currentStepIndex, isLastStep, validateCurrentStep]);
+  }, [currentStepIndex, isLastStep, steps, validateCurrentStep]);
 
   const goBack = useCallback(() => {
     if (!isFirstStep) {
-      setCurrentStep(STEPS[currentStepIndex - 1]);
+      setCurrentStep(steps[currentStepIndex - 1]);
     }
-  }, [currentStepIndex, isFirstStep]);
+  }, [currentStepIndex, isFirstStep, steps]);
 
   const goToStep = useCallback((step: EventFormStep) => {
     setCurrentStep(step);
@@ -113,7 +137,8 @@ export function useEventForm(options: UseEventFormOptions = {}) {
     form,
     currentStep,
     currentStepIndex,
-    totalSteps: STEPS.length,
+    steps,
+    totalSteps: steps.length,
     isFirstStep,
     isLastStep,
     goNext,
@@ -158,6 +183,8 @@ export function useEditEventForm(options: UseEventFormOptions = {}) {
         maxCapacity: eventData.maxCapacity?.toString() || '',
         minimumAge: eventData.minimumAge?.toString() || '21',
         isPublic: eventData.isPublic ?? true,
+        isPaid: false,
+        tiers: [],
       });
     },
     [eventForm.form]

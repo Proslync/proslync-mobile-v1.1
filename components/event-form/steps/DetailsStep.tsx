@@ -1,4 +1,4 @@
-// Step 4: Details - Capacity, age requirement, visibility
+// Step 4: Details - Capacity, age requirement, visibility, paid/free
 
 import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -28,6 +28,12 @@ export function DetailsStep() {
         name="isPublic"
         label="Public Event"
         description="Anyone can see and RSVP to your event"
+      />
+
+      <FormSwitch<EventFormData>
+        name="isPaid"
+        label="Paid Event"
+        description="Charge admission with ticket tiers and pricing"
       />
     </Animated.View>
   );

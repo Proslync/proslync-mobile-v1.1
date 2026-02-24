@@ -1,5 +1,19 @@
 import { z } from 'zod';
 
+// Inline tier pricing schema for event creation
+const tierPricingFormSchema = z.object({
+  name: z.string().min(1, 'Pricing name is required'),
+  price: z.number().min(0, 'Price must be 0 or more'),
+  currency: z.string().optional(),
+  capacity: z.number().min(1).optional(),
+});
+
+const tierFormSchema = z.object({
+  name: z.string().min(1, 'Tier name is required'),
+  description: z.string().optional().or(z.literal('')),
+  pricing: z.array(tierPricingFormSchema),
+});
+
 const locationDetailsSchema = z.object({
   addressLine1: z.string(),
   city: z.string(),
@@ -43,6 +57,10 @@ export const eventFormSchema = z
     maxCapacity: z.string().optional().or(z.literal('')),
     minimumAge: z.string().optional().or(z.literal('')),
     isPublic: z.boolean(),
+    isPaid: z.boolean(),
+
+    // Pricing (Step 5 - only when isPaid is true)
+    tiers: z.array(tierFormSchema).optional(),
   })
   .refine((data) => data.endDate > data.startDate, {
     message: 'End date must be after start date',
@@ -87,6 +105,11 @@ export const detailsSchema = z.object({
   maxCapacity: z.string().optional().or(z.literal('')),
   minimumAge: z.string().optional().or(z.literal('')),
   isPublic: z.boolean(),
+  isPaid: z.boolean(),
+});
+
+export const pricingSchema = z.object({
+  tiers: z.array(tierFormSchema).optional(),
 });
 
 // Type export - form values (all as input types)
@@ -95,6 +118,9 @@ export type BasicInfoFormData = z.infer<typeof basicInfoSchema>;
 export type DateTimeFormData = z.infer<typeof dateTimeSchema>;
 export type LocationFormData = z.infer<typeof locationSchema>;
 export type DetailsFormData = z.infer<typeof detailsSchema>;
+export type PricingFormData = z.infer<typeof pricingSchema>;
+export type TierFormData = z.infer<typeof tierFormSchema>;
+export type TierPricingFormData = z.infer<typeof tierPricingFormSchema>;
 
 // Helper to parse string values to numbers for API submission
 export function parseEventFormData(data: EventFormData) {
@@ -113,5 +139,21 @@ export function parseEventFormData(data: EventFormData) {
       ? parseInt(data.minimumAge, 10)
       : 21,
     isPublic: data.isPublic,
+    // Include inline tiers when event is paid
+    ...(data.isPaid && data.tiers?.length
+      ? {
+          tiers: data.tiers.map((tier, index) => ({
+            name: tier.name.trim(),
+            description: tier.description?.trim() || undefined,
+            displayOrder: index,
+            pricing: tier.pricing.map((p) => ({
+              name: p.name.trim(),
+              price: p.price,
+              currency: p.currency || 'USD',
+              capacity: p.capacity || undefined,
+            })),
+          })),
+        }
+      : {}),
   };
 }

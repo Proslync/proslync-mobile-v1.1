@@ -133,6 +133,20 @@ export interface LocationDetails {
   };
 }
 
+export interface CreateTierInline {
+  name: string;
+  description?: string;
+  displayOrder?: number;
+  pricing: {
+    name: string;
+    price: number;
+    currency?: string;
+    capacity?: number;
+    availableFrom?: string;
+    availableUntil?: string;
+  }[];
+}
+
 export interface CreateEventDto {
   name: string;
   description?: string;
@@ -146,6 +160,7 @@ export interface CreateEventDto {
   eventType?: string;
   imageUrl?: string;
   isPublic?: boolean;
+  tiers?: CreateTierInline[];
 }
 
 export interface UpdateEventDto {

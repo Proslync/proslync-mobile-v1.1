@@ -7,6 +7,7 @@ import {
   DateTimeStep,
   LocationStep,
   DetailsStep,
+  PricingStep,
 } from '@/components/event-form';
 import type { EventFormStep } from '@/hooks';
 import { useCreateEvent, useEventForm } from '@/hooks';
@@ -29,18 +30,21 @@ import {
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Step configuration
-const STEPS: {
-  key: EventFormStep;
-  title: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  component: React.ComponentType;
-}[] = [
-  { key: 'basic', title: 'Basic Info', icon: 'create-outline', component: BasicInfoStep },
-  { key: 'datetime', title: 'Date & Time', icon: 'calendar-outline', component: DateTimeStep },
-  { key: 'location', title: 'Location', icon: 'location-outline', component: LocationStep },
-  { key: 'details', title: 'Details', icon: 'settings-outline', component: DetailsStep },
-];
+// Step rendering configuration
+const STEP_CONFIG: Record<
+  EventFormStep,
+  {
+    title: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    component: React.ComponentType;
+  }
+> = {
+  basic: { title: 'Basic Info', icon: 'create-outline', component: BasicInfoStep },
+  datetime: { title: 'Date & Time', icon: 'calendar-outline', component: DateTimeStep },
+  location: { title: 'Location', icon: 'location-outline', component: LocationStep },
+  details: { title: 'Details', icon: 'settings-outline', component: DetailsStep },
+  pricing: { title: 'Pricing', icon: 'pricetag-outline', component: PricingStep },
+};
 
 export default function CreateEventScreen() {
   const insets = useSafeAreaInsets();
@@ -52,6 +56,7 @@ export default function CreateEventScreen() {
   const {
     form,
     currentStepIndex,
+    steps,
     isFirstStep,
     isLastStep,
     goNext,
@@ -62,8 +67,9 @@ export default function CreateEventScreen() {
   // Mutation hook
   const createEvent = useCreateEvent();
 
-  // Get current step component
-  const CurrentStepComponent = STEPS[currentStepIndex]?.component;
+  // Get current step config
+  const currentStepKey = steps[currentStepIndex];
+  const CurrentStepComponent = STEP_CONFIG[currentStepKey]?.component;
 
   const handleBack = () => {
     if (isFirstStep) {
@@ -146,40 +152,43 @@ export default function CreateEventScreen() {
 
         {/* Progress Indicator */}
         <View style={styles.progressContainer}>
-          {STEPS.map((step, index) => (
-            <View key={step.key} style={styles.progressStep}>
-              <View
-                style={[
-                  styles.progressDot,
-                  { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
-                  index <= currentStepIndex && {
-                    backgroundColor: accentColor,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={step.icon}
-                  size={16}
-                  color={
-                    index <= currentStepIndex
-                      ? isDark ? '#000' : '#fff'
-                      : colors.textTertiary
-                  }
-                />
-              </View>
-              {index < STEPS.length - 1 && (
+          {steps.map((stepKey, index) => {
+            const config = STEP_CONFIG[stepKey];
+            return (
+              <View key={stepKey} style={styles.progressStep}>
                 <View
                   style={[
-                    styles.progressLine,
+                    styles.progressDot,
                     { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
-                    index < currentStepIndex && {
+                    index <= currentStepIndex && {
                       backgroundColor: accentColor,
                     },
                   ]}
-                />
-              )}
-            </View>
-          ))}
+                >
+                  <Ionicons
+                    name={config.icon}
+                    size={16}
+                    color={
+                      index <= currentStepIndex
+                        ? isDark ? '#000' : '#fff'
+                        : colors.textTertiary
+                    }
+                  />
+                </View>
+                {index < steps.length - 1 && (
+                  <View
+                    style={[
+                      styles.progressLine,
+                      { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
+                      index < currentStepIndex && {
+                        backgroundColor: accentColor,
+                      },
+                    ]}
+                  />
+                )}
+              </View>
+            );
+          })}
         </View>
 
         <KeyboardAvoidingView
