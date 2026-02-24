@@ -1,6 +1,6 @@
 // Reaction Sheet - Bottom sheet for message reactions and actions
 
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -8,13 +8,13 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAppTheme } from '@/hooks/use-app-theme';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
-const REACTIONS = ['❤️', '👍', '😂', '😮', '😢', '😡'];
+const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "😡"];
 
 interface ReactionSheetProps {
   visible: boolean;
@@ -50,21 +50,29 @@ export function ReactionSheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={[
-          styles.container,
-          {
-            paddingBottom: insets.bottom + 16,
-            backgroundColor: isDark ? '#1c1c1e' : colors.card,
-          }
-        ]}>
+        <View
+          style={[
+            styles.container,
+            {
+              paddingBottom: insets.bottom + 16,
+              backgroundColor: isDark ? "#000000" : colors.card,
+            },
+          ]}
+        >
           {/* Reactions Row */}
-          <View style={[styles.reactionsRow, { borderBottomColor: colors.border }]}>
+          <View
+            style={[styles.reactionsRow, { borderBottomColor: colors.border }]}
+          >
             {REACTIONS.map((emoji) => (
               <TouchableOpacity
                 key={emoji}
                 style={[
                   styles.reactionButton,
-                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
+                  {
+                    backgroundColor: isDark
+                      ? "rgba(255, 255, 255, 0.1)"
+                      : "rgba(0, 0, 0, 0.05)",
+                  },
                 ]}
                 onPress={() => {
                   onReaction(emoji);
@@ -89,7 +97,9 @@ export function ReactionSheet({
                 activeOpacity={0.7}
               >
                 <Ionicons name="arrow-undo" size={20} color={colors.text} />
-                <Text style={[styles.actionText, { color: colors.text }]}>Reply</Text>
+                <Text style={[styles.actionText, { color: colors.text }]}>
+                  Reply
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -103,7 +113,9 @@ export function ReactionSheet({
                 activeOpacity={0.7}
               >
                 <Ionicons name="copy-outline" size={20} color={colors.text} />
-                <Text style={[styles.actionText, { color: colors.text }]}>Copy</Text>
+                <Text style={[styles.actionText, { color: colors.text }]}>
+                  Copy
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -117,7 +129,9 @@ export function ReactionSheet({
                 activeOpacity={0.7}
               >
                 <Ionicons name="trash-outline" size={20} color="#ff3b30" />
-                <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
+                <Text style={[styles.actionText, styles.deleteText]}>
+                  Delete
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -131,7 +145,9 @@ export function ReactionSheet({
                 activeOpacity={0.7}
               >
                 <Ionicons name="flag-outline" size={20} color="#ff3b30" />
-                <Text style={[styles.actionText, styles.deleteText]}>Report</Text>
+                <Text style={[styles.actionText, styles.deleteText]}>
+                  Report
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -140,7 +156,11 @@ export function ReactionSheet({
           <TouchableOpacity
             style={[
               styles.cancelButton,
-              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
+              {
+                backgroundColor: isDark
+                  ? "rgba(255, 255, 255, 0.1)"
+                  : "rgba(0, 0, 0, 0.05)",
+              },
             ]}
             onPress={onClose}
             activeOpacity={0.7}
@@ -156,8 +176,8 @@ export function ReactionSheet({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "flex-end",
   },
   container: {
     borderTopLeftRadius: 20,
@@ -165,8 +185,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   reactionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    flexDirection: "row",
+    justifyContent: "space-evenly",
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
@@ -175,8 +195,8 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   reactionEmoji: {
     fontSize: 24,
@@ -185,29 +205,29 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
     gap: 14,
   },
   actionText: {
     fontSize: 17,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   deleteText: {
-    color: '#ff3b30',
+    color: "#ff3b30",
   },
   cancelButton: {
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelText: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
+    fontFamily: "Lato_700Bold",
+    color: "#0095f6",
   },
 });

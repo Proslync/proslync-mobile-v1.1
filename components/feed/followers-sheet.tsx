@@ -1,5 +1,5 @@
-import * as React from 'react';
-import { useStableRouter } from '@/hooks/use-stable-router';
+import * as React from "react";
+import { useStableRouter } from "@/hooks/use-stable-router";
 import {
   View,
   Text,
@@ -7,16 +7,19 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-} from 'react-native';
-import BottomSheet, { BottomSheetFlatList } from '@gorhom/bottom-sheet';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { followsApi } from '@/lib/api/follows';
-import type { UserFollowItem, VenueFollowItem } from '@/lib/types/follows.types';
+} from "react-native";
+import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { followsApi } from "@/lib/api/follows";
+import type {
+  UserFollowItem,
+  VenueFollowItem,
+} from "@/lib/types/follows.types";
 
-const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
-type SheetTab = 'followers' | 'following';
+type SheetTab = "followers" | "following";
 
 interface FollowersSheetProps {
   visible: boolean;
@@ -31,7 +34,7 @@ interface ListItem {
   id: number;
   name: string;
   imageUrl?: string | null;
-  type: 'user' | 'venue';
+  type: "user" | "venue";
 }
 
 export function FollowersSheet({
@@ -46,7 +49,7 @@ export function FollowersSheet({
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { colors, isDark } = useAppTheme();
-  const snapPoints = React.useMemo(() => ['55%', '85%'], []);
+  const snapPoints = React.useMemo(() => ["55%", "85%"], []);
 
   const [activeTab, setActiveTab] = React.useState<SheetTab>(initialTab);
   const [followers, setFollowers] = React.useState<ListItem[]>([]);
@@ -73,9 +76,9 @@ export function FollowersSheet({
   React.useEffect(() => {
     if (!visible || !userId) return;
 
-    if (activeTab === 'followers' && !hasFetchedFollowers) {
+    if (activeTab === "followers" && !hasFetchedFollowers) {
       fetchFollowers();
-    } else if (activeTab === 'following' && !hasFetchedFollowing) {
+    } else if (activeTab === "following" && !hasFetchedFollowing) {
       fetchFollowing();
     }
   }, [visible, activeTab, userId]);
@@ -87,21 +90,24 @@ export function FollowersSheet({
       const items: ListItem[] = [
         ...res.userFollowers.map((u: UserFollowItem) => ({
           id: u.id,
-          name: u.userName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'User',
+          name:
+            u.userName ||
+            `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
+            "User",
           imageUrl: u.avatarUrl,
-          type: 'user' as const,
+          type: "user" as const,
         })),
         ...res.venueFollowers.map((v: VenueFollowItem) => ({
           id: v.id,
           name: v.name,
           imageUrl: v.logoUrl,
-          type: 'venue' as const,
+          type: "venue" as const,
         })),
       ];
       setFollowers(items);
       setHasFetchedFollowers(true);
     } catch (err) {
-      console.error('[FollowersSheet] Failed to fetch followers:', err);
+      console.error("[FollowersSheet] Failed to fetch followers:", err);
     } finally {
       setIsLoading(false);
     }
@@ -114,21 +120,24 @@ export function FollowersSheet({
       const items: ListItem[] = [
         ...res.followingUsers.map((u: UserFollowItem) => ({
           id: u.id,
-          name: u.userName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'User',
+          name:
+            u.userName ||
+            `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
+            "User",
           imageUrl: u.avatarUrl,
-          type: 'user' as const,
+          type: "user" as const,
         })),
         ...res.followingVenues.map((v: VenueFollowItem) => ({
           id: v.id,
           name: v.name,
           imageUrl: v.logoUrl,
-          type: 'venue' as const,
+          type: "venue" as const,
         })),
       ];
       setFollowing(items);
       setHasFetchedFollowing(true);
     } catch (err) {
-      console.error('[FollowersSheet] Failed to fetch following:', err);
+      console.error("[FollowersSheet] Failed to fetch following:", err);
     } finally {
       setIsLoading(false);
     }
@@ -142,16 +151,19 @@ export function FollowersSheet({
   };
 
   const handleUserPress = (item: ListItem) => {
-    if (item.type === 'user') {
+    if (item.type === "user") {
       router.push({
-        pathname: '/user/[username]',
-        params: { username: item.name || item.id.toString(), userId: item.id.toString() },
+        pathname: "/user/[username]",
+        params: {
+          username: item.name || item.id.toString(),
+          userId: item.id.toString(),
+        },
       });
       handleClose();
     }
   };
 
-  const data = activeTab === 'followers' ? followers : following;
+  const data = activeTab === "followers" ? followers : following;
 
   const renderItem = React.useCallback(
     ({ item }: { item: ListItem }) => (
@@ -160,19 +172,31 @@ export function FollowersSheet({
         onPress={() => handleUserPress(item)}
         activeOpacity={0.6}
       >
-        <View style={[styles.avatarWrap, { backgroundColor: colors.backgroundSecondary }]}>
+        <View
+          style={[
+            styles.avatarWrap,
+            { backgroundColor: colors.backgroundSecondary },
+          ]}
+        >
           <Image
             source={item.imageUrl ? { uri: item.imageUrl } : DefaultAvatarImage}
             style={styles.avatar}
           />
         </View>
         <View style={styles.rowInfo}>
-          <Text style={[styles.rowName, { color: colors.text }]} numberOfLines={1}>{item.name}</Text>
-          <Text style={[styles.rowType, { color: colors.textTertiary }]}>{item.type === 'venue' ? 'Venue' : 'User'}</Text>
+          <Text
+            style={[styles.rowName, { color: colors.text }]}
+            numberOfLines={1}
+          >
+            {item.name}
+          </Text>
+          <Text style={[styles.rowType, { color: colors.textTertiary }]}>
+            {item.type === "venue" ? "Venue" : "User"}
+          </Text>
         </View>
       </TouchableOpacity>
     ),
-    [colors]
+    [colors],
   );
 
   const ListEmpty = () => {
@@ -186,7 +210,9 @@ export function FollowersSheet({
     return (
       <View style={styles.emptyContainer}>
         <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
-          {activeTab === 'followers' ? 'No followers yet' : 'Not following anyone yet'}
+          {activeTab === "followers"
+            ? "No followers yet"
+            : "Not following anyone yet"}
         </Text>
       </View>
     );
@@ -201,11 +227,15 @@ export function FollowersSheet({
       onClose={handleClose}
       backgroundStyle={[
         styles.sheetBackground,
-        { backgroundColor: isDark ? '#1c1c1e' : '#fff' }
+        { backgroundColor: isDark ? "#000000" : "#fff" },
       ]}
       handleIndicatorStyle={[
         styles.sheetIndicator,
-        { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)' }
+        {
+          backgroundColor: isDark
+            ? "rgba(255, 255, 255, 0.3)"
+            : "rgba(0, 0, 0, 0.2)",
+        },
       ]}
       enableDynamicSizing={false}
     >
@@ -214,46 +244,60 @@ export function FollowersSheet({
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'followers' && [styles.tabActive, { borderBottomColor: colors.text }]
+            activeTab === "followers" && [
+              styles.tabActive,
+              { borderBottomColor: colors.text },
+            ],
           ]}
-          onPress={() => setActiveTab('followers')}
+          onPress={() => setActiveTab("followers")}
           activeOpacity={0.7}
         >
-          <Text style={[
-            styles.tabCount,
-            { color: colors.textTertiary },
-            activeTab === 'followers' && { color: colors.text }
-          ]}>
+          <Text
+            style={[
+              styles.tabCount,
+              { color: colors.textTertiary },
+              activeTab === "followers" && { color: colors.text },
+            ]}
+          >
             {followersCount}
           </Text>
-          <Text style={[
-            styles.tabLabel,
-            { color: colors.textTertiary },
-            activeTab === 'followers' && { color: colors.text }
-          ]}>
+          <Text
+            style={[
+              styles.tabLabel,
+              { color: colors.textTertiary },
+              activeTab === "followers" && { color: colors.text },
+            ]}
+          >
             Followers
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'following' && [styles.tabActive, { borderBottomColor: colors.text }]
+            activeTab === "following" && [
+              styles.tabActive,
+              { borderBottomColor: colors.text },
+            ],
           ]}
-          onPress={() => setActiveTab('following')}
+          onPress={() => setActiveTab("following")}
           activeOpacity={0.7}
         >
-          <Text style={[
-            styles.tabCount,
-            { color: colors.textTertiary },
-            activeTab === 'following' && { color: colors.text }
-          ]}>
+          <Text
+            style={[
+              styles.tabCount,
+              { color: colors.textTertiary },
+              activeTab === "following" && { color: colors.text },
+            ]}
+          >
             {followingCount}
           </Text>
-          <Text style={[
-            styles.tabLabel,
-            { color: colors.textTertiary },
-            activeTab === 'following' && { color: colors.text }
-          ]}>
+          <Text
+            style={[
+              styles.tabLabel,
+              { color: colors.textTertiary },
+              activeTab === "following" && { color: colors.text },
+            ]}
+          >
             Following
           </Text>
         </TouchableOpacity>
@@ -271,7 +315,11 @@ export function FollowersSheet({
           { paddingBottom: insets.bottom + 20 },
         ]}
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: colors.separator }]} />}
+        ItemSeparatorComponent={() => (
+          <View
+            style={[styles.separator, { backgroundColor: colors.separator }]}
+          />
+        )}
       />
     </BottomSheet>
   );
@@ -290,25 +338,25 @@ const styles = StyleSheet.create({
 
   // Tabs
   tabBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderBottomWidth: 1,
   },
   tab: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderBottomColor: "transparent",
   },
   tabActive: {},
   tabCount: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   tabCountActive: {},
   tabLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   tabLabelActive: {},
@@ -319,11 +367,11 @@ const styles = StyleSheet.create({
   },
   listContentEmpty: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
@@ -331,7 +379,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   avatar: {
     width: 48,
@@ -344,11 +392,11 @@ const styles = StyleSheet.create({
   },
   rowName: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
+    fontFamily: "Lato_600SemiBold",
   },
   rowType: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   separator: {
@@ -358,12 +406,12 @@ const styles = StyleSheet.create({
 
   // Empty
   emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 48,
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
 });

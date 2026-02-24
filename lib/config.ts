@@ -3,8 +3,8 @@
 
 // Local development override
 // Set to true to use local backend (requires backend running on your machine)
-const USE_LOCAL_BACKEND = false;
-const LOCAL_IP = "192.168.101.32"; // Update with your IP: ifconfig (Mac) or ipconfig (Windows)
+const USE_LOCAL_BACKEND = true;
+const LOCAL_IP = "192.168.101.60"; // Update with your IP: ifconfig (Mac) or ipconfig (Windows)
 
 // API URLs
 const PROD_API_URL =

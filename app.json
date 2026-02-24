@@ -85,7 +85,7 @@
       ],
       [
         "@stripe/stripe-terminal-react-native",
-        {
+{
           "tapToPayCheck": true
         }
       ],

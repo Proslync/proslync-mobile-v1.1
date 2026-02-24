@@ -1,6 +1,6 @@
 // Location Visibility Sheet — Liquid glass "Who can see my location" settings
 
-import * as React from 'react';
+import * as React from "react";
 import {
   View,
   StyleSheet,
@@ -9,66 +9,66 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
-} from 'react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import * as Haptics from 'expo-haptics';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import * as Haptics from "expo-haptics";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { GlassOverlay } from '@/components/glass/glass-overlay';
-import { GlassCard } from '@/components/glass/glass-card';
+import { GlassOverlay } from "@/components/glass/glass-overlay";
+import { GlassCard } from "@/components/glass/glass-card";
 
-const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
-import { GlassText } from '@/components/glass/glass-text';
-import { GlassButton } from '@/components/glass/glass-button';
-import { useAppTheme } from '@/hooks/use-app-theme';
+const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
+import { GlassText } from "@/components/glass/glass-text";
+import { GlassButton } from "@/components/glass/glass-button";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   spacing,
   radius,
   textColor,
   glassFill,
   glassBorder,
-} from '@/constants/glass/tokens';
-import { useLocationVisibility } from '@/hooks/use-location-visibility';
-import { useAuth } from '@/lib/providers/auth-provider';
-import { followsApi } from '@/lib/api/follows';
-import type { UserFollowItem } from '@/lib/types/follows.types';
-import type { LocationVisibilityMode } from '@/lib/types/location-visibility.types';
+} from "@/constants/glass/tokens";
+import { useLocationVisibility } from "@/hooks/use-location-visibility";
+import { useAuth } from "@/lib/providers/auth-provider";
+import { followsApi } from "@/lib/api/follows";
+import type { UserFollowItem } from "@/lib/types/follows.types";
+import type { LocationVisibilityMode } from "@/lib/types/location-visibility.types";
 import {
   VISIBILITY_MODE_LABELS,
   VISIBILITY_MODE_ICONS,
-} from '@/lib/types/location-visibility.types';
+} from "@/lib/types/location-visibility.types";
 
 interface LocationVisibilitySheetProps {
   isVisible: boolean;
   onClose: () => void;
 }
 
-type Screen = 'modes' | 'picker';
-type PickerTarget = 'allow' | 'block';
+type Screen = "modes" | "picker";
+type PickerTarget = "allow" | "block";
 
 // Mode accent colors for dark theme
 const MODE_ACCENT_DARK: Record<LocationVisibilityMode, string> = {
-  everyone: '#ffffff',
-  friends: 'rgba(255, 255, 255, 0.8)',
-  only: 'rgba(255, 255, 255, 0.7)',
-  except: 'rgba(255, 255, 255, 0.6)',
+  everyone: "#ffffff",
+  friends: "rgba(255, 255, 255, 0.8)",
+  only: "rgba(255, 255, 255, 0.7)",
+  except: "rgba(255, 255, 255, 0.6)",
 };
 
 // Mode accent colors for light theme
 const MODE_ACCENT_LIGHT: Record<LocationVisibilityMode, string> = {
-  everyone: '#1a1a1a',
-  friends: 'rgba(0, 0, 0, 0.8)',
-  only: 'rgba(0, 0, 0, 0.7)',
-  except: 'rgba(0, 0, 0, 0.6)',
+  everyone: "#1a1a1a",
+  friends: "rgba(0, 0, 0, 0.8)",
+  only: "rgba(0, 0, 0, 0.7)",
+  except: "rgba(0, 0, 0, 0.6)",
 };
 
 const MODE_DESCRIPTIONS: Record<LocationVisibilityMode, string> = {
-  everyone: 'All Status users',
-  friends: 'People who follow you',
-  only: 'Hand-picked friends only',
-  except: 'Everyone except specific people',
+  everyone: "All Status users",
+  friends: "People who follow you",
+  only: "Hand-picked friends only",
+  except: "Everyone except specific people",
 };
 
 export function LocationVisibilitySheet({
@@ -79,49 +79,61 @@ export function LocationVisibilitySheet({
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const { user } = useAuth();
-  const {
-    settings,
-    setMode,
-    toggleAllowList,
-    toggleBlockList,
-  } = useLocationVisibility();
+  const { settings, setMode, toggleAllowList, toggleBlockList } =
+    useLocationVisibility();
 
   // Theme-aware colors
   const MODE_ACCENT = isDark ? MODE_ACCENT_DARK : MODE_ACCENT_LIGHT;
-  const sheetBackgroundColor = isDark ? 'rgba(20, 20, 22, 0.85)' : 'rgba(255, 255, 255, 0.97)';
-  const sheetBorderColor = isDark ? `rgba(255, 255, 255, ${glassBorder.medium.opacity})` : 'rgba(0, 0, 0, 0.08)';
-  const indicatorColor = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
-  const iconColor = isDark ? '#ffffff' : '#1a1a1a';
-  const checkmarkColor = isDark ? '#ffffff' : '#1a1a1a';
-  const checkCircleBgActive = isDark ? '#ffffff' : '#1a1a1a';
-  const checkCircleBorderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)';
-  const checkIconColor = isDark ? '#000' : '#fff';
-  const separatorColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
-  const modeRowActiveBg = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)';
-  const friendRowSelectedBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
-  const avatarRingColor = isDark ? '#ffffff' : '#1a1a1a';
-  const searchInputColor = isDark ? '#fff' : '#1a1a1a';
+  const sheetBackgroundColor = isDark ? "#000000" : "rgba(255, 255, 255, 0.97)";
+  const sheetBorderColor = isDark
+    ? `rgba(255, 255, 255, ${glassBorder.medium.opacity})`
+    : "rgba(0, 0, 0, 0.08)";
+  const indicatorColor = isDark
+    ? "rgba(255, 255, 255, 0.3)"
+    : "rgba(0, 0, 0, 0.2)";
+  const iconColor = isDark ? "#ffffff" : "#1a1a1a";
+  const checkmarkColor = isDark ? "#ffffff" : "#1a1a1a";
+  const checkCircleBgActive = isDark ? "#ffffff" : "#1a1a1a";
+  const checkCircleBorderColor = isDark
+    ? "rgba(255, 255, 255, 0.2)"
+    : "rgba(0, 0, 0, 0.2)";
+  const checkIconColor = isDark ? "#000" : "#fff";
+  const separatorColor = isDark
+    ? "rgba(255, 255, 255, 0.08)"
+    : "rgba(0, 0, 0, 0.08)";
+  const modeRowActiveBg = isDark
+    ? "rgba(255, 255, 255, 0.04)"
+    : "rgba(0, 0, 0, 0.04)";
+  const friendRowSelectedBg = isDark
+    ? "rgba(255, 255, 255, 0.06)"
+    : "rgba(0, 0, 0, 0.06)";
+  const avatarRingColor = isDark ? "#ffffff" : "#1a1a1a";
+  const searchInputColor = isDark ? "#fff" : "#1a1a1a";
   const headerGlowGradientColors = isDark
-    ? ['rgba(255, 255, 255, 0.2)', 'rgba(255, 255, 255, 0.05)', 'transparent'] as const
-    : ['rgba(0, 0, 0, 0.06)', 'rgba(0, 0, 0, 0.02)', 'transparent'] as const;
+    ? ([
+        "rgba(255, 255, 255, 0.2)",
+        "rgba(255, 255, 255, 0.05)",
+        "transparent",
+      ] as const)
+    : (["rgba(0, 0, 0, 0.06)", "rgba(0, 0, 0, 0.02)", "transparent"] as const);
   const innerHighlightGradientColors = isDark
-    ? ['rgba(255, 255, 255, 0.05)', 'transparent'] as const
-    : ['rgba(0, 0, 0, 0.02)', 'transparent'] as const;
-  const faintIconColor = isDark ? 'rgba(255, 255, 255, 0.3)' : textColor.faint;
-  const mutedIconColor = isDark ? 'rgba(255, 255, 255, 0.5)' : textColor.muted;
-  const primaryIconColor = isDark ? '#ffffff' : textColor.primary;
+    ? (["rgba(255, 255, 255, 0.05)", "transparent"] as const)
+    : (["rgba(0, 0, 0, 0.02)", "transparent"] as const);
+  const faintIconColor = isDark ? "rgba(255, 255, 255, 0.3)" : textColor.faint;
+  const mutedIconColor = isDark ? "rgba(255, 255, 255, 0.5)" : textColor.muted;
+  const primaryIconColor = isDark ? "#ffffff" : textColor.primary;
 
-  const [screen, setScreen] = React.useState<Screen>('modes');
-  const [pickerTarget, setPickerTarget] = React.useState<PickerTarget>('allow');
+  const [screen, setScreen] = React.useState<Screen>("modes");
+  const [pickerTarget, setPickerTarget] = React.useState<PickerTarget>("allow");
   const [followers, setFollowers] = React.useState<UserFollowItem[]>([]);
   const [isLoadingFollowers, setIsLoadingFollowers] = React.useState(false);
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   React.useEffect(() => {
     if (isVisible) {
       bottomSheetRef.current?.expand();
-      setScreen('modes');
-      setSearchQuery('');
+      setScreen("modes");
+      setSearchQuery("");
     } else {
       bottomSheetRef.current?.close();
     }
@@ -134,7 +146,7 @@ export function LocationVisibilitySheet({
       const data = await followsApi.getUserFollowers(user.id);
       setFollowers(data.userFollowers);
     } catch (e) {
-      console.error('[VisibilitySheet] Failed to fetch followers:', e);
+      console.error("[VisibilitySheet] Failed to fetch followers:", e);
     } finally {
       setIsLoadingFollowers(false);
     }
@@ -142,14 +154,14 @@ export function LocationVisibilitySheet({
 
   const handleModePress = (mode: LocationVisibilityMode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (mode === 'only') {
-      setPickerTarget('allow');
-      setScreen('picker');
+    if (mode === "only") {
+      setPickerTarget("allow");
+      setScreen("picker");
       fetchFollowers();
       setMode(mode);
-    } else if (mode === 'except') {
-      setPickerTarget('block');
-      setScreen('picker');
+    } else if (mode === "except") {
+      setPickerTarget("block");
+      setScreen("picker");
       fetchFollowers();
       setMode(mode);
     } else {
@@ -159,7 +171,7 @@ export function LocationVisibilitySheet({
 
   const handleToggleUser = (userId: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (pickerTarget === 'allow') {
+    if (pickerTarget === "allow") {
       toggleAllowList(userId);
     } else {
       toggleBlockList(userId);
@@ -168,18 +180,18 @@ export function LocationVisibilitySheet({
 
   const handleBack = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setScreen('modes');
-    setSearchQuery('');
+    setScreen("modes");
+    setSearchQuery("");
   };
 
   const handleDone = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setScreen('modes');
-    setSearchQuery('');
+    setScreen("modes");
+    setSearchQuery("");
   };
 
   const selectedList =
-    pickerTarget === 'allow' ? settings.allowList : settings.blockList;
+    pickerTarget === "allow" ? settings.allowList : settings.blockList;
 
   const filteredFollowers = React.useMemo(() => {
     if (!searchQuery.trim()) return followers;
@@ -188,29 +200,35 @@ export function LocationVisibilitySheet({
       (f) =>
         (f.firstName?.toLowerCase().includes(q) ?? false) ||
         (f.lastName?.toLowerCase().includes(q) ?? false) ||
-        (f.userName?.toLowerCase().includes(q) ?? false)
+        (f.userName?.toLowerCase().includes(q) ?? false),
     );
   }, [followers, searchQuery]);
 
   const modes: LocationVisibilityMode[] = [
-    'everyone',
-    'friends',
-    'only',
-    'except',
+    "everyone",
+    "friends",
+    "only",
+    "except",
   ];
 
   return (
     <BottomSheet
       ref={bottomSheetRef}
       index={-1}
-      snapPoints={['85%']}
+      snapPoints={["85%"]}
       enablePanDownToClose
       onClose={onClose}
       backgroundStyle={[
         styles.sheetBackground,
-        { backgroundColor: sheetBackgroundColor, borderColor: sheetBorderColor },
+        {
+          backgroundColor: sheetBackgroundColor,
+          borderColor: sheetBorderColor,
+        },
       ]}
-      handleIndicatorStyle={[styles.sheetIndicator, { backgroundColor: indicatorColor }]}
+      handleIndicatorStyle={[
+        styles.sheetIndicator,
+        { backgroundColor: indicatorColor },
+      ]}
       enableDynamicSizing={false}
     >
       <BottomSheetView
@@ -219,7 +237,7 @@ export function LocationVisibilitySheet({
           { paddingBottom: Math.max(insets.bottom, spacing.lg) },
         ]}
       >
-        {screen === 'modes' ? (
+        {screen === "modes" ? (
           /* ─── Screen 1: Mode Picker ─── */
           <View style={styles.modesContainer}>
             {/* Header icon with glow */}
@@ -236,7 +254,7 @@ export function LocationVisibilitySheet({
                 blurIntensity="medium"
                 fillLevel="light"
                 borderLevel="medium"
-                borderRadius={radius['2xl']}
+                borderRadius={radius["2xl"]}
                 style={styles.headerIcon}
               >
                 <Ionicons name="eye" size={26} color={iconColor} />
@@ -268,11 +286,11 @@ export function LocationVisibilitySheet({
               />
               {modes.map((mode, index) => {
                 const isActive = settings.mode === mode;
-                const hasPicker = mode === 'only' || mode === 'except';
+                const hasPicker = mode === "only" || mode === "except";
                 const count =
-                  mode === 'only'
+                  mode === "only"
                     ? settings.allowList.length
-                    : mode === 'except'
+                    : mode === "except"
                       ? settings.blockList.length
                       : 0;
 
@@ -282,7 +300,15 @@ export function LocationVisibilitySheet({
                       onPress={() => handleModePress(mode)}
                       activeOpacity={0.6}
                     >
-                      <View style={[styles.modeRow, isActive && [styles.modeRowActive, { backgroundColor: modeRowActiveBg }]]}>
+                      <View
+                        style={[
+                          styles.modeRow,
+                          isActive && [
+                            styles.modeRowActive,
+                            { backgroundColor: modeRowActiveBg },
+                          ],
+                        ]}
+                      >
                         <View
                           style={[
                             styles.modeIcon,
@@ -300,8 +326,8 @@ export function LocationVisibilitySheet({
                         </View>
                         <View style={styles.modeLabelContainer}>
                           <GlassText
-                            hierarchy={isActive ? 'primary' : 'secondary'}
-                            weight={isActive ? 'bold' : 'regular'}
+                            hierarchy={isActive ? "primary" : "secondary"}
+                            weight={isActive ? "bold" : "regular"}
                             size={17}
                           >
                             {VISIBILITY_MODE_LABELS[mode]}
@@ -309,8 +335,8 @@ export function LocationVisibilitySheet({
                           <GlassText hierarchy="muted" size={12}>
                             {MODE_DESCRIPTIONS[mode]}
                             {hasPicker && count > 0
-                              ? ` · ${count} ${count === 1 ? 'person' : 'people'}`
-                              : ''}
+                              ? ` · ${count} ${count === 1 ? "person" : "people"}`
+                              : ""}
                           </GlassText>
                         </View>
                         {hasPicker ? (
@@ -338,7 +364,12 @@ export function LocationVisibilitySheet({
                       </View>
                     </TouchableOpacity>
                     {index < modes.length - 1 && (
-                      <View style={[styles.separator, { backgroundColor: separatorColor }]} />
+                      <View
+                        style={[
+                          styles.separator,
+                          { backgroundColor: separatorColor },
+                        ]}
+                      />
                     )}
                   </React.Fragment>
                 );
@@ -366,9 +397,7 @@ export function LocationVisibilitySheet({
                 </GlassOverlay>
               </TouchableOpacity>
               <GlassText weight="bold" size={18} style={styles.pickerTitle}>
-                {pickerTarget === 'allow'
-                  ? 'Select Friends'
-                  : 'Exclude People'}
+                {pickerTarget === "allow" ? "Select Friends" : "Exclude People"}
               </GlassText>
               <View style={styles.backButton} />
             </View>
@@ -383,11 +412,7 @@ export function LocationVisibilitySheet({
               style={styles.searchCard}
             >
               <View style={styles.searchContent}>
-                <Ionicons
-                  name="search"
-                  size={16}
-                  color={mutedIconColor}
-                />
+                <Ionicons name="search" size={16} color={mutedIconColor} />
                 <TextInput
                   style={[styles.searchInput, { color: searchInputColor }]}
                   value={searchQuery}
@@ -396,7 +421,7 @@ export function LocationVisibilitySheet({
                   placeholderTextColor={mutedIconColor}
                 />
                 {searchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <TouchableOpacity onPress={() => setSearchQuery("")}>
                     <Ionicons
                       name="close-circle"
                       size={16}
@@ -441,7 +466,7 @@ export function LocationVisibilitySheet({
                   />
                 </GlassOverlay>
                 <GlassText hierarchy="muted" size={14}>
-                  {searchQuery ? 'No results' : 'No followers yet'}
+                  {searchQuery ? "No results" : "No followers yet"}
                 </GlassText>
               </View>
             ) : (
@@ -462,8 +487,8 @@ export function LocationVisibilitySheet({
                     const isSelected = selectedList.includes(follower.id);
                     const displayName =
                       follower.firstName || follower.lastName
-                        ? `${follower.firstName ?? ''} ${follower.lastName ?? ''}`.trim()
-                        : follower.userName ?? `User ${follower.id}`;
+                        ? `${follower.firstName ?? ""} ${follower.lastName ?? ""}`.trim()
+                        : (follower.userName ?? `User ${follower.id}`);
 
                     return (
                       <React.Fragment key={follower.id}>
@@ -474,16 +499,28 @@ export function LocationVisibilitySheet({
                           <View
                             style={[
                               styles.friendRow,
-                              isSelected && [styles.friendRowSelected, { backgroundColor: friendRowSelectedBg }],
+                              isSelected && [
+                                styles.friendRowSelected,
+                                { backgroundColor: friendRowSelectedBg },
+                              ],
                             ]}
                           >
                             <View style={styles.friendAvatarWrap}>
                               <Image
-                                source={follower.avatarUrl ? { uri: follower.avatarUrl } : DefaultAvatarImage}
+                                source={
+                                  follower.avatarUrl
+                                    ? { uri: follower.avatarUrl }
+                                    : DefaultAvatarImage
+                                }
                                 style={styles.friendAvatar}
                               />
                               {isSelected && (
-                                <View style={[styles.friendAvatarRing, { borderColor: avatarRingColor }]} />
+                                <View
+                                  style={[
+                                    styles.friendAvatarRing,
+                                    { borderColor: avatarRingColor },
+                                  ]}
+                                />
                               )}
                             </View>
                             <GlassText
@@ -493,11 +530,19 @@ export function LocationVisibilitySheet({
                             >
                               {displayName}
                             </GlassText>
-                            <View style={[
-                              styles.checkCircle,
-                              { borderColor: checkCircleBorderColor },
-                              isSelected && [styles.checkCircleActive, { backgroundColor: checkCircleBgActive, borderColor: checkCircleBgActive }],
-                            ]}>
+                            <View
+                              style={[
+                                styles.checkCircle,
+                                { borderColor: checkCircleBorderColor },
+                                isSelected && [
+                                  styles.checkCircleActive,
+                                  {
+                                    backgroundColor: checkCircleBgActive,
+                                    borderColor: checkCircleBgActive,
+                                  },
+                                ],
+                              ]}
+                            >
                               {isSelected && (
                                 <Ionicons
                                   name="checkmark"
@@ -509,7 +554,12 @@ export function LocationVisibilitySheet({
                           </View>
                         </TouchableOpacity>
                         {index < filteredFollowers.length - 1 && (
-                          <View style={[styles.friendSeparator, { backgroundColor: separatorColor }]} />
+                          <View
+                            style={[
+                              styles.friendSeparator,
+                              { backgroundColor: separatorColor },
+                            ]}
+                          />
                         )}
                       </React.Fragment>
                     );
@@ -537,8 +587,8 @@ export function LocationVisibilitySheet({
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    borderTopLeftRadius: radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
+    borderTopLeftRadius: radius["2xl"],
+    borderTopRightRadius: radius["2xl"],
     borderWidth: 1,
   },
   sheetIndicator: {
@@ -553,16 +603,16 @@ const styles = StyleSheet.create({
 
   // ── Mode Picker ──
   modesContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: spacing.xs,
   },
   headerIconWrap: {
-    position: 'relative',
+    position: "relative",
     marginBottom: spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerGlow: {
-    position: 'absolute',
+    position: "absolute",
     width: 100,
     height: 100,
     borderRadius: 50,
@@ -571,33 +621,33 @@ const styles = StyleSheet.create({
   headerIcon: {
     width: 56,
     height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 2,
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: spacing.xl,
   },
   modesList: {
-    width: '100%',
-    overflow: 'hidden',
+    width: "100%",
+    overflow: "hidden",
   },
   innerHighlight: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    height: '50%',
-    borderTopLeftRadius: radius['2xl'],
-    borderTopRightRadius: radius['2xl'],
+    height: "50%",
+    borderTopLeftRadius: radius["2xl"],
+    borderTopRightRadius: radius["2xl"],
   },
   modeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
@@ -610,16 +660,16 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 17,
     borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   modeLabelContainer: {
     flex: 1,
     gap: 2,
   },
   modeTrailing: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.xs,
   },
   separator: {
@@ -632,32 +682,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pickerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: spacing.lg,
   },
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   backButtonInner: {
     width: 34,
     height: 34,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   pickerTitle: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   searchCard: {
     marginBottom: spacing.md,
   },
   searchContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: spacing.md,
     height: 42,
     gap: spacing.sm,
@@ -665,7 +715,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   selectedCount: {
     marginBottom: spacing.sm,
@@ -673,21 +723,21 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: spacing.md,
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     gap: spacing.md,
   },
   emptyIcon: {
     width: 64,
     height: 64,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   friendList: {
     flex: 1,
@@ -696,11 +746,11 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   friendListCard: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   friendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
@@ -709,7 +759,7 @@ const styles = StyleSheet.create({
     // backgroundColor set dynamically
   },
   friendAvatarWrap: {
-    position: 'relative',
+    position: "relative",
   },
   friendAvatar: {
     width: 40,
@@ -718,7 +768,7 @@ const styles = StyleSheet.create({
     backgroundColor: `rgba(255, 255, 255, ${glassFill.subtle})`,
   },
   friendAvatarRing: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     left: -2,
     width: 44,
@@ -734,8 +784,8 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   checkCircleActive: {
     // backgroundColor and borderColor set dynamically
