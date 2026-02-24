@@ -1,5 +1,5 @@
 // Hook for Tap to Pay flow using Stripe Terminal SDK
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useStripeTerminal,
   type Reader,
@@ -20,7 +20,8 @@ type TapToPayStatus =
 export function useTapToPay(eventId: number | null) {
   const {
     discoverReaders,
-    connectLocalMobileReader,
+    connectReader,
+    discoveredReaders,
     retrievePaymentIntent,
     collectPaymentMethod,
     confirmPaymentIntent,
@@ -31,6 +32,45 @@ export function useTapToPay(eventId: number | null) {
   const [error, setError] = useState<string | null>(null);
   const [reader, setReader] = useState<Reader.Type | null>(null);
   const readerRef = useRef<Reader.Type | null>(null);
+  const locationIdRef = useRef<string | null>(null);
+
+  /**
+   * When readers are discovered, connect to the first one.
+   */
+  useEffect(() => {
+    if (
+      status === "discovering" &&
+      discoveredReaders.length > 0 &&
+      locationIdRef.current
+    ) {
+      const firstReader = discoveredReaders[0];
+      setStatus("connecting");
+
+      connectReader(
+        {
+          reader: firstReader,
+          locationId: locationIdRef.current,
+        },
+        "tapToPay",
+      )
+        .then(({ reader: connectedReader, error: connectError }) => {
+          if (connectError) {
+            setError(connectError.message);
+            setStatus("error");
+            return;
+          }
+          if (connectedReader) {
+            setReader(connectedReader);
+            readerRef.current = connectedReader;
+            setStatus("ready");
+          }
+        })
+        .catch((err: any) => {
+          setError(err?.message || "Failed to connect reader");
+          setStatus("error");
+        });
+    }
+  }, [status, discoveredReaders, connectReader]);
 
   /**
    * Discover and connect to the local mobile reader (iPhone NFC).
@@ -40,45 +80,22 @@ export function useTapToPay(eventId: number | null) {
       try {
         setStatus("discovering");
         setError(null);
+        locationIdRef.current = locationId;
 
-        const { readers, error: discoverError } = await discoverReaders({
-          discoveryMethod: "localMobile",
+        const { error: discoverError } = await discoverReaders({
+          discoveryMethod: "tapToPay",
           simulated: false,
         });
 
         if (discoverError) {
           throw new Error(discoverError.message);
         }
-
-        if (!readers || readers.length === 0) {
-          throw new Error(
-            "No local mobile readers found. Make sure Tap to Pay is supported on this device.",
-          );
-        }
-
-        setStatus("connecting");
-
-        const { reader: connectedReader, error: connectError } =
-          await connectLocalMobileReader({
-            reader: readers[0],
-            locationId,
-          });
-
-        if (connectError) {
-          throw new Error(connectError.message);
-        }
-
-        if (connectedReader) {
-          setReader(connectedReader);
-          readerRef.current = connectedReader;
-          setStatus("ready");
-        }
       } catch (err: any) {
-        setError(err?.message || "Failed to connect reader");
+        setError(err?.message || "Failed to discover readers");
         setStatus("error");
       }
     },
-    [discoverReaders, connectLocalMobileReader],
+    [discoverReaders],
   );
 
   /**

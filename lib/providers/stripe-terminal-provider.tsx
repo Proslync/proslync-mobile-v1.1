@@ -1,10 +1,10 @@
 // Stripe Terminal Provider for Tap to Pay
-import React, { type ReactNode } from "react";
+import React, { type ReactElement } from "react";
 import { StripeTerminalProvider } from "@stripe/stripe-terminal-react-native";
 import { terminalApi } from "@/lib/api/terminal";
 
 interface TerminalProviderProps {
-  children: ReactNode;
+  children: ReactElement | ReactElement[];
 }
 
 /**

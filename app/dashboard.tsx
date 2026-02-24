@@ -21,6 +21,7 @@ import {
   View,
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface StatCardProps {
@@ -386,7 +387,7 @@ export default function DashboardScreen() {
               title="Attendees"
               subtitle="Manage event attendees"
               icon="people-outline"
-              onPress={() => router.push('/dashboard/attendees')}
+              onPress={() => router.push("/dashboard/attendees")}
               colors={colors}
             />
             <MenuItem
@@ -431,24 +432,23 @@ export default function DashboardScreen() {
         animationType="fade"
         onRequestClose={() => setShowEventPicker(false)}
       >
-<<<<<<< HEAD
         <View style={styles.modalOverlay}>
-          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowEventPicker(false)} />
-          <View style={[styles.modalContent, { backgroundColor: colors.cardElevated }]}>
-=======
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowEventPicker(false)}
-        >
+          <BlurView
+            intensity={40}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowEventPicker(false)}
+          />
           <View
             style={[
               styles.modalContent,
               { backgroundColor: colors.cardElevated },
             ]}
           >
->>>>>>> 87a9203 (Add Stripe Tap to Pay, dark mode modal fixes, and UI improvements)
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {pickerAction === "collect"
                 ? "Select Event to Collect"
