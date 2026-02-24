@@ -6,7 +6,6 @@ import {
 } from '@stripe/stripe-terminal-react-native';
 import type { Reader } from '@stripe/stripe-terminal-react-native';
 import { paymentsApi } from '@/lib/api/payments';
-import { config } from '@/lib/config';
 
 type ReaderStatus = 'disconnected' | 'connecting' | 'connected';
 
@@ -14,7 +13,7 @@ interface TerminalPaymentContextValue {
   readerStatus: ReaderStatus;
   isReaderConnected: boolean;
   isInitialized: boolean;
-  connectReader: () => Promise<void>;
+  connectReader: (locationId?: string) => Promise<void>;
   collectPayment: (clientSecret: string) => Promise<void>;
   cancelCollect: () => Promise<void>;
 }
@@ -63,7 +62,7 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
     }
   }, [connectedReader]);
 
-  const connectReader = useCallback(async () => {
+  const connectReader = useCallback(async (locationId?: string) => {
     if (isConnectingRef.current || readerStatus === 'connected') return;
     if (!isInitialized) {
       throw new Error('Terminal SDK not initialized yet');
@@ -103,7 +102,7 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
       const { error: connectError } = await sdkConnectReader(
         {
           reader,
-          locationId: config.stripe.terminalLocationId || undefined,
+          locationId: locationId || undefined,
           merchantDisplayName: 'Status',
           tosAcceptancePermitted: true,
           autoReconnectOnUnexpectedDisconnect: true,
@@ -224,7 +223,7 @@ export function useTerminalPayment(): TerminalPaymentContextValue {
       readerStatus: 'disconnected',
       isReaderConnected: false,
       isInitialized: false,
-      connectReader: async () => {},
+      connectReader: async (_locationId?: string) => {},
       collectPayment: async () => {
         throw new Error('Tap to Pay is only available on iPhone');
       },

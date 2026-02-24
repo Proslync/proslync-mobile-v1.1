@@ -54,17 +54,9 @@ export default function CollectPaymentsScreen() {
 
   const [guests, setGuests] = React.useState<UnpaidGuest[]>([]);
   const [eventData, setEventData] = React.useState<Omit<UnpaidAttendeesResponse, 'guests'> | null>(null);
+  const terminalLocationIdRef = React.useRef<string | undefined>(undefined);
   const [loading, setLoading] = React.useState(true);
   const [collectingGuestId, setCollectingGuestId] = React.useState<number | null>(null);
-
-  // Connect to Tap to Pay reader once SDK is initialized
-  React.useEffect(() => {
-    if (isInitialized && readerStatus === 'disconnected') {
-      connectReader().catch((err) => {
-        console.warn('[CollectPayments] Reader connect failed:', err?.message);
-      });
-    }
-  }, [isInitialized]);
 
   // Fetch unpaid guests
   const fetchUnpaid = React.useCallback(async () => {
@@ -72,11 +64,13 @@ export default function CollectPaymentsScreen() {
     try {
       const res = await paymentsApi.getUnpaidAttendees(eventId);
       setGuests(res.guests);
+      terminalLocationIdRef.current = res.terminalLocationId;
       setEventData({
         defaultTierId: res.defaultTierId,
         defaultPricingId: res.defaultPricingId,
         defaultPrice: res.defaultPrice,
         currency: res.currency,
+        terminalLocationId: res.terminalLocationId,
       });
     } catch (err: any) {
       console.error('[CollectPayments] Fetch error:', err);
@@ -84,6 +78,15 @@ export default function CollectPaymentsScreen() {
       setLoading(false);
     }
   }, [eventId]);
+
+  // Connect to Tap to Pay reader once SDK is initialized and locationId is known
+  React.useEffect(() => {
+    if (isInitialized && readerStatus === 'disconnected' && terminalLocationIdRef.current) {
+      connectReader(terminalLocationIdRef.current).catch((err) => {
+        console.warn('[CollectPayments] Reader connect failed:', err?.message);
+      });
+    }
+  }, [isInitialized, readerStatus, eventData]);
 
   // Initial load
   React.useEffect(() => {
@@ -147,10 +150,10 @@ export default function CollectPaymentsScreen() {
   );
 
   const handleRetryConnect = React.useCallback(() => {
-    connectReader().catch((err) => {
+    connectReader(eventData?.terminalLocationId).catch((err) => {
       Alert.alert('Connection Failed', err?.message || 'Could not connect to reader.');
     });
-  }, [connectReader]);
+  }, [connectReader, eventData?.terminalLocationId]);
 
   const priceDisplay = React.useMemo(() => {
     if (!eventData?.defaultPrice) return null;

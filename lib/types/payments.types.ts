@@ -69,6 +69,7 @@ export interface UnpaidAttendeesResponse {
   defaultPricingId?: number;
   defaultPrice?: number;
   currency?: string;
+  terminalLocationId?: string;
 }
 
 export interface CollectAtDoorRequest {
