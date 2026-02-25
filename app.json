@@ -14,7 +14,8 @@
       "entitlements": {
         "com.apple.developer.in-app-payments": [
           "merchant.statusdigitalinc.status"
-        ]
+        ],
+        "com.apple.developer.proximity-reader.payment.acceptance": true
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
