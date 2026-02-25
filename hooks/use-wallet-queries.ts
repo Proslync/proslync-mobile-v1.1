@@ -87,7 +87,9 @@ export function useSetupStripeAccount() {
         if (response.onboardingUrl) {
           await Linking.openURL(response.onboardingUrl);
         }
-      } else if (!status.detailsSubmitted) {
+      } else if (!status.chargesEnabled || !status.payoutsEnabled) {
+        // Account exists but not fully active — re-open onboarding
+        // (covers both !detailsSubmitted and pending verification)
         const response = await stripeConnectApi.getOnboardingLink();
         await Linking.openURL(response.url);
       }

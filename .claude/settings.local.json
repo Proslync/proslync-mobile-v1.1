@@ -95,7 +95,17 @@
       "mcp__plugin_context7_context7__resolve-library-id",
       "mcp__plugin_context7_context7__query-docs",
       "WebFetch(domain:docs.stripecdn.com)",
-      "WebFetch(domain:docs.expo.dev)"
+      "WebFetch(domain:docs.expo.dev)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social diff --stat)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social fetch origin develop)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social log origin/develop --oneline -10)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social diff 634be10..9fa0387 --stat)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social diff 634be10..9fa0387)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social branch --show-current)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social log --oneline -5)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social log --oneline feature/venue-followers..origin/develop)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social merge origin/develop --no-commit --no-ff)",
+      "Bash(git -C /Users/alex/Projects/Work/status.social status)"
     ]
   }
 }

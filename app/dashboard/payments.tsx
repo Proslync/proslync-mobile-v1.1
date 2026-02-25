@@ -11,10 +11,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInRight, FadeInLeft, FadeOutRight, FadeOutLeft } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown, FadeInRight, FadeInLeft, FadeOutRight, FadeOutLeft } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useToast } from '@/components/shared/toast';
@@ -41,7 +42,7 @@ import {
   STRIPE_EARNINGS_KEY,
   STRIPE_PAYOUTS_KEY,
 } from '@/hooks/use-wallet-queries';
-import { stripeConnectApi, type EarningsItem, type PayoutItem } from '@/lib/api/wallet';
+import { stripeConnectApi, type EarningsItem, type PayoutItem, type StripeAccountStatus } from '@/lib/api/wallet';
 import type { WalletBalances, PayoutMethod } from '@/lib/types/wallet.types';
 
 const TAB_SEGMENTS = ['Overview', 'Earnings', 'Payouts'];
@@ -67,12 +68,15 @@ export default function PaymentsScreen() {
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
+  const { setup } = useLocalSearchParams<{ setup?: string }>();
 
   const [selectedTab, setSelectedTab] = useState(0);
   const previousTabRef = React.useRef(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [withdrawalSheetVisible, setWithdrawalSheetVisible] = useState(false);
+  const [setupResult, setSetupResult] = useState<'success' | 'pending' | null>(null);
+  const setupHandledRef = React.useRef(false);
 
   // React Query hooks — all fetch independently (matching web app pattern)
   const { data: accountStatus, isLoading: statusLoading } = useStripeAccountStatus();
@@ -81,6 +85,24 @@ export default function PaymentsScreen() {
   const { data: earningsData } = useEarnings();
   const { data: payoutsData } = usePayouts();
   const setupMutation = useSetupStripeAccount();
+
+  // Handle return from Stripe onboarding deep link
+  React.useEffect(() => {
+    if (!setup || setupHandledRef.current) return;
+    setupHandledRef.current = true;
+
+    // Refetch account status from Stripe, then show result based on actual state
+    queryClient.refetchQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] }).then(() => {
+      const fresh = queryClient.getQueryData<StripeAccountStatus>([STRIPE_ACCOUNT_STATUS_KEY]);
+      if (fresh?.chargesEnabled && fresh?.payoutsEnabled) {
+        setSetupResult('success');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        setSetupResult('pending');
+      }
+      setTimeout(() => setSetupResult(null), 4000);
+    });
+  }, [setup, queryClient]);
 
   // Account active = chargesEnabled && payoutsEnabled (matches web app)
   const isAccountActive = !!accountStatus?.chargesEnabled && !!accountStatus?.payoutsEnabled;
@@ -177,6 +199,28 @@ export default function PaymentsScreen() {
         <Text style={styles.headerTitle}>Payments</Text>
         <View style={styles.headerButton} />
       </Animated.View>
+
+      {/* Setup result banner */}
+      {setupResult && (
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          style={[
+            styles.setupBanner,
+            setupResult === 'success' ? styles.setupBannerSuccess : styles.setupBannerPending,
+          ]}
+        >
+          <Ionicons
+            name={setupResult === 'success' ? 'checkmark-circle' : 'time'}
+            size={20}
+            color="#fff"
+          />
+          <Text style={styles.setupBannerText}>
+            {setupResult === 'success'
+              ? 'Payout account connected successfully!'
+              : 'Account setup is being reviewed by Stripe. This usually takes a few minutes.'}
+          </Text>
+        </Animated.View>
+      )}
 
       {/* Account Status - always visible (matches web app) */}
       {accountStatus && (
@@ -347,6 +391,30 @@ const styles = StyleSheet.create({
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  setupBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  setupBannerSuccess: {
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    borderColor: 'rgba(34, 197, 94, 0.25)',
+  },
+  setupBannerPending: {
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+  },
+  setupBannerText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: '#fff',
   },
   loadingText: {
     marginTop: 12,

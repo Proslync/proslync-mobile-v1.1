@@ -311,8 +311,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
         if (response.onboardingUrl) {
           await Linking.openURL(response.onboardingUrl);
         }
-      } else if (!status.detailsSubmitted) {
-        // Account exists but onboarding not complete - get new link
+      } else if (!status.chargesEnabled || !status.payoutsEnabled) {
+        // Account exists but not fully active — re-open onboarding
+        // (covers both !detailsSubmitted and pending verification)
         const response = await stripeConnectApi.getOnboardingLink();
         await Linking.openURL(response.url);
       }
