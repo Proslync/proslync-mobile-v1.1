@@ -1,25 +1,29 @@
-import { useEffect, useState } from 'react';
-import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
-import * as Font from 'expo-font';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import 'react-native-reanimated';
+import { useEffect, useState } from "react";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from "@react-navigation/native";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
+import * as Font from "expo-font";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import "react-native-reanimated";
 
-import { ThemeProvider, useAppTheme } from '@/lib/providers/theme-provider';
-import { AuthProvider } from '@/lib/providers/auth-provider';
-import { QueryProvider } from '@/lib/providers/query-provider';
-import { StreamProvider } from '@/lib/providers/stream-provider';
-import { WalletProvider } from '@/lib/providers/wallet-provider';
-import { ToastProvider } from '@/components/shared/toast';
-import { TabNavigationProvider } from '@/lib/providers/tab-navigation-provider';
-import { ChatProvider } from '@/lib/providers/chat-provider';
-import { CallProvider } from '@/lib/providers/call-provider';
-import { LiveLocationProvider } from '@/lib/providers/live-location-provider';
-import { StripeProvider } from '@/lib/providers/stripe-provider';
-import { TerminalProvider } from '@/lib/providers/terminal-provider';
+import { ThemeProvider, useAppTheme } from "@/lib/providers/theme-provider";
+import { AuthProvider } from "@/lib/providers/auth-provider";
+import { QueryProvider } from "@/lib/providers/query-provider";
+import { StreamProvider } from "@/lib/providers/stream-provider";
+import { WalletProvider } from "@/lib/providers/wallet-provider";
+import { ToastProvider } from "@/components/shared/toast";
+import { TabNavigationProvider } from "@/lib/providers/tab-navigation-provider";
+import { ChatProvider } from "@/lib/providers/chat-provider";
+import { CallProvider } from "@/lib/providers/call-provider";
+import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
+import { StripeProvider } from "@/lib/providers/stripe-provider";
+import { TerminalProvider } from "@/lib/providers/terminal-provider";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,31 +39,92 @@ function RootLayoutNav() {
         <Stack.Screen name="index" />
         <Stack.Screen name="signin" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="chat/[conversationId]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="call/[callId]" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="new-message" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="user-profile/[userId]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="user/[username]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen
+          name="chat/[conversationId]"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="call/[callId]"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="new-message"
+          options={{ presentation: "modal", animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="user-profile/[userId]"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="user/[username]"
+          options={{ animation: "slide_from_right" }}
+        />
         <Stack.Screen
           name="event/[id]"
           options={{
-            animation: 'slide_from_right',
+            animation: "slide_from_right",
           }}
         />
-        <Stack.Screen name="edit-profile" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="dashboard" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="create-event" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="my-events" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="manage-event/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="manage-venue/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="create-post" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="scan-qr" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="collect-payments" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="notifications" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen
+          name="edit-profile"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="dashboard"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="create-event"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="my-events"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="manage-event/[id]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="manage-venue/[id]"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="create-post"
+          options={{ presentation: "modal", animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="scan-qr"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
+          name="collect-payments"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="tap-to-pay"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="notifications"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="modal"
+          options={{ presentation: "modal", title: "Modal" }}
+        />
       </Stack>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <StatusBar style={isDark ? "light" : "dark"} />
     </NavigationThemeProvider>
   );
 }
@@ -72,14 +137,14 @@ export default function RootLayout() {
       try {
         await Font.loadAsync({
           ...Ionicons.font,
-          'Lato_300Light': require('../assets/fonts/Lato_300Light.ttf'),
-          'Lato_400Regular': require('../assets/fonts/Lato_400Regular.ttf'),
-          'Lato_700Bold': require('../assets/fonts/Lato_700Bold.ttf'),
-          'Lato_900Black': require('../assets/fonts/Lato_900Black.ttf'),
+          Lato_300Light: require("../assets/fonts/Lato_300Light.ttf"),
+          Lato_400Regular: require("../assets/fonts/Lato_400Regular.ttf"),
+          Lato_700Bold: require("../assets/fonts/Lato_700Bold.ttf"),
+          Lato_900Black: require("../assets/fonts/Lato_900Black.ttf"),
         });
         setFontsLoaded(true);
       } catch (e) {
-        console.log('Font loading error:', e);
+        console.log("Font loading error:", e);
         setFontsLoaded(true); // Continue anyway
       }
     }

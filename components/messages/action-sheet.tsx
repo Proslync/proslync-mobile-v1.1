@@ -1,6 +1,6 @@
 // Action Sheet - Long press actions for conversations
 
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
   Modal,
   Pressable,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { Conversation } from '../../lib/types/messages.types';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { Conversation } from "../../lib/types/messages.types";
 
 interface ActionSheetProps {
   visible: boolean;
@@ -40,28 +40,28 @@ export function ActionSheet({
 
   const actions = [
     {
-      icon: conversation.isPinned ? 'pin-outline' : 'pin',
-      label: conversation.isPinned ? 'Unpin' : 'Pin',
+      icon: conversation.isPinned ? "pin-outline" : "pin",
+      label: conversation.isPinned ? "Unpin" : "Pin",
       onPress: onPin,
       color: colors.text,
     },
     {
-      icon: conversation.isMuted ? 'notifications' : 'notifications-off',
-      label: conversation.isMuted ? 'Unmute' : 'Mute',
+      icon: conversation.isMuted ? "notifications" : "notifications-off",
+      label: conversation.isMuted ? "Unmute" : "Mute",
       onPress: onMute,
       color: colors.text,
     },
     {
-      icon: 'archive',
-      label: 'Archive',
+      icon: "archive",
+      label: "Archive",
       onPress: onArchive,
       color: colors.text,
     },
     {
-      icon: 'trash',
-      label: 'Delete',
+      icon: "trash",
+      label: "Delete",
       onPress: onDelete,
-      color: '#ff3b30',
+      color: "#ff3b30",
     },
   ];
 
@@ -73,16 +73,21 @@ export function ActionSheet({
       onRequestClose={onClose}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={[
-          styles.container,
-          {
-            paddingBottom: insets.bottom + 16,
-            backgroundColor: isDark ? '#1c1c1e' : colors.card,
-          }
-        ]}>
+        <View
+          style={[
+            styles.container,
+            {
+              paddingBottom: insets.bottom + 16,
+              backgroundColor: isDark ? "#000000" : colors.card,
+            },
+          ]}
+        >
           {/* Conversation Preview */}
           <View style={[styles.preview, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.previewTitle, { color: colors.text }]} numberOfLines={1}>
+            <Text
+              style={[styles.previewTitle, { color: colors.text }]}
+              numberOfLines={1}
+            >
               {conversation.title}
             </Text>
           </View>
@@ -119,7 +124,11 @@ export function ActionSheet({
           <TouchableOpacity
             style={[
               styles.cancelButton,
-              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
+              {
+                backgroundColor: isDark
+                  ? "rgba(255, 255, 255, 0.1)"
+                  : "rgba(0, 0, 0, 0.05)",
+              },
             ]}
             onPress={onClose}
             activeOpacity={0.7}
@@ -135,8 +144,8 @@ export function ActionSheet({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "flex-end",
   },
   container: {
     borderTopLeftRadius: 20,
@@ -150,15 +159,15 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-    textAlign: 'center',
+    fontFamily: "Lato_700Bold",
+    textAlign: "center",
   },
   actionsContainer: {
     paddingVertical: 8,
   },
   actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
     gap: 14,
@@ -169,18 +178,18 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 17,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   cancelButton: {
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 12,
     paddingVertical: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   cancelText: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
+    fontFamily: "Lato_700Bold",
+    color: "#0095f6",
   },
 });

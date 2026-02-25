@@ -1,12 +1,12 @@
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { useStableRouter } from '@/hooks/use-stable-router';
-import { useDashboard } from '@/hooks/use-dashboard';
-import { useMyEvents } from '@/hooks/use-events-query';
-import { useAuth } from '@/lib/providers/auth-provider';
-import type { Event } from '@/lib/types/events.types';
-import { EventStatus } from '@/lib/types/events.types';
-import { Ionicons } from '@expo/vector-icons';
-import * as React from 'react';
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { useStableRouter } from "@/hooks/use-stable-router";
+import { useDashboard } from "@/hooks/use-dashboard";
+import { useMyEvents } from "@/hooks/use-events-query";
+import { useAuth } from "@/lib/providers/auth-provider";
+import type { Event } from "@/lib/types/events.types";
+import { EventStatus } from "@/lib/types/events.types";
+import { Ionicons } from "@expo/vector-icons";
+import * as React from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,10 +19,10 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
+} from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { BlurView } from "expo-blur";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface StatCardProps {
   title: string;
@@ -38,15 +38,35 @@ interface StatCardProps {
   };
 }
 
-function StatCard({ title, value, icon, color, subtitle, colors }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  icon,
+  color,
+  subtitle,
+  colors,
+}: StatCardProps) {
   return (
-    <View style={[styles.statCard, { borderLeftColor: color, backgroundColor: colors.cardElevated }]}>
+    <View
+      style={[
+        styles.statCard,
+        { borderLeftColor: color, backgroundColor: colors.cardElevated },
+      ]}
+    >
       <View style={styles.statCardHeader}>
         <Ionicons name={icon} size={20} color={color} />
-        <Text style={[styles.statCardTitle, { color: colors.textSecondary }]}>{title}</Text>
+        <Text style={[styles.statCardTitle, { color: colors.textSecondary }]}>
+          {title}
+        </Text>
       </View>
-      <Text style={[styles.statCardValue, { color: colors.text }]}>{value}</Text>
-      {subtitle && <Text style={[styles.statCardSubtitle, { color: colors.textTertiary }]}>{subtitle}</Text>}
+      <Text style={[styles.statCardValue, { color: colors.text }]}>
+        {value}
+      </Text>
+      {subtitle && (
+        <Text style={[styles.statCardSubtitle, { color: colors.textTertiary }]}>
+          {subtitle}
+        </Text>
+      )}
     </View>
   );
 }
@@ -67,13 +87,25 @@ interface MenuItemProps {
 
 function MenuItem({ title, subtitle, icon, onPress, colors }: MenuItemProps) {
   return (
-    <TouchableOpacity style={[styles.menuItem, { borderBottomColor: colors.border }]} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.menuItemIcon, { backgroundColor: colors.cardElevated }]}>
+    <TouchableOpacity
+      style={[styles.menuItem, { borderBottomColor: colors.border }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View
+        style={[styles.menuItemIcon, { backgroundColor: colors.cardElevated }]}
+      >
         <Ionicons name={icon} size={22} color={colors.text} />
       </View>
       <View style={styles.menuItemContent}>
-        <Text style={[styles.menuItemTitle, { color: colors.text }]}>{title}</Text>
-        <Text style={[styles.menuItemSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+        <Text style={[styles.menuItemTitle, { color: colors.text }]}>
+          {title}
+        </Text>
+        <Text
+          style={[styles.menuItemSubtitle, { color: colors.textSecondary }]}
+        >
+          {subtitle}
+        </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={colors.iconSecondary} />
     </TouchableOpacity>
@@ -84,53 +116,80 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { stats, venues = [], isLoading: statsLoading, error, refetch } = useDashboard();
+  const {
+    stats,
+    venues = [],
+    isLoading: statsLoading,
+    error,
+    refetch,
+  } = useDashboard();
   const { data: myEvents = [] } = useMyEvents();
   const { colors } = useAppTheme();
   const [refreshing, setRefreshing] = React.useState(false);
   const [showEventPicker, setShowEventPicker] = React.useState(false);
-  const [pickerAction, setPickerAction] = React.useState<'scanner' | 'collect'>('scanner');
+  const [pickerAction, setPickerAction] = React.useState<"scanner" | "collect">(
+    "scanner",
+  );
 
   // Filter to active/published events for scanning
   const scannerEvents = React.useMemo(() => {
     return myEvents.filter(
-      (e) => e.status === EventStatus.PUBLISHED || e.status === EventStatus.ACTIVE
+      (e) =>
+        e.status === EventStatus.PUBLISHED || e.status === EventStatus.ACTIVE,
     );
   }, [myEvents]);
 
   const handleScannerPress = React.useCallback(() => {
     if (scannerEvents.length === 0) {
       // No active events — open scanner without eventId
-      router.push('/scan-qr');
+      router.push("/scan-qr");
     } else if (scannerEvents.length === 1) {
       // Single active event — go straight to scanner
-      router.push({ pathname: '/scan-qr', params: { eventId: String(scannerEvents[0].id) } });
+      router.push({
+        pathname: "/scan-qr",
+        params: { eventId: String(scannerEvents[0].id) },
+      });
     } else {
       // Multiple events — show picker
-      setPickerAction('scanner');
+      setPickerAction("scanner");
       setShowEventPicker(true);
     }
   }, [scannerEvents, router]);
 
   const handleCollectPress = React.useCallback(() => {
     if (scannerEvents.length === 0) {
-      Alert.alert('No Active Events', 'You need an active or published event to collect payments.');
+      Alert.alert(
+        "No Active Events",
+        "You need an active or published event to collect payments.",
+      );
     } else if (scannerEvents.length === 1) {
-      router.push({ pathname: '/collect-payments', params: { eventId: String(scannerEvents[0].id) } });
+      router.push({
+        pathname: "/collect-payments",
+        params: { eventId: String(scannerEvents[0].id) },
+      });
     } else {
-      setPickerAction('collect');
+      setPickerAction("collect");
       setShowEventPicker(true);
     }
   }, [scannerEvents, router]);
 
-  const pickEvent = React.useCallback((event: Event) => {
-    setShowEventPicker(false);
-    if (pickerAction === 'collect') {
-      router.push({ pathname: '/collect-payments', params: { eventId: String(event.id) } });
-    } else {
-      router.push({ pathname: '/scan-qr', params: { eventId: String(event.id) } });
-    }
-  }, [router, pickerAction]);
+  const pickEvent = React.useCallback(
+    (event: Event) => {
+      setShowEventPicker(false);
+      if (pickerAction === "collect") {
+        router.push({
+          pathname: "/collect-payments",
+          params: { eventId: String(event.id) },
+        });
+      } else {
+        router.push({
+          pathname: "/scan-qr",
+          params: { eventId: String(event.id) },
+        });
+      }
+    },
+    [router, pickerAction],
+  );
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -142,9 +201,17 @@ export default function DashboardScreen() {
 
   if (isLoading && !refreshing) {
     return (
-      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.container,
+          styles.loadingContainer,
+          { backgroundColor: colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.text} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading dashboard...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Loading dashboard...
+        </Text>
       </View>
     );
   }
@@ -154,7 +221,10 @@ export default function DashboardScreen() {
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
+        ]}
       >
         <TouchableOpacity
           style={styles.backButton}
@@ -163,7 +233,9 @@ export default function DashboardScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Dashboard</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          Dashboard
+        </Text>
         <View style={styles.headerSpacer} />
       </Animated.View>
 
@@ -189,7 +261,9 @@ export default function DashboardScreen() {
             <Ionicons name="warning-outline" size={20} color="#f87171" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={refetch} activeOpacity={0.7}>
-              <Text style={[styles.retryText, { color: colors.buttonPrimary }]}>Retry</Text>
+              <Text style={[styles.retryText, { color: colors.buttonPrimary }]}>
+                Retry
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -200,7 +274,9 @@ export default function DashboardScreen() {
             entering={FadeInDown.delay(150).duration(500).springify()}
             style={styles.section}
           >
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>My Venues</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              My Venues
+            </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -209,7 +285,10 @@ export default function DashboardScreen() {
               {venues.map((venue) => (
                 <View
                   key={venue.id}
-                  style={[styles.venueCard, { backgroundColor: colors.cardElevated }]}
+                  style={[
+                    styles.venueCard,
+                    { backgroundColor: colors.cardElevated },
+                  ]}
                 >
                   {venue.imageUrl ? (
                     <Image
@@ -218,16 +297,37 @@ export default function DashboardScreen() {
                       resizeMode="cover"
                     />
                   ) : (
-                    <View style={[styles.venueImagePlaceholder, { backgroundColor: colors.backgroundSecondary || colors.cardElevated }]}>
-                      <Ionicons name="business-outline" size={28} color={colors.textSecondary} />
+                    <View
+                      style={[
+                        styles.venueImagePlaceholder,
+                        {
+                          backgroundColor:
+                            colors.backgroundSecondary || colors.cardElevated,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="business-outline"
+                        size={28}
+                        color={colors.textSecondary}
+                      />
                     </View>
                   )}
                   <View style={styles.venueInfo}>
-                    <Text style={[styles.venueName, { color: colors.text }]} numberOfLines={1}>
+                    <Text
+                      style={[styles.venueName, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
                       {venue.name}
                     </Text>
                     {(venue.city || venue.address) && (
-                      <Text style={[styles.venueLocation, { color: colors.textSecondary }]} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.venueLocation,
+                          { color: colors.textSecondary },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {venue.city || venue.address}
                       </Text>
                     )}
@@ -240,50 +340,54 @@ export default function DashboardScreen() {
 
         {/* Menu Items */}
         <Animated.View
-          entering={FadeInDown.delay(venues.length > 0 ? 250 : 200).duration(500).springify()}
+          entering={FadeInDown.delay(venues.length > 0 ? 250 : 200)
+            .duration(500)
+            .springify()}
           style={styles.section}
         >
-          <View style={[styles.menuList, { backgroundColor: colors.cardElevated }]}>
+          <View
+            style={[styles.menuList, { backgroundColor: colors.cardElevated }]}
+          >
             <MenuItem
               title="Create Event"
               subtitle="Set up a new event"
               icon="add-circle-outline"
-              onPress={() => router.push('/create-event')}
+              onPress={() => router.push("/create-event")}
               colors={colors}
             />
             <MenuItem
               title="My Events"
               subtitle="View and edit your events"
               icon="calendar-outline"
-              onPress={() => router.push('/my-events')}
+              onPress={() => router.push("/my-events")}
               colors={colors}
             />
             <MenuItem
               title="My Venues"
               subtitle="Manage your venues"
               icon="business-outline"
-              onPress={() => router.push('/my-venues')}
+              onPress={() => router.push("/my-venues")}
               colors={colors}
             />
             <MenuItem
               title="Analytics"
               subtitle="View detailed insights"
               icon="bar-chart-outline"
-              onPress={() => router.push('/dashboard/analytics')}
+              onPress={() => router.push("/dashboard/analytics")}
               colors={colors}
             />
             <MenuItem
               title="Revenue"
               subtitle="Track earnings and trends"
               icon="trending-up-outline"
-              onPress={() => router.push('/dashboard/revenue')}
+              onPress={() => router.push("/dashboard/revenue")}
               colors={colors}
             />
             <MenuItem
               title="Attendees"
               subtitle="Manage event attendees"
               icon="people-outline"
-              onPress={() => router.push('/dashboard/attendees')}
+              onPress={() => router.push("/dashboard/attendees")}
               colors={colors}
             />
             <MenuItem
@@ -304,7 +408,7 @@ export default function DashboardScreen() {
               title="Wallet"
               subtitle="View earnings and payouts"
               icon="wallet-outline"
-              onPress={() => router.push('/dashboard/payments')}
+              onPress={() => router.push("/dashboard/payments")}
               colors={colors}
             />
             <MenuItem
@@ -329,11 +433,26 @@ export default function DashboardScreen() {
         onRequestClose={() => setShowEventPicker(false)}
       >
         <View style={styles.modalOverlay}>
-          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowEventPicker(false)} />
-          <View style={[styles.modalContent, { backgroundColor: colors.cardElevated }]}>
+          <BlurView
+            intensity={40}
+            tint="dark"
+            style={StyleSheet.absoluteFill}
+          />
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowEventPicker(false)}
+          />
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.cardElevated },
+            ]}
+          >
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {pickerAction === 'collect' ? 'Select Event to Collect' : 'Select Event to Scan'}
+              {pickerAction === "collect"
+                ? "Select Event to Collect"
+                : "Select Event to Scan"}
             </Text>
             <FlatList
               data={scannerEvents}
@@ -341,26 +460,61 @@ export default function DashboardScreen() {
               style={styles.modalList}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={[styles.eventPickerItem, { borderBottomColor: colors.border }]}
+                  style={[
+                    styles.eventPickerItem,
+                    { borderBottomColor: colors.border },
+                  ]}
                   onPress={() => pickEvent(item)}
                   activeOpacity={0.7}
                 >
                   {item.imageUrl ? (
-                    <Image source={{ uri: item.imageUrl }} style={styles.eventPickerImage} />
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.eventPickerImage}
+                    />
                   ) : (
-                    <View style={[styles.eventPickerImagePlaceholder, { backgroundColor: colors.backgroundSecondary || colors.cardElevated }]}>
-                      <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+                    <View
+                      style={[
+                        styles.eventPickerImagePlaceholder,
+                        {
+                          backgroundColor:
+                            colors.backgroundSecondary || colors.cardElevated,
+                        },
+                      ]}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color={colors.textSecondary}
+                      />
                     </View>
                   )}
                   <View style={styles.eventPickerInfo}>
-                    <Text style={[styles.eventPickerName, { color: colors.text }]} numberOfLines={1}>
+                    <Text
+                      style={[styles.eventPickerName, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
                       {item.name}
                     </Text>
-                    <Text style={[styles.eventPickerDate, { color: colors.textSecondary }]}>
-                      {new Date(item.startDate).toLocaleDateString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    <Text
+                      style={[
+                        styles.eventPickerDate,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {new Date(item.startDate).toLocaleDateString([], {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.iconSecondary} />
+                  <Ionicons
+                    name="chevron-forward"
+                    size={18}
+                    color={colors.iconSecondary}
+                  />
                 </TouchableOpacity>
               )}
             />
@@ -369,7 +523,14 @@ export default function DashboardScreen() {
               onPress={() => setShowEventPicker(false)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>Cancel</Text>
+              <Text
+                style={[
+                  styles.modalCancelText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -383,18 +544,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(248, 113, 113, 0.1)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(248, 113, 113, 0.1)",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -403,17 +564,17 @@ const styles = StyleSheet.create({
   errorText: {
     flex: 1,
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    color: '#ef4444',
+    fontFamily: "Lato_400Regular",
+    color: "#ef4444",
   },
   retryText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
@@ -421,12 +582,12 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   headerSpacer: {
     width: 40,
@@ -438,35 +599,35 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
     marginBottom: 24,
   },
   statCard: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: "45%",
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 3,
   },
   statCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginBottom: 8,
   },
   statCardTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   statCardValue: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   statCardSubtitle: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 4,
   },
   section: {
@@ -474,29 +635,29 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginBottom: 16,
   },
   quickActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   quickActionButton: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 8,
   },
   quickActionIcon: {
     width: 56,
     height: 56,
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   quickActionText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
   },
   venueList: {
     gap: 12,
@@ -505,17 +666,17 @@ const styles = StyleSheet.create({
   venueCard: {
     width: 160,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   venueImage: {
-    width: '100%',
+    width: "100%",
     height: 100,
   },
   venueImagePlaceholder: {
-    width: '100%',
+    width: "100%",
     height: 100,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   venueInfo: {
     padding: 10,
@@ -523,19 +684,19 @@ const styles = StyleSheet.create({
   },
   venueName: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   venueLocation: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   menuList: {
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
   },
@@ -543,8 +704,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   menuItemContent: {
@@ -552,30 +713,30 @@ const styles = StyleSheet.create({
   },
   menuItemTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   menuItemSubtitle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   modalContent: {
-    width: '100%',
+    width: "100%",
     maxHeight: 400,
     borderRadius: 16,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   modalTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-    textAlign: 'center',
+    fontFamily: "Lato_700Bold",
+    textAlign: "center",
     paddingVertical: 16,
     paddingHorizontal: 20,
   },
@@ -583,8 +744,8 @@ const styles = StyleSheet.create({
     maxHeight: 300,
   },
   eventPickerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -598,8 +759,8 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   eventPickerInfo: {
     flex: 1,
@@ -608,19 +769,19 @@ const styles = StyleSheet.create({
   },
   eventPickerName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   eventPickerDate: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   modalCancelBtn: {
     paddingVertical: 14,
     borderTopWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalCancelText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
 });
