@@ -13,6 +13,8 @@ interface TerminalPaymentContextValue {
   readerStatus: ReaderStatus;
   isReaderConnected: boolean;
   isInitialized: boolean;
+  initError: string | null;
+  retryInit: () => Promise<void>;
   connectReader: (locationId?: string) => Promise<void>;
   collectPayment: (clientSecret: string) => Promise<void>;
   cancelCollect: () => Promise<void>;
@@ -35,17 +37,30 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
   } = useStripeTerminal();
 
   const [readerStatus, setReaderStatus] = useState<ReaderStatus>('disconnected');
+  const [initError, setInitError] = useState<string | null>(null);
   const isConnectingRef = useRef(false);
   const resolveDiscoveryRef = useRef<((readers: Reader.Type[]) => void) | null>(null);
 
   // Initialize SDK — must complete before any other SDK calls
+  const doInit = useCallback(async () => {
+    try {
+      setInitError(null);
+      const { error } = await initialize();
+      if (error) {
+        console.error('[Terminal] Initialize error:', error);
+        setInitError(error.message || 'Failed to initialize Terminal SDK');
+      }
+    } catch (err: any) {
+      console.error('[Terminal] Initialize exception:', err);
+      setInitError(err?.message || 'Failed to initialize Terminal SDK');
+    }
+  }, [initialize]);
+
   useEffect(() => {
     if (!isInitialized) {
-      initialize().catch((err) => {
-        console.error('[Terminal] Initialize error:', err);
-      });
+      doInit();
     }
-  }, [initialize, isInitialized]);
+  }, [isInitialized, doInit]);
 
   // When discovered readers update, resolve any pending discovery promise
   useEffect(() => {
@@ -86,7 +101,7 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
       // Start discovery — readers arrive via discoveredReaders prop
       const { error: discoverError } = await discoverReaders({
         discoveryMethod: 'tapToPay',
-        simulated: __DEV__,
+        simulated: false,
       });
 
       if (discoverError) {
@@ -186,11 +201,13 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
       readerStatus,
       isReaderConnected: readerStatus === 'connected',
       isInitialized,
+      initError,
+      retryInit: doInit,
       connectReader,
       collectPayment,
       cancelCollect,
     }),
-    [readerStatus, isInitialized, connectReader, collectPayment, cancelCollect]
+    [readerStatus, isInitialized, initError, doInit, connectReader, collectPayment, cancelCollect]
   );
 
   return (
@@ -232,6 +249,8 @@ export function useTerminalPayment(): TerminalPaymentContextValue {
       readerStatus: 'disconnected',
       isReaderConnected: false,
       isInitialized: false,
+      initError: Platform.OS !== 'ios' ? 'Tap to Pay is only available on iPhone' : null,
+      retryInit: async () => {},
       connectReader: async (_locationId?: string) => {},
       collectPayment: async () => {
         throw new Error('Tap to Pay is only available on iPhone');

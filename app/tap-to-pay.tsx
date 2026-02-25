@@ -92,6 +92,8 @@ export default function TapToPayScreen() {
     readerStatus,
     isReaderConnected,
     isInitialized,
+    initError,
+    retryInit,
     connectReader,
     collectPayment,
     cancelCollect,
@@ -354,18 +356,26 @@ export default function TapToPayScreen() {
           style={[
             styles.statusDot,
             {
-              backgroundColor: statusDotColor(readerStatus, flowStatus),
+              backgroundColor: initError
+                ? "#f87171"
+                : statusDotColor(readerStatus, flowStatus),
             },
           ]}
         />
-        <Text style={styles.statusText}>
-          {statusLabel(readerStatus, flowStatus)}
+        <Text style={styles.statusText} numberOfLines={2}>
+          {initError
+            ? `SDK error: ${initError}`
+            : statusLabel(readerStatus, flowStatus)}
         </Text>
-        {readerStatus === "disconnected" && flowStatus === "idle" && (
+        {initError ? (
+          <TouchableOpacity onPress={retryInit} activeOpacity={0.7}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        ) : readerStatus === "disconnected" && flowStatus === "idle" ? (
           <TouchableOpacity onPress={handleRetryConnect} activeOpacity={0.7}>
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
       </Animated.View>
 
       {/* Content */}
