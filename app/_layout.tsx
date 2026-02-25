@@ -104,10 +104,6 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
-          name="collect-payments"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
           name="tap-to-pay"
           options={{ animation: "slide_from_right" }}
         />

@@ -164,7 +164,7 @@ export default function DashboardScreen() {
       );
     } else if (scannerEvents.length === 1) {
       router.push({
-        pathname: "/collect-payments",
+        pathname: "/tap-to-pay",
         params: { eventId: String(scannerEvents[0].id) },
       });
     } else {
@@ -178,7 +178,7 @@ export default function DashboardScreen() {
       setShowEventPicker(false);
       if (pickerAction === "collect") {
         router.push({
-          pathname: "/collect-payments",
+          pathname: "/tap-to-pay",
           params: { eventId: String(event.id) },
         });
       } else {
