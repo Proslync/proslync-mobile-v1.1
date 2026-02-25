@@ -72,6 +72,17 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
     setReaderStatus('connecting');
 
     try {
+      // Set up the reader waiting promise BEFORE starting discovery
+      // to avoid a race condition where discoveredReaders updates
+      // before the promise listener is registered.
+      const readersPromise = new Promise<Reader.Type[]>((resolve, reject) => {
+        resolveDiscoveryRef.current = resolve;
+        setTimeout(() => {
+          resolveDiscoveryRef.current = null;
+          reject(new Error('Timed out waiting for Tap to Pay reader'));
+        }, 15000);
+      });
+
       // Start discovery — readers arrive via discoveredReaders prop
       const { error: discoverError } = await discoverReaders({
         discoveryMethod: 'tapToPay',
@@ -82,16 +93,14 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
         throw new Error(discoverError.message);
       }
 
-      // Wait for readers to be discovered (with timeout)
+      // If readers were already discovered (e.g. from a previous attempt),
+      // use them directly; otherwise wait for the discovery callback.
       let readers = discoveredReaders;
       if (readers.length === 0) {
-        readers = await new Promise<Reader.Type[]>((resolve, reject) => {
-          resolveDiscoveryRef.current = resolve;
-          setTimeout(() => {
-            resolveDiscoveryRef.current = null;
-            reject(new Error('Timed out waiting for Tap to Pay reader'));
-          }, 10000);
-        });
+        readers = await readersPromise;
+      } else {
+        // Clean up the unused promise
+        resolveDiscoveryRef.current = null;
       }
 
       if (readers.length === 0) {

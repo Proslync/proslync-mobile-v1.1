@@ -23,9 +23,13 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Status uses your location to keep your location on the map updated, even when the app is closed",
         "NSCameraUsageDescription": "Status needs camera access for video calls and scanning IDs",
         "NSMicrophoneUsageDescription": "Status needs microphone access for voice and video calls",
+        "NSBluetoothPeripheralUsageDescription": "Status uses Bluetooth to connect to card readers for in-person payments",
+        "NSBluetoothAlwaysUsageDescription": "Status uses Bluetooth to connect to card readers for in-person payments",
+        "NSLocalNetworkUsageDescription": "Status uses the local network to discover and connect to card readers",
         "UIBackgroundModes": [
           "location",
-          "voip"
+          "voip",
+          "bluetooth-central"
         ]
       }
     },

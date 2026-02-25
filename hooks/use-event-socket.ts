@@ -16,7 +16,8 @@ interface GuestCheckedInPayload {
 }
 
 interface PaymentReceivedPayload {
-  userId: number;
+  userId?: number | null;
+  guestId?: number | null;
   paymentId: number;
   amount: number;
   eventId: number;

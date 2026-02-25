@@ -106,8 +106,14 @@ export default function CollectPaymentsScreen() {
     onGuestCheckedIn: React.useCallback(() => {
       fetchUnpaid();
     }, [fetchUnpaid]),
-    onPaymentReceived: React.useCallback((data: { userId: number }) => {
-      setGuests((prev) => prev.filter((g) => g.userId !== data.userId));
+    onPaymentReceived: React.useCallback((data: { userId?: number | null; guestId?: number | null }) => {
+      setGuests((prev) =>
+        prev.filter((g) => {
+          if (data.guestId && g.id === data.guestId) return false;
+          if (data.userId && g.userId && g.userId === data.userId) return false;
+          return true;
+        })
+      );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }, []),
   });
@@ -115,7 +121,7 @@ export default function CollectPaymentsScreen() {
   // Handle collect payment via Tap to Pay
   const handleCollect = React.useCallback(
     async (guest: UnpaidGuest) => {
-      if (!eventId || !guest.canCollect || !isReaderConnected) return;
+      if (!eventId || !isReaderConnected) return;
 
       setCollectingGuestId(guest.id);
 
@@ -189,6 +195,9 @@ export default function CollectPaymentsScreen() {
               {item.firstName} {item.lastName}
             </Text>
             <View style={styles.guestMeta}>
+              {!item.userId && (
+                <Text style={styles.guestMetaText}>Walk-in</Text>
+              )}
               {item.age != null && (
                 <Text style={styles.guestMetaText}>Age {item.age}</Text>
               )}
@@ -201,20 +210,14 @@ export default function CollectPaymentsScreen() {
           </View>
 
           {/* Collect Button */}
-          {item.canCollect ? (
-            <GlassButton
-              label={isCollecting ? '' : 'Collect'}
-              loading={isCollecting}
-              size="sm"
-              variant="glass"
-              onPress={() => handleCollect(item)}
-              disabled={isCollecting || collectingGuestId !== null || !isReaderConnected}
-            />
-          ) : (
-            <View style={styles.disabledBadge}>
-              <Text style={styles.disabledText}>No account</Text>
-            </View>
-          )}
+          <GlassButton
+            label={isCollecting ? '' : 'Collect'}
+            loading={isCollecting}
+            size="sm"
+            variant="glass"
+            onPress={() => handleCollect(item)}
+            disabled={isCollecting || collectingGuestId !== null || !isReaderConnected}
+          />
         </Animated.View>
       );
     },
@@ -493,16 +496,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.4)',
-  },
-  disabledBadge: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  disabledText: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.25)',
   },
 });

@@ -141,9 +141,13 @@ export default function CheckInsScreen() {
       fetchGuests();
     }, [fetchGuests]),
     onPaymentReceived: React.useCallback(
-      (data: { userId: number }) => {
+      (data: { userId?: number | null; guestId?: number | null }) => {
         setGuests((prev) =>
-          prev.map((g) => (g.userId === data.userId ? { ...g, paid: true } : g)),
+          prev.map((g) => {
+            if (data.guestId && g.id === data.guestId) return { ...g, paid: true };
+            if (data.userId && g.userId && g.userId === data.userId) return { ...g, paid: true };
+            return g;
+          }),
         );
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       },
