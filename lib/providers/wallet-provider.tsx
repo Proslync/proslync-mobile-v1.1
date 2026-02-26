@@ -245,9 +245,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const { tickets = [] } = await ticketsApi.getMyTickets({
         status: 'upcoming', limit: 100, sortBy: 'eventDate', sortOrder: 'asc',
       });
-      ticketCards = tickets
-        .filter((t) => t.status === 'active')
-        .map((t) => {
+      ticketCards = tickets.map((t) => {
           const start = new Date(t.event?.startDate || t.createdAt);
           ticketEventIds.add(t.eventId.toString());
           return {

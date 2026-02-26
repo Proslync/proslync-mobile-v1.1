@@ -9,7 +9,7 @@ export { ActivityList } from './activity-list';
 export { OfferCarousel } from './offer-carousel';
 export { ExploreEvents } from './explore-events';
 export { WithdrawalSheet } from './withdrawal-sheet';
-export { TicketCarousel } from './ticket-carousel';
+export { TicketList } from './ticket-list';
 export { TicketActionSheet } from './ticket-action-sheet';
 export { WalletSkeleton } from './wallet-skeleton';
 export { BalanceCard } from './balance-card';

@@ -92,6 +92,7 @@ export const ticketsApi = {
    */
   getMyTickets: async (params?: {
     status?: 'upcoming' | 'past' | 'all';
+    ticketStatus?: string;
     page?: number;
     limit?: number;
     sortBy?: 'eventDate' | 'createdAt' | 'eventName';
@@ -99,6 +100,7 @@ export const ticketsApi = {
   }): Promise<UserTicketsResponse> => {
     const query = new URLSearchParams();
     if (params?.status) query.set('status', params.status);
+    if (params?.ticketStatus) query.set('ticketStatus', params.ticketStatus);
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.sortBy) query.set('sortBy', params.sortBy);

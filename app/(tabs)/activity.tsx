@@ -1,5 +1,5 @@
 // Wallet Screen - Membership card, offers, and events
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -11,7 +11,7 @@ import {
   MembershipCard,
   StatusCardMenuSheet,
   OfferCarousel,
-  TicketCarousel,
+  TicketList,
   WalletSkeleton,
 } from '@/components/wallet';
 
@@ -28,6 +28,9 @@ export default function WalletScreen() {
     claimOffer,
     refreshWallet,
   } = useWallet();
+
+  // RSVP-only events (no ticketId) — passed to TicketList separately
+  const rsvpEvents = useMemo(() => events.filter((e) => !e.ticketId), [events]);
 
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
 
@@ -61,23 +64,12 @@ export default function WalletScreen() {
         />
 
         {/* Tickets */}
-        <TicketCarousel
-          events={events}
+        <TicketList
+          rsvpEvents={rsvpEvents}
           onViewEvent={(eventId) => {
-            const event = events.find(e => e.id === eventId);
             router.push({
               pathname: '/event/[id]',
-              params: {
-                id: eventId,
-                ...(event && {
-                  title: event.title,
-                  date: event.dateTime,
-                  imageUrl: event.flyerUrl,
-                  venueName: event.venueName,
-                  isPaid: event.isPaid ? 'true' : 'false',
-                  price: event.pricePaid != null ? event.pricePaid.toString() : '',
-                }),
-              },
+              params: { id: eventId },
             });
           }}
           onActionComplete={refreshWallet}

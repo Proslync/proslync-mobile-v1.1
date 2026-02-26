@@ -46,6 +46,7 @@ export {
 } from './use-search';
 
 // Ticket/Payment hooks
+export { useMyTickets, MY_TICKETS_KEY } from './use-my-tickets';
 export { useGetTiers, TIERS_QUERY_KEY } from './use-ticket-tiers';
 export { useValidatePromoCode } from './use-promo-code';
 export {
