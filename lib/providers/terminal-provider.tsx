@@ -6,6 +6,7 @@ import {
 } from '@stripe/stripe-terminal-react-native';
 import type { Reader } from '@stripe/stripe-terminal-react-native';
 import { paymentsApi } from '@/lib/api/payments';
+import { useAuth } from './auth-provider';
 
 type ReaderStatus = 'disconnected' | 'connecting' | 'connected';
 
@@ -23,6 +24,7 @@ interface TerminalPaymentContextValue {
 const TerminalPaymentContext = createContext<TerminalPaymentContextValue | null>(null);
 
 function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
   const {
     initialize,
     isInitialized,
@@ -42,6 +44,7 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
   const resolveDiscoveryRef = useRef<((readers: Reader.Type[]) => void) | null>(null);
 
   // Initialize SDK — must complete before any other SDK calls
+  // Only attempt when authenticated since tokenProvider needs a valid JWT
   const doInit = useCallback(async () => {
     try {
       setInitError(null);
@@ -57,10 +60,10 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
   }, [initialize]);
 
   useEffect(() => {
-    if (!isInitialized) {
+    if (isAuthenticated && !isInitialized) {
       doInit();
     }
-  }, [isInitialized, doInit]);
+  }, [isAuthenticated, isInitialized, doInit]);
 
   // When discovered readers update, resolve any pending discovery promise
   useEffect(() => {

@@ -162,9 +162,9 @@ export default function RootLayout() {
       <ThemeProvider defaultTheme="light">
         <QueryProvider>
           <StripeProvider>
-            <TerminalProvider>
-              <ToastProvider>
-                <AuthProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <TerminalProvider>
                   <LiveLocationProvider>
                     <TabNavigationProvider>
                       <StreamProvider>
@@ -178,9 +178,9 @@ export default function RootLayout() {
                       </StreamProvider>
                     </TabNavigationProvider>
                   </LiveLocationProvider>
-                </AuthProvider>
-              </ToastProvider>
-            </TerminalProvider>
+                </TerminalProvider>
+              </AuthProvider>
+            </ToastProvider>
           </StripeProvider>
         </QueryProvider>
       </ThemeProvider>
