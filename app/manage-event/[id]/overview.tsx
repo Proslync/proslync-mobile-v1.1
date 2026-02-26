@@ -179,20 +179,22 @@ export default function OverviewScreen() {
         </Animated.View>
 
         {/* Venue Map */}
-        {event?.latitude && event?.longitude && !isExpoGo && MAPBOX_TOKEN && (
+        {event?.venue?.latitude && event?.venue?.longitude && !isExpoGo && MAPBOX_TOKEN && (
           <Animated.View entering={FadeInDown.delay(350).duration(300)}>
             <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Venue</Text>
-            {event.venueName && (
-              <Text style={[styles.venueLabel, { color: colors.textSecondary }]}>{event.venueName}</Text>
+            {event.venue.name && (
+              <Text style={[styles.venueLabel, { color: colors.textSecondary }]}>{event.venue.name}</Text>
             )}
-            {event.address && (
-              <Text style={[styles.venueAddress, { color: colors.textTertiary }]}>{event.address}</Text>
+            {event.venue.address && (
+              <Text style={[styles.venueAddress, { color: colors.textTertiary }]}>{event.venue.address}</Text>
             )}
             <TouchableOpacity
               activeOpacity={0.9}
               onPress={() => {
-                const coords = `${event.latitude},${event.longitude}`;
-                const label = encodeURIComponent(event.venueName || event.name || 'Event');
+                const lat = Number(event.venue!.latitude);
+                const lng = Number(event.venue!.longitude);
+                const coords = `${lat},${lng}`;
+                const label = encodeURIComponent(event.venue!.name || event.name || 'Event');
                 const url = Platform.select({
                   ios: `maps:0,0?q=${label}@${coords}`,
                   default: `geo:${coords}?q=${coords}(${label})`,
@@ -215,11 +217,11 @@ export default function OverviewScreen() {
                 >
                   <Camera
                     defaultSettings={{
-                      centerCoordinate: [event.longitude, event.latitude],
+                      centerCoordinate: [Number(event.venue.longitude), Number(event.venue.latitude)],
                       zoomLevel: 14,
                     }}
                   />
-                  <MarkerView coordinate={[event.longitude, event.latitude]}>
+                  <MarkerView coordinate={[Number(event.venue.longitude), Number(event.venue.latitude)]}>
                     <View style={styles.marker}>
                       <Ionicons name="location" size={28} color="#fff" />
                     </View>

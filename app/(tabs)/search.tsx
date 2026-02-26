@@ -160,8 +160,8 @@ function transformEventToMapEvent(event: Event): MapEvent {
     id: event.id.toString(),
     title: event.name,
     venue: event.venue?.name || event.location || 'TBA',
-    latitude: event.venue?.latitude || 40.7580, // Default to NYC
-    longitude: event.venue?.longitude || -73.9855,
+    latitude: Number(event.venue?.latitude) || 40.7580, // Default to NYC
+    longitude: Number(event.venue?.longitude) || -73.9855,
     imageUrl: event.flyer?.url || event.imageUrl || '',
     date: dateStr,
     time: timeStr,

@@ -227,7 +227,7 @@ export default function EventPage() {
       return { lat: eventData.locationDetails.coordinates.lat, lng: eventData.locationDetails.coordinates.lng };
     }
     if (eventData?.venue?.latitude && eventData?.venue?.longitude) {
-      return { lat: eventData.venue.latitude, lng: eventData.venue.longitude };
+      return { lat: Number(eventData.venue.latitude), lng: Number(eventData.venue.longitude) };
     }
     return null;
   }, [eventData]);
