@@ -84,6 +84,8 @@ export function PurchaseTableSheet({
         paymentIntentClientSecret: result.clientSecret,
         merchantDisplayName: 'Status',
         style: 'alwaysDark',
+        applePay: { merchantCountryCode: 'US' },
+        googlePay: { merchantCountryCode: 'US', testEnv: __DEV__ },
       });
 
       if (initError) {

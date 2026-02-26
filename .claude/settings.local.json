@@ -109,7 +109,10 @@
       "Bash(xcrun xctrace list devices:*)",
       "Bash(pgrep:*)",
       "Bash(ps:*)",
-      "Bash(xargs basename:*)"
+      "Bash(xargs basename:*)",
+      "WebFetch(domain:docs.stripe.com)",
+      "WebFetch(domain:support.stripe.com)",
+      "WebFetch(domain:dev.to)"
     ]
   }
 }
