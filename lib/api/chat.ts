@@ -67,11 +67,14 @@ export const chatApi = {
       name,
     }),
 
-  getMessages: (conversationId: string, cursor?: string, limit = 30) =>
-    apiClient.get<MessagesResponse>(
-      `/api/conversations/${conversationId}/messages`,
-      { params: { cursor, limit } },
-    ),
+  getMessages: (conversationId: string, cursor?: string, limit = 30) => {
+    const params = new URLSearchParams();
+    params.set('limit', String(limit));
+    if (cursor) params.set('cursor', cursor);
+    return apiClient.get<MessagesResponse>(
+      `/api/conversations/${conversationId}/messages?${params.toString()}`,
+    );
+  },
 
   sendMessage: (
     conversationId: string,

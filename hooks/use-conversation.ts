@@ -1,11 +1,22 @@
-import * as React from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { chatApi, type MessageResponse } from '@/lib/api/chat';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import {
+  chatApi,
+  type MessageResponse,
+  type ConversationResponse,
+} from '@/lib/api/chat';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { CONVERSATIONS_KEY } from './use-conversations';
 import io, { type Socket } from 'socket.io-client';
 import { config } from '@/lib/config';
-import * as SecureStore from 'expo-secure-store';
+import { apiClient } from '@/lib/api/client';
+
+// --- Types ---
 
 export interface ChatMessage {
   id: string;
@@ -40,7 +51,11 @@ export interface ChannelInfo {
   };
 }
 
-const MESSAGES_KEY = 'conversation-messages';
+// --- Constants ---
+
+export const CONVERSATION_MESSAGES_KEY = 'conversation-messages';
+
+// --- Helpers ---
 
 function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
   const sender = msg.sender;
@@ -77,103 +92,121 @@ function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
   };
 }
 
+function deriveChannelInfo(
+  conv: ConversationResponse,
+  currentUserId: number,
+): ChannelInfo {
+  const otherMembers = conv.members.filter((m) => m.userId !== currentUserId);
+  const firstOther = otherMembers[0];
+  const displayName =
+    conv.name ||
+    (firstOther
+      ? firstOther.userName ||
+        [firstOther.firstName, firstOther.lastName].filter(Boolean).join(' ') ||
+        'Chat'
+      : 'Chat');
+
+  return {
+    id: conv.id,
+    name: displayName,
+    imageUrl: conv.imageUrl || firstOther?.avatarUrl || undefined,
+    memberCount: conv.members.length,
+    otherMember: firstOther
+      ? {
+          id: String(firstOther.userId),
+          name:
+            firstOther.userName ||
+            [firstOther.firstName, firstOther.lastName]
+              .filter(Boolean)
+              .join(' ') ||
+            'Unknown',
+          image: firstOther.avatarUrl,
+        }
+      : undefined,
+  };
+}
+
+type InfiniteMessagesData = {
+  pages: { messages: MessageResponse[]; nextCursor: string | null; hasMore: boolean }[];
+  pageParams: (string | undefined)[];
+};
+
+// --- Hook ---
+
 export function useConversation(conversationId: string | undefined) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const currentUserId = user?.id ?? 0;
-  const socketRef = React.useRef<Socket | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherReadAt, setOtherReadAt] = useState<Date | null>(null);
 
-  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
-  const [channelInfo, setChannelInfo] = React.useState<ChannelInfo | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
-  const [isTyping, setIsTyping] = React.useState(false);
-  const [otherReadAt, setOtherReadAt] = React.useState<Date | null>(null);
+  // --- Messages (infinite query — newest page first, load older on demand) ---
 
-  // Fetch initial messages
-  React.useEffect(() => {
-    if (!conversationId || !currentUserId) {
-      setIsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const init = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Fetch messages
-        const response = await chatApi.getMessages(conversationId, undefined, 50);
-
-        if (cancelled) return;
-
-        const mapped = response.messages
-          .map((m) => mapMessage(m, currentUserId))
-          .reverse(); // API returns newest first, we want oldest first
-        setMessages(mapped);
-
-        // Mark as read
-        await chatApi.markRead(conversationId);
-
-        // Get conversation info for header
-        const convResponse = await chatApi.getConversations();
-        const conv = convResponse.conversations.find((c) => c.id === conversationId);
-        if (conv) {
-          const otherMembers = conv.members.filter((m) => m.userId !== currentUserId);
-          const firstOther = otherMembers[0];
-          const displayName =
-            conv.name ||
-            (firstOther
-              ? firstOther.userName ||
-                [firstOther.firstName, firstOther.lastName].filter(Boolean).join(' ') ||
-                'Chat'
-              : 'Chat');
-
-          setChannelInfo({
-            id: conv.id,
-            name: displayName,
-            imageUrl: conv.imageUrl || firstOther?.avatarUrl || undefined,
-            memberCount: conv.members.length,
-            otherMember: firstOther
-              ? {
-                  id: String(firstOther.userId),
-                  name:
-                    firstOther.userName ||
-                    [firstOther.firstName, firstOther.lastName].filter(Boolean).join(' ') ||
-                    'Unknown',
-                  image: firstOther.avatarUrl,
-                }
-              : undefined,
-          });
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err : new Error('Failed to load conversation'));
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+  const messagesQuery = useInfiniteQuery({
+    queryKey: [CONVERSATION_MESSAGES_KEY, conversationId],
+    enabled: !!conversationId && !!currentUserId,
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const response = await chatApi.getMessages(conversationId!, pageParam, 50);
+      // Mark as read on initial load only
+      if (!pageParam) {
+        chatApi.markRead(conversationId!).catch(() => {});
       }
-    };
+      return response;
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.nextCursor ?? undefined : undefined,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+  });
 
-    init();
-    return () => {
-      cancelled = true;
-    };
-  }, [conversationId, currentUserId]);
+  // Flatten pages into oldest-first array for display
+  // API returns newest-first per page; pages[0]=newest batch, pages[N]=oldest batch
+  const messages = useMemo(() => {
+    const pages = messagesQuery.data?.pages ?? [];
+    return pages
+      .slice()
+      .reverse()
+      .flatMap((page) =>
+        page.messages
+          .slice()
+          .reverse()
+          .map((m) => mapMessage(m, currentUserId)),
+      );
+  }, [messagesQuery.data, currentUserId]);
 
-  // Socket.IO for real-time
-  React.useEffect(() => {
+  // --- Channel info (shared query with conversations list) ---
+
+  const conversationsQuery = useQuery({
+    queryKey: [CONVERSATIONS_KEY],
+    queryFn: async () => {
+      const response = await chatApi.getConversations();
+      return response.conversations;
+    },
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    enabled: !!conversationId && !!currentUserId,
+  });
+
+  const channelInfo = useMemo((): ChannelInfo | null => {
+    if (!conversationId || !currentUserId) return null;
+    const conv = conversationsQuery.data?.find((c) => c.id === conversationId);
+    if (!conv) return null;
+    return deriveChannelInfo(conv, currentUserId);
+  }, [conversationId, currentUserId, conversationsQuery.data]);
+
+  // --- Socket.IO for real-time updates ---
+
+  useEffect(() => {
     if (!conversationId || !currentUserId) return;
 
     let socket: Socket | null = null;
     let cancelled = false;
 
     const initSocket = async () => {
-      const token = await SecureStore.getItemAsync('accessToken');
+      const token = await apiClient.getAccessToken();
       if (!token || cancelled) return;
 
       const s = io(`${config.websocket.url}/chat`, {
@@ -189,17 +222,32 @@ export function useConversation(conversationId: string | undefined) {
       });
 
       s.on('chat:message', (data: { message: MessageResponse }) => {
-        // Skip messages from ourselves — already added optimistically in sendMessage
+        // Skip own messages — already added optimistically via sendMessage
         if (data.message.senderId === currentUserId) return;
-        const mapped = mapMessage(data.message, currentUserId);
-        setMessages((prev) => [...prev, mapped]);
-        chatApi.markRead(conversationId);
+
+        // Insert into React Query cache (prepend to newest page)
+        queryClient.setQueryData<InfiniteMessagesData>(
+          [CONVERSATION_MESSAGES_KEY, conversationId],
+          (old) => {
+            if (!old?.pages?.length) return old;
+            const pages = [...old.pages];
+            pages[0] = {
+              ...pages[0],
+              messages: [data.message, ...pages[0].messages],
+            };
+            return { ...old, pages };
+          },
+        );
+
+        chatApi.markRead(conversationId).catch(() => {});
+        queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
       });
 
       s.on('chat:typing', (data: { userId: number }) => {
         if (data.userId !== currentUserId) {
           setIsTyping(true);
-          setTimeout(() => setIsTyping(false), 3000);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
         }
       });
 
@@ -214,78 +262,198 @@ export function useConversation(conversationId: string | undefined) {
 
     return () => {
       cancelled = true;
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
       if (socket) {
         socket.emit('chat:leave', { conversationId });
         socket.disconnect();
       }
       socketRef.current = null;
     };
-  }, [conversationId, currentUserId]);
+  }, [conversationId, currentUserId, queryClient]);
 
-  const sendMessage = React.useCallback(
-    async (text: string, attachments?: { type: 'image' | 'video'; uri: string }[]) => {
+  // --- Send message (optimistic update) ---
+
+  const sendMessageMutation = useMutation({
+    mutationFn: async (params: {
+      text: string;
+      attachments?: { type: 'image' | 'video'; uri: string }[];
+    }) => {
+      return chatApi.sendMessage(conversationId!, {
+        type: 'text',
+        text: params.text.trim() || undefined,
+      });
+    },
+    onMutate: async (params) => {
+      await queryClient.cancelQueries({
+        queryKey: [CONVERSATION_MESSAGES_KEY, conversationId],
+      });
+
+      const optimisticMsg: MessageResponse = {
+        id: -Date.now(),
+        conversationId: conversationId!,
+        senderId: currentUserId,
+        type: 'text',
+        text: params.text.trim(),
+        mediaUrl: null,
+        mediaMetadata: null,
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: currentUserId,
+          userName: user?.userName,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          avatarUrl: user?.avatar?.url,
+        },
+      };
+
+      queryClient.setQueryData<InfiniteMessagesData>(
+        [CONVERSATION_MESSAGES_KEY, conversationId],
+        (old) => {
+          if (!old?.pages?.length) return old;
+          const pages = [...old.pages];
+          pages[0] = {
+            ...pages[0],
+            messages: [optimisticMsg, ...pages[0].messages],
+          };
+          return { ...old, pages };
+        },
+      );
+
+      return { optimisticId: optimisticMsg.id };
+    },
+    onSuccess: (serverMsg, _vars, context) => {
+      // Replace optimistic message with server response
+      queryClient.setQueryData<InfiniteMessagesData>(
+        [CONVERSATION_MESSAGES_KEY, conversationId],
+        (old) => {
+          if (!old?.pages?.length) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.map((m) =>
+                m.id === context?.optimisticId ? serverMsg : m,
+              ),
+            })),
+          };
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    },
+    onError: (_err, _vars, context) => {
+      // Remove optimistic message on failure
+      queryClient.setQueryData<InfiniteMessagesData>(
+        [CONVERSATION_MESSAGES_KEY, conversationId],
+        (old) => {
+          if (!old?.pages?.length) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.filter(
+                (m) => m.id !== context?.optimisticId,
+              ),
+            })),
+          };
+        },
+      );
+    },
+  });
+
+  // --- Delete message (optimistic removal) ---
+
+  const deleteMessageMutation = useMutation({
+    mutationFn: (messageId: string) => chatApi.deleteMessage(Number(messageId)),
+    onMutate: async (messageId) => {
+      await queryClient.cancelQueries({
+        queryKey: [CONVERSATION_MESSAGES_KEY, conversationId],
+      });
+
+      const previous = queryClient.getQueryData<InfiniteMessagesData>([
+        CONVERSATION_MESSAGES_KEY,
+        conversationId,
+      ]);
+
+      queryClient.setQueryData<InfiniteMessagesData>(
+        [CONVERSATION_MESSAGES_KEY, conversationId],
+        (old) => {
+          if (!old?.pages?.length) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.filter(
+                (m) => String(m.id) !== messageId,
+              ),
+            })),
+          };
+        },
+      );
+
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          [CONVERSATION_MESSAGES_KEY, conversationId],
+          context.previous,
+        );
+      }
+    },
+  });
+
+  // --- Public API (preserves existing interface) ---
+
+  const sendMessage = useCallback(
+    async (
+      text: string,
+      attachments?: { type: 'image' | 'video'; uri: string }[],
+    ) => {
       if (!conversationId) return;
       if (!text.trim() && (!attachments || attachments.length === 0)) return;
-
-      try {
-        // For now, just send text messages
-        // Media upload can be added later using the files API
-        const response = await chatApi.sendMessage(conversationId, {
-          type: 'text',
-          text: text.trim() || undefined,
-        });
-
-        // Add to local messages immediately
-        const mapped = mapMessage(response, currentUserId);
-        setMessages((prev) => [...prev, mapped]);
-
-        // Invalidate conversations list to update preview
-        queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
-      } catch (err) {
-        console.error('Error sending message:', err);
-        throw err;
-      }
+      await sendMessageMutation.mutateAsync({ text, attachments });
     },
-    [conversationId, currentUserId, queryClient],
+    [conversationId, sendMessageMutation],
   );
 
-  const sendVoiceMessage = React.useCallback(
-    async (uri: string, duration: number) => {
-      if (!conversationId) return;
-      // Voice messages not yet supported in our backend
-      console.warn('Voice messages not yet supported');
-    },
-    [conversationId],
-  );
-
-  const deleteMessage = React.useCallback(
-    async (messageId: string) => {
-      try {
-        await chatApi.deleteMessage(Number(messageId));
-        setMessages((prev) => prev.filter((m) => m.id !== messageId));
-      } catch (err) {
-        console.error('Error deleting message:', err);
-        throw err;
-      }
+  const sendVoiceMessage = useCallback(
+    async (_uri: string, _duration: number) => {
+      // Voice messages not yet supported by backend
     },
     [],
   );
 
-  const sendTypingStart = React.useCallback(async () => {
+  const deleteMessage = useCallback(
+    async (messageId: string) => {
+      await deleteMessageMutation.mutateAsync(messageId);
+    },
+    [deleteMessageMutation],
+  );
+
+  const sendTypingStart = useCallback(async () => {
     if (!conversationId || !socketRef.current) return;
     socketRef.current.emit('chat:typing', { conversationId });
   }, [conversationId]);
 
-  const sendTypingStop = React.useCallback(async () => {
-    // No explicit stop event needed — typing auto-clears
+  const sendTypingStop = useCallback(async () => {
+    // No explicit stop event — typing auto-clears after timeout
   }, []);
 
+  const loadOlderMessages = useCallback(async () => {
+    if (messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage) {
+      await messagesQuery.fetchNextPage();
+    }
+  }, [messagesQuery]);
+
   return {
-    channel: null, // Not needed anymore
     messages,
     channelInfo,
-    isLoading,
-    error,
+    isLoading: messagesQuery.isLoading,
+    error: messagesQuery.error,
     isTyping,
     currentUserId: String(currentUserId),
     otherReadAt,
@@ -294,5 +462,8 @@ export function useConversation(conversationId: string | undefined) {
     sendTypingStart,
     sendTypingStop,
     deleteMessage,
+    loadOlderMessages,
+    hasOlderMessages: !!messagesQuery.hasNextPage,
+    isSending: sendMessageMutation.isPending,
   };
 }

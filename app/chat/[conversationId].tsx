@@ -895,7 +895,6 @@ export default function ChatThreadScreen() {
   const [isMuted, setIsMuted] = useState(false);
 
   const {
-    channel,
     messages,
     channelInfo,
     isLoading,

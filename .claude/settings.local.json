@@ -112,7 +112,8 @@
       "Bash(xargs basename:*)",
       "WebFetch(domain:docs.stripe.com)",
       "WebFetch(domain:support.stripe.com)",
-      "WebFetch(domain:dev.to)"
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:help.passkit.com)"
     ]
   }
 }
