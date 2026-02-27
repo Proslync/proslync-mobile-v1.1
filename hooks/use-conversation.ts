@@ -15,6 +15,7 @@ import { CONVERSATIONS_KEY } from './use-conversations';
 import io, { type Socket } from 'socket.io-client';
 import { config } from '@/lib/config';
 import { apiClient } from '@/lib/api/client';
+import { filesApi } from '@/lib/api/files';
 
 // --- Types ---
 
@@ -406,6 +407,102 @@ export function useConversation(conversationId: string | undefined) {
     },
   });
 
+  // --- Send voice message (optimistic update + upload) ---
+
+  const sendVoiceMessageMutation = useMutation({
+    mutationFn: async (params: { uri: string; duration: number }) => {
+      // Upload audio file to GCS
+      const mediaUrl = await filesApi.uploadVoiceMessage(params.uri);
+
+      // Send message with uploaded URL
+      return chatApi.sendMessage(conversationId!, {
+        type: 'voice',
+        mediaUrl,
+        mediaMetadata: {
+          duration: params.duration,
+          mimeType: 'audio/mp4',
+        },
+      });
+    },
+    onMutate: async (params) => {
+      await queryClient.cancelQueries({
+        queryKey: [CONVERSATION_MESSAGES_KEY, conversationId],
+      });
+
+      const optimisticMsg: MessageResponse = {
+        id: -Date.now(),
+        conversationId: conversationId!,
+        senderId: currentUserId,
+        type: 'voice',
+        text: null,
+        mediaUrl: params.uri,
+        mediaMetadata: {
+          duration: params.duration,
+          mimeType: 'audio/mp4',
+        },
+        isDeleted: false,
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: currentUserId,
+          userName: user?.userName,
+          firstName: user?.firstName,
+          lastName: user?.lastName,
+          avatarUrl: user?.avatar?.url,
+        },
+      };
+
+      queryClient.setQueryData<InfiniteMessagesData>(
+        [CONVERSATION_MESSAGES_KEY, conversationId],
+        (old) => {
+          if (!old?.pages?.length) return old;
+          const pages = [...old.pages];
+          pages[0] = {
+            ...pages[0],
+            messages: [optimisticMsg, ...pages[0].messages],
+          };
+          return { ...old, pages };
+        },
+      );
+
+      return { optimisticId: optimisticMsg.id };
+    },
+    onSuccess: (serverMsg, _vars, context) => {
+      queryClient.setQueryData<InfiniteMessagesData>(
+        [CONVERSATION_MESSAGES_KEY, conversationId],
+        (old) => {
+          if (!old?.pages?.length) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.map((m) =>
+                m.id === context?.optimisticId ? serverMsg : m,
+              ),
+            })),
+          };
+        },
+      );
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    },
+    onError: (_err, _vars, context) => {
+      queryClient.setQueryData<InfiniteMessagesData>(
+        [CONVERSATION_MESSAGES_KEY, conversationId],
+        (old) => {
+          if (!old?.pages?.length) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              messages: page.messages.filter(
+                (m) => m.id !== context?.optimisticId,
+              ),
+            })),
+          };
+        },
+      );
+    },
+  });
+
   // --- Public API (preserves existing interface) ---
 
   const sendMessage = useCallback(
@@ -421,10 +518,11 @@ export function useConversation(conversationId: string | undefined) {
   );
 
   const sendVoiceMessage = useCallback(
-    async (_uri: string, _duration: number) => {
-      // Voice messages not yet supported by backend
+    async (uri: string, duration: number) => {
+      if (!conversationId) return;
+      await sendVoiceMessageMutation.mutateAsync({ uri, duration });
     },
-    [],
+    [conversationId, sendVoiceMessageMutation],
   );
 
   const deleteMessage = useCallback(
@@ -465,5 +563,6 @@ export function useConversation(conversationId: string | undefined) {
     loadOlderMessages,
     hasOlderMessages: !!messagesQuery.hasNextPage,
     isSending: sendMessageMutation.isPending,
+    isSendingVoice: sendVoiceMessageMutation.isPending,
   };
 }

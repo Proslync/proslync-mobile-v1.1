@@ -21,6 +21,9 @@ function getFileInfoFromUri(uri: string): { name: string; type: string } {
     heic: 'image/heic',
     mp4: 'video/mp4',
     mov: 'video/quicktime',
+    m4a: 'audio/mp4',
+    aac: 'audio/aac',
+    mp3: 'audio/mpeg',
   };
 
   const type = mimeTypes[extension] || 'image/jpeg';
@@ -152,6 +155,44 @@ export const filesApi = {
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text().catch(() => '');
       console.error('Table image upload failed:', uploadResponse.status, errorText);
+      throw new Error(`Upload failed: ${uploadResponse.status}`);
+    }
+
+    // Step 3: Confirm upload
+    const confirmed = await filesApi.confirmUpload(fileId);
+    return confirmed.url;
+  },
+
+  /**
+   * Complete presigned URL upload flow for a voice message
+   *
+   * @param fileUri - Local file URI (e.g., from expo-av recording)
+   * @returns Public URL of the uploaded audio file
+   */
+  uploadVoiceMessage: async (fileUri: string): Promise<string> => {
+    const { name, type } = getFileInfoFromUri(fileUri);
+    const fileResponse = await fetch(fileUri);
+    const blob = await fileResponse.blob();
+    const fileSize = blob.size.toString();
+
+    // Step 1: Get presigned URL
+    const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
+      fileType: 'voice-message',
+      fileName: name,
+      mimeType: type,
+      fileSize,
+    });
+
+    // Step 2: Upload to GCS
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: blob,
+      headers: { 'Content-Type': type },
+    });
+
+    if (!uploadResponse.ok) {
+      const errorText = await uploadResponse.text().catch(() => '');
+      console.error('Voice message upload failed:', uploadResponse.status, errorText);
       throw new Error(`Upload failed: ${uploadResponse.status}`);
     }
 
