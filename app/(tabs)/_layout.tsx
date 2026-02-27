@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useConversations } from '@/hooks/use-conversations';
 
 // Safe imports - MapScreen uses @rnmapbox/maps native module which crashes in Expo Go
 let MapScreen: React.ComponentType<any>;
@@ -110,16 +111,21 @@ function ProfileTabIcon({ focused, avatarUrl, activeColor }: { focused: boolean;
 }
 
 // Regular Tab Icon
-function TabIcon({ index, focused, color }: { index: number; focused: boolean; color: string }) {
+function TabIcon({ index, focused, color, showBadge }: { index: number; focused: boolean; color: string; showBadge?: boolean }) {
   const tab = TAB_CONFIG[index];
   const iconSize = tab.name === 'search' || tab.name === 'activity' ? 26 : 24;
 
   return (
-    <Ionicons
-      name={focused ? (tab.icon as any) : (tab.iconOutline as any)}
-      size={iconSize}
-      color={color}
-    />
+    <View style={{ position: 'relative' }}>
+      <Ionicons
+        name={focused ? (tab.icon as any) : (tab.iconOutline as any)}
+        size={iconSize}
+        color={color}
+      />
+      {showBadge && (
+        <View style={styles.unreadBadge} />
+      )}
+    </View>
   );
 }
 
@@ -128,6 +134,8 @@ export default function SwipeableTabLayout() {
   const { user } = useAuth();
   const { openAccountSwitcher, syncTabIndex } = useTabNavigation();
   const { colors, isDark } = useAppTheme();
+  const { channelData } = useConversations(user?.id);
+  const hasUnreadMessages = channelData.some((ch) => ch.unreadCount > 0);
 
   const pagerRef = React.useRef<PagerView>(null);
   const [currentIndex, setCurrentIndex] = React.useState(DEFAULT_TAB_INDEX);
@@ -236,7 +244,7 @@ export default function SwipeableTabLayout() {
               {tab.name === 'profile' ? (
                 <ProfileTabIcon focused={isFocused} avatarUrl={avatarUrl} activeColor={colors.tabIconSelected} />
               ) : (
-                <TabIcon index={index} focused={isFocused} color={color} />
+                <TabIcon index={index} focused={isFocused} color={color} showBadge={tab.name === 'explore' && hasUnreadMessages} />
               )}
             </Pressable>
           );
@@ -294,5 +302,14 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
   },
 });

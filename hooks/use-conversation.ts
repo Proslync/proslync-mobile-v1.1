@@ -153,7 +153,9 @@ export function useConversation(conversationId: string | undefined) {
       const response = await chatApi.getMessages(conversationId!, pageParam, 50);
       // Mark as read on initial load only
       if (!pageParam) {
-        chatApi.markRead(conversationId!).catch(() => {});
+        chatApi.markRead(conversationId!).then(() => {
+          queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+        }).catch(() => {});
       }
       return response;
     },
