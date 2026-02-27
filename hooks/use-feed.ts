@@ -130,42 +130,9 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
   };
 }
 
-export function refreshAllFeeds() {
-  // This is called externally — we need a module-level queryClient reference.
-  // Components that call this should use the queryClient directly instead.
-  // For backwards compat, this is a no-op; callers should use useRefreshFeeds().
-}
-
 export function useRefreshFeeds() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: [FEED_QUERY_KEY] });
   };
-}
-
-export function useLike() {
-  const queryClient = useQueryClient();
-
-  const toggleLike = async (postId: string, isLiked: boolean) => {
-    const id = Number(postId);
-    if (isNaN(id)) return !isLiked;
-
-    try {
-      if (isLiked) {
-        await postsApi.unlikePost(id);
-      } else {
-        await postsApi.likePost(id);
-      }
-      // Invalidate feeds so counts update
-      queryClient.invalidateQueries({ queryKey: [FEED_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: ['post'] });
-      queryClient.invalidateQueries({ queryKey: ['user-posts'] });
-      return !isLiked;
-    } catch (error) {
-      console.error('Failed to toggle like:', error);
-      throw error;
-    }
-  };
-
-  return { toggleLike, isLoading: false };
 }

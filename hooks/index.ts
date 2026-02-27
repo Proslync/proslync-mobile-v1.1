@@ -1,5 +1,5 @@
 // Feed hooks
-export { useFeed, FEED_QUERY_KEY, useLike, useRefreshFeeds } from './use-feed';
+export { useFeed, FEED_QUERY_KEY, useRefreshFeeds } from './use-feed';
 export { useUserFeed, USER_FEED_QUERY_KEY } from './use-user-feed';
 export { useEventForm, useEditEventForm } from './use-event-form';
 export type { EventFormStep } from './use-event-form';

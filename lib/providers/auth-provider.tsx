@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useRouter, useSegments } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/auth';
 import { apiClient } from '../api/client';
 import type { User, UserRole } from '../types/auth.types';
@@ -49,13 +50,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = React.useState(true);
   const router = useRouter();
   const segments = useSegments();
+  const queryClient = useQueryClient();
 
   const isAuthenticated = !!user;
 
   // Handle auth errors from API client (session expired, refresh failed)
-  const handleAuthError = React.useCallback(() => {    setUser(null);
+  const handleAuthError = React.useCallback(() => {
+    queryClient.clear();
+    setUser(null);
     // Navigation effect will handle redirect to signin
-  }, []);
+  }, [queryClient]);
 
   // Set up auth error callback on mount
   React.useEffect(() => {
@@ -127,6 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       await apiClient.clearAccessToken();
       await apiClient.clearRefreshToken();
+      queryClient.clear();
       setUser(null);
       router.replace('/signin');
     }
@@ -147,6 +152,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const switchAccount = async (accessToken: string, refreshToken?: string): Promise<boolean> => {
     try {
+      // Clear previous user's cached data
+      queryClient.clear();
+
       // Set the tokens for the new account
       await apiClient.setAccessToken(accessToken);
       if (refreshToken) {
