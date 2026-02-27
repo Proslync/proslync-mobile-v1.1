@@ -122,9 +122,13 @@ export default function UserProfileScreen() {
     async function loadEvents() {
       if (!userId) return;
       try {
-        const events = await eventsApi.getEvents();
+        const events = await eventsApi.getUserEvents(Number(userId), {
+          limit: 8,
+          sortBy: 'registered',
+          sortOrder: 'desc',
+        });
         if (cancelled) return;
-        setRecentEvents((events || []).slice(0, 6));
+        setRecentEvents(events || []);
       } catch {
         // Events section is optional
       }
@@ -435,7 +439,7 @@ export default function UserProfileScreen() {
                   })}
                 >
                   <Image
-                    source={{ uri: event.flyerUrl || event.imageUrl || undefined }}
+                    source={{ uri: event.flyer?.url || event.flyerUrl || event.imageUrl || undefined }}
                     style={styles.eventImage}
                   />
                   <LinearGradient

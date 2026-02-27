@@ -271,6 +271,25 @@ export const eventsApi = {
   },
 
   /**
+   * Get events a user has registered for
+   * Backend endpoint: GET /api/users/:id/events
+   */
+  getUserEvents: async (
+    userId: number,
+    params?: { limit?: number; sortBy?: 'date' | 'name' | 'registered'; sortOrder?: 'asc' | 'desc' },
+  ): Promise<Event[]> => {
+    const query = new URLSearchParams();
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.sortBy) query.set('sortBy', params.sortBy);
+    if (params?.sortOrder) query.set('sortOrder', params.sortOrder);
+    const qs = query.toString();
+    const response = await apiClient.get<{ events: Event[] }>(
+      `/api/users/${userId}/events${qs ? `?${qs}` : ''}`,
+    );
+    return response.events;
+  },
+
+  /**
    * Cancel RSVP / registration for an event
    */
   cancelRegistration: async (eventId: number): Promise<RsvpResponse> => {
