@@ -1,103 +1,81 @@
-// React Query hook for fetching user feed activities
-// Based on web app pattern: hooks/stream/use-user-feed.ts
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { postsApi, type FeedItemResponse } from '@/lib/api/posts';
 
-import { useQuery } from '@tanstack/react-query';
-import { useStream } from '@/lib/providers/stream-provider';
-
-export const USER_FEED_QUERY_KEY = 'stream-user-feed';
+export const USER_FEED_QUERY_KEY = 'user-posts';
 
 interface UserActivity {
   id: string;
   imageUrl?: string;
   videoUrl?: string;
-  thumbUrl?: string; // Video thumbnail URL from Stream CDN
+  thumbUrl?: string;
   mediaType: 'image' | 'video';
   likes: number;
   comments: number;
 }
 
-/**
- * React Query hook for fetching user's feed activities from GetStream
- * Uses queryKey: ['stream-user-feed', userId] - can be invalidated on mutations
- */
-export function useUserFeed(
-  userId: string | number | null | undefined,
-  enabled = true
-) {
-  const { client, isReady } = useStream();
-  const userIdStr = userId ? String(userId) : null;
+function mapToUserActivity(item: FeedItemResponse): UserActivity | null {
+  const firstMedia = item.media?.[0];
 
-  const query = useQuery<UserActivity[]>({
-    queryKey: [USER_FEED_QUERY_KEY, userIdStr],
-    enabled: enabled && Boolean(client) && isReady && Boolean(userIdStr),
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    queryFn: async () => {
-      if (!client || !userIdStr) {
-        throw new Error('Cannot fetch user feed without a connected client and userId.');
-      }
+  // For events, use flyer/image as the display image
+  const imageUrl =
+    item.type === 'event'
+      ? item.eventFlyerUrl || item.eventImageUrl || (firstMedia?.type === 'image' ? firstMedia.url : undefined)
+      : firstMedia?.type === 'image'
+        ? firstMedia.url
+        : undefined;
 
-      const feed = client.feed('user', userIdStr);
-      const response = await feed.getOrCreate({ limit: 50 });
+  const videoUrl = firstMedia?.type === 'video' ? firstMedia.url : undefined;
+  const thumbUrl = firstMedia?.thumbnailUrl;
 
-      // Map activities to a simpler format for the grid
-      const rawActivities = response.activities || [];
-      const mappedActivities: UserActivity[] = [];
-
-      for (const activity of rawActivities) {
-        const act = activity as any;
-        // Try to extract media from various sources
-        let imageUrl = act.imageUrl || act.image;
-        let videoUrl = act.videoUrl || act.video;
-        let thumbUrl: string | undefined;
-        let mediaType: 'image' | 'video' = 'image';
-
-        // Check attachments
-        if (act.attachments?.length > 0) {
-          const attachment = act.attachments[0];
-          if (attachment.type === 'video' || attachment.type === 'file') {
-            videoUrl = attachment.url || attachment.asset_url;
-            // Extract thumbnail from custom fields (Stream CDN provides thumb_url)
-            thumbUrl = attachment.custom?.thumb_url || attachment.thumb_url;
-            mediaType = 'video';
-          } else {
-            imageUrl = attachment.url || attachment.image_url || attachment.asset_url;
-          }
-        }
-
-        // Check for event flyer
-        if (!imageUrl && act.event?.flyer?.url) {
-          imageUrl = act.event.flyer.url;
-        }
-
-        // Skip activities without media
-        if (!imageUrl && !videoUrl) {
-          continue;
-        }
-
-        if (videoUrl) {
-          mediaType = 'video';
-        }
-
-        mappedActivities.push({
-          id: act.id,
-          imageUrl,
-          videoUrl,
-          thumbUrl,
-          mediaType,
-          likes: act.reaction_counts?.like || 0,
-          comments: act.reaction_counts?.comment || 0,
-        });
-      }
-
-      return mappedActivities;
-    },
-  });
+  // Skip items without media (for the grid view)
+  if (!imageUrl && !videoUrl) {
+    return null;
+  }
 
   return {
-    activities: query.data || [],
+    id: String(item.id),
+    imageUrl: imageUrl || undefined,
+    videoUrl,
+    thumbUrl,
+    mediaType: videoUrl ? 'video' : 'image',
+    likes: item.likeCount,
+    comments: item.commentCount,
+  };
+}
+
+export function useUserFeed(
+  userId: string | number | null | undefined,
+  enabled = true,
+) {
+  const userIdNum = userId ? Number(userId) : null;
+
+  const query = useInfiniteQuery({
+    queryKey: [USER_FEED_QUERY_KEY, userIdNum],
+    enabled: enabled && userIdNum !== null && !isNaN(userIdNum),
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      return postsApi.getUserPosts(userIdNum!, pageParam, 50);
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.nextCursor ?? undefined : undefined,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  const activities = (query.data?.pages ?? [])
+    .flatMap((page) => page.items.map(mapToUserActivity))
+    .filter((item): item is UserActivity => item !== null);
+
+  return {
+    activities,
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
+    loadMore: async () => {
+      if (query.hasNextPage && !query.isFetchingNextPage) {
+        await query.fetchNextPage();
+      }
+    },
+    hasMore: !!query.hasNextPage,
   };
 }

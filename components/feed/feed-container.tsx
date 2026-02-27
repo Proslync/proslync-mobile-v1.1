@@ -58,7 +58,6 @@ export function FeedContainer({
 
   const [activeIndex, setActiveIndex] = React.useState(0);
 
-  // ── Layout ──────────────────────────────────────────────────────────
   const handleLayout = React.useCallback((e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height;
     if (h > 0 && h !== containerHeight) {
@@ -66,7 +65,6 @@ export function FeedContainer({
     }
   }, [containerHeight]);
 
-  // ── Viewability ─────────────────────────────────────────────────────
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 50,
   }).current;
@@ -96,7 +94,6 @@ export function FeedContainer({
     [currentIndex, onIndexChange, items]
   );
 
-  // ── Render item ─────────────────────────────────────────────────────
   const renderItem = React.useCallback(
     ({ item, index }: { item: FeedItemType; index: number }) => {
       return (
@@ -140,7 +137,6 @@ export function FeedContainer({
     ]
   );
 
-  // ── Item layout ─────────────────────────────────────────────────────
   const getItemLayout = React.useCallback(
     (_: any, index: number) => ({
       length: containerHeight,
@@ -150,13 +146,11 @@ export function FeedContainer({
     [containerHeight]
   );
 
-  // ── Key extractor ───────────────────────────────────────────────────
   const keyExtractor = React.useCallback(
     (item: FeedItemType) => item.id,
     []
   );
 
-  // ── Waiting for layout measurement ──────────────────────────────────
   if (containerHeight === 0) {
     return <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout} />;
   }

@@ -26,7 +26,7 @@ export function useLocationVisibility() {
           setSettings(parsed);
         }
       } catch (e) {
-        console.error('[LocationVisibility] Failed to load settings:', e);
+        console.error('Failed to load settings:', e);
       } finally {
         setIsLoaded(true);
       }
@@ -39,7 +39,7 @@ export function useLocationVisibility() {
     try {
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch (e) {
-      console.error('[LocationVisibility] Failed to persist settings:', e);
+      console.error('Failed to persist settings:', e);
     }
   }, []);
 

@@ -36,9 +36,7 @@ export default function GuestListPage() {
         const response = await eventsApi.getEventAttendees(numericId);
         setAttendees(response.attendees);
         setTotal(response.total);
-      } catch (error) {
-        console.log('[GuestList] Could not fetch attendees:', error);
-      } finally {
+      } catch (error) {      } finally {
         setIsLoading(false);
       }
     }

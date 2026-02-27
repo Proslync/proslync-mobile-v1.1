@@ -29,19 +29,19 @@ const SECTIONS = [
     permission: { resource: "events" as keyof RolePermissions, action: "view" },
   },
   {
-    key: "attendees",
-    label: "Attendees",
-    subtitle: "View guest list",
-    icon: "people-outline" as const,
+    key: "check-ins",
+    label: "Check Ins",
+    subtitle: "Scan and verify tickets",
+    icon: "checkmark-circle-outline" as const,
     permission: {
       resource: "attendees" as keyof RolePermissions,
       action: "view",
     },
   },
   {
-    key: "check-ins",
-    label: "Check Ins",
-    subtitle: "Scan and verify tickets",
+    key: "scanner",
+    label: "Scanner",
+    subtitle: "Scan IDs and membership cards",
     icon: "scan-outline" as const,
     permission: {
       resource: "attendees" as keyof RolePermissions,
@@ -204,6 +204,10 @@ export default function ManageEventScreen() {
   const handleSectionPress = (sectionKey: string) => {
     if (sectionKey === "tap-to-pay") {
       router.push({ pathname: "/tap-to-pay", params: { eventId: id! } });
+      return;
+    }
+    if (sectionKey === "scanner") {
+      router.push({ pathname: "/scan-qr", params: { eventId: id! } });
       return;
     }
     router.push(`/manage-event/${id}/${sectionKey}`);

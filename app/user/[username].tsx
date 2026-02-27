@@ -16,9 +16,9 @@ import { useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
-import { useChat } from '@/lib/providers/chat-provider';
+import { chatApi } from '@/lib/api/chat';
 
-import { useUserFeedStats } from '@/hooks/use-user-feed-stats';
+import { useUserFeed } from '@/hooks/use-user-feed';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { LinkifiedText } from '@/components/shared/linkified-text';
@@ -60,7 +60,7 @@ export default function UserProfileScreen() {
   const router = useStableRouter();
   const { username, userId } = useLocalSearchParams<{ username: string; userId?: string }>();
   const { showSuccess, showError } = useToast();
-  const { client, status: chatStatus } = useChat();
+  // Chat handled via chatApi
 
   const { colors, isDark } = useAppTheme();
   const [user, setUser] = React.useState<PublicUserProfile | null>(null);
@@ -70,16 +70,17 @@ export default function UserProfileScreen() {
   const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
   const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
 
-  // Fetch follower/following counts and activities from Stream
-  const { followerCount, followingCount, activities: userPosts, isLoading: statsLoading, refetch: refetchStats } = useUserFeedStats(user?.id);
-  const postsLoading = statsLoading;
+  // Fetch user posts from our backend
+  const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserFeed(user?.id);
+  const followerCount = user?.followStats?.followers ?? 0;
+  const followingCount = user?.followStats?.following ?? 0;
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
-    onRefresh: refetchStats,
+    onRefresh: refetchPosts,
   });
 
-  // Use Stream SDK directly for follow/unfollow (same as web frontend)
+  // Follow/unfollow via backend
   const {
     isFollowing,
     follow,
@@ -123,7 +124,7 @@ export default function UserProfileScreen() {
 
         setUser(profile);
       } catch (err: any) {
-        console.error('[UserProfile] Error loading user:', err);
+        console.error('Error loading user:', err);
         setError(err?.message || 'User not found');
       } finally {
         setIsLoading(false);
@@ -140,27 +141,20 @@ export default function UserProfileScreen() {
   const avatarUrl = user?.avatar?.url;
 
   const handleFollow = async () => {
-    if (!user?.id || isFollowInProgress || isUnfollowInProgress) return;
-
-    console.log('[UserProfile] handleFollow called, isFollowing:', isFollowing, 'userId:', user.id);
-    try {
-      if (isFollowing) {
-        console.log('[UserProfile] Calling unfollow via Stream SDK...');
-        await unfollow();
-      } else {
-        console.log('[UserProfile] Calling follow via Stream SDK...');
-        await follow();
+    if (!user?.id || isFollowInProgress || isUnfollowInProgress) return;    try {
+      if (isFollowing) {        await unfollow();
+      } else {        await follow();
       }
-      // Refetch stats to update follower count
-      await refetchStats();
+      // Refetch posts
+      await refetchPosts();
     } catch (err: any) {
-      console.error('[UserProfile] Follow error:', err);
+      console.error('Follow error:', err);
       showError(err?.message || 'Failed to update follow status');
     }
   };
 
   const handleMessage = async () => {
-    if (!user?.id || !client || chatStatus !== 'connected') {
+    if (!user?.id) {
       showError('Unable to start chat. Please try again.');
       return;
     }
@@ -169,47 +163,15 @@ export default function UserProfileScreen() {
 
     setIsCreatingChat(true);
     try {
-      const currentUserId = client.userID;
-      if (!currentUserId) {
-        showError('You need to be logged in to send messages');
-        return;
-      }
-
-      const targetUserId = String(user.id);
-
-      // Query Stream Chat for existing 1:1 channel with this user
-      const existingChannels = await client.queryChannels(
-        {
-          type: 'messaging',
-          members: { $eq: [currentUserId, targetUserId] },
-        },
-        {},
-        { limit: 1 },
-      );
-
-      if (existingChannels.length > 0) {
-        const existing = existingChannels[0];
-        router.push({
-          pathname: '/chat/[conversationId]',
-          params: { conversationId: existing.id || existing.cid },
-        });
-        return;
-      }
-
-      // No existing channel — create one
-      const channelId = [currentUserId, targetUserId].sort().join('-');
-      const channel = client.channel('messaging', channelId, {
-        members: [currentUserId, targetUserId],
-      });
-
-      await channel.watch();
+      // Create conversation (backend will dedup existing DMs)
+      const conversation = await chatApi.createConversation([user.id]);
 
       router.push({
         pathname: '/chat/[conversationId]',
-        params: { conversationId: channel.id || channelId },
+        params: { conversationId: conversation.id },
       });
     } catch (err: any) {
-      console.error('[UserProfile] Error creating chat:', err);
+      console.error('Error creating chat:', err);
       showError(err?.message || 'Failed to start conversation');
     } finally {
       setIsCreatingChat(false);

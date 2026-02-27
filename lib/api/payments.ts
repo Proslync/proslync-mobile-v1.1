@@ -54,6 +54,15 @@ export const paymentsApi = {
   },
 
   /**
+   * Get or create a Stripe Terminal location for an event
+   * Backend endpoint: GET /api/events/:eventId/terminal/location
+   */
+  fetchTerminalLocation: async (eventId: number): Promise<string> => {
+    const res = await apiClient.get<{ locationId: string }>(`/api/events/${eventId}/terminal/location`);
+    return res.locationId;
+  },
+
+  /**
    * Initiate collect-at-door payment for a guest
    * Backend endpoint: POST /api/events/:eventId/payments/collect-at-door
    */

@@ -26,14 +26,12 @@ import { buttonPress } from '@/constants/glass/animations';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { GlassButtonVariant, GlassButtonSize } from '@/constants/glass/types';
 
-// ── Size map ──────────────────────────────────────────────────────────
 const sizeMap: Record<GlassButtonSize, { height: number; fontSize: number; paddingH: number }> = {
   sm: { height: 36, fontSize: 13, paddingH: 14 },
   md: { height: 44, fontSize: 15, paddingH: 18 },
   lg: { height: 48, fontSize: 16, paddingH: 22 },
 };
 
-// ── Variant configs ───────────────────────────────────────────────────
 interface VariantConfig {
   fillOpacity: number;
   borderOpacity: number;

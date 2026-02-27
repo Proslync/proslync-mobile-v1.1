@@ -29,9 +29,10 @@ import Animated, {
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { eventsApi } from '@/lib/api/events';
+import { locationsApi, HeatmapPoint } from '@/lib/api/locations';
 import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
-import Mapbox, { MapView, Camera, MarkerView, LocationPuck, SymbolLayer } from '@rnmapbox/maps';
+import Mapbox, { MapView, Camera, MarkerView, LocationPuck, SymbolLayer, ShapeSource, HeatmapLayer } from '@rnmapbox/maps';
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import { ShareLocationSheet } from '@/components/map/share-location-sheet';
 import { FriendProfileSheet } from '@/components/map/friend-profile-sheet';
@@ -296,11 +297,8 @@ function MapPreview() {
 
       const apiEvents = await eventsApi.getEvents({ limit: 50 });
       const mapEvents = apiEvents.map(transformEventToMapEvent);
-      setEvents(mapEvents);
-
-      console.log('[Map] Fetched', mapEvents.length, 'events from API');
-    } catch (err) {
-      console.error('[Map] Failed to fetch events:', err);
+      setEvents(mapEvents);    } catch (err) {
+      console.error('Failed to fetch events:', err);
       setError('Failed to load events');
     } finally {
       setIsLoading(false);
@@ -472,6 +470,7 @@ function FullMapScreen() {
   const [selectedEvent, setSelectedEvent] = useState<MapEvent | null>(null);
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendMarker | null>(null);
+  const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
   const { colors, isDark } = useAppTheme();
 
   // Live location hook
@@ -500,14 +499,32 @@ function FullMapScreen() {
       const mapEvents = apiEvents.map(transformEventToMapEvent);
       setEvents(mapEvents);
     } catch (err) {
-      console.error('[Map] Failed to fetch events:', err);
+      console.error('Failed to fetch events:', err);
       setError('Failed to load events');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  const fetchHeatmap = useCallback(async () => {
+    if (!userLocation) return;
+    try {
+      const points = await locationsApi.getHeatmapPoints(userLocation[1], userLocation[0]);
+      setHeatmapPoints(points);
+    } catch (err) {
+      console.error('Failed to fetch heatmap:', err);
+    }
+  }, [userLocation]);
+
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
+
+  // Fetch heatmap when user location is available, refresh every 60s
+  useEffect(() => {
+    if (!userLocation) return;
+    fetchHeatmap();
+    const interval = setInterval(fetchHeatmap, 60000);
+    return () => clearInterval(interval);
+  }, [userLocation, fetchHeatmap]);
 
   const { refreshControl } = useRefreshControl({ onRefresh: fetchEvents });
 
@@ -556,12 +573,67 @@ function FullMapScreen() {
   const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
   const defaultCenter: [number, number] = userLocation || [-73.9855, 40.7580];
 
+  // Build heatmap GeoJSON from anonymous user locations
+  const heatmapGeoJSON = useMemo(() => {
+    const features = heatmapPoints.map((pt) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [pt.longitude, pt.latitude] },
+      properties: { weight: pt.weight },
+    }));
+    return { type: 'FeatureCollection' as const, features };
+  }, [heatmapPoints]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <MapView style={StyleSheet.absoluteFill} styleURL={DARK_STYLE_URL} logoEnabled={false} attributionEnabled={false} compassEnabled={false} scaleBarEnabled={false} zoomEnabled={true} pitchEnabled={true} rotateEnabled={true}>
         <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12 }} minZoomLevel={2} maxZoomLevel={20} />
         {/* Override POI/business label colors to white */}
         <SymbolLayer id="poi-label" existing={true} style={{ textColor: '#ffffff' }} />
+        {/* Heatmap layer — Snapmap-style activity density */}
+        {heatmapGeoJSON.features.length > 0 && (
+          <ShapeSource id="heatmap-source" shape={heatmapGeoJSON as any}>
+            <HeatmapLayer
+              id="heatmap-layer"
+              sourceID="heatmap-source"
+              belowLayerID="poi-label"
+              style={{
+                heatmapWeight: ['get', 'weight'],
+                heatmapIntensity: [
+                  'interpolate', ['linear'], ['zoom'],
+                  0, 0.5,
+                  9, 1,
+                  14, 2,
+                  18, 3,
+                ],
+                heatmapRadius: [
+                  'interpolate', ['linear'], ['zoom'],
+                  0, 4,
+                  6, 15,
+                  10, 30,
+                  14, 50,
+                  18, 70,
+                ],
+                heatmapColor: [
+                  'interpolate', ['linear'], ['heatmap-density'],
+                  0, 'rgba(0,0,0,0)',
+                  0.1, 'rgba(33,102,172,0.2)',
+                  0.3, 'rgba(103,169,207,0.4)',
+                  0.5, 'rgba(109,205,163,0.5)',
+                  0.7, 'rgba(253,219,127,0.6)',
+                  0.85, 'rgba(239,138,98,0.7)',
+                  1, 'rgba(178,24,43,0.8)',
+                ],
+                heatmapOpacity: [
+                  'interpolate', ['linear'], ['zoom'],
+                  0, 0.6,
+                  14, 0.5,
+                  18, 0.3,
+                ],
+              }}
+            />
+          </ShapeSource>
+        )}
+
         {/* Show LocationPuck only when NOT sharing (avatar marker replaces it when sharing) */}
         {!sharingState.isSharing && (
           <LocationPuck puckBearing="heading" puckBearingEnabled={true} pulsing={{ isEnabled: true, color: '#34c759' }} />

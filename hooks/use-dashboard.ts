@@ -8,9 +8,6 @@ import type { Venue } from '@/lib/types/events.types';
 export const DASHBOARD_STATS_QUERY_KEY = 'dashboard-stats';
 export const MY_VENUES_QUERY_KEY = 'my-venues';
 
-/**
- * Hook for fetching dashboard statistics
- */
 export function useDashboardStats() {
   return useQuery<DashboardStats>({
     queryKey: [DASHBOARD_STATS_QUERY_KEY],
@@ -20,9 +17,6 @@ export function useDashboardStats() {
   });
 }
 
-/**
- * Hook for fetching user's venues
- */
 export function useMyVenues() {
   return useQuery<Venue[]>({
     queryKey: [MY_VENUES_QUERY_KEY],
@@ -39,10 +33,6 @@ export function useMyVenues() {
   });
 }
 
-/**
- * Combined hook for dashboard page - maintains backward compatibility
- * Fetches both stats and venues in parallel using React Query
- */
 export function useDashboard() {
   const queryClient = useQueryClient();
 

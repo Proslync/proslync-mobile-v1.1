@@ -11,7 +11,6 @@ import type {
   SpacingScale,
 } from './types';
 
-// ── Blur Intensities ──────────────────────────────────────────────────
 export const blur: Record<BlurIntensity, number> = {
   light: 25,
   medium: 30,
@@ -19,7 +18,6 @@ export const blur: Record<BlurIntensity, number> = {
   maximum: 80,
 };
 
-// ── Glass Fill ────────────────────────────────────────────────────────
 // Dark-alpha overlays on white backgrounds
 export const glassFill: Record<GlassFill, number> = {
   subtle: 0.03,
@@ -29,14 +27,12 @@ export const glassFill: Record<GlassFill, number> = {
   frosted: 0.85,
 };
 
-// ── Glass Border ──────────────────────────────────────────────────────
 export const glassBorder: Record<GlassBorder, { opacity: number; borderWidth: number }> = {
   subtle: { opacity: 0.08, borderWidth: 1 },
   medium: { opacity: 0.12, borderWidth: 1 },
   strong: { opacity: 0.18, borderWidth: 1 },
 };
 
-// ── Radius Scale ──────────────────────────────────────────────────────
 export const radius: Record<RadiusScale, number> = {
   xs: 6,
   sm: 8,
@@ -47,7 +43,6 @@ export const radius: Record<RadiusScale, number> = {
   '3xl': 32,
 };
 
-// ── Shadow Presets ────────────────────────────────────────────────────
 export const shadow: Record<ShadowLevel, ShadowPreset> = {
   sm: {
     shadowColor: '#000',
@@ -79,7 +74,6 @@ export const shadow: Record<ShadowLevel, ShadowPreset> = {
   },
 };
 
-// ── Text Colors ───────────────────────────────────────────────────────
 export const textColor: Record<TextHierarchy, string> = {
   primary: '#1a1a1a',
   secondary: 'rgba(0, 0, 0, 0.6)',
@@ -88,7 +82,6 @@ export const textColor: Record<TextHierarchy, string> = {
   faint: 'rgba(0, 0, 0, 0.15)',
 };
 
-// ── Accent Colors ─────────────────────────────────────────────────────
 export const accent: Record<AccentColor, string> = {
   blue: '#0095f6',
   purple: '#8b5cf6',
@@ -97,7 +90,6 @@ export const accent: Record<AccentColor, string> = {
   yellow: '#fbbf24',
 };
 
-// ── Background Colors ─────────────────────────────────────────────────
 export const background = {
   pure: '#ffffff',
   elevated: '#f8f8f8',
@@ -105,7 +97,6 @@ export const background = {
   card: '#f5f5f5',
 } as const;
 
-// ── Font Family ───────────────────────────────────────────────────────
 export const fontFamily: Record<FontWeight, string> = {
   light: 'Lato_300Light',
   regular: 'Lato_400Regular',
@@ -113,7 +104,6 @@ export const fontFamily: Record<FontWeight, string> = {
   black: 'Lato_900Black',
 };
 
-// ── Spacing Scale ─────────────────────────────────────────────────────
 export const spacing: Record<SpacingScale, number> = {
   xs: 4,
   sm: 8,

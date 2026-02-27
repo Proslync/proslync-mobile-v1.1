@@ -15,31 +15,19 @@ import type {
   PublicUserProfile,
 } from '../types/auth.types';
 
-/**
- * Authentication API endpoints
- */
 export const authApi = {
-  /**
-   * Request OTP code for phone number
-   */
   requestOtp: async (data: RequestOtpRequest): Promise<RequestOtpResponse> => {
     return apiClient.post<RequestOtpResponse>('/api/auth/request-otp', data, {
       skipAuth: true,
     });
   },
 
-  /**
-   * Verify OTP code
-   */
   verifyOtp: async (data: VerifyOtpRequest): Promise<VerifyOtpResponse> => {
     return apiClient.post<VerifyOtpResponse>('/api/auth/verify-otp', data, {
       skipAuth: true,
     });
   },
 
-  /**
-   * Refresh access token
-   */
   refreshToken: async (): Promise<RefreshTokenResponse> => {
     const refreshToken = await apiClient.getRefreshToken();
     return apiClient.post<RefreshTokenResponse>(
@@ -49,16 +37,10 @@ export const authApi = {
     );
   },
 
-  /**
-   * Logout user
-   */
   logout: async (): Promise<LogoutResponse> => {
     return apiClient.post<LogoutResponse>('/api/auth/logout');
   },
 
-  /**
-   * Get current authenticated user
-   */
   getCurrentUser: async (): Promise<User> => {
     const raw = await apiClient.get<Record<string, unknown>>('/api/auth/me');
     // Normalize: backend may return userName or username
@@ -68,9 +50,6 @@ export const authApi = {
     return raw as unknown as User;
   },
 
-  /**
-   * Check if user is authenticated
-   */
   checkAuth: async (): Promise<CheckAuthResponse> => {
     try {
       const user = await apiClient.get<User>('/api/auth/me');
@@ -80,16 +59,10 @@ export const authApi = {
     }
   },
 
-  /**
-   * Update user profile
-   */
   updateProfile: async (data: UpdateProfileRequest): Promise<UpdateProfileResponse> => {
     return apiClient.put<UpdateProfileResponse>('/api/users/profile', data);
   },
 
-  /**
-   * Search for a user by username
-   */
   getUserByUsername: async (userName: string): Promise<PublicUserProfile | null> => {
     const response = await apiClient.get<{
       events: unknown[];
@@ -123,9 +96,6 @@ export const authApi = {
     };
   },
 
-  /**
-   * Get public user profile by ID (includes event stats and follow stats)
-   */
   getUserById: async (userId: number): Promise<PublicUserProfile | null> => {
     try {
       const response = await apiClient.get<Record<string, unknown>>(`/api/users/${userId}`);
@@ -142,35 +112,23 @@ export const authApi = {
         followStats: (raw.followStats) as PublicUserProfile['followStats'],
       };
     } catch (error) {
-      console.error('[Auth] Error fetching user by ID:', error);
+      console.error('Error fetching user by ID:', error);
       return null;
     }
   },
 
-  /**
-   * Follow a user
-   */
   followUser: async (userId: number): Promise<{ success: boolean; message: string }> => {
     return apiClient.post<{ success: boolean; message: string }>(`/api/users/${userId}/follow`, {});
   },
 
-  /**
-   * Unfollow a user
-   */
   unfollowUser: async (userId: number): Promise<{ success: boolean; message: string }> => {
     return apiClient.delete<{ success: boolean; message: string }>(`/api/users/${userId}/follow`);
   },
 
-  /**
-   * Check if current user is following a specific user
-   */
   getFollowStatus: async (userId: number): Promise<{ isFollowing: boolean }> => {
     return apiClient.get<{ isFollowing: boolean }>(`/api/users/${userId}/follow-status`);
   },
 
-  /**
-   * Get presigned URL for avatar upload
-   */
   getAvatarPresignedUrl: async (
     fileName: string,
     mimeType: string,
@@ -183,16 +141,10 @@ export const authApi = {
     });
   },
 
-  /**
-   * Confirm file upload
-   */
   confirmUpload: async (fileId: string): Promise<ConfirmUploadResponse> => {
     return apiClient.post<ConfirmUploadResponse>(`/api/files/confirm-upload/${fileId}`);
   },
 
-  /**
-   * Upload file to presigned URL
-   */
   uploadToPresignedUrl: async (
     uploadUrl: string,
     uri: string,
@@ -207,18 +159,12 @@ export const authApi = {
       );
       return;
     }
-
-    console.log('[Auth] Uploading to cloud storage:', uploadUrl.substring(0, 80) + '...');
-
     // For cloud storage (S3/GCS), read the file and upload as blob
     // React Native's fetch can read local file URIs
     try {
       // Read the file as blob using fetch
       const fileResponse = await fetch(uri);
       const blob = await fileResponse.blob();
-
-      console.log('[Auth] File blob created, size:', blob.size);
-
       // Upload to presigned URL
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
@@ -227,15 +173,12 @@ export const authApi = {
         },
         body: blob,
       });
-
-      console.log('[Auth] Upload response status:', uploadResponse.status);
-
       if (!uploadResponse.ok) {
         const errorText = await uploadResponse.text();
         throw new Error(`Upload failed with status ${uploadResponse.status}: ${errorText}`);
       }
     } catch (error: any) {
-      console.error('[Auth] Upload error:', error);
+      console.error('Upload error:', error);
       throw new Error(error?.message || 'Failed to upload file');
     }
   },

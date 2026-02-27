@@ -7,10 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -22,13 +18,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { usePaymentSheet } from '@stripe/stripe-react-native';
+import { TerminalProvider, useTerminalPayment } from '@/lib/providers/terminal-provider';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { eventsApi } from '@/lib/api/events';
 import { paymentsApi } from '@/lib/api/payments';
 import { useEventSocket } from '@/hooks/use-event-socket';
 import { EventUserStatus } from '@/lib/types/events.types';
-import type { EventAttendee } from '@/lib/types/events.types';
+import type { Event, EventAttendee } from '@/lib/types/events.types';
 
 interface CheckedInGuest {
   id: number;
@@ -75,22 +72,26 @@ function mapAttendee(a: EventAttendee): CheckedInGuest {
   };
 }
 
-export default function CheckInsScreen() {
+function CheckInsContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors, isDark } = useAppTheme();
   const eventId = id ? Number(id) : null;
 
-  const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
+  const { readerStatus, isReaderConnected, isInitialized, connectReader, collectPayment } = useTerminalPayment();
+  const connectAttemptedRef = React.useRef(false);
 
   const [guests, setGuests] = React.useState<CheckedInGuest[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [collectingGuestId, setCollectingGuestId] = React.useState<number | null>(null);
+  const [event, setEvent] = React.useState<Event | null>(null);
 
-  // Charge modal state
-  const [chargeModalVisible, setChargeModalVisible] = React.useState(false);
-  const [chargeGuest, setChargeGuest] = React.useState<CheckedInGuest | null>(null);
-  const [chargeAmount, setChargeAmount] = React.useState('');
+  // Fetch event data (for doorCoverPriceCents)
+  React.useEffect(() => {
+    if (!eventId) return;
+    eventsApi.getEvent(eventId).then(setEvent).catch(() => {});
+  }, [eventId]);
 
   // Fetch checked-in guests
   const fetchGuests = React.useCallback(async () => {
@@ -99,7 +100,6 @@ export default function CheckInsScreen() {
       const response = await eventsApi.getEventAttendees(eventId, {
         limit: 100,
       });
-      // Filter to checked-in statuses on the client
       const checkedInStatuses = [
         EventUserStatus.VERIFIED,
         EventUserStatus.CHECKED_IN,
@@ -116,7 +116,7 @@ export default function CheckInsScreen() {
       );
       setGuests(mapped);
     } catch (err) {
-      console.error('[CheckIns] Fetch error:', err);
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -155,69 +155,67 @@ export default function CheckInsScreen() {
     ),
   });
 
-  // Open charge modal
-  const openChargeModal = React.useCallback((guest: CheckedInGuest) => {
-    setChargeGuest(guest);
-    setChargeAmount('');
-    setChargeModalVisible(true);
-  }, []);
+  // Auto-connect Terminal reader
+  React.useEffect(() => {
+    if (isInitialized && !isReaderConnected && !connectAttemptedRef.current) {
+      connectAttemptedRef.current = true;
+      connectReader(eventId ?? undefined).catch(() => {});
+    }
+  }, [isInitialized, isReaderConnected, connectReader]);
 
-  // Handle charge with custom amount
-  const handleCharge = React.useCallback(async () => {
-    if (!eventId || !chargeGuest) return;
+  // Auto-charge door cover price
+  const handleCharge = React.useCallback(async (guest: CheckedInGuest) => {
+    if (!eventId) return;
 
-    const dollars = parseFloat(chargeAmount);
-    if (isNaN(dollars) || dollars < 0.5) {
-      Alert.alert('Invalid Amount', 'Please enter at least $0.50');
+    const doorCoverCents = event?.doorCoverPriceCents;
+
+    // Free event or no door cover — mark as paid instantly
+    if (!doorCoverCents || doorCoverCents <= 0) {
+      setGuests((prev) =>
+        prev.map((g) => (g.id === guest.id ? { ...g, paid: true } : g)),
+      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       return;
     }
 
-    const amountCents = Math.round(dollars * 100);
-    setChargeModalVisible(false);
-    setCollectingGuestId(chargeGuest.id);
+    setCollectingGuestId(guest.id);
 
     try {
-      // 1. Create payment intent with custom amount
-      const result = await paymentsApi.collectAtDoor(eventId, {
-        guestId: chargeGuest.id,
-        customAmountCents: amountCents,
-      });
-
-      // 2. Init Stripe Payment Sheet (Apple Pay / NFC Tap to Pay)
-      const { error: initError } = await initPaymentSheet({
-        paymentIntentClientSecret: result.clientSecret,
-        merchantDisplayName: 'Status',
-        style: 'alwaysDark',
-        applePay: { merchantCountryCode: 'US' },
-        googlePay: { merchantCountryCode: 'US', testEnv: true },
-      });
-
-      if (initError) throw new Error(initError.message);
-
-      // 3. Present payment sheet — guest taps phone/card
-      const { error: paymentError } = await presentPaymentSheet();
-
-      if (paymentError) {
-        if (paymentError.code === 'Canceled') {
-          setCollectingGuestId(null);
-          return;
-        }
-        throw new Error(paymentError.message);
+      // Connect reader if not connected
+      if (!isReaderConnected) {
+        await connectReader(eventId ?? undefined);
       }
 
-      // 4. Success
+      // Create payment intent with door cover price
+      const result = await paymentsApi.collectAtDoor(eventId, {
+        guestId: guest.id,
+        customAmountCents: doorCoverCents,
+        useTerminal: true,
+      });
+
+      // Collect payment via NFC tap-to-pay
+      await collectPayment(result.clientSecret);
+
+      // Success
       setGuests((prev) =>
-        prev.map((g) => (g.id === chargeGuest.id ? { ...g, paid: true } : g)),
+        prev.map((g) => (g.id === guest.id ? { ...g, paid: true } : g)),
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
+      if (err?.message?.includes('canceled')) {
+        setCollectingGuestId(null);
+        return;
+      }
       Alert.alert('Payment Failed', err?.message || 'Something went wrong.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setCollectingGuestId(null);
-      setChargeGuest(null);
     }
-  }, [eventId, chargeGuest, chargeAmount, initPaymentSheet, presentPaymentSheet]);
+  }, [eventId, event, isReaderConnected, connectReader, collectPayment]);
+
+  const doorCoverDisplay = event?.doorCoverPriceCents
+    ? `$${(event.doorCoverPriceCents / 100).toFixed(2)}`
+    : 'Free';
 
   const renderGuest = React.useCallback(
     ({ item }: { item: CheckedInGuest }) => {
@@ -228,11 +226,11 @@ export default function CheckInsScreen() {
           entering={FadeInDown.duration(300)}
           exiting={FadeOut.duration(200)}
           layout={Layout.springify()}
-          style={styles.guestRow}
+          style={[styles.guestRow, { backgroundColor: colors.cardElevated, borderColor: colors.border }]}
         >
           {/* Avatar placeholder */}
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitials}>
+          <View style={[styles.avatarPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.avatarInitials, { color: colors.textSecondary }]}>
               {item.name
                 .split(' ')
                 .map((n) => n[0])
@@ -244,15 +242,15 @@ export default function CheckInsScreen() {
 
           {/* Info */}
           <View style={styles.guestInfo}>
-            <Text style={styles.guestName} numberOfLines={1}>
+            <Text style={[styles.guestName, { color: colors.text }]} numberOfLines={1}>
               {item.name}
             </Text>
             <View style={styles.guestMeta}>
               {item.age != null && (
-                <Text style={styles.guestMetaText}>Age {item.age}</Text>
+                <Text style={[styles.guestMetaText, { color: colors.textTertiary }]}>Age {item.age}</Text>
               )}
               {item.checkedInAt && (
-                <Text style={styles.guestMetaText}>
+                <Text style={[styles.guestMetaText, { color: colors.textTertiary }]}>
                   {formatTimeAgo(item.checkedInAt)}
                 </Text>
               )}
@@ -267,17 +265,19 @@ export default function CheckInsScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.chargeButton}
-              onPress={() => openChargeModal(item)}
+              style={[styles.chargeButton, { backgroundColor: colors.cardElevated, borderColor: colors.border }]}
+              onPress={() => handleCharge(item)}
               activeOpacity={0.8}
               disabled={isCollecting || collectingGuestId !== null}
             >
               {isCollecting ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
                 <>
-                  <Ionicons name="card-outline" size={14} color="#fff" />
-                  <Text style={styles.chargeButtonText}>Charge</Text>
+                  <Ionicons name="phone-portrait-outline" size={14} color={colors.text} />
+                  <Text style={[styles.chargeButtonText, { color: colors.text }]}>
+                    Charge {doorCoverDisplay}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -285,7 +285,7 @@ export default function CheckInsScreen() {
         </Animated.View>
       );
     },
-    [collectingGuestId, openChargeModal],
+    [collectingGuestId, handleCharge, doorCoverDisplay],
   );
 
   const keyExtractor = React.useCallback(
@@ -295,49 +295,63 @@ export default function CheckInsScreen() {
 
   if (!eventId) {
     return (
-      <View style={styles.container}>
-        <DarkGradientBg />
-        <Text style={styles.errorText}>No event selected</Text>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {isDark && <DarkGradientBg />}
+        <Text style={[styles.errorText, { color: colors.textSecondary }]}>No event selected</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
       >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Check Ins</Text>
-          <Text style={styles.headerSubtitle}>
-            {guests.length} guest{guests.length !== 1 ? 's' : ''} checked in
-          </Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Check Ins</Text>
+          <View style={styles.headerStatusRow}>
+            <View
+              style={[
+                styles.readerDot,
+                {
+                  backgroundColor: isReaderConnected
+                    ? '#34d399'
+                    : readerStatus === 'connecting'
+                      ? '#fbbf24'
+                      : '#f87171',
+                },
+              ]}
+            />
+            <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>
+              {guests.length} guest{guests.length !== 1 ? 's' : ''} checked in
+            </Text>
+          </View>
         </View>
         <TouchableOpacity
           style={styles.backButton}
           onPress={fetchGuests}
           activeOpacity={0.7}
         >
-          <Ionicons name="refresh" size={20} color="#fff" />
+          <Ionicons name="refresh" size={20} color={colors.text} />
         </TouchableOpacity>
       </Animated.View>
 
       {/* Content */}
       {loading ? (
         <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Loading check-ins...</Text>
+          <ActivityIndicator size="large" color={colors.text} />
+          <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Loading check-ins...</Text>
         </View>
       ) : guests.length === 0 ? (
         <Animated.View
@@ -347,11 +361,11 @@ export default function CheckInsScreen() {
           <Ionicons
             name="scan-outline"
             size={64}
-            color="rgba(255,255,255,0.4)"
+            color={colors.textTertiary}
           />
-          <Text style={styles.emptyTitle}>No check-ins yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Guests will appear here after being scanned and approved
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No check-ins yet</Text>
+          <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
+            Guests will appear here once they've been scanned at the door
           </Text>
         </Animated.View>
       ) : (
@@ -366,90 +380,28 @@ export default function CheckInsScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
-
-      {/* Charge Amount Modal */}
-      <Modal
-        visible={chargeModalVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setChargeModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          style={[styles.modalContainer, { paddingTop: insets.top }]}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          {/* Modal Header */}
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Charge Guest</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setChargeModalVisible(false)}
-            >
-              <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Guest Info */}
-          <View style={styles.modalBody}>
-            <Text style={styles.modalGuestName}>{chargeGuest?.name}</Text>
-            {chargeGuest?.age != null && (
-              <Text style={styles.modalGuestMeta}>Age {chargeGuest.age}</Text>
-            )}
-
-            {/* Amount Input */}
-            <Text style={styles.amountLabel}>Amount</Text>
-            <View style={styles.amountInputRow}>
-              <Text style={styles.dollarSign}>$</Text>
-              <TextInput
-                style={styles.amountInput}
-                value={chargeAmount}
-                onChangeText={setChargeAmount}
-                placeholder="0.00"
-                placeholderTextColor="rgba(255,255,255,0.3)"
-                keyboardType="decimal-pad"
-                autoFocus
-              />
-            </View>
-          </View>
-
-          {/* Charge Button */}
-          <View style={[styles.modalFooter, { paddingBottom: insets.bottom + 16 }]}>
-            <TouchableOpacity
-              style={[
-                styles.chargeSubmitButton,
-                (!chargeAmount || parseFloat(chargeAmount) < 0.5) &&
-                  styles.chargeSubmitDisabled,
-              ]}
-              onPress={handleCharge}
-              disabled={!chargeAmount || parseFloat(chargeAmount) < 0.5}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="card-outline" size={20} color="#fff" />
-              <Text style={styles.chargeSubmitText}>
-                {chargeAmount && parseFloat(chargeAmount) >= 0.5
-                  ? `Charge $${parseFloat(chargeAmount).toFixed(2)}`
-                  : 'Enter Amount'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
+  );
+}
+
+export default function CheckInsScreen() {
+  return (
+    <TerminalProvider>
+      <CheckInsContent />
+    </TerminalProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.12)',
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 40,
@@ -464,13 +416,21 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+  },
+  headerStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 2,
+  },
+  readerDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   headerSubtitle: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 2,
   },
   centerContent: {
     flex: 1,
@@ -482,24 +442,20 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
   },
   emptyTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.6)',
     marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
   },
   errorText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
     textAlign: 'center',
     marginTop: 100,
   },
@@ -514,22 +470,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 8,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   avatarPlaceholder: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarInitials: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.6)',
   },
   guestInfo: {
     flex: 1,
@@ -538,7 +490,6 @@ const styles = StyleSheet.create({
   guestName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   guestMeta: {
     flexDirection: 'row',
@@ -548,7 +499,6 @@ const styles = StyleSheet.create({
   guestMetaText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
   },
   chargeButton: {
     flexDirection: 'row',
@@ -557,14 +507,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
   },
   chargeButtonText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   paidBadge: {
     flexDirection: 'row',
@@ -579,107 +526,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
     color: '#10b981',
-  },
-
-  // ─── Charge Modal ─────────────────────────────────────────
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeText: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  modalBody: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 32,
-    alignItems: 'center',
-  },
-  modalGuestName: {
-    fontSize: 22,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    marginBottom: 4,
-  },
-  modalGuestMeta: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
-    marginBottom: 40,
-  },
-  amountLabel: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.7)',
-    alignSelf: 'flex-start',
-    marginBottom: 8,
-  },
-  amountInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    borderRadius: 16,
-    paddingHorizontal: 20,
-    width: '100%',
-  },
-  dollarSign: {
-    fontSize: 28,
-    fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.5)',
-    marginRight: 4,
-  },
-  amountInput: {
-    flex: 1,
-    fontSize: 28,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    paddingVertical: 18,
-  },
-  modalFooter: {
-    padding: 20,
-  },
-  chargeSubmitButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 14,
-    paddingVertical: 16,
-  },
-  chargeSubmitDisabled: {
-    opacity: 0.4,
-  },
-  chargeSubmitText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
 });

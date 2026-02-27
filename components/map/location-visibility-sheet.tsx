@@ -601,7 +601,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
 
-  // ── Mode Picker ──
   modesContainer: {
     alignItems: "center",
     paddingTop: spacing.xs,
@@ -677,7 +676,6 @@ const styles = StyleSheet.create({
     marginLeft: spacing.lg + 34 + spacing.md,
   },
 
-  // ── Friend Picker ──
   pickerContainer: {
     flex: 1,
   },

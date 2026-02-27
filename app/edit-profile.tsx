@@ -85,7 +85,7 @@ export default function EditProfileScreen() {
         await uploadAvatar(asset.uri, asset.fileSize);
       }
     } catch (error) {
-      console.error('[EditProfile] Image picker error:', error);
+      console.error('Image picker error:', error);
       showError('Failed to pick image');
     }
   };
@@ -111,7 +111,7 @@ export default function EditProfileScreen() {
         await uploadAvatar(asset.uri, asset.fileSize);
       }
     } catch (error) {
-      console.error('[EditProfile] Camera error:', error);
+      console.error('Camera error:', error);
       showError('Failed to take photo');
     }
   };
@@ -135,7 +135,6 @@ export default function EditProfileScreen() {
       // Use provided file size or estimate
       const uploadFileSize = fileSize || 1024 * 1024; // Default to 1MB if not provided
 
-      console.log('[EditProfile] Getting presigned URL for avatar:', { fileName, mimeType, fileSize: uploadFileSize });
 
       // Step 1: Get presigned URL
       const presignedResponse = await authApi.getAvatarPresignedUrl(
@@ -144,26 +143,16 @@ export default function EditProfileScreen() {
         uploadFileSize
       );
 
-      console.log('[EditProfile] Presigned URL response:', {
-        fileId: presignedResponse.fileId,
-        message: presignedResponse.message,
-        uploadUrlPrefix: presignedResponse.uploadUrl.substring(0, 50),
-      });
-
-      // Step 2: Upload to presigned URL
-      console.log('[EditProfile] Uploading to presigned URL...');
+      // Upload to presigned URL
       await authApi.uploadToPresignedUrl(presignedResponse.uploadUrl, uri, mimeType);
 
-      console.log('[EditProfile] Upload complete, confirming...');
-
-      // Step 3: Confirm upload
-      const confirmResponse = await authApi.confirmUpload(presignedResponse.fileId);
-      console.log('[EditProfile] Upload confirmed:', confirmResponse);
+      // Confirm upload
+      await authApi.confirmUpload(presignedResponse.fileId);
 
       showSuccess('Photo updated');
       await refreshUser();
     } catch (error: any) {
-      console.error('[EditProfile] Upload avatar error:', error);
+      console.error('Upload avatar error:', error);
       const errorMessage = error?.message || error?.toString() || 'Failed to upload photo';
       showError(errorMessage);
       setSelectedImage(null);
@@ -236,7 +225,7 @@ export default function EditProfileScreen() {
         showError(response.message || 'Failed to update profile');
       }
     } catch (error: any) {
-      console.error('[EditProfile] Save error:', error);
+      console.error('Save error:', error);
       showError(error?.message || 'Failed to update profile. Please try again.');
     } finally {
       setIsSaving(false);

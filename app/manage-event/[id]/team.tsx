@@ -51,10 +51,8 @@ export default function TeamScreen() {
 
   const eventId = id ? Number(id) : 0;
 
-  // ── Permissions ──────────────────────────────────────────
   const { canInviteTeam, canManageTeam, canRemoveTeam } = useEventPermissions(eventId);
 
-  // ── Queries ────────────────────────────────────────────
   const membersQuery = useTeamMembers(eventId);
   const rolesQuery = useTeamRoles(eventId);
   const invitationsQuery = useTeamInvitations(eventId);
@@ -65,7 +63,6 @@ export default function TeamScreen() {
   const invitations = invitationsQuery.data?.invitations ?? [];
   const stats = statsQuery.data;
 
-  // ── Mutations ──────────────────────────────────────────
   const updateMemberRole = useUpdateMemberRole(eventId);
   const removeMember = useRemoveTeamMember(eventId);
   const createRole = useCreateRole(eventId);
@@ -73,7 +70,6 @@ export default function TeamScreen() {
   const updatePermissions = useUpdateRolePermissions(eventId);
   const cancelInvitation = useCancelInvitation(eventId);
 
-  // ── Modal state ────────────────────────────────────────
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [changeRoleMember, setChangeRoleMember] = useState<TeamMemberResponseDto | null>(null);
   const [createRoleModalVisible, setCreateRoleModalVisible] = useState(false);
@@ -83,14 +79,12 @@ export default function TeamScreen() {
   const [confirmDeleteRole, setConfirmDeleteRole] = useState<RoleResponseDto | null>(null);
   const [confirmCancelInvitation, setConfirmCancelInvitation] = useState<number | null>(null);
 
-  // ── Role name lookup for invitations ───────────────────
   const roleNameMap = useMemo(() => {
     const map = new Map<number, string>();
     roles.forEach((r) => map.set(r.id, r.name));
     return map;
   }, [roles]);
 
-  // ── Pull-to-refresh ────────────────────────────────────
   const { refreshControl } = useRefreshControl({
     onRefresh: async () => {
       await Promise.all([
@@ -102,7 +96,6 @@ export default function TeamScreen() {
     },
   });
 
-  // ── Member action sheet ────────────────────────────────
   const handleMemberAction = useCallback(
     (member: TeamMemberResponseDto) => {
       setActionSheetMember(member);
@@ -110,7 +103,6 @@ export default function TeamScreen() {
     [],
   );
 
-  // ── Change role handler ────────────────────────────────
   const handleChangeRole = useCallback(
     (roleId: number) => {
       if (!changeRoleMember) return;
@@ -122,7 +114,6 @@ export default function TeamScreen() {
     [changeRoleMember, updateMemberRole],
   );
 
-  // ── Create role handler ────────────────────────────────
   const handleCreateRole = useCallback(
     (data: Parameters<typeof createRole.mutate>[0]) => {
       createRole.mutate(data, {
@@ -132,7 +123,6 @@ export default function TeamScreen() {
     [createRole],
   );
 
-  // ── Delete role handler ────────────────────────────────
   const handleDeleteRole = useCallback(
     (role: RoleResponseDto) => {
       setConfirmDeleteRole(role);
@@ -140,7 +130,6 @@ export default function TeamScreen() {
     [],
   );
 
-  // ── Update permissions handler ─────────────────────────
   const handleSavePermissions = useCallback(
     (roleId: number, permissions: RolePermissions) => {
       updatePermissions.mutate(
@@ -151,7 +140,6 @@ export default function TeamScreen() {
     [updatePermissions],
   );
 
-  // ── Cancel invitation handler ──────────────────────────
   const handleCancelInvitation = useCallback(
     (invitationId: number) => {
       setConfirmCancelInvitation(invitationId);
@@ -238,6 +226,16 @@ export default function TeamScreen() {
                 <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
                   Invite people to help manage your event
                 </Text>
+                {canInviteTeam() && (
+                  <TouchableOpacity
+                    style={styles.emptyCta}
+                    onPress={() => setInviteModalVisible(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="person-add-outline" size={18} color={colors.text} />
+                    <Text style={[styles.emptyCtaText, { color: colors.text }]}>Invite Member</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             ) : (
               <View style={styles.membersList}>
@@ -535,5 +533,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
     textAlign: 'center',
+  },
+  emptyCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  emptyCtaText: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
   },
 });

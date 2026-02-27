@@ -12,7 +12,6 @@ import type {
 
 const PROMO_CODES_QUERY_KEY = 'event-promo-codes';
 
-// ── Promo Codes Query ────────────────────────────────────
 
 export function useGetPromoCodes(eventId: number) {
   return useQuery<PromoCode[]>({
@@ -23,7 +22,6 @@ export function useGetPromoCodes(eventId: number) {
   });
 }
 
-// ── Tier Mutations ───────────────────────────────────────
 
 export function useCreateTier(eventId: number) {
   const queryClient = useQueryClient();
@@ -56,7 +54,6 @@ export function useDeleteTier(eventId: number) {
   });
 }
 
-// ── Pricing Rule Mutations ───────────────────────────────
 
 export function useCreatePricingRule(eventId: number) {
   const queryClient = useQueryClient();
@@ -98,7 +95,6 @@ export function useDeletePricingRule(eventId: number) {
   });
 }
 
-// ── Promo Code Mutations ─────────────────────────────────
 
 export function useCreatePromoCode(eventId: number) {
   const queryClient = useQueryClient();

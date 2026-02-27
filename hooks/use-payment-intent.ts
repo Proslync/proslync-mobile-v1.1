@@ -9,18 +9,12 @@ import type {
 
 export const PAYMENT_STATUS_QUERY_KEY = 'payment-status';
 
-/**
- * Hook for creating a payment intent
- */
 export function useCreatePaymentIntent(eventId: number) {
   return useMutation<CreatePaymentIntentResponse, Error, CreatePaymentIntentRequest>({
     mutationFn: (data) => paymentsApi.createPaymentIntent(eventId, data),
   });
 }
 
-/**
- * Hook for polling payment status
- */
 export function usePaymentStatus(
   paymentIntentId: string | null,
   options?: { enabled?: boolean }

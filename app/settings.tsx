@@ -1,8 +1,3 @@
-/**
- * Settings Screen
- * Account settings and preferences
- */
-
 import * as React from 'react';
 import {
   View,

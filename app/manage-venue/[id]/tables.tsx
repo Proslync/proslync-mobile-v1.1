@@ -39,21 +39,18 @@ export default function VenueTablesScreen() {
 
   const venueId = id ? Number(id) : undefined;
 
-  // ── Data ─────────────────────────────────────────────────
   const { data: sections = [], isLoading } = useVenueSections(venueId);
   const createSection = useCreateSection(venueId!);
   const deleteSection = useDeleteSection(venueId!);
   const createTable = useCreateTable(venueId!);
   const deleteTable = useDeleteTable(venueId!);
 
-  // ── Modal state ───────────────────────────────────────────
   const [showAddSection, setShowAddSection] = useState(false);
   const [showAddTable, setShowAddTable] = useState<{ visible: boolean; sectionId: number | null }>({
     visible: false,
     sectionId: null,
   });
 
-  // ── Form fields ───────────────────────────────────────────
   const [sectionName, setSectionName] = useState('');
   const [sectionDesc, setSectionDesc] = useState('');
   const [tableLabel, setTableLabel] = useState('');
@@ -62,7 +59,6 @@ export default function VenueTablesScreen() {
   const [tableImageUri, setTableImageUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // ── Image picker ────────────────────────────────────────────
   const pickTableImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
@@ -82,7 +78,6 @@ export default function VenueTablesScreen() {
     }
   };
 
-  // ── Handlers ──────────────────────────────────────────────
   const handleCreateSection = async () => {
     if (!sectionName.trim()) return;
     try {
@@ -94,7 +89,7 @@ export default function VenueTablesScreen() {
       setSectionName('');
       setSectionDesc('');
     } catch (err: any) {
-      console.error('[Tables] Failed to create section:', err?.message || err);
+      console.error('Failed to create section:', err?.message || err);
       Alert.alert('Error', err?.message || 'Failed to create section. Please try again.');
     }
   };
@@ -108,7 +103,7 @@ export default function VenueTablesScreen() {
         try {
           imageUrl = await filesApi.uploadTableImage(tableImageUri);
         } catch (uploadErr: any) {
-          console.warn('[Tables] Image upload failed, creating table without image:', uploadErr?.message);
+          console.warn('Image upload failed, creating table without image:', uploadErr?.message);
         }
       }
 
@@ -125,7 +120,7 @@ export default function VenueTablesScreen() {
       setTablePrice('');
       setTableImageUri(null);
     } catch (err: any) {
-      console.error('[Tables] Failed to create table:', err?.message || err, err?.response || '');
+      console.error('Failed to create table:', err?.message || err, err?.response || '');
       Alert.alert('Error', err?.message || 'Failed to create table. Please try again.');
     } finally {
       setIsUploading(false);
@@ -173,7 +168,6 @@ export default function VenueTablesScreen() {
 
   const inputPlaceholderColor = colors.textTertiary;
 
-  // ── Loading state ─────────────────────────────────────────
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>

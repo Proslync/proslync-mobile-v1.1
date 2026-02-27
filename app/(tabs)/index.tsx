@@ -49,7 +49,7 @@ export default function FeedScreen() {
     // Find the item to get the eventId
     const item = feedItems.find(i => i.id === id);
     if (!item?.eventId) {
-      console.warn('[Feed] No eventId found for item:', id);
+      console.warn('No eventId found for item:', id);
       return;
     }
 
@@ -64,6 +64,8 @@ export default function FeedScreen() {
       const response = await eventsApi.registerForEvent(item.eventId);
       if (response.success) {
         showSuccess(response.message || 'You have successfully RSVP\'d!');
+        // Refetch feed so isUserRegistered updates from backend
+        refetch();
       } else {
         // Revert on failure
         setRsvpItems((prev) => {
@@ -74,7 +76,7 @@ export default function FeedScreen() {
         showError(response.message || 'Could not complete RSVP');
       }
     } catch (error: any) {
-      console.error('[Feed] RSVP error:', error);
+      console.error('RSVP error:', error);
       // Revert on error
       setRsvpItems((prev) => {
         const newMap = new Map(prev);
@@ -83,14 +85,14 @@ export default function FeedScreen() {
       });
       showError(error?.message || 'Failed to RSVP. Please try again.');
     }
-  }, [feedItems, showSuccess, showError]);
+  }, [feedItems, showSuccess, showError, refetch]);
 
   const togglePendingRsvp = useCallback(async (id: string) => {
     // For private events, use the same register endpoint
     // Backend will handle the request/pending status
     const item = feedItems.find(i => i.id === id);
     if (!item?.eventId) {
-      console.warn('[Feed] No eventId found for item:', id);
+      console.warn('No eventId found for item:', id);
       return;
     }
 
@@ -114,7 +116,7 @@ export default function FeedScreen() {
         showError(response.message || 'Could not submit request');
       }
     } catch (error: any) {
-      console.error('[Feed] Pending RSVP error:', error);
+      console.error('Pending RSVP error:', error);
       setPendingRsvpItems((prev) => {
         const newMap = new Map(prev);
         newMap.set(id, false);
@@ -127,7 +129,7 @@ export default function FeedScreen() {
   const handlePurchase = useCallback((id: string) => {
     const item = feedItems.find(i => i.id === id);
     if (!item?.eventId) {
-      console.warn('[Feed] No eventId found for item:', id);
+      console.warn('No eventId found for item:', id);
       return;
     }
 

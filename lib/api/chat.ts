@@ -1,0 +1,95 @@
+import { apiClient } from './client';
+
+export interface ConversationMember {
+  userId: number;
+  userName?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  lastReadAt?: string;
+  joinedAt: string;
+}
+
+export interface ConversationResponse {
+  id: string;
+  type: 'direct' | 'group';
+  name: string | null;
+  imageUrl: string | null;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+  unreadCount: number;
+  members: ConversationMember[];
+  createdAt: string;
+}
+
+export interface MessageResponse {
+  id: number;
+  conversationId: string;
+  senderId: number;
+  type: 'text' | 'image' | 'video' | 'voice';
+  text: string | null;
+  mediaUrl: string | null;
+  mediaMetadata: {
+    width?: number;
+    height?: number;
+    duration?: number;
+    mimeType?: string;
+    thumbnailUrl?: string;
+  } | null;
+  isDeleted: boolean;
+  createdAt: string;
+  sender?: {
+    id: number;
+    userName?: string;
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+  };
+}
+
+export interface MessagesResponse {
+  messages: MessageResponse[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export interface ConversationsResponse {
+  conversations: ConversationResponse[];
+}
+
+export const chatApi = {
+  getConversations: () =>
+    apiClient.get<ConversationsResponse>('/api/conversations'),
+
+  createConversation: (memberIds: number[], name?: string) =>
+    apiClient.post<ConversationResponse>('/api/conversations', {
+      memberIds,
+      name,
+    }),
+
+  getMessages: (conversationId: string, cursor?: string, limit = 30) =>
+    apiClient.get<MessagesResponse>(
+      `/api/conversations/${conversationId}/messages`,
+      { params: { cursor, limit } },
+    ),
+
+  sendMessage: (
+    conversationId: string,
+    data: {
+      type?: 'text' | 'image' | 'video' | 'voice';
+      text?: string;
+      mediaUrl?: string;
+      mediaMetadata?: Record<string, unknown>;
+    },
+  ) =>
+    apiClient.post<MessageResponse>(
+      `/api/conversations/${conversationId}/messages`,
+      data,
+    ),
+
+  markRead: (conversationId: string) =>
+    apiClient.post(`/api/conversations/${conversationId}/read`, {}),
+
+  deleteMessage: (messageId: number) =>
+    apiClient.delete(`/api/conversations/messages/${messageId}`),
+};

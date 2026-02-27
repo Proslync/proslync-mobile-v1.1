@@ -161,6 +161,7 @@ export interface CreateEventDto {
   imageUrl?: string;
   isPublic?: boolean;
   tiers?: CreateTierInline[];
+  doorCoverPriceCents?: number;
 }
 
 export interface UpdateEventDto {
@@ -176,6 +177,7 @@ export interface UpdateEventDto {
   eventType?: string;
   imageUrl?: string;
   isPublic?: boolean;
+  doorCoverPriceCents?: number;
 }
 
 export const eventsApi = {

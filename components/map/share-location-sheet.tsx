@@ -50,6 +50,9 @@ interface ShareLocationSheetProps {
 function formatRemainingTime(seconds: number): string {
   if (seconds <= 0) return "0m";
 
+  // Safety: if remaining time exceeds 24h, treat as permanent
+  if (seconds > 86400) return "Until I turn it off";
+
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
 

@@ -62,6 +62,7 @@ export interface Event {
   attendeeCount?: number;
   isUserRegistered?: boolean;
   isPaid?: boolean;
+  doorCoverPriceCents?: number;
   ticketsAvailableNow?: boolean;
   ticketsAvailableFrom?: string | null;
   locationDetails?: {

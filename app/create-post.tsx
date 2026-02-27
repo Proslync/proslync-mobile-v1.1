@@ -74,7 +74,7 @@ export default function CreatePostScreen() {
         setMediaType(result.assets[0].type === 'video' ? 'video' : 'image');
       }
     } catch (error) {
-      console.error('[CreatePost] Error picking media:', error);
+      console.error('Error picking media:', error);
       showError('Failed to select media');
     }
   };
@@ -98,7 +98,7 @@ export default function CreatePostScreen() {
       showSuccess('Post created!');
       router.back();
     } catch (error: any) {
-      console.error('[CreatePost] Error:', error);
+      console.error('Error:', error);
       showError(error?.message || 'Failed to create post');
     } finally {
       setIsSubmitting(false);

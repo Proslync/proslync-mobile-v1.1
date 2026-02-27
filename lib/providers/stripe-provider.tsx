@@ -8,15 +8,11 @@ interface StripeProviderProps {
   children: ReactNode;
 }
 
-/**
- * Stripe Provider wrapper for the app
- * Requires @stripe/stripe-react-native to be installed
- */
 export function StripeProvider({ children }: StripeProviderProps) {
   const publishableKey = config.stripe.publishableKey;
 
   if (!publishableKey) {
-    console.warn('[Stripe] Publishable key is not configured');
+    console.warn('Publishable key is not configured');
     return <View style={{ flex: 1 }}>{children}</View>;
   }
 

@@ -265,7 +265,7 @@ export function PurchaseTicketSheet({
       setSheetState('processing');
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (error: any) {
-      console.error('[PurchaseSheet] Payment error:', error);
+      console.error('Payment error:', error);
       setSheetState('error');
       setErrorMessage(error?.message || 'Payment failed. Please try again.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

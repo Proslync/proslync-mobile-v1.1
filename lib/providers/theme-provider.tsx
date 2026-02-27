@@ -69,9 +69,7 @@ export function ThemeProvider({
       if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
         setThemeModeState(savedTheme as ThemeMode);
       }
-    } catch (error) {
-      console.log('[ThemeProvider] Failed to load theme:', error);
-    } finally {
+    } catch (error) {    } finally {
       setIsLoading(false);
     }
   };
@@ -80,9 +78,7 @@ export function ThemeProvider({
     setThemeModeState(mode);
     try {
       await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
-    } catch (error) {
-      console.log('[ThemeProvider] Failed to save theme:', error);
-    }
+    } catch (error) {    }
   }, []);
 
   const toggleTheme = React.useCallback(() => {
@@ -136,10 +132,6 @@ export function useAppTheme(): ThemeContextValue {
   return context;
 }
 
-/**
- * Hook to get a specific color, with optional overrides
- * Similar to useThemeColor but uses new color system
- */
 export function useThemeColors(): ThemeColors & { base: typeof BaseColors } {
   const { colors, baseColors } = useAppTheme();
   return { ...colors, base: baseColors };

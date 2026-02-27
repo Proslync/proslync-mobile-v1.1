@@ -13,7 +13,6 @@ import {
   type CreatePayoutDto,
 } from '@/lib/api/wallet';
 
-// ── Query Keys ──────────────────────────────────────────────
 
 export const STRIPE_ACCOUNT_STATUS_KEY = 'stripe-account-status';
 export const STRIPE_BALANCE_KEY = 'stripe-balance';
@@ -21,7 +20,6 @@ export const STRIPE_EXTERNAL_ACCOUNTS_KEY = 'stripe-external-accounts';
 export const STRIPE_EARNINGS_KEY = 'stripe-earnings';
 export const STRIPE_PAYOUTS_KEY = 'stripe-payouts';
 
-// ── Queries ─────────────────────────────────────────────────
 
 export function useStripeAccountStatus() {
   return useQuery<StripeAccountStatus>({
@@ -63,7 +61,6 @@ export function usePayouts(params?: GetPayoutsParams) {
   });
 }
 
-// ── Mutations ───────────────────────────────────────────────
 
 export function useCreatePayout() {
   const queryClient = useQueryClient();
@@ -83,13 +80,14 @@ export function useSetupStripeAccount() {
       const status = await stripeConnectApi.getAccountStatus();
 
       if (!status.hasAccount) {
+        // Create new account and open onboarding
         const response = await stripeConnectApi.createAccount();
         if (response.onboardingUrl) {
           await Linking.openURL(response.onboardingUrl);
         }
       } else if (!status.chargesEnabled || !status.payoutsEnabled) {
-        // Account exists but not fully active — re-open onboarding
-        // (covers both !detailsSubmitted and pending verification)
+        // Account exists but not fully active — get fresh onboarding link
+        // This handles both incomplete details AND pending requirements
         const response = await stripeConnectApi.getOnboardingLink();
         await Linking.openURL(response.url);
       }

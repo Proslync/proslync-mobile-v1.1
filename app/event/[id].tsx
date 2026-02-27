@@ -153,9 +153,7 @@ export default function EventPage() {
         if (fetchedEvent.isPaid) {
           setIsPaid(true);
         }
-      } catch (error) {
-        console.log('[Event] Could not fetch event details:', error);
-      }
+      } catch (error) {      }
     }
     fetchEventDetails();
   }, [eventId]);
@@ -204,7 +202,7 @@ export default function EventPage() {
         showError(response.message || 'Could not complete RSVP');
       }
     } catch (error: any) {
-      console.error('[Event] RSVP error:', error);
+      console.error('RSVP error:', error);
       showError(error?.message || 'Failed to RSVP. Please try again.');
     } finally {
       setIsLoading(false);

@@ -58,6 +58,7 @@ export default function EventRevenueScreen() {
 
   const [selectedRange, setSelectedRange] = React.useState<TimeRange>('1M');
   const [refreshing, setRefreshing] = React.useState(false);
+  const [scrollEnabled, setScrollEnabled] = React.useState(true);
   const [heroMetricId, setHeroMetricId] = React.useState('netRevenue');
   const [metricsOrder, setMetricsOrder] = React.useState<string[]>([]);
 
@@ -162,17 +163,17 @@ export default function EventRevenueScreen() {
   // Loading
   if (isLoading && !refreshing) {
     return (
-      <View style={styles.container}>
-        <DarkGradientBg />
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {isDark && <DarkGradientBg />}
+        <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
           <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Event Revenue</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Event Revenue</Text>
           <View style={styles.headerButton} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color={colors.text} />
         </View>
       </View>
     );
@@ -181,19 +182,19 @@ export default function EventRevenueScreen() {
   // Empty state
   if (!heroMetric || !data) {
     return (
-      <View style={styles.container}>
-        <DarkGradientBg />
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {isDark && <DarkGradientBg />}
+        <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
           <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Event Revenue</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Event Revenue</Text>
           <View style={styles.headerButton} />
         </View>
         <View style={styles.emptyContainer}>
-          <Ionicons name="trending-up-outline" size={56} color="rgba(255,255,255,0.3)" />
-          <Text style={styles.emptyTitle}>No revenue data yet</Text>
-          <Text style={styles.emptyHint}>Ticket sales for this event will appear here</Text>
+          <Ionicons name="trending-up-outline" size={56} color={colors.textTertiary} />
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No revenue data yet</Text>
+          <Text style={[styles.emptyHint, { color: colors.textTertiary }]}>Once tickets start selling, revenue trends and analytics will appear here</Text>
         </View>
       </View>
     );
@@ -202,18 +203,18 @@ export default function EventRevenueScreen() {
   const totals = data.totals;
 
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
       >
         <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Event Revenue</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Event Revenue</Text>
         <View style={styles.headerButton} />
       </Animated.View>
 
@@ -221,8 +222,9 @@ export default function EventRevenueScreen() {
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={scrollEnabled}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#fff" />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.text} />
         }
       >
         {/* Summary Card */}
@@ -230,17 +232,17 @@ export default function EventRevenueScreen() {
           <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Gross</Text>
-                <Text style={styles.summaryGross}>{formatCents(totals.grossRevenue)}</Text>
+                <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Gross</Text>
+                <Text style={[styles.summaryGross, { color: colors.text }]}>{formatCents(totals.grossRevenue)}</Text>
               </View>
-              <View style={styles.summaryDivider} />
+              <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Fees</Text>
+                <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Fees</Text>
                 <Text style={styles.summaryFees}>-{formatCents(totals.platformFees)}</Text>
               </View>
-              <View style={styles.summaryDivider} />
+              <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
               <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Net</Text>
+                <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Net</Text>
                 <Text style={styles.summaryNet}>{formatCents(totals.netRevenue)}</Text>
               </View>
             </View>
@@ -256,6 +258,7 @@ export default function EventRevenueScreen() {
           metricLabel={heroMetric.label}
           colors={colors}
           isDark={isDark}
+          onTouchActive={(active) => setScrollEnabled(!active)}
         />
 
         {/* Range Selector */}
@@ -291,7 +294,6 @@ export default function EventRevenueScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -300,7 +302,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   headerButton: {
     width: 40,
@@ -311,7 +312,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   loadingContainer: {
     flex: 1,
@@ -327,14 +327,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 8,
   },
   emptyHint: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.3)',
     textAlign: 'center',
+    paddingHorizontal: 32,
   },
   scrollView: {
     flex: 1,
@@ -356,18 +355,15 @@ const styles = StyleSheet.create({
   summaryDivider: {
     width: 1,
     height: 36,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   summaryLabel: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
     marginBottom: 4,
   },
   summaryGross: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   summaryFees: {
     fontSize: 20,

@@ -25,6 +25,7 @@ import { otpSchema } from '@/lib/schemas/auth';
 import { authApi } from '@/lib/api/auth';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { handleApiError } from '@/lib/api/errors';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface OtpStepProps {
   phoneNumber: string;
@@ -41,6 +42,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
+  const { colors, isDark } = useAppTheme();
 
   // Shake animation for error
   const shakeX = useSharedValue(0);
@@ -115,7 +117,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
@@ -126,11 +128,11 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
             style={styles.backButtonContainer}
           >
             <TouchableOpacity
-              style={styles.backButton}
+              style={[styles.backButton, { backgroundColor: colors.input }]}
               onPress={onBack}
               activeOpacity={0.7}
             >
-              <Text style={styles.backIcon}>←</Text>
+              <Text style={[styles.backIcon, { color: colors.text }]}>←</Text>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -144,7 +146,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
         >
           <Image
             source={require('@/assets/images/status_logo.png')}
-            style={[styles.logo, { tintColor: '#1a1a1a' }]}
+            style={[styles.logo, { tintColor: colors.text }]}
             resizeMode="contain"
           />
         </Animated.View>
@@ -152,7 +154,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
         {/* Title */}
         <Animated.Text
           entering={FadeInUp.duration(500).delay(400)}
-          style={styles.title}
+          style={[styles.title, { color: colors.text }]}
         >
           Enter Verification Code
         </Animated.Text>
@@ -160,7 +162,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
         {/* Subtitle */}
         <Animated.Text
           entering={FadeInUp.duration(500).delay(450)}
-          style={styles.subtitle}
+          style={[styles.subtitle, { color: colors.textSecondary }]}
         >
           We sent a 6-digit code to {phoneNumber}
         </Animated.Text>
@@ -188,7 +190,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
               entering={FadeInDown.duration(200)}
               style={styles.successText}
             >
-              ✓ Verified successfully!
+              Verified successfully!
             </Animated.Text>
           )}
 
@@ -197,8 +199,8 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
               entering={FadeInDown.duration(200)}
               style={styles.loadingContainer}
             >
-              <ActivityIndicator color="rgba(0, 0, 0, 0.5)" size="small" />
-              <Text style={styles.loadingText}>Verifying...</Text>
+              <ActivityIndicator color={colors.textSecondary} size="small" />
+              <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Verifying...</Text>
             </Animated.View>
           )}
 
@@ -220,16 +222,16 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
           entering={FadeInUp.duration(600).delay(850)}
           style={styles.resendContainer}
         >
-          <Text style={styles.resendText}>Didn't receive a code? </Text>
+          <Text style={[styles.resendText, { color: colors.textSecondary }]}>Didn't receive a code? </Text>
           <TouchableOpacity
             onPress={handleResendOTP}
             disabled={isResending}
             activeOpacity={0.7}
           >
             {isResending ? (
-              <ActivityIndicator color="rgba(0, 0, 0, 0.5)" size="small" />
+              <ActivityIndicator color={colors.textSecondary} size="small" />
             ) : (
-              <Text style={styles.resendLink}>Resend</Text>
+              <Text style={[styles.resendLink, { color: colors.text }]}>Resend</Text>
             )}
           </TouchableOpacity>
         </Animated.View>
@@ -241,7 +243,6 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
@@ -254,13 +255,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backIcon: {
     fontSize: 22,
-    color: '#1a1a1a',
   },
   topSpacer: {
     height: 40,
@@ -276,13 +275,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#1a1a1a',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(0, 0, 0, 0.5)',
     textAlign: 'center',
     marginBottom: 40,
   },
@@ -307,7 +304,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    color: 'rgba(0, 0, 0, 0.5)',
     fontSize: 16,
   },
   errorText: {
@@ -325,11 +321,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   resendText: {
-    color: 'rgba(0, 0, 0, 0.5)',
     fontSize: 16,
   },
   resendLink: {
-    color: '#1a1a1a',
     fontSize: 16,
     textDecorationLine: 'underline',
   },

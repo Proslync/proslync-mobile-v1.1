@@ -105,7 +105,7 @@ export function PurchaseTableSheet({
 
       setSheetState('processing');
     } catch (error: any) {
-      console.error('[PurchaseTableSheet] Payment error:', error);
+      console.error('Payment error:', error);
       setSheetState('error');
     }
   };

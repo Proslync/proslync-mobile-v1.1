@@ -52,13 +52,11 @@ export function useEventSocket({
     const connect = async () => {
       const token = await apiClient.getAccessToken();
       if (!token) {
-        console.error('[EventSocket] No auth token available');
+        console.error('No auth token available');
         return;
       }
 
       const socketUrl = `${config.websocket.url}/events`;
-      console.log('[EventSocket] Connecting to:', socketUrl, 'eventId:', eventId);
-
       socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         auth: { token },
@@ -67,27 +65,19 @@ export function useEventSocket({
         reconnectionDelay: 1000,
       });
 
-      socket.on('connect', () => {
-        console.log('[EventSocket] Connected, subscribing to event:', eventId);
-        socket?.emit('subscribe_event', { eventId });
+      socket.on('connect', () => {        socket?.emit('subscribe_event', { eventId });
       });
 
-      socket.on('disconnect', (reason) => {
-        console.log('[EventSocket] Disconnected:', reason);
-      });
+      socket.on('disconnect', (reason) => {      });
 
       socket.on('connect_error', (error) => {
-        console.error('[EventSocket] Connection error:', error.message);
+        console.error('Connection error:', error.message);
       });
 
-      socket.on('guest_checked_in', (data: GuestCheckedInPayload) => {
-        console.log('[EventSocket] Guest checked in:', data);
-        callbacksRef.current.onGuestCheckedIn?.(data);
+      socket.on('guest_checked_in', (data: GuestCheckedInPayload) => {        callbacksRef.current.onGuestCheckedIn?.(data);
       });
 
-      socket.on('payment_received', (data: PaymentReceivedPayload) => {
-        console.log('[EventSocket] Payment received:', data);
-        callbacksRef.current.onPaymentReceived?.(data);
+      socket.on('payment_received', (data: PaymentReceivedPayload) => {        callbacksRef.current.onPaymentReceived?.(data);
       });
 
       socket.on('pong', () => {

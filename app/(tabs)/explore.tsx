@@ -19,8 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useChat } from '@/lib/providers/chat-provider';
-import { useChannels, type ChannelData } from '@/hooks/use-channels';
+import { useConversations, type ChannelData } from '@/hooks/use-conversations';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
 
@@ -109,6 +108,8 @@ function ConversationRow({
   currentUserId,
   index,
   searchMatch,
+  colors,
+  isDark,
 }: {
   channel: ChannelData;
   onPress: () => void;
@@ -116,6 +117,8 @@ function ConversationRow({
   currentUserId?: string;
   index: number;
   searchMatch?: string;
+  colors: any;
+  isDark: boolean;
 }) {
   const hasUnread = channel.unreadCount > 0;
   const isOwnMessage = channel.lastMessage?.userId === currentUserId;
@@ -145,6 +148,21 @@ function ConversationRow({
     return `${prefix}${channel.lastMessage.text}`;
   };
 
+  // Read receipt status icon for own messages
+  const renderReadStatus = () => {
+    if (!isOwnMessage || !channel.lastMessage) return null;
+
+    if (channel.lastMessageReadByOther) {
+      return (
+        <Ionicons name="checkmark-done" size={14} color="#0095f6" style={{ marginRight: 4 }} />
+      );
+    }
+    // Delivered (sent but not read)
+    return (
+      <Ionicons name="checkmark-done" size={14} color={colors.textTertiary} style={{ marginRight: 4 }} />
+    );
+  };
+
   return (
     <Animated.View entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}>
       <TouchableOpacity
@@ -163,19 +181,24 @@ function ConversationRow({
         <View style={styles.conversationContent}>
           <View style={styles.conversationHeader}>
             <Text
-              style={[styles.conversationTitle, hasUnread && styles.conversationTitleUnread]}
+              style={[styles.conversationTitle, { color: colors.text }, hasUnread && styles.conversationTitleUnread]}
               numberOfLines={1}
             >
               {channel.name}
             </Text>
-            <Text style={[styles.timestamp, hasUnread && styles.timestampUnread]}>
+            <Text style={[styles.timestamp, { color: colors.textTertiary }, hasUnread && { color: colors.text }]}>
               {channel.lastMessage ? formatTime(channel.lastMessage.createdAt) : ''}
             </Text>
           </View>
 
           <View style={styles.conversationFooter}>
+            {renderReadStatus()}
             <Text
-              style={[styles.lastMessage, hasUnread && styles.lastMessageUnread]}
+              style={[
+                styles.lastMessage,
+                { color: colors.textSecondary },
+                hasUnread && { color: colors.text, fontFamily: 'Lato_700Bold' },
+              ]}
               numberOfLines={1}
             >
               {getLastMessageText()}
@@ -244,10 +267,9 @@ function LoadingState({ colors }: { colors: any }) {
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { client, status, reconnect } = useChat();
-  const { channelData, isLoading, refetch, deleteChannel } = useChannels();
   const { colors, isDark } = useAppTheme();
   const { user } = useAuth();
+  const { channelData, isLoading, refetch, deleteChannel } = useConversations(user?.id);
   const headerTitle = user?.userName ? `@${user.userName}` : 'Messages';
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -255,57 +277,27 @@ export default function MessagesScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Map<string, string>>(new Map());
 
-  const currentUserId = client?.userID;
+  const currentUserId = user ? String(user.id) : undefined;
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
     onRefresh: refetch,
   });
 
-  // Search through message content using Stream Chat search API
+  // Search through conversations locally (name + last message)
   const performSearch = useCallback(async (query: string) => {
-    if (!client || !query.trim()) {
+    if (!query.trim()) {
       setSearchResults(new Map());
       return;
     }
 
     setIsSearching(true);
     try {
-      // Use Stream Chat's message search API
-      const response = await client.search(
-        { members: { $in: [currentUserId || ''] } },
-        query,
-        { limit: 30, offset: 0 }
-      );
-
-      const results = new Map<string, string>();
-
-      if (response.results) {
-        response.results.forEach((result: any) => {
-          const message = result.message;
-          if (message && message.cid) {
-            // Extract channel ID from cid (format: "messaging:channelId")
-            const channelId = message.cid.split(':')[1];
-            if (channelId && message.text) {
-              // Store the matching message snippet
-              const snippet = message.text.length > 50
-                ? message.text.substring(0, 50) + '...'
-                : message.text;
-              results.set(channelId, `"${snippet}"`);
-            }
-          }
-        });
-      }
-
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Search error:', error);
-      // Fallback to local search if API fails
       performLocalSearch(query);
     } finally {
       setIsSearching(false);
     }
-  }, [client, currentUserId]);
+  }, [performLocalSearch]);
 
   // Fallback local search through channel names and last messages
   const performLocalSearch = useCallback((query: string) => {
@@ -417,9 +409,11 @@ export default function MessagesScreen() {
         currentUserId={currentUserId}
         index={index}
         searchMatch={searchResults.get(item.id)}
+        colors={colors}
+        isDark={isDark}
       />
     ),
-    [handleConversationPress, handleDeleteConversation, currentUserId, searchResults]
+    [handleConversationPress, handleDeleteConversation, currentUserId, searchResults, colors, isDark]
   );
 
   const renderEmptyState = useCallback(() => {
@@ -429,40 +423,8 @@ export default function MessagesScreen() {
     return <EmptyMessages onSendMessage={handleNewMessage} colors={colors} />;
   }, [searchQuery, handleNewMessage, colors]);
 
-  // Show loading while connecting
-  if (status === 'connecting') {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <DarkGradientBg />
-        <View style={styles.header}>
-          <View style={styles.headerButton} />
-          <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
-          <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
-            <Ionicons name="create-outline" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-        <LoadingState colors={colors} />
-      </View>
-    );
-  }
-
-  // Show error state
-  if (status === 'error') {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <DarkGradientBg />
-        <View style={styles.header}>
-          <View style={styles.headerButton} />
-          <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
-          <View style={styles.headerButton} />
-        </View>
-        <ConnectionError onRetry={reconnect} colors={colors} />
-      </View>
-    );
-  }
-
-  // Show loading while fetching channels
-  if (status === 'connected' && isLoading && channelData.length === 0) {
+  // Show loading while fetching conversations
+  if (isLoading && channelData.length === 0) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <DarkGradientBg />
@@ -654,7 +616,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
     marginRight: 8,
   },
   conversationTitleUnread: {
@@ -663,10 +624,6 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
-  },
-  timestampUnread: {
-    color: '#1a1a1a',
   },
   conversationFooter: {
     flexDirection: 'row',
@@ -676,10 +633,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
-  },
-  lastMessageUnread: {
-    color: 'rgba(0,0,0,0.7)',
   },
   unreadDot: {
     width: 8,

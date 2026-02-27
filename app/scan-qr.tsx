@@ -42,7 +42,6 @@ import type { EventAttendee } from '@/lib/types/events.types';
 import { EventUserStatus } from '@/lib/types/events.types';
 import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 type ScanStep = 'membership' | 'id';
 
@@ -86,7 +85,6 @@ interface CheckedInGuest {
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SCAN_FRAME_SIZE = SCREEN_WIDTH - 80;
 
-// ─── ID Parsing ──────────────────────────────────────────────────────────────
 
 function parseDriverLicense(data: string): {
   firstName: string;
@@ -148,7 +146,6 @@ function parseDriverLicense(data: string): {
   }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -204,7 +201,6 @@ const getTicketBadge = (ticketStatus?: string) => {
   }
 };
 
-// ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function ScannerScreen() {
   const insets = useSafeAreaInsets();
@@ -249,7 +245,6 @@ export default function ScannerScreen() {
   const [showList, setShowList] = React.useState(false);
   const [listStats, setListStats] = React.useState<{ total: number; verified: number; pending: number }>({ total: 0, verified: 0, pending: 0 });
 
-  // ─── Guest list helpers ──────────────────────────────────────────────────
 
   const mapAttendeeToGuest = React.useCallback((a: EventAttendee): CheckedInGuest => {
     const name = [a.firstName, a.lastName].filter(Boolean).join(' ') || a.guestName || 'Unknown';
@@ -319,7 +314,6 @@ export default function ScannerScreen() {
     }).catch(() => {});
   }, [eventId]);
 
-  // ─── NFC support check & cleanup ────────────────────────────────────────
 
   React.useEffect(() => {
     NfcManager.isSupported().then(setNfcSupported).catch(() => {});
@@ -328,7 +322,6 @@ export default function ScannerScreen() {
     };
   }, []);
 
-  // ─── Scan line animation ─────────────────────────────────────────────────
 
   const scanLinePosition = useSharedValue(0);
 
@@ -347,7 +340,6 @@ export default function ScannerScreen() {
     transform: [{ translateY: scanLinePosition.value * (SCAN_FRAME_SIZE - 4) }],
   }));
 
-  // ─── Step 1: Membership scan handler ─────────────────────────────────────
 
   const handleMembershipScan = React.useCallback((data: string) => {
     let parsed: any = null;
@@ -369,7 +361,6 @@ export default function ScannerScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
 
-  // ─── NFC membership scan ──────────────────────────────────────────────────
 
   const startNfcScan = React.useCallback(async () => {
     if (nfcScanning) return;
@@ -410,7 +401,6 @@ export default function ScannerScreen() {
     Haptics.selectionAsync();
   };
 
-  // ─── Step 2: ID scan handler ─────────────────────────────────────────────
 
   const handleIdScan = React.useCallback(async (data: string) => {
     const licenseData = parseDriverLicense(data);
@@ -512,7 +502,6 @@ export default function ScannerScreen() {
     }
   }, [eventId, membershipData, skippedMembership]);
 
-  // ─── Code scanner (switches between QR and PDF417 based on step) ─────────
 
   const codeScanner = useCodeScanner({
     codeTypes: scanStep === 'membership' ? ['qr'] : ['pdf-417'],
@@ -535,7 +524,6 @@ export default function ScannerScreen() {
     },
   });
 
-  // ─── Actions ─────────────────────────────────────────────────────────────
 
   const addToListOptimistic = (result: IdScanResult, guestStatus: 'approved' | 'denied') => {
     setCheckedInGuests((prev) => [{
@@ -608,7 +596,6 @@ export default function ScannerScreen() {
     setIsActive(true);
   };
 
-  // ─── Charge guest (collect payment at door) ────────────────────────────
 
   const handleCharge = React.useCallback(async (guest: CheckedInGuest) => {
     if (!eventId || !guest.guestIdNum) return;
@@ -657,7 +644,6 @@ export default function ScannerScreen() {
     }
   }, [eventId, eventPricing, initPaymentSheet, presentPaymentSheet]);
 
-  // ─── Permission / device checks ──────────────────────────────────────────
 
   React.useEffect(() => {
     if (!hasPermission) {
@@ -696,7 +682,6 @@ export default function ScannerScreen() {
     );
   }
 
-  // ─── Guest list view ─────────────────────────────────────────────────────
 
   if (showList) {
     return (
@@ -777,7 +762,6 @@ export default function ScannerScreen() {
     );
   }
 
-  // ─── Main scanner view ───────────────────────────────────────────────────
 
   const isShowingResult = (scanStep === 'membership' && showMembershipResult) || (scanStep === 'id' && idResult !== null);
 
@@ -1117,7 +1101,6 @@ export default function ScannerScreen() {
   );
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
@@ -1165,7 +1148,6 @@ const styles = StyleSheet.create({
   },
   nfcButtonText: { fontSize: 14, fontFamily: 'Lato_600SemiBold', color: '#fff' },
 
-  // ─── Membership result (dark glass) ────────────────────────────────────
   resultOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
 
   membershipResultBlur: { borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
@@ -1193,7 +1175,6 @@ const styles = StyleSheet.create({
   rescanLink: { marginTop: 16, padding: 8 },
   rescanLinkText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.4)' },
 
-  // ─── ID result (light glass) ───────────────────────────────────────────
   resultBlur: { borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
   resultCard: { padding: 28, alignItems: 'center' },
   statusIndicator: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
@@ -1233,7 +1214,6 @@ const styles = StyleSheet.create({
   scanNextButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 16, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.06)', gap: 6 },
   scanNextButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1a1a1a' },
 
-  // ─── Bottom bar ────────────────────────────────────────────────────────
   bottomBar: { position: 'absolute', left: 24, right: 24, gap: 12 },
 
   checkedInCounter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(16,185,129,0.2)', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' },
@@ -1254,7 +1234,6 @@ const styles = StyleSheet.create({
   },
   skipButtonText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)' },
 
-  // ─── Guest list ────────────────────────────────────────────────────────
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
   listCount: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
   guestRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', gap: 12 },
@@ -1292,7 +1271,6 @@ const styles = StyleSheet.create({
   emptyList: { alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
   emptyListText: { fontSize: 15, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.3)' },
 
-  // ─── Permission screen ────────────────────────────────────────────────
   permissionIcon: { width: 96, height: 96, borderRadius: 48, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
   permissionTitle: { fontSize: 24, fontFamily: 'Lato_700Bold', color: '#fff', marginBottom: 12 },
   permissionText: { fontSize: 15, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 22 },

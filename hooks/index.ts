@@ -1,4 +1,5 @@
-export { useFeed } from './use-feed';
+// Feed hooks
+export { useFeed, FEED_QUERY_KEY, useLike, useRefreshFeeds } from './use-feed';
 export { useUserFeed, USER_FEED_QUERY_KEY } from './use-user-feed';
 export { useEventForm, useEditEventForm } from './use-event-form';
 export type { EventFormStep } from './use-event-form';
@@ -19,21 +20,25 @@ export { useVenueFollowers, VENUE_FOLLOWERS_KEY } from './use-venue-followers';
 export { useFollowVenue } from './use-follow-venue';
 export { useAddressSuggestions } from './use-address-suggestions';
 export type { AddressSuggestion } from './use-address-suggestions';
-export {
-  useUploadActivityMedia,
-  useCreateStreamActivity,
-  useCreateEventActivity,
-} from './use-stream-activity';
-export type { ActivityMedia } from './use-stream-activity';
 
-// Activity/Post detail hooks
-export { useActivity, ACTIVITY_QUERY_KEY } from './use-activity';
-export type { ActivityResponse } from './use-activity';
-export { useActivityComments, COMMENTS_QUERY_KEY } from './use-activity-comments';
-export type { CommentData } from './use-activity-comments';
+// Post creation hooks
+export {
+  useUploadPostMedia,
+  useCreatePost,
+  useCreateEventPost,
+} from './use-create-post';
+export type { ActivityMedia } from './use-create-post';
+
+// Post detail hooks
+export { usePost, POST_QUERY_KEY } from './use-post';
+export type { PostResponse } from './use-post';
+export { usePostComments, POST_COMMENTS_KEY } from './use-post-comments';
+export type { CommentData } from './use-post-comments';
 export { useAddComment } from './use-add-comment';
-export { useActivityReaction } from './use-activity-reaction';
-export { useCommentReaction } from './use-comment-reaction';
+export { usePostReaction } from './use-post-reaction';
+
+// Follow hooks
+export { useFollowUser } from './use-follow-user';
 
 // Search/Discover hooks
 export { useDebounce } from './use-debounce';

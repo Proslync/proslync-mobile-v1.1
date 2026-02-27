@@ -138,8 +138,18 @@ export default function ArtistsScreen() {
           <Ionicons name="musical-notes-outline" size={48} color={colors.textTertiary} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No artists yet</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
-            Add artists to display them on your event
+            Add artists and performers to showcase your event lineup
           </Text>
+          {canManage && (
+            <TouchableOpacity
+              style={styles.emptyCta}
+              onPress={handleOpenCreate}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="add-circle-outline" size={18} color={colors.text} />
+              <Text style={[styles.emptyCtaText, { color: colors.text }]}>Add Artist</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <ScrollView
@@ -264,6 +274,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     marginTop: 6,
     textAlign: 'center',
+  },
+  emptyCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  emptyCtaText: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
   },
   scrollView: {
     flex: 1,

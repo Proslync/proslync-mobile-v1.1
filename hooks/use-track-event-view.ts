@@ -12,9 +12,6 @@ const TRACK_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
  */
 const checkedThisSession = new Set<number>();
 
-/**
- * Check if this event was already tracked within the last 24 hours
- */
 async function wasRecentlyTracked(eventId: number): Promise<boolean> {
   if (checkedThisSession.has(eventId)) return true;
 
@@ -53,9 +50,6 @@ export async function clearTrackingCache(): Promise<void> {
   }
 }
 
-/**
- * Mark this event as tracked
- */
 async function markTracked(eventId: number): Promise<void> {
   checkedThisSession.add(eventId);
   try {

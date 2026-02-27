@@ -15,31 +15,48 @@ interface OnboardingCardProps {
 }
 
 export function OnboardingCard({ onSetup, isSettingUp, accountStatus }: OnboardingCardProps) {
+  const detailsSubmitted = accountStatus?.detailsSubmitted && accountStatus?.hasAccount;
+  const hasRequirements = (accountStatus?.requirements?.currentlyDue?.length ?? 0) > 0 ||
+    (accountStatus?.requirements?.pastDue?.length ?? 0) > 0;
+
+  // Details submitted and no outstanding requirements — Stripe is reviewing
+  const isPendingReview = detailsSubmitted && !hasRequirements;
+
   return (
     <Animated.View entering={FadeInDown.duration(400)} style={styles.wrapper}>
       <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.container}>
         <View style={styles.iconContainer}>
-          <Ionicons name="wallet-outline" size={56} color="#fff" />
+          <Ionicons
+            name={isPendingReview ? 'time-outline' : 'wallet-outline'}
+            size={56}
+            color="#fff"
+          />
         </View>
-        <Text style={styles.title}>Set Up Payouts</Text>
+        <Text style={styles.title}>
+          {isPendingReview ? 'Under Review' : 'Set Up Payouts'}
+        </Text>
         <Text style={styles.description}>
-          Connect your bank account or debit card to receive earnings from ticket sales and tips.
+          {isPendingReview
+            ? 'Your application has been submitted and is being reviewed by Stripe. This usually takes 1-2 business days.'
+            : 'Connect your bank account or debit card to receive earnings from ticket sales and tips.'}
         </Text>
 
-        <View style={styles.features}>
-          <View style={styles.feature}>
-            <Ionicons name="shield-checkmark" size={20} color="#22c55e" />
-            <Text style={styles.featureText}>Secure payments via Stripe</Text>
+        {!isPendingReview && (
+          <View style={styles.features}>
+            <View style={styles.feature}>
+              <Ionicons name="shield-checkmark" size={20} color="#22c55e" />
+              <Text style={styles.featureText}>Secure payments via Stripe</Text>
+            </View>
+            <View style={styles.feature}>
+              <Ionicons name="flash" size={20} color="#f59e0b" />
+              <Text style={styles.featureText}>Instant payouts to debit cards</Text>
+            </View>
+            <View style={styles.feature}>
+              <Ionicons name="calendar" size={20} color="#3b82f6" />
+              <Text style={styles.featureText}>1-3 day bank transfers</Text>
+            </View>
           </View>
-          <View style={styles.feature}>
-            <Ionicons name="flash" size={20} color="#f59e0b" />
-            <Text style={styles.featureText}>Instant payouts to debit cards</Text>
-          </View>
-          <View style={styles.feature}>
-            <Ionicons name="calendar" size={20} color="#3b82f6" />
-            <Text style={styles.featureText}>1-3 day bank transfers</Text>
-          </View>
-        </View>
+        )}
 
         <View style={styles.buttonContainer}>
           {isSettingUp ? (
@@ -48,8 +65,8 @@ export function OnboardingCard({ onSetup, isSettingUp, accountStatus }: Onboardi
             </View>
           ) : (
             <GlassButton
-              label="Connect Payout Account"
-              icon={<Ionicons name="link" size={20} color="#fff" />}
+              label={isPendingReview ? 'Check Status' : hasRequirements ? 'Continue Setup' : 'Connect Payout Account'}
+              icon={<Ionicons name={isPendingReview ? 'refresh' : 'link'} size={20} color="#fff" />}
               variant="glass"
               size="lg"
               onPress={onSetup}
@@ -61,6 +78,12 @@ export function OnboardingCard({ onSetup, isSettingUp, accountStatus }: Onboardi
         {accountStatus?.hasAccount && !accountStatus?.detailsSubmitted && (
           <Text style={styles.hint}>
             You have a pending setup. Tap above to complete it.
+          </Text>
+        )}
+
+        {hasRequirements && (
+          <Text style={styles.hint}>
+            Stripe needs additional information. Tap above to continue.
           </Text>
         )}
       </GlassSurface>

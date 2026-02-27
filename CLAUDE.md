@@ -16,9 +16,8 @@
 - **Zod** for validation, **react-hook-form** for forms
 - **expo-video** (`useVideoPlayer`, `VideoView`) for video playback
 - **react-native-pager-view** for swipeable tab navigation (NOT React Navigation tabs)
-- **Stream** for chat (`stream-chat`) and video calls (`@stream-io/video-react-native-sdk`)
 - **Stripe** (`@stripe/stripe-react-native`) for payments
-- **Socket.IO** for real-time features (analytics, event updates)
+- **Socket.IO** for real-time features (analytics, event updates, chat)
 
 ## Project Structure
 - `app/` — Expo Router file-based routes (tabs, dashboard, manage-event, etc.)
@@ -27,7 +26,7 @@
 - `hooks/` — React Query hooks + custom hooks, all exported from `hooks/index.ts`
 - `lib/api/` — API layer: typed methods organized by domain (events, feed, payments, analytics, etc.)
 - `lib/api/client.ts` — `ApiClient` class with auth token management, refresh, timeout
-- `lib/providers/` — Context providers (auth, chat, stream, stripe, tab-navigation, wallet, theme, etc.)
+- `lib/providers/` — Context providers (auth, chat, stripe, tab-navigation, wallet, theme, etc.)
 - `lib/types/` — Shared TypeScript types
 
 ## Patterns

@@ -14,7 +14,6 @@ import type {
   InviteByUserIdRequest,
 } from '@/lib/types/team.types';
 
-// ── Member Mutations ─────────────────────────────────────
 
 export function useUpdateMemberRole(eventId: number) {
   const queryClient = useQueryClient();
@@ -39,7 +38,6 @@ export function useRemoveTeamMember(eventId: number) {
   });
 }
 
-// ── Role Mutations ───────────────────────────────────────
 
 export function useCreateRole(eventId: number) {
   const queryClient = useQueryClient();
@@ -83,7 +81,6 @@ export function useUpdateRolePermissions(eventId: number) {
   });
 }
 
-// ── Invitation Mutations ─────────────────────────────────
 
 export function useInviteByUserId(eventId: number) {
   const queryClient = useQueryClient();

@@ -13,7 +13,6 @@ import type {
 } from '../types/pricing.types';
 
 export const pricingApi = {
-  // ── Tiers ──────────────────────────────────────────────
 
   getTiers: async (eventId: number): Promise<TicketTier[]> => {
     return apiClient.get<TicketTier[]>(`/api/events/${eventId}/pricing/tiers`);
@@ -35,7 +34,6 @@ export const pricingApi = {
     return apiClient.delete(`/api/events/${eventId}/pricing/tiers/${tierId}`);
   },
 
-  // ── Pricing Rules ──────────────────────────────────────
 
   getPricingRules: async (eventId: number, tierId: number): Promise<PricingRule[]> => {
     return apiClient.get<PricingRule[]>(
@@ -76,7 +74,6 @@ export const pricingApi = {
     );
   },
 
-  // ── Promo Codes ────────────────────────────────────────
 
   getPromoCodes: async (eventId: number): Promise<PromoCode[]> => {
     return apiClient.get<PromoCode[]>(`/api/events/${eventId}/promo-codes`);

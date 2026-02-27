@@ -306,7 +306,6 @@ export default function PaymentsScreen() {
   );
 }
 
-// ── Overview Tab ────────────────────────────────────────────
 
 interface OverviewTabProps {
   earnings: EarningsItem[];
@@ -381,7 +380,6 @@ function OverviewTab({
   );
 }
 
-// ── Styles ──────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {

@@ -13,9 +13,6 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-/**
- * Animated shimmer effect component
- */
 function ShimmerOverlay({ isDark }: { isDark: boolean }) {
   const shimmerPosition = useSharedValue(0);
 
@@ -68,9 +65,6 @@ function ShimmerOverlay({ isDark }: { isDark: boolean }) {
   );
 }
 
-/**
- * Skeleton placeholder for a single feed item
- */
 export function FeedItemSkeleton() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
@@ -153,9 +147,6 @@ export function FeedItemSkeleton() {
   );
 }
 
-/**
- * Full-screen loading state with multiple skeleton cards
- */
 export function FeedLoadingSkeleton() {
   const { colors } = useAppTheme();
 

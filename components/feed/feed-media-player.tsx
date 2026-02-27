@@ -27,11 +27,11 @@ interface FeedMediaPlayerProps {
   isActive: boolean;
   onSingleTap?: () => void;
   overlay?: React.ReactNode;
-  // Dynamic aspect ratio from GetStream
+  // Dynamic aspect ratio from backend
   aspectRatio?: number;
   mediaWidth?: number;
   mediaHeight?: number;
-  // Media orientation from GetStream (horizontal, vertical, square)
+  // Media orientation (horizontal, vertical, square)
   mediaOrientation?: MediaOrientation;
   // Container width for sizing calculations
   containerWidth?: number;
@@ -66,7 +66,7 @@ export function FeedMediaPlayer({
   aspectRatio: propAspectRatio,
   mediaWidth,
   mediaHeight,
-  // mediaOrientation - available from GetStream but container sizing handles orientation automatically
+  // mediaOrientation - container sizing handles orientation automatically
   containerWidth = SCREEN_WIDTH * 0.85,
   maxHeight: propMaxHeight,
 }: FeedMediaPlayerProps) {
@@ -106,13 +106,11 @@ export function FeedMediaPlayer({
           const { width, height } = tracks[0].size;
           if (width && height && height > 0) {
             const detectedRatio = width / height;
-            console.log('[FeedMediaPlayer] Detected video dimensions:', width, 'x', height, 'ratio:', detectedRatio);
             setVideoAspectRatio(detectedRatio);
           }
         }
       } catch (e) {
         // Fallback: keep default ratio
-        console.log('[FeedMediaPlayer] Could not detect video dimensions:', e);
       }
       setIsLoadingVideoRatio(false);
     });
@@ -163,7 +161,6 @@ export function FeedMediaPlayer({
           setIsLoadingImageRatio(false);
         },
         (error) => {
-          console.log('[FeedMediaPlayer] Failed to get image size:', error);
           setIsLoadingImageRatio(false);
         }
       );

@@ -29,8 +29,18 @@ export default function WalletScreen() {
     refreshWallet,
   } = useWallet();
 
-  // RSVP-only events (no ticketId) — passed to TicketList separately
-  const rsvpEvents = useMemo(() => events.filter((e) => !e.ticketId), [events]);
+  // RSVP-only events (no ticketId) that haven't ended yet — passed to TicketList separately
+  const rsvpEvents = useMemo(() => {
+    const now = Date.now();
+    return events.filter((e) => {
+      if (e.ticketId) return false; // Only RSVP events
+      const end = e.endDateTime ? new Date(e.endDateTime).getTime() : NaN;
+      const start = new Date(e.dateTime).getTime();
+      // Use endDateTime if valid, otherwise startDate + 12h
+      const cutoff = !isNaN(end) ? end : (!isNaN(start) ? start + 12 * 60 * 60 * 1000 : 0);
+      return cutoff > now;
+    });
+  }, [events]);
 
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
 

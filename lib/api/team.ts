@@ -14,7 +14,6 @@ import type {
 } from '../types/team.types';
 
 export const teamApi = {
-  // ── Roles ──────────────────────────────────────────────
 
   getRoles: async (eventId: number): Promise<RoleResponseDto[]> => {
     return apiClient.get<RoleResponseDto[]>(
@@ -58,7 +57,6 @@ export const teamApi = {
     );
   },
 
-  // ── Members ────────────────────────────────────────────
 
   getMembers: async (
     eventId: number,
@@ -87,7 +85,6 @@ export const teamApi = {
     );
   },
 
-  // ── Invitations ────────────────────────────────────────
 
   inviteByUserId: async (
     eventId: number,
@@ -123,7 +120,6 @@ export const teamApi = {
     );
   },
 
-  // ── Stats ──────────────────────────────────────────────
 
   getStats: async (eventId: number): Promise<TeamStatsResponse> => {
     return apiClient.get<TeamStatsResponse>(

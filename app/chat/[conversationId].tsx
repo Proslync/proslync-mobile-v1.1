@@ -23,6 +23,9 @@ import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
+import { BlurView } from 'expo-blur';
 import { Audio } from 'expo-av';
 import Animated, {
   useSharedValue,
@@ -36,10 +39,10 @@ import Animated, {
   FadeInDown,
   FadeOut,
 } from 'react-native-reanimated';
-import { useChannel, type ChatMessage } from '@/hooks/use-channel';
+import { useConversation, type ChatMessage } from '@/hooks/use-conversation';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
-import { useCallProvider } from '@/lib/providers/call-provider';
+// Video calls removed — not a core feature
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.75;
@@ -54,6 +57,7 @@ interface MessageGroup {
   message?: ChatMessage;
   isGroupStart?: boolean;
   showTime?: boolean;
+  isLastOwnBeforeRead?: boolean;
 }
 
 interface PendingMedia {
@@ -99,6 +103,8 @@ function MessageBubble({
   onLongPress,
   colors,
   isDark,
+  isLastOwnBeforeRead,
+  readAt,
 }: {
   message: ChatMessage;
   isGroupStart?: boolean;
@@ -107,6 +113,8 @@ function MessageBubble({
   onLongPress?: (message: ChatMessage) => void;
   colors: ThemeColors;
   isDark: boolean;
+  isLastOwnBeforeRead?: boolean;
+  readAt?: Date | null;
 }) {
   const isOwn = message.isOwn;
   const hasAttachments = message.attachments && message.attachments.length > 0;
@@ -208,6 +216,16 @@ function MessageBubble({
           <Text style={[styles.messageTime, { color: colors.textTertiary }, isOwn && styles.messageTimeOwn]}>
             {formatMessageTime(message.createdAt)}
           </Text>
+        )}
+
+        {/* Read receipt - "Seen at X:XX" */}
+        {isLastOwnBeforeRead && readAt && (
+          <View style={[styles.readReceiptRow, isOwn && styles.readReceiptRowOwn]}>
+            <Ionicons name="checkmark-done" size={12} color="#0095f6" />
+            <Text style={styles.readReceiptText}>
+              Seen {formatMessageTime(readAt)}
+            </Text>
+          </View>
         )}
       </Pressable>
     </View>
@@ -872,28 +890,47 @@ export default function ChatThreadScreen() {
   const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
-  const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
+  const [showChatInfo, setShowChatInfo] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   const {
+    channel,
     messages,
     channelInfo,
     isLoading,
     error,
     isTyping,
     currentUserId,
+    otherReadAt,
     sendMessage,
     sendVoiceMessage,
     sendTypingStart,
     deleteMessage,
-  } = useChannel(conversationId);
+  } = useConversation(conversationId);
 
-  const { startCall } = useCallProvider();
+  // Video calls removed
+
+  // Mute state (not yet supported by backend)
+  // TODO: Add mute/unmute API when backend supports it
 
   // Group messages by day and consecutive sender
   const messageGroups = React.useMemo((): MessageGroup[] => {
     const groups: MessageGroup[] = [];
     let currentDay: string | null = null;
     let lastSenderId: string | null = null;
+
+    // Find the last own message that was read by the other person
+    let lastOwnReadMsgId: string | null = null;
+    if (otherReadAt) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        if (msg.isOwn && msg.createdAt.getTime() <= otherReadAt.getTime()) {
+          lastOwnReadMsgId = msg.id;
+          break;
+        }
+      }
+    }
 
     messages.forEach((msg, index) => {
       const msgDate = new Date(msg.createdAt);
@@ -917,37 +954,19 @@ export default function ChatThreadScreen() {
         message: msg,
         isGroupStart,
         showTime,
+        isLastOwnBeforeRead: msg.id === lastOwnReadMsgId,
       });
       lastSenderId = msg.userId;
     });
 
     return groups;
-  }, [messages]);
+  }, [messages, otherReadAt]);
 
   const handleStartCall = useCallback(
     async (video: boolean) => {
-      if (!channelInfo?.otherMember || !currentUserId) {
-        Alert.alert('Error', 'Cannot start call — no other member found.');
-        return;
-      }
-
-      const callId = `${conversationId}-${Date.now()}`;
-      const members = [
-        { userId: currentUserId },
-        { userId: channelInfo.otherMember.id },
-      ];
-
-      const call = await startCall({ callId, members, video });
-      if (call) {
-        router.push({
-          pathname: '/call/[callId]',
-          params: { callId },
-        });
-      } else {
-        Alert.alert('Error', 'Failed to start call. Please try again.');
-      }
+      Alert.alert('Coming Soon', 'Voice and video calls are coming soon.');
     },
-    [conversationId, channelInfo, currentUserId, startCall, router]
+    []
   );
 
   const handleSend = useCallback(
@@ -1058,7 +1077,12 @@ export default function ChatThreadScreen() {
     transform: [{ scale: withSpring(scrollToBottomOpacity.value) }],
   }));
 
-  const handleProfilePress = useCallback(() => {
+  const handleHeaderPress = useCallback(() => {
+    setShowChatInfo(true);
+  }, []);
+
+  const handleGoToProfile = useCallback(() => {
+    setShowChatInfo(false);
     if (channelInfo?.otherMember) {
       router.push({
         pathname: '/user/[username]',
@@ -1070,23 +1094,61 @@ export default function ChatThreadScreen() {
     }
   }, [channelInfo, router]);
 
-  const handleDeleteMessage = useCallback(
+  const handleMuteToggle = useCallback(async () => {
+    // Mute/unmute not yet supported by backend
+    setIsMuted(!isMuted);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, [isMuted]);
+
+  const handleBlock = useCallback(() => {
+    Alert.alert(
+      'Block User',
+      `Are you sure you want to block ${channelInfo?.name}? They won't be able to message you.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: async () => {
+            // TODO: Implement block via backend API
+            setShowChatInfo(false);
+            router.back();
+          },
+        },
+      ]
+    );
+  }, [channelInfo, router]);
+
+  const handleLongPressMessage = useCallback(
     (message: ChatMessage) => {
-      setMessageToDelete(message);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setSelectedMessage(message);
     },
     []
   );
 
-  const confirmDeleteMessage = useCallback(async () => {
-    if (!messageToDelete) return;
+  const handleUnsend = useCallback(async () => {
+    if (!selectedMessage) return;
     try {
-      await deleteMessage(messageToDelete.id);
+      await deleteMessage(selectedMessage.id);
     } catch {
-      Alert.alert('Error', 'Failed to delete message.');
+      Alert.alert('Error', 'Failed to unsend message.');
     } finally {
-      setMessageToDelete(null);
+      setSelectedMessage(null);
     }
-  }, [messageToDelete, deleteMessage]);
+  }, [selectedMessage, deleteMessage]);
+
+  const handleCopyMessage = useCallback(async () => {
+    if (!selectedMessage?.text) return;
+    try {
+      await Clipboard.setStringAsync(selectedMessage.text);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    } finally {
+      setSelectedMessage(null);
+    }
+  }, [selectedMessage]);
 
   const renderItem = useCallback(
     ({ item }: { item: MessageGroup }) => {
@@ -1101,16 +1163,18 @@ export default function ChatThreadScreen() {
             isGroupStart={item.isGroupStart}
             showTime={item.showTime}
             onImagePress={setViewerImage}
-            onLongPress={handleDeleteMessage}
+            onLongPress={handleLongPressMessage}
             colors={colors}
             isDark={isDark}
+            isLastOwnBeforeRead={item.isLastOwnBeforeRead}
+            readAt={otherReadAt}
           />
         );
       }
 
       return null;
     },
-    [colors, isDark, handleDeleteMessage]
+    [colors, isDark, handleLongPressMessage, otherReadAt]
   );
 
   if (isLoading) {
@@ -1142,7 +1206,7 @@ export default function ChatThreadScreen() {
 
         <TouchableOpacity
           style={styles.headerCenter}
-          onPress={handleProfilePress}
+          onPress={handleHeaderPress}
           activeOpacity={0.7}
         >
           <View style={styles.headerAvatarContainer}>
@@ -1236,40 +1300,140 @@ export default function ChatThreadScreen() {
         onClose={() => setViewerImage(null)}
       />
 
-      {/* Delete Message Modal */}
+      {/* Instagram-style Message Context Menu */}
       <Modal
-        visible={!!messageToDelete}
+        visible={!!selectedMessage}
         transparent
         animationType="fade"
-        onRequestClose={() => setMessageToDelete(null)}
+        onRequestClose={() => setSelectedMessage(null)}
       >
         <Pressable
-          style={styles.deleteModalOverlay}
-          onPress={() => setMessageToDelete(null)}
+          style={styles.contextMenuOverlay}
+          onPress={() => setSelectedMessage(null)}
         >
-          <Pressable style={[styles.deleteModalContent, { backgroundColor: isDark ? colors.cardElevated : '#fff' }]}>
-            <Text style={[styles.deleteModalTitle, { color: colors.text }]}>Delete Message</Text>
-            <Text style={[styles.deleteModalText, { color: colors.textSecondary }]}>
-              Are you sure you want to delete this message? This cannot be undone.
-            </Text>
-            <View style={styles.deleteModalButtons}>
+          <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+
+          <View style={styles.contextMenuContent}>
+            {/* Selected message preview */}
+            {selectedMessage && (
+              <Animated.View entering={FadeIn.duration(150)} style={[styles.contextMessagePreview, selectedMessage.isOwn && styles.contextMessagePreviewOwn]}>
+                {selectedMessage.text ? (
+                  <View style={[
+                    styles.messageBubble,
+                    selectedMessage.isOwn ? styles.messageBubbleOwn : [styles.messageBubbleOther, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' }],
+                  ]}>
+                    <Text style={selectedMessage.isOwn ? styles.messageTextOwn : [styles.messageText, { color: colors.text }]}>
+                      {selectedMessage.text}
+                    </Text>
+                  </View>
+                ) : selectedMessage.attachments?.[0] ? (
+                  <Image
+                    source={{ uri: selectedMessage.attachments[0].thumbUrl || selectedMessage.attachments[0].url }}
+                    style={styles.contextPreviewImage}
+                    resizeMode="cover"
+                  />
+                ) : null}
+                <Text style={[styles.contextTimestamp, { color: colors.textTertiary }]}>
+                  {formatMessageTime(selectedMessage.createdAt)}
+                </Text>
+              </Animated.View>
+            )}
+
+            {/* Action Menu */}
+            <Animated.View entering={FadeInDown.delay(50).duration(200)} style={[styles.actionMenu, { backgroundColor: isDark ? 'rgba(40,40,40,0.95)' : 'rgba(255,255,255,0.95)' }]}>
+              {selectedMessage?.text ? (
+                <TouchableOpacity
+                  style={[styles.actionMenuItem, { borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}
+                  onPress={handleCopyMessage}
+                  activeOpacity={0.6}
+                >
+                  <Ionicons name="copy-outline" size={20} color={colors.text} />
+                  <Text style={[styles.actionMenuText, { color: colors.text }]}>Copy</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              {selectedMessage?.isOwn && (
+                <TouchableOpacity
+                  style={[styles.actionMenuItem, { borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}
+                  onPress={handleUnsend}
+                  activeOpacity={0.6}
+                >
+                  <Ionicons name="arrow-undo-outline" size={20} color="#FF3B30" />
+                  <Text style={[styles.actionMenuText, { color: '#FF3B30' }]}>Unsend</Text>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
-                style={[styles.deleteModalButton, styles.deleteModalCancel, { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.25)' }]}
-                onPress={() => setMessageToDelete(null)}
-                activeOpacity={0.7}
+                style={[styles.actionMenuItem, styles.actionMenuItemLast]}
+                onPress={() => {
+                  // Forward / More placeholder
+                  setSelectedMessage(null);
+                }}
+                activeOpacity={0.6}
               >
-                <Text style={[styles.deleteModalButtonText, { color: colors.text }]}>Cancel</Text>
+                <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
+                <Text style={[styles.actionMenuText, { color: colors.text }]}>More</Text>
+                <View style={{ flex: 1 }} />
+                <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.deleteModalButton, styles.deleteModalConfirm]}
-                onPress={confirmDeleteMessage}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.deleteModalButtonText, { color: '#fff' }]}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </Pressable>
+            </Animated.View>
+          </View>
         </Pressable>
+      </Modal>
+
+      {/* Chat Info Screen - Instagram style */}
+      <Modal
+        visible={showChatInfo}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowChatInfo(false)}
+      >
+        <View style={[styles.chatInfoContainer, { backgroundColor: colors.background }]}>
+          {isDark && <DarkGradientBg />}
+          {/* Back button */}
+          <View style={[styles.chatInfoHeader, { paddingTop: insets.top }]}>
+            <TouchableOpacity
+              style={styles.chatInfoBackButton}
+              onPress={() => setShowChatInfo(false)}
+            >
+              <Ionicons name="chevron-back" size={28} color={colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Avatar + Name */}
+          <View style={styles.chatInfoProfile}>
+            <View style={styles.chatInfoAvatarWrapper}>
+              <Avatar uri={channelInfo?.otherMember?.image} size={100} colors={colors} />
+            </View>
+            <Text style={[styles.chatInfoName, { color: colors.text }]}>
+              {channelInfo?.name || 'User'}
+            </Text>
+          </View>
+
+          {/* Action buttons row */}
+          <View style={styles.chatInfoActions}>
+            <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleGoToProfile} activeOpacity={0.7}>
+              <View style={[styles.chatInfoActionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+                <Ionicons name="person-outline" size={22} color={colors.text} />
+              </View>
+              <Text style={[styles.chatInfoActionLabel, { color: colors.text }]}>Profile</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleMuteToggle} activeOpacity={0.7}>
+              <View style={[styles.chatInfoActionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+                <Ionicons name={isMuted ? 'notifications-off' : 'notifications-outline'} size={22} color={colors.text} />
+              </View>
+              <Text style={[styles.chatInfoActionLabel, { color: colors.text }]}>{isMuted ? 'Unmute' : 'Mute'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleBlock} activeOpacity={0.7}>
+              <View style={[styles.chatInfoActionIcon, { backgroundColor: 'rgba(255,59,48,0.12)' }]}>
+                <Ionicons name="ban-outline" size={22} color="#FF3B30" />
+              </View>
+              <Text style={[styles.chatInfoActionLabel, { color: '#FF3B30' }]}>Block</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </View>
   );
@@ -1445,6 +1609,23 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginRight: 4,
     marginLeft: 0,
+  },
+  readReceiptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+    marginLeft: 4,
+    gap: 3,
+  },
+  readReceiptRowOwn: {
+    justifyContent: 'flex-end',
+    marginRight: 4,
+    marginLeft: 0,
+  },
+  readReceiptText: {
+    fontSize: 11,
+    fontFamily: 'Lato_400Regular',
+    color: '#0095f6',
   },
   // Attachments
   attachmentWrapper: {
@@ -1781,51 +1962,100 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT * 0.7,
   },
-  // Delete message modal
-  deleteModalOverlay: {
+  // Instagram-style context menu
+  contextMenuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
   },
-  deleteModalContent: {
-    width: '100%',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
+  contextMenuContent: {
+    width: SCREEN_WIDTH - 48,
+    maxWidth: 340,
+    alignItems: 'stretch',
+    gap: 8,
   },
-  deleteModalTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    marginBottom: 8,
+  contextMessagePreview: {
+    alignItems: 'flex-start',
+    paddingHorizontal: 8,
   },
-  deleteModalText: {
-    fontSize: 14,
+  contextMessagePreviewOwn: {
+    alignItems: 'flex-end',
+  },
+  contextPreviewImage: {
+    width: MAX_IMAGE_WIDTH * 0.6,
+    height: MAX_IMAGE_WIDTH * 0.6,
+    borderRadius: 18,
+  },
+  contextTimestamp: {
+    fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
+    marginTop: 4,
+    paddingHorizontal: 4,
   },
-  deleteModalButtons: {
+  actionMenu: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  actionMenuItem: {
     flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  deleteModalButton: {
-    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 12,
+    gap: 12,
+    borderBottomWidth: 0.5,
+  },
+  actionMenuItemLast: {
+    borderBottomWidth: 0,
+  },
+  actionMenuText: {
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
+  },
+  // Chat Info Screen
+  chatInfoContainer: {
+    flex: 1,
+  },
+  chatInfoHeader: {
+    paddingHorizontal: 4,
+    paddingBottom: 8,
+  },
+  chatInfoBackButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  deleteModalCancel: {
-    borderWidth: 1,
+  chatInfoProfile: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 28,
   },
-  deleteModalConfirm: {
-    backgroundColor: '#ff3b30',
+  chatInfoAvatarWrapper: {
+    marginBottom: 16,
   },
-  deleteModalButtonText: {
-    fontSize: 15,
+  chatInfoName: {
+    fontSize: 22,
     fontFamily: 'Lato_700Bold',
+  },
+  chatInfoActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 32,
+    paddingHorizontal: 24,
+  },
+  chatInfoActionBtn: {
+    alignItems: 'center',
+    gap: 6,
+  },
+  chatInfoActionIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatInfoActionLabel: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
   },
 });

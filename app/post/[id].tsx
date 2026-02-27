@@ -21,11 +21,10 @@ import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import {
-  useActivity,
-  useActivityComments,
+  usePost,
+  usePostComments,
   useAddComment,
-  useActivityReaction,
-  useCommentReaction,
+  usePostReaction,
   type CommentData,
 } from '@/hooks';
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
@@ -59,7 +58,6 @@ function CommentItem({
   currentUserId?: string;
 }) {
   const { colors } = useAppTheme();
-  const { addReaction, deleteReaction, isAdding, isDeleting } = useCommentReaction();
 
   // Get comment user info
   const userCustom = comment.user?.custom;
@@ -71,48 +69,15 @@ function CommentItem({
       : comment.user?.id) ||
     'user';
   const commentAvatar = comment.user?.image;
-  const commentVerified = userCustom?.verified || false;
-  const isReply = Boolean(comment.parent_id);
-
-  // Check if liked
-  const ownReactions = Array.isArray(comment.own_reactions) ? comment.own_reactions : [];
-  const isLiked = ownReactions.some(
-    (reaction) => reaction.type === 'like' && reaction.user?.id === currentUserId
-  );
-  const likeCount = comment.reaction_counts?.like || comment.reaction_count || 0;
+  const isReply = false; // Threading not yet supported in our backend
 
   // Format time
   const formatTime = (createdAt: string | number) => {
     try {
-      const date =
-        typeof createdAt === 'number'
-          ? new Date(createdAt / 1000000) // GetStream uses nanoseconds
-          : new Date(createdAt);
+      const date = new Date(createdAt);
       return formatDistanceToNow(date, { addSuffix: true });
     } catch {
       return '';
-    }
-  };
-
-  const handleLike = async () => {
-    if (isAdding || isDeleting) return;
-    try {
-      if (isLiked) {
-        await deleteReaction({
-          commentId: comment.id,
-          activityId,
-          type: 'like',
-        });
-      } else {
-        await addReaction({
-          commentId: comment.id,
-          activityId,
-          type: 'like',
-          enforceUnique: true,
-        });
-      }
-    } catch (error) {
-      console.error('Error toggling comment like:', error);
     }
   };
 
@@ -127,9 +92,6 @@ function CommentItem({
           <Text style={[styles.commentUsername, { color: colors.text }]}>
             @{commentUsername}
           </Text>
-          {commentVerified && (
-            <Ionicons name="checkmark-circle" size={12} color="#3897F0" />
-          )}
           <Text style={[styles.commentTime, { color: colors.textTertiary }]}>
             {formatTime(comment.created_at)}
           </Text>
@@ -140,45 +102,13 @@ function CommentItem({
         <View style={styles.commentActions}>
           <TouchableOpacity
             style={styles.commentAction}
-            onPress={handleLike}
-            disabled={isAdding || isDeleting}
+            onPress={() => onReply(comment.id, commentUsername)}
           >
-            <Ionicons
-              name={isLiked ? 'heart' : 'heart-outline'}
-              size={14}
-              color={isLiked ? '#ff4444' : colors.textTertiary}
-            />
             <Text style={[styles.commentActionText, { color: colors.textTertiary }]}>
-              {formatNumber(likeCount)}
+              Reply
             </Text>
           </TouchableOpacity>
-          {!isReply && (
-            <TouchableOpacity
-              style={styles.commentAction}
-              onPress={() => onReply(comment.id, commentUsername)}
-            >
-              <Text style={[styles.commentActionText, { color: colors.textTertiary }]}>
-                Reply
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
-
-        {/* Replies */}
-        {replies.length > 0 && !isReply && (
-          <View style={styles.repliesContainer}>
-            {replies.map((reply) => (
-              <CommentItem
-                key={reply.id}
-                comment={reply}
-                replies={[]}
-                activityId={activityId}
-                onReply={onReply}
-                currentUserId={currentUserId}
-              />
-            ))}
-          </View>
-        )}
       </View>
     </View>
   );
@@ -196,88 +126,66 @@ export default function PostDetailScreen() {
   const [replyingToCommentId, setReplyingToCommentId] = React.useState<string | null>(null);
   const [replyingToUsername, setReplyingToUsername] = React.useState<string | null>(null);
 
-  // Fetch activity
-  const { activity, isLoading, refetch: refetchActivity } = useActivity(activityId);
+  const postId = activityId;
+
+  // Fetch post
+  const { post, isLoading, refetch: refetchPost } = usePost(postId);
 
   // Fetch comments
-  const { comments: activityComments, isLoading: commentsLoading, refetch: refetchComments } = useActivityComments({
-    activityId,
-    enabled: Boolean(activityId),
+  const { comments: postComments, isLoading: commentsLoading } = usePostComments({
+    postId,
+    enabled: Boolean(postId),
   });
 
   // Hooks for mutations
   const { addComment, isAdding: isAddingComment } = useAddComment();
-  const { addReaction, deleteReaction } = useActivityReaction();
+  const { like, unlike } = usePostReaction();
 
-  // Get post data from activity
-  const customFields = activity?.custom;
+  // Get post data
   const username =
-    customFields?.userName ||
-    activity?.user?.custom?.userName ||
-    activity?.user?.name ||
-    (activity?.user?.custom?.firstName && activity?.user?.custom?.lastName
-      ? `${activity.user.custom.firstName} ${activity.user.custom.lastName}`
-      : activity?.user?.id) ||
+    post?.authorUserName ||
+    [post?.authorFirstName, post?.authorLastName].filter(Boolean).join(' ') ||
     'user';
-  const userAvatar = activity?.user?.image;
-  const verified = activity?.user?.custom?.verified || false;
+  const userAvatar = post?.authorAvatarUrl;
 
   // Get media
-  const imageAttachment = activity?.attachments?.find(
-    (att) => att.type === 'image' && (att.image_url || att.url)
-  );
-  const videoAttachment = activity?.attachments?.find(
-    (att) => att.type === 'file' && (att.asset_url || att.url)
-  );
-  const imageUrl = imageAttachment?.image_url || imageAttachment?.url;
-  const videoUrl = videoAttachment?.asset_url || videoAttachment?.url;
-  const thumbnailUrl = videoAttachment?.custom?.thumb_url || videoAttachment?.thumb_url || imageUrl;
+  const firstMedia = post?.media?.[0];
+  const imageUrl =
+    post?.type === 'event'
+      ? post.eventFlyerUrl || post.eventImageUrl || (firstMedia?.type === 'image' ? firstMedia.url : undefined)
+      : firstMedia?.type === 'image'
+        ? firstMedia.url
+        : undefined;
+  const videoUrl = firstMedia?.type === 'video' ? firstMedia.url : undefined;
+  const thumbnailUrl = firstMedia?.thumbnailUrl || imageUrl;
 
   // Get reaction data
-  const ownReactions = Array.isArray(activity?.own_reactions) ? activity.own_reactions : [];
-  const reactionGroups = activity?.reaction_groups || {};
-  const hasLiked = ownReactions.some((reaction) => reaction.type === 'like');
-  const likes = reactionGroups.like?.count || activity?.reaction_count || 0;
+  const hasLiked = post?.isLiked ?? false;
+  const likes = post?.likeCount ?? 0;
 
   // Format time
   const timeAgo = React.useMemo(() => {
-    if (!activity?.created_at) return '';
+    if (!post?.createdAt) return '';
     try {
-      return formatDistanceToNow(new Date(activity.created_at), { addSuffix: true });
+      return formatDistanceToNow(new Date(post.createdAt), { addSuffix: true });
     } catch {
       return '';
     }
-  }, [activity?.created_at]);
+  }, [post?.createdAt]);
 
-  // Filter top-level comments
-  const topLevelComments = React.useMemo(() => {
-    return activityComments.filter((comment) => !comment.parent_id);
-  }, [activityComments]);
-
-  // Get replies for a comment
-  const getRepliesForComment = (commentId: string): CommentData[] => {
-    const comment = activityComments.find((c) => c.id === commentId);
-    return comment?.replies || comment?.children || [];
-  };
+  // Comments are flat (no threading yet)
+  const topLevelComments = postComments;
 
   // Handle like/unlike
   const handleLikeClick = async () => {
-    if (!activity) return;
+    if (!post) return;
     try {
       if (hasLiked) {
-        await deleteReaction({
-          activityId: activity.id,
-          type: 'like',
-        });
+        await unlike({ postId: post.id });
       } else {
-        await addReaction({
-          activityId: activity.id,
-          type: 'like',
-          custom: { emoji: '❤️' },
-          enforceUnique: true,
-        });
+        await like({ postId: post.id });
       }
-      await refetchActivity();
+      await refetchPost();
     } catch (error) {
       console.error('Error toggling like:', error);
     }
@@ -285,12 +193,12 @@ export default function PostDetailScreen() {
 
   // Handle comment submission
   const handleCommentSubmit = async () => {
-    if (!activity || !commentText.trim() || isAddingComment) return;
+    if (!post || !commentText.trim() || isAddingComment) return;
     try {
       await addComment({
-        activityId: activity.id,
+        postId: post.id,
         comment: commentText.trim(),
-        parentId: replyingToCommentId || undefined,
+        parentId: replyingToCommentId ? Number(replyingToCommentId) : undefined,
       });
       setCommentText('');
       setReplyingToCommentId(null);
@@ -349,10 +257,10 @@ export default function PostDetailScreen() {
           <TouchableOpacity
             style={styles.authorRow}
             onPress={() => {
-              if (activity?.user?.id) {
+              if (post?.authorId) {
                 router.push({
                   pathname: '/user-profile/[userId]',
-                  params: { userId: activity.user.id },
+                  params: { userId: String(post.authorId) },
                 });
               }
             }}
@@ -366,9 +274,6 @@ export default function PostDetailScreen() {
                 <Text style={[styles.authorUsername, { color: colors.text }]}>
                   @{username}
                 </Text>
-                {verified && (
-                  <Ionicons name="checkmark-circle" size={14} color="#3897F0" />
-                )}
               </View>
               <Text style={[styles.authorTime, { color: colors.textTertiary }]}>
                 {timeAgo}
@@ -438,14 +343,14 @@ export default function PostDetailScreen() {
         </Animated.View>
 
         {/* Description */}
-        {activity?.text && (
+        {post?.text && (
           <Animated.View
             entering={FadeInDown.delay(300).duration(400)}
             style={[styles.descriptionSection, { borderBottomColor: colors.border }]}
           >
             <Text style={[styles.descriptionText, { color: colors.text }]}>
               <Text style={styles.descriptionUsername}>@{username}</Text>{' '}
-              {activity.text}
+              {post?.text}
             </Text>
           </Animated.View>
         )}
@@ -475,19 +380,16 @@ export default function PostDetailScreen() {
                 No comments yet. Be the first to comment!
               </Text>
             ) : (
-              topLevelComments.map((comment) => {
-                const replies = getRepliesForComment(comment.id);
-                return (
+              topLevelComments.map((comment) => (
                   <CommentItem
                     key={comment.id}
                     comment={comment}
-                    replies={replies}
-                    activityId={activity?.id || ''}
+                    replies={[]}
+                    activityId={postId || ''}
                     onReply={handleReplyClick}
                     currentUserId={user ? String(user.id) : undefined}
                   />
-                );
-              })
+              ))
             )}
           </Animated.View>
         )}

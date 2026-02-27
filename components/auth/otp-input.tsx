@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
   interpolateColor,
 } from 'react-native-reanimated';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface OTPInputProps {
   value: string;
@@ -32,6 +33,7 @@ export function OTPInput({
   success = false,
 }: OTPInputProps) {
   const inputRef = React.useRef<TextInput>(null);
+  const { isDark } = useAppTheme();
 
   const handlePress = () => {
     inputRef.current?.focus();
@@ -70,6 +72,7 @@ export function OTPInput({
         value={value}
         onChangeText={handleChange}
         keyboardType="number-pad"
+        keyboardAppearance={isDark ? 'dark' : 'light'}
         maxLength={maxLength}
         autoComplete="sms-otp"
         textContentType="oneTimeCode"
@@ -91,6 +94,7 @@ interface OTPBoxProps {
 function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
   const animatedValue = useSharedValue(0);
   const cursorOpacity = useSharedValue(0);
+  const { colors, isDark } = useAppTheme();
 
   React.useEffect(() => {
     if (error) {
@@ -116,11 +120,13 @@ function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
     }
   }, [isFocused, cursorOpacity]);
 
+  const defaultBorder = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+
   const boxStyle = useAnimatedStyle(() => {
     const borderColor = interpolateColor(
       animatedValue.value,
       [0, 1, 2],
-      ['rgba(0, 0, 0, 0.15)', '#ff6b6b', '#4ade80']
+      [defaultBorder, '#ff6b6b', '#4ade80']
     );
 
     return {
@@ -134,11 +140,11 @@ function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
   }));
 
   return (
-    <Animated.View style={[styles.box, boxStyle]}>
+    <Animated.View style={[styles.box, { backgroundColor: colors.input }, boxStyle]}>
       {digit ? (
-        <Animated.Text style={styles.digit}>{digit}</Animated.Text>
+        <Animated.Text style={[styles.digit, { color: colors.text }]}>{digit}</Animated.Text>
       ) : isFocused ? (
-        <Animated.View style={[styles.cursor, cursorStyle]} />
+        <Animated.View style={[styles.cursor, { backgroundColor: colors.text }, cursorStyle]} />
       ) : null}
     </Animated.View>
   );
@@ -157,19 +163,16 @@ const styles = StyleSheet.create({
     width: 48,
     height: 56,
     borderRadius: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   digit: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#1a1a1a',
   },
   cursor: {
     width: 2,
     height: 24,
-    backgroundColor: '#1a1a1a',
     borderRadius: 1,
   },
   hiddenInput: {

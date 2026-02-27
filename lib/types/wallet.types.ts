@@ -66,6 +66,7 @@ export interface WalletEventCard {
   ticketStatus?: 'active' | 'redeemed' | 'cancelled' | 'transferred';
   title: string;
   dateTime: string;
+  endDateTime?: string;
   dateTimeLabel: string;
   venueName: string;
   flyerUrl: string;

@@ -63,6 +63,7 @@ export interface UserTicket {
     name: string;
     startDate: string;
     endDate?: string;
+    status?: string;
     isPaid?: boolean;
     imageUrl?: string;
     venue?: {

@@ -12,13 +12,12 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  PanResponder,
-  type GestureResponderEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle, Line, Text as SvgText } from 'react-native-svg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -29,7 +28,6 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// ─── Types ──────────────────────────────────────────────────
 export type TimeRange = '12H' | '1D' | '1W' | '2W' | '1M' | '3M' | '6M' | '1Y' | '5Y';
 
 export interface AnalyticsMetric {
@@ -71,7 +69,6 @@ export function getRangeLabel(range: TimeRange): string {
   }
 }
 
-// ─── Delta Calculator ───────────────────────────────────────
 export function calcDelta(series: number[]): { text: string; isPositive: boolean } {
   if (series.length < 2) return { text: '', isPositive: true };
   const first = series[0];
@@ -86,7 +83,6 @@ export function calcDelta(series: number[]): { text: string; isPositive: boolean
   };
 }
 
-// ─── SVG Path Builders ──────────────────────────────────────
 function buildSmoothPath(
   data: number[],
   width: number,
@@ -136,7 +132,6 @@ function buildAreaPath(
   return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
 }
 
-// ─── Point Calculator (for tooltip) ─────────────────────────
 function getChartPoints(
   data: number[],
   width: number,
@@ -207,7 +202,6 @@ function formatXAxisDates(dates: string[], range: TimeRange): { label: string; f
   return result;
 }
 
-// ─── Hero Line Chart ────────────────────────────────────────
 export function HeroLineChart({
   data,
   dates,
@@ -216,6 +210,7 @@ export function HeroLineChart({
   selectedRange = '1M',
   colors,
   isDark,
+  onTouchActive,
 }: {
   data: number[];
   dates?: string[];
@@ -224,6 +219,7 @@ export function HeroLineChart({
   selectedRange?: TimeRange;
   colors: ThemeColors;
   isDark: boolean;
+  onTouchActive?: (active: boolean) => void;
 }) {
   const chartWidth = SCREEN_WIDTH - 32;
   const xAxisHeight = 20;
@@ -269,28 +265,24 @@ export function HeroLineChart({
 
   const dismissTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const panResponder = React.useMemo(
+  const gesture = React.useMemo(
     () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onStartShouldSetPanResponderCapture: () => true,
-        onMoveShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponderCapture: () => true,
-        onPanResponderGrant: (evt: GestureResponderEvent) => {
+      Gesture.Pan()
+        .runOnJS(true)
+        .minDistance(0)
+        .onBegin((e) => {
           if (dismissTimer.current) clearTimeout(dismissTimer.current);
-          setActiveIndex(findNearestIndex(evt.nativeEvent.locationX));
-        },
-        onPanResponderMove: (evt: GestureResponderEvent) => {
-          setActiveIndex(findNearestIndex(evt.nativeEvent.locationX));
-        },
-        onPanResponderRelease: () => {
+          onTouchActive?.(true);
+          setActiveIndex(findNearestIndex(e.x));
+        })
+        .onUpdate((e) => {
+          setActiveIndex(findNearestIndex(e.x));
+        })
+        .onFinalize(() => {
+          onTouchActive?.(false);
           dismissTimer.current = setTimeout(() => setActiveIndex(null), 2000);
-        },
-        onPanResponderTerminate: () => {
-          dismissTimer.current = setTimeout(() => setActiveIndex(null), 2000);
-        },
-      }),
-    [findNearestIndex],
+        }),
+    [findNearestIndex, onTouchActive],
   );
 
   const activePoint = activeIndex !== null ? points[activeIndex] : null;
@@ -308,105 +300,121 @@ export function HeroLineChart({
     ? formatTooltipDate(dates[activeIndex], selectedRange)
     : '';
 
-  // Tooltip position — always at top of chart, horizontally centered on point
-  const tooltipW = 140;
+  // Tooltip position — follows the active dot, clamped within chart bounds
+  const tooltipW = 150;
+  const tooltipH = 48;
+  const tooltipGap = 10;
   const tooltipX = activePoint
     ? Math.max(0, Math.min(activePoint.x - tooltipW / 2, chartWidth - tooltipW))
     : 0;
-  const tooltipY = 0;
+  const tooltipY = activePoint
+    ? activePoint.y - tooltipH - tooltipGap >= 0
+      ? activePoint.y - tooltipH - tooltipGap
+      : activePoint.y + tooltipGap + 8
+    : 0;
 
   return (
-    <View style={{ marginHorizontal: 16, marginTop: 8 }} {...panResponder.panHandlers}>
-      <Svg width={chartWidth} height={totalHeight}>
-        <Defs>
-          <SvgGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color} stopOpacity="0.25" />
-            <Stop offset="0.6" stopColor={color} stopOpacity="0.08" />
-            <Stop offset="1" stopColor={color} stopOpacity="0" />
-          </SvgGradient>
-        </Defs>
-        {areaPath ? <Path d={areaPath} fill={`url(#${gradientId})`} /> : null}
-        {linePath ? (
-          <Path
-            d={linePath}
-            fill="none"
-            stroke={color}
-            strokeWidth={2.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ) : null}
-
-        {/* Tooltip indicator line + dot */}
-        {activePoint && (
-          <>
-            <Line
-              x1={activePoint.x}
-              y1={0}
-              x2={activePoint.x}
-              y2={chartHeight}
-              stroke={isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)'}
-              strokeWidth={1}
-              strokeDasharray="4 3"
+    <GestureDetector gesture={gesture}>
+      <Animated.View style={{ marginHorizontal: 16, marginTop: 8 }}>
+        <Svg width={chartWidth} height={totalHeight}>
+          <Defs>
+            <SvgGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={color} stopOpacity="0.25" />
+              <Stop offset="0.6" stopColor={color} stopOpacity="0.08" />
+              <Stop offset="1" stopColor={color} stopOpacity="0" />
+            </SvgGradient>
+          </Defs>
+          {areaPath ? <Path d={areaPath} fill={`url(#${gradientId})`} /> : null}
+          {linePath ? (
+            <Path
+              d={linePath}
+              fill="none"
+              stroke={color}
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-            <Circle
-              cx={activePoint.x}
-              cy={activePoint.y}
-              r={5}
-              fill={color}
-              stroke={isDark ? '#000' : '#fff'}
-              strokeWidth={2}
-            />
-          </>
-        )}
-
-        {/* X-axis labels */}
-        {xLabels.map((item, i) => {
-          const x = chartPadding + item.fraction * (chartWidth - chartPadding * 2);
-          return (
-            <SvgText
-              key={`x-${i}`}
-              x={x}
-              y={chartHeight + 14}
-              fontSize={10}
-              fontFamily="Lato_400Regular"
-              fill={labelColor}
-              textAnchor="middle"
-            >
-              {item.label}
-            </SvgText>
-          );
-        })}
-      </Svg>
-
-      {/* Floating tooltip — shows value + date */}
-      {activePoint && (
-        <View
-          style={[
-            styles.tooltip,
-            {
-              left: tooltipX,
-              top: tooltipY,
-              backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.75)',
-            },
-          ]}
-          pointerEvents="none"
-        >
-          <Text style={[styles.tooltipText, { color: '#fff' }]}>
-            {metricLabel ? `${tooltipValue} ${metricLabel}` : tooltipValue}
-          </Text>
-          {tooltipDate ? (
-            <Text style={[styles.tooltipDate, { color: 'rgba(255,255,255,0.6)' }]}>
-              {tooltipDate}
-            </Text>
           ) : null}
-        </View>
-      )}
-    </View>
+
+          {/* Tooltip indicator line + dot */}
+          {activePoint && (
+            <>
+              <Line
+                x1={activePoint.x}
+                y1={0}
+                x2={activePoint.x}
+                y2={chartHeight}
+                stroke={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)'}
+                strokeWidth={1}
+                strokeDasharray="4 3"
+              />
+              {/* Outer glow ring */}
+              <Circle
+                cx={activePoint.x}
+                cy={activePoint.y}
+                r={10}
+                fill={color}
+                opacity={0.15}
+              />
+              {/* Inner dot */}
+              <Circle
+                cx={activePoint.x}
+                cy={activePoint.y}
+                r={5}
+                fill={color}
+                stroke={isDark ? '#000' : '#fff'}
+                strokeWidth={2}
+              />
+            </>
+          )}
+
+          {/* X-axis labels */}
+          {xLabels.map((item, i) => {
+            const x = chartPadding + item.fraction * (chartWidth - chartPadding * 2);
+            return (
+              <SvgText
+                key={`x-${i}`}
+                x={x}
+                y={chartHeight + 14}
+                fontSize={10}
+                fontFamily="Lato_400Regular"
+                fill={labelColor}
+                textAnchor="middle"
+              >
+                {item.label}
+              </SvgText>
+            );
+          })}
+        </Svg>
+
+        {/* Floating glass tooltip — follows the active point */}
+        {activePoint && (
+          <View
+            style={[
+              styles.tooltip,
+              {
+                left: tooltipX,
+                top: tooltipY,
+                width: tooltipW,
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <Text style={styles.tooltipText}>
+              {tooltipValue}
+            </Text>
+            {tooltipDate ? (
+              <Text style={styles.tooltipDate}>
+                {tooltipDate}
+              </Text>
+            ) : null}
+          </View>
+        )}
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
-// ─── Mini Sparkline ─────────────────────────────────────────
 function MiniSparkline({
   data,
   isPositive,
@@ -437,7 +445,6 @@ function MiniSparkline({
   );
 }
 
-// ─── Hero Metric Header ─────────────────────────────────────
 export function HeroMetricHeader({
   metric,
   colors,
@@ -459,7 +466,6 @@ export function HeroMetricHeader({
   );
 }
 
-// ─── Range Selector ─────────────────────────────────────────
 export function RangeSelector({
   selected,
   onSelect,
@@ -492,7 +498,6 @@ export function RangeSelector({
   );
 }
 
-// ─── Metric Tile ────────────────────────────────────────────
 export function MetricTile({
   metric,
   selectedRange,
@@ -531,7 +536,6 @@ export function MetricTile({
   );
 }
 
-// ─── Full Analytics Screen Shell ────────────────────────────
 // Reusable container with hero chart, range selector, and metric tiles.
 // Both Dashboard and Event analytics pages use this.
 export function AnalyticsScreenShell({
@@ -556,6 +560,7 @@ export function AnalyticsScreenShell({
   const { colors, isDark } = useAppTheme();
 
   const [refreshing, setRefreshing] = React.useState(false);
+  const [scrollEnabled, setScrollEnabled] = React.useState(true);
   const [heroMetricId, setHeroMetricId] = React.useState<string>(
     metrics[0]?.id ?? 'views',
   );
@@ -662,6 +667,7 @@ export function AnalyticsScreenShell({
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={scrollEnabled}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -681,6 +687,7 @@ export function AnalyticsScreenShell({
           selectedRange={selectedRange}
           colors={colors}
           isDark={isDark}
+          onTouchActive={(active) => setScrollEnabled(!active)}
         />
 
         <RangeSelector selected={selectedRange} onSelect={handleRangeChange} ranges={ranges} colors={colors} />
@@ -840,25 +847,29 @@ const styles = StyleSheet.create({
   tileSeparator: {
     height: 1,
   },
-  // Tooltip
+  // Tooltip — glass style
   tooltip: {
     position: 'absolute',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 60,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
   tooltipText: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Lato_700Bold',
     textAlign: 'center',
+    color: '#fff',
   },
   tooltipDate: {
-    fontSize: 10,
+    fontSize: 11,
     fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     marginTop: 2,
+    color: 'rgba(255,255,255,0.55)',
   },
 });

@@ -20,7 +20,7 @@ export const venuesApi = {
   },
 
   /**
-   * Follow a venue (syncs with backend DB after Stream follow)
+   * Follow a venue
    * Backend endpoint: POST /api/venues/:id/follow
    */
   followVenue: async (venueId: number): Promise<{ success: boolean; message: string }> => {
@@ -28,11 +28,19 @@ export const venuesApi = {
   },
 
   /**
-   * Unfollow a venue (syncs with backend DB after Stream unfollow)
+   * Unfollow a venue
    * Backend endpoint: DELETE /api/venues/:id/follow
    */
   unfollowVenue: async (venueId: number): Promise<{ success: boolean; message: string }> => {
     return apiClient.delete<{ success: boolean; message: string }>(`/api/venues/${venueId}/follow`);
+  },
+
+  /**
+   * Check if current user follows a venue
+   * Backend endpoint: GET /api/venues/:id/follow-status
+   */
+  getVenueFollowStatus: async (venueId: number): Promise<{ isFollowing: boolean }> => {
+    return apiClient.get<{ isFollowing: boolean }>(`/api/venues/${venueId}/follow-status`);
   },
 
   /**

@@ -7,10 +7,6 @@ interface LinkifiedTextProps {
   style?: TextStyle;
 }
 
-/**
- * Renders text with clickable @mentions
- * Tapping a @username navigates to that user's profile
- */
 export function LinkifiedText({ children, style }: LinkifiedTextProps) {
   const router = useStableRouter();
 

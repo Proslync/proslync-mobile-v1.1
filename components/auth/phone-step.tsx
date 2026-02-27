@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CountryPicker } from './country-picker';
 import { authApi } from '@/lib/api/auth';
 import { handleApiError } from '@/lib/api/errors';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface PhoneStepProps {
   onSuccess: (phoneNumber: string) => void;
@@ -54,6 +55,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
 
   // Get minimum digits required for current country
   const minDigits = PHONE_LENGTH_BY_COUNTRY[countryCode] || 7;
@@ -111,7 +113,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
@@ -124,7 +126,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
         >
           <Image
             source={require('@/assets/images/status_logo.png')}
-            style={[styles.logo, { tintColor: '#1a1a1a' }]}
+            style={[styles.logo, { tintColor: colors.text }]}
             resizeMode="contain"
           />
         </Animated.View>
@@ -132,7 +134,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
         {/* Title */}
         <Animated.Text
           entering={FadeInUp.duration(500).delay(400)}
-          style={styles.title}
+          style={[styles.title, { color: colors.text }]}
         >
           Login/Signup
         </Animated.Text>
@@ -140,7 +142,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
         {/* Subtitle */}
         <Animated.Text
           entering={FadeInUp.duration(500).delay(450)}
-          style={styles.subtitle}
+          style={[styles.subtitle, { color: colors.textSecondary }]}
         >
           We'll send you a verification code.
         </Animated.Text>
@@ -148,25 +150,25 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
         {/* Phone Input */}
         <Animated.View
           entering={FadeInDown.duration(600).delay(500)}
-          style={styles.inputContainer}
+          style={[styles.inputContainer, { backgroundColor: colors.input }]}
         >
           <CountryPicker
             selectedCode={countryCode}
             onSelect={setCountryCode}
           />
-          <Text style={styles.dialCode}>{countryCode}</Text>
+          <Text style={[styles.dialCode, { color: colors.text }]}>{countryCode}</Text>
           <TextInput
-            style={styles.phoneInput}
+            style={[styles.phoneInput, { color: colors.text }]}
             placeholder="(555) 555-5555"
-            placeholderTextColor="rgba(0, 0, 0, 0.3)"
+            placeholderTextColor={colors.placeholder}
             keyboardType="phone-pad"
+            keyboardAppearance={isDark ? 'dark' : 'light'}
             value={phoneNumber}
             onChangeText={handlePhoneChange}
             maxLength={14}
             autoFocus
-            selectionColor="rgba(0, 0, 0, 0.3)"
-            cursorColor="rgba(0, 0, 0, 0.5)"
-            // Autofill support
+            selectionColor={colors.textTertiary}
+            cursorColor={colors.textSecondary}
             textContentType="telephoneNumber"
             autoComplete="tel"
             importantForAutofill="yes"
@@ -210,10 +212,10 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
           entering={FadeInUp.duration(600).delay(700)}
           style={styles.termsContainer}
         >
-          <Text style={styles.termsText}>
+          <Text style={[styles.termsText, { color: colors.textTertiary }]}>
             By continuing, you agree to our{' '}
-            <Text style={styles.termsLink}>Terms</Text> and{' '}
-            <Text style={styles.termsLink}>Privacy Policy</Text>
+            <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Terms</Text> and{' '}
+            <Text style={[styles.termsLink, { color: colors.textSecondary }]}>Privacy Policy</Text>
           </Text>
         </Animated.View>
       </View>
@@ -224,7 +226,6 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   content: {
     flex: 1,
@@ -244,13 +245,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#1a1a1a',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(0, 0, 0, 0.5)',
     textAlign: 'center',
     marginBottom: 40,
   },
@@ -258,11 +257,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     width: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
     borderRadius: 12,
   },
   dialCode: {
-    color: '#1a1a1a',
     fontSize: 17,
     fontWeight: '500',
     paddingHorizontal: 8,
@@ -271,7 +268,6 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 56,
     fontSize: 17,
-    color: '#1a1a1a',
     paddingRight: 16,
   },
   errorText: {
@@ -308,12 +304,10 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: 13,
-    color: 'rgba(0, 0, 0, 0.4)',
     textAlign: 'center',
     lineHeight: 20,
   },
   termsLink: {
-    color: 'rgba(0, 0, 0, 0.6)',
     textDecorationLine: 'underline',
   },
 });

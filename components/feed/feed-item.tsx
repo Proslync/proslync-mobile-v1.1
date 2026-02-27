@@ -16,7 +16,7 @@ import { FeedBottomCTA } from './feed-bottom-cta';
 import { FeedMediaPlayer } from './feed-media-player';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { useStream } from '@/lib/providers/stream-provider';
+import { useAuth } from '@/lib/providers/auth-provider';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -86,7 +86,8 @@ export function FeedItem({
 }: FeedItemProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
-  const { userId: currentUserId } = useStream();
+  const { user: authUser } = useAuth();
+  const currentUserId = authUser ? String(authUser.id) : null;
   const {
     isFollowing,
     isLoading: followLoading,
@@ -121,7 +122,7 @@ export function FeedItem({
         await follow();
       }
     } catch (error) {
-      console.error('[FeedItem] Follow error:', error);
+      console.error('Follow error:', error);
     }
   };
 

@@ -8,10 +8,6 @@ interface RequestConfig {
   skipAuth?: boolean;
 }
 
-/**
- * API Client for React Native
- * Handles authentication, token refresh, and API requests
- */
 class ApiClient {
   private baseUrl: string;
   private timeout: number;
@@ -32,25 +28,16 @@ class ApiClient {
     this.onAuthErrorCallback = callback;
   }
 
-  /**
-   * Clear the auth error callback
-   */
   clearOnAuthError(): void {
     this.onAuthErrorCallback = null;
   }
 
-  /**
-   * Trigger auth error callback (internal use)
-   */
   private notifyAuthError(): void {
     if (this.onAuthErrorCallback) {
       this.onAuthErrorCallback();
     }
   }
 
-  /**
-   * Get stored access token
-   */
   async getAccessToken(): Promise<string | null> {
     try {
       return await SecureStore.getItemAsync(config.auth.tokenKey);
@@ -59,9 +46,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * Store access token
-   */
   async setAccessToken(token: string | undefined): Promise<void> {
     if (!token) {
       return;
@@ -73,9 +57,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * Remove access token (logout)
-   */
   async clearAccessToken(): Promise<void> {
     try {
       await SecureStore.deleteItemAsync(config.auth.tokenKey);
@@ -84,9 +65,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * Get stored refresh token
-   */
   async getRefreshToken(): Promise<string | null> {
     try {
       return await SecureStore.getItemAsync(config.auth.refreshTokenKey);
@@ -95,9 +73,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * Store refresh token
-   */
   async setRefreshToken(token: string | undefined): Promise<void> {
     if (!token) {
       return;
@@ -109,9 +84,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * Remove refresh token
-   */
   async clearRefreshToken(): Promise<void> {
     try {
       await SecureStore.deleteItemAsync(config.auth.refreshTokenKey);
@@ -120,9 +92,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * Build request headers
-   */
   private async buildHeaders(
     customHeaders?: Record<string, string>,
     skipAuth?: boolean
@@ -142,9 +111,6 @@ class ApiClient {
     return headers;
   }
 
-  /**
-   * Perform token refresh
-   */
   private async performTokenRefresh(): Promise<void> {
     // Prevent concurrent refresh requests
     if (this.isRefreshing && this.refreshPromise) {
@@ -181,9 +147,7 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.log('[ApiClient] Token refresh failed:', response.status, errorData);
-        await this.clearAccessToken();
+        const errorData = await response.json().catch(() => ({}));        await this.clearAccessToken();
         await this.clearRefreshToken();
         // Notify auth provider to clear user state and redirect to signin
         this.notifyAuthError();
@@ -191,8 +155,6 @@ class ApiClient {
       }
 
       const data = await response.json();
-      console.log('[ApiClient] Token refresh successful');
-
       if (data.accessToken) {
         await this.setAccessToken(data.accessToken);
       }
@@ -200,7 +162,7 @@ class ApiClient {
         await this.setRefreshToken(data.refreshToken);
       }
     } catch (error) {
-      console.error('[ApiClient] Token refresh error:', error);
+      console.error('Token refresh error:', error);
       await this.clearAccessToken();
       await this.clearRefreshToken();
       // Notify auth provider to clear user state and redirect to signin
@@ -209,9 +171,6 @@ class ApiClient {
     }
   }
 
-  /**
-   * Make HTTP request
-   */
   private async request<T>(
     method: string,
     endpoint: string,
@@ -252,9 +211,7 @@ class ApiClient {
       // Handle 401 - try to refresh token
       if (response.status === 401 && !requestConfig?.skipAuth) {
         // Don't retry refresh endpoint to avoid infinite loops
-        if (endpoint.includes('/auth/refresh')) {
-          console.log('[ApiClient] 401 on refresh endpoint, not retrying');
-          throw ApiClientError.fromResponse(response, data);
+        if (endpoint.includes('/auth/refresh')) {          throw ApiClientError.fromResponse(response, data);
         }
 
         try {
@@ -300,44 +257,26 @@ class ApiClient {
     }
   }
 
-  /**
-   * GET request
-   */
   async get<T>(endpoint: string, config?: RequestConfig): Promise<T> {
     return this.request<T>('GET', endpoint, undefined, config);
   }
 
-  /**
-   * POST request
-   */
   async post<T>(endpoint: string, body?: unknown, config?: RequestConfig): Promise<T> {
     return this.request<T>('POST', endpoint, body, config);
   }
 
-  /**
-   * PUT request
-   */
   async put<T>(endpoint: string, body?: unknown, config?: RequestConfig): Promise<T> {
     return this.request<T>('PUT', endpoint, body, config);
   }
 
-  /**
-   * PATCH request
-   */
   async patch<T>(endpoint: string, body?: unknown, config?: RequestConfig): Promise<T> {
     return this.request<T>('PATCH', endpoint, body, config);
   }
 
-  /**
-   * DELETE request
-   */
   async delete<T>(endpoint: string, config?: RequestConfig): Promise<T> {
     return this.request<T>('DELETE', endpoint, undefined, config);
   }
 
-  /**
-   * Upload file with multipart/form-data
-   */
   async uploadFile<T>(
     endpoint: string,
     file: { uri: string; name: string; type: string },
@@ -370,9 +309,6 @@ class ApiClient {
     );
 
     try {
-      console.log('[ApiClient] Uploading file to:', url);
-      console.log('[ApiClient] File info:', { name: file.name, type: file.type, uri: file.uri.substring(0, 50) + '...' });
-
       const response = await fetch(url, {
         method: 'POST',
         headers,
@@ -389,9 +325,6 @@ class ApiClient {
       } else {
         data = await response.text();
       }
-
-      console.log('[ApiClient] Upload response status:', response.status);
-
       // Handle 401 - try to refresh token
       if (response.status === 401 && !config?.skipAuth) {
         try {
@@ -403,14 +336,14 @@ class ApiClient {
       }
 
       if (!response.ok) {
-        console.error('[ApiClient] Upload failed:', data);
+        console.error('Upload failed:', data);
         throw ApiClientError.fromResponse(response, data);
       }
 
       return data as T;
     } catch (error) {
       clearTimeout(timeoutId);
-      console.error('[ApiClient] Upload error:', error);
+      console.error('Upload error:', error);
 
       if (error instanceof ApiClientError) {
         throw error;

@@ -6,9 +6,6 @@ import type {
   ConfirmUploadResponse,
 } from '../types/files.types';
 
-/**
- * Get file info from a local URI
- */
 function getFileInfoFromUri(uri: string): { name: string; type: string } {
   const filename = uri.split('/').pop() || 'file';
   const match = /\.(\w+)$/.exec(filename);
@@ -55,10 +52,6 @@ export const filesApi = {
     fileUri: string,
     mimeType: string
   ): Promise<void> => {
-    console.log('[FilesApi] Uploading to presigned URL...');
-    console.log('[FilesApi] File URI:', fileUri.substring(0, 50) + '...');
-    console.log('[FilesApi] MIME type:', mimeType);
-
     // For React Native, we need to use a blob or the fetch with file URI
     // React Native's fetch can handle file:// URIs directly
     const response = await fetch(fileUri);
@@ -74,12 +67,9 @@ export const filesApi = {
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text().catch(() => 'Unknown error');
-      console.error('[FilesApi] S3 upload failed:', uploadResponse.status, errorText);
+      console.error('S3 upload failed:', uploadResponse.status, errorText);
       throw new Error(`S3 upload failed: ${uploadResponse.status} ${uploadResponse.statusText}`);
-    }
-
-    console.log('[FilesApi] S3 upload successful');
-  },
+    }  },
 
   /**
    * Confirm file upload after successful S3 upload
@@ -107,10 +97,6 @@ export const filesApi = {
     const fileResponse = await fetch(fileUri);
     const blob = await fileResponse.blob();
     const fileSize = blob.size.toString();
-
-    console.log('[FilesApi] Starting flyer upload for event:', eventId);
-    console.log('[FilesApi] File:', { name, type, size: fileSize });
-
     // Step 1: Get presigned URL
     const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
       fileType: 'flyer',
@@ -119,9 +105,6 @@ export const filesApi = {
       fileSize,
       eventId: eventId.toString(),
     });
-
-    console.log('[FilesApi] Got presigned URL, fileId:', fileId);
-
     // Step 2: Upload to S3
     // Use the blob we already fetched
     const uploadResponse = await fetch(uploadUrl, {
@@ -135,14 +118,8 @@ export const filesApi = {
     if (!uploadResponse.ok) {
       throw new Error(`S3 upload failed: ${uploadResponse.status}`);
     }
-
-    console.log('[FilesApi] S3 upload complete');
-
     // Step 3: Confirm upload
     const confirmed = await filesApi.confirmUpload(fileId);
-
-    console.log('[FilesApi] Upload confirmed, URL:', confirmed.url);
-
     return confirmed.url;
   },
 
@@ -154,15 +131,9 @@ export const filesApi = {
    */
   uploadTableImage: async (fileUri: string): Promise<string> => {
     const { name, type } = getFileInfoFromUri(fileUri);
-
-    console.log('[FilesApi] Table image upload:', { name, type, uri: fileUri.substring(0, 80) });
-
     const fileResponse = await fetch(fileUri);
     const blob = await fileResponse.blob();
     const fileSize = blob.size.toString();
-
-    console.log('[FilesApi] Blob size:', fileSize, 'blob.type:', blob.type);
-
     // Step 1: Get presigned URL
     const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
       fileType: 'table-image',
@@ -170,9 +141,6 @@ export const filesApi = {
       mimeType: type,
       fileSize,
     });
-
-    console.log('[FilesApi] Got presigned URL for table image, fileId:', fileId);
-
     // Use the same Content-Type that was used to generate the signed URL
     // Step 2: Upload to GCS/S3
     const uploadResponse = await fetch(uploadUrl, {
@@ -183,7 +151,7 @@ export const filesApi = {
 
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text().catch(() => '');
-      console.error('[FilesApi] Table image upload failed:', uploadResponse.status, errorText);
+      console.error('Table image upload failed:', uploadResponse.status, errorText);
       throw new Error(`Upload failed: ${uploadResponse.status}`);
     }
 

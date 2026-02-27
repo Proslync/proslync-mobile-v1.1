@@ -1,21 +1,12 @@
-// Multi-step event form hook using react-hook-form with Zod validation
-// Uses FormProvider pattern for proper field persistence across steps
+// Single-page event form hook using react-hook-form with Zod validation
+// Uses FormProvider pattern for proper field persistence
 
 import { EventFormData, eventFormSchema } from '@/lib/schemas/events';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 export type EventFormStep = 'basic' | 'datetime' | 'location' | 'details' | 'pricing';
-
-// Map step to its field names for validation
-const STEP_FIELDS: Record<EventFormStep, (keyof EventFormData)[]> = {
-  basic: ['name', 'description', 'flyerUri', 'flyerMediaType'],
-  datetime: ['startDate', 'endDate'],
-  location: ['venueId', 'location', 'locationDetails'],
-  details: ['maxCapacity', 'minimumAge', 'isPublic', 'isPaid'],
-  pricing: ['tiers'],
-};
 
 // Default values for the form - exported for reuse
 export const DEFAULT_EVENT_FORM_VALUES: EventFormData = {
@@ -33,19 +24,14 @@ export const DEFAULT_EVENT_FORM_VALUES: EventFormData = {
   isPublic: true,
   isPaid: false,
   tiers: [],
+  doorCoverPrice: '',
 };
 
 interface UseEventFormOptions {
   defaultValues?: Partial<EventFormData>;
 }
 
-/**
- * Custom hook for multi-step event form with per-step validation
- * Returns form instance to be used with FormProvider
- */
 export function useEventForm(options: UseEventFormOptions = {}) {
-  const [currentStep, setCurrentStep] = useState<EventFormStep>('basic');
-
   const form = useForm<EventFormData>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
@@ -54,107 +40,38 @@ export function useEventForm(options: UseEventFormOptions = {}) {
     },
     mode: 'onTouched',
     reValidateMode: 'onChange',
-    shouldUnregister: false, // Keep field values when Controllers unmount between steps
+    shouldUnregister: false,
     shouldFocusError: true,
   });
 
-  // Watch isPaid to build dynamic steps
-  const isPaid = form.watch('isPaid');
-
-  const steps = useMemo((): EventFormStep[] => {
-    const base: EventFormStep[] = ['basic', 'datetime', 'location', 'details'];
-    if (isPaid) base.push('pricing');
-    return base;
-  }, [isPaid]);
-
-  // If current step is removed (e.g. toggled isPaid off while on pricing), go back
-  useEffect(() => {
-    if (!steps.includes(currentStep)) {
-      setCurrentStep('details');
-    }
-  }, [steps, currentStep]);
-
-  const currentStepIndex = steps.indexOf(currentStep);
-  const isFirstStep = currentStepIndex === 0;
-  const isLastStep = currentStepIndex === steps.length - 1;
-
-  // Validate only fields for current step
-  const validateCurrentStep = useCallback(async (): Promise<boolean> => {
-    const fields = STEP_FIELDS[currentStep];
-    const result = await form.trigger(fields);
-    return result;
-  }, [currentStep, form]);
-
-  // Watch relevant fields to update canGoNext reactively
+  // Watch fields for canSubmit
   const name = form.watch('name');
   const startDate = form.watch('startDate');
   const endDate = form.watch('endDate');
   const location = form.watch('location');
+  const isPaid = form.watch('isPaid');
   const tiers = form.watch('tiers');
 
-  const canGoNext = (() => {
-    switch (currentStep) {
-      case 'basic':
-        return (name?.trim().length ?? 0) > 0;
-      case 'datetime':
-        return startDate && endDate && startDate < endDate;
-      case 'location':
-        return (location?.trim().length ?? 0) > 0;
-      case 'details':
-        return true;
-      case 'pricing':
-        return (
-          Array.isArray(tiers) &&
-          tiers.length > 0 &&
-          tiers.every((t) => t.pricing?.length > 0)
-        );
-      default:
-        return false;
-    }
-  })();
-
-  const goNext = useCallback(async (): Promise<boolean> => {
-    const isValid = await validateCurrentStep();
-    if (!isValid) return false;
-
-    if (!isLastStep) {
-      setCurrentStep(steps[currentStepIndex + 1]);
+  const canSubmit = useMemo(() => {
+    if (!name?.trim()) return false;
+    if (!startDate || !endDate || startDate >= endDate) return false;
+    if (!location?.trim()) return false;
+    if (isPaid && (!Array.isArray(tiers) || tiers.length === 0 || !tiers.every((t) => t.pricing?.length > 0))) {
+      return false;
     }
     return true;
-  }, [currentStepIndex, isLastStep, steps, validateCurrentStep]);
-
-  const goBack = useCallback(() => {
-    if (!isFirstStep) {
-      setCurrentStep(steps[currentStepIndex - 1]);
-    }
-  }, [currentStepIndex, isFirstStep, steps]);
-
-  const goToStep = useCallback((step: EventFormStep) => {
-    setCurrentStep(step);
-  }, []);
+  }, [name, startDate, endDate, location, isPaid, tiers]);
 
   return {
     form,
-    currentStep,
-    currentStepIndex,
-    steps,
-    totalSteps: steps.length,
-    isFirstStep,
-    isLastStep,
-    goNext,
-    goBack,
-    goToStep,
-    canGoNext,
-    validateCurrentStep,
+    canSubmit,
+    isPaid,
   };
 }
 
 // Type for the return value of useEventForm
 export type UseEventFormReturn = ReturnType<typeof useEventForm>;
 
-/**
- * Hook for edit event form - same as useEventForm but with reset capability
- */
 export function useEditEventForm(options: UseEventFormOptions = {}) {
   const eventForm = useEventForm(options);
 
@@ -169,6 +86,8 @@ export function useEditEventForm(options: UseEventFormOptions = {}) {
       maxCapacity?: number;
       minimumAge?: number;
       isPublic?: boolean;
+      isPaid?: boolean;
+      doorCoverPriceCents?: number;
     }) => {
       eventForm.form.reset({
         name: eventData.name || '',
@@ -183,8 +102,11 @@ export function useEditEventForm(options: UseEventFormOptions = {}) {
         maxCapacity: eventData.maxCapacity?.toString() || '',
         minimumAge: eventData.minimumAge?.toString() || '21',
         isPublic: eventData.isPublic ?? true,
-        isPaid: false,
+        isPaid: eventData.isPaid ?? false,
         tiers: [],
+        doorCoverPrice: eventData.doorCoverPriceCents
+          ? (eventData.doorCoverPriceCents / 100).toFixed(2)
+          : '',
       });
     },
     [eventForm.form]

@@ -4,8 +4,6 @@ export { authApi } from './auth';
 export { mapActivityToFeedItem, getEventIdFromActivity } from './feed';
 export type { FeedActivity, FeedResponse } from './feed';
 export { eventsApi } from './events';
-export { streamApi } from './stream';
-export type { StreamTokenResponse, StreamTokensResponse } from './stream';
 export { addToGoogleWallet, updateGoogleWalletCard, generateAppleWalletToken, generateAppleWalletTicketToken, getMembershipCard } from './wallet';
 export { followsApi } from './follows';
 export { postsApi } from './posts';

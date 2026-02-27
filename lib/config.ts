@@ -30,9 +30,6 @@ export const config = {
   stripe: {
     publishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || "",
   },
-  stream: {
-    apiKey: process.env.EXPO_PUBLIC_STREAM_API_KEY || "wnyzcwhxkjsf",
-  },
   mapbox: {
     accessToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN || "",
   },

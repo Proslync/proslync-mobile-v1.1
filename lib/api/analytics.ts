@@ -33,7 +33,6 @@ export interface TimeSeriesResponse {
   eventId?: number;
 }
 
-// ── Revenue Analytics ────────────────────────────────────────
 
 export interface RevenueTimeSeriesPoint {
   date: string;

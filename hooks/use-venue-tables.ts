@@ -6,7 +6,6 @@ import type { VenueTableSection, EventTableItem, ConfigureEventTableRequest } fr
 export const VENUE_SECTIONS_KEY = 'venue-table-sections';
 export const EVENT_TABLES_KEY = 'event-tables';
 
-// ── Venue Table Section Queries & Mutations ──────────────
 
 export function useVenueSections(venueId?: number) {
   return useQuery<VenueTableSection[]>({
@@ -54,7 +53,6 @@ export function useDeleteSection(venueId: number) {
   });
 }
 
-// ── Venue Table Mutations ─────────────────────────────────
 
 export function useCreateTable(venueId: number) {
   const queryClient = useQueryClient();
@@ -106,7 +104,6 @@ export function useDeleteTable(venueId: number) {
   });
 }
 
-// ── Event Tables Query ────────────────────────────────────
 
 export function useEventTables(eventId?: number) {
   return useQuery<EventTableItem[]>({

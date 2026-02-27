@@ -1,4 +1,4 @@
-// New Message Screen - Start a new conversation with Stream Chat
+// New Message Screen - Start a new conversation
 
 import React, { useState, useCallback, useEffect } from 'react';
 import {
@@ -15,9 +15,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useChat } from '@/lib/providers/chat-provider';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { followsApi } from '@/lib/api/follows';
+import { chatApi } from '@/lib/api/chat';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 import type { UserFollowItem } from '@/lib/types/follows.types';
@@ -112,7 +112,6 @@ function buildDisplayName(item: UserFollowItem): string {
 export default function NewMessageScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { client, status } = useChat();
   const { user: currentUser } = useAuth();
   const { colors, isDark } = useAppTheme();
 
@@ -181,7 +180,7 @@ export default function NewMessageScreen() {
 
         setContacts(sorted);
       } catch (err) {
-        console.error('[NewMessage] Error fetching contacts:', err);
+        console.error('Error fetching contacts:', err);
       } finally {
         if (!cancelled) setIsLoadingContacts(false);
       }
@@ -191,96 +190,52 @@ export default function NewMessageScreen() {
     return () => { cancelled = true; };
   }, [currentUser?.id]);
 
-  // Search users via Stream Chat
+  // Filter contacts by search query (search is client-side from contacts list)
   useEffect(() => {
-    if (!client || status !== 'connected' || !searchQuery.trim()) {
+    if (!searchQuery.trim()) {
       setSearchResults([]);
       return;
     }
 
-    const searchUsers = async () => {
-      setIsSearching(true);
-      try {
-        const response = await client.queryUsers(
-          {
-            $or: [
-              { name: { $autocomplete: searchQuery } },
-              { id: { $autocomplete: searchQuery } },
-            ],
-            id: { $ne: client.userID || '' },
-          },
-          { name: 1 },
-          { limit: 20 }
-        );
+    const query = searchQuery.toLowerCase();
+    const filtered = contacts
+      .filter((c) =>
+        c.name.toLowerCase().includes(query) ||
+        c.userName?.toLowerCase().includes(query),
+      )
+      .map((c) => ({
+        id: String(c.id),
+        name: c.name,
+        image: c.image || undefined,
+      }));
 
-        setSearchResults(
-          response.users.map((u) => ({
-            id: u.id,
-            name: (u.name as string) || u.id,
-            image: u.image as string | undefined,
-            online: u.online,
-          }))
-        );
-      } catch (err) {
-        console.error('[NewMessage] Search error:', err);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    };
+    setSearchResults(filtered);
+  }, [searchQuery, contacts]);
 
-    const debounce = setTimeout(searchUsers, 300);
-    return () => clearTimeout(debounce);
-  }, [client, status, searchQuery]);
-
-  // Open or create channel with a user (by numeric userId)
+  // Open or create conversation with a user (by numeric userId)
   const openChannelWithUser = useCallback(
     async (targetUserId: string) => {
-      if (!client || isCreating) return;
+      if (isCreating) return;
 
       setIsCreating(true);
       try {
-        const currentUserId = client.userID;
-        if (!currentUserId) return;
+        const targetId = Number(targetUserId);
+        if (isNaN(targetId)) return;
 
-        // Query Stream Chat for existing 1:1 channel
-        const existingChannels = await client.queryChannels(
-          {
-            type: 'messaging',
-            members: { $eq: [currentUserId, targetUserId] },
-          },
-          {},
-          { limit: 1 },
-        );
-
-        if (existingChannels.length > 0) {
-          const existing = existingChannels[0];
-          router.replace({
-            pathname: '/chat/[conversationId]',
-            params: { conversationId: existing.id || existing.cid },
-          });
-          return;
-        }
-
-        // No existing channel — create one
-        const channelId = [currentUserId, targetUserId].sort().join('-');
-        const channel = client.channel('messaging', channelId, {
-          members: [currentUserId, targetUserId],
-        });
-
-        await channel.create();
+        // Create conversation (backend will dedup existing DMs)
+        const conversation = await chatApi.createConversation([targetId]);
 
         router.replace({
           pathname: '/chat/[conversationId]',
-          params: { conversationId: channel.id || channelId },
+          params: { conversationId: conversation.id },
         });
       } catch (err) {
-        console.error('[NewMessage] Create channel error:', err);
+        console.error('Create conversation error:', err);
       } finally {
         setIsCreating(false);
       }
     },
-    [client, isCreating, router]
+    [isCreating, router]
   );
 
   const handleSelectContact = useCallback(
@@ -314,27 +269,6 @@ export default function NewMessageScreen() {
     ),
     [handleSelectSearchResult, colors]
   );
-
-  // Show loading while chat is connecting
-  if (status === 'connecting') {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        {isDark && <DarkGradientBg />}
-        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>New Message</Text>
-          <View style={styles.cancelButton} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Connecting...</Text>
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>

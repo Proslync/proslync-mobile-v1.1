@@ -15,21 +15,15 @@ import "react-native-reanimated";
 import { ThemeProvider, useAppTheme } from "@/lib/providers/theme-provider";
 import { AuthProvider } from "@/lib/providers/auth-provider";
 import { QueryProvider } from "@/lib/providers/query-provider";
-import { StreamProvider } from "@/lib/providers/stream-provider";
 import { WalletProvider } from "@/lib/providers/wallet-provider";
 import { ToastProvider } from "@/components/shared/toast";
 import { TabNavigationProvider } from "@/lib/providers/tab-navigation-provider";
-import { ChatProvider } from "@/lib/providers/chat-provider";
-import { CallProvider } from "@/lib/providers/call-provider";
 import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
 import { TerminalProvider } from "@/lib/providers/terminal-provider";
 
 SplashScreen.preventAutoHideAsync();
 
-/**
- * Inner layout component that uses theme context
- */
 function RootLayoutNav() {
   const { isDark } = useAppTheme();
 
@@ -42,13 +36,6 @@ function RootLayoutNav() {
         <Stack.Screen
           name="chat/[conversationId]"
           options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="call/[callId]"
-          options={{
-            presentation: "fullScreenModal",
-            animation: "slide_from_bottom",
-          }}
         />
         <Stack.Screen
           name="new-message"
@@ -106,6 +93,10 @@ function RootLayoutNav() {
         <Stack.Screen
           name="tap-to-pay"
           options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="wallet"
+          options={{ headerShown: false, animation: "none" }}
         />
         <Stack.Screen
           name="notifications"
@@ -167,15 +158,9 @@ export default function RootLayout() {
                 <TerminalProvider>
                   <LiveLocationProvider>
                     <TabNavigationProvider>
-                      <StreamProvider>
-                        <ChatProvider>
-                          <CallProvider>
-                            <WalletProvider>
-                              <RootLayoutNav />
-                            </WalletProvider>
-                          </CallProvider>
-                        </ChatProvider>
-                      </StreamProvider>
+                      <WalletProvider>
+                        <RootLayoutNav />
+                      </WalletProvider>
                     </TabNavigationProvider>
                   </LiveLocationProvider>
                 </TerminalProvider>

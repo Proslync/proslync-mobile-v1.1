@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useStream } from '@/lib/providers/stream-provider';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/lib/providers/auth-provider';
 import { venuesApi } from '@/lib/api/venues';
 import { VENUE_FOLLOWERS_KEY } from './use-venue-followers';
 
@@ -15,166 +15,77 @@ interface UseFollowVenueResult {
   refetch: () => Promise<void>;
 }
 
-/**
- * Hook to follow/unfollow a venue using Stream SDK directly
- * Two-step: 1) GetStream follow (primary), 2) Backend DB sync (secondary)
- * Mirrors useFollowUser but targets venue: feeds
- */
+const VENUE_FOLLOW_STATUS_KEY = 'venue-follow-status';
+
 export function useFollowVenue(venueId?: number | string | null): UseFollowVenueResult {
-  const { client, isReady, userId: currentUserId } = useStream();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const targetVenueId = venueId ? String(venueId) : null;
+  const currentUserId = user?.id ?? null;
+  const targetVenueId = venueId ? Number(venueId) : null;
 
-  const [isFollowing, setIsFollowing] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const canFollow = !!(currentUserId && targetVenueId);
+
   const [isFollowInProgress, setIsFollowInProgress] = React.useState(false);
   const [isUnfollowInProgress, setIsUnfollowInProgress] = React.useState(false);
 
-  const fetchedForVenueRef = React.useRef<string | null>(null);
+  const statusQuery = useQuery({
+    queryKey: [VENUE_FOLLOW_STATUS_KEY, targetVenueId],
+    enabled: canFollow,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const result = await venuesApi.getVenueFollowStatus(targetVenueId!);
+      return result.isFollowing;
+    },
+  });
 
-  const canFollow =
-    Boolean(client) &&
-    isReady &&
-    Boolean(currentUserId) &&
-    Boolean(targetVenueId);
-
-  // Fetch follow status from Stream
-  const fetchFollowStatus = React.useCallback(async () => {
-    if (!client || !currentUserId || !targetVenueId || !isReady) {
-      setIsLoading(false);
-      return;
-    }
-
-    if (fetchedForVenueRef.current === targetVenueId) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-
-      const timelineFeed = client.feed('timeline', currentUserId);
-      await timelineFeed.getOrCreate();
-
-      const response = await client.queryFollows({
-        limit: 1,
-        filter: {
-          source_feed: `timeline:${currentUserId}`,
-          target_feed: `venue:${targetVenueId}`,
-        },
-      });
-
-      const following = response.follows.length > 0;
-      setIsFollowing(following);
-      fetchedForVenueRef.current = targetVenueId;
-    } catch (error) {
-      console.error('[useFollowVenue] Error checking follow status:', error);
-      setIsFollowing(false);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [client, currentUserId, targetVenueId, isReady]);
-
-  const refetch = React.useCallback(async () => {
-    fetchedForVenueRef.current = null;
-    await fetchFollowStatus();
-  }, [fetchFollowStatus]);
-
-  React.useEffect(() => {
-    if (targetVenueId !== fetchedForVenueRef.current) {
-      fetchedForVenueRef.current = null;
-      setIsFollowing(false);
-      setIsLoading(true);
-    }
-    fetchFollowStatus();
-  }, [fetchFollowStatus, targetVenueId]);
-
-  React.useEffect(() => {
-    return () => {
-      fetchedForVenueRef.current = null;
-    };
-  }, [targetVenueId]);
+  const isFollowing = statusQuery.data ?? false;
 
   const follow = React.useCallback(async () => {
-    if (!canFollow || !client || !currentUserId || !targetVenueId) return;
+    if (!canFollow || !targetVenueId) return;
 
     setIsFollowInProgress(true);
     try {
-      // Step 1: Follow in GetStream (primary)
-      const timelineFeed = client.feed('timeline', currentUserId);
-      await timelineFeed.getOrCreate();
-      await timelineFeed.follow(`venue:${targetVenueId}`);
+      await venuesApi.followVenue(targetVenueId);
 
-      setIsFollowing(true);
-
-      // Step 2: Sync with backend database (secondary, non-critical)
-      try {
-        const venueIdNumber = Number(targetVenueId);
-        if (!isNaN(venueIdNumber)) {
-          await venuesApi.followVenue(venueIdNumber);
-        }
-      } catch (syncError) {
-        console.error('[useFollowVenue] Failed to sync follow with backend:', syncError);
-      }
-
-      // Invalidate venue followers cache
-      queryClient.invalidateQueries({ queryKey: [VENUE_FOLLOWERS_KEY, Number(targetVenueId)] });
+      queryClient.setQueryData([VENUE_FOLLOW_STATUS_KEY, targetVenueId], true);
+      queryClient.invalidateQueries({ queryKey: [VENUE_FOLLOWERS_KEY, targetVenueId] });
     } catch (error: any) {
-      console.error('[useFollowVenue] Follow error:', error);
-
-      if (
-        error?.message?.includes("can't be found") ||
-        error?.message?.includes('Feed') ||
-        error?.message?.includes('not found')
-      ) {
-        throw new Error('This venue profile is not yet active. Please try again later.');
-      }
-
       if (error?.status === 409 || error?.message?.includes('already')) {
-        setIsFollowing(true);
+        queryClient.setQueryData([VENUE_FOLLOW_STATUS_KEY, targetVenueId], true);
         return;
       }
-
       throw error;
     } finally {
       setIsFollowInProgress(false);
     }
-  }, [canFollow, client, currentUserId, targetVenueId, queryClient]);
+  }, [canFollow, targetVenueId, queryClient]);
 
   const unfollow = React.useCallback(async () => {
-    if (!canFollow || !client || !currentUserId || !targetVenueId) return;
+    if (!canFollow || !targetVenueId) return;
 
     setIsUnfollowInProgress(true);
     try {
-      // Step 1: Unfollow in GetStream (primary)
-      const timelineFeed = client.feed('timeline', currentUserId);
-      await timelineFeed.unfollow(`venue:${targetVenueId}`);
+      await venuesApi.unfollowVenue(targetVenueId);
 
-      setIsFollowing(false);
-
-      // Step 2: Sync with backend database (secondary, non-critical)
-      try {
-        const venueIdNumber = Number(targetVenueId);
-        if (!isNaN(venueIdNumber)) {
-          await venuesApi.unfollowVenue(venueIdNumber);
-        }
-      } catch (syncError) {
-        console.error('[useFollowVenue] Failed to sync unfollow with backend:', syncError);
-      }
-
-      // Invalidate venue followers cache
-      queryClient.invalidateQueries({ queryKey: [VENUE_FOLLOWERS_KEY, Number(targetVenueId)] });
+      queryClient.setQueryData([VENUE_FOLLOW_STATUS_KEY, targetVenueId], false);
+      queryClient.invalidateQueries({ queryKey: [VENUE_FOLLOWERS_KEY, targetVenueId] });
     } catch (error) {
-      console.error('[useFollowVenue] Unfollow error:', error);
+      console.error('Unfollow error:', error);
       throw error;
     } finally {
       setIsUnfollowInProgress(false);
     }
-  }, [canFollow, client, currentUserId, targetVenueId, queryClient]);
+  }, [canFollow, targetVenueId, queryClient]);
+
+  const refetch = React.useCallback(async () => {
+    await statusQuery.refetch();
+  }, [statusQuery]);
 
   return {
     isFollowing,
-    isLoading,
+    isLoading: statusQuery.isLoading,
     canFollow,
     follow,
     unfollow,

@@ -8,10 +8,6 @@ import {
 
 export const REVENUE_TIMESERIES_KEY = 'revenue-timeseries';
 
-/**
- * Fetch revenue time series for dashboard (all events) or a specific event.
- * Uses the new backend endpoints that return daily-aggregated revenue data.
- */
 export function useRevenueTimeSeries(range: string, eventId?: number) {
   return useQuery<RevenueTimeSeriesResponse>({
     queryKey: [REVENUE_TIMESERIES_KEY, range, eventId],

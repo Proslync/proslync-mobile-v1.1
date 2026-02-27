@@ -22,9 +22,6 @@ export interface FollowVenue {
   logo: string;
 }
 
-/**
- * Transform API user item to UI format
- */
 function transformUserItem(item: UserFollowItem): FollowUser {
   return {
     id: item.id.toString(),
@@ -35,9 +32,6 @@ function transformUserItem(item: UserFollowItem): FollowUser {
   };
 }
 
-/**
- * Transform API venue item to UI format
- */
 function transformVenueItem(item: VenueFollowItem): FollowVenue {
   return {
     id: item.id.toString(),
@@ -46,11 +40,7 @@ function transformVenueItem(item: VenueFollowItem): FollowVenue {
   };
 }
 
-/**
- * Hook to fetch user's followers
- * @param userId - User ID to fetch followers for
- * @param enabled - Set to true to fetch (use for lazy loading when modal opens)
- */
+/** @param enabled - Set to true to fetch (use for lazy loading when modal opens) */
 export function useUserFollowers(
   userId: string | number | null | undefined,
   enabled: boolean = true
@@ -59,11 +49,7 @@ export function useUserFollowers(
 
   const query = useQuery({
     queryKey: ['userFollowers', numericUserId],
-    queryFn: async () => {
-      console.log('[useUserFollowers] Fetching followers for user:', numericUserId);
-      const result = await followsApi.getUserFollowers(numericUserId!);
-      console.log('[useUserFollowers] Response:', result);
-      return result;
+    queryFn: async () => {      const result = await followsApi.getUserFollowers(numericUserId!);      return result;
     },
     enabled: !!numericUserId && enabled,
     staleTime: 30000, // 30 seconds - data considered fresh for this duration
@@ -80,11 +66,7 @@ export function useUserFollowers(
   };
 }
 
-/**
- * Hook to fetch users and venues that this user is following
- * @param userId - User ID to fetch following for
- * @param enabled - Set to true to fetch (use for lazy loading when modal opens)
- */
+/** @param enabled - Set to true to fetch (use for lazy loading when modal opens) */
 export function useUserFollowing(
   userId: string | number | null | undefined,
   enabled: boolean = true
@@ -93,11 +75,7 @@ export function useUserFollowing(
 
   const query = useQuery({
     queryKey: ['userFollowing', numericUserId],
-    queryFn: async () => {
-      console.log('[useUserFollowing] Fetching following for user:', numericUserId);
-      const result = await followsApi.getUserFollowing(numericUserId!);
-      console.log('[useUserFollowing] Response:', result);
-      return result;
+    queryFn: async () => {      const result = await followsApi.getUserFollowing(numericUserId!);      return result;
     },
     enabled: !!numericUserId && enabled,
     staleTime: 30000, // 30 seconds - data considered fresh for this duration

@@ -16,7 +16,7 @@ interface TerminalPaymentContextValue {
   isInitialized: boolean;
   initError: string | null;
   retryInit: () => Promise<void>;
-  connectReader: (locationId?: string) => Promise<void>;
+  connectReader: (eventId?: number) => Promise<void>;
   collectPayment: (clientSecret: string) => Promise<void>;
   cancelCollect: () => Promise<void>;
 }
@@ -80,7 +80,13 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
     }
   }, [connectedReader]);
 
-  const connectReader = useCallback(async (locationId?: string) => {
+  const connectReader = useCallback(async (eventId?: number) => {
+    // If the native SDK already has a connected reader (e.g. from a previous screen visit),
+    // just sync status and skip re-connecting
+    if (connectedReader) {
+      setReaderStatus('connected');
+      return;
+    }
     if (isConnectingRef.current || readerStatus === 'connected') return;
     if (!isInitialized) {
       throw new Error('Terminal SDK not initialized yet');
@@ -90,6 +96,12 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
     setReaderStatus('connecting');
 
     try {
+      // Fetch a terminal location from the backend for this event
+      let resolvedLocationId: string | undefined;
+      if (eventId) {
+        resolvedLocationId = await paymentsApi.fetchTerminalLocation(eventId);
+      }
+
       // Set up the reader waiting promise BEFORE starting discovery
       // to avoid a race condition where discoveredReaders updates
       // before the promise listener is registered.
@@ -129,7 +141,7 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
       const { error: connectError } = await sdkConnectReader(
         {
           reader,
-          locationId: locationId || undefined,
+          locationId: resolvedLocationId,
           merchantDisplayName: 'Status',
           tosAcceptancePermitted: true,
           autoReconnectOnUnexpectedDisconnect: true,
@@ -143,13 +155,13 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
 
       setReaderStatus('connected');
     } catch (err) {
-      console.error('[Terminal] Connect error:', err);
+      console.error('Connect error:', err);
       setReaderStatus('disconnected');
       throw err;
     } finally {
       isConnectingRef.current = false;
     }
-  }, [readerStatus, isInitialized, discoverReaders, discoveredReaders, sdkConnectReader]);
+  }, [connectedReader, readerStatus, isInitialized, discoverReaders, discoveredReaders, sdkConnectReader]);
 
   const collectPayment = useCallback(
     async (clientSecret: string) => {
@@ -254,7 +266,7 @@ export function useTerminalPayment(): TerminalPaymentContextValue {
       isInitialized: false,
       initError: Platform.OS !== 'ios' ? 'Tap to Pay is only available on iPhone' : null,
       retryInit: async () => {},
-      connectReader: async (_locationId?: string) => {},
+      connectReader: async (_eventId?: number) => {},
       collectPayment: async () => {
         throw new Error('Tap to Pay is only available on iPhone');
       },

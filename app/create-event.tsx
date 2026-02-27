@@ -1,4 +1,4 @@
-// Create Event Screen - Multi-step form with FormProvider pattern
+// Create Event Screen - Single-page form with all fields
 
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useToast } from '@/components/shared/toast';
@@ -9,14 +9,13 @@ import {
   DetailsStep,
   PricingStep,
 } from '@/components/event-form';
-import type { EventFormStep } from '@/hooks';
 import { useCreateEvent, useEventForm } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { FormProvider } from 'react-hook-form';
+import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -24,27 +23,79 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Step rendering configuration
-const STEP_CONFIG: Record<
-  EventFormStep,
-  {
-    title: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    component: React.ComponentType;
-  }
-> = {
-  basic: { title: 'Basic Info', icon: 'create-outline', component: BasicInfoStep },
-  datetime: { title: 'Date & Time', icon: 'calendar-outline', component: DateTimeStep },
-  location: { title: 'Location', icon: 'location-outline', component: LocationStep },
-  details: { title: 'Details', icon: 'settings-outline', component: DetailsStep },
-  pricing: { title: 'Pricing', icon: 'pricetag-outline', component: PricingStep },
-};
+function DoorCoverInput() {
+  const { colors, isDark } = useAppTheme();
+  const { control } = useFormContext<EventFormData>();
+
+  return (
+    <View style={sectionStyles.section}>
+      <Text style={[sectionStyles.sectionTitle, { color: colors.text }]}>Door Cover</Text>
+      <Text style={[sectionStyles.sectionSubtitle, { color: colors.textTertiary }]}>
+        Optional cover charge at the door
+      </Text>
+      <Controller
+        control={control}
+        name="doorCoverPrice"
+        render={({ field: { onChange, onBlur, value } }) => (
+          <View style={[sectionStyles.inputRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+            <Text style={[sectionStyles.dollarSign, { color: colors.textSecondary }]}>$</Text>
+            <TextInput
+              style={[sectionStyles.amountInput, { color: colors.text }]}
+              value={value || ''}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholder="0.00"
+              placeholderTextColor={colors.textTertiary}
+              keyboardType="decimal-pad"
+              keyboardAppearance={isDark ? 'dark' : 'light'}
+            />
+          </View>
+        )}
+      />
+    </View>
+  );
+}
+
+const sectionStyles = StyleSheet.create({
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    marginBottom: 12,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    height: 52,
+  },
+  dollarSign: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    marginRight: 8,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 18,
+    fontFamily: 'Lato_400Regular',
+  },
+});
 
 export default function CreateEventScreen() {
   const insets = useSafeAreaInsets();
@@ -52,41 +103,11 @@ export default function CreateEventScreen() {
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
 
-  // Form hook
-  const {
-    form,
-    currentStepIndex,
-    steps,
-    isFirstStep,
-    isLastStep,
-    goNext,
-    goBack: formGoBack,
-    canGoNext,
-  } = useEventForm();
-
-  // Mutation hook
+  const { form, canSubmit, isPaid } = useEventForm();
   const createEvent = useCreateEvent();
 
-  // Get current step config
-  const currentStepKey = steps[currentStepIndex];
-  const CurrentStepComponent = STEP_CONFIG[currentStepKey]?.component;
-
-  const handleBack = () => {
-    if (isFirstStep) {
-      router.back();
-    } else {
-      formGoBack();
-    }
-  };
-
-  const handleNext = async () => {
-    await goNext();
-  };
-
-  // Final submit handler - called only when form is valid
+  // Final submit handler
   const onSubmit = (data: EventFormData) => {
-    console.log('[CreateEvent] Submitting:', JSON.stringify(data, null, 2));
-
     const parsedData = parseEventFormData(data);
     createEvent.mutate(
       {
@@ -100,17 +121,14 @@ export default function CreateEventScreen() {
           router.replace(`/event/${event.id}`);
         },
         onError: (error) => {
-          console.error('[CreateEvent] Mutation error:', error);
+          console.error('Mutation error:', error);
           showError(error.message || 'Failed to create event. Please try again.');
         },
       }
     );
   };
 
-  // Error handler for invalid submit
   const onSubmitError = (errors: Record<string, any>) => {
-    console.log('[CreateEvent] Validation errors:', errors);
-
     const errorMessages = Object.entries(errors)
       .map(([field, error]) => {
         const fieldName =
@@ -143,53 +161,12 @@ export default function CreateEventScreen() {
           entering={FadeIn.duration(400)}
           style={[styles.header, { paddingTop: insets.top + 8 }]}
         >
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Create Event</Text>
           <View style={styles.headerSpacer} />
         </Animated.View>
-
-        {/* Progress Indicator */}
-        <View style={styles.progressContainer}>
-          {steps.map((stepKey, index) => {
-            const config = STEP_CONFIG[stepKey];
-            return (
-              <View key={stepKey} style={styles.progressStep}>
-                <View
-                  style={[
-                    styles.progressDot,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
-                    index <= currentStepIndex && {
-                      backgroundColor: accentColor,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={config.icon}
-                    size={16}
-                    color={
-                      index <= currentStepIndex
-                        ? isDark ? '#000' : '#fff'
-                        : colors.textTertiary
-                    }
-                  />
-                </View>
-                {index < steps.length - 1 && (
-                  <View
-                    style={[
-                      styles.progressLine,
-                      { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' },
-                      index < currentStepIndex && {
-                        backgroundColor: accentColor,
-                      },
-                    ]}
-                  />
-                )}
-              </View>
-            );
-          })}
-        </View>
 
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -201,7 +178,21 @@ export default function CreateEventScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {CurrentStepComponent && <CurrentStepComponent />}
+            <BasicInfoStep />
+            <View style={styles.divider} />
+            <DateTimeStep />
+            <View style={styles.divider} />
+            <LocationStep />
+            <View style={styles.divider} />
+            <DetailsStep />
+            <View style={styles.divider} />
+            <DoorCoverInput />
+            {isPaid && (
+              <>
+                <View style={styles.divider} />
+                <PricingStep />
+              </>
+            )}
           </ScrollView>
 
           {/* Bottom Actions */}
@@ -211,47 +202,26 @@ export default function CreateEventScreen() {
               { paddingBottom: insets.bottom + 16, borderTopColor: colors.border },
             ]}
           >
-            {isLastStep ? (
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  {
-                    backgroundColor: accentColor,
-                  },
-                  !canGoNext && styles.buttonDisabled,
-                ]}
-                onPress={form.handleSubmit(onSubmit, onSubmitError)}
-                disabled={!canGoNext || createEvent.isPending}
-              >
-                {createEvent.isPending ? (
-                  <ActivityIndicator color={isDark ? '#000' : '#fff'} />
-                ) : (
-                  <>
-                    <Ionicons name="checkmark-circle" size={20} color={isDark ? '#000' : '#fff'} />
-                    <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#fff' }]}>
-                      Create Event
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  styles.actionButton,
-                  {
-                    backgroundColor: accentColor,
-                  },
-                  !canGoNext && styles.buttonDisabled,
-                ]}
-                onPress={handleNext}
-                disabled={!canGoNext}
-              >
-                <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#fff' }]}>
-                  Continue
-                </Text>
-                <Ionicons name="arrow-forward" size={20} color={isDark ? '#000' : '#fff'} />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                { backgroundColor: accentColor },
+                !canSubmit && styles.buttonDisabled,
+              ]}
+              onPress={form.handleSubmit(onSubmit, onSubmitError)}
+              disabled={!canSubmit || createEvent.isPending}
+            >
+              {createEvent.isPending ? (
+                <ActivityIndicator color={isDark ? '#000' : '#fff'} />
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color={isDark ? '#000' : '#fff'} />
+                  <Text style={[styles.actionButtonText, { color: isDark ? '#000' : '#fff' }]}>
+                    Create Event
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -283,29 +253,6 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
   },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-  },
-  progressStep: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  progressDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressLine: {
-    width: 40,
-    height: 2,
-    marginHorizontal: 4,
-  },
   keyboardView: {
     flex: 1,
   },
@@ -314,6 +261,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 24,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginVertical: 16,
   },
   bottomActions: {
     paddingHorizontal: 24,

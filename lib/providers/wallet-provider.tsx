@@ -134,7 +134,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
       setStripeAccountStatus(status);
       return status;
     } catch (error) {
-      console.log('[Wallet] No Stripe account or error fetching status:', error);
       setStripeAccountStatus({ hasAccount: false, chargesEnabled: false, payoutsEnabled: false, detailsSubmitted: false });
       return null;
     }
@@ -159,7 +158,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
         pendingCents,
       }));
     } catch (error) {
-      console.log('[Wallet] Error fetching balance:', error);
     }
   }, []);
 
@@ -170,7 +168,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const methods = (response.data ?? []).map(externalAccountToPayoutMethod);
       setPayoutMethods(methods);
     } catch (error) {
-      console.log('[Wallet] Error fetching payout methods:', error);
       setPayoutMethods([]);
     }
   }, []);
@@ -200,7 +197,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
       setTransactions(allTransactions);
     } catch (error) {
-      console.log('[Wallet] Error fetching transactions:', error);
     }
   }, []);
 
@@ -225,71 +221,92 @@ export function WalletProvider({ children }: WalletProviderProps) {
       });
       setOffers(mapped);
     } catch (error) {
-      console.log('[Wallet] Error fetching promos:', error);
       setOffers([]);
     }
   }, []);
 
-  // Fetch user's tickets + RSVP-only events and merge into one list
+  // Fetch user's upcoming tickets and RSVP events
   const fetchTicketsAndEvents = useCallback(async () => {
-    const formatDateLabel = (date: Date) =>
-      date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
+    const nowMs = Date.now();
+    const cards: WalletEventCard[] = [];
+    const seenEventIds = new Set<string>();
+
+    const fmtDate = (d: Date) =>
+      d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
       + ' \u2022 '
-      + date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+      + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 
-    let ticketCards: WalletEventCard[] = [];
-    const ticketEventIds = new Set<string>();
+    const isUpcoming = (startDate?: string, endDate?: string): boolean => {
+      if (endDate) {
+        const ms = new Date(endDate).getTime();
+        if (!isNaN(ms)) return ms > nowMs;
+      }
+      if (startDate) {
+        const ms = new Date(startDate).getTime();
+        if (!isNaN(ms)) return ms + 12 * 60 * 60 * 1000 > nowMs;
+      }
+      return false;
+    };
 
-    // 1. Tickets (have ticketId for sell/transfer)
+    // 1. Paid tickets
     try {
-      const { tickets = [] } = await ticketsApi.getMyTickets({
+      const response = await ticketsApi.getMyTickets({
         status: 'upcoming', limit: 100, sortBy: 'eventDate', sortOrder: 'asc',
       });
-      ticketCards = tickets.map((t) => {
-          const start = new Date(t.event?.startDate || t.createdAt);
-          ticketEventIds.add(t.eventId.toString());
-          return {
-            id: t.eventId.toString(),
-            ticketId: t.id,
-            ticketStatus: t.status,
-            title: t.event?.name || 'Event',
-            dateTime: t.event?.startDate || t.createdAt,
-            dateTimeLabel: formatDateLabel(start),
-            venueName: t.event?.venue?.name || 'TBA',
-            flyerUrl: t.event?.flyer?.url || t.event?.imageUrl || undefined,
-            isEarningEnabled: false,
-            isPaid: t.event?.isPaid ?? false,
-            pricePaid: t.pricePaid ? Number(t.pricePaid) : undefined,
-          };
+      for (const t of response?.tickets ?? []) {
+        if (t.status !== 'active') continue;
+        // Skip finished/cancelled events
+        const eventStatus = t.event?.status;
+        if (eventStatus === 'finished' || eventStatus === 'cancelled') continue;
+        if (!isUpcoming(t.event?.startDate, t.event?.endDate)) continue;
+        const eid = t.eventId.toString();
+        seenEventIds.add(eid);
+        cards.push({
+          id: eid,
+          ticketId: t.id,
+          ticketStatus: t.status,
+          title: t.event?.name || 'Event',
+          dateTime: t.event?.startDate || t.createdAt,
+          endDateTime: t.event?.endDate || undefined,
+          dateTimeLabel: fmtDate(new Date(t.event?.startDate || t.createdAt)),
+          venueName: t.event?.venue?.name || 'TBA',
+          flyerUrl: t.event?.flyer?.url || t.event?.imageUrl || '',
+          isEarningEnabled: false,
+          isPaid: t.event?.isPaid ?? false,
+          pricePaid: t.pricePaid ? Number(t.pricePaid) : undefined,
         });
+      }
     } catch (error) {
-      console.log('[Wallet] Error fetching tickets:', error);
+      console.error('[Wallet] Error fetching tickets:', error);
     }
 
-    // 2. RSVP-only events (no ticket yet)
+    // 2. Free RSVP events (no ticket)
     try {
       const allEvents = await eventsApi.getEvents({ limit: 100 });
-      const now = new Date();
-      const rsvpCards: WalletEventCard[] = allEvents
-        .filter((e) => e.isUserRegistered && new Date(e.startDate) >= now && !ticketEventIds.has(e.id.toString()))
-        .map((e) => ({
+      for (const e of allEvents) {
+        if (!e.isUserRegistered) continue;
+        if (seenEventIds.has(e.id.toString())) continue;
+        if (e.status === 'finished' || e.status === 'cancelled') continue;
+        if (!isUpcoming(e.startDate, e.endDate)) continue;
+        cards.push({
           id: e.id.toString(),
           title: e.name,
           dateTime: e.startDate,
-          dateTimeLabel: formatDateLabel(new Date(e.startDate)),
+          endDateTime: e.endDate,
+          dateTimeLabel: fmtDate(new Date(e.startDate)),
           venueName: e.venue?.name || e.location || 'TBA',
-          flyerUrl: e.flyer?.url || e.imageUrl || undefined,
+          flyerUrl: e.flyer?.url || e.imageUrl || '',
           isEarningEnabled: false,
           isPaid: e.isPaid ?? false,
-        }));
-
-      setEvents(
-        [...ticketCards, ...rsvpCards].sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()),
-      );
+        });
+      }
     } catch (error) {
-      console.log('[Wallet] Error fetching RSVP events:', error);
-      setEvents(ticketCards);
+      console.error('[Wallet] Error fetching RSVP events:', error);
     }
+
+    // Sort by start date ascending
+    cards.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+    setEvents(cards);
   }, []);
 
   // Setup Stripe Connect account
@@ -303,15 +320,14 @@ export function WalletProvider({ children }: WalletProviderProps) {
       if (!status?.hasAccount) {
         // Create new account
         const response = await stripeConnectApi.createAccount();
-        console.log('[Wallet] Created Stripe account:', response.accountId);
 
         // Open onboarding URL
         if (response.onboardingUrl) {
           await Linking.openURL(response.onboardingUrl);
         }
       } else if (!status.chargesEnabled || !status.payoutsEnabled) {
-        // Account exists but not fully active — re-open onboarding
-        // (covers both !detailsSubmitted and pending verification)
+        // Account exists but not fully active — get fresh onboarding link
+        // This handles both incomplete details AND pending requirements
         const response = await stripeConnectApi.getOnboardingLink();
         await Linking.openURL(response.url);
       }
@@ -319,7 +335,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       // Refresh status after setup
       await fetchAccountStatus();
     } catch (error) {
-      console.error('[Wallet] Error setting up Stripe account:', error);
+      console.error('Error setting up Stripe account:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -332,7 +348,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       const response = await stripeConnectApi.getDashboardLink();
       await Linking.openURL(response.url);
     } catch (error) {
-      console.error('[Wallet] Error opening Stripe dashboard:', error);
+      console.error('Error opening Stripe dashboard:', error);
       throw error;
     }
   }, []);
@@ -352,12 +368,11 @@ export function WalletProvider({ children }: WalletProviderProps) {
         destination: methodId,
       });
 
-      console.log('[Wallet] Payout created:', response);
 
       // Refresh balance and transactions
       await Promise.all([fetchBalance(), fetchTransactions()]);
     } catch (error) {
-      console.error('[Wallet] Error creating payout:', error);
+      console.error('Error creating payout:', error);
       throw error;
     } finally {
       setIsLoading(false);
@@ -384,17 +399,14 @@ export function WalletProvider({ children }: WalletProviderProps) {
 
   const removePayoutMethod = useCallback((methodId: string) => {
     // Payout method removal is done through Stripe Dashboard
-    console.log('[Wallet] Remove payout method - open Stripe dashboard');
   }, []);
 
   const setDefaultPayoutMethod = useCallback((methodId: string) => {
     // Default payout method is set through Stripe Dashboard
-    console.log('[Wallet] Set default payout method - open Stripe dashboard');
   }, []);
 
   const clearPendingTransaction = useCallback((transactionId: string) => {
     // This is handled by the backend/Stripe webhooks
-    console.log('[Wallet] Clear pending transaction:', transactionId);
   }, []);
 
   // Initial data fetch when authenticated
@@ -432,7 +444,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
           ]);
         }
       } catch (error) {
-        console.error('[Wallet] Error loading wallet data:', error);
+        console.error('Error loading wallet data:', error);
       } finally {
         setIsLoading(false);
       }
@@ -458,7 +470,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
         ]);
       }
     } catch (error) {
-      console.error('[Wallet] Error refreshing wallet:', error);
+      console.error('Error refreshing wallet:', error);
     } finally {
       setIsLoading(false);
     }

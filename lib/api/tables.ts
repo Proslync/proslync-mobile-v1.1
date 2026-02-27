@@ -8,7 +8,6 @@ import type {
 } from '../types/tables.types';
 
 export const tablesApi = {
-  // ── Venue Table Sections ─────────────────────────────────
 
   /**
    * Get all table sections for a venue
@@ -52,7 +51,6 @@ export const tablesApi = {
     return apiClient.delete<void>(`/api/venues/${venueId}/tables/sections/${sectionId}`);
   },
 
-  // ── Venue Tables ─────────────────────────────────────────
 
   /**
    * Create a new table within a venue section
@@ -99,7 +97,6 @@ export const tablesApi = {
     return apiClient.delete<void>(`/api/venues/${venueId}/tables/${tableId}`);
   },
 
-  // ── Event Tables ─────────────────────────────────────────
 
   /**
    * Get all tables configured for an event

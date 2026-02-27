@@ -53,9 +53,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const isAuthenticated = !!user;
 
   // Handle auth errors from API client (session expired, refresh failed)
-  const handleAuthError = React.useCallback(() => {
-    console.log('[Auth] Auth error received, clearing user state');
-    setUser(null);
+  const handleAuthError = React.useCallback(() => {    setUser(null);
     // Navigation effect will handle redirect to signin
   }, []);
 
@@ -95,42 +93,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuth = async () => {
     try {
-      const token = await apiClient.getAccessToken();
-      console.log('[Auth] Token found:', !!token);
-      if (token) {
+      const token = await apiClient.getAccessToken();      if (token) {
         // Fetch full user data directly from /api/auth/me
-        const userData = await authApi.getCurrentUser();
-        console.log('[Auth] User data from API:', JSON.stringify(userData, null, 2));
-        if (userData) {
+        const userData = await authApi.getCurrentUser();        if (userData) {
           setUser(userData);
         }
       }
-    } catch (error) {
-      console.log('[Auth] Auth check failed:', error);
-    } finally {
+    } catch (error) {    } finally {
       setIsLoading(false);
     }
   };
 
   const login = async (partialUser: PartialUser, accessToken: string, refreshToken?: string) => {
-    console.log('[Auth] Login called with partial user:', JSON.stringify(partialUser, null, 2));
-
     // Store tokens
     await apiClient.setAccessToken(accessToken);
     if (refreshToken) {
-      await apiClient.setRefreshToken(refreshToken);
-      console.log('[Auth] Refresh token stored');
-    }
+      await apiClient.setRefreshToken(refreshToken);    }
 
     // Immediately fetch full user profile from /api/auth/me
     // This gets all profile fields: firstName, lastName, userName, bio, avatar, etc.
     try {
-      const fullUserData = await authApi.getCurrentUser();
-      console.log('[Auth] Full user data from /api/auth/me:', JSON.stringify(fullUserData, null, 2));
-      setUser(fullUserData);
-    } catch (error) {
-      console.log('[Auth] Failed to fetch full user data:', error);
-      // Fallback to partial user if full fetch fails
+      const fullUserData = await authApi.getCurrentUser();      setUser(fullUserData);
+    } catch (error) {      // Fallback to partial user if full fetch fails
       setUser(partialUser as unknown as User);
     }
   };
@@ -163,8 +147,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const switchAccount = async (accessToken: string, refreshToken?: string): Promise<boolean> => {
     try {
-      console.log('[Auth] Switching account...');
-
       // Set the tokens for the new account
       await apiClient.setAccessToken(accessToken);
       if (refreshToken) {
@@ -172,13 +154,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       // Fetch the user data for this account
-      const userData = await authApi.getCurrentUser();
-      console.log('[Auth] Switched to user:', userData.id);
-      setUser(userData);
+      const userData = await authApi.getCurrentUser();      setUser(userData);
 
       return true;
     } catch (error) {
-      console.error('[Auth] Failed to switch account:', error);
+      console.error('Failed to switch account:', error);
       // If switch fails, the tokens are still set - user might need to re-login
       return false;
     }

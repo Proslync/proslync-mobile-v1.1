@@ -13,9 +13,6 @@ import type {
   GlassTextStyleOptions,
 } from './types';
 
-/**
- * Build a ViewStyle for a glass card (fill + border + radius + shadow).
- */
 export function glassCardStyle(options: GlassCardStyleOptions = {}): ViewStyle {
   const {
     fill = 'subtle',
@@ -36,9 +33,6 @@ export function glassCardStyle(options: GlassCardStyleOptions = {}): ViewStyle {
   };
 }
 
-/**
- * Build a ViewStyle for a glass button (fill + border + radius, no shadow).
- */
 export function glassButtonStyle(options: GlassButtonStyleOptions = {}): ViewStyle {
   const {
     fill = 'medium',
@@ -56,9 +50,6 @@ export function glassButtonStyle(options: GlassButtonStyleOptions = {}): ViewSty
   };
 }
 
-/**
- * Build a TextStyle for glass text (hierarchy color + font weight + size).
- */
 export function glassTextStyle(options: GlassTextStyleOptions = {}): TextStyle {
   const {
     hierarchy = 'primary',
@@ -73,9 +64,6 @@ export function glassTextStyle(options: GlassTextStyleOptions = {}): TextStyle {
   };
 }
 
-/**
- * Absolute-fill positioning helper.
- */
 export function absoluteFill(): ViewStyle {
   return {
     position: 'absolute' as const,
@@ -86,9 +74,6 @@ export function absoluteFill(): ViewStyle {
   };
 }
 
-/**
- * Sheet/modal background style.
- */
 export function sheetBackgroundStyle(): ViewStyle {
   return {
     backgroundColor: 'rgba(0, 0, 0, 0.6)',

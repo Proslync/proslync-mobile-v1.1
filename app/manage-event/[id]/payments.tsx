@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useEarnings } from '@/hooks/use-wallet-queries';
 import type { EarningsItem } from '@/lib/api/wallet';
 
@@ -36,17 +37,17 @@ function StatusBadge({ status }: { status: EarningsItem['status'] }) {
   );
 }
 
-function EarningRow({ item }: { item: EarningsItem }) {
+function EarningRow({ item, colors }: { item: EarningsItem; colors: ReturnType<typeof useAppTheme>['colors'] }) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { borderBottomColor: colors.border }]}>
       <View style={styles.rowLeft}>
-        <Text style={styles.rowTitle} numberOfLines={1}>{item.eventName}</Text>
-        <Text style={styles.rowDate}>
+        <Text style={[styles.rowTitle, { color: colors.text }]} numberOfLines={1}>{item.eventName}</Text>
+        <Text style={[styles.rowDate, { color: colors.textTertiary }]}>
           {new Date(item.createdAt).toLocaleDateString()}
         </Text>
       </View>
       <View style={styles.rowRight}>
-        <Text style={styles.grossAmount}>{formatCents(item.grossAmount)}</Text>
+        <Text style={[styles.grossAmount, { color: colors.text }]}>{formatCents(item.grossAmount)}</Text>
         <Text style={styles.feeAmount}>-{formatCents(item.platformFee)} fee</Text>
         <Text style={styles.netAmount}>net {formatCents(item.netAmount)}</Text>
         <StatusBadge status={item.status} />
@@ -59,6 +60,7 @@ export default function EventPaymentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useAppTheme();
   const eventId = Number(id);
 
   const { data, isLoading, refetch, isRefetching } = useEarnings(
@@ -69,53 +71,53 @@ export default function EventPaymentsScreen() {
   const earnings = data?.earnings ?? [];
 
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Event Payments</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Event Payments</Text>
         <View style={styles.headerButton} />
       </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color={colors.text} />
         </View>
       ) : (
         <FlatList
           data={earnings}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <EarningRow item={item} />}
+          renderItem={({ item }) => <EarningRow item={item} colors={colors} />}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor="#fff" />
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.text} />
           }
           ListHeaderComponent={
             summary ? (
               <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.summaryCard}>
                 <View style={styles.summaryRow}>
                   <View style={styles.summaryItem}>
-                    <Text style={styles.summaryLabel}>Gross</Text>
-                    <Text style={styles.summaryGross}>{formatCents(summary.totalGross)}</Text>
+                    <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Gross</Text>
+                    <Text style={[styles.summaryGross, { color: colors.text }]}>{formatCents(summary.totalGross)}</Text>
                   </View>
-                  <View style={styles.summaryDivider} />
+                  <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
                   <View style={styles.summaryItem}>
-                    <Text style={styles.summaryLabel}>Fees</Text>
+                    <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Fees</Text>
                     <Text style={styles.summaryFees}>-{formatCents(summary.totalPlatformFees)}</Text>
                   </View>
-                  <View style={styles.summaryDivider} />
+                  <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
                   <View style={styles.summaryItem}>
-                    <Text style={styles.summaryLabel}>Net</Text>
+                    <Text style={[styles.summaryLabel, { color: colors.textTertiary }]}>Net</Text>
                     <Text style={styles.summaryNet}>{formatCents(summary.totalNet)}</Text>
                   </View>
                 </View>
                 {summary.pendingAmount > 0 && (
-                  <View style={styles.pendingRow}>
+                  <View style={[styles.pendingRow, { borderTopColor: colors.border }]}>
                     <Ionicons name="time-outline" size={14} color="#f59e0b" />
                     <Text style={styles.pendingText}>
                       {formatCents(summary.pendingAmount)} pending
@@ -127,10 +129,10 @@ export default function EventPaymentsScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="receipt-outline" size={48} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.emptyText}>No earnings yet</Text>
-              <Text style={styles.emptyHint}>
-                Ticket sales for this event will appear here
+              <Ionicons name="receipt-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No earnings yet</Text>
+              <Text style={[styles.emptyHint, { color: colors.textTertiary }]}>
+                Earnings from ticket sales will show up here once customers purchase tickets
               </Text>
             </View>
           }
@@ -143,7 +145,6 @@ export default function EventPaymentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',
@@ -152,7 +153,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   headerButton: {
     width: 40,
@@ -163,7 +163,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   loadingContainer: {
     flex: 1,
@@ -190,18 +189,15 @@ const styles = StyleSheet.create({
   summaryDivider: {
     width: 1,
     height: 36,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   summaryLabel: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
     marginBottom: 4,
   },
   summaryGross: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   summaryFees: {
     fontSize: 20,
@@ -221,7 +217,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
   pendingText: {
     fontSize: 13,
@@ -234,7 +229,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
   rowLeft: {
     flex: 1,
@@ -243,12 +237,10 @@ const styles = StyleSheet.create({
   rowTitle: {
     fontSize: 15,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
   },
   rowDate: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
   },
   rowRight: {
@@ -258,7 +250,6 @@ const styles = StyleSheet.create({
   grossAmount: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   feeAmount: {
     fontSize: 11,
@@ -289,12 +280,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   emptyHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.3)',
     textAlign: 'center',
+    paddingHorizontal: 32,
   },
 });

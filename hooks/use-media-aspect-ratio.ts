@@ -12,7 +12,7 @@ export interface UseMediaAspectRatioResult {
 }
 
 /**
- * Hook to detect image aspect ratio from URL when dimensions are not provided by GetStream
+ * Hook to detect image aspect ratio from URL when dimensions are not provided by the backend
  * Matches frontend's useImageAspectRatio implementation
  *
  * Classification thresholds (matching frontend):
@@ -21,11 +21,11 @@ export interface UseMediaAspectRatioResult {
  * - Square: 0.9 <= aspectRatio <= 1.1
  *
  * @param imageUrl - URL of the image to measure
- * @param providedAspectRatio - Pre-calculated aspect ratio from GetStream (if available)
+ * @param providedAspectRatio - Pre-calculated aspect ratio from the backend (if available)
  * @returns Aspect ratio data and loading state
  *
  * @example
- * // Use with GetStream dimensions (preferred - no network request)
+ * // Use with the backend dimensions (preferred - no network request)
  * const { aspectRatio, mediaOrientation } = useMediaAspectRatio(imageUrl, item.aspectRatio);
  *
  * @example
@@ -39,11 +39,11 @@ export function useMediaAspectRatio(
   const [detectedAspectRatio, setDetectedAspectRatio] = React.useState<number | null>(null);
   const [isLoading, setIsLoading] = React.useState(!providedAspectRatio);
 
-  // Use provided aspect ratio if available (from GetStream metadata)
+  // Use provided aspect ratio if available (from the backend metadata)
   const aspectRatio = providedAspectRatio ?? detectedAspectRatio;
 
   React.useEffect(() => {
-    // Skip detection if we already have aspect ratio from GetStream
+    // Skip detection if we already have aspect ratio from the backend
     if (providedAspectRatio) {
       setIsLoading(false);
       return;
@@ -69,7 +69,7 @@ export function useMediaAspectRatio(
         setIsLoading(false);
       },
       (error) => {
-        console.warn('[useMediaAspectRatio] Failed to get image size:', error);
+        console.warn('Failed to get image size:', error);
         setDetectedAspectRatio(null);
         setIsLoading(false);
       }
@@ -103,17 +103,17 @@ export function useMediaAspectRatio(
 
 /**
  * Hook to detect video aspect ratio from URL
- * Note: For videos, it's preferred to use GetStream's original_width/original_height
+ * Note: For videos, it's preferred to use the backend's original_width/original_height
  * as loading video metadata is more expensive than images
  *
  * @param videoUrl - URL of the video
- * @param providedAspectRatio - Pre-calculated aspect ratio from GetStream (if available)
+ * @param providedAspectRatio - Pre-calculated aspect ratio from the backend (if available)
  */
 export function useVideoAspectRatio(
   videoUrl: string | null | undefined,
   providedAspectRatio?: number
 ): UseMediaAspectRatioResult {
-  // For videos, we primarily rely on GetStream metadata
+  // For videos, we primarily rely on the backend metadata
   // Fallback detection for videos would require loading video metadata which is expensive
   // So we just return the provided aspect ratio or null
   const aspectRatio = providedAspectRatio ?? null;

@@ -1,6 +1,3 @@
-/**
- * Custom error class for API client errors
- */
 export class ApiClientError extends Error {
   public statusCode: number;
   public errors?: Record<string, string[]>;
@@ -39,9 +36,6 @@ export class ApiClientError extends Error {
   }
 }
 
-/**
- * Handle API errors and return user-friendly message
- */
 export const handleApiError = (error: Error): string => {
   if (error instanceof ApiClientError) {
     switch (error.statusCode) {

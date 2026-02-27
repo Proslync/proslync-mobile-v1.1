@@ -56,6 +56,7 @@ export default function DashboardRevenueScreen() {
 
   const [selectedRange, setSelectedRange] = React.useState<TimeRange>('1M');
   const [refreshing, setRefreshing] = React.useState(false);
+  const [scrollEnabled, setScrollEnabled] = React.useState(true);
   const [heroMetricId, setHeroMetricId] = React.useState('netRevenue');
   const [metricsOrder, setMetricsOrder] = React.useState<string[]>([]);
 
@@ -227,6 +228,7 @@ export default function DashboardRevenueScreen() {
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={scrollEnabled}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#fff" />
         }
@@ -262,6 +264,7 @@ export default function DashboardRevenueScreen() {
           metricLabel={heroMetric.label}
           colors={colors}
           isDark={isDark}
+          onTouchActive={(active) => setScrollEnabled(!active)}
         />
 
         {/* Range Selector */}

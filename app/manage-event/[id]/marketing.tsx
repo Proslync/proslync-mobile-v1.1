@@ -219,7 +219,6 @@ export default function MarketingScreen() {
   );
 }
 
-// ── PromoCard ────────────────────────────────────────────────────────
 
 interface PromoCardProps {
   promo: PromoCode;
@@ -320,7 +319,6 @@ function PromoCard({ promo, colors, readOnly, onShare, onCopy, onToggle, onToggl
   );
 }
 
-// ── Styles ───────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1 },

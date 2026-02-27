@@ -314,7 +314,7 @@ export default function ProfileScreen() {
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
   const lastTapRef = React.useRef<number>(0);
 
-  // Fetch posts/activities from GetStream - uses React Query for proper cache invalidation
+  // Fetch posts/activities - uses React Query for proper cache invalidation
   const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserFeed(user?.id);
 
   // Fetch followers/following from backend API
@@ -360,10 +360,9 @@ export default function ProfileScreen() {
         if (stored) {
           const accounts = JSON.parse(stored) as SavedAccount[];
           setSavedAccounts(accounts);
-          console.log('[Profile] Loaded saved accounts:', accounts.length);
         }
       } catch (error) {
-        console.error('[Profile] Error loading saved accounts:', error);
+        console.error('Error loading saved accounts:', error);
       }
     }
     loadSavedAccounts();
@@ -393,9 +392,7 @@ export default function ProfileScreen() {
           };
           const updated = [...prev, newAccount];
           // Save to storage
-          AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated))
-            .then(() => console.log('[Profile] Saved new account to storage'))
-            .catch((err) => console.error('[Profile] Error saving account:', err));
+          AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated)).catch(() => {});
           return updated;
         } else {
           // Update existing account info (in case user updated their profile or got new tokens)
@@ -414,7 +411,7 @@ export default function ProfileScreen() {
           );
           // Save updated info to storage
           AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated))
-            .catch((err) => console.error('[Profile] Error updating account:', err));
+            .catch((err) => console.error('Error updating account:', err));
           return updated;
         }
       });

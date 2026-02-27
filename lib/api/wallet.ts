@@ -1,7 +1,6 @@
 // Wallet API - Google Wallet & Apple Wallet integration
 import { apiClient } from './client';
 
-// ============ Google Wallet ============
 
 export interface GoogleWalletResponse {
   success: boolean;
@@ -13,19 +12,12 @@ export interface GoogleWalletResponse {
   error?: string;
 }
 
-/**
- * Add membership card to Google Wallet
- * Returns a save URL or JWT for adding the card
- */
 export async function addToGoogleWallet(membershipCardId: number): Promise<GoogleWalletResponse> {
   return apiClient.post<GoogleWalletResponse>(
     `/api/google-wallet/membership-cards/${membershipCardId}/add-to-wallet`
   );
 }
 
-/**
- * Update Google Wallet membership card
- */
 export async function updateGoogleWalletCard(
   membershipCardId: number,
   updates: { points?: number; accountName?: string; status?: string }
@@ -36,7 +28,6 @@ export async function updateGoogleWalletCard(
   );
 }
 
-// ============ Apple Wallet ============
 
 export interface AppleWalletTokenResponse {
   success: boolean;
@@ -48,26 +39,18 @@ export interface AppleWalletTokenResponse {
   error?: string;
 }
 
-/**
- * Generate download token for Apple Wallet membership card
- * Returns a download URL for the .pkpass file
- */
 export async function generateAppleWalletToken(): Promise<AppleWalletTokenResponse> {
   return apiClient.post<AppleWalletTokenResponse>(
     '/api/apple-wallet/membership-cards/generate-token'
   );
 }
 
-/**
- * Generate download token for Apple Wallet event ticket
- */
 export async function generateAppleWalletTicketToken(ticketNumber: string): Promise<AppleWalletTokenResponse> {
   return apiClient.post<AppleWalletTokenResponse>(
     `/api/apple-wallet/tickets/${ticketNumber}/generate-token`
   );
 }
 
-// ============ Membership Card ============
 
 export interface MembershipCardResponse {
   success: boolean;
@@ -82,14 +65,10 @@ export interface MembershipCardResponse {
   message?: string;
 }
 
-/**
- * Get user's membership card info
- */
 export async function getMembershipCard(): Promise<MembershipCardResponse> {
   return apiClient.get<MembershipCardResponse>('/api/membership-cards/me');
 }
 
-// ============ Stripe Connect - Earnings & Payouts ============
 
 export interface StripeAccountStatus {
   hasAccount: boolean;
@@ -248,37 +227,22 @@ export interface TransferFundsResponse {
 }
 
 export const stripeConnectApi = {
-  /**
-   * Get Stripe Connect account status
-   */
   getAccountStatus: async (): Promise<StripeAccountStatus> => {
     return apiClient.get<StripeAccountStatus>('/api/stripe-connect/accounts/status');
   },
 
-  /**
-   * Create a new Stripe Connect Express account
-   */
   createAccount: async (): Promise<CreateAccountResponse> => {
     return apiClient.post<CreateAccountResponse>('/api/stripe-connect/accounts/create');
   },
 
-  /**
-   * Get onboarding link for account setup
-   */
   getOnboardingLink: async (): Promise<OnboardingLinkResponse> => {
     return apiClient.post<OnboardingLinkResponse>('/api/stripe-connect/accounts/onboarding-link');
   },
 
-  /**
-   * Get Stripe Express Dashboard link
-   */
   getDashboardLink: async (): Promise<DashboardLinkResponse> => {
     return apiClient.get<DashboardLinkResponse>('/api/stripe-connect/accounts/dashboard-link');
   },
 
-  /**
-   * Delete Stripe Connect account
-   */
   deleteAccount: async (): Promise<void> => {
     return apiClient.delete('/api/stripe-connect/accounts');
   },
@@ -301,9 +265,6 @@ export const stripeConnectApi = {
     };
   },
 
-  /**
-   * Get external accounts (bank accounts & debit cards)
-   */
   getExternalAccounts: async (): Promise<ExternalAccountsResponse> => {
     const raw: any = await apiClient.get('/api/stripe-connect/payouts/external-accounts');
     // Backend may return flat array or { data: [...] }
@@ -357,23 +318,14 @@ export const stripeConnectApi = {
     };
   },
 
-  /**
-   * Transfer held funds to connected account (for completed events)
-   */
   transferFunds: async (): Promise<TransferFundsResponse> => {
     return apiClient.post<TransferFundsResponse>('/api/stripe-connect/payouts/transfer');
   },
 
-  /**
-   * Create a payout (withdrawal) to external account
-   */
   createPayout: async (data: CreatePayoutDto): Promise<CreatePayoutResponse> => {
     return apiClient.post<CreatePayoutResponse>('/api/stripe-connect/payouts/create', data);
   },
 
-  /**
-   * Get payout history
-   */
   getPayouts: async (params?: GetPayoutsParams): Promise<PayoutsListResponse> => {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());

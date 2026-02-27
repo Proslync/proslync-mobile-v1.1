@@ -1,10 +1,6 @@
-import * as React from 'react';
-import type { Feed } from '@stream-io/feeds-react-native-sdk';
-import { useStream } from '@/lib/providers/stream-provider';
-import { mapActivityToFeedItem, getEventIdFromActivity, type FeedActivity } from '@/lib/api/feed';
-import { eventsApi } from '@/lib/api/events';
+import { useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { postsApi, type FeedItemResponse } from '@/lib/api/posts';
 import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
-import type { Event } from '@/lib/types/events.types';
 
 interface UseFeedOptions {
   feedType: FeedTab;
@@ -21,456 +17,155 @@ interface UseFeedReturn {
   hasMore: boolean;
 }
 
-const FEED_LIMIT = 20;
+export const FEED_QUERY_KEY = 'feed';
 
-// ============================================================================
-// GLOBAL SINGLETONS - Prevents multiple concurrent initializations
-// These are module-level to persist across component mounts/unmounts
-// ============================================================================
-interface FeedCache {
-  feed: Feed | null;
-  userId: string | null;
-  items: FeedItem[];
-  hasMore: boolean;
-  lastFetch: number;
-}
+function mapResponseToFeedItem(item: FeedItemResponse): FeedItem {
+  const firstMedia = item.media?.[0];
+  const mediaType: 'video' | 'image' =
+    firstMedia?.type === 'video' ? 'video' : 'image';
 
-const feedCaches: Map<FeedTab, FeedCache> = new Map();
-let globalInitializingFeed: FeedTab | null = null;
-let globalInitPromise: Promise<Feed | null> | null = null;
+  const imageUrl =
+    item.type === 'event'
+      ? item.eventFlyerUrl || item.eventImageUrl || firstMedia?.url || ''
+      : firstMedia?.type === 'image'
+        ? firstMedia.url
+        : '';
 
-const EMPTY_CACHE: Omit<FeedCache, never> = { feed: null, userId: null, items: [], hasMore: true, lastFetch: 0 };
+  const videoUrl =
+    firstMedia?.type === 'video' ? firstMedia.url : undefined;
 
-function getFeedCache(feedType: FeedTab): FeedCache {
-  if (!feedCaches.has(feedType)) {
-    feedCaches.set(feedType, { ...EMPTY_CACHE });
+  const thumbnail =
+    firstMedia?.thumbnailUrl || imageUrl || '';
+
+  const displayName =
+    item.authorUserName ||
+    [item.authorFirstName, item.authorLastName].filter(Boolean).join(' ') ||
+    '';
+
+  const width = firstMedia?.width;
+  const height = firstMedia?.height;
+  let aspectRatio: number | undefined;
+  let mediaOrientation: 'horizontal' | 'vertical' | 'square' | undefined;
+  if (width && height) {
+    aspectRatio = width / height;
+    if (aspectRatio > 1.05) mediaOrientation = 'horizontal';
+    else if (aspectRatio < 0.95) mediaOrientation = 'vertical';
+    else mediaOrientation = 'square';
   }
-  return feedCaches.get(feedType)!;
+
+  return {
+    id: String(item.id),
+    username: item.type === 'event' && item.venueName ? item.venueName : displayName,
+    userAvatar: item.authorAvatarUrl || '',
+    description: item.text || '',
+    likes: item.likeCount,
+    comments: item.commentCount,
+    shares: 0,
+    isLiked: item.isLiked,
+    mediaType,
+    videoUrl,
+    imageUrl,
+    thumbnail,
+    mediaWidth: width,
+    mediaHeight: height,
+    aspectRatio,
+    mediaOrientation,
+    isEvent: item.type === 'event',
+    eventId: item.eventId ?? undefined,
+    eventTitle: item.eventName ?? undefined,
+    eventDate: item.eventStartDate ?? undefined,
+    price: undefined,
+    isPaid: item.eventIsPaid ?? undefined,
+    isPrivate: !item.isPublic,
+    venueId: item.venueId ?? undefined,
+    venueName: item.venueName ?? undefined,
+    userId: String(item.authorId),
+    isVenueActivity: !!item.venueId,
+    isUserRegistered: item.isUserRegistered ?? false,
+  };
 }
 
-function clearFeedCache(feedType: FeedTab) {
-  feedCaches.set(feedType, { ...EMPTY_CACHE });
-  // Also clear the global init lock if it was for this feed type
-  if (globalInitializingFeed === feedType) {
-    globalInitializingFeed = null;
-    globalInitPromise = null;
-  }
-}
-
-function clearAllFeedCaches() {
-  feedCaches.clear();
-  globalInitializingFeed = null;
-  globalInitPromise = null;
-}
-
-// ============================================================================
-
-/**
- * Hook to fetch feed from GetStream using the React Native SDK
- * Uses Stream tokens from backend for authentication
- *
- * IMPORTANT: Uses module-level singletons to prevent duplicate initialization
- * even when multiple hook instances are created (e.g., during React.lazy remounts)
- */
 export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedReturn {
-  const { client, userId, isReady } = useStream();
-  const [items, setItems] = React.useState<FeedItem[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isError, setIsError] = React.useState(false);
-  const [error, setError] = React.useState<Error | null>(null);
-  const [hasMore, setHasMore] = React.useState(true);
+  const queryClient = useQueryClient();
 
-  const mountedRef = React.useRef(true);
-  const lastUserIdRef = React.useRef<string | null>(null);
-  const [fetchTrigger, setFetchTrigger] = React.useState(0);
+  const fetchFeed = feedType === 'foryou'
+    ? postsApi.getForYouFeed
+    : postsApi.getFollowingFeed;
 
-  // Cleanup on unmount
-  React.useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  const query = useInfiniteQuery({
+    queryKey: [FEED_QUERY_KEY, feedType],
+    enabled,
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      return fetchFeed(pageParam, 20);
+    },
+    getNextPageParam: (lastPage) =>
+      lastPage.hasMore ? lastPage.nextCursor ?? undefined : undefined,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
 
-  // Check for account switch and clear all caches
-  React.useEffect(() => {
-    if (!userId) return;
+  const items = (query.data?.pages ?? []).flatMap((page) =>
+    page.items.map(mapResponseToFeedItem),
+  );
 
-    // On actual account switch (not initial mount), clear everything and re-fetch
-    if (lastUserIdRef.current !== null && lastUserIdRef.current !== userId) {
-      console.log('[Feed] Account switched from', lastUserIdRef.current, 'to', userId, '- clearing all caches');
-      clearAllFeedCaches();
-      setItems([]);
-      setHasMore(true);
-      setIsLoading(true);
-      setIsError(false);
-      setError(null);
-      // Bump trigger so the fetch effect re-runs after cache is cleared
-      setFetchTrigger((n) => n + 1);
-    }
-
-    lastUserIdRef.current = userId;
-  }, [userId]);
-
-  /**
-   * Initialize feed with global serialization guard
-   * Prevents concurrent getOrCreate calls across all hook instances
-   */
-  const initializeFeed = React.useCallback(async (): Promise<Feed | null> => {
-    if (!client || !userId || !isReady) {
-      return null;
-    }
-
-    const cache = getFeedCache(feedType);
-
-    // Already initialized for this user - return cached feed
-    if (cache.feed && cache.userId === userId) {
-      return cache.feed;
-    }
-
-    // Another initialization is in progress globally
-    if (globalInitializingFeed === feedType && globalInitPromise) {
-      console.log('[Feed] Waiting for existing initialization...');
-      return globalInitPromise;
-    }
-
-    // Start initialization - set global lock
-    globalInitializingFeed = feedType;
-
-    const initPromise = (async (): Promise<Feed | null> => {
-      try {
-        const feedGroup = feedType === 'foryou' ? 'foryou' : 'timeline';
-        console.log(`[Feed] Initializing ${feedGroup} feed for user ${userId}`);
-
-        const feed = client.feed(feedGroup, userId);
-
-        // Single getOrCreate call
-        await feed.getOrCreate({
-          limit: FEED_LIMIT,
-          watch: true,
-        });
-
-        // Update cache
-        const updatedCache = getFeedCache(feedType);
-        updatedCache.feed = feed;
-        updatedCache.userId = userId;
-
-        console.log('[Feed] Feed initialized successfully');
-        return feed;
-      } catch (err) {
-        console.error('[Feed] Failed to initialize feed:', err);
-        throw err;
-      } finally {
-        globalInitializingFeed = null;
-        globalInitPromise = null;
-      }
-    })();
-
-    globalInitPromise = initPromise;
-    return initPromise;
-  }, [client, userId, isReady, feedType]);
-
-  /**
-   * Convert a backend Event to a FeedItem for display
-   */
-  const eventToFeedItem = (event: Event): FeedItem => {
-    const flyerUrl = event.flyer?.url || event.imageUrl || '';
-    return {
-      id: `event-${event.id}`,
-      username: event.venue?.name || 'You',
-      userAvatar: event.venue?.imageUrl || '',
-      description: event.description || '',
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      mediaType: 'image',
-      videoUrl: undefined,
-      imageUrl: flyerUrl,
-      thumbnail: flyerUrl,
-      isEvent: true,
-      eventId: event.id,
-      eventTitle: event.name,
-      eventDate: event.startDate,
-      price: undefined,
-      isPaid: event.isPaid,
-      ticketsAvailableNow: event.ticketsAvailableNow,
-      ticketsAvailableFrom: event.ticketsAvailableFrom,
-      isPrivate: !event.isPublic,
-      venueId: event.venue?.id,
-      venueName: event.venue?.name,
-      userId: event.ownerId?.toString(),
-      isVenueActivity: !!event.venue?.id,
-      isUserRegistered: event.isUserRegistered,
-    };
+  const refetch = async () => {
+    await query.refetch();
   };
 
-  /**
-   * Fetch feed items from an already-initialized feed
-   */
-  const fetchFeedItems = React.useCallback(async (feed: Feed) => {
-    try {
-      // Get activities from feed state
-      const feedState = (feed.state as any)?.getLatestValue?.() || (feed.state as any);
-      const activities = (feedState?.activities || []) as unknown as FeedActivity[];
-
-      console.log(`[Feed] Processing ${activities.length} activities`);
-
-      // Extract unique eventIds
-      const eventIds = activities
-        .map(getEventIdFromActivity)
-        .filter((id): id is number => id !== undefined);
-      const uniqueEventIds = [...new Set(eventIds)];
-
-      console.log(`[Feed] Found ${uniqueEventIds.length} unique eventIds`);
-
-      // Fetch event details from backend
-      let eventsMap: Map<number, Event> = new Map();
-      if (uniqueEventIds.length > 0) {
-        try {
-          console.log('[Feed] Fetching event details from backend...');
-          const events = await eventsApi.getEventsByIds(uniqueEventIds);
-          console.log(`[Feed] Fetched ${events.length} events from backend`);
-
-          events.forEach(event => {
-            eventsMap.set(event.id, event);
-          });
-        } catch (eventError) {
-          console.warn('[Feed] Failed to fetch event details:', eventError);
-        }
-      }
-
-      // Map activities to feed items
-      const now = new Date();
-      const feedItems = activities
-        .map(activity => mapActivityToFeedItem(activity, eventsMap))
-        .filter((item): item is FeedItem => item !== null)
-        // Filter out past events (keep non-events and future events)
-        .filter(item => {
-          if (!item.isEvent || !item.eventDate) return true;
-          const eventDate = new Date(item.eventDate);
-          return eventDate >= now;
-        });
-
-      console.log(`[Feed] Mapped ${feedItems.length} items with media (filtered past events)`);
-
-      return feedItems;
-    } catch (err) {
-      console.error('[Feed] Error fetching feed items:', err);
-      throw err;
+  const loadMore = async () => {
+    if (query.hasNextPage && !query.isFetchingNextPage) {
+      await query.fetchNextPage();
     }
-  }, []);
-
-  /**
-   * Main fetch function - initializes feed if needed, then fetches items
-   */
-  const fetchFeed = React.useCallback(async () => {
-    if (!enabled || !isReady || !client || !userId) {
-      setIsLoading(false);
-      return;
-    }
-
-    const cache = getFeedCache(feedType);
-
-    // If we have cached items for this user, use them immediately
-    if (cache.userId === userId && cache.items.length > 0) {
-      setItems(cache.items);
-      setHasMore(cache.hasMore);
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setIsError(false);
-      setError(null);
-
-      // Initialize feed (serialized - safe to call multiple times)
-      const feed = await initializeFeed();
-
-      if (!feed || !mountedRef.current) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Fetch items from initialized feed
-      const feedItems = await fetchFeedItems(feed);
-
-      if (mountedRef.current) {
-        // Update cache
-        const updatedCache = getFeedCache(feedType);
-        updatedCache.items = feedItems;
-        updatedCache.lastFetch = Date.now();
-
-        setItems(feedItems);
-
-        // Check if there's a next page
-        const feedState = (feed.state as any)?.getLatestValue?.() || (feed.state as any);
-        const hasNextPage = !!feedState?.next;
-        updatedCache.hasMore = hasNextPage;
-        setHasMore(hasNextPage);
-      }
-    } catch (err: any) {
-      console.error('[Feed] Error:', err);
-      if (mountedRef.current) {
-        setIsError(true);
-        setError(err instanceof Error ? err : new Error('Failed to fetch feed'));
-      }
-    } finally {
-      if (mountedRef.current) {
-        setIsLoading(false);
-      }
-    }
-  }, [enabled, isReady, client, userId, feedType, initializeFeed, fetchFeedItems]);
-
-  /**
-   * Load more activities
-   */
-  const loadMore = React.useCallback(async () => {
-    const cache = getFeedCache(feedType);
-    const feed = cache.feed;
-
-    if (!hasMore || isLoading || !feed) return;
-
-    try {
-      console.log('[Feed] Loading more activities...');
-
-      const response = await feed.getNextPage();
-
-      if (response && mountedRef.current) {
-        const activities = (response.activities || []) as unknown as FeedActivity[];
-
-        // Extract unique eventIds
-        const eventIds = activities
-          .map(getEventIdFromActivity)
-          .filter((id): id is number => id !== undefined);
-        const uniqueEventIds = [...new Set(eventIds)];
-
-        // Fetch event details
-        let eventsMap: Map<number, Event> = new Map();
-        if (uniqueEventIds.length > 0) {
-          try {
-            const events = await eventsApi.getEventsByIds(uniqueEventIds);
-            events.forEach(event => {
-              eventsMap.set(event.id, event);
-            });
-          } catch (eventError) {
-            console.warn('[Feed] Failed to fetch event details for loadMore:', eventError);
-          }
-        }
-
-        const now = new Date();
-        const newItems = activities
-          .map(activity => mapActivityToFeedItem(activity, eventsMap))
-          .filter((item): item is FeedItem => item !== null)
-          // Filter out past events
-          .filter(item => {
-            if (!item.isEvent || !item.eventDate) return true;
-            const eventDate = new Date(item.eventDate);
-            return eventDate >= now;
-          });
-
-        const allItems = [...items, ...newItems];
-        setItems(allItems);
-
-        const nextHasMore = !!response.next;
-        setHasMore(nextHasMore);
-
-        // Update cache
-        cache.items = allItems;
-        cache.hasMore = nextHasMore;
-
-        console.log(`[Feed] Loaded ${newItems.length} more activities`);
-      } else if (mountedRef.current) {
-        setHasMore(false);
-        cache.hasMore = false;
-      }
-    } catch (err) {
-      console.error('[Feed] Error loading more:', err);
-    }
-  }, [hasMore, isLoading, items, feedType]);
-
-  /**
-   * Initial fetch when Stream client is ready
-   */
-  React.useEffect(() => {
-    if (!isReady || !enabled || !userId) {
-      return;
-    }
-
-    const cache = getFeedCache(feedType);
-
-    // Skip if already have data for this user
-    if (cache.userId === userId && cache.items.length > 0) {
-      setItems(cache.items);
-      setHasMore(cache.hasMore);
-      setIsLoading(false);
-      return;
-    }
-
-    // Skip if already initializing
-    if (globalInitializingFeed === feedType) {
-      return;
-    }
-
-    fetchFeed();
-  }, [feedType, enabled, isReady, userId, fetchTrigger]); // fetchTrigger forces re-fetch on account switch
-
-  /**
-   * Refetch function - clears cache and re-fetches
-   */
-  const refetch = React.useCallback(async () => {
-    clearFeedCache(feedType);
-    setHasMore(true);
-    await fetchFeed();
-  }, [feedType, fetchFeed]);
+  };
 
   return {
     items,
-    isLoading,
-    isError,
-    error,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
     refetch,
     loadMore,
-    hasMore,
+    hasMore: !!query.hasNextPage,
   };
 }
 
-/**
- * Hook to toggle like on a feed item
- * Uses GetStream reactions API
- */
+export function refreshAllFeeds() {
+  // This is called externally — we need a module-level queryClient reference.
+  // Components that call this should use the queryClient directly instead.
+  // For backwards compat, this is a no-op; callers should use useRefreshFeeds().
+}
+
+export function useRefreshFeeds() {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: [FEED_QUERY_KEY] });
+  };
+}
+
 export function useLike() {
-  const [isLoading, setIsLoading] = React.useState(false);
-  const { client, isReady } = useStream();
+  const queryClient = useQueryClient();
 
-  const toggleLike = React.useCallback(async (activityId: string, isLiked: boolean) => {
-    if (!isReady || !client) {
-      console.warn('[Like] Stream client not ready');
-      return !isLiked;
-    }
+  const toggleLike = async (postId: string, isLiked: boolean) => {
+    const id = Number(postId);
+    if (isNaN(id)) return !isLiked;
 
-    setIsLoading(true);
     try {
       if (isLiked) {
-        await client.deleteActivityReaction({
-          activity_id: activityId,
-          type: 'like',
-        });
+        await postsApi.unlikePost(id);
       } else {
-        await client.addActivityReaction({
-          activity_id: activityId,
-          type: 'like',
-        });
+        await postsApi.likePost(id);
       }
-      console.log('[Like] Toggle like:', activityId, !isLiked);
+      // Invalidate feeds so counts update
+      queryClient.invalidateQueries({ queryKey: [FEED_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: ['post'] });
+      queryClient.invalidateQueries({ queryKey: ['user-posts'] });
       return !isLiked;
     } catch (error) {
-      console.error('[Like] Failed to toggle like:', error);
+      console.error('Failed to toggle like:', error);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
-  }, [client, isReady]);
+  };
 
-  return { toggleLike, isLoading };
+  return { toggleLike, isLoading: false };
 }

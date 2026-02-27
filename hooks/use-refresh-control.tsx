@@ -13,10 +13,6 @@ interface UseRefreshControlResult {
   triggerRefresh: () => Promise<void>;
 }
 
-/**
- * Hook to create a pull-to-refresh control with haptic feedback
- * Use this on any scrollable page for consistent refresh behavior
- */
 export function useRefreshControl({
   onRefresh,
   tintColor = '#fff',
@@ -31,7 +27,7 @@ export function useRefreshControl({
     try {
       await onRefresh();
     } catch (error) {
-      console.error('[useRefreshControl] Refresh error:', error);
+      console.error('Refresh error:', error);
     } finally {
       setRefreshing(false);
     }

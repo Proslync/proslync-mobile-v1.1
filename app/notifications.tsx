@@ -39,7 +39,6 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-// ── Placeholder activity data ─────────────────────────────
 
 interface ActivityNotification {
   id: string;
@@ -64,7 +63,6 @@ const PLACEHOLDER_ACTIVITY: ActivityNotification[] = __DEV__
     ]
   : [];
 
-// ── Team Invitation Row ──────────────────────────────────
 
 function TeamInvitationRow({
   invitation,
@@ -157,7 +155,6 @@ function TeamInvitationRow({
   return card;
 }
 
-// ── Activity Row ─────────────────────────────────────────
 
 function ActivityRow({ item, colors, isDark }: { item: ActivityNotification; colors: ThemeColors; isDark: boolean }) {
   return (
@@ -182,7 +179,6 @@ function ActivityRow({ item, colors, isDark }: { item: ActivityNotification; col
   );
 }
 
-// ── Main Screen ──────────────────────────────────────────
 
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();

@@ -173,7 +173,7 @@ function VenueCard({
         await follow();
       }
     } catch (error) {
-      console.error('[VenueCard] Follow/unfollow error:', error);
+      console.error('Follow/unfollow error:', error);
     }
   }, [isFollowing, follow, unfollow]);
 

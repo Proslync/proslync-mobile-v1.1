@@ -47,7 +47,7 @@ let backgroundSocket: Socket<ServerToClientEvents, ClientToServerEvents> | null 
 // Define the background location task at module level (required by expo-task-manager)
 TaskManager?.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) => {
   if (error) {
-    console.error('[LiveLocation:BG] Background task error:', error.message);
+    console.error('Background task error:', error.message);
     return;
   }
 
@@ -56,7 +56,6 @@ TaskManager?.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =
     const location = locations[0];
     if (!location) return;
 
-    console.log('[LiveLocation:BG] Background location update:', location.coords.latitude, location.coords.longitude);
 
     // Send via HTTP fallback if socket not available
     if (backgroundSocket?.connected) {
@@ -88,7 +87,7 @@ TaskManager?.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }: any) =
           });
         }
       } catch (err) {
-        console.error('[LiveLocation:BG] HTTP fallback failed:', err);
+        console.error('HTTP fallback failed:', err);
       }
     }
   }
@@ -187,7 +186,6 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
   // Connect socket when authenticated (only if feature is enabled)
   React.useEffect(() => {
     if (!config.websocket.enabled) {
-      console.log('[LiveLocation] WebSocket disabled in config');
       return;
     }
 
@@ -284,7 +282,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         }
       }
     } catch (error) {
-      console.error('[LiveLocation] Failed to restore sharing state:', error);
+      console.error('Failed to restore sharing state:', error);
     }
   };
 
@@ -296,7 +294,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         await AsyncStorage.removeItem(SHARING_STATE_KEY);
       }
     } catch (error) {
-      console.error('[LiveLocation] Failed to persist sharing state:', error);
+      console.error('Failed to persist sharing state:', error);
     }
   };
 
@@ -315,13 +313,11 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
   const startBackgroundLocationUpdates = async () => {
     if (!TaskManager) return; // Native module not available
     if (!hasBackgroundPermission) {
-      console.log('[LiveLocation] No background location permission');
       return;
     }
 
     const isTaskRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => false);
     if (isTaskRunning) {
-      console.log('[LiveLocation] Background location task already running');
       return;
     }
 
@@ -340,9 +336,8 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         pausesUpdatesAutomatically: false,
         activityType: Location.ActivityType.Other,
       });
-      console.log('[LiveLocation] Background location updates started');
     } catch (error) {
-      console.error('[LiveLocation] Failed to start background location:', error);
+      console.error('Failed to start background location:', error);
     }
   };
 
@@ -352,10 +347,9 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       const isTaskRunning = await Location.hasStartedLocationUpdatesAsync(BACKGROUND_LOCATION_TASK).catch(() => false);
       if (isTaskRunning) {
         await Location.stopLocationUpdatesAsync(BACKGROUND_LOCATION_TASK);
-        console.log('[LiveLocation] Background location updates stopped');
       }
     } catch (error) {
-      console.error('[LiveLocation] Failed to stop background location:', error);
+      console.error('Failed to stop background location:', error);
     }
   };
 
@@ -368,14 +362,13 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       // Get auth token from secure storage
       const token = await apiClient.getAccessToken();
       if (!token) {
-        console.error('[LiveLocation] No auth token available');
+        console.error('No auth token available');
         setConnectionState('error');
         return;
       }
 
       // Connect to /locations namespace
       const socketUrl = `${config.websocket.url}/locations`;
-      console.log('[LiveLocation] Connecting to:', socketUrl);
 
       const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
         socketUrl,
@@ -389,7 +382,6 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       );
 
       socket.on('connect', () => {
-        console.log('[LiveLocation] Socket connected');
         setConnectionState('connected');
 
         // Subscribe to friends' locations
@@ -405,13 +397,12 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       });
 
       socket.on('disconnect', (reason) => {
-        console.log('[LiveLocation] Socket disconnected:', reason);
         setConnectionState('disconnected');
         stopHeartbeat();
       });
 
       socket.on('connect_error', (error) => {
-        console.error('[LiveLocation] Socket connection error:', error.message);
+        console.error('Socket connection error:', error.message);
         setConnectionState('error');
       });
 
@@ -430,7 +421,6 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
       // Handle friend location updates
       socket.on('friend_location', (data) => {
-        console.log('[LiveLocation] Friend location update:', data.userId);
         setFriendLocations((prev) => {
           const updated = new Map(prev);
           updated.set(data.userId, data);
@@ -440,7 +430,6 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
       // Handle friend stopped sharing (backend sends friend_offline)
       socket.on('friend_offline', (data) => {
-        console.log('[LiveLocation] Friend went offline:', data.userId);
         setFriendLocations((prev) => {
           const updated = new Map(prev);
           updated.delete(data.userId);
@@ -450,7 +439,6 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
       // Handle sharing confirmations
       socket.on('sharing_started', (data) => {
-        console.log('[LiveLocation] Sharing confirmed:', data);
         const newState: SharingState = {
           isSharing: true,
           startedAt: Date.now(),
@@ -462,7 +450,6 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       });
 
       socket.on('sharing_stopped', (data) => {
-        console.log('[LiveLocation] Sharing stopped:', data.reason);
         const newState: SharingState = {
           isSharing: false,
           startedAt: null,
@@ -477,18 +464,17 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
       // Handle heartbeat response
       socket.on('pong', (data) => {
-        console.log('[LiveLocation] Heartbeat pong:', data.serverTime);
       });
 
       socket.on('error', (data) => {
-        console.error('[LiveLocation] Server error:', data.code, data.message);
+        console.error('Server error:', data.code, data.message);
       });
 
       socketRef.current = socket;
       // Set module-level ref for background task access
       backgroundSocket = socket;
     } catch (error) {
-      console.error('[LiveLocation] Failed to connect socket:', error);
+      console.error('Failed to connect socket:', error);
       setConnectionState('error');
     }
   };
@@ -552,7 +538,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         }
       );
     } catch (error) {
-      console.error('[LiveLocation] Failed to start location updates:', error);
+      console.error('Failed to start location updates:', error);
     }
   };
 
@@ -565,12 +551,12 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
 
   const startSharing = async (duration: ShareDurationSeconds) => {
     if (!config.websocket.enabled) {
-      console.warn('[LiveLocation] Live location feature is disabled');
+      console.warn('Live location feature is disabled');
       return;
     }
 
     if (!socketRef.current?.connected) {
-      console.warn('[LiveLocation] Cannot start sharing - socket not connected');
+      console.warn('Cannot start sharing - socket not connected');
       return;
     }
 
@@ -594,7 +580,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         });
         currentLocationRef.current = location;
       } catch (error) {
-        console.error('[LiveLocation] Failed to get current location:', error);
+        console.error('Failed to get current location:', error);
         return;
       }
     }

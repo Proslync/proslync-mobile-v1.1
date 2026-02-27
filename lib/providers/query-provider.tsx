@@ -9,26 +9,19 @@ import {
   onlineManager,
 } from '@tanstack/react-query';
 
-// ============================================================================
-// React Native specific: Online status management
 // https://tanstack.com/query/v5/docs/framework/react/react-native
-// ============================================================================
 onlineManager.setEventListener((setOnline) => {
   return NetInfo.addEventListener((state) => {
     setOnline(!!state.isConnected);
   });
 });
 
-// ============================================================================
-// React Native specific: Refetch on App focus
-// ============================================================================
 function onAppStateChange(status: AppStateStatus) {
   if (Platform.OS !== 'web') {
     focusManager.setFocused(status === 'active');
   }
 }
 
-// Create a client with sensible defaults for React Native
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -68,5 +61,4 @@ export function QueryProvider({ children }: QueryProviderProps) {
   );
 }
 
-// Export queryClient for use in hooks that need to invalidate queries
 export { queryClient };

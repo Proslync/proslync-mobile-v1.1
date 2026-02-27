@@ -61,6 +61,9 @@ export const eventFormSchema = z
 
     // Pricing (Step 5 - only when isPaid is true)
     tiers: z.array(tierFormSchema).optional(),
+
+    // Door cover price (dollars as string for form input)
+    doorCoverPrice: z.string().optional().or(z.literal('')),
   })
   .refine((data) => data.endDate > data.startDate, {
     message: 'End date must be after start date',
@@ -154,6 +157,10 @@ export function parseEventFormData(data: EventFormData) {
             })),
           })),
         }
+      : {}),
+    // Door cover price in cents
+    ...(data.doorCoverPrice && data.doorCoverPrice.trim() !== ''
+      ? { doorCoverPriceCents: Math.round(parseFloat(data.doorCoverPrice) * 100) }
       : {}),
   };
 }

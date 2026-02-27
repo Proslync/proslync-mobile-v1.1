@@ -17,10 +17,6 @@ interface UseSearchOptions extends Omit<SearchRequest, 'query'> {
   initialQuery?: string;
 }
 
-/**
- * Hook for searching events, venues, and people
- * Uses React Query with debounced search query
- */
 export function useSearch(options: UseSearchOptions = {}) {
   const [searchQuery, setSearchQuery] = useState(options.initialQuery || '');
   const debouncedQuery = useDebounce(searchQuery, 500);

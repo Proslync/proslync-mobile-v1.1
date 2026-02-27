@@ -1,7 +1,7 @@
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { GlassSurface } from '@/components/glass/glass-surface';
-import { useEvent, useEventMarketingStats, usePublishEvent, useEventPermissions } from '@/hooks';
+import { useEvent, useEventMarketingStats, usePublishEvent, useDeleteEvent, useEventPermissions } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { EventStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
@@ -47,6 +47,7 @@ export default function OverviewScreen() {
   const { data: event } = useEvent(eventId);
   const { data: stats, isLoading: statsLoading } = useEventMarketingStats(eventId);
   const publishEvent = usePublishEvent();
+  const deleteEvent = useDeleteEvent();
   const { canEditEvents } = useEventPermissions(eventId);
 
   const handleEdit = () => {
@@ -70,6 +71,28 @@ export default function OverviewScreen() {
         onPress: () => publishEvent.mutate(eventId),
       },
     ]);
+  };
+
+  const handleDelete = () => {
+    if (!eventId) return;
+    Alert.alert(
+      'Delete Event',
+      `Are you sure you want to delete "${event?.name || 'this event'}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deleteEvent.mutate(eventId, {
+              onSuccess: () => {
+                router.dismissAll();
+              },
+            });
+          },
+        },
+      ],
+    );
   };
 
   const formatStatValue = (key: string, value: number): string => {
@@ -170,6 +193,26 @@ export default function OverviewScreen() {
                 </Text>
                 {publishEvent.isPending ? (
                   <ActivityIndicator size="small" color={colors.text} />
+                ) : (
+                  <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                )}
+              </GlassSurface>
+            </TouchableOpacity>
+          )}
+
+          {canEditEvents() && (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleDelete}
+              disabled={deleteEvent.isPending}
+            >
+              <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.actionRow}>
+                <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                <Text style={[styles.actionLabel, { color: '#ef4444' }]}>
+                  {deleteEvent.isPending ? 'Deleting...' : 'Delete Event'}
+                </Text>
+                {deleteEvent.isPending ? (
+                  <ActivityIndicator size="small" color="#ef4444" />
                 ) : (
                   <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                 )}

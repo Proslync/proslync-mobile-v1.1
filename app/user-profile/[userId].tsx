@@ -27,7 +27,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useToast } from '@/components/shared/toast';
 import { useFollowUser } from '@/hooks/use-follow-user';
-import { useChat } from '@/lib/providers/chat-provider';
+import { chatApi } from '@/lib/api/chat';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { usersApi } from '@/lib/api/users';
@@ -51,7 +51,7 @@ export default function UserProfileScreen() {
   const { colors } = useAppTheme();
   const { showSuccess, showError } = useToast();
   const { user: currentUser } = useAuth();
-  const { client: chatClient, status: chatStatus } = useChat();
+  // Chat handled via chatApi
   const params = useLocalSearchParams<{
     userId: string;
     name: string;
@@ -62,7 +62,6 @@ export default function UserProfileScreen() {
   const userId = params.userId;
   const isSelf = currentUser && String(currentUser.id) === String(userId);
 
-  // ── State ───────────────────────────────────────────────────────────
   const [profile, setProfile] = React.useState<PublicUserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = React.useState(true);
   const [isBlocked, setIsBlocked] = React.useState(false);
@@ -72,7 +71,6 @@ export default function UserProfileScreen() {
   const [showReportSheet, setShowReportSheet] = React.useState(false);
   const [recentEvents, setRecentEvents] = React.useState<any[]>([]);
 
-  // ── Follow hook ─────────────────────────────────────────────────────
   const {
     isFollowing,
     isLoading: followLoading,
@@ -84,7 +82,6 @@ export default function UserProfileScreen() {
 
   const isFollowActionInProgress = isFollowInProgress || isUnfollowInProgress;
 
-  // ── Derived display data ────────────────────────────────────────────
   const displayName = profile
     ? [profile.firstName, profile.lastName].filter(Boolean).join(' ') || profile.userName || params.name || 'User'
     : params.name || 'User';
@@ -95,7 +92,6 @@ export default function UserProfileScreen() {
   const following = profile?.followStats?.following ?? 0;
   const totalEvents = profile?.eventStats?.totalEvents ?? 0;
 
-  // ── Fetch profile from backend ──────────────────────────────────────
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -112,7 +108,7 @@ export default function UserProfileScreen() {
         if (profileData) setProfile(profileData);
         setIsBlocked(blockStatus.isBlocked);
       } catch (err) {
-        console.error('[UserProfile] Failed to load profile:', err);
+        console.error('Failed to load profile:', err);
       } finally {
         if (!cancelled) setIsLoadingProfile(false);
       }
@@ -121,7 +117,6 @@ export default function UserProfileScreen() {
     return () => { cancelled = true; };
   }, [userId]);
 
-  // ── Fetch user's recent events ──────────────────────────────────────
   React.useEffect(() => {
     let cancelled = false;
     async function loadEvents() {
@@ -138,7 +133,6 @@ export default function UserProfileScreen() {
     return () => { cancelled = true; };
   }, [userId]);
 
-  // ── Actions ─────────────────────────────────────────────────────────
   const handleFollowPress = async () => {
     if (isFollowActionInProgress || followLoading) return;
     try {
@@ -155,23 +149,19 @@ export default function UserProfileScreen() {
   };
 
   const handleMessagePress = async () => {
-    if (!chatClient || chatStatus !== 'connected' || !userId) {
+    if (!userId) {
       showError('Chat not available');
       return;
     }
     setIsMessageLoading(true);
     try {
-      const channelId = [chatClient.userID, String(userId)].sort().join('-');
-      const channel = chatClient.channel('messaging', channelId, {
-        members: [chatClient.userID || '', String(userId)],
-      });
-      await channel.create();
+      const conversation = await chatApi.createConversation([Number(userId)]);
       router.push({
         pathname: '/chat/[conversationId]',
-        params: { conversationId: channel.id || channelId },
+        params: { conversationId: conversation.id },
       });
     } catch (err) {
-      console.error('[UserProfile] Message error:', err);
+      console.error('Message error:', err);
       showError('Could not open conversation');
     } finally {
       setIsMessageLoading(false);
@@ -272,7 +262,6 @@ export default function UserProfileScreen() {
     return String(n);
   }
 
-  // ── Render ──────────────────────────────────────────────────────────
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       {/* Header */}
