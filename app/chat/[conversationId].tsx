@@ -300,6 +300,20 @@ function Avatar({ uri, size = 28, colors }: { uri?: string; size?: number; color
   );
 }
 
+// Generate stable waveform bar heights from a string seed
+function generateWaveformBars(seed: string, count: number): number[] {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  const bars: number[] = [];
+  for (let i = 0; i < count; i++) {
+    hash = (hash * 16807 + 1) | 0;
+    bars.push(4 + (((hash >>> 0) % 1000) / 1000) * 12);
+  }
+  return bars;
+}
+
 // Voice Message Player Component
 function VoiceMessagePlayer({
   audioUrl,
@@ -314,6 +328,7 @@ function VoiceMessagePlayer({
   colors: ThemeColors;
   isDark: boolean;
 }) {
+  const barHeights = useMemo(() => generateWaveformBars(audioUrl, 20), [audioUrl]);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -443,13 +458,13 @@ function VoiceMessagePlayer({
       <View style={styles.voiceWaveformContainer}>
         {/* Waveform visualization */}
         <View style={styles.voiceWaveform}>
-          {[...Array(20)].map((_, i) => (
+          {barHeights.map((h, i) => (
             <View
               key={i}
               style={[
                 styles.voiceWaveformBar,
                 {
-                  height: 4 + Math.random() * 12,
+                  height: h,
                   backgroundColor: isOwn
                     ? 'rgba(255,255,255,0.35)'
                     : 'rgba(0,149,246,0.4)',
@@ -459,13 +474,13 @@ function VoiceMessagePlayer({
           ))}
           {/* Progress overlay */}
           <Animated.View style={[styles.voiceProgressOverlay, progressStyle]}>
-            {[...Array(20)].map((_, i) => (
+            {barHeights.map((h, i) => (
               <View
                 key={i}
                 style={[
                   styles.voiceWaveformBar,
                   {
-                    height: 4 + Math.random() * 12,
+                    height: h,
                     backgroundColor: isOwn ? '#fff' : '#0095f6',
                   },
                 ]}
@@ -884,6 +899,7 @@ export default function ChatThreadScreen() {
   const router = useStableRouter();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const flatListRef = useRef<FlatList>(null);
+  const prevMessageCountRef = useRef(0);
   const scrollToBottomOpacity = useSharedValue(0);
   const { colors, isDark } = useAppTheme();
 
@@ -960,6 +976,25 @@ export default function ChatThreadScreen() {
 
     return groups;
   }, [messages, otherReadAt]);
+
+  // Auto-scroll to bottom when new messages arrive (not when loading older history)
+  useEffect(() => {
+    const prevCount = prevMessageCountRef.current;
+    const newCount = messages.length;
+    prevMessageCountRef.current = newCount;
+
+    if (newCount > prevCount && prevCount > 0) {
+      // New message(s) added — scroll to bottom
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } else if (prevCount === 0 && newCount > 0) {
+      // Initial load — scroll to bottom without animation
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    }
+  }, [messages.length]);
 
   const handleStartCall = useCallback(
     async (video: boolean) => {
@@ -1254,11 +1289,6 @@ export default function ChatThreadScreen() {
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           inverted={false}
-          onContentSizeChange={() => {
-            if (flatListRef.current && messages.length > 0) {
-              flatListRef.current.scrollToEnd({ animated: false });
-            }
-          }}
           ListEmptyComponent={<EmptyChat userName={channelInfo?.name} colors={colors} />}
           ListFooterComponent={
             isTyping ? <TypingIndicator visible={isTyping} userName={channelInfo?.name} colors={colors} isDark={isDark} /> : null
