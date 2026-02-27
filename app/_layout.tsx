@@ -1,3 +1,8 @@
+import { registerGlobals } from "@livekit/react-native";
+
+// Must be called before any LiveKit components render
+registerGlobals();
+
 import { useEffect, useState } from "react";
 import {
   DarkTheme,
@@ -21,6 +26,8 @@ import { TabNavigationProvider } from "@/lib/providers/tab-navigation-provider";
 import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
 import { TerminalProvider } from "@/lib/providers/terminal-provider";
+import { CallProvider } from "@/lib/providers/call-provider";
+import { IncomingCallOverlay } from "@/components/shared/incoming-call-overlay";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -82,6 +89,14 @@ function RootLayoutNav() {
         <Stack.Screen
           name="create-post"
           options={{ presentation: "modal", animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="call"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
+            gestureEnabled: false,
+          }}
         />
         <Stack.Screen
           name="scan-qr"
@@ -155,15 +170,18 @@ export default function RootLayout() {
           <StripeProvider>
             <ToastProvider>
               <AuthProvider>
-                <TerminalProvider>
-                  <LiveLocationProvider>
-                    <TabNavigationProvider>
-                      <WalletProvider>
-                        <RootLayoutNav />
-                      </WalletProvider>
-                    </TabNavigationProvider>
-                  </LiveLocationProvider>
-                </TerminalProvider>
+                <CallProvider>
+                  <TerminalProvider>
+                    <LiveLocationProvider>
+                      <TabNavigationProvider>
+                        <WalletProvider>
+                          <RootLayoutNav />
+                          <IncomingCallOverlay />
+                        </WalletProvider>
+                      </TabNavigationProvider>
+                    </LiveLocationProvider>
+                  </TerminalProvider>
+                </CallProvider>
               </AuthProvider>
             </ToastProvider>
           </StripeProvider>

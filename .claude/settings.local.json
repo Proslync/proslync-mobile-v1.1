@@ -113,7 +113,8 @@
       "WebFetch(domain:docs.stripe.com)",
       "WebFetch(domain:support.stripe.com)",
       "WebFetch(domain:dev.to)",
-      "WebFetch(domain:help.passkit.com)"
+      "WebFetch(domain:help.passkit.com)",
+      "WebFetch(domain:docs.livekit.io)"
     ]
   }
 }

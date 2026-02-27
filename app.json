@@ -27,6 +27,7 @@
         "NSBluetoothAlwaysUsageDescription": "Status uses Bluetooth to connect to card readers for in-person payments",
         "NSLocalNetworkUsageDescription": "Status uses the local network to discover and connect to card readers",
         "UIBackgroundModes": [
+          "audio",
           "location",
           "voip",
           "bluetooth-central"
@@ -89,7 +90,7 @@
       ],
       [
         "@stripe/stripe-terminal-react-native",
-{
+        {
           "tapToPayCheck": true
         }
       ],
@@ -105,10 +106,11 @@
       [
         "@config-plugins/react-native-webrtc",
         {
-          "cameraPermission": "Status needs camera access for scanning IDs",
-          "microphonePermission": "Status needs microphone access for voice messages"
+          "cameraPermission": "Status needs camera access for video calls and scanning IDs",
+          "microphonePermission": "Status needs microphone access for voice and video calls"
         }
-      ]
+      ],
+      "@livekit/react-native-expo-plugin"
     ],
     "experiments": {
       "typedRoutes": true

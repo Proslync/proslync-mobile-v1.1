@@ -40,6 +40,7 @@ import Animated, {
   FadeOut,
 } from 'react-native-reanimated';
 import { useConversation, type ChatMessage } from '@/hooks/use-conversation';
+import { useCall } from '@/lib/providers/call-provider';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 // Video calls removed — not a core feature
@@ -996,11 +997,24 @@ export default function ChatThreadScreen() {
     }
   }, [messages.length]);
 
+  const { startCall } = useCall();
+
   const handleStartCall = useCallback(
     async (video: boolean) => {
-      Alert.alert('Coming Soon', 'Voice and video calls are coming soon.');
+      if (!channelInfo?.otherMember) return;
+      try {
+        await startCall(
+          Number(channelInfo.otherMember.id),
+          video,
+          channelInfo.otherMember.name,
+          channelInfo.otherMember.image,
+        );
+        router.push('/call');
+      } catch {
+        Alert.alert('Error', 'Failed to start call. Please try again.');
+      }
     },
-    []
+    [channelInfo, startCall, router]
   );
 
   const handleSend = useCallback(

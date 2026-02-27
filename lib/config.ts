@@ -33,6 +33,9 @@ export const config = {
   mapbox: {
     accessToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN || "",
   },
+  livekit: {
+    serverUrl: process.env.EXPO_PUBLIC_LIVEKIT_URL || "",
+  },
 } as const;
 
 export type Config = typeof config;
