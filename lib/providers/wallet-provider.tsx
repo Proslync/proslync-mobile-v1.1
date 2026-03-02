@@ -104,6 +104,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
         statusTier: 'Standard',
         memberSince: authUser.createdAt || new Date().toISOString(),
         membershipCardId: authUser.id || 0,
+        isProfileComplete: authUser.isProfileComplete ?? false,
       };
     }
     return {
@@ -112,6 +113,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
       statusTier: 'Standard',
       memberSince: new Date().toISOString(),
       membershipCardId: 0,
+      isProfileComplete: false,
     };
   }, [authUser]);
 

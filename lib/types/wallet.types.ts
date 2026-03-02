@@ -17,6 +17,7 @@ export interface WalletUser {
   statusTier: StatusTier;
   memberSince: string;
   membershipCardId?: number;
+  isProfileComplete: boolean;
 }
 
 export interface WalletBalances {

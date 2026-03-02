@@ -9,6 +9,7 @@ import { useWallet } from '@/lib/providers/wallet-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import {
   MembershipCard,
+  IncompleteMembershipCard,
   StatusCardMenuSheet,
   OfferCarousel,
   TicketList,
@@ -64,8 +65,12 @@ export default function WalletScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
       >
-        {/* Membership Card - Tappable */}
-        <MembershipCard user={user} onPress={() => setCardMenuVisible(true)} />
+        {/* Membership Card */}
+        {user.isProfileComplete ? (
+          <MembershipCard user={user} onPress={() => setCardMenuVisible(true)} />
+        ) : (
+          <IncompleteMembershipCard onPress={() => router.push('/edit-profile')} />
+        )}
 
         {/* Promos Carousel */}
         <OfferCarousel
@@ -87,12 +92,14 @@ export default function WalletScreen() {
 
       </ScrollView>
 
-      {/* Status Card Menu Sheet */}
-      <StatusCardMenuSheet
-        visible={cardMenuVisible}
-        onClose={() => setCardMenuVisible(false)}
-        user={user}
-      />
+      {/* Status Card Menu Sheet - only for complete profiles */}
+      {user.isProfileComplete && (
+        <StatusCardMenuSheet
+          visible={cardMenuVisible}
+          onClose={() => setCardMenuVisible(false)}
+          user={user}
+        />
+      )}
     </View>
   );
 }
