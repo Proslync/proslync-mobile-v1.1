@@ -284,20 +284,23 @@ function RoomContent({
 export default function CallScreen() {
   const { currentCall, endCall } = useCall();
   const endingRef = useRef(false);
+  const hadCallRef = useRef(false);
 
-  // Navigate back when call ends
+  // Track that we had an active call
   useEffect(() => {
-    if (!currentCall && endingRef.current) {
-      if (router.canGoBack()) {
-        router.back();
-      }
+    if (currentCall) {
+      hadCallRef.current = true;
+      endingRef.current = false;
     }
   }, [currentCall]);
 
-  // Reset ref when a new call starts
+  // Navigate back when call ends (local end OR remote end)
   useEffect(() => {
-    if (currentCall) {
-      endingRef.current = false;
+    if (!currentCall && hadCallRef.current) {
+      hadCallRef.current = false;
+      if (router.canGoBack()) {
+        router.back();
+      }
     }
   }, [currentCall]);
 
