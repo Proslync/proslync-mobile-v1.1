@@ -121,6 +121,9 @@ export {
   MY_TEAM_INVITATIONS_KEY,
 } from './use-notifications';
 
+// Membership card hooks
+export { useMembershipCard, MEMBERSHIP_CARD_KEY } from './use-membership-card';
+
 // Wallet / Stripe Connect hooks
 export {
   useStripeAccountStatus,

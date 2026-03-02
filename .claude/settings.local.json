@@ -115,7 +115,8 @@
       "WebFetch(domain:dev.to)",
       "WebFetch(domain:help.passkit.com)",
       "WebFetch(domain:docs.livekit.io)",
-      "Bash(git show:*)"
+      "Bash(git show:*)",
+      "Bash(find:*)"
     ]
   }
 }

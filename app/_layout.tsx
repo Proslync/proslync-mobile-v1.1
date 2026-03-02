@@ -106,6 +106,13 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="qr-card"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
           name="tap-to-pay"
           options={{ animation: "slide_from_right" }}
         />
