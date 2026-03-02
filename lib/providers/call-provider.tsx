@@ -151,7 +151,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     ) => {
       try {
         await AudioSession.startAudioSession();
-        const result = await callsApi.getToken(recipientId, isVideo);
+        const result = await callsApi.initiateCall(recipientId, isVideo);
         setCurrentCall({
           callId: result.callId,
           roomName: result.roomName,

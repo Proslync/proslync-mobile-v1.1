@@ -27,6 +27,10 @@ export interface ChatMessage {
   userImage?: string;
   createdAt: Date;
   isOwn: boolean;
+  isSystem?: boolean;
+  systemEvent?: string;
+  callType?: string;
+  callDuration?: number;
   attachments?: {
     type: 'image' | 'video' | 'audio';
     url: string;
@@ -59,6 +63,22 @@ export const CONVERSATION_MESSAGES_KEY = 'conversation-messages';
 // --- Helpers ---
 
 function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
+  // System messages (call events, etc.)
+  if (msg.type === 'system') {
+    return {
+      id: String(msg.id),
+      text: msg.text || '',
+      userId: '',
+      userName: '',
+      createdAt: new Date(msg.createdAt),
+      isOwn: false,
+      isSystem: true,
+      systemEvent: msg.systemMetadata?.event,
+      callType: msg.systemMetadata?.callType,
+      callDuration: msg.systemMetadata?.duration,
+    };
+  }
+
   const sender = msg.sender;
   const senderName = sender
     ? sender.userName ||

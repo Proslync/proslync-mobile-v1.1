@@ -40,8 +40,8 @@ export interface CallHistoryResponse {
 }
 
 export const callsApi = {
-  getToken: (recipientId: number, isVideo: boolean) =>
-    apiClient.post<CallTokenResponse>('/api/calls/token', {
+  initiateCall: (recipientId: number, isVideo: boolean) =>
+    apiClient.post<CallTokenResponse>('/api/calls/initiate', {
       recipientId,
       isVideo,
     }),
