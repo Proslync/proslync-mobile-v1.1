@@ -34,7 +34,7 @@ export const config = {
     accessToken: process.env.EXPO_PUBLIC_MAPBOX_TOKEN || "",
   },
   livekit: {
-    serverUrl: process.env.EXPO_PUBLIC_LIVEKIT_URL || "",
+    serverUrl: process.env.EXPO_PUBLIC_LIVEKIT_URL || "wss://status-test-c1ki6pp2.livekit.cloud",
   },
 } as const;
 
