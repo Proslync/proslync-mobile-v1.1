@@ -29,6 +29,7 @@ import { useToast } from '@/components/shared/toast';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useUserFeed } from '@/hooks/use-user-feed';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { useMutualFollowers } from '@/hooks/use-mutual-followers';
 import { FollowersSheet } from '@/components/feed/followers-sheet';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { chatApi } from '@/lib/api/chat';
@@ -94,6 +95,9 @@ export default function UserProfileScreen() {
 
   // Posts grid
   const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserFeed(userId);
+
+  // Mutual followers
+  const { mutualFollowers, totalMutualCount } = useMutualFollowers(!isSelf ? userId : undefined);
 
   const displayName = profile
     ? [profile.firstName, profile.lastName].filter(Boolean).join(' ') || profile.userName || params.name || 'User'
@@ -463,21 +467,26 @@ export default function UserProfileScreen() {
           </Animated.View>
         )}
 
-        {/* Mutual Connections - only shown in dev until real mutual followers API is available */}
-        {__DEV__ && !isSelf && isFollowing && (
+        {/* Mutual Connections */}
+        {!isSelf && totalMutualCount > 0 && (
           <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.mutualSection}>
             <View style={styles.mutualAvatars}>
-              {[1, 2, 3].map((_, i) => (
-                <View key={i} style={[styles.mutualAvatar, { marginLeft: i > 0 ? -8 : 0, borderColor: colors.background }]}>
+              {mutualFollowers.slice(0, 3).map((u, i) => (
+                <View key={u.id} style={[styles.mutualAvatar, { marginLeft: i > 0 ? -8 : 0, borderColor: colors.background }]}>
                   <Image
-                    source={{ uri: `https://i.pravatar.cc/60?img=${20 + i}` }}
+                    source={u.avatarUrl ? { uri: u.avatarUrl } : DefaultAvatarImage}
                     style={styles.mutualAvatarImage}
                   />
                 </View>
               ))}
             </View>
             <Text style={[styles.mutualText, { color: colors.textTertiary }]}>
-              Followed by <Text style={[styles.mutualBold, { color: colors.textSecondary }]}>3 people you follow</Text>
+              Followed by{' '}
+              <Text style={[styles.mutualBold, { color: colors.textSecondary }]}>
+                {totalMutualCount === 1
+                  ? `${mutualFollowers[0]?.firstName || mutualFollowers[0]?.userName || '1 person'} you follow`
+                  : `${totalMutualCount} people you follow`}
+              </Text>
             </Text>
           </Animated.View>
         )}
