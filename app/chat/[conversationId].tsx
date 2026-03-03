@@ -1176,9 +1176,8 @@ export default function ChatThreadScreen() {
     setShowChatInfo(false);
     if (channelInfo?.otherMember) {
       router.push({
-        pathname: '/user/[username]',
+        pathname: '/user-profile/[userId]',
         params: {
-          username: channelInfo.otherMember.name || channelInfo.otherMember.id,
           userId: channelInfo.otherMember.id,
         },
       });

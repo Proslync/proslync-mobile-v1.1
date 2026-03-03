@@ -53,14 +53,14 @@ function RootLayoutNav() {
           options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
-          name="user/[username]"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
           name="event/[id]"
           options={{
             animation: "slide_from_right",
           }}
+        />
+        <Stack.Screen
+          name="post/[id]"
+          options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
           name="edit-profile"

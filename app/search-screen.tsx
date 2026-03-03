@@ -315,8 +315,8 @@ export default function DiscoverScreen() {
   // Navigation handlers
   const handlePersonPress = useCallback((person: DiscoverPerson) => {
     router.push({
-      pathname: '/user/[username]',
-      params: { username: person.username, userId: String(person.id) },
+      pathname: '/user-profile/[userId]',
+      params: { userId: String(person.id) },
     });
   }, [router]);
 

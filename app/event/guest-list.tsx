@@ -45,9 +45,8 @@ export default function GuestListPage() {
 
   const navigateToProfile = (attendee: EventAttendee) => {
     router.push({
-      pathname: '/user/[username]',
+      pathname: '/user-profile/[userId]',
       params: {
-        username: attendee.userName || String(attendee.userId),
         userId: String(attendee.userId),
       },
     });
