@@ -592,6 +592,7 @@ export default function UserProfileScreen() {
           userId={Number(userId)}
           followersCount={followers}
           followingCount={following}
+          currentUserId={currentUser?.id}
         />
       )}
 
