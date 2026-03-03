@@ -47,6 +47,7 @@ export function mapPersonToDiscover(person: {
   lastName: string;
   userName?: string;
   avatar?: { id: string; url: string } | null;
+  mutualCount?: number;
 }): DiscoverPerson {
   return {
     id: person.id,
@@ -55,6 +56,7 @@ export function mapPersonToDiscover(person: {
     avatar: person.avatar?.url,
     followers: 0, // TODO: Add follower count when available
     verified: false,
+    mutualCount: person.mutualCount,
   };
 }
 

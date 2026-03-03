@@ -70,13 +70,12 @@ function PersonCard({
             )}
           </View>
           <Text style={[styles.personUsername, { color: colors.textSecondary }]}>@{person.username}</Text>
+          {(person.mutualCount ?? 0) > 0 && (
+            <Text style={[styles.mutualText, { color: colors.textTertiary }]}>
+              {person.mutualCount} mutual {person.mutualCount === 1 ? 'follower' : 'followers'}
+            </Text>
+          )}
         </View>
-        {person.followers > 0 && (
-          <View style={styles.personFollowers}>
-            <Text style={[styles.followerCount, { color: colors.text }]}>{formatNumber(person.followers)}</Text>
-            <Text style={[styles.followerLabel, { color: colors.textTertiary }]}>followers</Text>
-          </View>
-        )}
         <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
       </TouchableOpacity>
     </Animated.View>
@@ -611,17 +610,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
-  personFollowers: {
-    alignItems: 'flex-end',
-    marginRight: 4,
-  },
-  followerCount: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-  },
-  followerLabel: {
-    fontSize: 10,
+  mutualText: {
+    fontSize: 12,
     fontFamily: 'Lato_400Regular',
+    marginTop: 3,
   },
   // Event Card
   eventCard: {
