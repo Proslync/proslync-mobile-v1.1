@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useUnreadNotificationCount } from '@/hooks';
 import type { FeedTab } from '@/lib/types/feed.types';
 
 interface FeedHeaderProps {
@@ -24,6 +25,7 @@ export function FeedHeader({
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const router = useRouter();
+  const { data: unreadCount } = useUnreadNotificationCount();
 
   return (
     <Animated.View
@@ -69,6 +71,9 @@ export function FeedHeader({
           activeOpacity={0.7}
         >
           <Ionicons name="notifications-outline" size={22} color={colors.text} />
+          {!!unreadCount && unreadCount > 0 && (
+            <View style={styles.unreadBadge} />
+          )}
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -115,5 +120,14 @@ const styles = StyleSheet.create({
     width: 28,
     height: 3,
     borderRadius: 1.5,
+  },
+  unreadBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF3B30',
   },
 });

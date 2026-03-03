@@ -119,6 +119,12 @@ export {
   useAcceptTeamInvitation,
   useDeclineTeamInvitation,
   MY_TEAM_INVITATIONS_KEY,
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+  NOTIFICATIONS_KEY,
+  UNREAD_COUNT_KEY,
 } from './use-notifications';
 
 // Membership card hooks

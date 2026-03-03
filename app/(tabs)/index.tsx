@@ -213,6 +213,7 @@ export default function FeedScreen() {
   if (feedItems.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <FeedHeader activeTab={activeTab} onTabChange={setActiveTab} />
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No content yet</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
