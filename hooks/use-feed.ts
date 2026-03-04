@@ -15,27 +15,38 @@ interface UseFeedReturn {
   refetch: () => Promise<void>;
   loadMore: () => Promise<void>;
   hasMore: boolean;
+  isFetchingNextPage: boolean;
 }
 
 export const FEED_QUERY_KEY = 'feed';
 
+const VIDEO_EXTENSIONS = /\.(mp4|mov|webm|m4v|avi|mkv)(\?|$)/i;
+
+function isVideoUrl(url?: string | null): boolean {
+  if (!url) return false;
+  return VIDEO_EXTENSIONS.test(url);
+}
+
 function mapResponseToFeedItem(item: FeedItemResponse): FeedItem {
   const firstMedia = item.media?.[0];
-  const mediaType: 'video' | 'image' =
-    firstMedia?.type === 'video' ? 'video' : 'image';
+  const isVideo =
+    firstMedia?.type === 'video' ||
+    (firstMedia?.mimeType && firstMedia.mimeType.startsWith('video/')) ||
+    isVideoUrl(firstMedia?.url);
 
-  const imageUrl =
-    item.type === 'event'
-      ? item.eventFlyerUrl || item.eventImageUrl || firstMedia?.url || ''
-      : firstMedia?.type === 'image'
-        ? firstMedia.url
-        : '';
+  const mediaType: 'video' | 'image' = isVideo ? 'video' : 'image';
 
-  const videoUrl =
-    firstMedia?.type === 'video' ? firstMedia.url : undefined;
+  const primaryUrl = item.type === 'event'
+    ? item.eventFlyerUrl || item.eventImageUrl || firstMedia?.url || ''
+    : firstMedia?.url || '';
+
+  const imageUrl = isVideo ? '' : primaryUrl;
+  const videoUrl = isVideo ? primaryUrl : undefined;
 
   const thumbnail =
-    firstMedia?.thumbnailUrl || imageUrl || '';
+    firstMedia?.thumbnailUrl
+    || (isVideo ? (item.eventImageUrl || primaryUrl || '') : '')
+    || imageUrl || '';
 
   const displayName =
     item.authorUserName ||
@@ -127,6 +138,7 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
     refetch,
     loadMore,
     hasMore: !!query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
   };
 }
 

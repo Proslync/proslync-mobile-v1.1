@@ -99,6 +99,8 @@ function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
     ];
   }
 
+  const isSystem = msg.type === 'system' || msg.isDeleted;
+
   return {
     id: String(msg.id),
     text: msg.isDeleted ? 'This message was deleted' : msg.text || '',
@@ -107,6 +109,7 @@ function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
     userImage: sender?.avatarUrl,
     createdAt: new Date(msg.createdAt),
     isOwn: msg.senderId === currentUserId,
+    isSystem,
     attachments,
   };
 }

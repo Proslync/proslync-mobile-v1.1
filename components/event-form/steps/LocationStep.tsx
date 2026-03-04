@@ -19,7 +19,7 @@ const LIGHT_STYLE_URL = 'mapbox://styles/mapbox/light-v11';
 
 export function LocationStep() {
   const { colors, isDark } = useAppTheme();
-  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
+  const markerColor = '#EF4444';
   const { setValue, watch, formState: { errors } } = useFormContext<EventFormData>();
   const [pickerVisible, setPickerVisible] = useState(false);
   const { data: venues = [], isLoading } = useMyVenues();
@@ -139,9 +139,9 @@ export function LocationStep() {
                   style={[
                     styles.markerDot,
                     {
-                      backgroundColor: accentColor,
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(56, 151, 240, 0.3)',
-                      shadowColor: accentColor,
+                      backgroundColor: markerColor,
+                      borderColor: 'rgba(239, 68, 68, 0.3)',
+                      shadowColor: markerColor,
                     },
                   ]}
                 />

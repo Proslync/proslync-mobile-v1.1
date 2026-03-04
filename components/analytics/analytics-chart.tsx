@@ -18,7 +18,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle, Line, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle, Line, Text as SvgText, G } from 'react-native-svg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
@@ -154,6 +154,92 @@ function getChartPoints(
   }));
 }
 
+/** Evaluate a cubic bezier at parameter t (0..1) for a single axis */
+function cubicBezier(p0: number, cp1: number, cp2: number, p1: number, t: number): number {
+  const u = 1 - t;
+  return u * u * u * p0 + 3 * u * u * t * cp1 + 3 * u * t * t * cp2 + t * t * t * p1;
+}
+
+/** Given a touch X, interpolate smoothly along the bezier curve to get { x, y, value } */
+function interpolateOnCurve(
+  touchX: number,
+  points: { x: number; y: number; value: number }[],
+  padding: number,
+  chartWidth: number,
+): { x: number; y: number; value: number } | null {
+  if (points.length < 2) return null;
+
+  // Clamp touchX to chart bounds
+  const minX = padding;
+  const maxX = chartWidth - padding;
+  const clampedX = Math.max(minX, Math.min(maxX, touchX));
+
+  // Find which segment the touchX falls in
+  let segIdx = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    if (clampedX >= points[i].x && clampedX <= points[i + 1].x) {
+      segIdx = i;
+      break;
+    }
+    if (i === points.length - 2) segIdx = i; // last segment
+  }
+
+  const curr = points[segIdx];
+  const next = points[segIdx + 1];
+  if (!next) return curr;
+
+  // The control points for the cubic bezier match buildSmoothPath:
+  // C cpx curr.y, cpx next.y, next.x next.y  where cpx = (curr.x + next.x) / 2
+  const cpx = (curr.x + next.x) / 2;
+  const cp1 = { x: cpx, y: curr.y };
+  const cp2 = { x: cpx, y: next.y };
+
+  // Find t where bezierX(t) ≈ clampedX using binary search
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    const bx = cubicBezier(curr.x, cp1.x, cp2.x, next.x, mid);
+    if (bx < clampedX) lo = mid;
+    else hi = mid;
+  }
+  const t = (lo + hi) / 2;
+
+  const x = cubicBezier(curr.x, cp1.x, cp2.x, next.x, t);
+  const y = cubicBezier(curr.y, cp1.y, cp2.y, next.y, t);
+  const value = curr.value + (next.value - curr.value) * t;
+
+  return { x, y, value };
+}
+
+/** Generate Y-axis tick values — pick ~4 evenly-spaced nice numbers */
+function getYTicks(data: number[], tickCount = 4): number[] {
+  if (data.length === 0) return [0];
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  if (min === max) return [min];
+
+  const range = max - min;
+  const step = range / (tickCount - 1);
+  const ticks: number[] = [];
+  for (let i = 0; i < tickCount; i++) {
+    ticks.push(min + step * i);
+  }
+  return ticks;
+}
+
+/** Format a Y-axis value for display */
+function formatYValue(value: number, isRate: boolean, isCurrency: boolean): string {
+  if (isRate) return `${value.toFixed(0)}%`;
+  if (isCurrency) {
+    const dollars = value / 100;
+    if (dollars >= 1000) return `$${(dollars / 1000).toFixed(1)}k`;
+    return `$${dollars.toFixed(0)}`;
+  }
+  if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+  return Math.round(value).toString();
+}
+
 /** Format a date string for the tooltip based on the time range */
 function formatTooltipDate(dateStr: string, range: TimeRange): string {
   const d = new Date(dateStr);
@@ -170,27 +256,34 @@ function formatTooltipDate(dateStr: string, range: TimeRange): string {
   return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-/** Pick ~5 evenly-spaced date strings and format them for the X-axis */
+/** Pick evenly-spaced date strings and format for X-axis */
 function formatXAxisDates(dates: string[], range: TimeRange): { label: string; fraction: number }[] {
   if (dates.length < 2) return [];
 
-  const labelCount = Math.min(5, dates.length);
+  // Fewer labels to avoid crowding
+  const labelCount = Math.min(4, dates.length);
   const result: { label: string; fraction: number }[] = [];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   for (let i = 0; i < labelCount; i++) {
-    const fraction = i / (labelCount - 1);
+    // Inset the first and last labels slightly so they don't clip edges
+    const fraction = labelCount === 1 ? 0.5 : i / (labelCount - 1);
     const dataIndex = Math.round(fraction * (dates.length - 1));
     const d = new Date(dates[dataIndex]);
 
     let label: string;
     if (range === '12H' || range === '1D') {
       const h = d.getHours();
-      label = `${h % 12 || 12}${h >= 12 ? 'PM' : 'AM'}`;
-    } else if (range === '1W' || range === '2W') {
-      label = `${days[d.getDay()]}`;
-    } else if (range === '1M' || range === '3M' || range === '6M') {
+      const min = d.getMinutes();
+      label = min === 0
+        ? `${h % 12 || 12}${h >= 12 ? 'PM' : 'AM'}`
+        : `${h % 12 || 12}:${String(min).padStart(2, '0')}`;
+    } else if (range === '1W') {
+      label = days[d.getDay()];
+    } else if (range === '2W' || range === '1M') {
+      label = `${months[d.getMonth()]} ${d.getDate()}`;
+    } else if (range === '3M' || range === '6M') {
       label = `${months[d.getMonth()]} ${d.getDate()}`;
     } else {
       label = `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
@@ -221,17 +314,20 @@ export function HeroLineChart({
   isDark: boolean;
   onTouchActive?: (active: boolean) => void;
 }) {
-  const chartWidth = SCREEN_WIDTH - 32;
-  const xAxisHeight = 20;
+  const svgWidth = SCREEN_WIDTH - 32;
+  const yAxisWidth = 40; // space for Y-axis labels
+  const chartWidth = svgWidth - yAxisWidth;
+  const xAxisHeight = 24;
   const chartHeight = SCREEN_HEIGHT * 0.28;
   const totalHeight = chartHeight + xAxisHeight;
   const chartPadding = 4;
   const color = isPositive ? '#00D632' : '#FF3B30';
   const gradientId = 'heroGrad';
   const isRate = !!metricLabel?.toLowerCase().includes('rate');
-  const labelColor = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)';
+  const isCurrency = !!metricLabel?.toLowerCase().includes('revenue') || !!metricLabel?.toLowerCase().includes('fees');
+  const labelColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)';
 
-  const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
+  const [activePoint, setActivePoint] = React.useState<{ x: number; y: number; value: number } | null>(null);
 
   // Compute X-axis labels from real date strings
   const xLabels = React.useMemo(
@@ -239,6 +335,10 @@ export function HeroLineChart({
     [dates, selectedRange],
   );
 
+  // Y-axis ticks
+  const yTicks = React.useMemo(() => getYTicks(data, 4), [data]);
+
+  // Build paths/points within the chart area (offset by yAxisWidth)
   const linePath = buildSmoothPath(data, chartWidth, chartHeight, chartPadding);
   const areaPath = buildAreaPath(data, chartWidth, chartHeight, chartPadding);
   const points = React.useMemo(
@@ -246,21 +346,12 @@ export function HeroLineChart({
     [data, chartWidth, chartHeight],
   );
 
-  const findNearestIndex = React.useCallback(
+  const interpolateTouch = React.useCallback(
     (touchX: number) => {
-      if (points.length === 0) return null;
-      let nearest = 0;
-      let minDist = Math.abs(points[0].x - touchX);
-      for (let i = 1; i < points.length; i++) {
-        const dist = Math.abs(points[i].x - touchX);
-        if (dist < minDist) {
-          minDist = dist;
-          nearest = i;
-        }
-      }
-      return nearest;
+      // Adjust touch X for the Y-axis offset
+      return interpolateOnCurve(touchX - yAxisWidth, points, chartPadding, chartWidth);
     },
-    [points],
+    [points, chartWidth, yAxisWidth],
   );
 
   const dismissTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -273,50 +364,46 @@ export function HeroLineChart({
         .onBegin((e) => {
           if (dismissTimer.current) clearTimeout(dismissTimer.current);
           onTouchActive?.(true);
-          setActiveIndex(findNearestIndex(e.x));
+          setActivePoint(interpolateTouch(e.x));
         })
         .onUpdate((e) => {
-          setActiveIndex(findNearestIndex(e.x));
+          setActivePoint(interpolateTouch(e.x));
         })
         .onFinalize(() => {
           onTouchActive?.(false);
-          dismissTimer.current = setTimeout(() => setActiveIndex(null), 2000);
+          dismissTimer.current = setTimeout(() => setActivePoint(null), 2000);
         }),
-    [findNearestIndex, onTouchActive],
+    [interpolateTouch, onTouchActive],
   );
 
-  const activePoint = activeIndex !== null ? points[activeIndex] : null;
-
-  // Format tooltip: value + date
+  // Format tooltip value
   const tooltipValue = activePoint
     ? isRate
       ? `${activePoint.value.toFixed(1)}%`
       : metricLabel?.toLowerCase().includes('revenue') || metricLabel?.toLowerCase().includes('fees')
         ? `$${(activePoint.value / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-        : activePoint.value.toLocaleString()
+        : Math.round(activePoint.value).toLocaleString()
     : '';
 
-  const tooltipDate = activeIndex !== null && dates?.[activeIndex]
-    ? formatTooltipDate(dates[activeIndex], selectedRange)
-    : '';
-
-  // Tooltip position — follows the active dot, clamped within chart bounds
-  const tooltipW = 150;
-  const tooltipH = 48;
-  const tooltipGap = 10;
+  // Tooltip floats above the line — positioned at the interpolated point
+  const tooltipGap = 24;
   const tooltipX = activePoint
-    ? Math.max(0, Math.min(activePoint.x - tooltipW / 2, chartWidth - tooltipW))
+    ? Math.max(8, Math.min(activePoint.x, chartWidth - 8))
     : 0;
   const tooltipY = activePoint
-    ? activePoint.y - tooltipH - tooltipGap >= 0
-      ? activePoint.y - tooltipH - tooltipGap
-      : activePoint.y + tooltipGap + 8
+    ? Math.max(12, activePoint.y - tooltipGap)
     : 0;
+
+  // Y-axis: map data value to chart Y coordinate
+  const dataMin = data.length > 0 ? Math.min(...data) : 0;
+  const dataMax = data.length > 0 ? Math.max(...data) : 1;
+  const dataRange = dataMax - dataMin || 1;
+  const chartH = chartHeight - chartPadding * 2;
 
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View style={{ marginHorizontal: 16, marginTop: 8 }}>
-        <Svg width={chartWidth} height={totalHeight}>
+        <Svg width={svgWidth} height={totalHeight}>
           <Defs>
             <SvgGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
               <Stop offset="0" stopColor={color} stopOpacity="0.25" />
@@ -324,58 +411,98 @@ export function HeroLineChart({
               <Stop offset="1" stopColor={color} stopOpacity="0" />
             </SvgGradient>
           </Defs>
-          {areaPath ? <Path d={areaPath} fill={`url(#${gradientId})`} /> : null}
-          {linePath ? (
-            <Path
-              d={linePath}
-              fill="none"
-              stroke={color}
-              strokeWidth={2.5}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          ) : null}
 
-          {/* Tooltip indicator line + dot */}
-          {activePoint && (
-            <>
-              <Line
-                x1={activePoint.x}
-                y1={0}
-                x2={activePoint.x}
-                y2={chartHeight}
-                stroke={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)'}
-                strokeWidth={1}
-                strokeDasharray="4 3"
-              />
-              {/* Outer glow ring */}
-              <Circle
-                cx={activePoint.x}
-                cy={activePoint.y}
-                r={10}
-                fill={color}
-                opacity={0.15}
-              />
-              {/* Inner dot */}
-              <Circle
-                cx={activePoint.x}
-                cy={activePoint.y}
-                r={5}
-                fill={color}
-                stroke={isDark ? '#000' : '#fff'}
-                strokeWidth={2}
-              />
-            </>
-          )}
+          {/* Y-axis labels + grid lines */}
+          {yTicks.map((tick, i) => {
+            const y = chartPadding + chartH - ((tick - dataMin) / dataRange) * chartH;
+            return (
+              <React.Fragment key={`y-${i}`}>
+                <Line
+                  x1={yAxisWidth}
+                  y1={y}
+                  x2={svgWidth}
+                  y2={y}
+                  stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'}
+                  strokeWidth={1}
+                />
+                <SvgText
+                  x={yAxisWidth - 6}
+                  y={y + 3.5}
+                  fontSize={10}
+                  fontFamily="Lato_400Regular"
+                  fill={labelColor}
+                  textAnchor="end"
+                >
+                  {formatYValue(tick, isRate, isCurrency)}
+                </SvgText>
+              </React.Fragment>
+            );
+          })}
 
-          {/* X-axis labels */}
+          {/* Chart area — offset by yAxisWidth */}
+          <G transform={`translate(${yAxisWidth}, 0)`}>
+            {areaPath ? <Path d={areaPath} fill={`url(#${gradientId})`} /> : null}
+            {linePath ? (
+              <Path
+                d={linePath}
+                fill="none"
+                stroke={color}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ) : null}
+
+            {/* Tooltip indicator line + dot + floating value */}
+            {activePoint && (
+              <>
+                <Line
+                  x1={activePoint.x}
+                  y1={0}
+                  x2={activePoint.x}
+                  y2={chartHeight}
+                  stroke={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)'}
+                  strokeWidth={1}
+                  strokeDasharray="4 3"
+                />
+                <Circle
+                  cx={activePoint.x}
+                  cy={activePoint.y}
+                  r={10}
+                  fill={color}
+                  opacity={0.15}
+                />
+                <Circle
+                  cx={activePoint.x}
+                  cy={activePoint.y}
+                  r={5}
+                  fill={color}
+                  stroke={isDark ? '#000' : '#fff'}
+                  strokeWidth={2}
+                />
+                <SvgText
+                  x={tooltipX}
+                  y={tooltipY}
+                  fontSize={13}
+                  fontFamily="Lato_700Bold"
+                  fontWeight="700"
+                  fill={isDark ? '#fff' : '#000'}
+                  textAnchor="middle"
+                >
+                  {tooltipValue}
+                </SvgText>
+              </>
+            )}
+          </G>
+
+          {/* X-axis labels — offset by yAxisWidth */}
           {xLabels.map((item, i) => {
-            const x = chartPadding + item.fraction * (chartWidth - chartPadding * 2);
+            const x = yAxisWidth + chartPadding + item.fraction * (chartWidth - chartPadding * 2);
             return (
               <SvgText
                 key={`x-${i}`}
                 x={x}
-                y={chartHeight + 14}
+                y={chartHeight + 16}
                 fontSize={10}
                 fontFamily="Lato_400Regular"
                 fill={labelColor}
@@ -387,29 +514,6 @@ export function HeroLineChart({
           })}
         </Svg>
 
-        {/* Floating glass tooltip — follows the active point */}
-        {activePoint && (
-          <View
-            style={[
-              styles.tooltip,
-              {
-                left: tooltipX,
-                top: tooltipY,
-                width: tooltipW,
-              },
-            ]}
-            pointerEvents="none"
-          >
-            <Text style={styles.tooltipText}>
-              {tooltipValue}
-            </Text>
-            {tooltipDate ? (
-              <Text style={styles.tooltipDate}>
-                {tooltipDate}
-              </Text>
-            ) : null}
-          </View>
-        )}
       </Animated.View>
     </GestureDetector>
   );
@@ -846,30 +950,5 @@ const styles = StyleSheet.create({
   },
   tileSeparator: {
     height: 1,
-  },
-  // Tooltip — glass style
-  tooltip: {
-    position: 'absolute',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  tooltipText: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    textAlign: 'center',
-    color: '#fff',
-  },
-  tooltipDate: {
-    fontSize: 11,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
-    marginTop: 2,
-    color: 'rgba(255,255,255,0.55)',
   },
 });

@@ -101,6 +101,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
         name: displayName,
         userName: authUser.userName,
         avatarUrl: authUser.avatar?.url,
+        isVerified: authUser.isVerified,
         statusTier: 'Standard',
         memberSince: authUser.createdAt || new Date().toISOString(),
         membershipCardId: authUser.id || 0,

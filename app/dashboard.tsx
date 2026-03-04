@@ -2,6 +2,8 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { useAuth } from "@/lib/providers/auth-provider";
+import { useWallet } from "@/lib/providers/wallet-provider";
+import { UserRole } from "@/lib/types/auth.types";
 import { Ionicons } from "@expo/vector-icons";
 import * as React from "react";
 import {
@@ -15,6 +17,7 @@ import {
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MembershipCard, StatusCardMenuSheet } from "@/components/wallet";
 
 interface StatCardProps {
   title: string;
@@ -115,6 +118,8 @@ export default function DashboardScreen() {
     refetch,
   } = useDashboard();
   const { colors } = useAppTheme();
+  const { user: walletUser } = useWallet();
+  const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -177,6 +182,16 @@ export default function DashboardScreen() {
           />
         }
       >
+        {/* Status Card */}
+        {walletUser && (
+          <Animated.View entering={FadeInDown.duration(500)} style={styles.cardContainer}>
+            <MembershipCard
+              user={walletUser}
+              onPress={() => setCardMenuVisible(true)}
+            />
+          </Animated.View>
+        )}
+
         {/* Error Banner */}
         {error && (
           <Animated.View
@@ -252,6 +267,15 @@ export default function DashboardScreen() {
               onPress={() => router.push("/dashboard/payments")}
               colors={colors}
             />
+            {user?.role === UserRole.ADMIN && (
+              <MenuItem
+                title="Admin Panel"
+                subtitle="Manage users, events, and posts"
+                icon="shield-checkmark-outline"
+                onPress={() => router.push("/admin")}
+                colors={colors}
+              />
+            )}
           </View>
         </Animated.View>
 
@@ -259,6 +283,14 @@ export default function DashboardScreen() {
         <View style={{ height: insets.bottom + 40 }} />
       </ScrollView>
 
+      {/* Status Card Menu Sheet */}
+      {walletUser && (
+        <StatusCardMenuSheet
+          visible={cardMenuVisible}
+          onClose={() => setCardMenuVisible(false)}
+          user={walletUser}
+        />
+      )}
     </View>
   );
 }
@@ -353,6 +385,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Lato_400Regular",
     marginTop: 4,
+  },
+  cardContainer: {
+    marginHorizontal: -16,
+    marginBottom: 8,
   },
   section: {
     marginBottom: 24,

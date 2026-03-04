@@ -15,6 +15,7 @@ export interface WalletUser {
   name: string;
   userName?: string;
   avatarUrl?: string;
+  isVerified?: boolean;
   statusTier: StatusTier;
   memberSince: string;
   membershipCardId?: number;

@@ -15,7 +15,8 @@
         "com.apple.developer.in-app-payments": [
           "merchant.statusdigitalinc.status"
         ],
-        "com.apple.developer.proximity-reader.payment.acceptance": true
+        "com.apple.developer.proximity-reader.payment.acceptance": true,
+        "aps-environment": "development"
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -30,6 +31,7 @@
           "audio",
           "location",
           "voip",
+          "remote-notification",
           "bluetooth-central"
         ]
       }
@@ -110,7 +112,13 @@
           "microphonePermission": "Status needs microphone access for voice and video calls"
         }
       ],
-      "@livekit/react-native-expo-plugin"
+      [
+        "@config-plugins/react-native-callkeep",
+        {
+          "appName": "Status"
+        }
+      ],
+      "./plugins/withVoipPushNotification"
     ],
     "experiments": {
       "typedRoutes": true

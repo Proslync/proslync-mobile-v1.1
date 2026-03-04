@@ -7,11 +7,17 @@ import {
   Dimensions,
   Image,
   ActivityIndicator,
+  Share,
+  ActionSheetIOS,
+  AppState,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { Ionicons } from '@expo/vector-icons';
+import { usersApi } from '@/lib/api/users';
 import { FeedBottomCTA } from './feed-bottom-cta';
 import { FeedMediaPlayer } from './feed-media-player';
 import { useFollowUser } from '@/hooks/use-follow-user';
@@ -23,13 +29,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 16;
 const CARD_WIDTH = SCREEN_WIDTH - (CARD_MARGIN * 2);
 const CARD_BORDER_RADIUS = 20;
-// Extra top padding to account for the FeedHeader (For You / Following tabs)
 const HEADER_HEIGHT = 50;
-// Bottom CTA height
-const BOTTOM_CTA_HEIGHT = 105;
-// Card header and footer heights (approximate)
-const CARD_HEADER_HEIGHT = 56; // 12px padding * 2 + 32px avatar
-const CARD_FOOTER_HEIGHT = 80; // 14px padding * 2 + title + date
+const CARD_HEADER_HEIGHT = 56;
+const CARD_FOOTER_HEIGHT = 80;
 
 function formatEventDate(dateString: string): string {
   try {
@@ -69,6 +71,7 @@ interface FeedItemProps {
   onRefer: () => void;
   onUserClick: () => void;
   onEventPress: () => void;
+  onBlock?: (userId: string) => void;
 }
 
 export function FeedItem({
@@ -83,6 +86,7 @@ export function FeedItem({
   onPurchase,
   onUserClick,
   onEventPress,
+  onBlock,
 }: FeedItemProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
@@ -98,20 +102,19 @@ export function FeedItem({
   } = useFollowUser(item.userId);
 
   const flyerUrl = item.imageUrl || item.thumbnail;
+  const isVideoItem = item.mediaType === 'video' && !!item.videoUrl;
   const isFollowActionInProgress = isFollowInProgress || isUnfollowInProgress;
 
-  // Check if this is the current user's own post
   const isSelf = currentUserId && item.userId && currentUserId === String(item.userId);
 
-  // Calculate maximum height for media to ensure card fits within available space
-  // with adequate spacing between card and bottom CTA button
   const availableHeight = itemHeight
-    - (insets.top + HEADER_HEIGHT + 8)  // Top: safe area + header + margin
-    - 80  // Bottom: CTA area
-    - CARD_FOOTER_HEIGHT  // Card footer (header is now overlaid on media)
-    - 32;  // Gap between card and bottom CTA
+    - (insets.top + HEADER_HEIGHT + 8)
+    - 80
+    - CARD_HEADER_HEIGHT
+    - CARD_FOOTER_HEIGHT
+    - 32;
 
-  const maxMediaHeight = Math.max(availableHeight, 200); // Minimum 200px for media
+  const maxMediaHeight = Math.max(availableHeight, 200);
 
   const handleFollowPress = async () => {
     if (isFollowActionInProgress || followLoading) return;
@@ -122,36 +125,92 @@ export function FeedItem({
         await follow();
       }
     } catch (error) {
-      console.error('Follow error:', error);
+      console.error('[FeedItem] Follow error:', error);
     }
   };
 
-  // Theme-aware gradient colors
+  const handleMoreMenu = () => {
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options: ['View Profile', 'Share Post', 'Block', 'Cancel'],
+        destructiveButtonIndex: 2,
+        cancelButtonIndex: 3,
+      },
+      async (buttonIndex) => {
+        if (buttonIndex === 0) {
+          onUserClick();
+        } else if (buttonIndex === 1) {
+          try {
+            await Share.share({
+              message: item.eventTitle
+                ? `Check out ${item.eventTitle} on Status!`
+                : 'Check out this event on Status!',
+            });
+          } catch {}
+        } else if (buttonIndex === 2) {
+          try {
+            await usersApi.blockUser(Number(item.userId));
+            onBlock?.(item.userId);
+          } catch (error) {
+            console.error('[FeedItem] Block error:', error);
+          }
+        }
+      },
+    );
+  };
+
+  // Background video player for the glow effect — muted, loops with main player
+  const bgPlayer = useVideoPlayer(
+    isVideoItem ? item.videoUrl! : null,
+    (p) => { p.loop = true; p.muted = true; }
+  );
+
+  React.useEffect(() => {
+    if (!bgPlayer || !isVideoItem) return;
+    if (isActive) {
+      try { bgPlayer.play(); } catch {}
+    } else {
+      try { bgPlayer.pause(); bgPlayer.currentTime = 0; } catch {}
+    }
+    return () => { try { bgPlayer.pause(); } catch {} };
+  }, [isActive, bgPlayer, isVideoItem]);
+
+  React.useEffect(() => {
+    if (!bgPlayer || !isVideoItem) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') { try { bgPlayer.pause(); } catch {} }
+      else if (isActive) { try { bgPlayer.play(); } catch {} }
+    });
+    return () => sub.remove();
+  }, [bgPlayer, isVideoItem, isActive]);
+
   const gradientColors = isDark
     ? ['rgba(15, 9, 12, 0.35)', 'rgba(15, 9, 12, 0.35)', 'rgba(15, 9, 12, 0.6)', 'rgba(15, 9, 12, 0.9)', colors.background, colors.background] as const
     : ['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0.9)', colors.background, colors.background] as const;
 
   return (
     <View style={[styles.container, { height: itemHeight, backgroundColor: colors.background }]}>
-      {/* Background wrapper with rounded bottom corners */}
+      {/* Background wrapper — blurred image or video glow */}
       <View style={styles.backgroundWrapper}>
-        {/* Background with flyer image - blurred */}
-        {flyerUrl && (
+        {isVideoItem && bgPlayer ? (
+          <VideoView
+            player={bgPlayer}
+            style={styles.backgroundImage}
+            contentFit="cover"
+            nativeControls={false}
+          />
+        ) : flyerUrl ? (
           <Image
             source={{ uri: flyerUrl }}
             style={styles.backgroundImage}
             resizeMode="cover"
           />
-        )}
-
-        {/* Blur layer over background */}
+        ) : null}
         <BlurView
           intensity={60}
           tint={isDark ? 'dark' : 'light'}
           style={styles.blurOverlay}
         />
-
-        {/* Gradient dark overlay - darker toward the bottom */}
         <LinearGradient
           colors={gradientColors}
           locations={[0, 0.7, 0.8, 0.88, 0.93, 1]}
@@ -169,33 +228,15 @@ export function FeedItem({
           },
         ]}
       >
-        {/* Instagram Story Card - Liquid Glass */}
+        {/* Single unified card */}
         <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {/* Glass blur background for card */}
           <BlurView
             intensity={25}
             tint={isDark ? 'dark' : 'light'}
             style={styles.cardBlurBackground}
           />
-          {/* Media Player - Full bleed from top of card to above footer */}
-          <View style={styles.flyerContainer}>
-            <FeedMediaPlayer
-              mediaType={item.mediaType}
-              videoUrl={item.videoUrl}
-              imageUrl={item.imageUrl || item.thumbnail}
-              poster={item.thumbnail}
-              isActive={isActive}
-              onSingleTap={onEventPress}
-              aspectRatio={item.aspectRatio}
-              mediaWidth={item.mediaWidth}
-              mediaHeight={item.mediaHeight}
-              mediaOrientation={item.mediaOrientation}
-              containerWidth={CARD_WIDTH - 2} // Account for card border
-              maxHeight={maxMediaHeight}
-            />
-          </View>
 
-          {/* Card Header - Overlaid on top of the image */}
+          {/* Card Header — organizer + follow */}
           <View style={styles.cardHeader}>
             <TouchableOpacity
               onPress={onUserClick}
@@ -209,10 +250,10 @@ export function FeedItem({
                 />
               )}
               <View style={styles.organizerNameRow}>
-                <Text style={[styles.organizerName, { color: '#fff' }]} numberOfLines={1}>
+                <Text style={[styles.organizerName, { color: colors.text }]} numberOfLines={1}>
                   {item.username}
                 </Text>
-                <MaterialCommunityIcons name="check-decagram" size={16} color="#fff" />
+                <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
               </View>
             </TouchableOpacity>
 
@@ -223,16 +264,16 @@ export function FeedItem({
                 disabled={followLoading || isFollowActionInProgress}
                 style={[
                   styles.followButton,
-                  isFollowing && [styles.followButtonFollowing, { backgroundColor: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.3)' }],
+                  isFollowing && styles.followButtonFollowing,
                 ]}
               >
                 {isFollowActionInProgress ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={isFollowing ? colors.textSecondary : '#fff'} />
                 ) : (
                   <Text
                     style={[
                       styles.followButtonText,
-                      isFollowing && { color: '#fff' },
+                      isFollowing && { color: 'rgba(255, 255, 255, 0.7)' },
                     ]}
                   >
                     {isFollowing ? 'Following' : 'Follow'}
@@ -240,9 +281,37 @@ export function FeedItem({
                 )}
               </TouchableOpacity>
             )}
+
+            <TouchableOpacity
+              onPress={handleMoreMenu}
+              activeOpacity={0.7}
+              style={styles.moreButton}
+            >
+              <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
 
-          {/* Card Footer - Event title + date */}
+          {/* Media */}
+          {(item.imageUrl || item.thumbnail || item.videoUrl) ? (
+            <View style={styles.flyerContainer}>
+              <FeedMediaPlayer
+                mediaType={item.mediaType}
+                videoUrl={item.videoUrl}
+                imageUrl={item.imageUrl || item.thumbnail}
+                poster={item.thumbnail}
+                isActive={isActive}
+                onSingleTap={onEventPress}
+                aspectRatio={item.aspectRatio}
+                mediaWidth={item.mediaWidth}
+                mediaHeight={item.mediaHeight}
+                mediaOrientation={item.mediaOrientation}
+                containerWidth={CARD_WIDTH - 2}
+                maxHeight={maxMediaHeight}
+              />
+            </View>
+          ) : null}
+
+          {/* Card Footer — event title + date */}
           <View style={styles.cardFooter}>
             <Text style={[styles.eventTitle, { color: colors.text }]} numberOfLines={2}>
               {item.eventTitle || item.description || 'Untitled Event'}
@@ -310,14 +379,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: CARD_MARGIN,
   },
-
-  // Card container - Liquid Glass
   card: {
     width: CARD_WIDTH,
     borderRadius: CARD_BORDER_RADIUS,
     overflow: 'hidden',
     borderWidth: 1,
-    // Soft shadow for lift
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
@@ -331,19 +397,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-
-  // Card Header - overlaid on top of media
   cardHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    zIndex: 1,
   },
   organizerSection: {
     flexDirection: 'row',
@@ -369,37 +428,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_700Bold',
     flexShrink: 1,
   },
-
-  // Follow Button - Glass aesthetic
   followButton: {
-    backgroundColor: '#3897F0',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     minWidth: 80,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(56, 151, 240, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
   followButtonFollowing: {
-    // Colors applied via inline styles for theming
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   followButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
-
-  // Flyer/Media container - fills from top of card
+  moreButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
   flyerContainer: {
     width: '100%',
     alignItems: 'center',
-    borderTopLeftRadius: CARD_BORDER_RADIUS,
-    borderTopRightRadius: CARD_BORDER_RADIUS,
-    overflow: 'hidden',
   },
-
-  // Card Footer
   cardFooter: {
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -414,5 +472,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
   },
-
 });

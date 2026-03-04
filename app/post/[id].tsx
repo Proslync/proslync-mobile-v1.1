@@ -12,6 +12,8 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,8 +27,11 @@ import {
   usePostComments,
   useAddComment,
   usePostReaction,
+  useDeletePost,
   type CommentData,
 } from '@/hooks';
+import { BlurView } from 'expo-blur';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -125,6 +130,8 @@ export default function PostDetailScreen() {
   const [showComments, setShowComments] = React.useState(false);
   const [replyingToCommentId, setReplyingToCommentId] = React.useState<string | null>(null);
   const [replyingToUsername, setReplyingToUsername] = React.useState<string | null>(null);
+  const [showMenu, setShowMenu] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
 
   const postId = activityId;
 
@@ -140,6 +147,7 @@ export default function PostDetailScreen() {
   // Hooks for mutations
   const { addComment, isAdding: isAddingComment } = useAddComment();
   const { like, unlike } = usePostReaction();
+  const { deletePost, isDeleting } = useDeletePost();
 
   // Get post data
   const username =
@@ -220,6 +228,30 @@ export default function PostDetailScreen() {
     setReplyingToUsername(null);
   };
 
+  const isOwnPost = user && post?.authorId && String(user.id) === String(post.authorId);
+
+  const handleShare = async () => {
+    setShowMenu(false);
+    try {
+      await Share.share({
+        message: post?.text
+          ? `Check out this post on Status: "${post.text}"`
+          : 'Check out this post on Status!',
+      });
+    } catch {}
+  };
+
+  const handleDeletePost = async () => {
+    if (!post) return;
+    try {
+      await deletePost(Number(post.id));
+      setShowDeleteConfirm(false);
+      router.back();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -243,7 +275,7 @@ export default function PostDetailScreen() {
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Post</Text>
-        <View style={styles.headerSpacer} />
+        <View style={{ width: 44 }} />
       </View>
 
       {/* Scrollable Content */}
@@ -254,32 +286,42 @@ export default function PostDetailScreen() {
       >
         {/* Post Author */}
         <Animated.View entering={FadeIn.duration(300)} style={styles.authorSection}>
-          <TouchableOpacity
-            style={styles.authorRow}
-            onPress={() => {
-              if (post?.authorId) {
-                router.push({
-                  pathname: '/user-profile/[userId]',
-                  params: { userId: String(post.authorId) },
-                });
-              }
-            }}
-          >
-            <Image
-              source={userAvatar ? { uri: userAvatar } : DefaultAvatarImage}
-              style={styles.authorAvatar}
-            />
-            <View style={styles.authorInfo}>
-              <View style={styles.authorNameRow}>
-                <Text style={[styles.authorUsername, { color: colors.text }]}>
-                  @{username}
+          <View style={styles.authorRow}>
+            <TouchableOpacity
+              style={styles.authorTouchable}
+              onPress={() => {
+                if (post?.authorId) {
+                  router.push({
+                    pathname: '/user-profile/[userId]',
+                    params: { userId: String(post.authorId) },
+                  });
+                }
+              }}
+            >
+              <Image
+                source={userAvatar ? { uri: userAvatar } : DefaultAvatarImage}
+                style={styles.authorAvatar}
+              />
+              <View style={styles.authorInfo}>
+                <View style={styles.authorNameRow}>
+                  <Text style={[styles.authorUsername, { color: colors.text }]}>
+                    @{username}
+                  </Text>
+                </View>
+                <Text style={[styles.authorTime, { color: colors.textTertiary }]}>
+                  {timeAgo}
                 </Text>
               </View>
-              <Text style={[styles.authorTime, { color: colors.textTertiary }]}>
-                {timeAgo}
-              </Text>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => setShowMenu(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="ellipsis-horizontal" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </Animated.View>
 
         {/* Post Media */}
@@ -458,6 +500,108 @@ export default function PostDetailScreen() {
           </TouchableOpacity>
         </View>
       </Animated.View>
+
+      {/* Options Menu Modal */}
+      <Modal
+        visible={showMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowMenu(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowMenu(false)}
+        >
+          <View style={styles.menuContainer}>
+            <BlurView intensity={80} tint="dark" style={styles.menuBlur}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={handleShare}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="share-outline" size={20} color="#fff" />
+                <Text style={styles.menuItemText}>Share</Text>
+              </TouchableOpacity>
+
+              {isOwnPost && (
+                <>
+                  <View style={styles.menuDivider} />
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      setShowMenu(false);
+                      setShowDeleteConfirm(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+                    <Text style={[styles.menuItemText, { color: '#ff3b30' }]}>Delete Post</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </BlurView>
+
+            <TouchableOpacity
+              style={styles.menuCancelButton}
+              onPress={() => setShowMenu(false)}
+              activeOpacity={0.7}
+            >
+              <BlurView intensity={80} tint="dark" style={styles.menuCancelBlur}>
+                <Text style={styles.menuCancelText}>Cancel</Text>
+              </BlurView>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteConfirmContainer}>
+            <BlurView intensity={80} tint="dark" style={styles.deleteConfirmContent}>
+              <View style={styles.deleteConfirmHeader}>
+                <View style={styles.deleteIconCircle}>
+                  <Ionicons name="trash" size={28} color="#ff3b30" />
+                </View>
+                <Text style={styles.deleteConfirmTitle}>Delete Post</Text>
+                <Text style={styles.deleteConfirmMessage}>
+                  This will permanently remove this post and all its comments. This action cannot be undone.
+                </Text>
+              </View>
+
+              <View style={styles.deleteConfirmActions}>
+                <TouchableOpacity
+                  style={styles.deleteConfirmCancelBtn}
+                  onPress={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmCancelText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.deleteConfirmDeleteBtn, isDeleting && { opacity: 0.5 }]}
+                  onPress={handleDeletePost}
+                  disabled={isDeleting}
+                  activeOpacity={0.7}
+                >
+                  {isDeleting ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.deleteConfirmDeleteText}>Delete</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -485,8 +629,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
   },
-  headerSpacer: {
+  menuButton: {
     width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
@@ -501,6 +648,12 @@ const styles = StyleSheet.create({
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  authorTouchable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   authorAvatar: {
     width: 40,
@@ -705,5 +858,121 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Modal overlay
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  // Options menu
+  menuContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+    gap: 8,
+  },
+  menuBlur: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
+    color: '#fff',
+  },
+  menuDivider: {
+    height: 0.5,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    marginHorizontal: 16,
+  },
+  menuCancelButton: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  menuCancelBlur: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  menuCancelText: {
+    fontSize: 17,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  // Delete confirmation
+  deleteConfirmContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  deleteConfirmContent: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  deleteConfirmHeader: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 20,
+  },
+  deleteIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  deleteConfirmTitle: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  deleteConfirmMessage: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  deleteConfirmActions: {
+    flexDirection: 'row',
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  deleteConfirmCancelBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRightWidth: 0.5,
+    borderRightColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  deleteConfirmCancelText: {
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
+    color: '#fff',
+  },
+  deleteConfirmDeleteBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 59, 48, 0.2)',
+  },
+  deleteConfirmDeleteText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#ff3b30',
   },
 });

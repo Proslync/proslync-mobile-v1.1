@@ -6,15 +6,18 @@ import { ticketsApi, UserTicketsResponse } from '@/lib/api/tickets';
 export const MY_TICKETS_KEY = 'my-tickets';
 
 export function useMyTickets(ticketStatus?: string) {
+  // Active tickets should only show upcoming events; other tabs show all
+  const timeStatus = ticketStatus === 'active' ? 'upcoming' : 'all';
+
   const { data, isLoading, refetch } = useQuery<UserTicketsResponse>({
     queryKey: [MY_TICKETS_KEY, ticketStatus],
     queryFn: () =>
       ticketsApi.getMyTickets({
         ticketStatus,
-        status: 'all',
+        status: timeStatus,
         limit: 50,
         sortBy: 'eventDate',
-        sortOrder: 'desc',
+        sortOrder: 'asc',
       }),
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

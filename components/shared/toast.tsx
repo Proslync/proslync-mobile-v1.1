@@ -138,24 +138,9 @@ function ToastItem({
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = React.useState<ToastMessage[]>([]);
-
-  const showToast = React.useCallback((message: string, type: ToastType = 'info') => {
-    const id = Date.now().toString();
-    setToasts((prev) => [...prev, { id, message, type }]);
-  }, []);
-
-  const showSuccess = React.useCallback((message: string) => {
-    showToast(message, 'success');
-  }, [showToast]);
-
-  const showError = React.useCallback((message: string) => {
-    showToast(message, 'error');
-  }, [showToast]);
-
-  const hideToast = React.useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  const showToast = React.useCallback((_message: string, _type?: ToastType) => {}, []);
+  const showSuccess = React.useCallback((_message: string) => {}, []);
+  const showError = React.useCallback((_message: string) => {}, []);
 
   const value = React.useMemo(
     () => ({ showToast, showSuccess, showError }),
@@ -165,16 +150,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <View style={styles.toastWrapper} pointerEvents="box-none">
-        {toasts.map((toast) => (
-          <ToastItem
-            key={toast.id}
-            message={toast.message}
-            type={toast.type}
-            onHide={() => hideToast(toast.id)}
-          />
-        ))}
-      </View>
     </ToastContext.Provider>
   );
 }

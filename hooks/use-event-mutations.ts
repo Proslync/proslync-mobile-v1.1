@@ -31,10 +31,7 @@ export function useCreateEvent() {
 
       // Step 2: Upload flyer if provided
       if (flyerUri) {
-        try {
-          flyerUrl = await filesApi.uploadEventFlyer(event.id, flyerUri);        } catch (error) {
-          console.warn('S3 flyer upload failed:', error);
-        }
+        flyerUrl = await filesApi.uploadEventFlyer(event.id, flyerUri);
       }
 
       // Step 3: Publish event
@@ -72,10 +69,7 @@ export function useUpdateEvent() {
       const event = await eventsApi.updateEvent(eventId, data);
       // Step 2: Upload new flyer if provided (using presigned URL flow)
       if (flyerUri) {
-        try {
-          await filesApi.uploadEventFlyer(eventId, flyerUri);        } catch (error) {
-          console.warn('Flyer upload failed:', error);
-        }
+        await filesApi.uploadEventFlyer(eventId, flyerUri);
       }
 
       return event;

@@ -22,6 +22,7 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useConversations, type ChannelData } from '@/hooks/use-conversations';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
+import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 
 // Local default avatar with white background
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
@@ -269,6 +270,7 @@ export default function MessagesScreen() {
   const router = useStableRouter();
   const { colors, isDark } = useAppTheme();
   const { user } = useAuth();
+  const { openAccountSwitcher } = useTabNavigation();
   const { channelData, isLoading, refetch, deleteChannel } = useConversations(user?.id);
   const headerTitle = user?.userName ? `@${user.userName}` : 'Messages';
 
@@ -449,7 +451,14 @@ export default function MessagesScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerButton} />
-        <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
+        <TouchableOpacity
+          style={styles.usernameButton}
+          onPress={openAccountSwitcher}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
+          <Ionicons name="chevron-down" size={18} color={colors.text} />
+        </TouchableOpacity>
         <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
           <Ionicons name="create-outline" size={24} color={colors.text} />
         </TouchableOpacity>
@@ -511,10 +520,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  usernameButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
   title: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    flex: 1,
     textAlign: 'center',
   },
   headerButton: {

@@ -1,8 +1,3 @@
-import { registerGlobals } from "@livekit/react-native";
-
-// Must be called before any LiveKit components render
-registerGlobals();
-
 import { useEffect, useState } from "react";
 import {
   DarkTheme,
@@ -28,7 +23,6 @@ import { StripeProvider } from "@/lib/providers/stripe-provider";
 import { TerminalProvider } from "@/lib/providers/terminal-provider";
 import { ChatSocketProvider } from "@/lib/providers/chat-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
-import { IncomingCallOverlay } from "@/components/shared/incoming-call-overlay";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -130,12 +124,16 @@ function RootLayoutNav() {
           options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
-          name="notification-settings"
+name="notification-settings"
           options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
           name="privacy-settings"
           options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="admin"
+          options={{ headerShown: false, animation: "slide_from_right" }}
         />
         <Stack.Screen
           name="modal"
@@ -193,7 +191,6 @@ export default function RootLayout() {
                       <TabNavigationProvider>
                         <WalletProvider>
                           <RootLayoutNav />
-                          <IncomingCallOverlay />
                         </WalletProvider>
                       </TabNavigationProvider>
                     </LiveLocationProvider>

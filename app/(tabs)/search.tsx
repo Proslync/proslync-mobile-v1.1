@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
+  Pressable,
   Image,
   ActivityIndicator,
   ScrollView,
@@ -61,6 +62,7 @@ interface FriendMarker {
   imageUrl: string;
   latitude: number;
   longitude: number;
+  updatedAt: number; // Unix timestamp ms
 }
 
 // Types
@@ -235,42 +237,21 @@ const EventMarker = React.memo(function EventMarker({ event, onPress }: { event:
 // Friend profile marker for map (circular profile photo)
 const FriendMarkerView = React.memo(function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.friendMarkerContainer}>
+    <Pressable onPress={onPress} hitSlop={12} style={styles.friendMarkerContainer}>
       <View style={styles.friendMarker}>
         <Image source={{ uri: friend.imageUrl }} style={styles.friendMarkerImage} />
       </View>
       <View style={styles.friendMarkerPointer} />
-    </TouchableOpacity>
+    </Pressable>
   );
 });
 
-// Current user's own location marker (green, pulsing)
+// Current user's own location marker (green border)
 const MyLocationMarker = React.memo(function MyLocationMarker({ imageUrl }: { imageUrl: string }) {
-  const pulseAnim = useSharedValue(1);
-
-  useEffect(() => {
-    pulseAnim.value = withRepeat(
-      withSequence(
-        withTiming(1.3, { duration: 1000 }),
-        withTiming(1, { duration: 1000 })
-      ),
-      -1,
-      false
-    );
-  }, []);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulseAnim.value }],
-    opacity: 2 - pulseAnim.value,
-  }));
-
   return (
     <View style={styles.friendMarkerContainer}>
-      <View style={styles.myPulseWrap}>
-        <Animated.View style={[styles.myPulseRing, pulseStyle]} />
-        <View style={styles.myLocationMarker}>
-          <Image source={{ uri: imageUrl }} style={styles.friendMarkerImage} />
-        </View>
+      <View style={styles.myLocationMarker}>
+        <Image source={{ uri: imageUrl }} style={styles.friendMarkerImage} />
       </View>
       <View style={styles.myLocationPointer} />
     </View>
@@ -546,6 +527,7 @@ function FullMapScreen() {
         imageUrl: loc.avatarUrl || '',
         latitude: loc.latitude,
         longitude: loc.longitude,
+        updatedAt: loc.updatedAt,
       };
     });
   }, [friendLocations]);
@@ -563,7 +545,7 @@ function FullMapScreen() {
   }, []);
 
   const handleFriendMarkerPress = useCallback((friend: FriendMarker) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedFriend(friend);
     cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, animationDuration: 500 });
   }, []);
@@ -766,6 +748,14 @@ function FullMapScreen() {
       <FriendProfileSheet
         visible={!!selectedFriend}
         onClose={() => setSelectedFriend(null)}
+        onShareBack={async () => {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === 'granted' && !userLocation) {
+            const location = await Location.getCurrentPositionAsync({});
+            setUserLocation([location.coords.longitude, location.coords.latitude]);
+          }
+          setShowShareSheet(true);
+        }}
         friend={selectedFriend}
       />
     </View>
@@ -1116,19 +1106,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#ffffff',
     marginTop: -1,
   },
-  // Current user's location marker (green, pulsing)
-  myPulseWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  myPulseRing: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: '#34c759',
-  },
+  // Current user's location marker (green border)
   myLocationMarker: {
     width: 50,
     height: 50,

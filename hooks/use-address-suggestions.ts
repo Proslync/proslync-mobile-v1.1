@@ -44,7 +44,7 @@ interface RetrieveFeature {
 export function useAddressSuggestions(query: string) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const debouncedQuery = useDebounce(query, 500);
+  const debouncedQuery = useDebounce(query, 200);
   const sessionTokenRef = useRef(generateSessionToken());
 
   useEffect(() => {

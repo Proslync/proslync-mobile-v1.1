@@ -1,11 +1,11 @@
 import * as React from 'react';
-import { useStableRouter } from '@/hooks/use-stable-router';
 import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { FeedContainer, FeedHeader, FeedLoadingSkeleton } from '@/components/feed';
 import { useFeed } from '@/hooks/use-feed';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -17,7 +17,7 @@ import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet'
 import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
 
 export default function FeedScreen() {
-  const router = useStableRouter();
+  const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
@@ -27,6 +27,7 @@ export default function FeedScreen() {
   const [purchasedItems, setPurchasedItems] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<FeedTab>('foryou');
   const [purchaseItem, setPurchaseItem] = useState<FeedItem | null>(null);
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
   const likedItems = new Set<string>();
 
   // Fetch feed from API based on active tab
@@ -35,21 +36,34 @@ export default function FeedScreen() {
     isLoading,
     isError,
     refetch,
+    loadMore,
+    isFetchingNextPage,
   } = useFeed({
     feedType: activeTab,
     enabled: isAuthenticated,
   });
+
+  // Filter out blocked users
+  const visibleItems = feedItems.filter(item => !blockedUserIds.has(String(item.userId)));
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
     onRefresh: refetch,
   });
 
+  const handleBlock = useCallback((userId: string) => {
+    setBlockedUserIds(prev => {
+      const next = new Set(prev);
+      next.add(userId);
+      return next;
+    });
+  }, []);
+
   const toggleRsvp = useCallback(async (id: string) => {
     // Find the item to get the eventId
-    const item = feedItems.find(i => i.id === id);
+    const item = visibleItems.find(i => i.id === id);
     if (!item?.eventId) {
-      console.warn('No eventId found for item:', id);
+      console.warn('[Feed] No eventId found for item:', id);
       return;
     }
 
@@ -64,8 +78,6 @@ export default function FeedScreen() {
       const response = await eventsApi.registerForEvent(item.eventId);
       if (response.success) {
         showSuccess(response.message || 'You have successfully RSVP\'d!');
-        // Refetch feed so isUserRegistered updates from backend
-        refetch();
       } else {
         // Revert on failure
         setRsvpItems((prev) => {
@@ -76,7 +88,7 @@ export default function FeedScreen() {
         showError(response.message || 'Could not complete RSVP');
       }
     } catch (error: any) {
-      console.error('RSVP error:', error);
+      console.error('[Feed] RSVP error:', error);
       // Revert on error
       setRsvpItems((prev) => {
         const newMap = new Map(prev);
@@ -85,14 +97,14 @@ export default function FeedScreen() {
       });
       showError(error?.message || 'Failed to RSVP. Please try again.');
     }
-  }, [feedItems, showSuccess, showError, refetch]);
+  }, [visibleItems, showSuccess, showError]);
 
   const togglePendingRsvp = useCallback(async (id: string) => {
     // For private events, use the same register endpoint
     // Backend will handle the request/pending status
-    const item = feedItems.find(i => i.id === id);
+    const item = visibleItems.find(i => i.id === id);
     if (!item?.eventId) {
-      console.warn('No eventId found for item:', id);
+      console.warn('[Feed] No eventId found for item:', id);
       return;
     }
 
@@ -116,7 +128,7 @@ export default function FeedScreen() {
         showError(response.message || 'Could not submit request');
       }
     } catch (error: any) {
-      console.error('Pending RSVP error:', error);
+      console.error('[Feed] Pending RSVP error:', error);
       setPendingRsvpItems((prev) => {
         const newMap = new Map(prev);
         newMap.set(id, false);
@@ -124,17 +136,17 @@ export default function FeedScreen() {
       });
       showError(error?.message || 'Failed to submit request. Please try again.');
     }
-  }, [feedItems, showSuccess, showError]);
+  }, [visibleItems, showSuccess, showError]);
 
   const handlePurchase = useCallback((id: string) => {
-    const item = feedItems.find(i => i.id === id);
+    const item = visibleItems.find(i => i.id === id);
     if (!item?.eventId) {
-      console.warn('No eventId found for item:', id);
+      console.warn('[Feed] No eventId found for item:', id);
       return;
     }
 
     setPurchaseItem(item);
-  }, [feedItems]);
+  }, [visibleItems]);
 
   const handlePurchaseSuccess = useCallback((ticketCount: number) => {
     if (purchaseItem) {
@@ -182,6 +194,9 @@ export default function FeedScreen() {
         title: item.eventTitle || item.description,
         date: item.eventDate || '',
         imageUrl: item.imageUrl || item.thumbnail,
+        videoUrl: item.videoUrl || '',
+        mediaType: item.mediaType || 'image',
+        thumbnail: item.thumbnail || '',
         venueName: item.venueName || '',
         username: item.username || '',
         userAvatar: item.userAvatar || '',
@@ -193,7 +208,7 @@ export default function FeedScreen() {
     });
   }, [router, rsvpItems]);
 
-  if (isLoading && feedItems.length === 0) {
+  if (isLoading && visibleItems.length === 0) {
     return <FeedLoadingSkeleton />;
   }
 
@@ -210,7 +225,7 @@ export default function FeedScreen() {
     );
   }
 
-  if (feedItems.length === 0) {
+  if (visibleItems.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <FeedHeader activeTab={activeTab} onTabChange={setActiveTab} />
@@ -227,7 +242,7 @@ export default function FeedScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FeedContainer
-        items={feedItems}
+        items={visibleItems}
         currentIndex={currentIndex}
         likedItems={likedItems}
         rsvpItems={rsvpItems}
@@ -240,7 +255,10 @@ export default function FeedScreen() {
         onRefer={handleRefer}
         onUserClick={handleUserClick}
         onEventPress={handleEventPress}
+        onBlock={handleBlock}
         refreshControl={refreshControl}
+        onEndReached={loadMore}
+        isFetchingNextPage={isFetchingNextPage}
       />
       <FeedHeader
         activeTab={activeTab}

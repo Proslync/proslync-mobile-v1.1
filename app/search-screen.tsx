@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
@@ -6,340 +6,497 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
   Image,
   ActivityIndicator,
-  RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInDown, FadeInRight } from 'react-native-reanimated';
-import {
-  useSearch,
-  mapPersonToDiscover,
-  mapEventToDiscover,
-  mapVenueToDiscover,
-} from '@/hooks/use-search';
-import { useFollowVenue } from '@/hooks/use-follow-venue';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useUnifiedSearch } from '@/hooks/use-unified-search';
+import { useFollowUser } from '@/hooks/use-follow-user';
+import { useAuth } from '@/lib/providers/auth-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import type { DiscoverCategory, DiscoverPerson, DiscoverEvent, DiscoverVenue } from '@/lib/types/search.types';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import type {
+  UnifiedSearchItem,
+  SearchSuggestion,
+} from '@/lib/types/search.types';
+import { format } from 'date-fns';
 
-// Category tabs configuration
-const CATEGORIES: { key: DiscoverCategory; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'people', label: 'People', icon: 'people-outline' },
-  { key: 'events', label: 'Events', icon: 'calendar-outline' },
-  { key: 'venues', label: 'Venues', icon: 'location-outline' },
-];
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
-// Person Card Component
-function PersonCard({
-  person,
-  index,
+// ── Result row components ──
+
+function PersonRow({
+  item,
   onPress,
   colors,
 }: {
-  person: DiscoverPerson;
-  index: number;
+  item: UnifiedSearchItem;
   onPress: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
 }) {
-  return (
-    <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-      <TouchableOpacity
-        style={[styles.personCard, { backgroundColor: colors.cardElevated }]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
-        <View style={styles.personAvatarContainer}>
-          {person.avatar ? (
-            <Image source={{ uri: person.avatar }} style={styles.personAvatar} />
-          ) : (
-            <View style={[styles.personAvatar, styles.personAvatarPlaceholder, { backgroundColor: colors.input }]}>
-              <Ionicons name="person" size={24} color={colors.textTertiary} />
-            </View>
-          )}
-        </View>
-        <View style={styles.personInfo}>
-          <View style={styles.personNameRow}>
-            <Text style={[styles.personName, { color: colors.text }]} numberOfLines={1}>
-              {person.name}
-            </Text>
-            {person.verified && (
-              <Ionicons name="checkmark-circle" size={16} color="#3b82f6" style={{ marginLeft: 4 }} />
-            )}
-          </View>
-          <Text style={[styles.personUsername, { color: colors.textSecondary }]}>@{person.username}</Text>
-          {(person.mutualCount ?? 0) > 0 && (
-            <Text style={[styles.mutualText, { color: colors.textTertiary }]}>
-              {person.mutualCount} mutual {person.mutualCount === 1 ? 'follower' : 'followers'}
-            </Text>
-          )}
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
+  const { user } = useAuth();
+  const isSelf = user?.id === item.id;
+  const { isFollowing, follow, unfollow, isFollowInProgress, isUnfollowInProgress } = useFollowUser(item.id);
+  const name = `${item.firstName || ''} ${item.lastName || ''}`.trim();
 
-// Event Card Component
-function EventCard({
-  event,
-  index,
-  onPress,
-  colors,
-}: {
-  event: DiscoverEvent;
-  index: number;
-  onPress: () => void;
-  colors: ReturnType<typeof useAppTheme>['colors'];
-}) {
-  return (
-    <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-      <TouchableOpacity
-        style={styles.eventCard}
-        onPress={onPress}
-        activeOpacity={0.9}
-      >
-        {event.image ? (
-          <Image source={{ uri: event.image }} style={styles.eventImage} />
-        ) : (
-          <View style={[styles.eventImage, styles.eventImagePlaceholder, { backgroundColor: colors.input }]}>
-            <Ionicons name="calendar" size={40} color={colors.textTertiary} />
-          </View>
-        )}
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
-          style={styles.eventGradient}
-        />
-        <View style={styles.eventContent}>
-          <Text style={styles.eventTitle} numberOfLines={2}>{event.title}</Text>
-          <View style={styles.eventMeta}>
-            <View style={styles.eventMetaItem}>
-              <Ionicons name="calendar-outline" size={12} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.eventMetaText}>{event.date}</Text>
-            </View>
-            <View style={styles.eventMetaItem}>
-              <Ionicons name="location-outline" size={12} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.eventMetaText} numberOfLines={1}>{event.location}</Text>
-            </View>
-          </View>
-          <View style={styles.eventFooter}>
-            {event.attendees > 0 && (
-              <View style={styles.eventMetaItem}>
-                <Ionicons name="people-outline" size={12} color="rgba(255,255,255,0.5)" />
-                <Text style={[styles.eventMetaText, { color: 'rgba(255,255,255,0.5)' }]}>
-                  {formatNumber(event.attendees)} going
-                </Text>
-              </View>
-            )}
-            <Text style={styles.eventPrice}>{event.price}</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
-
-// Venue Card Component
-function VenueCard({
-  venue,
-  index,
-  onPress,
-  colors,
-}: {
-  venue: DiscoverVenue;
-  index: number;
-  onPress: () => void;
-  colors: ReturnType<typeof useAppTheme>['colors'];
-}) {
-  const {
-    isFollowing,
-    isLoading: isFollowLoading,
-    follow,
-    unfollow,
-    isFollowInProgress,
-    isUnfollowInProgress,
-  } = useFollowVenue(venue.id);
-
-  const isActionInProgress = isFollowInProgress || isUnfollowInProgress;
-
-  const handleFollowPress = useCallback(async () => {
+  const handleFollowPress = async () => {
     try {
       if (isFollowing) {
         await unfollow();
       } else {
         await follow();
       }
-    } catch (error) {
-      console.error('Follow/unfollow error:', error);
-    }
-  }, [isFollowing, follow, unfollow]);
-
-  return (
-    <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-      <TouchableOpacity
-        style={[styles.venueCard, { backgroundColor: colors.cardElevated }]}
-        onPress={onPress}
-        activeOpacity={0.7}
-      >
-        <View style={styles.venueImageContainer}>
-          {venue.image ? (
-            <Image source={{ uri: venue.image }} style={styles.venueImage} />
-          ) : (
-            <View style={[styles.venueImage, styles.venueImagePlaceholder, { backgroundColor: colors.input }]}>
-              <Ionicons name="business" size={28} color={colors.textTertiary} />
-            </View>
-          )}
-        </View>
-        <View style={styles.venueInfo}>
-          <Text style={[styles.venueName, { color: colors.text }]} numberOfLines={1}>{venue.name}</Text>
-          <View style={styles.venueMetaRow}>
-            <Ionicons name="musical-notes-outline" size={12} color={colors.textSecondary} />
-            <Text style={[styles.venueMetaText, { color: colors.textSecondary }]}>{venue.type}</Text>
-          </View>
-          <View style={styles.venueMetaRow}>
-            <Ionicons name="location-outline" size={12} color={colors.textTertiary} />
-            <Text style={[styles.venueMetaText, { color: colors.textTertiary }]} numberOfLines={1}>
-              {venue.location}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.followButton,
-            isFollowing && styles.followButtonActive,
-          ]}
-          onPress={handleFollowPress}
-          disabled={isFollowLoading || isActionInProgress}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          {isActionInProgress ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.followButtonText}>
-              {isFollowLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-}
-
-// Empty State Component
-function EmptyState({
-  searchQuery,
-  category,
-  colors,
-}: {
-  searchQuery: string;
-  category: DiscoverCategory;
-  colors: ReturnType<typeof useAppTheme>['colors'];
-}) {
-  const icons: Record<DiscoverCategory, keyof typeof Ionicons.glyphMap> = {
-    people: 'people-outline',
-    events: 'calendar-outline',
-    venues: 'location-outline',
+    } catch {}
   };
 
   return (
-    <View style={styles.emptyState}>
-      <Ionicons name={icons[category]} size={48} color={colors.textTertiary} />
-      <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
-        {searchQuery
-          ? `No ${category} found for "${searchQuery}"`
-          : `Start typing to search for ${category}...`}
-      </Text>
-    </View>
+    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+      {item.avatar?.url ? (
+        <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
+      ) : (
+        <Image source={DefaultAvatarImage} style={styles.avatar} />
+      )}
+      <View style={styles.resultInfo}>
+        <View style={styles.nameRow}>
+          <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+            {name || 'User'}
+          </Text>
+          {item.isVerified && (
+            <MaterialCommunityIcons name="check-decagram" size={15} color={colors.verified} style={{ marginLeft: 4 }} />
+          )}
+        </View>
+        {item.userName && (
+          <Text style={[styles.resultSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+            @{item.userName}
+          </Text>
+        )}
+        {(item.mutualCount ?? 0) > 0 && (
+          <Text style={[styles.mutualText, { color: colors.textTertiary }]}>
+            {item.mutualCount} mutual {item.mutualCount === 1 ? 'friend' : 'friends'}
+          </Text>
+        )}
+      </View>
+      {!isSelf && (
+        <TouchableOpacity
+          style={[styles.followButton, isFollowing && styles.followButtonFollowing]}
+          onPress={handleFollowPress}
+          disabled={isFollowInProgress || isUnfollowInProgress}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.followButtonText, isFollowing && styles.followButtonTextFollowing]}>
+            {isFollowInProgress || isUnfollowInProgress
+              ? '...'
+              : isFollowing
+                ? 'Following'
+                : 'Follow'}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
   );
 }
 
-// Helper function for formatting numbers
-function formatNumber(num: number): string {
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(1)}M`;
-  }
-  if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}K`;
-  }
-  return num.toString();
+function EventRow({
+  item,
+  onPress,
+  colors,
+}: {
+  item: UnifiedSearchItem;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  const dateLabel = item.startDate
+    ? format(new Date(item.startDate), 'MMM d, yyyy')
+    : 'Date TBA';
+
+  return (
+    <TouchableOpacity style={styles.eventRow} onPress={onPress} activeOpacity={0.9}>
+      {item.flyer?.url ? (
+        <Image source={{ uri: item.flyer.url }} style={styles.eventThumb} />
+      ) : (
+        <View style={[styles.eventThumb, styles.placeholderThumb, { backgroundColor: colors.input }]}>
+          <Ionicons name="calendar" size={24} color={colors.textTertiary} />
+        </View>
+      )}
+      <View style={styles.resultInfo}>
+        <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+          {item.name || 'Event'}
+        </Text>
+        <View style={styles.metaRow}>
+          <Ionicons name="calendar-outline" size={12} color={colors.textSecondary} />
+          <Text style={[styles.resultSubtitle, { color: colors.textSecondary }]}>{dateLabel}</Text>
+        </View>
+        {item.venueName && (
+          <View style={styles.metaRow}>
+            <Ionicons name="location-outline" size={12} color={colors.textTertiary} />
+            <Text style={[styles.resultSubtitle, { color: colors.textTertiary }]} numberOfLines={1}>
+              {item.venueName}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
 }
 
-export default function DiscoverScreen() {
+function VenueRow({
+  item,
+  onPress,
+  colors,
+}: {
+  item: UnifiedSearchItem;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  return (
+    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+      {item.logo?.url ? (
+        <Image source={{ uri: item.logo.url }} style={styles.venueThumb} />
+      ) : (
+        <View style={[styles.venueThumb, styles.placeholderThumb, { backgroundColor: colors.input }]}>
+          <Ionicons name="business" size={22} color={colors.textTertiary} />
+        </View>
+      )}
+      <View style={styles.resultInfo}>
+        <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+          {item.name || 'Venue'}
+        </Text>
+        {item.address && (
+          <View style={styles.metaRow}>
+            <Ionicons name="location-outline" size={12} color={colors.textTertiary} />
+            <Text style={[styles.resultSubtitle, { color: colors.textTertiary }]} numberOfLines={1}>
+              {item.address}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function PostRow({
+  item,
+  onPress,
+  colors,
+}: {
+  item: UnifiedSearchItem;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  const firstMedia = Array.isArray(item.media) && item.media.length > 0
+    ? (item.media[0] as { url?: string; type?: string })
+    : null;
+
+  return (
+    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+      {firstMedia?.url ? (
+        <Image source={{ uri: firstMedia.url }} style={styles.venueThumb} />
+      ) : (
+        <View style={[styles.venueThumb, styles.placeholderThumb, { backgroundColor: colors.input }]}>
+          <Ionicons name="document-text-outline" size={22} color={colors.textTertiary} />
+        </View>
+      )}
+      <View style={styles.resultInfo}>
+        <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={2}>
+          {item.text || 'Post'}
+        </Text>
+        <View style={styles.metaRow}>
+          {item.authorName && (
+            <Text style={[styles.resultSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.authorName}
+            </Text>
+          )}
+          {(item.likeCount ?? 0) > 0 && (
+            <>
+              <Text style={[styles.resultSubtitle, { color: colors.textTertiary }]}> · </Text>
+              <Ionicons name="heart" size={11} color={colors.textTertiary} />
+              <Text style={[styles.resultSubtitle, { color: colors.textTertiary }]}> {item.likeCount}</Text>
+            </>
+          )}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ── Suggestion components ──
+
+function RecentSearchRow({
+  item,
+  onPress,
+  onDelete,
+  colors,
+}: {
+  item: SearchSuggestion;
+  onPress: () => void;
+  onDelete: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  return (
+    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.recentIcon, { backgroundColor: colors.input }]}>
+        <Ionicons
+          name={item.selectedType ? getTypeIcon(item.selectedType) : 'time-outline'}
+          size={18}
+          color={colors.textSecondary}
+        />
+      </View>
+      <View style={styles.resultInfo}>
+        <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+          {item.displayName || item.query || 'Search'}
+        </Text>
+        {item.selectedType && (
+          <Text style={[styles.resultSubtitle, { color: colors.textTertiary }]}>
+            {item.selectedType}
+          </Text>
+        )}
+      </View>
+      <TouchableOpacity onPress={onDelete} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <Ionicons name="close" size={18} color={colors.textTertiary} />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+}
+
+function SuggestionPersonRow({
+  item,
+  onPress,
+  colors,
+  subtitle,
+}: {
+  item: SearchSuggestion;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+  subtitle?: string;
+}) {
+  const name = `${item.firstName || ''} ${item.lastName || ''}`.trim();
+  return (
+    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+      {item.avatar?.url ? (
+        <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
+      ) : (
+        <Image source={DefaultAvatarImage} style={styles.avatar} />
+      )}
+      <View style={styles.resultInfo}>
+        <View style={styles.nameRow}>
+          <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+            {name || 'User'}
+          </Text>
+          {item.isVerified && (
+            <MaterialCommunityIcons name="check-decagram" size={15} color={colors.verified} style={{ marginLeft: 4 }} />
+          )}
+        </View>
+        {item.userName && (
+          <Text style={[styles.resultSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+            @{item.userName}
+          </Text>
+        )}
+        {subtitle && (
+          <Text style={[styles.mutualText, { color: colors.textTertiary }]}>{subtitle}</Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function FrequentAvatarRow({
+  items,
+  onPress,
+  colors,
+}: {
+  items: SearchSuggestion[];
+  onPress: (item: SearchSuggestion) => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.frequentRow}
+    >
+      {items.map((item) => {
+        const name = `${item.firstName || ''}`.trim();
+        return (
+          <TouchableOpacity
+            key={item.id}
+            style={styles.frequentItem}
+            onPress={() => onPress(item)}
+            activeOpacity={0.7}
+          >
+            {item.avatar?.url ? (
+              <Image source={{ uri: item.avatar.url }} style={styles.frequentAvatar} />
+            ) : (
+              <Image source={DefaultAvatarImage} style={styles.frequentAvatar} />
+            )}
+            <Text style={[styles.frequentName, { color: colors.textSecondary }]} numberOfLines={1}>
+              {name || item.userName || 'User'}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+function getTypeIcon(type: string): keyof typeof Ionicons.glyphMap {
+  switch (type) {
+    case 'person': return 'person-outline';
+    case 'event': return 'calendar-outline';
+    case 'venue': return 'location-outline';
+    case 'post': return 'document-text-outline';
+    default: return 'search-outline';
+  }
+}
+
+// ── Main screen ──
+
+export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { colors } = useAppTheme();
-  const [activeCategory, setActiveCategory] = useState<DiscoverCategory>('people');
+  const inputRef = useRef<TextInput>(null);
 
-  // Use search hook with limits based on active category
   const {
-    data: searchData,
-    isLoading,
-    error,
-    refetch,
     searchQuery,
     setSearchQuery,
-  } = useSearch({
-    eventsLimit: activeCategory === 'events' ? 10 : 3,
-    venuesLimit: activeCategory === 'venues' ? 10 : 3,
-    peopleLimit: activeCategory === 'people' ? 10 : 3,
-  });
+    debouncedQuery,
+    results,
+    isSearching,
+    suggestions,
+    recordSearch,
+    deleteSearchEntry,
+    clearSearchHistory,
+  } = useUnifiedSearch();
 
-  const [refreshing, setRefreshing] = useState(false);
+  const hasQuery = debouncedQuery.length > 0;
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  }, [refetch]);
+  // Navigation + record
+  const handleResultPress = useCallback(
+    (item: UnifiedSearchItem) => {
+      recordSearch({
+        query: searchQuery,
+        selectedType: item.type,
+        selectedId: item.id,
+        displayName:
+          item.type === 'person'
+            ? `${item.firstName || ''} ${item.lastName || ''}`.trim()
+            : item.name || item.text || undefined,
+        displayImage:
+          item.avatar?.url || item.flyer?.url || item.logo?.url || undefined,
+      });
 
-  // Transform API data to UI format
-  const people = useMemo(
-    () => searchData?.people.map(mapPersonToDiscover) || [],
-    [searchData?.people]
+      switch (item.type) {
+        case 'person':
+          router.push({
+            pathname: '/user/[username]',
+            params: { username: item.userName || `user-${item.id}`, userId: String(item.id) },
+          });
+          break;
+        case 'event':
+          router.push({
+            pathname: '/event/[id]',
+            params: { id: String(item.id) },
+          });
+          break;
+        case 'venue':
+          router.push({
+            pathname: '/(tabs)/search',
+            params: { venueName: item.name || '' },
+          });
+          break;
+        case 'post':
+          // Navigate to feed or post detail if available
+          break;
+      }
+    },
+    [searchQuery, recordSearch, router],
   );
 
-  const events = useMemo(
-    () => searchData?.events.map(mapEventToDiscover) || [],
-    [searchData?.events]
+  const handleSuggestionPersonPress = useCallback(
+    (item: SearchSuggestion) => {
+      recordSearch({
+        selectedType: 'person',
+        selectedId: item.id,
+        displayName: `${item.firstName || ''} ${item.lastName || ''}`.trim(),
+        displayImage: item.avatar?.url,
+      });
+      router.push({
+        pathname: '/user/[username]',
+        params: { username: item.userName || `user-${item.id}`, userId: String(item.id) },
+      });
+    },
+    [recordSearch, router],
   );
 
-  const venues = useMemo(
-    () => searchData?.venues.map(mapVenueToDiscover) || [],
-    [searchData?.venues]
+  const handleRecentPress = useCallback(
+    (item: SearchSuggestion) => {
+      if (item.selectedId && item.selectedType) {
+        // Navigate to the item directly
+        switch (item.selectedType) {
+          case 'person':
+            router.push({
+              pathname: '/user/[username]',
+              params: { username: `user-${item.selectedId}`, userId: String(item.selectedId) },
+            });
+            break;
+          case 'event':
+            router.push({
+              pathname: '/event/[id]',
+              params: { id: String(item.selectedId) },
+            });
+            break;
+          case 'venue':
+            router.push({
+              pathname: '/(tabs)/search',
+              params: { venueName: item.displayName || '' },
+            });
+            break;
+        }
+      } else if (item.query) {
+        setSearchQuery(item.query);
+      }
+    },
+    [router, setSearchQuery],
   );
 
-  // Navigation handlers
-  const handlePersonPress = useCallback((person: DiscoverPerson) => {
-    router.push({
-      pathname: '/user-profile/[userId]',
-      params: { userId: String(person.id) },
-    });
-  }, [router]);
+  // Render unified result item
+  const renderResultItem = useCallback(
+    ({ item }: { item: UnifiedSearchItem }) => {
+      const onPress = () => handleResultPress(item);
+      switch (item.type) {
+        case 'person':
+          return <PersonRow item={item} onPress={onPress} colors={colors} />;
+        case 'event':
+          return <EventRow item={item} onPress={onPress} colors={colors} />;
+        case 'venue':
+          return <VenueRow item={item} onPress={onPress} colors={colors} />;
+        case 'post':
+          return <PostRow item={item} onPress={onPress} colors={colors} />;
+        default:
+          return null;
+      }
+    },
+    [handleResultPress, colors],
+  );
 
-  const handleEventPress = useCallback((event: DiscoverEvent) => {
-    router.push({
-      pathname: '/event/[id]',
-      params: { id: String(event.id), title: event.title },
-    });
-  }, [router]);
-
-  const handleVenuePress = useCallback((venue: DiscoverVenue) => {
-    // Navigate to map with venue location or venue detail
-    router.push({
-      pathname: '/(tabs)/search',
-      params: { venueName: venue.name },
-    });
-  }, [router]);
+  const recentSearches = suggestions?.recentSearches ?? [];
+  const frequentFriends = suggestions?.frequentFriends ?? [];
+  const mutualSuggestions = suggestions?.mutualFollowSuggestions ?? [];
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DarkGradientBg />
+
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
           style={styles.backButton}
@@ -348,15 +505,11 @@ export default function DiscoverScreen() {
         >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Discover</Text>
-        <View style={styles.headerSpacer} />
-      </Animated.View>
 
-      {/* Search Bar */}
-      <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
         <View style={[styles.searchBar, { backgroundColor: colors.input }]}>
           <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
           <TextInput
+            ref={inputRef}
             style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search people, events, venues..."
             placeholderTextColor={colors.textTertiary}
@@ -364,6 +517,7 @@ export default function DiscoverScreen() {
             onChangeText={setSearchQuery}
             autoCapitalize="none"
             autoCorrect={false}
+            autoFocus
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -371,134 +525,107 @@ export default function DiscoverScreen() {
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Category Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryTabs}
-        >
-          {CATEGORIES.map((cat, index) => (
-            <Animated.View key={cat.key} entering={FadeInRight.delay(index * 50).duration(200)}>
-              <TouchableOpacity
-                style={[
-                  styles.categoryTab,
-                  {
-                    backgroundColor: activeCategory === cat.key ? colors.text : colors.input,
-                    borderColor: activeCategory === cat.key ? colors.text : colors.border,
-                  },
-                ]}
-                onPress={() => setActiveCategory(cat.key)}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name={cat.icon}
-                  size={16}
-                  color={activeCategory === cat.key ? colors.background : colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.categoryTabText,
-                    { color: activeCategory === cat.key ? colors.background : colors.textSecondary },
-                  ]}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
-        </ScrollView>
-      </View>
+      </Animated.View>
 
       {/* Content */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.text}
-          />
-        }
-      >
-        {isLoading && !refreshing ? (
+      {hasQuery ? (
+        // ── Search results ──
+        isSearching && results.length === 0 ? (
           <View style={styles.loadingState}>
             <ActivityIndicator size="large" color={colors.text} />
-            <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Searching...</Text>
           </View>
-        ) : error ? (
-          <View style={styles.errorState}>
-            <Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} />
-            <Text style={[styles.errorText, { color: colors.textSecondary }]}>
-              Error loading results. Pull to retry.
+        ) : results.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              No results for "{debouncedQuery}"
             </Text>
           </View>
         ) : (
-          <>
-            {/* People Tab */}
-            {activeCategory === 'people' && (
-              <View style={styles.tabContent}>
-                {people.length === 0 ? (
-                  <EmptyState searchQuery={searchQuery} category="people" colors={colors} />
-                ) : (
-                  people.map((person, index) => (
-                    <PersonCard
-                      key={person.id}
-                      person={person}
-                      index={index}
-                      onPress={() => handlePersonPress(person)}
-                      colors={colors}
-                    />
-                  ))
-                )}
+          <FlatList
+            data={results}
+            keyExtractor={(item) => `${item.type}-${item.id}`}
+            renderItem={renderResultItem}
+            contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          />
+        )
+      ) : (
+        // ── Suggestions (no query) ──
+        <ScrollView
+          contentContainerStyle={[styles.suggestionsContent, { paddingBottom: insets.bottom + 20 }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Recent searches */}
+          {recentSearches.length > 0 && (
+            <Animated.View entering={FadeInDown.duration(300)}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent</Text>
+                <TouchableOpacity onPress={clearSearchHistory}>
+                  <Text style={[styles.clearText, { color: colors.textTertiary }]}>Clear all</Text>
+                </TouchableOpacity>
               </View>
-            )}
+              {recentSearches.map((item) => (
+                <RecentSearchRow
+                  key={item.id}
+                  item={item}
+                  onPress={() => handleRecentPress(item)}
+                  onDelete={() => deleteSearchEntry(item.id)}
+                  colors={colors}
+                />
+              ))}
+            </Animated.View>
+          )}
 
-            {/* Events Tab */}
-            {activeCategory === 'events' && (
-              <View style={styles.tabContent}>
-                {events.length === 0 ? (
-                  <EmptyState searchQuery={searchQuery} category="events" colors={colors} />
-                ) : (
-                  events.map((event, index) => (
-                    <EventCard
-                      key={event.id}
-                      event={event}
-                      index={index}
-                      onPress={() => handleEventPress(event)}
-                      colors={colors}
-                    />
-                  ))
-                )}
+          {/* Frequently searched */}
+          {frequentFriends.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(100).duration(300)}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Frequently searched</Text>
               </View>
-            )}
+              <FrequentAvatarRow
+                items={frequentFriends}
+                onPress={handleSuggestionPersonPress}
+                colors={colors}
+              />
+            </Animated.View>
+          )}
 
-            {/* Venues Tab */}
-            {activeCategory === 'venues' && (
-              <View style={styles.tabContent}>
-                {venues.length === 0 ? (
-                  <EmptyState searchQuery={searchQuery} category="venues" colors={colors} />
-                ) : (
-                  venues.map((venue, index) => (
-                    <VenueCard
-                      key={venue.id}
-                      venue={venue}
-                      index={index}
-                      onPress={() => handleVenuePress(venue)}
-                      colors={colors}
-                    />
-                  ))
-                )}
+          {/* Suggested (mutual follows) */}
+          {mutualSuggestions.length > 0 && (
+            <Animated.View entering={FadeInDown.delay(200).duration(300)}>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Suggested for you</Text>
               </View>
-            )}
-          </>
-        )}
+              {mutualSuggestions.map((item) => (
+                <SuggestionPersonRow
+                  key={item.id}
+                  item={item}
+                  onPress={() => handleSuggestionPersonPress(item)}
+                  colors={colors}
+                  subtitle={
+                    (item.mutualCount ?? 0) > 0
+                      ? `${item.mutualCount} mutual ${item.mutualCount === 1 ? 'friend' : 'friends'}`
+                      : undefined
+                  }
+                />
+              ))}
+            </Animated.View>
+          )}
 
-        {/* Bottom padding */}
-        <View style={{ height: insets.bottom + 20 }} />
-      </ScrollView>
+          {/* Empty suggestions state */}
+          {recentSearches.length === 0 && frequentFriends.length === 0 && mutualSuggestions.length === 0 && (
+            <View style={styles.emptyState}>
+              <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                Search for people, events, venues, and posts
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -510,253 +637,177 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingBottom: 12,
-    borderBottomWidth: 1,
+    gap: 8,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
   searchBar: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    paddingHorizontal: 14,
-    height: 44,
-    gap: 10,
+    paddingHorizontal: 12,
+    height: 40,
+    gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
   },
-  categoryTabs: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 12,
-  },
-  categoryTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+  listContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
   },
-  categoryTabText: {
-    fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
+  suggestionsContent: {
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  tabContent: {
-    gap: 12,
-  },
-  // Person Card
-  personCard: {
+  // Result rows
+  resultRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
+    paddingVertical: 10,
     gap: 12,
   },
-  personAvatarContainer: {
-    position: 'relative',
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  personAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-  personAvatarPlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  personInfo: {
+  resultInfo: {
     flex: 1,
     minWidth: 0,
   },
-  personNameRow: {
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  personName: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
+  resultTitle: {
+    fontSize: 15,
+    fontFamily: 'Lato_600SemiBold',
+    flexShrink: 1,
   },
-  personUsername: {
+  resultSubtitle: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    marginTop: 2,
+    marginTop: 1,
   },
   mutualText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    marginTop: 3,
+    marginTop: 2,
   },
-  // Event Card
-  eventCard: {
-    height: 160,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  eventImage: {
-    ...StyleSheet.absoluteFillObject,
-    resizeMode: 'cover',
-  },
-  eventImagePlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  eventGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  eventContent: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 14,
-  },
-  eventTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    marginBottom: 6,
-  },
-  eventMeta: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  eventMetaItem: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-  },
-  eventMetaText: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.7)',
-  },
-  eventFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  eventPrice: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  // Venue Card
-  venueCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    gap: 12,
-  },
-  venueImageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  venueImage: {
-    width: '100%',
-    height: '100%',
-  },
-  venueImagePlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  venueInfo: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  venueName: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    marginBottom: 4,
-  },
-  venueMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
     marginTop: 2,
   },
-  venueMetaText: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    flex: 1,
-  },
-  // Venue Follow Button
   followButton: {
     backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    minWidth: 72,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  followButtonActive: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderColor: 'rgba(255,255,255,0.15)',
+  followButtonFollowing: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   followButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'Lato_600SemiBold',
     color: '#fff',
   },
+  followButtonTextFollowing: {
+    color: 'rgba(255,255,255,0.5)',
+  },
+  // Event row
+  eventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 12,
+  },
+  eventThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+  },
+  // Venue / Post thumb
+  venueThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+  },
+  placeholderThumb: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Recent search icon
+  recentIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Section headers
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+  },
+  clearText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+  },
+  // Frequent avatars horizontal row
+  frequentRow: {
+    gap: 16,
+    paddingVertical: 8,
+  },
+  frequentItem: {
+    alignItems: 'center',
+    width: 64,
+  },
+  frequentAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 6,
+  },
+  frequentName: {
+    fontSize: 11,
+    fontFamily: 'Lato_400Regular',
+    textAlign: 'center',
+  },
   // States
   loadingState: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
-  },
-  loadingText: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 12,
-  },
-  errorState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  errorText: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 12,
-    textAlign: 'center',
-    paddingHorizontal: 40,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 60,
+    paddingVertical: 80,
   },
-  emptyStateText: {
+  emptyText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     marginTop: 12,

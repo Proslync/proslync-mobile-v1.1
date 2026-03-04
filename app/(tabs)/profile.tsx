@@ -28,6 +28,7 @@ import { SwipeableTabView } from '@/components/shared/swipeable-tab-view';
 import { LinkifiedText } from '@/components/shared/linkified-text';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { FollowersSheet } from '@/components/feed/followers-sheet';
+import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
@@ -486,32 +487,32 @@ export default function ProfileScreen() {
               <ActivityIndicator color={colors.text} size="small" />
             </View>
           ) : userPosts.length > 0 ? (
-            userPosts.map((post) => {
-              // For videos, prefer thumbnail, then fall back to videoUrl
-              // For images, use imageUrl
-              const displayUri = post.mediaType === 'video'
-                ? (post.thumbUrl || post.videoUrl)
-                : post.imageUrl;
-
-              return (
-                <TouchableOpacity
-                  key={post.id}
-                  activeOpacity={0.9}
-                  style={styles.postContainer}
-                  onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
-                >
-                  <Image
-                    source={{ uri: displayUri }}
+            userPosts.map((post) => (
+              <TouchableOpacity
+                key={post.id}
+                activeOpacity={0.9}
+                style={styles.postContainer}
+                onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
+              >
+                {post.mediaType === 'video' && post.videoUrl ? (
+                  <VideoThumbnailImage
+                    videoUrl={post.videoUrl}
+                    fallbackUri={post.thumbUrl || post.imageUrl}
                     style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
                   />
-                  {post.mediaType === 'video' && (
-                    <View style={styles.videoIndicator}>
-                      <Ionicons name="play" size={32} color="#fff" />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })
+                ) : (
+                  <Image
+                    source={{ uri: post.imageUrl }}
+                    style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
+                  />
+                )}
+                {post.mediaType === 'video' && (
+                  <View style={styles.videoIndicator}>
+                    <Ionicons name="play" size={32} color="#fff" />
+                  </View>
+                )}
+              </TouchableOpacity>
+            ))
           ) : (
             <View style={styles.noPostsContainer}>
               <Ionicons name="images-outline" size={48} color={colors.textTertiary} />

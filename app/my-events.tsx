@@ -112,78 +112,100 @@ function EventCard({
   const statusColor = getStatusColor(event.status);
   const statusLabel = getStatusLabel(event.status);
 
+  // For video flyers, use imageUrl as thumbnail instead
+  const VIDEO_EXT = /\.(mp4|mov|webm|m4v)(\?|$)/i;
+  const flyerIsVideo =
+    event.flyer?.mimeType?.startsWith("video/") ||
+    VIDEO_EXT.test(event.flyer?.url || "");
+  const thumbUri = flyerIsVideo
+    ? event.imageUrl || undefined
+    : event.flyer?.url || event.imageUrl || undefined;
+
   return (
-    <View style={styles.eventRow}>
-      <TouchableOpacity
-        style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
-        onPress={onPress}
-        activeOpacity={0.8}
-      >
+    <TouchableOpacity
+      style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View>
         <Image
-          source={{ uri: event.flyer?.url || event.imageUrl || undefined }}
+          source={{ uri: thumbUri }}
           style={[
             styles.eventImage,
             { backgroundColor: colors.backgroundSecondary },
           ]}
         />
-        <View style={styles.eventContent}>
-          <View style={styles.eventHeader}>
-            <Text
-              style={[styles.eventName, { color: colors.text }]}
-              numberOfLines={1}
-            >
-              {event.name}
-            </Text>
-            {showStatus && (
-              <View
-                style={[styles.statusBadge, { backgroundColor: statusColor }]}
-              >
-                <Text style={styles.statusText}>{statusLabel}</Text>
-              </View>
-            )}
+        {flyerIsVideo && (
+          <View style={styles.videoOverlay}>
+            <Ionicons name="play" size={20} color="#fff" />
           </View>
-          <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
-            {formatEventDate(event.startDate)} at{" "}
-            {formatEventTime(event.startDate)}
-          </Text>
+        )}
+      </View>
+      <View style={styles.eventContent}>
+        <View style={styles.eventHeader}>
           <Text
-            style={[styles.eventLocation, { color: colors.textTertiary }]}
+            style={[styles.eventName, { color: colors.text }]}
             numberOfLines={1}
           >
-            {event.venue?.name || event.location || "Location TBA"}
+            {event.name}
           </Text>
-          <View style={styles.eventStats}>
-            <View style={styles.eventStat}>
-              <Ionicons
-                name="people-outline"
-                size={14}
-                color={colors.textTertiary}
-              />
-              <Text
-                style={[styles.eventStatText, { color: colors.textTertiary }]}
-              >
-                {event.attendeeCount || 0} RSVPs
-              </Text>
+          {showStatus && (
+            <View
+              style={[styles.statusBadge, { backgroundColor: statusColor }]}
+            >
+              <Text style={styles.statusText}>{statusLabel}</Text>
             </View>
-          </View>
+          )}
         </View>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[
-          styles.dashboardButton,
-          { backgroundColor: colors.cardElevated },
-        ]}
-        onPress={onDashboard}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="grid-outline" size={16} color={colors.textSecondary} />
-        <Text
-          style={[styles.dashboardButtonText, { color: colors.textSecondary }]}
-        >
-          Dashboard
+        <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
+          {formatEventDate(event.startDate)} at{" "}
+          {formatEventTime(event.startDate)}
         </Text>
-      </TouchableOpacity>
-    </View>
+        <Text
+          style={[styles.eventLocation, { color: colors.textTertiary }]}
+          numberOfLines={1}
+        >
+          {event.venue?.name || event.location || "Location TBA"}
+        </Text>
+        <View style={styles.eventBottomRow}>
+          <View style={styles.eventStat}>
+            <Ionicons
+              name="people-outline"
+              size={14}
+              color={colors.textTertiary}
+            />
+            <Text
+              style={[styles.eventStatText, { color: colors.textTertiary }]}
+            >
+              {event.attendeeCount || 0} RSVPs
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.dashboardButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              onDashboard();
+            }}
+            activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          >
+            <Ionicons
+              name="grid-outline"
+              size={13}
+              color={colors.textSecondary}
+            />
+            <Text
+              style={[
+                styles.dashboardButtonText,
+                { color: colors.textSecondary },
+              ]}
+            >
+              Dashboard
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -558,33 +580,25 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 16,
   },
-  eventRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    gap: 8,
-  },
-  dashboardButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 4,
-  },
-  dashboardButtonText: {
-    fontSize: 10,
-    fontFamily: "Lato_600SemiBold",
-  },
   eventCard: {
-    flex: 1,
     flexDirection: "row",
     borderRadius: 12,
     overflow: "hidden",
+    marginBottom: 12,
   },
   eventImage: {
     width: 100,
     height: 100,
+  },
+  videoOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
   eventContent: {
     flex: 1,
@@ -622,8 +636,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Lato_400Regular",
   },
-  eventStats: {
+  eventBottomRow: {
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 4,
   },
   eventStat: {
@@ -634,5 +650,18 @@ const styles = StyleSheet.create({
   eventStatText: {
     fontSize: 12,
     fontFamily: "Lato_400Regular",
+  },
+  dashboardButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  dashboardButtonText: {
+    fontSize: 11,
+    fontFamily: "Lato_600SemiBold",
   },
 });

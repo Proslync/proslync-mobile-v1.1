@@ -1,44 +1,70 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Linking, Platform } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  Linking,
+  Platform,
+  TouchableOpacity,
+} from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
-import { BlurView } from "expo-blur";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { GlassButton } from "../glass/glass-button";
-import { radius, spacing, glassBorder } from "../../constants/glass/tokens";
+import { useStableRouter } from "@/hooks/use-stable-router";
+import { useLiveLocation } from "@/lib/providers/live-location-provider";
+import { radius, spacing } from "../../constants/glass/tokens";
 
 interface FriendProfileSheetProps {
   visible: boolean;
   onClose: () => void;
+  onShareBack?: () => void;
   friend: {
     id: string;
     name: string;
     imageUrl: string;
     latitude: number;
     longitude: number;
+    updatedAt: number;
   } | null;
+}
+
+function getTimeAgo(timestamp: number): string {
+  const now = Date.now();
+  const diffMs = now - timestamp;
+  const diffMins = Math.floor(diffMs / 60000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins === 1) return "1 minute ago";
+  if (diffMins < 60) return `${diffMins} minutes ago`;
+
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours === 1) return "1 hour ago";
+  if (diffHours < 24) return `${diffHours} hours ago`;
+
+  return "Over a day ago";
 }
 
 export function FriendProfileSheet({
   visible,
   onClose,
+  onShareBack,
   friend,
 }: FriendProfileSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
+  const router = useStableRouter();
+  const { sharingState } = useLiveLocation();
 
-  React.useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.expand();
-    } else {
-      bottomSheetRef.current?.close();
-    }
-  }, [visible]);
+  // Snap height: profile row (~70) + actions (~3×50) + cancel (~50) + padding
+  const snapHeight = sharingState.isSharing ? 340 : 390;
 
   const handleGetDirections = () => {
     if (!friend) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const { latitude, longitude, name } = friend;
 
     if (Platform.OS === "ios") {
@@ -50,13 +76,37 @@ export function FriendProfileSheet({
     }
   };
 
-  if (!friend) return null;
+  const handleShareBack = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onClose();
+    onShareBack?.();
+  };
 
-  // Time-based sharing status text
-  const sharingText = "Sharing location now";
+  const handleViewProfile = () => {
+    if (!friend) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onClose();
+    router.push({
+      pathname: "/user-profile/[userId]",
+      params: { userId: friend.id },
+    });
+  };
+
+  const handleCancel = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onClose();
+  };
+
+  if (!friend || !visible) return null;
+
+  const lastActiveText = getTimeAgo(friend.updatedAt);
+  const hasCoordinates =
+    friend.latitude !== 0 && friend.longitude !== 0;
 
   // Theme-aware colors
-  const sheetBackgroundColor = isDark ? "#000000" : "rgba(255, 255, 255, 0.97)";
+  const sheetBackgroundColor = isDark
+    ? "#000000"
+    : "rgba(255, 255, 255, 0.97)";
   const sheetBorderColor = isDark
     ? "rgba(255, 255, 255, 0.1)"
     : "rgba(0, 0, 0, 0.08)";
@@ -67,26 +117,27 @@ export function FriendProfileSheet({
   const liveBadgeBgColor = isDark
     ? "rgba(30, 30, 32, 0.95)"
     : "rgba(255, 255, 255, 0.95)";
-  const coordPillBorderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.1)";
-  const coordFillColor = isDark
-    ? "rgba(255, 255, 255, 0.03)"
-    : "rgba(0, 0, 0, 0.03)";
-  const coordIconColor = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
-  const coordTextColor = isDark
-    ? "rgba(255,255,255,0.4)"
-    : "rgba(0, 0, 0, 0.4)";
   const statusTextColor = isDark
     ? "rgba(255, 255, 255, 0.5)"
     : "rgba(0, 0, 0, 0.5)";
+  const separatorColor = isDark
+    ? "rgba(255, 255, 255, 0.08)"
+    : "rgba(0, 0, 0, 0.08)";
+  const actionTextColor = isDark ? "#ffffff" : "#1a1a1a";
+  const actionIconBgColor = isDark
+    ? "rgba(255, 255, 255, 0.06)"
+    : "rgba(0, 0, 0, 0.04)";
+  const actionIconBorderColor = isDark
+    ? "rgba(255, 255, 255, 0.1)"
+    : "rgba(0, 0, 0, 0.08)";
 
   return (
     <BottomSheet
       ref={bottomSheetRef}
-      index={-1}
+      index={0}
+      snapPoints={[snapHeight]}
       enablePanDownToClose
-      enableDynamicSizing
+      enableDynamicSizing={false}
       onClose={onClose}
       backgroundStyle={[
         styles.sheetBackground,
@@ -103,7 +154,7 @@ export function FriendProfileSheet({
       <BottomSheetView
         style={[styles.container, { paddingBottom: insets.bottom || 16 }]}
       >
-        {/* Profile section */}
+        {/* Profile header */}
         <View style={styles.profileRow}>
           <View style={styles.avatarContainer}>
             <Image source={{ uri: friend.imageUrl }} style={styles.avatar} />
@@ -122,39 +173,123 @@ export function FriendProfileSheet({
               {friend.name}
             </Text>
             <View style={styles.statusRow}>
-              <Ionicons name="location" size={14} color="#34c759" />
+              <Ionicons name="time-outline" size={13} color={statusTextColor} />
               <Text style={[styles.statusText, { color: statusTextColor }]}>
-                {sharingText}
+                Last active {lastActiveText}
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Coordinates pill */}
-        <View style={[styles.coordPill, { borderColor: coordPillBorderColor }]}>
-          <BlurView
-            intensity={25}
-            tint={isDark ? "dark" : "light"}
-            style={StyleSheet.absoluteFill}
-          />
-          <View
-            style={[styles.coordFill, { backgroundColor: coordFillColor }]}
-          />
-          <Ionicons name="navigate-outline" size={14} color={coordIconColor} />
-          <Text style={[styles.coordText, { color: coordTextColor }]}>
-            {friend.latitude.toFixed(4)}, {friend.longitude.toFixed(4)}
-          </Text>
-        </View>
+        {/* Separator */}
+        <View style={[styles.separator, { backgroundColor: separatorColor }]} />
 
-        {/* Directions button */}
-        <GlassButton
-          label="Get Directions"
-          icon={<Ionicons name="map-outline" size={18} color={iconColor} />}
-          variant="glass"
-          size="lg"
-          fullWidth
+        {/* Action: Get Directions */}
+        <TouchableOpacity
+          style={[styles.actionRow, !hasCoordinates && styles.actionRowDisabled]}
           onPress={handleGetDirections}
-        />
+          activeOpacity={0.6}
+          disabled={!hasCoordinates}
+        >
+          <View
+            style={[
+              styles.actionIcon,
+              {
+                backgroundColor: actionIconBgColor,
+                borderColor: actionIconBorderColor,
+              },
+            ]}
+          >
+            <Ionicons
+              name="navigate-outline"
+              size={18}
+              color={hasCoordinates ? iconColor : statusTextColor}
+            />
+          </View>
+          <Text
+            style={[
+              styles.actionText,
+              { color: hasCoordinates ? actionTextColor : statusTextColor },
+            ]}
+          >
+            Get Directions
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)"}
+          />
+        </TouchableOpacity>
+
+        {/* Action: Share Your Location Back (only if not sharing) */}
+        {!sharingState.isSharing && (
+          <TouchableOpacity
+            style={styles.actionRow}
+            onPress={handleShareBack}
+            activeOpacity={0.6}
+          >
+            <View
+              style={[
+                styles.actionIcon,
+                {
+                  backgroundColor: actionIconBgColor,
+                  borderColor: actionIconBorderColor,
+                },
+              ]}
+            >
+              <Ionicons name="location-outline" size={18} color={iconColor} />
+            </View>
+            <Text style={[styles.actionText, { color: actionTextColor }]}>
+              Share Your Location Back
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)"}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Action: View Profile */}
+        <TouchableOpacity
+          style={styles.actionRow}
+          onPress={handleViewProfile}
+          activeOpacity={0.6}
+        >
+          <View
+            style={[
+              styles.actionIcon,
+              {
+                backgroundColor: actionIconBgColor,
+                borderColor: actionIconBorderColor,
+              },
+            ]}
+          >
+            <Ionicons name="person-outline" size={18} color={iconColor} />
+          </View>
+          <Text style={[styles.actionText, { color: actionTextColor }]}>
+            View Profile
+          </Text>
+          <Ionicons
+            name="chevron-forward"
+            size={16}
+            color={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.15)"}
+          />
+        </TouchableOpacity>
+
+        {/* Separator */}
+        <View style={[styles.separator, { backgroundColor: separatorColor }]} />
+
+        {/* Cancel */}
+        <TouchableOpacity
+          style={styles.cancelRow}
+          onPress={handleCancel}
+          activeOpacity={0.6}
+        >
+          <Text style={[styles.cancelText, { color: statusTextColor }]}>
+            Cancel
+          </Text>
+        </TouchableOpacity>
       </BottomSheetView>
     </BottomSheet>
   );
@@ -175,12 +310,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
 
-  // Profile
+  // Profile header
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   avatarContainer: {
     position: "relative",
@@ -226,23 +361,43 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_400Regular",
   },
 
-  // Coordinate pill
-  coordPill: {
+  // Separator
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 4,
+  },
+
+  // Action rows
+  actionRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  actionRowDisabled: {
+    opacity: 0.35,
+  },
+  actionIcon: {
+    width: 34,
     height: 34,
     borderRadius: 17,
-    overflow: "hidden",
     borderWidth: 1,
-    marginBottom: 16,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  coordFill: {
-    ...StyleSheet.absoluteFillObject,
+  actionText: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: "Lato_400Regular",
   },
-  coordText: {
-    fontSize: 13,
+
+  // Cancel
+  cancelRow: {
+    alignItems: "center",
+    paddingVertical: 14,
+  },
+  cancelText: {
+    fontSize: 16,
     fontFamily: "Lato_400Regular",
   },
 });
