@@ -160,18 +160,28 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         if (useCallKit) {
           callkitService.endCall(data.callId);
         }
-        setCurrentCall(null);
-        setIncomingCall(null);
-        AudioSession.stopAudioSession().catch(() => {});
+        setCurrentCall((cur) => {
+          if (cur?.callId === data.callId) {
+            AudioSession.stopAudioSession().catch(() => {});
+            return null;
+          }
+          return cur;
+        });
+        setIncomingCall((inc) => (inc?.callId === data.callId ? null : inc));
       });
 
       s.on('call:ended', (data: { callId: string }) => {
         if (useCallKit) {
           callkitService.endCall(data.callId);
         }
-        setCurrentCall(null);
-        setIncomingCall(null);
-        AudioSession.stopAudioSession().catch(() => {});
+        setCurrentCall((cur) => {
+          if (cur?.callId === data.callId) {
+            AudioSession.stopAudioSession().catch(() => {});
+            return null;
+          }
+          return cur;
+        });
+        setIncomingCall((inc) => (inc?.callId === data.callId ? null : inc));
       });
     };
 
@@ -184,7 +194,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         socketRef.current = null;
       }
     };
-  }, [user?.id, router]);
+  }, [user?.id]);
 
   const startCall = React.useCallback(
     async (recipientId: number, name?: string, avatar?: string, isVideo?: boolean) => {

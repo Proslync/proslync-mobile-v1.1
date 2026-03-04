@@ -6,7 +6,7 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
@@ -27,14 +27,32 @@ import { config } from '@/lib/config';
 
 export default function CallScreen() {
   const { currentCall, endCall } = useCall();
-  const router = useRouter();
+  const endingRef = React.useRef(false);
+  const hadCallRef = React.useRef(false);
 
-  // Navigate back if call was ended externally (remote hangup, socket event)
+  // Track that we had an active call
   React.useEffect(() => {
-    if (!currentCall && router.canGoBack()) {
-      router.back();
+    if (currentCall) {
+      hadCallRef.current = true;
+      endingRef.current = false;
     }
-  }, [currentCall, router]);
+  }, [currentCall]);
+
+  // Navigate back when call ends (local end OR remote end)
+  React.useEffect(() => {
+    if (!currentCall && hadCallRef.current) {
+      hadCallRef.current = false;
+      if (router.canGoBack()) {
+        router.back();
+      }
+    }
+  }, [currentCall]);
+
+  const handleEnd = React.useCallback(async () => {
+    if (endingRef.current) return;
+    endingRef.current = true;
+    await endCall();
+  }, [endCall]);
 
   if (!currentCall) return <View style={styles.container} />;
 
@@ -51,6 +69,12 @@ export default function CallScreen() {
         audio={true}
         video={currentCall.isVideo}
         onError={(err) => console.warn('[LiveKit] Room error:', err.message)}
+        onDisconnected={() => {
+          // Auto-end if LiveKit disconnects and we didn't initiate it
+          if (!endingRef.current) {
+            handleEnd();
+          }
+        }}
       >
         <RoomContent
           isVideo={currentCall.isVideo}
@@ -58,7 +82,7 @@ export default function CallScreen() {
           recipientAvatar={currentCall.recipientAvatar}
           callId={currentCall.callId}
           isOutgoing={currentCall.isOutgoing}
-          onEnd={endCall}
+          onEnd={handleEnd}
         />
       </LiveKitRoom>
     </View>
