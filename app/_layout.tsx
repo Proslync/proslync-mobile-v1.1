@@ -26,6 +26,7 @@ import { TabNavigationProvider } from "@/lib/providers/tab-navigation-provider";
 import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
 import { TerminalProvider } from "@/lib/providers/terminal-provider";
+import { ChatSocketProvider } from "@/lib/providers/chat-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
 import { IncomingCallOverlay } from "@/components/shared/incoming-call-overlay";
 
@@ -185,6 +186,7 @@ export default function RootLayout() {
           <StripeProvider>
             <ToastProvider>
               <AuthProvider>
+                <ChatSocketProvider>
                 <CallProvider>
                   <TerminalProvider>
                     <LiveLocationProvider>
@@ -197,6 +199,7 @@ export default function RootLayout() {
                     </LiveLocationProvider>
                   </TerminalProvider>
                 </CallProvider>
+                </ChatSocketProvider>
               </AuthProvider>
             </ToastProvider>
           </StripeProvider>
