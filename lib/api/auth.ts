@@ -110,6 +110,7 @@ export const authApi = {
         avatar: (raw.avatar) as PublicUserProfile['avatar'],
         eventStats: (raw.eventStats) as PublicUserProfile['eventStats'],
         followStats: (raw.followStats) as PublicUserProfile['followStats'],
+        isPrivate: (raw.isPrivate) as boolean | undefined,
       };
     } catch (error) {
       console.error('Error fetching user by ID:', error);

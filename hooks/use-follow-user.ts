@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { followsApi } from '@/lib/api/follows';
 import { authApi } from '@/lib/api/auth';
+import { USER_FEED_QUERY_KEY } from './use-user-feed';
 
 interface UseFollowUserResult {
   isFollowing: boolean;
@@ -57,6 +58,7 @@ export function useFollowUser(targetUserId?: number | string | null): UseFollowU
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['userFollowers', targetId] });
       queryClient.invalidateQueries({ queryKey: ['userFollowing', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: [USER_FEED_QUERY_KEY, targetId] });
     } catch (error: any) {
       if (error?.status === 409 || error?.message?.includes('already')) {
         queryClient.setQueryData([FOLLOW_STATUS_KEY, targetId], true);
@@ -81,6 +83,7 @@ export function useFollowUser(targetUserId?: number | string | null): UseFollowU
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ['userFollowers', targetId] });
       queryClient.invalidateQueries({ queryKey: ['userFollowing', currentUserId] });
+      queryClient.invalidateQueries({ queryKey: [USER_FEED_QUERY_KEY, targetId] });
     } catch (error) {
       console.error('Unfollow error:', error);
       throw error;

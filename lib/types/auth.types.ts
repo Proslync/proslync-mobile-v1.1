@@ -180,4 +180,5 @@ export interface PublicUserProfile {
   avatar?: Avatar | null;
   eventStats?: EventStats;
   followStats?: FollowStats;
+  isPrivate?: boolean;
 }

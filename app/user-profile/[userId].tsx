@@ -200,10 +200,8 @@ export default function UserProfileScreen() {
     try {
       if (isFollowing) {
         await unfollow();
-        showSuccess('Unfollowed');
       } else {
         await follow();
-        showSuccess('Following');
       }
     } catch (error: any) {
       showError(error?.message || 'Failed to update follow');
@@ -511,6 +509,19 @@ export default function UserProfileScreen() {
 
         {/* Tab Content */}
         {contentTab === 'posts' ? (
+          profile?.isPrivate && !isFollowing && !isSelf ? (
+            <View style={styles.privateAccountContainer}>
+              <View style={[styles.privateLockCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
+                <Ionicons name="lock-closed" size={32} color={colors.textTertiary} />
+              </View>
+              <Text style={[styles.privateTitle, { color: colors.text }]}>
+                This account is private
+              </Text>
+              <Text style={[styles.privateSubtitle, { color: colors.textTertiary }]}>
+                Follow this account to see their posts
+              </Text>
+            </View>
+          ) : (
           <View style={styles.postsGrid}>
             {postsLoading ? (
               <View style={styles.postsLoadingContainer}>
@@ -545,6 +556,7 @@ export default function UserProfileScreen() {
               </View>
             )}
           </View>
+          )
         ) : (
           <View style={styles.eventsTabContent}>
             {recentEvents.length > 0 ? (
@@ -961,6 +973,28 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
     alignItems: 'center',
     gap: 12,
+  },
+  privateAccountContainer: {
+    width: '100%',
+    paddingVertical: 60,
+    alignItems: 'center',
+    gap: 8,
+  },
+  privateLockCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  privateTitle: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+  },
+  privateSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
   },
   noPostsText: {
     fontSize: 14,
