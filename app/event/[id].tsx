@@ -6,18 +6,19 @@ import {
   Dimensions,
   TouchableOpacity,
   Image,
-  ImageBackground,
   ScrollView,
   Platform,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Animated, {
   FadeInDown,
-  FadeInUp,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -29,6 +30,7 @@ import Mapbox, { MapView, Camera, MarkerView } from '@rnmapbox/maps';
 import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet';
 import { PurchaseTableSheet } from '@/components/tables/purchase-table-sheet';
 import { useTrackEventView } from '@/hooks/use-track-event-view';
@@ -44,7 +46,10 @@ if (MAPBOX_TOKEN && !isExpoGo) {
 }
 const DARK_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_MARGIN = 16;
+const CARD_WIDTH = SCREEN_WIDTH - (CARD_MARGIN * 2);
+const CARD_BORDER_RADIUS = 20;
 
 function getOrdinalSuffix(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
@@ -55,13 +60,12 @@ function getOrdinalSuffix(n: number): string {
 function formatEventDate(dateString: string, venueName?: string): string {
   try {
     const date = new Date(dateString);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     const dayName = days[date.getDay()];
     const monthName = months[date.getMonth()];
     const dayNum = date.getDate();
-    const ordinal = getOrdinalSuffix(dayNum);
 
     let hours = date.getHours();
     const minutes = date.getMinutes();
@@ -70,7 +74,7 @@ function formatEventDate(dateString: string, venueName?: string): string {
     hours = hours ? hours : 12;
     const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
 
-    let result = `${dayName}, ${monthName} ${dayNum}${ordinal} at ${hours}:${minutesStr}${ampm}`;
+    let result = `${dayName}, ${monthName} ${dayNum} at ${hours}:${minutesStr}${ampm}`;
     if (venueName) {
       result += ` at ${venueName}`;
     }
@@ -90,9 +94,13 @@ export default function EventPage() {
     title?: string;
     date?: string;
     imageUrl?: string;
+    videoUrl?: string;
+    mediaType?: string;
+    thumbnail?: string;
     venueName?: string;
     username?: string;
     userAvatar?: string;
+    userId?: string;
     isPaid?: string;
     price?: string;
     isUserRegistered?: string;
@@ -103,6 +111,7 @@ export default function EventPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPurchaseSheet, setShowPurchaseSheet] = React.useState(false);
   const [eventData, setEventData] = React.useState<Event | null>(null);
+  const [isFetchingEvent, setIsFetchingEvent] = React.useState(true);
   const [selectedTable, setSelectedTable] = React.useState<EventTableItem | null>(null);
   const [showTableSheet, setShowTableSheet] = React.useState(false);
   const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({});
@@ -110,12 +119,26 @@ export default function EventPage() {
   const buttonScale = useSharedValue(1);
 
   const eventId = params.id;
-  const eventTitle = params.title || 'Event';
-  const eventDate = params.date;
-  const flyerImage = params.imageUrl;
-  const venueName = params.venueName;
+  const eventTitle = eventData?.name || params.title || 'Event';
+  const eventDate = params.date || eventData?.startDate;
+  const flyerImage = params.imageUrl || eventData?.flyer?.url || eventData?.imageUrl;
+  const venueName = params.venueName || eventData?.venue?.name;
+
+  // Detect video from route params, fetched flyer mimeType, or URL extension
+  const VIDEO_EXT = /\.(mp4|mov|webm|m4v)(\?|$)/i;
+  const flyerUrl = eventData?.flyer?.url;
+  const flyerIsVideo =
+    params.mediaType === 'video' ||
+    eventData?.flyer?.mimeType?.startsWith('video/') ||
+    VIDEO_EXT.test(flyerUrl || '') ||
+    VIDEO_EXT.test(params.videoUrl || '');
+
+  const mediaType: 'video' | 'image' = flyerIsVideo ? 'video' : 'image';
+  const videoUrl = flyerIsVideo ? (params.videoUrl || flyerUrl || undefined) : undefined;
+  const thumbnail = params.thumbnail || (flyerIsVideo ? (params.imageUrl || eventData?.imageUrl || '') : '') || flyerImage || '';
   const username = params.username;
   const userAvatar = params.userAvatar;
+  const userId = params.userId;
   const [isPaid, setIsPaid] = React.useState(params.isPaid === 'true');
   const eventPrice = params.price ? parseFloat(params.price) : undefined;
   const numericEventId = eventId ? parseInt(eventId, 10) : undefined;
@@ -137,23 +160,20 @@ export default function EventPage() {
     return groups;
   }, [eventTables]);
 
-  // Fetch event details to get current registration status and isPaid
+  // Fetch event details
   React.useEffect(() => {
     async function fetchEventDetails() {
       if (!eventId) return;
       try {
-        const numericEventId = parseInt(eventId, 10);
-        if (isNaN(numericEventId)) return;
-
-        const fetchedEvent = await eventsApi.getEvent(numericEventId);
+        const numId = parseInt(eventId, 10);
+        if (isNaN(numId)) return;
+        const fetchedEvent = await eventsApi.getEvent(numId);
         setEventData(fetchedEvent);
-        if (fetchedEvent.isUserRegistered) {
-          setIsRsvpd(true);
-        }
-        if (fetchedEvent.isPaid) {
-          setIsPaid(true);
-        }
-      } catch (error) {      }
+        if (fetchedEvent.isUserRegistered) setIsRsvpd(true);
+        if (fetchedEvent.isPaid) setIsPaid(true);
+      } catch {} finally {
+        setIsFetchingEvent(false);
+      }
     }
     fetchEventDetails();
   }, [eventId]);
@@ -164,20 +184,24 @@ export default function EventPage() {
   );
 
   React.useEffect(() => {
-    if (numericEventId && !isNaN(numericEventId)) {
-      trackView();
-    }
+    if (numericEventId && !isNaN(numericEventId)) trackView();
   }, [numericEventId, trackView]);
 
-  const handleBack = () => {
-    router.back();
+  const handleBack = () => router.back();
+
+  const handleUserPress = () => {
+    if (userId) {
+      router.push({
+        pathname: '/user/[username]',
+        params: { username: username || userId, userId },
+      });
+    }
   };
 
   const handleRsvp = async () => {
     if (isLoading || !eventId) return;
 
-    // For paid events, open the purchase sheet instead
-    if (isPaid) {
+    if (isPaid && !isRsvpd) {
       setShowPurchaseSheet(true);
       return;
     }
@@ -189,21 +213,30 @@ export default function EventPage() {
 
     setIsLoading(true);
     try {
-      const numericEventId = parseInt(eventId, 10);
-      if (isNaN(numericEventId)) {
-        throw new Error('Invalid event ID');
-      }
+      const numId = parseInt(eventId, 10);
+      if (isNaN(numId)) throw new Error('Invalid event ID');
 
-      const response = await eventsApi.registerForEvent(numericEventId);
-      if (response.success) {
-        setIsRsvpd(true);
-        showSuccess(response.message || 'You have successfully RSVP\'d to this event!');
+      if (isRsvpd) {
+        // Cancel RSVP
+        const response = await eventsApi.cancelRegistration(numId);
+        if (response.success) {
+          setIsRsvpd(false);
+          showSuccess(response.message || 'RSVP cancelled');
+        } else {
+          showError(response.message || 'Could not cancel RSVP');
+        }
       } else {
-        showError(response.message || 'Could not complete RSVP');
+        // Register RSVP
+        const response = await eventsApi.registerForEvent(numId);
+        if (response.success) {
+          setIsRsvpd(true);
+          showSuccess(response.message || 'You have successfully RSVP\'d to this event!');
+        } else {
+          showError(response.message || 'Could not complete RSVP');
+        }
       }
     } catch (error: any) {
-      console.error('RSVP error:', error);
-      showError(error?.message || 'Failed to RSVP. Please try again.');
+      showError(error?.message || 'Failed to process RSVP. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -219,7 +252,7 @@ export default function EventPage() {
     transform: [{ scale: buttonScale.value }],
   }));
 
-  // Derive map coordinates from event data
+  // Map coordinates
   const coordinates = React.useMemo(() => {
     if (eventData?.locationDetails?.coordinates) {
       return { lat: eventData.locationDetails.coordinates.lat, lng: eventData.locationDetails.coordinates.lng };
@@ -235,59 +268,39 @@ export default function EventPage() {
     || eventData?.location
     || null;
 
-  // Dynamic gradient colors based on theme
-  const gradientColors: [string, string, string, string] = isDark
-    ? ['transparent', 'rgba(15, 9, 12, 0.3)', 'rgba(15, 9, 12, 0.7)', 'rgba(15, 9, 12, 0.97)']
-    : ['transparent', 'rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.7)', 'rgba(255, 255, 255, 0.97)'];
+  const gradientColors = isDark
+    ? ['rgba(15, 9, 12, 0.35)', 'rgba(15, 9, 12, 0.35)', 'rgba(15, 9, 12, 0.6)', 'rgba(15, 9, 12, 0.9)', colors.background, colors.background] as const
+    : ['rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.35)', 'rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0.9)', colors.background, colors.background] as const;
 
-  const renderContent = () => (
-    <Animated.View
-      entering={FadeInUp.duration(400).springify()}
-      style={styles.tabContent}
-    >
-      {/* Poster/Organizer Info */}
-      {username && (
-        <TouchableOpacity style={styles.posterContainer} activeOpacity={0.8}>
-          {userAvatar && (
-            <Image
-              source={{ uri: userAvatar }}
-              style={[styles.posterAvatar, { borderColor: colors.borderStrong }]}
-            />
-          )}
-          <Text style={[styles.posterName, { color: colors.text }]}>@{username}</Text>
-        </TouchableOpacity>
-      )}
-      <Text style={[styles.tabContentTitle, { color: colors.text }]}>{eventTitle}</Text>
-      {eventDate && (
-        <Text style={[styles.tabContentDate, { color: colors.textSecondary }]}>
-          {formatEventDate(eventDate, venueName)}
-        </Text>
-      )}
-      <Text style={[styles.tabContentDescription, { color: colors.textTertiary }]}>
-        Join us for an unforgettable night filled with great music, amazing vibes, and incredible people.
-      </Text>
-    </Animated.View>
-  );
+  // RSVP button label
+  const isDone = !isPaid && isRsvpd;
+  let rsvpLabel = 'RSVP';
+  if (isLoading) rsvpLabel = 'Processing...';
+  else if (isPaid && !isRsvpd) rsvpLabel = eventPrice != null ? `From $${eventPrice.toFixed(2)}` : 'Tickets';
+  else if (isRsvpd) rsvpLabel = "RSVP'd";
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Blurred background */}
-      {flyerImage && (
-        <ImageBackground
-          source={{ uri: flyerImage }}
-          style={styles.backgroundImage}
-          blurRadius={12}
-        >
-          <View style={[styles.backgroundOverlay, { backgroundColor: isDark ? 'rgba(15, 9, 12, 0.5)' : 'rgba(255, 255, 255, 0.5)' }]} />
-        </ImageBackground>
-      )}
-
-      {/* Gradient overlay - darker at bottom */}
-      <LinearGradient
-        colors={gradientColors}
-        locations={[0, 0.4, 0.7, 1]}
-        style={styles.background}
-      />
+      <View style={styles.backgroundWrapper}>
+        {flyerImage && (
+          <Image
+            source={{ uri: flyerImage }}
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
+        )}
+        <BlurView
+          intensity={60}
+          tint={isDark ? 'dark' : 'light'}
+          style={styles.blurOverlay}
+        />
+        <LinearGradient
+          colors={gradientColors}
+          locations={[0, 0.7, 0.8, 0.88, 0.93, 1]}
+          style={styles.gradientOverlay}
+        />
+      </View>
 
       {/* Header with back button */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
@@ -309,28 +322,80 @@ export default function EventPage() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Flyer Card */}
-        <Animated.View entering={FadeInDown.duration(500).springify()} style={styles.flyerContainer}>
-          <View style={[styles.flyerCard, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)' }]}>
-            {flyerImage ? (
-              <Image
-                source={{ uri: flyerImage }}
-                style={styles.flyerImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <View style={[styles.flyerPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
-                <Ionicons name="image-outline" size={64} color={colors.textTertiary} />
-                <Text style={[styles.flyerPlaceholderText, { color: colors.textTertiary }]}>No flyer available</Text>
+        {/* Event Card — same layout as feed */}
+        <Animated.View entering={FadeInDown.duration(500).springify()} style={styles.cardContainer}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <BlurView
+              intensity={25}
+              tint={isDark ? 'dark' : 'light'}
+              style={styles.cardBlurBackground}
+            />
+
+            {/* Card Header — organizer */}
+            {username && (
+              <View style={styles.cardHeader}>
+                <TouchableOpacity
+                  onPress={handleUserPress}
+                  activeOpacity={0.7}
+                  style={styles.organizerSection}
+                >
+                  {userAvatar && (
+                    <Image
+                      source={{ uri: userAvatar }}
+                      style={[styles.organizerAvatar, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
+                    />
+                  )}
+                  <View style={styles.organizerNameRow}>
+                    <Text style={[styles.organizerName, { color: colors.text }]} numberOfLines={1}>
+                      {username}
+                    </Text>
+                    <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
+
+            {/* Media — video or image via FeedMediaPlayer */}
+            {(flyerImage || videoUrl) ? (
+              <View style={styles.flyerContainer}>
+                <FeedMediaPlayer
+                  mediaType={mediaType}
+                  videoUrl={videoUrl}
+                  imageUrl={flyerImage}
+                  poster={thumbnail}
+                  isActive={true}
+                  containerWidth={CARD_WIDTH - 2}
+                  maxHeight={CARD_WIDTH * 1.25}
+                />
+              </View>
+            ) : isFetchingEvent ? (
+              <View style={[styles.flyerContainer, styles.mediaLoading, { width: CARD_WIDTH - 2, backgroundColor: colors.backgroundSecondary }]}>
+                <ActivityIndicator size="small" color={colors.textTertiary} />
+              </View>
+            ) : null}
+
+            {/* Card Footer — event title + date */}
+            <View style={styles.cardFooter}>
+              <Text style={[styles.eventTitle, { color: colors.text }]} numberOfLines={2}>
+                {eventTitle}
+              </Text>
+              {eventDate && (
+                <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
+                  {formatEventDate(eventDate, venueName)}
+                </Text>
+              )}
+            </View>
           </View>
         </Animated.View>
 
-        {/* Content */}
-        <View style={styles.tabContentContainer}>
-          {renderContent()}
-        </View>
+        {/* Description */}
+        {eventData?.description && (
+          <View style={styles.descriptionSection}>
+            <Text style={[styles.descriptionText, { color: colors.textTertiary }]}>
+              {eventData.description}
+            </Text>
+          </View>
+        )}
 
         {/* Tables Section */}
         {hasTables ? (
@@ -341,7 +406,6 @@ export default function EventPage() {
               const availableCount = tables.filter((t) => t.status === 'available').length;
               return (
                 <View key={sectionName} style={styles.tableSectionGroup}>
-                  {/* Dropdown header */}
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() =>
@@ -367,7 +431,6 @@ export default function EventPage() {
                     />
                   </TouchableOpacity>
 
-                  {/* Expanded table list */}
                   {isExpanded &&
                     tables.map((table) => {
                       const isSold = table.status === 'sold';
@@ -385,17 +448,9 @@ export default function EventPage() {
                           disabled={unavailable}
                           activeOpacity={0.7}
                         >
-                          <View
-                            style={[
-                              styles.tableCard,
-                              unavailable && { opacity: 0.5 },
-                            ]}
-                          >
+                          <View style={[styles.tableCard, unavailable && { opacity: 0.5 }]}>
                             {table.imageUrl ? (
-                              <Image
-                                source={{ uri: table.imageUrl }}
-                                style={styles.tableImage}
-                              />
+                              <Image source={{ uri: table.imageUrl }} style={styles.tableImage} />
                             ) : null}
                             <View style={styles.tableCardBody}>
                               <View style={styles.tableCardLeft}>
@@ -408,13 +463,9 @@ export default function EventPage() {
                               </View>
                               <View style={styles.tableCardRight}>
                                 {isSold ? (
-                                  <Text style={[styles.tableSoldText, { color: colors.textTertiary }]}>
-                                    Sold
-                                  </Text>
+                                  <Text style={[styles.tableSoldText, { color: colors.textTertiary }]}>Sold</Text>
                                 ) : isReserved ? (
-                                  <Text style={[styles.tableSoldText, { color: colors.textTertiary }]}>
-                                    Reserved
-                                  </Text>
+                                  <Text style={[styles.tableSoldText, { color: colors.textTertiary }]}>Reserved</Text>
                                 ) : (
                                   <Text style={[styles.tablePrice, { color: colors.text }]}>
                                     ${Number(table.price).toLocaleString()}
@@ -482,43 +533,29 @@ export default function EventPage() {
           </Animated.View>
         ) : null}
 
-        {/* Spacer for bottom elements */}
         <View style={{ height: 140 }} />
       </ScrollView>
 
       {/* RSVP Button */}
-      <View style={[styles.rsvpContainer, { bottom: insets.bottom + 16 }]}>
-        {(() => {
-          const isDone = !isPaid && isRsvpd;
-          let label = 'RSVP';
-          if (isLoading) {
-            label = 'Processing...';
-          } else if (isPaid) {
-            label = eventPrice != null ? `From $${eventPrice.toFixed(2)}` : 'Tickets';
-          } else if (isDone) {
-            label = "RSVP'd";
-          }
-          return (
-            <TouchableOpacity
-              onPress={handleRsvp}
-              activeOpacity={0.85}
-              disabled={isLoading || isDone}
-            >
-              <Animated.View style={[
-                styles.rsvpButton,
-                { backgroundColor: isDone ? '#2a2a2a' : '#3897F0' },
-                buttonAnimatedStyle,
-              ]}>
-                <Text style={[
-                  styles.rsvpButtonText,
-                  { color: isDone ? '#888' : '#fff' },
-                ]}>
-                  {label}
-                </Text>
-              </Animated.View>
-            </TouchableOpacity>
-          );
-        })()}
+      <View style={[styles.rsvpWrapper, { paddingBottom: insets.bottom + 16 }]}>
+        <TouchableOpacity
+          onPress={handleRsvp}
+          activeOpacity={0.85}
+          disabled={isLoading}
+        >
+          <Animated.View style={[styles.rsvpButton, buttonAnimatedStyle]}>
+            {!isDone && (
+              <>
+                <BlurView intensity={30} tint="light" style={styles.rsvpBlur} />
+                <View style={styles.rsvpFill} />
+              </>
+            )}
+            <View style={[styles.rsvpBorder, isDone && styles.rsvpBorderDone]} />
+            <Text style={[styles.rsvpButtonText, isDone && styles.rsvpButtonTextDone]}>
+              {rsvpLabel}
+            </Text>
+          </Animated.View>
+        </TouchableOpacity>
       </View>
 
       <PurchaseTicketSheet
@@ -549,6 +586,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  backgroundWrapper: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+  },
   backgroundImage: {
     position: 'absolute',
     top: 0,
@@ -556,10 +601,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  backgroundOverlay: {
-    flex: 1,
+  blurOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  background: {
+  gradientOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -585,92 +634,148 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: CARD_MARGIN,
     paddingBottom: 120,
   },
-  flyerContainer: {
+  cardContainer: {
     alignItems: 'center',
-    marginBottom: 0,
   },
-  flyerCard: {
-    width: SCREEN_WIDTH - 32,
-    height: SCREEN_HEIGHT * 0.55,
-    borderRadius: 12,
+  card: {
+    width: CARD_WIDTH,
+    borderRadius: CARD_BORDER_RADIUS,
     overflow: 'hidden',
-    // Subtle shadow effect
-    shadowColor: 'rgba(0, 0, 0, 0.2)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 30,
-    // Android elevation
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
     elevation: 10,
   },
-  flyerImage: {
-    width: '100%',
-    height: '100%',
+  cardBlurBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
-  flyerPlaceholder: {
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  organizerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    justifyContent: 'center',
+    gap: 8,
+  },
+  organizerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  organizerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 4,
+  },
+  organizerName: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    flexShrink: 1,
+  },
+  flyerContainer: {
+    width: '100%',
     alignItems: 'center',
   },
-  flyerPlaceholderText: {
-    marginTop: 12,
+  mediaLoading: {
+    height: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 0,
+  },
+  cardFooter: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 4,
+  },
+  eventTitle: {
+    fontSize: 20,
+    fontFamily: 'Lato_700Bold',
+    lineHeight: 26,
+  },
+  eventDate: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
   },
-  tabContentContainer: {
+  descriptionSection: {
     paddingHorizontal: 8,
-  },
-  tabContent: {
     paddingVertical: 16,
   },
-  tabContentTitle: {
-    fontSize: 24,
-    fontFamily: 'Lato_700Bold',
-    marginBottom: 8,
-  },
-  tabContentDate: {
-    fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    marginBottom: 16,
-  },
-  tabContentDescription: {
+  descriptionText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
     lineHeight: 22,
   },
-  posterContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-    gap: 10,
-  },
-  posterAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-  },
-  posterName: {
-    fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-  },
-  rsvpContainer: {
+  rsvpWrapper: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
   },
   rsvpButton: {
-    height: 48,
     borderRadius: 12,
-    justifyContent: 'center',
+    paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  rsvpBlur: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  rsvpFill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  rsvpBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 1,
+    borderRadius: 12,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  rsvpBorderDone: {
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   rsvpButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    letterSpacing: 0.3,
+    letterSpacing: 0.5,
+    color: '#000',
+  },
+  rsvpButtonTextDone: {
+    color: '#fff',
   },
   tablesSection: {
     paddingHorizontal: 8,

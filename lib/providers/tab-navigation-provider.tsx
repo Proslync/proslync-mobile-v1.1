@@ -18,6 +18,9 @@ interface TabNavigationContextType {
   closeAccountSwitcher: () => void;
   // New: Allow _layout.tsx to register its pager control functions
   registerPagerControl: (control: PagerControl | null) => void;
+  // Tab bar floating island dimensions for positioning elements above it
+  tabBarTopOffset: number;
+  setTabBarTopOffset: (offset: number) => void;
 }
 
 interface PagerControl {
@@ -38,6 +41,7 @@ export function useTabNavigation() {
 export function TabNavigationProvider({ children }: { children: React.ReactNode }) {
   const [isAccountSwitcherOpen, setIsAccountSwitcherOpen] = React.useState(false);
   const [currentTabIndex, setCurrentTabIndex] = React.useState(2); // Default to 'index' (Home)
+  const [tabBarTopOffset, setTabBarTopOffset] = React.useState(0);
   const pagerControlRef = React.useRef<PagerControl | null>(null);
 
   const currentTab = TAB_ORDER[currentTabIndex] || 'index';
@@ -115,6 +119,8 @@ export function TabNavigationProvider({ children }: { children: React.ReactNode 
     isAccountSwitcherOpen,
     closeAccountSwitcher,
     registerPagerControl,
+    tabBarTopOffset,
+    setTabBarTopOffset,
   }), [
     currentTabIndex,
     currentTab,
@@ -127,6 +133,7 @@ export function TabNavigationProvider({ children }: { children: React.ReactNode 
     isAccountSwitcherOpen,
     closeAccountSwitcher,
     registerPagerControl,
+    tabBarTopOffset,
   ]);
 
   return (

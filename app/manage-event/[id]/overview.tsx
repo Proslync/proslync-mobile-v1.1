@@ -87,6 +87,7 @@ export default function OverviewScreen() {
             deleteEvent.mutate(eventId, {
               onSuccess: () => {
                 router.dismissAll();
+                router.replace('/my-events');
               },
             });
           },

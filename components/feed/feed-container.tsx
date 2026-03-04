@@ -6,6 +6,7 @@ import {
   StyleSheet,
   RefreshControlProps,
   LayoutChangeEvent,
+  ActivityIndicator,
 } from 'react-native';
 import { FeedItem } from './feed-item';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -27,9 +28,10 @@ interface FeedContainerProps {
   onRefer: (id: string) => void;
   onUserClick: (item: FeedItemType) => void;
   onEventPress: (item: FeedItemType) => void;
-  showDoubleTapHeart?: string | null;
-  onDoubleTap: (id: string) => void;
+  onBlock?: (userId: string) => void;
   refreshControl?: React.ReactElement<RefreshControlProps>;
+  onEndReached?: () => void;
+  isFetchingNextPage?: boolean;
 }
 
 export function FeedContainer({
@@ -46,9 +48,10 @@ export function FeedContainer({
   onRefer,
   onUserClick,
   onEventPress,
-  showDoubleTapHeart,
-  onDoubleTap,
+  onBlock,
   refreshControl,
+  onEndReached,
+  isFetchingNextPage,
 }: FeedContainerProps) {
   const flatListRef = React.useRef<FlatList>(null);
   const [containerHeight, setContainerHeight] = React.useState(0);
@@ -58,6 +61,7 @@ export function FeedContainer({
 
   const [activeIndex, setActiveIndex] = React.useState(0);
 
+  // ── Layout ──────────────────────────────────────────────────────────
   const handleLayout = React.useCallback((e: LayoutChangeEvent) => {
     const h = e.nativeEvent.layout.height;
     if (h > 0 && h !== containerHeight) {
@@ -65,6 +69,7 @@ export function FeedContainer({
     }
   }, [containerHeight]);
 
+  // ── Viewability ─────────────────────────────────────────────────────
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 50,
   }).current;
@@ -94,6 +99,7 @@ export function FeedContainer({
     [currentIndex, onIndexChange, items]
   );
 
+  // ── Render item ─────────────────────────────────────────────────────
   const renderItem = React.useCallback(
     ({ item, index }: { item: FeedItemType; index: number }) => {
       return (
@@ -106,14 +112,13 @@ export function FeedContainer({
           isRsvp={rsvpItems.get(item.id) ?? false}
           isPendingRsvp={pendingRsvpItems.get(item.id) ?? false}
           isPurchased={purchasedItems.has(item.id)}
-          showDoubleTapHeart={showDoubleTapHeart === item.id}
-          onDoubleTap={() => onDoubleTap(item.id)}
           onRsvp={() => onRsvp(item.id)}
           onPendingRsvp={() => onPendingRsvp(item.id)}
           onPurchase={() => onPurchase(item.id)}
           onRefer={() => onRefer(item.id)}
           onUserClick={() => onUserClick(item)}
           onEventPress={() => onEventPress(item)}
+          onBlock={onBlock}
         />
       );
     },
@@ -132,11 +137,11 @@ export function FeedContainer({
       onRefer,
       onUserClick,
       onEventPress,
-      showDoubleTapHeart,
-      onDoubleTap,
+      onBlock,
     ]
   );
 
+  // ── Item layout ─────────────────────────────────────────────────────
   const getItemLayout = React.useCallback(
     (_: any, index: number) => ({
       length: containerHeight,
@@ -146,11 +151,23 @@ export function FeedContainer({
     [containerHeight]
   );
 
+  // ── Key extractor ───────────────────────────────────────────────────
   const keyExtractor = React.useCallback(
     (item: FeedItemType) => item.id,
     []
   );
 
+  // ── Footer loading indicator ───────────────────────────────────────
+  const ListFooter = React.useCallback(() => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={[styles.footer, { height: containerHeight }]}>
+        <ActivityIndicator size="small" color={colors.text} />
+      </View>
+    );
+  }, [isFetchingNextPage, containerHeight, colors.text]);
+
+  // ── Waiting for layout measurement ──────────────────────────────────
   if (containerHeight === 0) {
     return <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout} />;
   }
@@ -178,6 +195,9 @@ export function FeedContainer({
         bounces
         style={styles.list}
         refreshControl={refreshControl}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={2}
+        ListFooterComponent={ListFooter}
       />
     </View>
   );
@@ -189,5 +209,9 @@ const styles = StyleSheet.create({
   },
   list: {
     flex: 1,
+  },
+  footer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

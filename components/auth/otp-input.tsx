@@ -40,11 +40,9 @@ export function OTPInput({
   };
 
   const handleChange = (text: string) => {
-    // Only allow digits
     const digits = text.replace(/\D/g, '').slice(0, maxLength);
     onChange(digits);
 
-    // Auto-submit when complete
     if (digits.length === maxLength) {
       onComplete(digits);
     }
@@ -52,7 +50,8 @@ export function OTPInput({
 
   return (
     <Pressable onPress={handlePress} style={styles.container}>
-      <View style={styles.boxesContainer}>
+      {/* Visual boxes behind the input */}
+      <View style={styles.boxesContainer} pointerEvents="none">
         {Array.from({ length: maxLength }).map((_, index) => (
           <OTPBox
             key={index}
@@ -65,10 +64,10 @@ export function OTPInput({
         ))}
       </View>
 
-      {/* Hidden TextInput for keyboard */}
+      {/* Real visible TextInput on top — transparent text so digits show through boxes */}
       <TextInput
         ref={inputRef}
-        style={styles.hiddenInput}
+        style={[styles.realInput, { fontSize: 24 }]}
         value={value}
         onChangeText={handleChange}
         keyboardType="number-pad"
@@ -77,6 +76,8 @@ export function OTPInput({
         autoComplete="sms-otp"
         textContentType="oneTimeCode"
         editable={!disabled}
+        caretHidden
+        selectionColor="transparent"
         autoFocus
       />
     </Pressable>
@@ -106,7 +107,6 @@ function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
     }
   }, [error, success, animatedValue]);
 
-  // Cursor blink animation
   React.useEffect(() => {
     if (isFocused) {
       const interval = setInterval(() => {
@@ -175,10 +175,12 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 1,
   },
-  hiddenInput: {
+  realInput: {
     position: 'absolute',
-    opacity: 0,
-    height: 0,
-    width: 0,
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    color: 'transparent',
   },
 });

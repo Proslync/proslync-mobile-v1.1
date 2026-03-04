@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
-import { GlassSurface } from "@/components/glass/glass-surface";
+
 import { useEvent, useEventPermissions } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { EventStatus } from "@/lib/types/events.types";
@@ -10,13 +10,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import {
   ActivityIndicator,
-  Image,
+  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { BlurView } from "expo-blur";
+import { FeedMediaPlayer } from "@/components/feed/feed-media-player";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -158,6 +160,65 @@ function getStatusLabel(status: EventStatus): string {
   }
 }
 
+const STATE_ABBREV: Record<string, string> = {
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+  colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+  hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
+  kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
+  massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS",
+  missouri: "MO", montana: "MT", nebraska: "NE", nevada: "NV",
+  "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
+  "north carolina": "NC", "north dakota": "ND", ohio: "OH", oklahoma: "OK",
+  oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
+  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT",
+  virginia: "VA", washington: "WA", "west virginia": "WV", wisconsin: "WI",
+  wyoming: "WY", "district of columbia": "DC",
+};
+
+function abbreviateState(state: string): string {
+  if (state.length <= 2) return state.toUpperCase();
+  return STATE_ABBREV[state.toLowerCase()] || state;
+}
+
+function formatShortLocation(event: {
+  venue?: { name?: string; city?: string; state?: string; address?: string };
+  location?: string;
+  locationDetails?: {
+    addressLine1?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    country?: string;
+    formattedAddress?: string;
+  };
+}): string {
+  const venue = event.venue;
+  const loc = event.locationDetails;
+
+  // Build short address: street, city, ST (no zip, no country)
+  const street = loc?.addressLine1 || venue?.address;
+  const city = loc?.city || venue?.city;
+  const state = loc?.state || venue?.state;
+  const parts: string[] = [];
+
+  if (street) parts.push(street);
+  if (city) parts.push(city);
+  if (state) parts.push(abbreviateState(state));
+
+  if (parts.length > 0) return parts.join(", ");
+
+  // Fall back to location string but strip zip and country
+  if (event.location) {
+    return event.location
+      .replace(/,?\s*\d{5}(-\d{4})?\s*/g, "") // remove zip
+      .replace(/,?\s*(United States|USA|US)\s*$/i, "") // remove country
+      .replace(/,\s*$/, "")
+      .trim();
+  }
+
+  return "Location TBA";
+}
+
 function formatDateRange(startDate: string, endDate: string): string {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -237,6 +298,14 @@ export default function ManageEventScreen() {
   }
 
   const flyerUrl = event.flyer?.url || event.imageUrl;
+  const VIDEO_EXT = /\.(mp4|mov|webm|m4v)(\?|$)/i;
+  const flyerIsVideo =
+    event.flyer?.mimeType?.startsWith("video/") ||
+    VIDEO_EXT.test(event.flyer?.url || "");
+  const flyerMediaType: "video" | "image" = flyerIsVideo ? "video" : "image";
+  const flyerVideoUrl = flyerIsVideo ? event.flyer?.url : undefined;
+  const flyerThumbnail = flyerIsVideo ? event.imageUrl || "" : "";
+  const cardWidth = Dimensions.get("window").width - 32 - 2; // padding - border
   const isPastEvent =
     event.status === EventStatus.FINISHED ||
     event.status === EventStatus.CANCELLED;
@@ -284,44 +353,79 @@ export default function ManageEventScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Event Info Section */}
+        {/* Event Flyer Card */}
         <Animated.View entering={FadeInDown.duration(300)}>
-          <GlassSurface
-            fill="subtle"
-            border="subtle"
-            cornerRadius="lg"
-            style={styles.eventInfo}
+          <View
+            style={[
+              styles.eventCard,
+              {
+                borderColor: isDark
+                  ? "rgba(255,255,255,0.12)"
+                  : "rgba(0,0,0,0.08)",
+              },
+            ]}
           >
-            <View style={styles.eventInfoRow}>
-              {flyerUrl ? (
-                <Image
-                  source={{ uri: flyerUrl }}
-                  style={[
-                    styles.flyerImage,
-                    { backgroundColor: colors.backgroundSecondary },
-                  ]}
+            {/* Glass background */}
+            <BlurView
+              intensity={isDark ? 25 : 40}
+              tint={isDark ? "dark" : "light"}
+              style={StyleSheet.absoluteFill}
+            />
+
+            {/* Flyer media — video or image */}
+            {flyerUrl ? (
+              <FeedMediaPlayer
+                mediaType={flyerMediaType}
+                videoUrl={flyerVideoUrl}
+                imageUrl={flyerUrl}
+                poster={flyerThumbnail || flyerUrl}
+                isActive={true}
+                muted
+                containerWidth={cardWidth}
+                maxHeight={cardWidth * (4 / 3)}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.flyerPlaceholder,
+                  { backgroundColor: colors.backgroundSecondary },
+                ]}
+              >
+                <Ionicons
+                  name="calendar"
+                  size={48}
+                  color={colors.textTertiary}
                 />
-              ) : (
-                <View
-                  style={[
-                    styles.flyerPlaceholder,
-                    { backgroundColor: colors.backgroundSecondary },
-                  ]}
-                >
-                  <Ionicons
-                    name="calendar"
-                    size={28}
-                    color={colors.textTertiary}
-                  />
-                </View>
-              )}
-              <View style={styles.eventDetails}>
+              </View>
+            )}
+
+            {/* Card footer — event info below the image */}
+            <View style={styles.cardFooter}>
+              <Text
+                style={[styles.eventName, { color: colors.text }]}
+                numberOfLines={2}
+              >
+                {event.name}
+              </Text>
+              <View style={styles.eventDateRow}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={14}
+                  color={colors.textSecondary}
+                />
                 <Text
-                  style={[styles.eventName, { color: colors.text }]}
-                  numberOfLines={2}
+                  style={[styles.eventDate, { color: colors.textSecondary }]}
+                  numberOfLines={1}
                 >
-                  {event.name}
+                  {formatDateRange(event.startDate, event.endDate)}
                 </Text>
+              </View>
+              <View style={styles.eventDateRow}>
+                <Ionicons
+                  name="location-outline"
+                  size={14}
+                  color={colors.textSecondary}
+                />
                 <Text
                   style={[
                     styles.eventLocation,
@@ -329,15 +433,11 @@ export default function ManageEventScreen() {
                   ]}
                   numberOfLines={1}
                 >
-                  {event.venue?.name || event.location || "Location TBA"}
+                  {formatShortLocation(event)}
                 </Text>
-                <Text
-                  style={[styles.eventDate, { color: colors.textTertiary }]}
-                  numberOfLines={1}
-                >
-                  {formatDateRange(event.startDate, event.endDate)}
-                </Text>
-                <View style={styles.eventMeta}>
+              </View>
+              <View style={styles.eventMeta}>
+                {event.status !== EventStatus.PUBLISHED && (
                   <View
                     style={[
                       styles.statusBadge,
@@ -348,27 +448,27 @@ export default function ManageEventScreen() {
                       {getStatusLabel(event.status)}
                     </Text>
                   </View>
-                  {event.attendeeCount != null && (
-                    <View style={styles.attendeeStat}>
-                      <Ionicons
-                        name="people-outline"
-                        size={13}
-                        color={colors.textTertiary}
-                      />
-                      <Text
-                        style={[
-                          styles.attendeeText,
-                          { color: colors.textTertiary },
-                        ]}
-                      >
-                        {event.attendeeCount} RSVPs
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                )}
+                {event.attendeeCount != null && (
+                  <View style={styles.attendeeStat}>
+                    <Ionicons
+                      name="people-outline"
+                      size={13}
+                      color={colors.textTertiary}
+                    />
+                    <Text
+                      style={[
+                        styles.attendeeText,
+                        { color: colors.textTertiary },
+                      ]}
+                    >
+                      {event.attendeeCount} RSVPs
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
-          </GlassSurface>
+          </View>
         </Animated.View>
 
         {/* Menu Items */}
@@ -454,47 +554,46 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
-  eventInfo: {
-    padding: 16,
-  },
-  eventInfoRow: {
-    flexDirection: "row",
-  },
-  flyerImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
+  eventCard: {
+    borderRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
   },
   flyerPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
+    width: "100%",
+    aspectRatio: 3 / 4,
     justifyContent: "center",
     alignItems: "center",
   },
-  eventDetails: {
-    flex: 1,
-    marginLeft: 14,
+  cardFooter: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 6,
   },
   eventName: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "Lato_700Bold",
-    marginBottom: 4,
+    lineHeight: 26,
+    marginBottom: 2,
+  },
+  eventDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  eventDate: {
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
   },
   eventLocation: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    marginBottom: 2,
-  },
-  eventDate: {
-    fontSize: 13,
-    fontFamily: "Lato_400Regular",
-    marginBottom: 8,
   },
   eventMeta: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    marginTop: 4,
   },
   statusBadge: {
     paddingHorizontal: 8,

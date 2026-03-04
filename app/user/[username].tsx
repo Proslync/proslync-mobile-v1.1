@@ -25,11 +25,13 @@ import { LinkifiedText } from '@/components/shared/linkified-text';
 import { FollowersSheet } from '@/components/feed/followers-sheet';
 import type { PublicUserProfile } from '@/lib/types/auth.types';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const POST_SIZE = (SCREEN_WIDTH - 6) / 3;
+const POST_GAP = 2;
+const POST_SIZE = (SCREEN_WIDTH - POST_GAP * 2) / 3;
 
 function StatButton({
   value,
@@ -402,10 +404,18 @@ export default function UserProfileScreen() {
           ) : userPosts.length > 0 ? (
             userPosts.map((post) => (
               <TouchableOpacity key={post.id} activeOpacity={0.9} style={styles.postContainer}>
-                <Image
-                  source={{ uri: post.imageUrl || post.videoUrl }}
-                  style={[styles.postImage, dynamicStyles.postImage]}
-                />
+                {post.mediaType === 'video' && post.videoUrl ? (
+                  <VideoThumbnailImage
+                    videoUrl={post.videoUrl}
+                    fallbackUri={post.thumbUrl || post.imageUrl}
+                    style={[styles.postImage, dynamicStyles.postImage]}
+                  />
+                ) : (
+                  <Image
+                    source={{ uri: post.imageUrl }}
+                    style={[styles.postImage, dynamicStyles.postImage]}
+                  />
+                )}
                 {post.mediaType === 'video' && (
                   <View style={styles.videoIndicator}>
                     <Ionicons name="play" size={16} color="#fff" />
@@ -561,15 +571,16 @@ const styles = StyleSheet.create({
   postsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 1,
+    gap: POST_GAP,
   },
   postContainer: {
     position: 'relative',
-  },
-  postImage: {
     width: POST_SIZE,
     height: POST_SIZE,
-    margin: 1,
+  },
+  postImage: {
+    width: '100%',
+    height: '100%',
   },
   videoIndicator: {
     position: 'absolute',

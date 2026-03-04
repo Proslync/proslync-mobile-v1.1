@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
+import { Alert } from 'react-native';
 import { config } from '../config';
 import { ApiClientError } from './errors';
 
@@ -221,6 +222,25 @@ class ApiClient {
         } catch {
           // Refresh failed (no token or expired) — throw the original 401
           throw ApiClientError.fromResponse(response, data);
+        }
+      }
+
+      // Handle 403 - account suspended
+      if (response.status === 403) {
+        const message =
+          (data as Record<string, unknown>)?.message ?? '';
+        if (
+          typeof message === 'string' &&
+          message.toLowerCase().includes('suspended')
+        ) {
+          await this.clearAccessToken();
+          await this.clearRefreshToken();
+          Alert.alert(
+            'Account Suspended',
+            'Your account has been suspended. Please contact support if you believe this is an error.',
+          );
+          this.notifyAuthError();
+          throw new ApiClientError('Your account has been suspended', 403);
         }
       }
 

@@ -43,7 +43,6 @@ import { useConversation, type ChatMessage } from '@/hooks/use-conversation';
 import { useCall } from '@/lib/providers/call-provider';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
-// Video calls removed — not a core feature
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.75;
@@ -118,8 +117,20 @@ function MessageBubble({
   readAt?: Date | null;
 }) {
   const isOwn = message.isOwn;
+  const isSystem = message.isSystem;
   const hasAttachments = message.attachments && message.attachments.length > 0;
   const hasText = message.text && message.text.trim().length > 0;
+
+  // System messages render as centered, styled differently
+  if (isSystem) {
+    return (
+      <View style={styles.systemMessageRow}>
+        <View style={styles.systemMessageBubble}>
+          <Text style={styles.systemMessageText}>{message.text}</Text>
+        </View>
+      </View>
+    );
+  }
 
   // Check for audio attachments
   const audioAttachment = message.attachments?.find((att) => att.type === 'audio');
@@ -528,6 +539,11 @@ function Composer({
   const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  // Review state: after recording stops, user can relisten before sending
+  const [reviewAudio, setReviewAudio] = useState<{ uri: string; duration: number } | null>(null);
+  const [reviewSound, setReviewSound] = useState<Audio.Sound | null>(null);
+  const [isReviewPlaying, setIsReviewPlaying] = useState(false);
+  const [reviewPosition, setReviewPosition] = useState(0);
   const insets = useSafeAreaInsets();
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<TextInput>(null);
@@ -555,6 +571,15 @@ function Composer({
   const recordingAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: recordingScale.value }],
   }));
+
+  // Cleanup review sound on unmount
+  useEffect(() => {
+    return () => {
+      if (reviewSound) {
+        reviewSound.unloadAsync().catch(() => {});
+      }
+    };
+  }, [reviewSound]);
 
   const handleChangeText = (newText: string) => {
     setText(newText);
@@ -633,9 +658,9 @@ function Composer({
       setRecordingDuration(0);
       recordingRef.current = null;
 
-      // Send the audio if we have a valid URI and duration > 0
+      // Enter review mode instead of sending immediately
       if (uri && duration > 0) {
-        onSendAudio(uri, duration);
+        setReviewAudio({ uri, duration });
       }
 
     } catch (error) {
@@ -669,6 +694,80 @@ function Composer({
     }
   };
 
+  // Review mode: play/pause the recorded audio
+  const toggleReviewPlayback = async () => {
+    if (!reviewAudio) return;
+
+    try {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+      });
+
+      if (reviewSound) {
+        const status = await reviewSound.getStatusAsync();
+        if (status.isLoaded) {
+          if (isReviewPlaying) {
+            await reviewSound.pauseAsync();
+            setIsReviewPlaying(false);
+          } else if (status.positionMillis >= (status.durationMillis || 0) - 100) {
+            await reviewSound.setPositionAsync(0);
+            await reviewSound.playAsync();
+            setIsReviewPlaying(true);
+            setReviewPosition(0);
+          } else {
+            await reviewSound.playAsync();
+            setIsReviewPlaying(true);
+          }
+          return;
+        }
+      }
+
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: reviewAudio.uri },
+        { shouldPlay: true },
+        (status: any) => {
+          if (status.isLoaded) {
+            setReviewPosition(status.positionMillis / 1000);
+            if (status.didJustFinish) {
+              setIsReviewPlaying(false);
+              setReviewPosition(0);
+            }
+          }
+        }
+      );
+      setReviewSound(newSound);
+      setIsReviewPlaying(true);
+    } catch (error) {
+      console.error('Failed to play review audio:', error);
+    }
+  };
+
+  // Confirm and send the reviewed audio
+  const confirmReviewAudio = async () => {
+    if (!reviewAudio) return;
+    // Stop playback if playing
+    if (reviewSound) {
+      try { await reviewSound.stopAsync(); await reviewSound.unloadAsync(); } catch {}
+    }
+    onSendAudio(reviewAudio.uri, reviewAudio.duration);
+    setReviewAudio(null);
+    setReviewSound(null);
+    setIsReviewPlaying(false);
+    setReviewPosition(0);
+  };
+
+  // Discard the reviewed audio
+  const discardReviewAudio = async () => {
+    if (reviewSound) {
+      try { await reviewSound.stopAsync(); await reviewSound.unloadAsync(); } catch {}
+    }
+    setReviewAudio(null);
+    setReviewSound(null);
+    setIsReviewPlaying(false);
+    setReviewPosition(0);
+  };
+
   const handleMicPress = () => {
     if (isRecording) {
       stopRecording();
@@ -698,8 +797,44 @@ function Composer({
         </View>
       )}
 
+      {/* Audio review bar */}
+      {reviewAudio && !isRecording && (
+        <View style={[styles.reviewBar, { borderColor: colors.border }]}>
+          <TouchableOpacity onPress={discardReviewAudio} style={styles.reviewDeleteButton} activeOpacity={0.7}>
+            <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={toggleReviewPlayback} style={styles.reviewPlayButton} activeOpacity={0.7}>
+            <Ionicons name={isReviewPlaying ? 'pause' : 'play'} size={18} color="#fff" />
+          </TouchableOpacity>
+
+          <View style={styles.reviewWaveformArea}>
+            <View style={styles.reviewWaveformTrack}>
+              <View
+                style={[
+                  styles.reviewWaveformProgress,
+                  {
+                    width: reviewAudio.duration > 0
+                      ? `${Math.min((reviewPosition / reviewAudio.duration) * 100, 100)}%`
+                      : '0%',
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          <Text style={[styles.reviewDuration, { color: colors.textSecondary }]}>
+            {isReviewPlaying ? formatDuration(Math.floor(reviewPosition)) : formatDuration(reviewAudio.duration)}
+          </Text>
+
+          <TouchableOpacity onPress={confirmReviewAudio} style={styles.reviewSendButton} activeOpacity={0.7}>
+            <Ionicons name="send" size={20} color="#0095f6" />
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Pending media preview */}
-      {pendingMedia.length > 0 && !isRecording && (
+      {pendingMedia.length > 0 && !isRecording && !reviewAudio && (
         <View style={styles.pendingMediaContainer}>
           {pendingMedia.map((media, index) => (
             <View key={index} style={styles.pendingMediaItem}>
@@ -715,82 +850,84 @@ function Composer({
         </View>
       )}
 
-      <View style={styles.composerInner}>
-        {/* Camera button */}
-        {!isRecording && (
-          <TouchableOpacity
-            style={styles.composerButton}
-            onPress={onOpenCamera}
-            activeOpacity={0.7}
-          >
-            <LinearGradient
-              colors={['#007AFF', '#0095f6']}
-              style={styles.cameraButtonGradient}
-            >
-              <Ionicons name="camera" size={20} color="#fff" />
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-
-        {/* Input area */}
-        {!isRecording ? (
-          <View style={[styles.inputWrapper, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
-            <TextInput
-              ref={inputRef}
-              style={[styles.composerInput, { color: colors.text }]}
-              value={text}
-              onChangeText={handleChangeText}
-              placeholder={placeholder || 'Message...'}
-              placeholderTextColor={colors.placeholder}
-              multiline
-              maxLength={1000}
-            />
-
-            {/* Gallery button inside input */}
+      {!reviewAudio && (
+        <View style={styles.composerInner}>
+          {/* Camera button */}
+          {!isRecording && (
             <TouchableOpacity
-              style={styles.galleryButton}
-              onPress={onPickImage}
+              style={styles.composerButton}
+              onPress={onOpenCamera}
               activeOpacity={0.7}
             >
-              <Ionicons name="image-outline" size={24} color={colors.iconSecondary} />
+              <LinearGradient
+                colors={['#007AFF', '#0095f6']}
+                style={styles.cameraButtonGradient}
+              >
+                <Ionicons name="camera" size={20} color="#fff" />
+              </LinearGradient>
             </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.recordingInputWrapper}>
-            <Text style={[styles.recordingInputText, { color: colors.textSecondary }]}>
-              Tap mic to send, or cancel
-            </Text>
-          </View>
-        )}
+          )}
 
-        {/* Send or Mic button */}
-        {canSend && !isRecording ? (
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={handleSend}
-            disabled={isSending}
-            activeOpacity={0.7}
-          >
-            {isSending ? (
-              <ActivityIndicator size="small" color="#0095f6" />
-            ) : (
-              <Ionicons name="send" size={22} color="#0095f6" />
-            )}
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.micButton, isRecording && styles.micButtonRecording]}
-            onPress={handleMicPress}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={isRecording ? 'stop' : 'mic'}
-              size={24}
-              color={isRecording ? '#fff' : colors.iconSecondary}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
+          {/* Input area */}
+          {!isRecording ? (
+            <View style={[styles.inputWrapper, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
+              <TextInput
+                ref={inputRef}
+                style={[styles.composerInput, { color: colors.text }]}
+                value={text}
+                onChangeText={handleChangeText}
+                placeholder={placeholder || 'Message...'}
+                placeholderTextColor={colors.placeholder}
+                multiline
+                maxLength={1000}
+              />
+
+              {/* Gallery button inside input */}
+              <TouchableOpacity
+                style={styles.galleryButton}
+                onPress={onPickImage}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="image-outline" size={24} color={colors.iconSecondary} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.recordingInputWrapper}>
+              <Text style={[styles.recordingInputText, { color: colors.textSecondary }]}>
+                Tap stop to finish recording
+              </Text>
+            </View>
+          )}
+
+          {/* Send or Mic button */}
+          {canSend && !isRecording ? (
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSend}
+              disabled={isSending}
+              activeOpacity={0.7}
+            >
+              {isSending ? (
+                <ActivityIndicator size="small" color="#0095f6" />
+              ) : (
+                <Ionicons name="send" size={22} color="#0095f6" />
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.micButton, isRecording && styles.micButtonRecording]}
+              onPress={handleMicPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={isRecording ? 'stop' : 'mic'}
+                size={24}
+                color={isRecording ? '#fff' : colors.iconSecondary}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -998,23 +1135,13 @@ export default function ChatThreadScreen() {
   }, [messages.length]);
 
   const { startCall } = useCall();
-
   const handleStartCall = useCallback(
     async (video: boolean) => {
-      if (!channelInfo?.otherMember) return;
-      try {
-        await startCall(
-          Number(channelInfo.otherMember.id),
-          video,
-          channelInfo.otherMember.name,
-          channelInfo.otherMember.image,
-        );
-        router.push('/call');
-      } catch {
-        Alert.alert('Error', 'Failed to start call. Please try again.');
-      }
+      const otherId = Number(channelInfo.otherMember?.id);
+      if (!otherId) return;
+      startCall(otherId, channelInfo.otherMember?.name, channelInfo.otherMember?.image, video);
     },
-    [channelInfo, startCall, router]
+    [channelInfo, startCall]
   );
 
   const handleSend = useCallback(
@@ -1573,6 +1700,24 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  // System message styles
+  systemMessageRow: {
+    alignItems: 'center',
+    marginVertical: 8,
+    paddingHorizontal: 32,
+  },
+  systemMessageBubble: {
+    backgroundColor: 'rgba(128, 128, 128, 0.12)',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  systemMessageText: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(128, 128, 128, 0.8)',
+    textAlign: 'center',
+  },
   // Message styles
   messageRow: {
     flexDirection: 'row',
@@ -1910,6 +2055,61 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
     color: 'rgba(0, 0, 0, 0.6)',
+  },
+  // Audio review bar
+  reviewBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginHorizontal: 8,
+    marginBottom: 8,
+    backgroundColor: 'rgba(0, 149, 246, 0.08)',
+    borderRadius: 22,
+    borderWidth: 0.5,
+    borderColor: 'rgba(0, 149, 246, 0.2)',
+    gap: 10,
+  },
+  reviewDeleteButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewPlayButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#0095f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewWaveformArea: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  reviewWaveformTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(0, 149, 246, 0.2)',
+    overflow: 'hidden',
+  },
+  reviewWaveformProgress: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: '#0095f6',
+  },
+  reviewDuration: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    minWidth: 32,
+    textAlign: 'center',
+  },
+  reviewSendButton: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   recordingInputWrapper: {
     flex: 1,

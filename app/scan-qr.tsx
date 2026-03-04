@@ -553,17 +553,17 @@ export default function ScannerScreen() {
       if (eventId && idResult.guestId) {
         await eventsApi.approveGuest(eventId, idResult.guestId, 'Approved at door');
       }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      // Navigate to Check Ins screen after approval
-      if (eventId) {
-        router.replace(`/manage-event/${eventId}/check-ins`);
-        return;
-      }
     } catch {
+      // Guest may already be verified — continue to check-ins
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsSubmitting(false);
+
+    // Navigate to Check Ins screen after approval
+    if (eventId) {
+      router.replace(`/manage-event/${eventId}/check-ins`);
+    } else {
       addToListOptimistic(idResult, 'approved');
-    } finally {
-      setIsSubmitting(false);
       resetFlow();
     }
   };

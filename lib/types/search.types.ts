@@ -68,3 +68,64 @@ export interface DiscoverVenue {
   location: string;
   image?: string;
 }
+
+// ── Unified search types ──
+
+export interface UnifiedSearchItem {
+  type: 'person' | 'event' | 'venue' | 'post';
+  id: number;
+  score: number;
+  // Person
+  userName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatar?: { id: string; url: string } | null;
+  isVerified?: boolean;
+  isFollowing?: boolean;
+  mutualCount?: number;
+  // Event
+  name?: string;
+  description?: string | null;
+  startDate?: string | null;
+  venueName?: string | null;
+  venueId?: number | null;
+  flyer?: { id: string; url: string } | null;
+  // Venue
+  address?: string | null;
+  logo?: { id: string; url: string } | null;
+  // Post
+  text?: string | null;
+  authorName?: string | null;
+  authorAvatar?: string | null;
+  media?: unknown[];
+  likeCount?: number;
+}
+
+export interface UnifiedSearchResponse {
+  results: UnifiedSearchItem[];
+  total: number;
+  hasMore: boolean;
+}
+
+export interface SearchSuggestion {
+  type: 'recent' | 'frequent' | 'mutual';
+  id: number;
+  query?: string | null;
+  selectedType?: string | null;
+  selectedId?: number | null;
+  displayName?: string | null;
+  displayImage?: string | null;
+  searchedAt?: string;
+  userName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatar?: { id: string; url: string } | null;
+  isVerified?: boolean;
+  mutualCount?: number;
+}
+
+export interface SuggestionsResponse {
+  recentSearches: SearchSuggestion[];
+  frequentFriends: SearchSuggestion[];
+  mutualFollowSuggestions: SearchSuggestion[];
+}

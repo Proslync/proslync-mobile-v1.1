@@ -54,6 +54,7 @@ export interface User {
   role: UserRole;
   status: string;
   isProfileComplete: boolean;
+  isVerified?: boolean;
   isAppleMessagesLinked?: boolean;
   requiresAppleMessagesLinking?: boolean;
   assignedRoles?: AssignedRoles;

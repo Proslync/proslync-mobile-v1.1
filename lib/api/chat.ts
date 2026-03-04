@@ -26,7 +26,7 @@ export interface MessageResponse {
   id: number;
   conversationId: string;
   senderId: number;
-  type: 'text' | 'image' | 'video' | 'voice';
+  type: 'text' | 'image' | 'video' | 'voice' | 'system';
   text: string | null;
   mediaUrl: string | null;
   mediaMetadata: {

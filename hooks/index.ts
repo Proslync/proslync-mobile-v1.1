@@ -36,6 +36,7 @@ export { usePostComments, POST_COMMENTS_KEY } from './use-post-comments';
 export type { CommentData } from './use-post-comments';
 export { useAddComment } from './use-add-comment';
 export { usePostReaction } from './use-post-reaction';
+export { useDeletePost } from './use-delete-post';
 
 // Follow hooks
 export { useFollowUser } from './use-follow-user';
@@ -49,6 +50,11 @@ export {
   mapEventToDiscover,
   mapVenueToDiscover,
 } from './use-search';
+export {
+  useUnifiedSearch,
+  UNIFIED_SEARCH_KEY,
+  SUGGESTIONS_KEY,
+} from './use-unified-search';
 
 // Ticket/Payment hooks
 export { useMyTickets, MY_TICKETS_KEY } from './use-my-tickets';
@@ -136,3 +142,26 @@ export {
   STRIPE_EARNINGS_KEY,
   STRIPE_PAYOUTS_KEY,
 } from './use-wallet-queries';
+
+// Call hooks
+export { useCall } from '../lib/providers/call-provider';
+
+// Admin hooks
+export {
+  useAdminStats,
+  useAdminActivity,
+  useAdminUsers,
+  useAdminEvents,
+  useAdminPosts,
+  useUpdateUserRole,
+  useUpdateUserStatus,
+  useUpdateUserVerified,
+  useUpdateEventStatus,
+  useAdminDeleteEvent,
+  useAdminDeletePost,
+  ADMIN_STATS_KEY,
+  ADMIN_ACTIVITY_KEY,
+  ADMIN_USERS_KEY,
+  ADMIN_EVENTS_KEY,
+  ADMIN_POSTS_KEY,
+} from './use-admin';

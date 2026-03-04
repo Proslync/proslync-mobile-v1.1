@@ -1,7 +1,7 @@
 // Membership Card - Social profile card with avatar
 import React from 'react';
 import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { WalletUser } from '../../lib/types/wallet.types';
 
@@ -53,11 +53,16 @@ export function MembershipCard({ user, onPress, enlarged = false }: MembershipCa
             <Text style={styles.displayName} numberOfLines={1}>{user.name}</Text>
 
             {user.userName ? (
-              <Text style={styles.handle} numberOfLines={1}>@{user.userName}</Text>
+              <View style={styles.handleRow}>
+                <Text style={styles.handle} numberOfLines={1}>@{user.userName}</Text>
+                {user.isVerified && (
+                  <MaterialCommunityIcons name="check-decagram" size={15} color="#3897F0" />
+                )}
+              </View>
             ) : null}
 
             <View style={styles.memberRow}>
-              <Ionicons name="calendar-outline" size={11} color="rgba(255, 255, 255, 0.35)" />
+              <Ionicons name="calendar-outline" size={11} color="rgba(255, 255, 255, 0.6)" />
               <Text style={styles.memberSince}>{formatMemberSince(user.memberSince)}</Text>
             </View>
           </View>
@@ -85,14 +90,14 @@ const styles = StyleSheet.create({
   content: {
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 18,
     paddingBottom: 18,
   },
   logo: {
     width: 90,
     height: 32,
     tintColor: '#fff',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   avatarContainer: {
     position: 'relative',
@@ -121,12 +126,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
     textAlign: 'center',
   },
+  handleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
   handle: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.45)',
+    color: '#fff',
     textAlign: 'center',
-    marginTop: 2,
   },
   memberRow: {
     flexDirection: 'row',
@@ -138,6 +149,6 @@ const styles = StyleSheet.create({
   memberSince: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.35)',
+    color: 'rgba(255, 255, 255, 0.6)',
   },
 });

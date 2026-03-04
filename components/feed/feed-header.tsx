@@ -7,8 +7,8 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { FeedTab } from '@/lib/types/feed.types';
 
@@ -33,10 +33,9 @@ export function FeedHeader({
       <View style={styles.headerRow}>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => router.push('/search-screen')}
           activeOpacity={0.7}
         >
-          <Ionicons name="search-outline" size={22} color={colors.text} />
+          <Ionicons name="notifications-outline" size={22} color={colors.text} />
         </TouchableOpacity>
 
         <View style={styles.tabRow}>
@@ -65,10 +64,10 @@ export function FeedHeader({
 
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => router.push('/notifications')}
+          onPress={() => router.push('/search-screen')}
           activeOpacity={0.7}
         >
-          <Ionicons name="notifications-outline" size={22} color={colors.text} />
+          <Ionicons name="search-outline" size={22} color={colors.text} />
         </TouchableOpacity>
       </View>
     </Animated.View>
