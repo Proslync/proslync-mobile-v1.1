@@ -130,6 +130,13 @@ export {
 // Membership card hooks
 export { useMembershipCard, MEMBERSHIP_CARD_KEY } from './use-membership-card';
 
+// User Preferences hooks
+export {
+  useUserPreferences,
+  useUpdatePreference,
+  USER_PREFERENCES_KEY,
+} from './use-user-preferences';
+
 // Wallet / Stripe Connect hooks
 export {
   useStripeAccountStatus,

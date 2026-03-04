@@ -129,6 +129,14 @@ function RootLayoutNav() {
           options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
+          name="notification-settings"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="privacy-settings"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}
         />
