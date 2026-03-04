@@ -32,11 +32,9 @@ const ACTIVITY_ITEMS: ToggleItem[] = [
 
 const MESSAGES_ITEMS: ToggleItem[] = [
   { key: 'notifyDirectMessages', label: 'Direct Messages', description: 'When you receive a new message', icon: 'mail-outline' },
-  { key: 'notifyMessageRequests', label: 'Message Requests', description: 'New message requests', icon: 'mail-unread-outline' },
 ];
 
 const OTHER_ITEMS: ToggleItem[] = [
-  { key: 'notifyEmail', label: 'Email Notifications', description: 'Receive email updates', icon: 'send-outline' },
   { key: 'notifyPush', label: 'Push Notifications', description: 'Enable push notifications', icon: 'notifications-outline' },
 ];
 
