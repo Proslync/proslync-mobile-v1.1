@@ -6,220 +6,114 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { Audio } from 'expo-av';
 import {
-  RTCPeerConnection,
-  RTCSessionDescription,
-  RTCIceCandidate,
-  mediaDevices,
-  MediaStream,
-  RTCView,
-} from 'react-native-webrtc';
+  LiveKitRoom,
+  useTracks,
+  VideoTrack,
+  isTrackReference,
+  useLocalParticipant,
+  useRemoteParticipants,
+} from '@livekit/react-native';
+import { Track } from 'livekit-client';
 import { useCall } from '@/lib/providers/call-provider';
 import { callkitService } from '@/lib/services/callkit-service';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-  ],
-};
-
-type CallState = 'ringing' | 'connecting' | 'active' | 'ended';
+import { config } from '@/lib/config';
 
 export default function CallScreen() {
-  const params = useLocalSearchParams<{
-    callId: string;
-    recipientId: string;
-    recipientName: string;
-    recipientAvatar: string;
-    isVideo: string;
-    isIncoming: string;
-  }>();
+  const { currentCall, endCall } = useCall();
+  const router = useRouter();
 
+  // Navigate back if call was ended externally (remote hangup, socket event)
+  React.useEffect(() => {
+    if (!currentCall && router.canGoBack()) {
+      router.back();
+    }
+  }, [currentCall, router]);
+
+  if (!currentCall) return <View style={styles.container} />;
+
+  const serverUrl = currentCall.wsUrl || config.livekit.serverUrl;
+
+  return (
+    <View style={styles.container}>
+      <DarkGradientBg />
+      <LiveKitRoom
+        serverUrl={serverUrl}
+        token={currentCall.token}
+        connect={true}
+        options={{ adaptiveStream: { pixelDensity: 'screen' } }}
+        audio={true}
+        video={currentCall.isVideo}
+        onError={(err) => console.warn('[LiveKit] Room error:', err.message)}
+      >
+        <RoomContent
+          isVideo={currentCall.isVideo}
+          recipientName={currentCall.recipientName}
+          recipientAvatar={currentCall.recipientAvatar}
+          callId={currentCall.callId}
+          isOutgoing={currentCall.isOutgoing}
+          onEnd={endCall}
+        />
+      </LiveKitRoom>
+    </View>
+  );
+}
+
+interface RoomContentProps {
+  isVideo: boolean;
+  recipientName: string;
+  recipientAvatar?: string;
+  callId: string;
+  isOutgoing: boolean;
+  onEnd: () => Promise<void>;
+}
+
+function RoomContent({
+  isVideo,
+  recipientName,
+  recipientAvatar,
+  callId,
+  isOutgoing,
+  onEnd,
+}: RoomContentProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { endActiveCall, socketRef } = useCall();
+  const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
+  const remoteParticipants = useRemoteParticipants();
+  const hasRemoteParticipant = remoteParticipants.length > 0;
 
-  const isVideo = params.isVideo === '1';
-  const isIncoming = params.isIncoming === '1';
-
-  const [callState, setCallState] = React.useState<CallState>(
-    isIncoming ? 'connecting' : 'ringing',
-  );
   const [duration, setDuration] = React.useState(0);
-  const [isMuted, setIsMuted] = React.useState(false);
-  const [isCameraOff, setIsCameraOff] = React.useState(!isVideo);
   const [isSpeaker, setIsSpeaker] = React.useState(isVideo);
-  const [localStream, setLocalStream] = React.useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = React.useState<MediaStream | null>(null);
-
-  const pcRef = React.useRef<RTCPeerConnection | null>(null);
-  const pendingCandidatesRef = React.useRef<RTCIceCandidate[]>([]);
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const connectedRef = React.useRef(false);
 
-  // WebRTC setup
+  // Get all camera tracks for video rendering
+  const tracks = useTracks([Track.Source.Camera]);
+
+  const remoteCameraTrack = tracks.find(
+    (t) => isTrackReference(t) && t.participant.sid !== localParticipant?.sid,
+  );
+  const localCameraTrack = tracks.find(
+    (t) => isTrackReference(t) && t.participant.sid === localParticipant?.sid,
+  );
+
+  // Report call connected to CallKit when remote participant joins
   React.useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket || !params.callId) return;
+    if (hasRemoteParticipant && !connectedRef.current) {
+      connectedRef.current = true;
+      callkitService.reportCallConnected(callId);
+    }
+  }, [hasRemoteParticipant, callId]);
 
-    let pc: RTCPeerConnection | null = null;
-    let stream: MediaStream | null = null;
-    let mounted = true;
-
-    const setup = async () => {
-      // 1. Get local media
-      stream = await mediaDevices.getUserMedia({
-        audio: true,
-        video: isVideo ? { facingMode: 'user', width: 640, height: 480 } : false,
-      }) as MediaStream;
-      if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
-      setLocalStream(stream);
-
-      // 2. Create peer connection
-      pc = new RTCPeerConnection(ICE_SERVERS);
-      pcRef.current = pc;
-
-      // 3. Add local tracks
-      stream.getTracks().forEach(track => {
-        pc!.addTrack(track, stream!);
-      });
-
-      // 4. Handle remote tracks
-      pc.ontrack = (event: any) => {
-        if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0] as MediaStream);
-          setCallState('active');
-          // Tell CallKit the call is connected
-          callkitService.reportCallConnected(params.callId!);
-        }
-      };
-
-      // 5. Handle ICE candidates — send to peer via signaling
-      pc.onicecandidate = (event: any) => {
-        if (event.candidate) {
-          socket.emit('call:ice-candidate', {
-            callId: params.callId,
-            targetUserId: Number(params.recipientId),
-            candidate: event.candidate.toJSON ? event.candidate.toJSON() : event.candidate,
-          });
-        }
-      };
-
-      pc.oniceconnectionstatechange = () => {
-        const state = pc?.iceConnectionState;
-        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-          if (mounted) setCallState('ended');
-        }
-      };
-
-      // 6. Listen for remote ICE candidates
-      const handleIceCandidate = async (data: { callId: string; candidate: any }) => {
-        if (data.callId !== params.callId || !pc) return;
-        try {
-          const candidate = new RTCIceCandidate(data.candidate);
-          if (pc.remoteDescription) {
-            await pc.addIceCandidate(candidate);
-          } else {
-            pendingCandidatesRef.current.push(candidate);
-          }
-        } catch (err) {
-          console.error('Failed to add ICE candidate:', err);
-        }
-      };
-      socket.on('call:ice-candidate', handleIceCandidate);
-
-      // Helper to flush pending ICE candidates
-      const flushPendingCandidates = async () => {
-        for (const candidate of pendingCandidatesRef.current) {
-          try { await pc!.addIceCandidate(candidate); } catch {}
-        }
-        pendingCandidatesRef.current = [];
-      };
-
-      // 7. Role-specific signaling
-      if (!isIncoming) {
-        // CALLER: wait for call:accepted, then create & send offer
-        const handleAccepted = async (data: { callId: string }) => {
-          if (data.callId !== params.callId || !pc) return;
-          if (mounted) setCallState('connecting');
-          try {
-            const offer = await pc.createOffer({});
-            await pc.setLocalDescription(offer);
-            socket.emit('call:offer', {
-              callId: params.callId,
-              recipientId: Number(params.recipientId),
-              sdp: offer,
-            });
-          } catch (err) {
-            console.error('Failed to create offer:', err);
-          }
-        };
-        socket.on('call:accepted', handleAccepted);
-
-        // Listen for answer from recipient
-        const handleAnswer = async (data: { callId: string; sdp: any }) => {
-          if (data.callId !== params.callId || !pc) return;
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            await flushPendingCandidates();
-          } catch (err) {
-            console.error('Failed to handle answer:', err);
-          }
-        };
-        socket.on('call:answer', handleAnswer);
-      } else {
-        // RECIPIENT: wait for offer, then create & send answer
-        const handleOffer = async (data: { callId: string; senderId: number; sdp: any }) => {
-          if (data.callId !== params.callId || !pc) return;
-          if (mounted) setCallState('connecting');
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            await flushPendingCandidates();
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            socket.emit('call:answer', {
-              callId: params.callId,
-              callerId: data.senderId,
-              sdp: answer,
-            });
-          } catch (err) {
-            console.error('Failed to handle offer:', err);
-          }
-        };
-        socket.on('call:offer', handleOffer);
-      }
-    };
-
-    setup().catch((err) => {
-      console.error('WebRTC setup failed:', err);
-      if (mounted) setCallState('ended');
-    });
-
-    return () => {
-      mounted = false;
-      socket.off('call:offer');
-      socket.off('call:answer');
-      socket.off('call:ice-candidate');
-      socket.off('call:accepted');
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      if (pc) {
-        pc.close();
-        pcRef.current = null;
-      }
-    };
-  }, [params.callId, params.recipientId, isIncoming, isVideo]);
-
-  // Ringing sound
+  // Ringtone — play while waiting for remote participant
   React.useEffect(() => {
-    if (callState !== 'ringing' && callState !== 'connecting') return;
+    if (hasRemoteParticipant) return;
 
     let sound: Audio.Sound | null = null;
     let mounted = true;
@@ -250,11 +144,11 @@ export default function CallScreen() {
         sound.stopAsync().then(() => sound!.unloadAsync()).catch(() => {});
       }
     };
-  }, [callState]);
+  }, [hasRemoteParticipant]);
 
-  // Duration timer
+  // Duration timer — starts when remote joins
   React.useEffect(() => {
-    if (callState === 'active') {
+    if (hasRemoteParticipant) {
       timerRef.current = setInterval(() => {
         setDuration((d) => d + 1);
       }, 1000);
@@ -262,15 +156,7 @@ export default function CallScreen() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [callState]);
-
-  // Navigate back when call ends
-  React.useEffect(() => {
-    if (callState === 'ended') {
-      const timeout = setTimeout(() => router.back(), 1000);
-      return () => clearTimeout(timeout);
-    }
-  }, [callState, router]);
+  }, [hasRemoteParticipant]);
 
   const formatDuration = (seconds: number): string => {
     const m = Math.floor(seconds / 60);
@@ -279,39 +165,23 @@ export default function CallScreen() {
   };
 
   const handleEndCall = async () => {
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-    }
-    pcRef.current?.close();
-    pcRef.current = null;
-    // endActiveCall also calls callkitService.endCall internally
-    await endActiveCall();
-    router.back();
+    await onEnd();
+    // Navigation handled by the useEffect in CallScreen watching currentCall
   };
 
   const handleToggleMute = () => {
-    if (!localStream) return;
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (audioTrack) {
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMuted(!audioTrack.enabled);
-    }
+    localParticipant?.setMicrophoneEnabled(!isMicrophoneEnabled);
   };
 
   const handleToggleCamera = () => {
-    if (!localStream) return;
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      videoTrack.enabled = !videoTrack.enabled;
-      setIsCameraOff(!videoTrack.enabled);
-    }
+    localParticipant?.setCameraEnabled(!isCameraEnabled);
   };
 
-  const handleFlipCamera = () => {
-    if (!localStream) return;
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      (videoTrack as any)._switchCamera();
+  const handleFlipCamera = async () => {
+    const pub = localParticipant?.getTrackPublication(Track.Source.Camera);
+    const track = pub?.track;
+    if (track) {
+      await track.restartTrack();
     }
   };
 
@@ -319,59 +189,53 @@ export default function CallScreen() {
     setIsSpeaker((s) => !s);
   };
 
-  const statusText =
-    callState === 'ringing'
-      ? 'Ringing...'
-      : callState === 'connecting'
-        ? 'Connecting...'
-        : callState === 'ended'
-          ? 'Call Ended'
-          : formatDuration(duration);
+  const statusText = hasRemoteParticipant
+    ? formatDuration(duration)
+    : isOutgoing
+      ? 'Calling...'
+      : 'Connecting...';
+
+  const showCallerInfo = !isVideo || !hasRemoteParticipant || !(remoteCameraTrack && isTrackReference(remoteCameraTrack));
 
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
-
-      {/* Local camera preview (full screen while ringing/connecting for video calls) */}
-      {isVideo && localStream && callState !== 'active' && callState !== 'ended' && (
-        <RTCView
+    <View style={styles.roomContainer}>
+      {/* Local camera preview (full screen while ringing for video calls) */}
+      {isVideo && !hasRemoteParticipant && localCameraTrack && isTrackReference(localCameraTrack) && (
+        <VideoTrack
+          trackRef={localCameraTrack}
+          mirror={true}
           style={styles.remoteVideo}
-          streamURL={localStream.toURL()}
-          objectFit="cover"
-          mirror
         />
       )}
 
       {/* Remote video (full screen when active) */}
-      {isVideo && remoteStream && callState === 'active' && (
-        <RTCView
+      {isVideo && hasRemoteParticipant && remoteCameraTrack && isTrackReference(remoteCameraTrack) && (
+        <VideoTrack
+          trackRef={remoteCameraTrack}
           style={styles.remoteVideo}
-          streamURL={remoteStream.toURL()}
-          objectFit="cover"
         />
       )}
 
-      {/* Local video (PiP when active) */}
-      {isVideo && localStream && callState === 'active' && (
+      {/* Local video PiP when active */}
+      {isVideo && hasRemoteParticipant && localCameraTrack && isTrackReference(localCameraTrack) && (
         <View style={[styles.localVideoPip, { top: insets.top + 16 }]}>
-          <RTCView
+          <VideoTrack
+            trackRef={localCameraTrack}
+            mirror={true}
             style={styles.localVideoInner}
-            streamURL={localStream.toURL()}
-            objectFit="cover"
-            mirror
           />
         </View>
       )}
 
       {/* Caller info (shown when no remote video) */}
-      {(!isVideo || !remoteStream || callState !== 'active') && (
+      {showCallerInfo && (
         <Animated.View
           entering={FadeIn.duration(400)}
           style={[styles.callerInfo, { paddingTop: insets.top + 80 }]}
         >
-          {params.recipientAvatar ? (
+          {recipientAvatar ? (
             <Image
-              source={{ uri: params.recipientAvatar }}
+              source={{ uri: recipientAvatar }}
               style={styles.avatar}
             />
           ) : (
@@ -379,15 +243,15 @@ export default function CallScreen() {
               <Ionicons name="person" size={48} color="rgba(255,255,255,0.6)" />
             </View>
           )}
-          <Text style={styles.name}>{params.recipientName}</Text>
+          <Text style={styles.name}>{recipientName}</Text>
           <Text style={styles.status}>{statusText}</Text>
         </Animated.View>
       )}
 
-      {/* Status overlay for video calls */}
-      {isVideo && remoteStream && callState === 'active' && (
+      {/* Status overlay for active video calls */}
+      {isVideo && hasRemoteParticipant && remoteCameraTrack && isTrackReference(remoteCameraTrack) && (
         <View style={[styles.videoStatusOverlay, { top: insets.top + 16 }]}>
-          <Text style={styles.videoStatusName}>{params.recipientName}</Text>
+          <Text style={styles.videoStatusName}>{recipientName}</Text>
           <Text style={styles.videoStatusTime}>{statusText}</Text>
         </View>
       )}
@@ -398,28 +262,28 @@ export default function CallScreen() {
         style={[styles.controls, { paddingBottom: insets.bottom + 24 }]}
       >
         <TouchableOpacity
-          style={[styles.controlButton, isMuted && styles.controlActive]}
+          style={[styles.controlButton, !isMicrophoneEnabled && styles.controlActive]}
           onPress={handleToggleMute}
           activeOpacity={0.7}
         >
           <Ionicons
-            name={isMuted ? 'mic-off' : 'mic'}
+            name={isMicrophoneEnabled ? 'mic' : 'mic-off'}
             size={24}
             color="#fff"
           />
           <Text style={styles.controlLabel}>
-            {isMuted ? 'Unmute' : 'Mute'}
+            {isMicrophoneEnabled ? 'Mute' : 'Unmute'}
           </Text>
         </TouchableOpacity>
 
         {isVideo && (
           <TouchableOpacity
-            style={[styles.controlButton, isCameraOff && styles.controlActive]}
+            style={[styles.controlButton, !isCameraEnabled && styles.controlActive]}
             onPress={handleToggleCamera}
             activeOpacity={0.7}
           >
             <Ionicons
-              name={isCameraOff ? 'videocam-off' : 'videocam'}
+              name={isCameraEnabled ? 'videocam' : 'videocam-off'}
               size={24}
               color="#fff"
             />
@@ -472,6 +336,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  roomContainer: {
+    flex: 1,
   },
   remoteVideo: {
     ...StyleSheet.absoluteFillObject,

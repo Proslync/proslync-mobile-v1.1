@@ -117,7 +117,8 @@
       "WebFetch(domain:docs.livekit.io)",
       "Bash(git show:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(python3:*)"
     ]
   }
 }

@@ -11,6 +11,9 @@ import * as Font from "expo-font";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import "react-native-reanimated";
+import { registerGlobals } from "@livekit/react-native";
+
+registerGlobals();
 
 import { ThemeProvider, useAppTheme } from "@/lib/providers/theme-provider";
 import { AuthProvider } from "@/lib/providers/auth-provider";

@@ -3,10 +3,14 @@ import { apiClient } from './client';
 export interface InitiateCallResponse {
   callId: string;
   roomName: string;
+  token: string;
+  wsUrl: string;
 }
 
 export interface AcceptCallResponse {
   callId: string;
+  token: string;
+  wsUrl: string;
 }
 
 export interface IncomingCallData {
