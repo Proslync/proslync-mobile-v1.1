@@ -144,13 +144,9 @@ export default function UserProfileScreen() {
       try {
         const numericId = Number(userId);
         if (isNaN(numericId)) return;
-        const [profileData, blockStatus] = await Promise.all([
-          authApi.getUserById(numericId),
-          usersApi.getBlockStatus(numericId),
-        ]);
+        const profileData = await authApi.getUserById(numericId);
         if (cancelled) return;
         if (profileData) setProfile(profileData);
-        setIsBlocked(blockStatus.isBlocked);
       } catch (err) {
         console.error('Failed to load profile:', err);
       } finally {
