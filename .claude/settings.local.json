@@ -118,7 +118,9 @@
       "Bash(git show:*)",
       "Bash(find:*)",
       "Bash(cat:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "WebFetch(domain:www.reddit.com)",
+      "WebFetch(domain:libraries.io)"
     ]
   }
 }

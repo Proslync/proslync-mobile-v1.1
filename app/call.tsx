@@ -21,12 +21,11 @@ import {
 } from '@livekit/react-native';
 import { Track } from 'livekit-client';
 import { useCall } from '@/lib/providers/call-provider';
-import { callkitService } from '@/lib/services/callkit-service';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { config } from '@/lib/config';
 
 export default function CallScreen() {
-  const { currentCall, endCall } = useCall();
+  const { currentCall, endCall, onCallConnected } = useCall();
   const endingRef = React.useRef(false);
   const hadCallRef = React.useRef(false);
 
@@ -53,6 +52,17 @@ export default function CallScreen() {
     endingRef.current = true;
     await endCall();
   }, [endCall]);
+
+  // Safety: if we land on this screen but no call materializes, go back
+  React.useEffect(() => {
+    if (currentCall) return;
+    const timeout = setTimeout(() => {
+      if (!currentCall && !hadCallRef.current) {
+        if (router.canGoBack()) router.back();
+      }
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, [currentCall]);
 
   if (!currentCall) return <View style={styles.container} />;
 
@@ -83,6 +93,7 @@ export default function CallScreen() {
           callId={currentCall.callId}
           isOutgoing={currentCall.isOutgoing}
           onEnd={handleEnd}
+          onCallConnected={onCallConnected}
         />
       </LiveKitRoom>
     </View>
@@ -96,6 +107,7 @@ interface RoomContentProps {
   callId: string;
   isOutgoing: boolean;
   onEnd: () => Promise<void>;
+  onCallConnected: (callId: string) => void;
 }
 
 function RoomContent({
@@ -105,6 +117,7 @@ function RoomContent({
   callId,
   isOutgoing,
   onEnd,
+  onCallConnected,
 }: RoomContentProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -131,9 +144,9 @@ function RoomContent({
   React.useEffect(() => {
     if (hasRemoteParticipant && !connectedRef.current) {
       connectedRef.current = true;
-      callkitService.reportCallConnected(callId);
+      onCallConnected(callId);
     }
-  }, [hasRemoteParticipant, callId]);
+  }, [hasRemoteParticipant, callId, onCallConnected]);
 
   // Ringtone — play while waiting for remote participant
   React.useEffect(() => {

@@ -113,13 +113,13 @@
           "microphonePermission": "Status needs microphone access for voice and video calls"
         }
       ],
+      "./plugins/withVoipPushNotification",
       [
-        "@config-plugins/react-native-callkeep",
+        "expo-notifications",
         {
-          "appName": "Status"
+          "sounds": []
         }
-      ],
-      "./plugins/withVoipPushNotification"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
