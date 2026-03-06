@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { View } from 'react-native';
 import type { ViewStyle } from 'react-native';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import {
   glassFill as glassFillTokens,
   glassBorder as glassBorderTokens,
@@ -8,6 +9,8 @@ import {
 } from '@/constants/glass/tokens';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { GlassFill, GlassBorder, RadiusScale } from '@/constants/glass/types';
+
+const useNativeGlass = isGlassEffectAPIAvailable();
 
 interface GlassSurfaceProps {
   fill?: GlassFill;
@@ -18,8 +21,8 @@ interface GlassSurfaceProps {
 }
 
 /**
- * Lightweight View with glass fill + border, NO blur.
- * Automatically adapts to light/dark theme.
+ * Lightweight View with glass fill + border.
+ * Uses Apple's native Liquid Glass on iOS 26+, falls back to themed rgba on older platforms.
  */
 export function GlassSurface({
   fill = 'subtle',
@@ -30,11 +33,6 @@ export function GlassSurface({
 }: GlassSurfaceProps) {
   const { isDark } = useAppTheme();
 
-  // Use theme-appropriate colors
-  const fillColor = isDark
-    ? `rgba(255, 255, 255, ${glassFillTokens[fill]})`
-    : `rgba(0, 0, 0, ${glassFillTokens[fill]})`;
-
   const borderStyle: ViewStyle | undefined = border
     ? {
         borderWidth: glassBorderTokens[border].borderWidth,
@@ -43,6 +41,29 @@ export function GlassSurface({
           : `rgba(0, 0, 0, ${glassBorderTokens[border].opacity})`,
       }
     : undefined;
+
+  if (useNativeGlass) {
+    return (
+      <GlassView
+        glassEffectStyle="clear"
+        colorScheme={isDark ? 'dark' : 'light'}
+        style={[
+          {
+            borderRadius: radiusTokens[cornerRadius],
+            overflow: 'hidden' as const,
+          },
+          borderStyle,
+          style,
+        ]}
+      >
+        {children}
+      </GlassView>
+    );
+  }
+
+  const fillColor = isDark
+    ? `rgba(255, 255, 255, ${glassFillTokens[fill]})`
+    : `rgba(0, 0, 0, ${glassFillTokens[fill]})`;
 
   return (
     <View
