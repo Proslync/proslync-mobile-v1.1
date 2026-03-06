@@ -1,7 +1,6 @@
 import { AppState, type NativeEventSubscription, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { callsApi } from '@/lib/api/calls';
-import { router } from 'expo-router';
 
 // Configure how notifications appear when app is in foreground
 Notifications.setNotificationHandler({
@@ -17,7 +16,6 @@ Notifications.setNotificationHandler({
 class PushNotificationService {
   private registered = false;
   private currentToken: string | null = null;
-  private responseSubscription: Notifications.Subscription | null = null;
   private tokenRefreshSubscription: Notifications.Subscription | null = null;
   private appStateSubscription: NativeEventSubscription | null = null;
 
@@ -54,12 +52,6 @@ class PushNotificationService {
         this.registerTokenWithBackend(newToken.data as string);
       });
 
-    // Listen for notification taps
-    this.responseSubscription =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        this.handleNotificationTap(response);
-      });
-
     // Clear badge when app comes to foreground
     this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
 
@@ -84,41 +76,7 @@ class PushNotificationService {
     }
   };
 
-  private handleNotificationTap(
-    response: Notifications.NotificationResponse,
-  ) {
-    const data = response.notification.request.content.data;
-    if (!data) return;
-
-    const type = data.type as string;
-
-    switch (type) {
-      case 'follow':
-        if (data.followerId) {
-          router.push(`/user/${data.followerId}` as any);
-        }
-        break;
-      case 'like':
-      case 'comment':
-        if (data.postId) {
-          router.push(`/post/${data.postId}` as any);
-        }
-        break;
-      case 'payment':
-        if (data.eventId) {
-          router.push(`/manage-event/${data.eventId}` as any);
-        }
-        break;
-      default:
-        router.push('/notifications' as any);
-    }
-  }
-
   async unregister() {
-    if (this.responseSubscription) {
-      this.responseSubscription.remove();
-      this.responseSubscription = null;
-    }
     if (this.tokenRefreshSubscription) {
       this.tokenRefreshSubscription.remove();
       this.tokenRefreshSubscription = null;

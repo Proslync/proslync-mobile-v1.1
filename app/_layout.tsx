@@ -4,10 +4,11 @@ import {
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
+import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import "react-native-reanimated";
@@ -29,8 +30,37 @@ import { CallProvider } from "@/lib/providers/call-provider";
 
 SplashScreen.preventAutoHideAsync();
 
+function useNotificationObserver() {
+  useEffect(() => {
+    function redirect(notification: Notifications.Notification) {
+      const data = notification.request.content.data;
+      const url = data?.url;
+      if (typeof url === "string") {
+        router.push(url as any);
+      }
+    }
+
+    // Cold start — app was killed, user tapped notification to launch
+    const response = Notifications.getLastNotificationResponse();
+    if (response?.notification) {
+      redirect(response.notification);
+    }
+
+    // Foreground + background — user taps notification while app is running
+    const subscription =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        redirect(response.notification);
+      });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+}
+
 function RootLayoutNav() {
   const { isDark } = useAppTheme();
+  useNotificationObserver();
 
   return (
     <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
