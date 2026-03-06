@@ -16,7 +16,7 @@
           "merchant.statusdigitalinc.status"
         ],
         "com.apple.developer.proximity-reader.payment.acceptance": true,
-        "aps-environment": "development"
+        "aps-environment": "production"
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
