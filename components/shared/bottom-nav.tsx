@@ -4,6 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/providers/auth-provider';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
 
@@ -43,6 +44,7 @@ export function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
 
   const getActiveTab = (): TabName => {
     if (pathname.includes('/search')) return 'search';
@@ -59,7 +61,7 @@ export function BottomNav() {
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 4 }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom + 4, backgroundColor: colors.background }]}>
       {TABS.map((tab) => {
         const isActive = activeTab === tab.name;
         const isProfile = tab.name === 'profile';
@@ -96,7 +98,6 @@ const styles = StyleSheet.create({
     height: 50,
     paddingTop: 4,
     paddingHorizontal: 20,
-    backgroundColor: '#000',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

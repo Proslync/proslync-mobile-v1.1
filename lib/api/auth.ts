@@ -63,6 +63,13 @@ export const authApi = {
     return apiClient.put<UpdateProfileResponse>('/api/users/profile', data);
   },
 
+  checkUsernameAvailable: async (userName: string): Promise<boolean> => {
+    const response = await apiClient.get<{ available: boolean; userName: string }>(
+      `/api/users/check-username/${encodeURIComponent(userName)}`
+    );
+    return response.available;
+  },
+
   getUserByUsername: async (userName: string): Promise<PublicUserProfile | null> => {
     const response = await apiClient.get<{
       events: unknown[];

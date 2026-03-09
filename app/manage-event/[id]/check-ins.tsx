@@ -6,8 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -15,7 +15,7 @@ import Animated, {
   Layout,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { TerminalProvider, useTerminalPayment } from '@/lib/providers/terminal-provider';
@@ -86,6 +86,7 @@ function CheckInsContent() {
   const [loading, setLoading] = React.useState(true);
   const [collectingGuestId, setCollectingGuestId] = React.useState<number | null>(null);
   const [event, setEvent] = React.useState<Event | null>(null);
+  const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<string | null>(null);
 
   // Fetch event data (for doorCoverPriceCents)
   React.useEffect(() => {
@@ -103,7 +104,6 @@ function CheckInsContent() {
       const checkedInStatuses = [
         EventUserStatus.VERIFIED,
         EventUserStatus.CHECKED_IN,
-        EventUserStatus.SEATED,
       ];
       const filtered = response.attendees.filter(
         (a) => a.status && checkedInStatuses.includes(a.status),
@@ -122,10 +122,12 @@ function CheckInsContent() {
     }
   }, [eventId]);
 
-  // Initial load
-  React.useEffect(() => {
-    fetchGuests();
-  }, [fetchGuests]);
+  // Refetch every time the screen comes into focus (e.g. after scanner approval)
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchGuests();
+    }, [fetchGuests])
+  );
 
   // Polling fallback every 30s
   React.useEffect(() => {
@@ -206,7 +208,7 @@ function CheckInsContent() {
         setCollectingGuestId(null);
         return;
       }
-      Alert.alert('Payment Failed', err?.message || 'Something went wrong.');
+      setPaymentFailedAlert(err?.message || 'Something went wrong.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setCollectingGuestId(null);
@@ -305,6 +307,14 @@ function CheckInsContent() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
+      <ConfirmModal
+        visible={!!paymentFailedAlert}
+        onClose={() => setPaymentFailedAlert(null)}
+        title="Payment Failed"
+        message={paymentFailedAlert || ''}
+        alertOnly
+        icon="card-outline"
+      />
 
       {/* Header */}
       <Animated.View

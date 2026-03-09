@@ -8,6 +8,7 @@ import type { Event } from "@/lib/types/events.types";
 import { EventStatus } from "@/lib/types/events.types";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as VideoThumbnails from "expo-video-thumbnails";
 import * as React from "react";
 import {
   ActivityIndicator,
@@ -112,13 +113,70 @@ function EventCard({
   const statusColor = getStatusColor(event.status);
   const statusLabel = getStatusLabel(event.status);
 
-  // For video flyers, use imageUrl as thumbnail instead
+  // For video flyers, generate a thumbnail from the video
   const VIDEO_EXT = /\.(mp4|mov|webm|m4v)(\?|$)/i;
   const flyerIsVideo =
     event.flyer?.mimeType?.startsWith("video/") ||
     VIDEO_EXT.test(event.flyer?.url || "");
+
+  const [videoThumb, setVideoThumb] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!flyerIsVideo || !event.flyer?.url || event.imageUrl) return;
+    let cancelled = false;
+
+    const TIMESTAMPS = [0, 500, 1000, 2000, 4000, 8000, 15000, 30000];
+
+    async function isColorfulFrame(videoUrl: string, time: number): Promise<string | null> {
+      try {
+        // Generate the same frame at low and high JPEG quality.
+        // Solid-color frames compress nearly identically at any quality,
+        // while frames with real content get much larger at high quality.
+        const [low, high] = await Promise.all([
+          VideoThumbnails.getThumbnailAsync(videoUrl, { time, quality: 0.1 }),
+          VideoThumbnails.getThumbnailAsync(videoUrl, { time, quality: 1 }),
+        ]);
+        const [lowResp, highResp] = await Promise.all([
+          fetch(low.uri),
+          fetch(high.uri),
+        ]);
+        const [lowBlob, highBlob] = await Promise.all([
+          lowResp.blob(),
+          highResp.blob(),
+        ]);
+        const ratio = highBlob.size / Math.max(lowBlob.size, 1);
+        // Solid color: ratio ~1.0-1.5. Real content: ratio >2.0
+        return ratio > 2 ? high.uri : null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function findGoodThumbnail() {
+      const url = event.flyer!.url!;
+      for (const time of TIMESTAMPS) {
+        if (cancelled) return;
+        const uri = await isColorfulFrame(url, time);
+        if (uri) {
+          if (!cancelled) setVideoThumb(uri);
+          return;
+        }
+      }
+      // Fallback: use whatever we got from the first timestamp
+      try {
+        const fallback = await VideoThumbnails.getThumbnailAsync(url, { time: 0 });
+        if (!cancelled) setVideoThumb(fallback.uri);
+      } catch {
+        // no thumbnail available
+      }
+    }
+
+    findGoodThumbnail();
+    return () => { cancelled = true; };
+  }, [flyerIsVideo, event.flyer?.url, event.imageUrl]);
+
   const thumbUri = flyerIsVideo
-    ? event.imageUrl || undefined
+    ? event.imageUrl || videoThumb || undefined
     : event.flyer?.url || event.imageUrl || undefined;
 
   return (
@@ -128,16 +186,22 @@ function EventCard({
       activeOpacity={0.8}
     >
       <View>
-        <Image
-          source={{ uri: thumbUri }}
-          style={[
-            styles.eventImage,
-            { backgroundColor: colors.backgroundSecondary },
-          ]}
-        />
-        {flyerIsVideo && (
-          <View style={styles.videoOverlay}>
-            <Ionicons name="play" size={20} color="#fff" />
+        {thumbUri ? (
+          <Image
+            source={{ uri: thumbUri }}
+            style={[
+              styles.eventImage,
+              { backgroundColor: colors.backgroundSecondary },
+            ]}
+          />
+        ) : (
+          <View
+            style={[
+              styles.eventImage,
+              { backgroundColor: colors.backgroundSecondary, justifyContent: "center", alignItems: "center" },
+            ]}
+          >
+            <Ionicons name="calendar" size={28} color={colors.textTertiary} />
           </View>
         )}
       </View>
@@ -589,16 +653,6 @@ const styles = StyleSheet.create({
   eventImage: {
     width: 100,
     height: 100,
-  },
-  videoOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.3)",
   },
   eventContent: {
     flex: 1,

@@ -3,10 +3,14 @@ import { apiClient } from './client';
 export interface InitiateCallResponse {
   callId: string;
   roomName: string;
+  token: string;
+  wsUrl: string;
 }
 
 export interface AcceptCallResponse {
   callId: string;
+  token: string;
+  wsUrl: string;
 }
 
 export interface IncomingCallData {
@@ -15,6 +19,8 @@ export interface IncomingCallData {
   callerName: string;
   isVideo: boolean;
   roomName: string;
+  isGroup?: boolean;
+  conversationId?: string;
 }
 
 export interface CallHistoryItem {
@@ -33,6 +39,9 @@ export interface CallHistoryItem {
 export const callsApi = {
   initiateCall: (recipientId: number, isVideo: boolean) =>
     apiClient.post<InitiateCallResponse>('/api/calls/initiate', { recipientId, isVideo }),
+
+  initiateGroupCall: (conversationId: string, isVideo: boolean) =>
+    apiClient.post<InitiateCallResponse>('/api/calls/initiate-group', { conversationId, isVideo }),
 
   acceptCall: (callId: string) =>
     apiClient.post<AcceptCallResponse>(`/api/calls/${callId}/accept`),

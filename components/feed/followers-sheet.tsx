@@ -227,7 +227,7 @@ export function FollowersSheet({
       onClose={handleClose}
       backgroundStyle={[
         styles.sheetBackground,
-        { backgroundColor: isDark ? "#000000" : "#fff" },
+        { backgroundColor: colors.background },
       ]}
       handleIndicatorStyle={[
         styles.sheetIndicator,

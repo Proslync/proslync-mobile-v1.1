@@ -12,7 +12,6 @@ import {
   Dimensions,
   ActivityIndicator,
   Share,
-  Alert,
 } from 'react-native';
 import Animated, {
   FadeIn,
@@ -25,6 +24,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useToast } from '@/components/shared/toast';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { chatApi } from '@/lib/api/chat';
@@ -172,66 +172,18 @@ export default function UserProfileScreen() {
     }
   };
 
+  const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
+  const [showReportConfirm, setShowReportConfirm] = React.useState<string | null>(null);
+
   const handleBlockPress = () => {
-    const action = isBlocked ? 'Unblock' : 'Block';
-    Alert.alert(
-      `${action} ${displayName}?`,
-      isBlocked
-        ? 'They will be able to find your profile and message you again.'
-        : 'They won\'t be able to find your profile, see your posts, or message you.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: action,
-          style: isBlocked ? 'default' : 'destructive',
-          onPress: async () => {
-            setIsBlockLoading(true);
-            try {
-              const numericId = Number(userId);
-              if (isBlocked) {
-                await usersApi.unblockUser(numericId);
-                setIsBlocked(false);
-                showSuccess(`Unblocked ${displayName}`);
-              } else {
-                await usersApi.blockUser(numericId);
-                setIsBlocked(true);
-                showSuccess(`Blocked ${displayName}`);
-              }
-            } catch {
-              showError(`Failed to ${action.toLowerCase()} user`);
-            } finally {
-              setIsBlockLoading(false);
-            }
-          },
-        },
-      ],
-    );
     setShowMoreMenu(false);
+    setShowBlockConfirm(true);
   };
 
   const handleReportPress = (reasonId: string) => {
-    const reason = REPORT_REASONS.find(r => r.id === reasonId);
     setShowReportSheet(false);
     setShowMoreMenu(false);
-    Alert.alert(
-      'Report this account?',
-      `Reason: ${reason?.label}\n\nWe'll review this report and take action if it violates our guidelines.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Report',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await usersApi.reportUser(Number(userId), reasonId);
-              showSuccess('Report submitted');
-            } catch {
-              showError('Failed to submit report');
-            }
-          },
-        },
-      ],
-    );
+    setShowReportConfirm(reasonId);
   };
 
   const handleSharePress = async () => {
@@ -564,6 +516,59 @@ export default function UserProfileScreen() {
           </Animated.View>
         </TouchableOpacity>
       )}
+
+      <ConfirmModal
+        visible={showBlockConfirm}
+        onClose={() => setShowBlockConfirm(false)}
+        onConfirm={async () => {
+          setShowBlockConfirm(false);
+          setIsBlockLoading(true);
+          try {
+            const numericId = Number(userId);
+            if (isBlocked) {
+              await usersApi.unblockUser(numericId);
+              setIsBlocked(false);
+              showSuccess(`Unblocked ${displayName}`);
+            } else {
+              await usersApi.blockUser(numericId);
+              setIsBlocked(true);
+              showSuccess(`Blocked ${displayName}`);
+            }
+          } catch {
+            showError(`Failed to ${isBlocked ? 'unblock' : 'block'} user`);
+          } finally {
+            setIsBlockLoading(false);
+          }
+        }}
+        title={`${isBlocked ? 'Unblock' : 'Block'} ${displayName}?`}
+        message={isBlocked
+          ? 'They will be able to find your profile and message you again.'
+          : "They won't be able to find your profile, see your posts, or message you."}
+        confirmLabel={isBlocked ? 'Unblock' : 'Block'}
+        destructive={!isBlocked}
+        icon={isBlocked ? 'lock-open-outline' : 'ban'}
+      />
+
+      <ConfirmModal
+        visible={!!showReportConfirm}
+        onClose={() => setShowReportConfirm(null)}
+        onConfirm={async () => {
+          const reasonId = showReportConfirm;
+          setShowReportConfirm(null);
+          if (!reasonId) return;
+          try {
+            await usersApi.reportUser(Number(userId), reasonId);
+            showSuccess('Report submitted');
+          } catch {
+            showError('Failed to submit report');
+          }
+        }}
+        title="Report this account?"
+        message={`Reason: ${REPORT_REASONS.find(r => r.id === showReportConfirm)?.label}\n\nWe'll review this report and take action if it violates our guidelines.`}
+        confirmLabel="Report"
+        destructive
+        icon="flag-outline"
+      />
 
       {/* Loading overlay */}
       {isLoadingProfile && (

@@ -16,7 +16,6 @@ import {
   Dimensions,
   Pressable,
   Modal,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
@@ -42,6 +41,7 @@ import Animated, {
 import { useConversation, type ChatMessage } from '@/hooks/use-conversation';
 import { useCall } from '@/lib/providers/call-provider';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -105,6 +105,7 @@ function MessageBubble({
   isDark,
   isLastOwnBeforeRead,
   readAt,
+  isGroupChat,
 }: {
   message: ChatMessage;
   isGroupStart?: boolean;
@@ -115,6 +116,7 @@ function MessageBubble({
   isDark: boolean;
   isLastOwnBeforeRead?: boolean;
   readAt?: Date | null;
+  isGroupChat?: boolean;
 }) {
   const isOwn = message.isOwn;
   const isSystem = message.isSystem;
@@ -186,6 +188,13 @@ function MessageBubble({
         onLongPress={() => onLongPress?.(message)}
         delayLongPress={500}
       >
+        {/* Sender name for group chats */}
+        {isGroupChat && !isOwn && isGroupStart && (
+          <Text style={[styles.senderName, { color: colors.textSecondary }]}>
+            {message.userName}
+          </Text>
+        )}
+
         {/* Audio attachment - Voice message */}
         {hasAudio && audioAttachment && (
           <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
@@ -416,7 +425,7 @@ function VoiceMessagePlayer({
     } catch (error) {
       console.error('Error playing audio:', error);
       setIsLoading(false);
-      Alert.alert('Error', 'Failed to play voice message');
+      setErrorAlert('Failed to play voice message');
     }
   };
 
@@ -604,7 +613,7 @@ function Composer({
       // Request permissions
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please allow microphone access to send voice messages.');
+        setErrorAlert('Please allow microphone access to send voice messages.');
         return;
       }
 
@@ -630,7 +639,7 @@ function Composer({
 
     } catch (error) {
       console.error('Failed to start recording:', error);
-      Alert.alert('Error', 'Failed to start recording. Please try again.');
+      setErrorAlert('Failed to start recording. Please try again.');
     }
   };
 
@@ -1046,6 +1055,8 @@ export default function ChatThreadScreen() {
   const [viewerImage, setViewerImage] = useState<string | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
   const [showChatInfo, setShowChatInfo] = useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
 
   const {
@@ -1134,14 +1145,21 @@ export default function ChatThreadScreen() {
     }
   }, [messages.length]);
 
-  const { startCall } = useCall();
+  const { startCall, startGroupCall } = useCall();
+  const isGroupChat = channelInfo?.type === 'group';
   const handleStartCall = useCallback(
     async (video: boolean) => {
-      const otherId = Number(channelInfo.otherMember?.id);
+      if (isGroupChat) {
+        if (!conversationId) return;
+        const groupName = channelInfo?.name || 'Group Call';
+        startGroupCall(conversationId, groupName, video);
+        return;
+      }
+      const otherId = Number(channelInfo?.otherMember?.id);
       if (!otherId) return;
-      startCall(otherId, channelInfo.otherMember?.name, channelInfo.otherMember?.image, video);
+      startCall(otherId, channelInfo?.otherMember?.name, channelInfo?.otherMember?.image, video);
     },
-    [channelInfo, startCall]
+    [channelInfo, startCall, startGroupCall, isGroupChat, conversationId]
   );
 
   const handleSend = useCallback(
@@ -1230,7 +1248,7 @@ export default function ChatThreadScreen() {
         }, 100);
       } catch (err) {
         console.error('Failed to send voice message:', err);
-        Alert.alert('Error', 'Failed to send voice message. Please try again.');
+        setErrorAlert('Failed to send voice message. Please try again.');
       } finally {
         setIsSending(false);
       }
@@ -1276,23 +1294,8 @@ export default function ChatThreadScreen() {
   }, [isMuted]);
 
   const handleBlock = useCallback(() => {
-    Alert.alert(
-      'Block User',
-      `Are you sure you want to block ${channelInfo?.name}? They won't be able to message you.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Block',
-          style: 'destructive',
-          onPress: async () => {
-            // TODO: Implement block via backend API
-            setShowChatInfo(false);
-            router.back();
-          },
-        },
-      ]
-    );
-  }, [channelInfo, router]);
+    setShowBlockConfirm(true);
+  }, []);
 
   const handleLongPressMessage = useCallback(
     (message: ChatMessage) => {
@@ -1307,7 +1310,7 @@ export default function ChatThreadScreen() {
     try {
       await deleteMessage(selectedMessage.id);
     } catch {
-      Alert.alert('Error', 'Failed to unsend message.');
+      setErrorAlert('Failed to unsend message.');
     } finally {
       setSelectedMessage(null);
     }
@@ -1343,6 +1346,7 @@ export default function ChatThreadScreen() {
             isDark={isDark}
             isLastOwnBeforeRead={item.isLastOwnBeforeRead}
             readAt={otherReadAt}
+            isGroupChat={isGroupChat}
           />
         );
       }
@@ -1372,6 +1376,28 @@ export default function ChatThreadScreen() {
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <ConfirmModal
+        visible={!!errorAlert}
+        onClose={() => setErrorAlert(null)}
+        title="Error"
+        message={errorAlert || ''}
+        alertOnly
+        icon="alert-circle-outline"
+      />
+      <ConfirmModal
+        visible={showBlockConfirm}
+        onClose={() => setShowBlockConfirm(false)}
+        onConfirm={() => {
+          setShowBlockConfirm(false);
+          setShowChatInfo(false);
+          router.back();
+        }}
+        title="Block User"
+        message={`Are you sure you want to block ${channelInfo?.name}? They won't be able to message you.`}
+        confirmLabel="Block"
+        destructive
+        icon="ban"
+      />
 
       {/* Header - Instagram style */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -1393,7 +1419,9 @@ export default function ChatThreadScreen() {
               {channelInfo?.name || 'Chat'}
             </Text>
             <Text style={[styles.headerStatus, { color: colors.textSecondary }]}>
-              {channelInfo?.isOnline ? 'Active now' : 'Tap to view profile'}
+              {channelInfo?.type === 'group'
+                ? `${channelInfo.memberCount} members`
+                : channelInfo?.isOnline ? 'Active now' : 'Tap to view profile'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -1717,6 +1745,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     color: 'rgba(128, 128, 128, 0.8)',
     textAlign: 'center',
+  },
+  senderName: {
+    fontSize: 12,
+    fontFamily: 'Lato_600SemiBold',
+    marginBottom: 2,
+    marginLeft: 4,
   },
   // Message styles
   messageRow: {

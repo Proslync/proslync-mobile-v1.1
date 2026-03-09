@@ -11,15 +11,22 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-  Alert,
+  Dimensions,
+  Modal,
 } from 'react-native';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useConversations, type ChannelData } from '@/hooks/use-conversations';
+import {
+  useConversations,
+  usePinConversation,
+  useUnpinConversation,
+  useEnsureConcierge,
+  type ChannelData,
+} from '@/hooks/use-conversations';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
@@ -102,6 +109,26 @@ interface SearchResult {
   matchedAt?: string;
 }
 
+function ConciergeAvatar({ size = 56 }: { size?: number }) {
+  return (
+    <View
+      style={[
+        styles.avatarWrapper,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: '#1a1a2e',
+          borderWidth: 1.5,
+          borderColor: 'rgba(255,255,255,0.15)',
+        },
+      ]}
+    >
+      <Ionicons name="sparkles" size={size * 0.45} color="#fff" />
+    </View>
+  );
+}
+
 function ConversationRow({
   channel,
   onPress,
@@ -173,20 +200,34 @@ function ConversationRow({
         delayLongPress={500}
         activeOpacity={0.6}
       >
-        <ConversationAvatar
-          imageUrl={channel.imageUrl}
-          isOnline={channel.isOnline}
-          hasUnread={hasUnread}
-        />
+        {channel.isConcierge ? (
+          <ConciergeAvatar />
+        ) : (
+          <ConversationAvatar
+            imageUrl={channel.imageUrl}
+            isOnline={channel.isOnline}
+            hasUnread={hasUnread}
+          />
+        )}
 
         <View style={styles.conversationContent}>
           <View style={styles.conversationHeader}>
-            <Text
-              style={[styles.conversationTitle, { color: colors.text }, hasUnread && styles.conversationTitleUnread]}
-              numberOfLines={1}
-            >
-              {channel.name}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text
+                style={[styles.conversationTitle, { color: colors.text }, hasUnread && styles.conversationTitleUnread]}
+                numberOfLines={1}
+              >
+                {channel.name}
+              </Text>
+              {channel.isConcierge && (
+                <View style={styles.aiBadge}>
+                  <Text style={styles.aiBadgeText}>AI</Text>
+                </View>
+              )}
+              {channel.isPinned && !channel.isConcierge && (
+                <Ionicons name="pin" size={12} color={colors.textTertiary} style={{ marginLeft: 4 }} />
+              )}
+            </View>
             <Text style={[styles.timestamp, { color: colors.textTertiary }, hasUnread && { color: colors.text }]}>
               {channel.lastMessage ? formatTime(channel.lastMessage.createdAt) : ''}
             </Text>
@@ -272,6 +313,9 @@ export default function MessagesScreen() {
   const { user } = useAuth();
   const { openAccountSwitcher } = useTabNavigation();
   const { channelData, isLoading, refetch, deleteChannel } = useConversations(user?.id);
+  const pinMutation = usePinConversation();
+  const unpinMutation = useUnpinConversation();
+  useEnsureConcierge();
   const headerTitle = user?.userName ? `@${user.userName}` : 'Messages';
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -379,35 +423,39 @@ export default function MessagesScreen() {
     router.push('/new-message');
   }, [router]);
 
-  const handleDeleteConversation = useCallback(
+  const [deleteTarget, setDeleteTarget] = useState<ChannelData | null>(null);
+  const [deleteError, setDeleteError] = useState(false);
+  const [actionTarget, setActionTarget] = useState<ChannelData | null>(null);
+
+  const handleLongPress = useCallback(
     (channel: ChannelData) => {
-      Alert.alert(
-        'Delete Conversation',
-        `Are you sure you want to delete your conversation with ${channel.name}? This cannot be undone.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              const success = await deleteChannel(channel.id);
-              if (!success) {
-                Alert.alert('Error', 'Failed to delete conversation. Please try again.');
-              }
-            },
-          },
-        ]
-      );
+      setActionTarget(channel);
     },
-    [deleteChannel]
+    []
   );
+
+  const handleTogglePin = useCallback(async () => {
+    if (!actionTarget) return;
+    if (actionTarget.isPinned) {
+      unpinMutation.mutate(actionTarget.id);
+    } else {
+      pinMutation.mutate(actionTarget.id);
+    }
+    setActionTarget(null);
+  }, [actionTarget, pinMutation, unpinMutation]);
+
+  const handleDeleteFromAction = useCallback(() => {
+    if (!actionTarget) return;
+    setDeleteTarget(actionTarget);
+    setActionTarget(null);
+  }, [actionTarget]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: ChannelData; index: number }) => (
       <ConversationRow
         channel={item}
         onPress={() => handleConversationPress(item)}
-        onLongPress={() => handleDeleteConversation(item)}
+        onLongPress={() => handleLongPress(item)}
         currentUserId={currentUserId}
         index={index}
         searchMatch={searchResults.get(item.id)}
@@ -415,7 +463,7 @@ export default function MessagesScreen() {
         isDark={isDark}
       />
     ),
-    [handleConversationPress, handleDeleteConversation, currentUserId, searchResults, colors, isDark]
+    [handleConversationPress, handleLongPress, currentUserId, searchResults, colors, isDark]
   );
 
   const renderEmptyState = useCallback(() => {
@@ -425,12 +473,12 @@ export default function MessagesScreen() {
     return <EmptyMessages onSendMessage={handleNewMessage} colors={colors} />;
   }, [searchQuery, handleNewMessage, colors]);
 
+
   // Show loading while fetching conversations
   if (isLoading && channelData.length === 0) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <DarkGradientBg />
-        <View style={styles.header}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={styles.header}>
           <View style={styles.headerButton} />
           <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
           <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
@@ -446,10 +494,9 @@ export default function MessagesScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerButton} />
         <TouchableOpacity
           style={styles.usernameButton}
@@ -466,7 +513,7 @@ export default function MessagesScreen() {
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { backgroundColor: colors.input, borderColor: 'transparent' }, isSearchFocused && { borderColor: colors.inputBorder }]}>
+        <View style={[styles.searchBar, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }, isSearchFocused && { borderColor: colors.textTertiary }]}>
           <Ionicons name="search" size={18} color={colors.placeholder} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
@@ -505,6 +552,80 @@ export default function MessagesScreen() {
           showsVerticalScrollIndicator={false}
         />
       </Animated.View>
+
+      {/* Long press action sheet */}
+      <Modal
+        visible={!!actionTarget}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setActionTarget(null)}
+      >
+        <TouchableOpacity
+          style={styles.actionOverlay}
+          activeOpacity={1}
+          onPress={() => setActionTarget(null)}
+        >
+          <View style={[styles.actionSheet, { backgroundColor: colors.backgroundSecondary }]}>
+            <Text style={[styles.actionTitle, { color: colors.text }]} numberOfLines={1}>
+              {actionTarget?.name}
+            </Text>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleTogglePin}
+            >
+              <Ionicons
+                name={actionTarget?.isPinned ? 'pin-outline' : 'pin'}
+                size={20}
+                color={colors.text}
+              />
+              <Text style={[styles.actionText, { color: colors.text }]}>
+                {actionTarget?.isPinned ? 'Unpin conversation' : 'Pin conversation'}
+              </Text>
+            </TouchableOpacity>
+            {actionTarget && !actionTarget.isConcierge && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleDeleteFromAction}
+              >
+                <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
+                <Text style={[styles.actionText, { color: '#ff6b6b' }]}>Delete conversation</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.actionButton, { marginTop: 4 }]}
+              onPress={() => setActionTarget(null)}
+            >
+              <Ionicons name="close" size={20} color={colors.textSecondary} />
+              <Text style={[styles.actionText, { color: colors.textSecondary }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <ConfirmModal
+        visible={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          const success = await deleteChannel(deleteTarget.id);
+          setDeleteTarget(null);
+          if (!success) setDeleteError(true);
+        }}
+        title="Delete Conversation"
+        message={`Are you sure you want to delete your conversation with ${deleteTarget?.name}? This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
+
+      <ConfirmModal
+        visible={deleteError}
+        onClose={() => setDeleteError(false)}
+        title="Error"
+        message="Failed to delete conversation. Please try again."
+        alertOnly
+        icon="alert-circle-outline"
+      />
     </View>
   );
 }
@@ -570,6 +691,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
   // Avatar styles
   avatarContainer: {
@@ -628,10 +751,9 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   conversationTitle: {
-    flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    marginRight: 8,
+    flexShrink: 1,
   },
   conversationTitleUnread: {
     fontFamily: 'Lato_700Bold',
@@ -712,5 +834,55 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
+  },
+  titleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  aiBadge: {
+    marginLeft: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  aiBadgeText: {
+    fontSize: 10,
+    fontFamily: 'Lato_700Bold',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  actionOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+  actionSheet: {
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+  },
+  actionTitle: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    textAlign: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 4,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 12,
+  },
+  actionText: {
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
   },
 });

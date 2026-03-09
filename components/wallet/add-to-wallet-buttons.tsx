@@ -1,6 +1,7 @@
 // Add to Wallet Buttons - Platform-specific Apple/Google Wallet buttons
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert, Image, Linking, ActivityIndicator, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, Linking, ActivityIndicator, Platform } from 'react-native';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { addToGoogleWallet, generateAppleWalletToken } from '../../lib/api/wallet';
 
 interface AddToWalletButtonsProps {
@@ -10,6 +11,7 @@ interface AddToWalletButtonsProps {
 export function AddToWalletButtons({ membershipCardId }: AddToWalletButtonsProps) {
   const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
   const [isLoadingApple, setIsLoadingApple] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isIOS = Platform.OS === 'ios';
   const isAndroid = Platform.OS === 'android';
@@ -20,19 +22,18 @@ export function AddToWalletButtons({ membershipCardId }: AddToWalletButtonsProps
       const response = await generateAppleWalletToken();
 
       if (response.success && response.data?.downloadUrl) {
-        // Open the download URL to get the .pkpass file
         const canOpen = await Linking.canOpenURL(response.data.downloadUrl);
         if (canOpen) {
           await Linking.openURL(response.data.downloadUrl);
         } else {
-          Alert.alert('Error', 'Unable to open Apple Wallet');
+          setErrorMessage('Unable to open Apple Wallet');
         }
       } else {
-        Alert.alert('Error', response.error || 'Failed to add to Apple Wallet');
+        setErrorMessage(response.error || 'Failed to add to Apple Wallet');
       }
     } catch (error: any) {
       console.error('Apple Wallet error:', error);
-      Alert.alert('Error', error.message || 'Failed to add to Apple Wallet');
+      setErrorMessage(error.message || 'Failed to add to Apple Wallet');
     } finally {
       setIsLoadingApple(false);
     }
@@ -40,7 +41,7 @@ export function AddToWalletButtons({ membershipCardId }: AddToWalletButtonsProps
 
   const handleGoogleWallet = async () => {
     if (!membershipCardId) {
-      Alert.alert('Error', 'Membership card not available');
+      setErrorMessage('Membership card not available');
       return;
     }
 
@@ -49,23 +50,21 @@ export function AddToWalletButtons({ membershipCardId }: AddToWalletButtonsProps
       const response = await addToGoogleWallet(membershipCardId);
 
       if (response.success && response.data?.saveUrl) {
-        // Open Google Wallet save URL
         const canOpen = await Linking.canOpenURL(response.data.saveUrl);
         if (canOpen) {
           await Linking.openURL(response.data.saveUrl);
         } else {
-          Alert.alert('Error', 'Unable to open Google Wallet');
+          setErrorMessage('Unable to open Google Wallet');
         }
       } else if (response.success && response.data?.jwt) {
-        // If JWT is returned, construct the save URL
         const saveUrl = `https://pay.google.com/gp/v/save/${response.data.jwt}`;
         await Linking.openURL(saveUrl);
       } else {
-        Alert.alert('Error', response.error || 'Failed to add to Google Wallet');
+        setErrorMessage(response.error || 'Failed to add to Google Wallet');
       }
     } catch (error: any) {
       console.error('Google Wallet error:', error);
-      Alert.alert('Error', error.message || 'Failed to add to Google Wallet');
+      setErrorMessage(error.message || 'Failed to add to Google Wallet');
     } finally {
       setIsLoadingGoogle(false);
     }
@@ -74,6 +73,14 @@ export function AddToWalletButtons({ membershipCardId }: AddToWalletButtonsProps
   // Show only the relevant button based on platform
   return (
     <View style={styles.container}>
+      <ConfirmModal
+        visible={!!errorMessage}
+        onClose={() => setErrorMessage(null)}
+        title="Error"
+        message={errorMessage || ''}
+        alertOnly
+        icon="alert-circle-outline"
+      />
       {isIOS && (
         <TouchableOpacity
           style={[styles.button, isLoadingApple && styles.buttonDisabled]}

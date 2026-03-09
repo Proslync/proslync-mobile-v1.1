@@ -208,8 +208,8 @@ export default function SwipeableTabLayout() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Pager View - constrained to leave room for tab bar */}
-      <View style={{ flex: 1, marginBottom: TAB_BAR_HEIGHT }}>
+      {/* Pager View - content extends behind tab bar for glass blur effect */}
+      <View style={{ flex: 1 }}>
         <PagerView
           ref={pagerRef}
           style={styles.pager}
@@ -226,8 +226,9 @@ export default function SwipeableTabLayout() {
         </PagerView>
       </View>
 
-      {/* Custom Tab Bar - absolutely positioned over the reserved margin space */}
-      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4, height: TAB_BAR_HEIGHT, backgroundColor: colors.tabBar, borderTopColor: colors.tabBarBorder }]}>
+      {/* Custom Tab Bar */}
+      <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4, height: TAB_BAR_HEIGHT }]}>
+        <View style={[styles.tabBarBackground, { backgroundColor: colors.background, borderTopColor: colors.border }]} />
         {TAB_CONFIG.map((tab, index) => {
           const isFocused = currentIndex === index;
           const color = isFocused ? colors.tabIconSelected : colors.tabIconDefault;
@@ -275,10 +276,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    borderTopWidth: 0,
     paddingTop: 4,
     paddingHorizontal: 20,
-    elevation: 0,
+    overflow: 'hidden',
+  },
+  tabBarBackground: {
+    ...StyleSheet.absoluteFillObject,
+    borderTopWidth: 0.5,
   },
   tabButton: {
     flex: 1,

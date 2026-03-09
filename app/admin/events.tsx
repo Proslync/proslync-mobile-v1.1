@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
-  Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -23,6 +22,8 @@ import {
   useAdminDeleteEvent,
 } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { ActionMenu, type ActionMenuItem } from '@/components/shared/action-menu';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { AdminEvent } from '@/lib/api/admin';
 
 const STATUS_FILTERS = [
@@ -110,48 +111,41 @@ export default function AdminEventsScreen() {
   const updateStatus = useUpdateEventStatus();
   const deleteEvent = useAdminDeleteEvent();
 
+  const [actionEvent, setActionEvent] = useState<AdminEvent | null>(null);
+  const [statusEvent, setStatusEvent] = useState<AdminEvent | null>(null);
+  const [deleteConfirmEvent, setDeleteConfirmEvent] = useState<AdminEvent | null>(null);
+
   const showActions = useCallback(
     (event: AdminEvent) => {
-      Alert.alert(event.name, `Status: ${event.status}`, [
-        {
-          text: 'Change Status',
-          onPress: () => {
-            Alert.alert(
-              'Change Status',
-              `Current: ${event.status}`,
-              [
-                ...EVENT_STATUS_OPTIONS.filter((s) => s !== event.status).map((status) => ({
-                  text: status.charAt(0).toUpperCase() + status.slice(1),
-                  onPress: () => updateStatus.mutate({ eventId: event.id, status }),
-                })),
-                { text: 'Cancel', style: 'cancel' as const },
-              ],
-            );
-          },
-        },
-        {
-          text: 'Delete Event',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Delete Event', `Are you sure you want to delete "${event.name}"?`, [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete',
-                style: 'destructive',
-                onPress: () => deleteEvent.mutate(event.id),
-              },
-            ]);
-          },
-        },
-        {
-          text: 'View Event',
-          onPress: () => router.push({ pathname: '/event/[id]', params: { id: String(event.id) } }),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
+      setActionEvent(event);
     },
-    [updateStatus, deleteEvent, router],
+    [],
   );
+
+  const getEventActionItems = (e: AdminEvent): ActionMenuItem[] => [
+    {
+      label: 'Change Status',
+      icon: 'swap-horizontal-outline',
+      onPress: () => { setActionEvent(null); setStatusEvent(e); },
+    },
+    {
+      label: 'Delete Event',
+      icon: 'trash-outline',
+      destructive: true,
+      onPress: () => { setActionEvent(null); setDeleteConfirmEvent(e); },
+    },
+    {
+      label: 'View Event',
+      icon: 'eye-outline',
+      onPress: () => { setActionEvent(null); router.push({ pathname: '/event/[id]', params: { id: String(e.id) } }); },
+    },
+  ];
+
+  const getStatusItems = (e: AdminEvent): ActionMenuItem[] =>
+    EVENT_STATUS_OPTIONS.filter((s) => s !== e.status).map((status) => ({
+      label: status.charAt(0).toUpperCase() + status.slice(1),
+      onPress: () => { setStatusEvent(null); updateStatus.mutate({ eventId: e.id, status }); },
+    }));
 
   const events = data?.events ?? [];
 
@@ -240,6 +234,29 @@ export default function AdminEventsScreen() {
           }
         />
       )}
+
+      <ActionMenu
+        visible={!!actionEvent}
+        onClose={() => setActionEvent(null)}
+        items={actionEvent ? getEventActionItems(actionEvent) : []}
+      />
+
+      <ActionMenu
+        visible={!!statusEvent}
+        onClose={() => setStatusEvent(null)}
+        items={statusEvent ? getStatusItems(statusEvent) : []}
+      />
+
+      <ConfirmModal
+        visible={!!deleteConfirmEvent}
+        onClose={() => setDeleteConfirmEvent(null)}
+        onConfirm={() => { if (deleteConfirmEvent) { deleteEvent.mutate(deleteConfirmEvent.id); setDeleteConfirmEvent(null); } }}
+        title="Delete Event"
+        message={`Are you sure you want to delete "${deleteConfirmEvent?.name}"?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
     </View>
   );
 }

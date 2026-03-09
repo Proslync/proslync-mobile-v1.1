@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useToast } from '@/components/shared/toast';
 import { SegmentedControl } from '@/components/shared/segmented-control';
 import {
@@ -64,6 +65,7 @@ function toPayoutMethod(account: any): PayoutMethod {
 }
 
 export default function PaymentsScreen() {
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
@@ -172,7 +174,7 @@ export default function PaymentsScreen() {
   // Loading state
   if (statusLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <ActivityIndicator size="large" color="#fff" />
         <Text style={styles.loadingText}>Loading payments...</Text>
@@ -181,7 +183,7 @@ export default function PaymentsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <DarkGradientBg />
 
       {/* Header */}
@@ -384,7 +386,6 @@ function OverviewTab({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   loadingContainer: {
     justifyContent: 'center',

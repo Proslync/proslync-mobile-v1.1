@@ -7,11 +7,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { PhoneStep } from '@/components/auth/phone-step';
 import { OtpStep } from '@/components/auth/otp-step';
+import { ProfileSetupStep } from '@/components/auth/profile-setup-step';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function SignInScreen() {
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp' | 'profile'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -24,11 +25,23 @@ export default function SignInScreen() {
   };
 
   const handleBack = () => {
+    if (step === 'profile') {
+      // Profile setup has no back — user must complete it
+      return;
+    }
     if (step === 'otp') {
       setStep('phone');
     } else {
       router.back();
     }
+  };
+
+  const handleProfileSetupNeeded = () => {
+    setStep('profile');
+  };
+
+  const handleProfileComplete = () => {
+    router.replace(redirectUrl as any);
   };
 
   return (
@@ -54,7 +67,18 @@ export default function SignInScreen() {
             phoneNumber={phoneNumber}
             redirectUrl={redirectUrl}
             onBack={handleBack}
+            onProfileSetupNeeded={handleProfileSetupNeeded}
           />
+        </Animated.View>
+      )}
+
+      {step === 'profile' && (
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={styles.stepContainer}
+        >
+          <ProfileSetupStep onSuccess={handleProfileComplete} />
         </Animated.View>
       )}
     </View>

@@ -6,7 +6,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFormContext } from 'react-hook-form';
@@ -15,6 +14,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { CreateTierModal } from '@/components/pricing/create-tier-modal';
 import { CreatePricingRuleModal } from '@/components/pricing/create-pricing-rule-modal';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { EventFormData, TierFormData } from '@/lib/schemas/events';
 import type { CreateTierRequest, CreatePricingRuleRequest } from '@/lib/types/pricing.types';
 
@@ -66,22 +66,14 @@ export function PricingStep() {
     [tiers, editingTierIndex, setValue],
   );
 
+  const [deleteTierIndex, setDeleteTierIndex] = useState<number | null>(null);
+  const [deletePricingTarget, setDeletePricingTarget] = useState<{ tierIndex: number; pricingIndex: number } | null>(null);
+
   const handleDeleteTier = useCallback(
     (index: number) => {
-      Alert.alert('Delete Tier', `Delete "${tiers[index]?.name}" and all its pricing?`, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            const current = [...tiers];
-            current.splice(index, 1);
-            setValue('tiers', current, { shouldDirty: true });
-          },
-        },
-      ]);
+      setDeleteTierIndex(index);
     },
-    [tiers, setValue],
+    [],
   );
 
   // --- Pricing handlers ---
@@ -128,23 +120,9 @@ export function PricingStep() {
 
   const handleDeletePricing = useCallback(
     (tierIndex: number, pricingIndex: number) => {
-      const rule = tiers[tierIndex]?.pricing[pricingIndex];
-      Alert.alert('Delete Pricing', `Delete "${rule?.name}"?`, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            const current = [...tiers];
-            const tier = { ...current[tierIndex], pricing: [...current[tierIndex].pricing] };
-            tier.pricing.splice(pricingIndex, 1);
-            current[tierIndex] = tier;
-            setValue('tiers', current, { shouldDirty: true });
-          },
-        },
-      ]);
+      setDeletePricingTarget({ tierIndex, pricingIndex });
     },
-    [tiers, setValue],
+    [],
   );
 
   // --- Modal initial values ---
@@ -278,6 +256,44 @@ export function PricingStep() {
         onSubmit={handleTierSubmit}
         initialValues={tierModalInitial}
       />
+      <ConfirmModal
+        visible={deleteTierIndex !== null}
+        onClose={() => setDeleteTierIndex(null)}
+        onConfirm={() => {
+          if (deleteTierIndex !== null) {
+            const current = [...tiers];
+            current.splice(deleteTierIndex, 1);
+            setValue('tiers', current, { shouldDirty: true });
+            setDeleteTierIndex(null);
+          }
+        }}
+        title="Delete Tier"
+        message={`Delete "${deleteTierIndex !== null ? tiers[deleteTierIndex]?.name : ''}" and all its pricing?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
+
+      <ConfirmModal
+        visible={deletePricingTarget !== null}
+        onClose={() => setDeletePricingTarget(null)}
+        onConfirm={() => {
+          if (deletePricingTarget) {
+            const current = [...tiers];
+            const tier = { ...current[deletePricingTarget.tierIndex], pricing: [...current[deletePricingTarget.tierIndex].pricing] };
+            tier.pricing.splice(deletePricingTarget.pricingIndex, 1);
+            current[deletePricingTarget.tierIndex] = tier;
+            setValue('tiers', current, { shouldDirty: true });
+            setDeletePricingTarget(null);
+          }
+        }}
+        title="Delete Pricing"
+        message={`Delete "${deletePricingTarget ? tiers[deletePricingTarget.tierIndex]?.pricing[deletePricingTarget.pricingIndex]?.name : ''}"?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
+
       <CreatePricingRuleModal
         visible={showPricingModal}
         onClose={() => setShowPricingModal(false)}

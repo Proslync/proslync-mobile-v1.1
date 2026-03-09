@@ -101,6 +101,16 @@ const SECTIONS = [
     },
   },
   {
+    key: "text-blast",
+    label: "Text Blast",
+    subtitle: "SMS messages to guests",
+    icon: "chatbubble-outline" as const,
+    permission: {
+      resource: "marketing" as keyof RolePermissions,
+      action: "view",
+    },
+  },
+  {
     key: "team",
     label: "Team",
     subtitle: "Staff and permissions",

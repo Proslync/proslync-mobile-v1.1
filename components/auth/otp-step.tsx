@@ -31,9 +31,10 @@ interface OtpStepProps {
   phoneNumber: string;
   redirectUrl?: string;
   onBack?: () => void;
+  onProfileSetupNeeded?: () => void;
 }
 
-export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
+export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded }: OtpStepProps) {
   const [otpValue, setOtpValue] = React.useState('');
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [isResending, setIsResending] = React.useState(false);
@@ -88,6 +89,12 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack }: OtpStepProps) {
       await login(response.user, response.accessToken, response.refreshToken);
 
       setIsSuccess(true);
+
+      // New user without profile → show profile setup
+      if (!response.user.isProfileComplete && onProfileSetupNeeded) {
+        onProfileSetupNeeded();
+        return;
+      }
 
       // Navigation is handled by AuthProvider
     } catch (err) {

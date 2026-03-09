@@ -10,6 +10,7 @@ export default function ManageEventLayout() {
       <Stack.Screen name="analytics" />
       <Stack.Screen name="pricing" />
       <Stack.Screen name="marketing" />
+      <Stack.Screen name="text-blast" />
       <Stack.Screen name="payments" />
       <Stack.Screen name="team" />
       <Stack.Screen name="artists" />

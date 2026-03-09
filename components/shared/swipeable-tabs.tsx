@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useRouter, usePathname } from 'expo-router';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -179,6 +180,7 @@ interface SwipeableTabBarProps {
 
 export function SwipeableTabBar({ avatarUrl }: SwipeableTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const { currentIndex, scrollOffset, goToPage, openAccountSwitcher } = useSwipeableTabs();
 
   // Animated position indicator
@@ -217,7 +219,7 @@ export function SwipeableTabBar({ avatarUrl }: SwipeableTabBarProps) {
   }, [goToPage, openAccountSwitcher]);
 
   return (
-    <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4, height: 50 + insets.bottom }]}>
+    <View style={[styles.tabBar, { paddingBottom: insets.bottom + 4, height: 50 + insets.bottom, backgroundColor: colors.background }]}>
       {TAB_CONFIG.map((tab, index) => {
         const isFocused = currentIndex === index;
         const color = isFocused ? '#fff' : 'rgba(255, 255, 255, 0.5)';
@@ -249,6 +251,7 @@ interface TabPageProps {
 }
 
 export function TabPage({ index, children, isFocused }: TabPageProps) {
+  const { colors } = useAppTheme();
   // Track if this page has ever been focused (for lazy loading)
   const hasBeenFocused = React.useRef(false);
   if (isFocused) {
@@ -258,11 +261,11 @@ export function TabPage({ index, children, isFocused }: TabPageProps) {
   // Only render content if it has been focused at least once
   // This provides lazy loading while preserving state after initial load
   if (!hasBeenFocused.current) {
-    return <View style={styles.page} />;
+    return <View style={[styles.page, { backgroundColor: colors.background }]} />;
   }
 
   return (
-    <View style={styles.page}>
+    <View style={[styles.page, { backgroundColor: colors.background }]}>
       {children}
     </View>
   );
@@ -325,7 +328,6 @@ const styles = StyleSheet.create({
   },
   page: {
     flex: 1,
-    backgroundColor: '#000',
   },
   tabBar: {
     position: 'absolute',
@@ -333,7 +335,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    backgroundColor: '#000',
     paddingTop: 4,
     paddingHorizontal: 20,
     borderTopWidth: 0,

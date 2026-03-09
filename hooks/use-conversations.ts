@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { chatApi, type ConversationResponse } from '@/lib/api/chat';
 
 export const CONVERSATIONS_KEY = 'conversations';
@@ -19,11 +20,14 @@ export interface ChannelData {
   updatedAt: string;
   lastMessageReadByOther?: boolean;
   otherUserLastReadAt?: string;
+  isPinned: boolean;
+  isConcierge: boolean;
 }
 
 function mapConversation(conv: ConversationResponse, currentUserId?: number): ChannelData {
   const otherMembers = conv.members.filter((m) => m.userId !== currentUserId);
   const firstOther = otherMembers[0];
+  const isConcierge = conv.type === 'system';
 
   const displayName =
     conv.name ||
@@ -48,6 +52,8 @@ function mapConversation(conv: ConversationResponse, currentUserId?: number): Ch
     unreadCount: conv.unreadCount,
     memberCount: conv.members.length,
     updatedAt: conv.lastMessageAt || conv.createdAt,
+    isPinned: conv.isPinned || false,
+    isConcierge,
   };
 }
 
@@ -64,13 +70,22 @@ export function useConversations(currentUserId?: number) {
     },
   });
 
-  const channelData = (query.data ?? []).map((conv) =>
-    mapConversation(conv, currentUserId),
-  );
+  const channelData = (query.data ?? [])
+    .map((conv) => mapConversation(conv, currentUserId))
+    .sort((a, b) => {
+      // Concierge always first
+      if (a.isConcierge && !b.isConcierge) return -1;
+      if (!a.isConcierge && b.isConcierge) return 1;
+      // Then pinned
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      // Then by time
+      const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return bTime - aTime;
+    });
 
   const deleteChannel = async (conversationId: string) => {
-    // For now, just remove from local cache
-    // Backend doesn't support conversation deletion yet
     queryClient.setQueryData<ConversationResponse[]>(
       [CONVERSATIONS_KEY],
       (old) => old?.filter((c) => c.id !== conversationId),
@@ -86,4 +101,38 @@ export function useConversations(currentUserId?: number) {
     refetch: query.refetch,
     deleteChannel,
   };
+}
+
+export function usePinConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationId: string) => chatApi.pinConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    },
+  });
+}
+
+export function useUnpinConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationId: string) => chatApi.unpinConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    },
+  });
+}
+
+export function useEnsureConcierge() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    chatApi.getConciergeConversation().then(() => {
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    }).catch(() => {
+      // Silently fail — concierge will be created on next attempt
+    });
+  }, [queryClient]);
 }

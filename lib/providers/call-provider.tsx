@@ -13,6 +13,8 @@ import { voipPushService } from '@/lib/services/voip-push-service';
 interface ActiveCall {
   callId: string;
   roomName: string;
+  token: string;
+  wsUrl: string;
   recipientId: number;
   recipientName: string;
   recipientAvatar?: string;
@@ -23,8 +25,8 @@ interface ActiveCall {
 interface CallContextType {
   activeCall: ActiveCall | null;
   incomingCall: IncomingCallData | null;
-  socketRef: React.RefObject<Socket | null>;
   startCall: (recipientId: number, name?: string, avatar?: string, isVideo?: boolean) => Promise<void>;
+  startGroupCall: (conversationId: string, groupName: string, isVideo?: boolean) => Promise<void>;
   acceptIncoming: () => Promise<void>;
   declineIncoming: () => Promise<void>;
   endActiveCall: () => Promise<void>;
@@ -57,9 +59,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     // Handle CallKit answer — user tapped "Accept" on the native call screen
     callkitService.setOnAnswer(async (callId: string) => {
       try {
-        await callsApi.acceptCall(callId);
-        // We need the incoming call data to navigate — it might come from Socket.IO or push
-        // Navigate to call screen
+        const result = await callsApi.acceptCall(callId);
+        // Navigate to call screen with LiveKit credentials
         router.push({
           pathname: '/call',
           params: {
@@ -69,6 +70,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
             recipientAvatar: '',
             isVideo: '0',
             isIncoming: '1',
+            livekitToken: result.token,
+            livekitUrl: result.wsUrl,
           },
         });
       } catch (error) {
@@ -159,6 +162,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         const call: ActiveCall = {
           callId: result.callId,
           roomName: result.roomName,
+          token: result.token,
+          wsUrl: result.wsUrl,
           recipientId,
           recipientName: name || 'Unknown',
           recipientAvatar: avatar,
@@ -181,6 +186,8 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
             recipientAvatar: avatar || '',
             isVideo: isVideo ? '1' : '0',
             isIncoming: '0',
+            livekitToken: result.token,
+            livekitUrl: result.wsUrl,
           },
         });
       } catch (error) {
@@ -190,14 +197,57 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     [router],
   );
 
+  const startGroupCall = React.useCallback(
+    async (conversationId: string, groupName: string, isVideo?: boolean) => {
+      try {
+        const result = await callsApi.initiateGroupCall(conversationId, isVideo ?? false);
+        const call: ActiveCall = {
+          callId: result.callId,
+          roomName: result.roomName,
+          token: result.token,
+          wsUrl: result.wsUrl,
+          recipientId: 0,
+          recipientName: groupName,
+          isVideo: isVideo ?? false,
+          isOutgoing: true,
+        };
+        setActiveCall(call);
+
+        if (Platform.OS === 'ios') {
+          callkitService.reportOutgoingCall(result.callId, groupName);
+        }
+
+        router.push({
+          pathname: '/call',
+          params: {
+            callId: result.callId,
+            recipientId: '0',
+            recipientName: groupName,
+            recipientAvatar: '',
+            isVideo: isVideo ? '1' : '0',
+            isIncoming: '0',
+            isGroupCall: '1',
+            livekitToken: result.token,
+            livekitUrl: result.wsUrl,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to start group call:', error);
+      }
+    },
+    [router],
+  );
+
   const acceptIncoming = React.useCallback(async () => {
     if (!incomingCall) return;
 
     try {
-      await callsApi.acceptCall(incomingCall.callId);
+      const result = await callsApi.acceptCall(incomingCall.callId);
       const call: ActiveCall = {
         callId: incomingCall.callId,
         roomName: incomingCall.roomName,
+        token: result.token,
+        wsUrl: result.wsUrl,
         recipientId: incomingCall.callerId,
         recipientName: incomingCall.callerName,
         isVideo: incomingCall.isVideo,
@@ -214,6 +264,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           recipientAvatar: '',
           isVideo: incomingCall.isVideo ? '1' : '0',
           isIncoming: '1',
+          isGroupCall: incomingCall.isGroup ? '1' : '0',
+          livekitToken: result.token,
+          livekitUrl: result.wsUrl,
         },
       });
     } catch (error) {
@@ -264,14 +317,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     () => ({
       activeCall,
       incomingCall,
-      socketRef,
       startCall,
+      startGroupCall,
       acceptIncoming,
       declineIncoming,
       endActiveCall,
       clearActiveCall,
     }),
-    [activeCall, incomingCall, startCall, acceptIncoming, declineIncoming, endActiveCall, clearActiveCall],
+    [activeCall, incomingCall, startCall, startGroupCall, acceptIncoming, declineIncoming, endActiveCall, clearActiveCall],
   );
 
   return (

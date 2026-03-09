@@ -169,7 +169,7 @@ export default function DashboardRevenueScreen() {
   // Loading
   if (isLoading && !refreshing) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
@@ -188,7 +188,7 @@ export default function DashboardRevenueScreen() {
   // Empty state
   if (!heroMetric || !data) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
@@ -209,7 +209,7 @@ export default function DashboardRevenueScreen() {
   const totals = data.totals;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <DarkGradientBg />
 
       {/* Header */}
@@ -299,7 +299,6 @@ export default function DashboardRevenueScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',

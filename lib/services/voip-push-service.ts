@@ -1,5 +1,11 @@
 import { Platform } from 'react-native';
-import VoipPushNotification from 'react-native-voip-push-notification';
+
+let VoipPushNotification: any = null;
+try {
+  VoipPushNotification = require('react-native-voip-push-notification').default;
+} catch {
+  // Native module not available (simulator)
+}
 import { callkitService } from './callkit-service';
 import { callsApi } from '@/lib/api/calls';
 

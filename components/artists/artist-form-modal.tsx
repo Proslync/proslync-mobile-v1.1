@@ -190,7 +190,7 @@ export function ArtistFormModal({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: isDark ? '#000' : colors.background }]}
+        style={[styles.container, { backgroundColor: colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}

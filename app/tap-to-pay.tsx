@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   Image,
 } from "react-native";
 import Animated, {
@@ -20,6 +19,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { GlassButton } from "@/components/glass/glass-button";
 import { paymentsApi } from "@/lib/api/payments";
 import { useEventSocket } from "@/hooks/use-event-socket";
@@ -61,6 +62,7 @@ function readerStatusLabel(readerStatus: string, paymentStatus: string): string 
 }
 
 function TapToPayContent() {
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { eventId: eventIdParam } = useLocalSearchParams<{ eventId: string }>();
@@ -79,6 +81,7 @@ function TapToPayContent() {
   );
   const [paymentStatus, setPaymentStatus] = React.useState<'idle' | 'collecting' | 'processing' | 'success' | 'error'>('idle');
   const [paymentError, setPaymentError] = React.useState<string | null>(null);
+  const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<string | null>(null);
 
   // Fetch unpaid guests
   const fetchUnpaid = React.useCallback(async () => {
@@ -180,7 +183,7 @@ function TapToPayContent() {
         console.error("[TapToPay] Charge error:", err);
         setPaymentStatus('error');
         setPaymentError(err?.message || "Something went wrong");
-        Alert.alert("Payment Failed", err?.message || "Something went wrong.");
+        setPaymentFailedAlert(err?.message || "Something went wrong.");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setTimeout(() => setPaymentStatus('idle'), 2000);
       } finally {
@@ -266,7 +269,7 @@ function TapToPayContent() {
 
   if (!eventId) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <Text style={styles.errorText}>No event selected</Text>
       </View>
@@ -274,8 +277,16 @@ function TapToPayContent() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <DarkGradientBg />
+      <ConfirmModal
+        visible={!!paymentFailedAlert}
+        onClose={() => setPaymentFailedAlert(null)}
+        title="Payment Failed"
+        message={paymentFailedAlert || ''}
+        alertOnly
+        icon="card-outline"
+      />
 
       {/* Header */}
       <Animated.View
@@ -396,7 +407,6 @@ export default function TapToPayScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
   },
   header: {
     flexDirection: "row",

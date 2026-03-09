@@ -84,14 +84,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Not authenticated, redirect to signin
       router.replace('/signin');
     } else if (isAuthenticated && inAuthGroup) {
-      // Authenticated, redirect to main app
+      // Stay in signin for profile setup if profile is incomplete
       if (user && !user.isProfileComplete) {
-        // Profile incomplete, would redirect to profile setup
-        // For now, just go to tabs
-        router.replace('/(tabs)');
-      } else {
-        router.replace('/(tabs)');
+        return;
       }
+      // Authenticated with complete profile, redirect to main app
+      router.replace('/(tabs)');
     }
   }, [isAuthenticated, isLoading, segments]);
 

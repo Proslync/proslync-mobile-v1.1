@@ -11,11 +11,11 @@ import {
   Image,
   ScrollView,
   Switch,
-  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Conversation, User } from "../../lib/types/messages.types";
 
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
@@ -56,6 +56,9 @@ export function InfoSheet({
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
+  const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
+  const [showReportConfirm, setShowReportConfirm] = React.useState(false);
+
   if (!conversation) return null;
 
   const participant = conversation.participants[0];
@@ -74,7 +77,7 @@ export function InfoSheet({
             styles.container,
             {
               paddingBottom: insets.bottom + 16,
-              backgroundColor: isDark ? "#000000" : colors.card,
+              backgroundColor: colors.background,
             },
           ]}
         >
@@ -294,20 +297,7 @@ export function InfoSheet({
             >
               <TouchableOpacity
                 style={styles.dangerButton}
-                onPress={() => {
-                  Alert.alert(
-                    "Block User",
-                    `Are you sure you want to block ${conversation.title}?`,
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      {
-                        text: "Block",
-                        style: "destructive",
-                        onPress: onBlock,
-                      },
-                    ],
-                  );
-                }}
+                onPress={() => setShowBlockConfirm(true)}
                 activeOpacity={0.7}
               >
                 <Ionicons name="ban" size={20} color="#ff3b30" />
@@ -316,20 +306,7 @@ export function InfoSheet({
 
               <TouchableOpacity
                 style={styles.dangerButton}
-                onPress={() => {
-                  Alert.alert(
-                    "Report",
-                    "Report this conversation for review?",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      {
-                        text: "Report",
-                        style: "destructive",
-                        onPress: onReport,
-                      },
-                    ],
-                  );
-                }}
+                onPress={() => setShowReportConfirm(true)}
                 activeOpacity={0.7}
               >
                 <Ionicons name="flag" size={20} color="#ff3b30" />
@@ -338,6 +315,28 @@ export function InfoSheet({
             </View>
           </ScrollView>
         </View>
+
+        <ConfirmModal
+          visible={showBlockConfirm}
+          onClose={() => setShowBlockConfirm(false)}
+          onConfirm={() => { setShowBlockConfirm(false); onBlock?.(); }}
+          title="Block User"
+          message={`Are you sure you want to block ${conversation.title}?`}
+          confirmLabel="Block"
+          destructive
+          icon="ban"
+        />
+
+        <ConfirmModal
+          visible={showReportConfirm}
+          onClose={() => setShowReportConfirm(false)}
+          onConfirm={() => { setShowReportConfirm(false); onReport?.(); }}
+          title="Report"
+          message="Report this conversation for review?"
+          confirmLabel="Report"
+          destructive
+          icon="flag-outline"
+        />
       </View>
     </Modal>
   );

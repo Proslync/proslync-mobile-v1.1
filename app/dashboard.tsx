@@ -254,9 +254,9 @@ export default function DashboardScreen() {
               colors={colors}
             />
             <MenuItem
-              title="Attendees"
-              subtitle="Manage event attendees"
-              icon="people-outline"
+              title="List"
+              subtitle="Everyone who RSVP'd to your events"
+              icon="list-outline"
               onPress={() => router.push("/dashboard/attendees")}
               colors={colors}
             />

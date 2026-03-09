@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { CreateTierRequest, TicketTier } from '@/lib/types/pricing.types';
 
 interface CreateTierModalProps {
@@ -30,6 +31,7 @@ export function CreateTierModal({
   initialValues,
 }: CreateTierModalProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
 
@@ -54,7 +56,7 @@ export function CreateTierModal({
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={[styles.container, { paddingTop: insets.top }]}
+        style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
@@ -107,7 +109,7 @@ export function CreateTierModal({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

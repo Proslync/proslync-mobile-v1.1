@@ -26,7 +26,7 @@ const STATUS_FILTERS = [
   { key: 'confirmed', label: 'Confirmed', statuses: ['confirmed', 'verified'] },
   { key: 'pending', label: 'Pending', statuses: ['pending'] },
   { key: 'requested', label: 'Requested', statuses: ['requested'] },
-  { key: 'checked_in', label: 'Checked In', statuses: ['checked_in', 'seated'] },
+  { key: 'checked_in', label: 'Checked In', statuses: ['checked_in'] },
   { key: 'rejected', label: 'Rejected', statuses: ['rejected', 'cancelled', 'no_show'] },
 ] as const;
 
@@ -35,8 +35,6 @@ function getStatusColor(status?: EventUserStatus): string {
     case 'confirmed':
     case 'verified':
     case 'checked_in':
-    case 'seated':
-      return '#22c55e';
     case 'requested':
     case 'pending':
       return '#f59e0b';
@@ -54,7 +52,6 @@ function getStatusLabel(status?: EventUserStatus): string {
     case 'confirmed': return 'Confirmed';
     case 'verified': return 'Verified';
     case 'checked_in': return 'Checked In';
-    case 'seated': return 'Seated';
     case 'requested': return 'Requested';
     case 'pending': return 'Pending';
     case 'rejected': return 'Rejected';

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   Share,
   StyleSheet,
@@ -25,6 +24,7 @@ import {
 } from '@/hooks';
 import { EventStatus } from '@/lib/types/events.types';
 import type { PromoCode } from '@/lib/types/pricing.types';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -59,6 +59,8 @@ export default function MarketingScreen() {
   const togglePromoActive = useTogglePromoCodeActive(eventId);
 
   const [promoModalVisible, setPromoModalVisible] = useState(false);
+  const [copiedAlert, setCopiedAlert] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PromoCode | null>(null);
 
   const handlePromoSubmit = (data: Parameters<typeof createPromoCode.mutate>[0]) => {
     createPromoCode.mutate(data, {
@@ -80,14 +82,11 @@ export default function MarketingScreen() {
 
   const handleCopyCode = async (code: string) => {
     await Clipboard.setStringAsync(code);
-    Alert.alert('Copied', `${code} copied to clipboard`);
+    setCopiedAlert(`${code} copied to clipboard`);
   };
 
   const handleDelete = (promo: PromoCode) => {
-    Alert.alert('Delete Promo Code', `Delete "${promo.code}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deletePromoCode.mutate(promo.id) },
-    ]);
+    setDeleteTarget(promo);
   };
 
   const activePromos = promoCodes.filter((p) => p.isActive);
@@ -208,6 +207,26 @@ export default function MarketingScreen() {
           </Animated.View>
         </ScrollView>
       )}
+
+      <ConfirmModal
+        visible={!!copiedAlert}
+        onClose={() => setCopiedAlert(null)}
+        title="Copied"
+        message={copiedAlert || ''}
+        alertOnly
+        icon="checkmark-circle-outline"
+      />
+
+      <ConfirmModal
+        visible={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { if (deleteTarget) { deletePromoCode.mutate(deleteTarget.id); setDeleteTarget(null); } }}
+        title="Delete Promo Code"
+        message={`Delete "${deleteTarget?.code}"?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
 
       <CreatePromoCodeModal
         visible={promoModalVisible}

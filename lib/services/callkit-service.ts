@@ -1,5 +1,11 @@
 import { Platform } from 'react-native';
-import RNCallKeep from 'react-native-callkeep';
+
+let RNCallKeep: any = null;
+try {
+  RNCallKeep = require('react-native-callkeep').default;
+} catch {
+  // Native module not available (simulator)
+}
 
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -23,7 +29,7 @@ class CallKitService {
   private onEndCallback: CallEndHandler | null = null;
 
   async setup() {
-    if (Platform.OS !== 'ios' || this.initialized) return;
+    if (Platform.OS !== 'ios' || this.initialized || !RNCallKeep) return;
 
     try {
       await RNCallKeep.setup({

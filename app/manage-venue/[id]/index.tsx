@@ -3,6 +3,7 @@ import { useStableRouter } from '@/hooks/use-stable-router';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useVenue } from '@/hooks/use-venue-query';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
@@ -10,7 +11,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -35,6 +35,7 @@ const SECTIONS = [
   { key: 'info', label: 'Info', subtitle: 'Venue details and settings', icon: 'information-circle-outline' as const },
   { key: 'events', label: 'Events', subtitle: 'Events at this venue', icon: 'calendar-outline' as const },
   { key: 'tables', label: 'Tables', subtitle: 'Manage table sections', icon: 'grid-outline' as const },
+  { key: 'menu', label: 'Menu', subtitle: 'Manage food & drink items', icon: 'restaurant-outline' as const },
   { key: 'followers', label: 'Followers', subtitle: 'View venue followers', icon: 'people-outline' as const },
   { key: 'analytics', label: 'Analytics', subtitle: 'View detailed insights', icon: 'stats-chart-outline' as const },
 ];
@@ -64,6 +65,7 @@ export default function ManageVenueScreen() {
   const { colors, isDark } = useAppTheme();
   const { user, switchAccount } = useAuth();
   const [isSwitching, setIsSwitching] = React.useState(false);
+  const [errorAlert, setErrorAlert] = React.useState<{ title: string; message: string } | null>(null);
 
   const venueId = id ? Number(id) : undefined;
   const { data: venue, isLoading } = useVenue(venueId);
@@ -77,23 +79,23 @@ export default function ManageVenueScreen() {
     try {
       const stored = await AsyncStorage.getItem('saved_accounts');
       if (!stored) {
-        Alert.alert('Account Not Found', 'The venue owner account is not saved on this device. Add it via the account switcher first.');
+        setErrorAlert({ title: 'Account Not Found', message: 'The venue owner account is not saved on this device. Add it via the account switcher first.' });
         return;
       }
       const accounts: SavedAccount[] = JSON.parse(stored);
       const ownerAccount = accounts.find((a) => a.id === venue.ownerId);
       if (!ownerAccount || !ownerAccount.accessToken) {
-        Alert.alert('Account Not Found', 'The venue owner account is not saved on this device. Add it via the account switcher first.');
+        setErrorAlert({ title: 'Account Not Found', message: 'The venue owner account is not saved on this device. Add it via the account switcher first.' });
         return;
       }
       const success = await switchAccount(ownerAccount.accessToken, ownerAccount.refreshToken);
       if (success) {
         router.replace('/(tabs)');
       } else {
-        Alert.alert('Switch Failed', 'Could not log into the venue account. The session may have expired.');
+        setErrorAlert({ title: 'Switch Failed', message: 'Could not log into the venue account. The session may have expired.' });
       }
     } catch {
-      Alert.alert('Error', 'Failed to switch accounts.');
+      setErrorAlert({ title: 'Error', message: 'Failed to switch accounts.' });
     } finally {
       setIsSwitching(false);
     }
@@ -126,6 +128,14 @@ export default function ManageVenueScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
+      <ConfirmModal
+        visible={!!errorAlert}
+        onClose={() => setErrorAlert(null)}
+        title={errorAlert?.title || 'Error'}
+        message={errorAlert?.message || ''}
+        alertOnly
+        icon="alert-circle-outline"
+      />
 
       {/* Header */}
       <Animated.View

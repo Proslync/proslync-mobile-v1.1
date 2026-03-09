@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { Venue } from '@/lib/types/events.types';
 
 interface VenuePickerModalProps {
@@ -31,6 +32,7 @@ export function VenuePickerModal({
   isLoading,
 }: VenuePickerModalProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
 
   const handleSelect = (venue: Venue | null) => {
     onSelect(venue);
@@ -67,7 +69,7 @@ export function VenuePickerModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+      <View style={[styles.modalContainer, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Select Venue</Text>
@@ -127,7 +129,6 @@ export function VenuePickerModal({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: '#000',
   },
   modalHeader: {
     flexDirection: 'row',

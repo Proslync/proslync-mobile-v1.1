@@ -13,12 +13,12 @@ import {
   useDeleteTable,
 } from '@/hooks/use-venue-tables';
 import { filesApi } from '@/lib/api/files';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -58,11 +58,15 @@ export default function VenueTablesScreen() {
   const [tablePrice, setTablePrice] = useState('');
   const [tableImageUri, setTableImageUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [permissionAlert, setPermissionAlert] = useState(false);
+  const [errorAlert, setErrorAlert] = useState<string | null>(null);
+  const [deleteSectionTarget, setDeleteSectionTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteTableTarget, setDeleteTableTarget] = useState<{ id: number; label: string } | null>(null);
 
   const pickTableImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert('Permission Required', 'Permission to access photos is required.');
+      setPermissionAlert(true);
       return;
     }
 
@@ -90,7 +94,7 @@ export default function VenueTablesScreen() {
       setSectionDesc('');
     } catch (err: any) {
       console.error('Failed to create section:', err?.message || err);
-      Alert.alert('Error', err?.message || 'Failed to create section. Please try again.');
+      setErrorAlert(err?.message || 'Failed to create section. Please try again.');
     }
   };
 
@@ -121,32 +125,18 @@ export default function VenueTablesScreen() {
       setTableImageUri(null);
     } catch (err: any) {
       console.error('Failed to create table:', err?.message || err, err?.response || '');
-      Alert.alert('Error', err?.message || 'Failed to create table. Please try again.');
+      setErrorAlert(err?.message || 'Failed to create table. Please try again.');
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleDeleteSection = (sectionId: number, name: string) => {
-    Alert.alert(
-      'Delete Section',
-      `Delete "${name}"? All tables in this section will also be deleted.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteSection.mutateAsync(sectionId) },
-      ],
-    );
+    setDeleteSectionTarget({ id: sectionId, name });
   };
 
   const handleDeleteTable = (tableId: number, label: string) => {
-    Alert.alert(
-      'Delete Table',
-      `Delete table "${label}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteTable.mutateAsync(tableId) },
-      ],
-    );
+    setDeleteTableTarget({ id: tableId, label });
   };
 
   const resetTableForm = () => {
@@ -475,6 +465,46 @@ export default function VenueTablesScreen() {
           </View>
         </ScrollView>
       </BottomSheet>
+
+      <ConfirmModal
+        visible={permissionAlert}
+        onClose={() => setPermissionAlert(false)}
+        title="Permission Required"
+        message="Permission to access photos is required."
+        alertOnly
+        icon="camera-outline"
+      />
+
+      <ConfirmModal
+        visible={!!errorAlert}
+        onClose={() => setErrorAlert(null)}
+        title="Error"
+        message={errorAlert || ''}
+        alertOnly
+        icon="alert-circle-outline"
+      />
+
+      <ConfirmModal
+        visible={!!deleteSectionTarget}
+        onClose={() => setDeleteSectionTarget(null)}
+        onConfirm={() => { if (deleteSectionTarget) { deleteSection.mutateAsync(deleteSectionTarget.id); setDeleteSectionTarget(null); } }}
+        title="Delete Section"
+        message={`Delete "${deleteSectionTarget?.name}"? All tables in this section will also be deleted.`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
+
+      <ConfirmModal
+        visible={!!deleteTableTarget}
+        onClose={() => setDeleteTableTarget(null)}
+        onConfirm={() => { if (deleteTableTarget) { deleteTable.mutateAsync(deleteTableTarget.id); setDeleteTableTarget(null); } }}
+        title="Delete Table"
+        message={`Delete table "${deleteTableTarget?.label}"?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
     </View>
   );
 }

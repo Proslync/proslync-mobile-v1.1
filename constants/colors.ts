@@ -116,9 +116,9 @@ export const LightColors = {
 // Dark theme colors (matching frontend's dark theme)
 export const DarkColors = {
   // Backgrounds
-  background: '#0F090C',           // rgb(15, 9, 12) from frontend
-  backgroundSecondary: '#1A1215',
-  backgroundTertiary: '#251A1F',
+  background: '#121212',
+  backgroundSecondary: '#1E1E1E',
+  backgroundTertiary: '#2A2A2A',
 
   // Card backgrounds
   card: 'rgba(255, 255, 255, 0.03)',

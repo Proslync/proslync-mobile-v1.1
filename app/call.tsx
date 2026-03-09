@@ -11,24 +11,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { Audio } from 'expo-av';
-import {
-  RTCPeerConnection,
-  RTCSessionDescription,
-  RTCIceCandidate,
-  mediaDevices,
-  MediaStream,
-  RTCView,
-} from 'react-native-webrtc';
 import { useCall } from '@/lib/providers/call-provider';
 import { callkitService } from '@/lib/services/callkit-service';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-
-const ICE_SERVERS = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-  ],
-};
+import { useAppTheme } from '@/hooks/use-app-theme';
+import {
+  Room,
+  RoomEvent,
+  Track,
+  LocalParticipant,
+  RemoteParticipant,
+  RemoteTrackPublication,
+  LocalTrackPublication,
+  VideoTrack,
+  ConnectionState,
+} from '@livekit/react-native';
 
 type CallState = 'ringing' | 'connecting' | 'active' | 'ended';
 
@@ -40,14 +36,19 @@ export default function CallScreen() {
     recipientAvatar: string;
     isVideo: string;
     isIncoming: string;
+    isGroupCall: string;
+    livekitToken: string;
+    livekitUrl: string;
   }>();
 
+  const { colors } = useAppTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { endActiveCall, socketRef } = useCall();
+  const { endActiveCall } = useCall();
 
   const isVideo = params.isVideo === '1';
   const isIncoming = params.isIncoming === '1';
+  const isGroupCall = params.isGroupCall === '1';
 
   const [callState, setCallState] = React.useState<CallState>(
     isIncoming ? 'connecting' : 'ringing',
@@ -56,166 +57,117 @@ export default function CallScreen() {
   const [isMuted, setIsMuted] = React.useState(false);
   const [isCameraOff, setIsCameraOff] = React.useState(!isVideo);
   const [isSpeaker, setIsSpeaker] = React.useState(isVideo);
-  const [localStream, setLocalStream] = React.useState<MediaStream | null>(null);
-  const [remoteStream, setRemoteStream] = React.useState<MediaStream | null>(null);
+  const [remoteVideoTracks, setRemoteVideoTracks] = React.useState<Map<string, VideoTrack>>(new Map());
+  const [localVideoTrack, setLocalVideoTrack] = React.useState<VideoTrack | null>(null);
+  const [participantCount, setParticipantCount] = React.useState(0);
 
-  const pcRef = React.useRef<RTCPeerConnection | null>(null);
-  const pendingCandidatesRef = React.useRef<RTCIceCandidate[]>([]);
+  // Backward compat: single remote track for 1:1 calls
+  const remoteVideoTrack = React.useMemo(() => {
+    if (remoteVideoTracks.size === 0) return null;
+    return remoteVideoTracks.values().next().value ?? null;
+  }, [remoteVideoTracks]);
+
+  const roomRef = React.useRef<Room | null>(null);
   const timerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // WebRTC setup
+  // LiveKit room setup
   React.useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket || !params.callId) return;
+    if (!params.livekitToken || !params.livekitUrl) return;
 
-    let pc: RTCPeerConnection | null = null;
-    let stream: MediaStream | null = null;
     let mounted = true;
+    const room = new Room();
+    roomRef.current = room;
 
-    const setup = async () => {
-      // 1. Get local media
-      stream = await mediaDevices.getUserMedia({
-        audio: true,
-        video: isVideo ? { facingMode: 'user', width: 640, height: 480 } : false,
-      }) as MediaStream;
-      if (!mounted) { stream.getTracks().forEach(t => t.stop()); return; }
-      setLocalStream(stream);
+    // Track subscribed — remote participant's track is available
+    room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+      if (!mounted) return;
+      if (track.kind === Track.Kind.Video) {
+        setRemoteVideoTracks((prev) => {
+          const next = new Map(prev);
+          next.set(participant.identity, track as VideoTrack);
+          return next;
+        });
+      }
+      setCallState('active');
+      callkitService.reportCallConnected(params.callId!);
+    });
 
-      // 2. Create peer connection
-      pc = new RTCPeerConnection(ICE_SERVERS);
-      pcRef.current = pc;
+    room.on(RoomEvent.TrackUnsubscribed, (track, publication, participant) => {
+      if (!mounted) return;
+      if (track.kind === Track.Kind.Video) {
+        setRemoteVideoTracks((prev) => {
+          const next = new Map(prev);
+          next.delete(participant.identity);
+          return next;
+        });
+      }
+    });
 
-      // 3. Add local tracks
-      stream.getTracks().forEach(track => {
-        pc!.addTrack(track, stream!);
-      });
+    // Local track published
+    room.on(RoomEvent.LocalTrackPublished, (publication: LocalTrackPublication) => {
+      if (!mounted) return;
+      if (publication.track?.kind === Track.Kind.Video) {
+        setLocalVideoTrack(publication.track as VideoTrack);
+      }
+    });
 
-      // 4. Handle remote tracks
-      pc.ontrack = (event: any) => {
-        if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0] as MediaStream);
+    // Participant connected — someone joined the room
+    room.on(RoomEvent.ParticipantConnected, () => {
+      if (!mounted) return;
+      setCallState('active');
+      setParticipantCount(room.remoteParticipants.size);
+      callkitService.reportCallConnected(params.callId!);
+    });
+
+    // Participant disconnected — they left
+    room.on(RoomEvent.ParticipantDisconnected, () => {
+      if (!mounted) return;
+      setParticipantCount(room.remoteParticipants.size);
+      // For 1:1 calls, end when the other person leaves
+      // For group calls, end only when everyone else has left
+      if (room.remoteParticipants.size === 0) {
+        setCallState('ended');
+      }
+    });
+
+    // Room disconnected
+    room.on(RoomEvent.Disconnected, () => {
+      if (!mounted) return;
+      setCallState('ended');
+    });
+
+    const connect = async () => {
+      try {
+        await room.connect(params.livekitUrl!, params.livekitToken!, {
+          autoSubscribe: true,
+        });
+        if (!mounted) { room.disconnect(); return; }
+
+        // Publish local tracks
+        await room.localParticipant.enableMicrophone();
+        if (isVideo) {
+          await room.localParticipant.enableCamera();
+        }
+
+        // If participants are already in the room (e.g. incoming call, caller is waiting)
+        if (room.remoteParticipants.size > 0) {
           setCallState('active');
-          // Tell CallKit the call is connected
           callkitService.reportCallConnected(params.callId!);
         }
-      };
-
-      // 5. Handle ICE candidates — send to peer via signaling
-      pc.onicecandidate = (event: any) => {
-        if (event.candidate) {
-          socket.emit('call:ice-candidate', {
-            callId: params.callId,
-            targetUserId: Number(params.recipientId),
-            candidate: event.candidate.toJSON ? event.candidate.toJSON() : event.candidate,
-          });
-        }
-      };
-
-      pc.oniceconnectionstatechange = () => {
-        const state = pc?.iceConnectionState;
-        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-          if (mounted) setCallState('ended');
-        }
-      };
-
-      // 6. Listen for remote ICE candidates
-      const handleIceCandidate = async (data: { callId: string; candidate: any }) => {
-        if (data.callId !== params.callId || !pc) return;
-        try {
-          const candidate = new RTCIceCandidate(data.candidate);
-          if (pc.remoteDescription) {
-            await pc.addIceCandidate(candidate);
-          } else {
-            pendingCandidatesRef.current.push(candidate);
-          }
-        } catch (err) {
-          console.error('Failed to add ICE candidate:', err);
-        }
-      };
-      socket.on('call:ice-candidate', handleIceCandidate);
-
-      // Helper to flush pending ICE candidates
-      const flushPendingCandidates = async () => {
-        for (const candidate of pendingCandidatesRef.current) {
-          try { await pc!.addIceCandidate(candidate); } catch {}
-        }
-        pendingCandidatesRef.current = [];
-      };
-
-      // 7. Role-specific signaling
-      if (!isIncoming) {
-        // CALLER: wait for call:accepted, then create & send offer
-        const handleAccepted = async (data: { callId: string }) => {
-          if (data.callId !== params.callId || !pc) return;
-          if (mounted) setCallState('connecting');
-          try {
-            const offer = await pc.createOffer({});
-            await pc.setLocalDescription(offer);
-            socket.emit('call:offer', {
-              callId: params.callId,
-              recipientId: Number(params.recipientId),
-              sdp: offer,
-            });
-          } catch (err) {
-            console.error('Failed to create offer:', err);
-          }
-        };
-        socket.on('call:accepted', handleAccepted);
-
-        // Listen for answer from recipient
-        const handleAnswer = async (data: { callId: string; sdp: any }) => {
-          if (data.callId !== params.callId || !pc) return;
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            await flushPendingCandidates();
-          } catch (err) {
-            console.error('Failed to handle answer:', err);
-          }
-        };
-        socket.on('call:answer', handleAnswer);
-      } else {
-        // RECIPIENT: wait for offer, then create & send answer
-        const handleOffer = async (data: { callId: string; senderId: number; sdp: any }) => {
-          if (data.callId !== params.callId || !pc) return;
-          if (mounted) setCallState('connecting');
-          try {
-            await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
-            await flushPendingCandidates();
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            socket.emit('call:answer', {
-              callId: params.callId,
-              callerId: data.senderId,
-              sdp: answer,
-            });
-          } catch (err) {
-            console.error('Failed to handle offer:', err);
-          }
-        };
-        socket.on('call:offer', handleOffer);
+      } catch (err) {
+        console.error('[Call] LiveKit connect failed:', err);
+        if (mounted) setCallState('ended');
       }
     };
 
-    setup().catch((err) => {
-      console.error('WebRTC setup failed:', err);
-      if (mounted) setCallState('ended');
-    });
+    connect();
 
     return () => {
       mounted = false;
-      socket.off('call:offer');
-      socket.off('call:answer');
-      socket.off('call:ice-candidate');
-      socket.off('call:accepted');
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      if (pc) {
-        pc.close();
-        pcRef.current = null;
-      }
+      room.disconnect();
+      roomRef.current = null;
     };
-  }, [params.callId, params.recipientId, isIncoming, isVideo]);
+  }, [params.livekitToken, params.livekitUrl, params.callId, isVideo]);
 
   // Ringing sound
   React.useEffect(() => {
@@ -279,44 +231,45 @@ export default function CallScreen() {
   };
 
   const handleEndCall = async () => {
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop());
-    }
-    pcRef.current?.close();
-    pcRef.current = null;
-    // endActiveCall also calls callkitService.endCall internally
+    roomRef.current?.disconnect();
+    roomRef.current = null;
     await endActiveCall();
     router.back();
   };
 
   const handleToggleMute = () => {
-    if (!localStream) return;
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (audioTrack) {
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMuted(!audioTrack.enabled);
-    }
+    const room = roomRef.current;
+    if (!room) return;
+    const newMuted = !isMuted;
+    room.localParticipant.setMicrophoneEnabled(!newMuted);
+    setIsMuted(newMuted);
   };
 
   const handleToggleCamera = () => {
-    if (!localStream) return;
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      videoTrack.enabled = !videoTrack.enabled;
-      setIsCameraOff(!videoTrack.enabled);
-    }
+    const room = roomRef.current;
+    if (!room) return;
+    const newOff = !isCameraOff;
+    room.localParticipant.setCameraEnabled(!newOff);
+    setIsCameraOff(newOff);
   };
 
-  const handleFlipCamera = () => {
-    if (!localStream) return;
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (videoTrack) {
-      (videoTrack as any)._switchCamera();
+  const handleFlipCamera = async () => {
+    const room = roomRef.current;
+    if (!room) return;
+    // LiveKit RN handles camera switching via the local video track
+    const pub = room.localParticipant.getTrackPublication(Track.Source.Camera);
+    if (pub?.track) {
+      try {
+        await (pub.track as any).switchCamera();
+      } catch (err) {
+        console.error('[Call] Failed to flip camera:', err);
+      }
     }
   };
 
   const handleToggleSpeaker = () => {
     setIsSpeaker((s) => !s);
+    // LiveKit RN handles audio routing internally
   };
 
   const statusText =
@@ -328,35 +281,57 @@ export default function CallScreen() {
           ? 'Call Ended'
           : formatDuration(duration);
 
-  return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+  // Use LiveKit's VideoView for rendering tracks
+  const LiveKitVideoView = React.useMemo(() => {
+    try {
+      const { VideoView } = require('@livekit/react-native');
+      return VideoView;
+    } catch {
+      return null;
+    }
+  }, []);
 
-      {/* Local camera preview (full screen while ringing/connecting for video calls) */}
-      {isVideo && localStream && callState !== 'active' && callState !== 'ended' && (
-        <RTCView
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Remote video — single full screen for 1:1, grid for group */}
+      {isVideo && callState === 'active' && LiveKitVideoView && remoteVideoTracks.size > 0 && (
+        isGroupCall && remoteVideoTracks.size > 1 ? (
+          <View style={styles.videoGrid}>
+            {Array.from(remoteVideoTracks.entries()).map(([identity, track]) => (
+              <View key={identity} style={[styles.videoGridItem, { width: remoteVideoTracks.size <= 2 ? '100%' : '50%', height: remoteVideoTracks.size <= 2 ? '50%' : '50%' }]}>
+                <LiveKitVideoView
+                  style={StyleSheet.absoluteFill}
+                  videoTrack={track}
+                  objectFit="cover"
+                />
+              </View>
+            ))}
+          </View>
+        ) : (
+          <LiveKitVideoView
+            style={styles.remoteVideo}
+            videoTrack={remoteVideoTrack!}
+            objectFit="cover"
+          />
+        )
+      )}
+
+      {/* Local video preview (full screen while ringing/connecting) */}
+      {isVideo && localVideoTrack && callState !== 'active' && callState !== 'ended' && LiveKitVideoView && (
+        <LiveKitVideoView
           style={styles.remoteVideo}
-          streamURL={localStream.toURL()}
+          videoTrack={localVideoTrack}
           objectFit="cover"
           mirror
         />
       )}
 
-      {/* Remote video (full screen when active) */}
-      {isVideo && remoteStream && callState === 'active' && (
-        <RTCView
-          style={styles.remoteVideo}
-          streamURL={remoteStream.toURL()}
-          objectFit="cover"
-        />
-      )}
-
-      {/* Local video (PiP when active) */}
-      {isVideo && localStream && callState === 'active' && (
+      {/* Local video PiP when active */}
+      {isVideo && localVideoTrack && callState === 'active' && LiveKitVideoView && (
         <View style={[styles.localVideoPip, { top: insets.top + 16 }]}>
-          <RTCView
+          <LiveKitVideoView
             style={styles.localVideoInner}
-            streamURL={localStream.toURL()}
+            videoTrack={localVideoTrack}
             objectFit="cover"
             mirror
           />
@@ -364,7 +339,7 @@ export default function CallScreen() {
       )}
 
       {/* Caller info (shown when no remote video) */}
-      {(!isVideo || !remoteStream || callState !== 'active') && (
+      {(!isVideo || !remoteVideoTrack || callState !== 'active') && (
         <Animated.View
           entering={FadeIn.duration(400)}
           style={[styles.callerInfo, { paddingTop: insets.top + 80 }]}
@@ -385,10 +360,12 @@ export default function CallScreen() {
       )}
 
       {/* Status overlay for video calls */}
-      {isVideo && remoteStream && callState === 'active' && (
+      {isVideo && remoteVideoTracks.size > 0 && callState === 'active' && (
         <View style={[styles.videoStatusOverlay, { top: insets.top + 16 }]}>
           <Text style={styles.videoStatusName}>{params.recipientName}</Text>
-          <Text style={styles.videoStatusTime}>{statusText}</Text>
+          <Text style={styles.videoStatusTime}>
+            {statusText}{isGroupCall ? ` · ${participantCount + 1} people` : ''}
+          </Text>
         </View>
       )}
 
@@ -471,10 +448,17 @@ export default function CallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   remoteVideo: {
     ...StyleSheet.absoluteFillObject,
+  },
+  videoGrid: {
+    ...StyleSheet.absoluteFillObject,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  videoGridItem: {
+    overflow: 'hidden',
   },
   localVideoPip: {
     position: 'absolute',

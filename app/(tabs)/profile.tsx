@@ -29,7 +29,6 @@ import { useToast } from '@/components/shared/toast';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 import { SwipeableTabView } from '@/components/shared/swipeable-tab-view';
 import { LinkifiedText } from '@/components/shared/linkified-text';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -238,6 +237,7 @@ function AccountSwitcherModal({
   onAddAccount: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
 
   return (
     <Modal
@@ -246,12 +246,12 @@ function AccountSwitcherModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
+      <View style={[styles.modalContainer, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Ionicons name="close" size={28} color="#1a1a1a" />
+            <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Switch Account</Text>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>Switch Account</Text>
           <View style={styles.modalCloseButton} />
         </View>
 
@@ -274,10 +274,10 @@ function AccountSwitcherModal({
                   style={styles.accountAvatar}
                 />
                 <View style={styles.accountInfo}>
-                  <Text style={styles.accountUsername}>
+                  <Text style={[styles.accountUsername, { color: colors.text }]}>
                     {account.userName || 'username'}
                   </Text>
-                  <Text style={styles.accountName}>{displayName}</Text>
+                  <Text style={[styles.accountName, { color: colors.textSecondary }]}>{displayName}</Text>
                 </View>
                 {isCurrentAccount && (
                   <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
@@ -288,12 +288,12 @@ function AccountSwitcherModal({
 
           {/* Add Account Button */}
           <TouchableOpacity
-            style={styles.addAccountButton}
+            style={[styles.addAccountButton, { borderTopColor: colors.border }]}
             onPress={onAddAccount}
             activeOpacity={0.7}
           >
-            <View style={styles.addAccountIcon}>
-              <Ionicons name="add" size={24} color="#1a1a1a" />
+            <View style={[styles.addAccountIcon, { backgroundColor: colors.cardElevated }]}>
+              <Ionicons name="add" size={24} color={colors.text} />
             </View>
             <Text style={styles.addAccountText}>Add Account</Text>
           </TouchableOpacity>
@@ -488,12 +488,12 @@ export default function ProfileScreen() {
     }
   };
 
+
   if (isLoading) {
     return (
       <SwipeableTabView>
         <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
-          <DarkGradientBg />
-          <ActivityIndicator size="large" color={colors.text} />
+              <ActivityIndicator size="large" color={colors.text} />
         </View>
       </SwipeableTabView>
     );
@@ -502,7 +502,6 @@ export default function ProfileScreen() {
   return (
     <SwipeableTabView>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -512,7 +511,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
       >
-        {/* Header - Centered Username */}
+        {/* Header */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
             <Ionicons name="add" size={24} color={colors.text} />
@@ -738,7 +737,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingVertical: 12,
   },
   usernameButton: {
     flexDirection: 'row',
@@ -903,7 +902,6 @@ const styles = StyleSheet.create({
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -912,7 +910,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalCloseButton: {
     width: 44,
@@ -923,7 +920,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   userList: {
     paddingVertical: 8,
@@ -1014,12 +1010,10 @@ const styles = StyleSheet.create({
   accountUsername: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
   },
   accountName: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.5)',
     marginTop: 2,
   },
   addAccountButton: {
@@ -1029,13 +1023,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   addAccountIcon: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },

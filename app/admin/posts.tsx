@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -18,6 +17,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks';
 import { useAdminPosts, useAdminDeletePost } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { AdminPost } from '@/lib/api/admin';
 
 function PostRow({
@@ -108,19 +108,13 @@ export default function AdminPostsScreen() {
 
   const deletePost = useAdminDeletePost();
 
+  const [deleteTarget, setDeleteTarget] = useState<AdminPost | null>(null);
+
   const confirmDelete = useCallback(
     (post: AdminPost) => {
-      const preview = post.text?.substring(0, 40) || `Post #${post.id}`;
-      Alert.alert('Delete Post', `Delete "${preview}"?`, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deletePost.mutate(post.id),
-        },
-      ]);
+      setDeleteTarget(post);
     },
-    [deletePost],
+    [],
   );
 
   const posts = data?.posts ?? [];
@@ -191,6 +185,17 @@ export default function AdminPostsScreen() {
           }
         />
       )}
+
+      <ConfirmModal
+        visible={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => { if (deleteTarget) { deletePost.mutate(deleteTarget.id); setDeleteTarget(null); } }}
+        title="Delete Post"
+        message={`Delete "${deleteTarget?.text?.substring(0, 40) || `Post #${deleteTarget?.id}`}"?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
     </View>
   );
 }

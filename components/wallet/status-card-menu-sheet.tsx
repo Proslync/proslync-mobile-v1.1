@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import {
   View,
   StyleSheet,
-  Alert,
   Linking,
   TouchableOpacity,
   ActivityIndicator,
@@ -17,6 +16,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { MembershipCard } from "./membership-card";
 import { generateAppleWalletToken } from "../../lib/api/wallet";
 import { WalletUser, TIER_PERKS } from "../../lib/types/wallet.types";
+import { ConfirmModal } from "../shared/confirm-modal";
 import { GlassCard } from "../glass/glass-card";
 import { GlassText } from "../glass/glass-text";
 import { spacing, radius, glassBorder } from "../../constants/glass/tokens";
@@ -36,6 +36,7 @@ export function StatusCardMenuSheet({
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const [isAddingToWallet, setIsAddingToWallet] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
   const perks = TIER_PERKS[user.statusTier] || [];
   const displayPerks = perks.slice(0, 3);
 
@@ -84,10 +85,10 @@ export function StatusCardMenuSheet({
       if (response.success && response.data?.downloadUrl) {
         Linking.openURL(response.data.downloadUrl);
       } else {
-        Alert.alert("Error", response.error || "Failed to add to Apple Wallet");
+        setWalletError(response.error || "Failed to add to Apple Wallet");
       }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to add to Apple Wallet");
+      setWalletError(error.message || "Failed to add to Apple Wallet");
     } finally {
       setIsAddingToWallet(false);
     }
@@ -112,6 +113,14 @@ export function StatusCardMenuSheet({
         { backgroundColor: indicatorColor },
       ]}
     >
+      <ConfirmModal
+        visible={!!walletError}
+        onClose={() => setWalletError(null)}
+        title="Error"
+        message={walletError || ''}
+        alertOnly
+        icon="alert-circle-outline"
+      />
       <BottomSheetView
         style={[styles.container, { paddingBottom: insets.bottom || 8 }]}
       >

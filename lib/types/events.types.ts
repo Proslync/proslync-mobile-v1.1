@@ -89,7 +89,6 @@ export enum EventUserStatus {
   VERIFIED = 'verified',
   REJECTED = 'rejected',
   CONFIRMED = 'confirmed',
-  SEATED = 'seated',
   CHECKED_IN = 'checked_in',
   CANCELLED = 'cancelled',
   NO_SHOW = 'no_show',
@@ -113,8 +112,6 @@ export interface EventAttendee {
   notes?: string;
   verifiedBy?: number;
   verifiedAt?: string;
-  seatedBy?: number;
-  seatedAt?: string;
   tableNumber?: string;
   registeredAt?: string;
   createdAt?: string;
@@ -137,6 +134,30 @@ export interface EventAttendeesResponse {
     verifiedAttendees: number;
     pendingAttendees: number;
   };
+}
+
+export interface Contact {
+  userId?: number;
+  firstName: string;
+  lastName: string;
+  userName?: string;
+  phoneNumber?: string;
+  email?: string;
+  avatar?: string;
+  eventCount: number;
+  lastEventDate?: string;
+  firstEventDate?: string;
+  createdAt: string;
+}
+
+export interface ContactsResponse {
+  contacts: Contact[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 export interface EventPermissionsResponse {

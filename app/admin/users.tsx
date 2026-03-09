@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Image,
-  Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -24,6 +23,8 @@ import {
   useUpdateUserVerified,
 } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { ActionMenu, type ActionMenuItem } from '@/components/shared/action-menu';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { AdminUser } from '@/lib/api/admin';
 
 const ROLE_OPTIONS = ['user', 'host', 'bouncer', 'owner', 'admin'];
@@ -101,69 +102,41 @@ export default function AdminUsersScreen() {
   const updateStatus = useUpdateUserStatus();
   const updateVerified = useUpdateUserVerified();
 
+  const [actionUser, setActionUser] = useState<AdminUser | null>(null);
+  const [roleUser, setRoleUser] = useState<AdminUser | null>(null);
+  const [banConfirmUser, setBanConfirmUser] = useState<AdminUser | null>(null);
+
   const showActions = useCallback(
     (user: AdminUser) => {
-      const options = [
-        'Change Role',
-        user.status === 'blocked' ? 'Unblock User' : 'Ban User',
-        user.isVerified ? 'Remove Verified' : 'Give Verified Badge',
-        'Cancel',
-      ];
-
-      Alert.alert(
-        `${user.userName || user.firstName || 'User'} (${user.role})`,
-        `Status: ${user.status}`,
-        [
-          {
-            text: 'Change Role',
-            onPress: () => showRolePicker(user),
-          },
-          {
-            text: user.status === 'blocked' ? 'Unblock User' : 'Ban User',
-            style: user.status === 'blocked' ? 'default' : 'destructive',
-            onPress: () => {
-              const newStatus = user.status === 'blocked' ? 'active' : 'blocked';
-              Alert.alert(
-                'Confirm',
-                `${newStatus === 'blocked' ? 'Ban' : 'Unblock'} ${user.userName || 'this user'}?`,
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Confirm',
-                    style: newStatus === 'blocked' ? 'destructive' : 'default',
-                    onPress: () => updateStatus.mutate({ userId: user.id, status: newStatus }),
-                  },
-                ],
-              );
-            },
-          },
-          {
-            text: user.isVerified ? 'Remove Verified' : 'Give Verified Badge',
-            onPress: () => updateVerified.mutate({ userId: user.id, isVerified: !user.isVerified }),
-          },
-          { text: 'Cancel', style: 'cancel' },
-        ],
-      );
+      setActionUser(user);
     },
-    [updateStatus, updateVerified],
+    [],
   );
 
-  const showRolePicker = useCallback(
-    (user: AdminUser) => {
-      Alert.alert(
-        'Change Role',
-        `Current: ${user.role}`,
-        [
-          ...ROLE_OPTIONS.filter((r) => r !== user.role).map((role) => ({
-            text: role.charAt(0).toUpperCase() + role.slice(1),
-            onPress: () => updateRole.mutate({ userId: user.id, role }),
-          })),
-          { text: 'Cancel', style: 'cancel' as const },
-        ],
-      );
+  const getActionItems = (u: AdminUser): ActionMenuItem[] => [
+    {
+      label: 'Change Role',
+      icon: 'shield-outline',
+      onPress: () => { setActionUser(null); setRoleUser(u); },
     },
-    [updateRole],
-  );
+    {
+      label: u.status === 'blocked' ? 'Unblock User' : 'Ban User',
+      icon: u.status === 'blocked' ? 'lock-open-outline' : 'ban',
+      destructive: u.status !== 'blocked',
+      onPress: () => { setActionUser(null); setBanConfirmUser(u); },
+    },
+    {
+      label: u.isVerified ? 'Remove Verified' : 'Give Verified Badge',
+      icon: u.isVerified ? 'close-circle-outline' : 'checkmark-circle-outline',
+      onPress: () => { setActionUser(null); updateVerified.mutate({ userId: u.id, isVerified: !u.isVerified }); },
+    },
+  ];
+
+  const getRoleItems = (u: AdminUser): ActionMenuItem[] =>
+    ROLE_OPTIONS.filter((r) => r !== u.role).map((role) => ({
+      label: role.charAt(0).toUpperCase() + role.slice(1),
+      onPress: () => { setRoleUser(null); updateRole.mutate({ userId: u.id, role }); },
+    }));
 
   const users = data?.users ?? [];
 
@@ -253,6 +226,35 @@ export default function AdminUsersScreen() {
           }
         />
       )}
+
+      <ActionMenu
+        visible={!!actionUser}
+        onClose={() => setActionUser(null)}
+        items={actionUser ? getActionItems(actionUser) : []}
+      />
+
+      <ActionMenu
+        visible={!!roleUser}
+        onClose={() => setRoleUser(null)}
+        items={roleUser ? getRoleItems(roleUser) : []}
+      />
+
+      <ConfirmModal
+        visible={!!banConfirmUser}
+        onClose={() => setBanConfirmUser(null)}
+        onConfirm={() => {
+          if (banConfirmUser) {
+            const newStatus = banConfirmUser.status === 'blocked' ? 'active' : 'blocked';
+            updateStatus.mutate({ userId: banConfirmUser.id, status: newStatus });
+            setBanConfirmUser(null);
+          }
+        }}
+        title="Confirm"
+        message={`${banConfirmUser?.status === 'blocked' ? 'Unblock' : 'Ban'} ${banConfirmUser?.userName || 'this user'}?`}
+        confirmLabel="Confirm"
+        destructive={banConfirmUser?.status !== 'blocked'}
+        icon={banConfirmUser?.status === 'blocked' ? 'lock-open-outline' : 'ban'}
+      />
     </View>
   );
 }

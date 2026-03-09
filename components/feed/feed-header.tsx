@@ -28,7 +28,7 @@ export function FeedHeader({
   return (
     <Animated.View
       entering={FadeInDown.duration(500)}
-      style={[styles.container, { paddingTop: insets.top + 8 }]}
+      style={[styles.container, { paddingTop: insets.top }]}
     >
       <View style={styles.headerRow}>
         <TouchableOpacity

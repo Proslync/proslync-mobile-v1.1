@@ -5,9 +5,9 @@ import {
   ViewToken,
   StyleSheet,
   RefreshControlProps,
-  LayoutChangeEvent,
   ActivityIndicator,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FeedItem } from './feed-item';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
@@ -54,20 +54,26 @@ export function FeedContainer({
   isFetchingNextPage,
 }: FeedContainerProps) {
   const flatListRef = React.useRef<FlatList>(null);
-  const [containerHeight, setContainerHeight] = React.useState(0);
+  const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { currentTab } = useTabNavigation();
   const isFeedTab = currentTab === 'index';
 
   const [activeIndex, setActiveIndex] = React.useState(0);
+  const [containerHeight, setContainerHeight] = React.useState(0);
 
-  // ── Layout ──────────────────────────────────────────────────────────
-  const handleLayout = React.useCallback((e: LayoutChangeEvent) => {
-    const h = e.nativeEvent.layout.height;
-    if (h > 0 && h !== containerHeight) {
-      setContainerHeight(h);
-    }
-  }, [containerHeight]);
+  const handleLayout = React.useCallback((e: { nativeEvent: { layout: { height: number } } }) => {
+    setContainerHeight(e.nativeEvent.layout.height);
+  }, []);
+
+  const getItemLayout = React.useCallback(
+    (_data: any, index: number) => ({
+      length: containerHeight,
+      offset: containerHeight * index,
+      index,
+    }),
+    [containerHeight]
+  );
 
   // ── Viewability ─────────────────────────────────────────────────────
   const viewabilityConfig = React.useRef({
@@ -124,8 +130,8 @@ export function FeedContainer({
     },
     [
       activeIndex,
-      isFeedTab,
       containerHeight,
+      isFeedTab,
       items,
       likedItems,
       rsvpItems,
@@ -139,16 +145,6 @@ export function FeedContainer({
       onEventPress,
       onBlock,
     ]
-  );
-
-  // ── Item layout ─────────────────────────────────────────────────────
-  const getItemLayout = React.useCallback(
-    (_: any, index: number) => ({
-      length: containerHeight,
-      offset: containerHeight * index,
-      index,
-    }),
-    [containerHeight]
   );
 
   // ── Key extractor ───────────────────────────────────────────────────
@@ -165,11 +161,12 @@ export function FeedContainer({
         <ActivityIndicator size="small" color={colors.text} />
       </View>
     );
-  }, [isFetchingNextPage, containerHeight, colors.text]);
+  }, [isFetchingNextPage, colors.text, containerHeight]);
 
-  // ── Waiting for layout measurement ──────────────────────────────────
   if (containerHeight === 0) {
-    return <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout} />;
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout} />
+    );
   }
 
   return (
@@ -179,21 +176,22 @@ export function FeedContainer({
         data={items}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
+        getItemLayout={getItemLayout}
         showsVerticalScrollIndicator={false}
+        viewabilityConfig={viewabilityConfig}
+        onViewableItemsChanged={onViewableItemsChanged}
         pagingEnabled
         snapToInterval={containerHeight}
         snapToAlignment="start"
         decelerationRate="fast"
         disableIntervalMomentum
-        viewabilityConfig={viewabilityConfig}
-        onViewableItemsChanged={onViewableItemsChanged}
-        getItemLayout={getItemLayout}
         removeClippedSubviews
         maxToRenderPerBatch={3}
         windowSize={5}
         initialNumToRender={3}
         bounces
         style={styles.list}
+        contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={refreshControl}
         onEndReached={onEndReached}
         onEndReachedThreshold={2}
@@ -211,6 +209,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footer: {
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
   },

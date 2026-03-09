@@ -44,10 +44,12 @@ function ContactRow({
   contact,
   onPress,
   colors,
+  isSelected,
 }: {
   contact: ContactItem;
   onPress: () => void;
   colors: ThemeColors;
+  isSelected?: boolean;
 }) {
   return (
     <TouchableOpacity style={styles.contactRow} onPress={onPress} activeOpacity={0.7}>
@@ -63,6 +65,9 @@ function ContactRow({
           <Text style={[styles.contactUsername, { color: colors.textSecondary }]}>@{contact.userName}</Text>
         ) : null}
       </View>
+      {isSelected && (
+        <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+      )}
     </TouchableOpacity>
   );
 }
@@ -121,6 +126,8 @@ export default function NewMessageScreen() {
   const [isCreating, setIsCreating] = useState(false);
   const [contacts, setContacts] = useState<ContactItem[]>([]);
   const [isLoadingContacts, setIsLoadingContacts] = useState(true);
+  const [selectedContacts, setSelectedContacts] = useState<ContactItem[]>([]);
+  const [groupName, setGroupName] = useState('');
 
   // Fetch following + followers and build sorted contact list
   useEffect(() => {
@@ -238,36 +245,111 @@ export default function NewMessageScreen() {
     [isCreating, router]
   );
 
+  const toggleContact = useCallback(
+    (contact: ContactItem) => {
+      setSelectedContacts((prev) => {
+        const exists = prev.find((c) => c.id === contact.id);
+        if (exists) return prev.filter((c) => c.id !== contact.id);
+        return [...prev, contact];
+      });
+    },
+    [],
+  );
+
   const handleSelectContact = useCallback(
     (contact: ContactItem) => {
+      // If already have selections, toggle multi-select mode
+      if (selectedContacts.length > 0) {
+        toggleContact(contact);
+        return;
+      }
+      // Single tap with no selections = open DM directly
       openChannelWithUser(String(contact.id));
     },
-    [openChannelWithUser]
+    [openChannelWithUser, selectedContacts.length, toggleContact],
+  );
+
+  const handleLongPressContact = useCallback(
+    (contact: ContactItem) => {
+      toggleContact(contact);
+    },
+    [toggleContact],
   );
 
   const handleSelectSearchResult = useCallback(
     (user: SearchUser) => {
+      if (selectedContacts.length > 0) {
+        const contact: ContactItem = {
+          id: Number(user.id),
+          name: user.name,
+          image: user.image,
+          sortGroup: 0,
+        };
+        toggleContact(contact);
+        return;
+      }
       openChannelWithUser(user.id);
     },
-    [openChannelWithUser]
+    [openChannelWithUser, selectedContacts.length, toggleContact],
   );
+
+  const handleCreateGroup = useCallback(async () => {
+    if (isCreating || selectedContacts.length < 2) return;
+    setIsCreating(true);
+    try {
+      const memberIds = selectedContacts.map((c) => c.id);
+      const name = groupName.trim() || selectedContacts.map((c) => c.name.split(' ')[0]).join(', ');
+      const conversation = await chatApi.createConversation(memberIds, name);
+      router.replace({
+        pathname: '/chat/[conversationId]',
+        params: { conversationId: conversation.id },
+      });
+    } catch (err) {
+      console.error('Create group error:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [isCreating, selectedContacts, groupName, router]);
 
   const handleClose = useCallback(() => {
     router.back();
   }, [router]);
 
+  const selectedIds = React.useMemo(() => new Set(selectedContacts.map((c) => c.id)), [selectedContacts]);
+
   const renderContact = useCallback(
     ({ item }: { item: ContactItem }) => (
-      <ContactRow contact={item} onPress={() => handleSelectContact(item)} colors={colors} />
+      <TouchableOpacity
+        onPress={() => handleSelectContact(item)}
+        onLongPress={() => handleLongPressContact(item)}
+        activeOpacity={0.7}
+        style={styles.contactRow}
+      >
+        <View style={styles.avatarContainer}>
+          <Image
+            source={item.image ? { uri: item.image } : DefaultAvatarImage}
+            style={styles.avatar}
+          />
+        </View>
+        <View style={styles.contactInfo}>
+          <Text style={[styles.contactName, { color: colors.text }]}>{item.name}</Text>
+          {item.userName ? (
+            <Text style={[styles.contactUsername, { color: colors.textSecondary }]}>@{item.userName}</Text>
+          ) : null}
+        </View>
+        {selectedIds.has(item.id) && (
+          <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+        )}
+      </TouchableOpacity>
     ),
-    [handleSelectContact, colors]
+    [handleSelectContact, handleLongPressContact, colors, selectedIds],
   );
 
   const renderSearchResult = useCallback(
     ({ item }: { item: SearchUser }) => (
       <SearchResultRow user={item} onPress={() => handleSelectSearchResult(item)} colors={colors} />
     ),
-    [handleSelectSearchResult, colors]
+    [handleSelectSearchResult, colors],
   );
 
   return (
@@ -291,6 +373,52 @@ export default function NewMessageScreen() {
         <Text style={[styles.title, { color: colors.text }]}>New Message</Text>
         <View style={styles.cancelButton} />
       </View>
+
+      {/* Selected contacts chips */}
+      {selectedContacts.length > 0 && (
+        <View style={[styles.chipsContainer, { borderBottomColor: colors.border }]}>
+          <FlatList
+            horizontal
+            data={selectedContacts}
+            keyExtractor={(item) => String(item.id)}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipsContent}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.chip, { backgroundColor: colors.backgroundSecondary }]}
+                onPress={() => toggleContact(item)}
+                activeOpacity={0.7}
+              >
+                <Image
+                  source={item.image ? { uri: item.image } : DefaultAvatarImage}
+                  style={styles.chipAvatar}
+                />
+                <Text style={[styles.chipName, { color: colors.text }]}>{item.name.split(' ')[0]}</Text>
+                <Ionicons name="close" size={14} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          />
+          {selectedContacts.length >= 2 && (
+            <View style={styles.groupNameRow}>
+              <TextInput
+                style={[styles.groupNameInput, { color: colors.text, borderColor: colors.border }]}
+                value={groupName}
+                onChangeText={setGroupName}
+                placeholder="Group name (optional)"
+                placeholderTextColor={colors.placeholder}
+              />
+              <TouchableOpacity
+                style={[styles.createGroupButton, selectedContacts.length < 2 && { opacity: 0.4 }]}
+                onPress={handleCreateGroup}
+                disabled={selectedContacts.length < 2}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.createGroupText}>Create</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Search */}
       <View style={[styles.searchContainer, { borderBottomColor: colors.border }]}>
@@ -507,6 +635,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
+  },
+  chipsContainer: {
+    borderBottomWidth: 1,
+    paddingBottom: 8,
+  },
+  chipsContent: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  chipAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  chipName: {
+    fontSize: 13,
+    fontFamily: 'Lato_600SemiBold',
+  },
+  groupNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
+  },
+  groupNameInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  createGroupButton: {
+    backgroundColor: '#0095f6',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  createGroupText: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

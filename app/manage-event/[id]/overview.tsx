@@ -1,4 +1,5 @@
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useEvent, useEventMarketingStats, usePublishEvent, useDeleteEvent, useEventPermissions } from '@/hooks';
@@ -9,7 +10,6 @@ import Constants from 'expo-constants';
 import { useLocalSearchParams } from 'expo-router';
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Platform,
   ScrollView,
@@ -62,38 +62,17 @@ export default function OverviewScreen() {
     });
   };
 
+  const [showPublishConfirm, setShowPublishConfirm] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+
   const handlePublish = () => {
     if (!eventId) return;
-    Alert.alert('Publish Event', 'Are you sure you want to publish this event?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Publish',
-        onPress: () => publishEvent.mutate(eventId),
-      },
-    ]);
+    setShowPublishConfirm(true);
   };
 
   const handleDelete = () => {
     if (!eventId) return;
-    Alert.alert(
-      'Delete Event',
-      `Are you sure you want to delete "${event?.name || 'this event'}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            deleteEvent.mutate(eventId, {
-              onSuccess: () => {
-                router.dismissAll();
-                router.replace('/my-events');
-              },
-            });
-          },
-        },
-      ],
-    );
+    setShowDeleteConfirm(true);
   };
 
   const formatStatValue = (key: string, value: number): string => {
@@ -277,6 +256,39 @@ export default function OverviewScreen() {
           </Animated.View>
         )}
       </ScrollView>
+
+      <ConfirmModal
+        visible={showPublishConfirm}
+        onClose={() => setShowPublishConfirm(false)}
+        onConfirm={() => {
+          publishEvent.mutate(eventId!);
+          setShowPublishConfirm(false);
+        }}
+        title="Publish Event"
+        message="Are you sure you want to publish this event?"
+        confirmLabel="Publish"
+        icon="rocket-outline"
+      />
+
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          deleteEvent.mutate(eventId!, {
+            onSuccess: () => {
+              setShowDeleteConfirm(false);
+              router.dismissAll();
+              router.replace('/my-events');
+            },
+          });
+        }}
+        title="Delete Event"
+        message={`Are you sure you want to delete "${event?.name || 'this event'}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        isLoading={deleteEvent.isPending}
+        icon="trash-outline"
+      />
     </View>
   );
 }

@@ -55,7 +55,7 @@ export function ReactionSheet({
             styles.container,
             {
               paddingBottom: insets.bottom + 16,
-              backgroundColor: isDark ? "#000000" : colors.card,
+              backgroundColor: colors.background,
             },
           ]}
         >

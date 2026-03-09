@@ -41,6 +41,7 @@ export interface ChatMessage {
 
 export interface ChannelInfo {
   id: string;
+  type: 'direct' | 'group';
   name: string;
   imageUrl?: string;
   memberCount: number;
@@ -113,6 +114,7 @@ function deriveChannelInfo(
 
   return {
     id: conv.id,
+    type: conv.type,
     name: displayName,
     imageUrl: conv.imageUrl || firstOther?.avatarUrl || undefined,
     memberCount: conv.members.length,

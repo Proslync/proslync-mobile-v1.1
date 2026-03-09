@@ -13,10 +13,12 @@ import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { eventsApi } from '@/lib/api/events';
 import type { EventAttendee } from '@/lib/types/events.types';
 
 export default function GuestListPage() {
+  const { colors } = useAppTheme();
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ eventId?: string; eventTitle?: string }>();
@@ -86,7 +88,7 @@ export default function GuestListPage() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       <DarkGradientBg />
 
       {/* Header */}
@@ -151,7 +153,6 @@ export default function GuestListPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   header: {
     flexDirection: 'row',

@@ -233,7 +233,7 @@ export default function EditEventScreen() {
 
   return (
     <FormProvider {...form}>
-      <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#FFFFFF' }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {isDark && <DarkGradientBg />}
 
         {/* Header */}

@@ -8,10 +8,8 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
-  ActionSheetIOS,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +19,8 @@ import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { ActionMenu } from '@/components/shared/action-menu';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { UpdateProfileRequest } from '@/lib/types/auth.types';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
@@ -161,28 +161,11 @@ export default function EditProfileScreen() {
     }
   };
 
+  const [showPhotoMenu, setShowPhotoMenu] = React.useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = React.useState(false);
+
   const handleChangePhoto = () => {
-    if (Platform.OS === 'ios') {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ['Cancel', 'Take Photo', 'Choose from Library'],
-          cancelButtonIndex: 0,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) {
-            handleOpenCamera();
-          } else if (buttonIndex === 2) {
-            handlePickImage();
-          }
-        }
-      );
-    } else {
-      Alert.alert('Change Photo', 'Choose an option', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Take Photo', onPress: handleOpenCamera },
-        { text: 'Choose from Library', onPress: handlePickImage },
-      ]);
-    }
+    setShowPhotoMenu(true);
   };
 
   const handleSave = async () => {
@@ -234,14 +217,7 @@ export default function EditProfileScreen() {
 
   const handleCancel = () => {
     if (hasChanges) {
-      Alert.alert(
-        'Discard Changes?',
-        'You have unsaved changes. Are you sure you want to discard them?',
-        [
-          { text: 'Keep Editing', style: 'cancel' },
-          { text: 'Discard', style: 'destructive', onPress: () => router.back() },
-        ]
-      );
+      setShowDiscardConfirm(true);
     } else {
       router.back();
     }
@@ -395,6 +371,35 @@ export default function EditProfileScreen() {
           <View style={{ height: insets.bottom + 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ActionMenu
+        visible={showPhotoMenu}
+        onClose={() => setShowPhotoMenu(false)}
+        items={[
+          {
+            label: 'Take Photo',
+            icon: 'camera-outline',
+            onPress: () => { setShowPhotoMenu(false); handleOpenCamera(); },
+          },
+          {
+            label: 'Choose from Library',
+            icon: 'images-outline',
+            onPress: () => { setShowPhotoMenu(false); handlePickImage(); },
+          },
+        ]}
+      />
+
+      <ConfirmModal
+        visible={showDiscardConfirm}
+        onClose={() => setShowDiscardConfirm(false)}
+        onConfirm={() => { setShowDiscardConfirm(false); router.back(); }}
+        title="Discard Changes?"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        confirmLabel="Discard"
+        cancelLabel="Keep Editing"
+        destructive
+        icon="alert-circle-outline"
+      />
     </View>
   );
 }

@@ -8,10 +8,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { ActionMenu, type ActionMenuItem } from '@/components/shared/action-menu';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface ComposerProps {
   onSend: (text: string) => void;
@@ -26,8 +28,11 @@ export function Composer({
 }: ComposerProps) {
   const [text, setText] = useState('');
   const [inputHeight, setInputHeight] = useState(36);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showVoiceAlert, setShowVoiceAlert] = useState(false);
   const inputRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
 
   const handleSend = () => {
     if (text.trim()) {
@@ -38,20 +43,16 @@ export function Composer({
   };
 
   const handleAttachment = () => {
-    Alert.alert(
-      'Attach',
-      'Choose an option',
-      [
-        { text: 'Camera', onPress: () => {} },
-        { text: 'Photo Library', onPress: () => {} },
-        { text: 'Share Event', onPress: () => {} },
-        { text: 'Contact', onPress: () => {} },
-        { text: 'Location', onPress: () => {} },
-        { text: 'Cancel', style: 'cancel' },
-      ],
-      { cancelable: true }
-    );
+    setShowAttachMenu(true);
   };
+
+  const attachmentItems: ActionMenuItem[] = [
+    { label: 'Camera', icon: 'camera-outline', onPress: () => {} },
+    { label: 'Photo Library', icon: 'images-outline', onPress: () => {} },
+    { label: 'Share Event', icon: 'calendar-outline', onPress: () => {} },
+    { label: 'Contact', icon: 'person-outline', onPress: () => {} },
+    { label: 'Location', icon: 'location-outline', onPress: () => {} },
+  ];
 
   const handleContentSizeChange = (event: any) => {
     const height = Math.min(Math.max(36, event.nativeEvent.contentSize.height), 120);
@@ -59,7 +60,20 @@ export function Composer({
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8), backgroundColor: colors.background }]}>
+      <ActionMenu
+        visible={showAttachMenu}
+        onClose={() => setShowAttachMenu(false)}
+        items={attachmentItems}
+      />
+      <ConfirmModal
+        visible={showVoiceAlert}
+        onClose={() => setShowVoiceAlert(false)}
+        title="Voice Message"
+        message="Coming soon!"
+        alertOnly
+        icon="mic-outline"
+      />
       <View style={styles.inputRow}>
         <TouchableOpacity
           style={styles.attachButton}
@@ -96,7 +110,7 @@ export function Composer({
         ) : (
           <TouchableOpacity
             style={styles.micButton}
-            onPress={() => Alert.alert('Voice message', 'Coming soon!')}
+            onPress={() => setShowVoiceAlert(true)}
             activeOpacity={0.7}
           >
             <Ionicons name="mic" size={24} color="rgba(255, 255, 255, 0.6)" />
@@ -109,7 +123,6 @@ export function Composer({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.1)',
     paddingTop: 8,

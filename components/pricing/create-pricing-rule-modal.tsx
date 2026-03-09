@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { CreatePricingRuleRequest, PricingRule } from '@/lib/types/pricing.types';
 
 interface CreatePricingRuleModalProps {
@@ -31,6 +32,7 @@ export function CreatePricingRuleModal({
   initialValues,
 }: CreatePricingRuleModalProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [capacity, setCapacity] = useState('');
@@ -61,7 +63,7 @@ export function CreatePricingRuleModal({
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={[styles.container, { paddingTop: insets.top }]}
+        style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
@@ -122,7 +124,7 @@ export function CreatePricingRuleModal({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

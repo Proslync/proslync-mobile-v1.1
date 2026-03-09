@@ -9,15 +9,16 @@ import {
   TextInput,
   FlatList,
   ActivityIndicator,
-  Alert,
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useInviteByUserId } from '@/hooks';
 import { searchApi } from '@/lib/api/search';
 import type { SearchPerson } from '@/lib/types/search.types';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { RoleResponseDto } from '@/lib/types/team.types';
 
 interface InviteModalProps {
@@ -34,6 +35,7 @@ export function InviteModal({
   eventId,
 }: InviteModalProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const inviteMutation = useInviteByUserId(eventId);
 
   const [query, setQuery] = useState('');
@@ -42,6 +44,7 @@ export function InviteModal({
   const [selectedUser, setSelectedUser] = useState<SearchPerson | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [sent, setSent] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const debouncedQuery = useDebounce(query, 400);
 
@@ -94,7 +97,7 @@ export function InviteModal({
         onSuccess: () => setSent(true),
         onError: (err: any) => {
           const msg = err?.message || 'Failed to send invite';
-          Alert.alert('Invite Error', msg);
+          setInviteError(msg);
         },
       },
     );
@@ -136,7 +139,15 @@ export function InviteModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ConfirmModal
+        visible={!!inviteError}
+        onClose={() => setInviteError(null)}
+        title="Invite Error"
+        message={inviteError || ''}
+        alertOnly
+        icon="alert-circle-outline"
+      />
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Invite Team Member</Text>
@@ -270,7 +281,7 @@ export function InviteModal({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

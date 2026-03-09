@@ -7,6 +7,7 @@ export default function ManageVenueLayout() {
       <Stack.Screen name="events" />
       <Stack.Screen name="info" />
       <Stack.Screen name="tables" />
+      <Stack.Screen name="menu" />
       <Stack.Screen name="analytics" />
       <Stack.Screen name="followers" />
     </Stack>

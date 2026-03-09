@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { RoleResponseDto } from '@/lib/types/team.types';
 
 interface ChangeRoleModalProps {
@@ -31,6 +32,7 @@ export function ChangeRoleModal({
   loading,
 }: ChangeRoleModalProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const [selectedRoleId, setSelectedRoleId] = useState(currentRoleId);
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function ChangeRoleModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <View style={styles.header}>
           <Text style={styles.title}>Change Role</Text>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -99,7 +101,7 @@ export function ChangeRoleModal({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

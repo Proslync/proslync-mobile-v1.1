@@ -12,12 +12,13 @@ export interface ConversationMember {
 
 export interface ConversationResponse {
   id: string;
-  type: 'direct' | 'group';
+  type: 'direct' | 'group' | 'system';
   name: string | null;
   imageUrl: string | null;
   lastMessageAt: string | null;
   lastMessagePreview: string | null;
   unreadCount: number;
+  isPinned?: boolean;
   members: ConversationMember[];
   createdAt: string;
 }
@@ -95,4 +96,43 @@ export const chatApi = {
 
   deleteMessage: (messageId: number) =>
     apiClient.delete(`/api/conversations/messages/${messageId}`),
+
+  addMembers: (conversationId: string, memberIds: number[]) =>
+    apiClient.post<{ added: number }>(
+      `/api/conversations/${conversationId}/members`,
+      { memberIds },
+    ),
+
+  removeMember: (conversationId: string, userId: number) =>
+    apiClient.delete(`/api/conversations/${conversationId}/members/${userId}`),
+
+  leaveConversation: (conversationId: string) =>
+    apiClient.post<{ success: boolean }>(
+      `/api/conversations/${conversationId}/leave`,
+      {},
+    ),
+
+  updateConversation: (
+    conversationId: string,
+    data: { name?: string; imageUrl?: string },
+  ) =>
+    apiClient.patch<ConversationResponse>(
+      `/api/conversations/${conversationId}`,
+      data,
+    ),
+
+  pinConversation: (conversationId: string) =>
+    apiClient.patch<{ success: boolean }>(
+      `/api/conversations/${conversationId}/pin`,
+      {},
+    ),
+
+  unpinConversation: (conversationId: string) =>
+    apiClient.patch<{ success: boolean }>(
+      `/api/conversations/${conversationId}/unpin`,
+      {},
+    ),
+
+  getConciergeConversation: () =>
+    apiClient.post<ConversationResponse>('/api/conversations/concierge', {}),
 };

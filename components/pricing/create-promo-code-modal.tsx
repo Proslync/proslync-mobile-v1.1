@@ -14,6 +14,7 @@ import {
   Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { CreatePromoCodeRequest, PromoCode } from '@/lib/types/pricing.types';
 
 interface CreatePromoCodeModalProps {
@@ -32,6 +33,7 @@ export function CreatePromoCodeModal({
   initialValues,
 }: CreatePromoCodeModalProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const [code, setCode] = useState('');
   const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
   const [discountValue, setDiscountValue] = useState('');
@@ -75,7 +77,7 @@ export function CreatePromoCodeModal({
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView
-        style={[styles.container, { paddingTop: insets.top }]}
+        style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
@@ -185,7 +187,7 @@ export function CreatePromoCodeModal({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

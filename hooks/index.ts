@@ -15,6 +15,7 @@ export { useMyEvents, useEvent, useEvents } from './use-events-query';
 export { useEventMarketingStats } from './use-dashboard-query';
 export { useEventAttendees } from './use-event-attendees';
 export { useAllAttendees, ALL_ATTENDEES_KEY } from './use-all-attendees';
+export { useContacts, CONTACTS_KEY } from './use-contacts';
 export { useMyVenues } from './use-venues-query';
 export { useVenueFollowers, VENUE_FOLLOWERS_KEY } from './use-venue-followers';
 export { useFollowVenue } from './use-follow-venue';
@@ -145,6 +146,27 @@ export {
 
 // Call hooks
 export { useCall } from '../lib/providers/call-provider';
+
+// Text Blast hooks
+export {
+  useTextBlasts,
+  useRecipientCount,
+  useSendTextBlast,
+  TEXT_BLASTS_KEY,
+  RECIPIENT_COUNT_KEY,
+} from './use-text-blasts';
+
+// Venue Menu hooks
+export {
+  useVenueMenu,
+  useCreateMenuCategory,
+  useUpdateMenuCategory,
+  useDeleteMenuCategory,
+  useCreateMenuItem,
+  useUpdateMenuItem,
+  useDeleteMenuItem,
+  VENUE_MENU_KEY,
+} from './use-venue-menu';
 
 // Admin hooks
 export {

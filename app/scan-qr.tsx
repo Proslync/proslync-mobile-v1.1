@@ -8,7 +8,6 @@ import {
   Dimensions,
   Linking,
   FlatList,
-  Alert,
 } from 'react-native';
 import {
   Camera,
@@ -36,6 +35,8 @@ import Animated, {
 import { BlurView } from 'expo-blur';
 import { usePaymentSheet } from '@stripe/stripe-react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { eventsApi } from '@/lib/api/events';
 import { paymentsApi } from '@/lib/api/payments';
 import type { EventAttendee } from '@/lib/types/events.types';
@@ -203,6 +204,7 @@ const getTicketBadge = (ticketStatus?: string) => {
 
 
 export default function ScannerScreen() {
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { eventId: eventIdParam } = useLocalSearchParams<{ eventId?: string }>();
@@ -214,6 +216,7 @@ export default function ScannerScreen() {
 
   // Payment state
   const [chargingGuestId, setChargingGuestId] = React.useState<string | null>(null);
+  const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<string | null>(null);
   const [eventPricing, setEventPricing] = React.useState<{
     defaultTierId?: number;
     defaultPricingId?: number;
@@ -249,8 +252,7 @@ export default function ScannerScreen() {
   const mapAttendeeToGuest = React.useCallback((a: EventAttendee): CheckedInGuest => {
     const name = [a.firstName, a.lastName].filter(Boolean).join(' ') || a.guestName || 'Unknown';
     const isApproved = a.status === EventUserStatus.VERIFIED ||
-      a.status === EventUserStatus.CHECKED_IN ||
-      a.status === EventUserStatus.SEATED;
+      a.status === EventUserStatus.CHECKED_IN;
     let age: number | undefined;
     if (a.birthDate) {
       const bd = new Date(a.birthDate);
@@ -279,7 +281,6 @@ export default function ScannerScreen() {
           EventUserStatus.VERIFIED,
           EventUserStatus.REJECTED,
           EventUserStatus.CHECKED_IN,
-          EventUserStatus.SEATED,
         ],
       });
       const mapped = response.attendees.map(mapAttendeeToGuest);
@@ -637,7 +638,7 @@ export default function ScannerScreen() {
       );
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err: any) {
-      Alert.alert('Payment Failed', err?.message || 'Something went wrong.');
+      setPaymentFailedAlert(err?.message || 'Something went wrong.');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setChargingGuestId(null);
@@ -653,7 +654,7 @@ export default function ScannerScreen() {
 
   if (!hasPermission) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <View style={styles.permissionIcon}>
           <Ionicons name="camera" size={48} color="#fff" />
@@ -674,7 +675,7 @@ export default function ScannerScreen() {
 
   if (!device) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
         <DarkGradientBg />
         <ActivityIndicator size="large" color="#fff" />
         <Text style={styles.loadingText}>Initializing camera...</Text>
@@ -685,8 +686,16 @@ export default function ScannerScreen() {
 
   if (showList) {
     return (
-      <View style={[styles.container, { backgroundColor: '#000' }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <DarkGradientBg />
+        <ConfirmModal
+          visible={!!paymentFailedAlert}
+          onClose={() => setPaymentFailedAlert(null)}
+          title="Payment Failed"
+          message={paymentFailedAlert || ''}
+          alertOnly
+          icon="card-outline"
+        />
         <View style={[styles.listHeader, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity style={styles.headerButton} onPress={() => setShowList(false)}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -766,7 +775,7 @@ export default function ScannerScreen() {
   const isShowingResult = (scanStep === 'membership' && showMembershipResult) || (scanStep === 'id' && idResult !== null);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <DarkGradientBg />
       <Camera
         style={StyleSheet.absoluteFill}
@@ -1103,7 +1112,7 @@ export default function ScannerScreen() {
 
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   centered: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 48 },
   loadingText: { marginTop: 16, fontSize: 15, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)' },
 

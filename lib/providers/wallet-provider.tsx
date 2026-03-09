@@ -281,25 +281,26 @@ export function WalletProvider({ children }: WalletProviderProps) {
       console.error('[Wallet] Error fetching tickets:', error);
     }
 
-    // 2. Free RSVP events (no ticket)
+    // 2. Free RSVP events (no ticket) — use dedicated user events endpoint
     try {
-      const allEvents = await eventsApi.getEvents({ limit: 100 });
-      for (const e of allEvents) {
-        if (!e.isUserRegistered) continue;
-        if (seenEventIds.has(e.id.toString())) continue;
-        if (e.status === 'finished' || e.status === 'cancelled') continue;
-        if (!isUpcoming(e.startDate, e.endDate)) continue;
-        cards.push({
-          id: e.id.toString(),
-          title: e.name,
-          dateTime: e.startDate,
-          endDateTime: e.endDate,
-          dateTimeLabel: fmtDate(new Date(e.startDate)),
-          venueName: e.venue?.name || e.location || 'TBA',
-          flyerUrl: e.flyer?.url || e.imageUrl || '',
-          isEarningEnabled: false,
-          isPaid: e.isPaid ?? false,
-        });
+      if (authUser?.id) {
+        const rsvpEvents = await eventsApi.getUserEvents(authUser.id, { limit: 100 });
+        for (const e of rsvpEvents) {
+          if (seenEventIds.has(e.id.toString())) continue;
+          if (e.status === 'finished' || e.status === 'cancelled') continue;
+          if (!isUpcoming(e.startDate, e.endDate)) continue;
+          cards.push({
+            id: e.id.toString(),
+            title: e.name,
+            dateTime: e.startDate,
+            endDateTime: e.endDate,
+            dateTimeLabel: fmtDate(new Date(e.startDate)),
+            venueName: e.venue?.name || e.location || 'TBA',
+            flyerUrl: e.flyer?.url || e.imageUrl || '',
+            isEarningEnabled: false,
+            isPaid: e.isPaid ?? false,
+          });
+        }
       }
     } catch (error) {
       console.error('[Wallet] Error fetching RSVP events:', error);
@@ -308,7 +309,7 @@ export function WalletProvider({ children }: WalletProviderProps) {
     // Sort by start date ascending
     cards.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
     setEvents(cards);
-  }, []);
+  }, [authUser?.id]);
 
   // Setup Stripe Connect account
   const setupStripeAccount = useCallback(async () => {

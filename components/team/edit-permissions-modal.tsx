@@ -9,6 +9,7 @@ import {
   Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { RolePermissions, RoleResponseDto } from '@/lib/types/team.types';
 
 interface EditPermissionsModalProps {
@@ -111,6 +112,7 @@ export function EditPermissionsModal({
   loading,
 }: EditPermissionsModalProps) {
   const insets = useSafeAreaInsets();
+  const { colors } = useAppTheme();
   const [permissions, setPermissions] = useState<RolePermissions | null>(null);
 
   useEffect(() => {
@@ -152,7 +154,7 @@ export function EditPermissionsModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.title}>Edit Permissions</Text>
@@ -209,7 +211,7 @@ export function EditPermissionsModal({
           })}
         </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 16, backgroundColor: colors.background }]}>
           <TouchableOpacity
             style={styles.submitButton}
             onPress={() => onSave(role.id, permissions)}
@@ -227,7 +229,7 @@ export function EditPermissionsModal({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -310,7 +312,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#000',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.06)',
   },

@@ -9,6 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { User } from '../../lib/types/messages.types';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
@@ -33,11 +34,12 @@ function getRoleLabel(role: User['role']): string {
 }
 
 export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
+  const { colors } = useAppTheme();
   const roleLabel = getRoleLabel(user.role);
 
   return (
     <TouchableOpacity
-      style={[styles.container, isSelected && styles.containerSelected]}
+      style={[styles.container, { backgroundColor: colors.background }, isSelected && styles.containerSelected]}
       onPress={onPress}
       activeOpacity={0.7}
     >
@@ -81,7 +83,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#000',
   },
   containerSelected: {
     backgroundColor: 'rgba(0, 149, 246, 0.1)',

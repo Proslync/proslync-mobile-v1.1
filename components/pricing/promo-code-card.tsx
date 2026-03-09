@@ -1,9 +1,11 @@
 // Reusable promo code display card
 
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Switch } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { PromoCode } from '@/lib/types/pricing.types';
 
 interface PromoCodeCardProps {
@@ -25,12 +27,10 @@ function formatDate(dateStr: string): string {
 
 export function PromoCodeCard({ promoCode, readOnly, onToggleActive, onEdit, onDelete }: PromoCodeCardProps) {
   const { colors } = useAppTheme();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleDelete = () => {
-    Alert.alert('Delete Promo Code', `Delete "${promoCode.code}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => onDelete(promoCode.id) },
-    ]);
+    setShowDeleteConfirm(true);
   };
 
   const usageText = promoCode.maxUses
@@ -76,6 +76,16 @@ export function PromoCodeCard({ promoCode, readOnly, onToggleActive, onEdit, onD
           </TouchableOpacity>
         </View>
       )}
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => { setShowDeleteConfirm(false); onDelete(promoCode.id); }}
+        title="Delete Promo Code"
+        message={`Delete "${promoCode.code}"?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
     </GlassSurface>
   );
 }

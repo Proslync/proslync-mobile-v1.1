@@ -2,7 +2,15 @@ import * as React from 'react';
 import { View, TouchableOpacity, StyleSheet, Share, PlatformColor } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+let LiquidGlassView: React.ComponentType<any> = View;
+let isLiquidGlassSupported = false;
+try {
+  const lg = require('@callstack/liquid-glass');
+  LiquidGlassView = lg.LiquidGlassView;
+  isLiquidGlassSupported = lg.isLiquidGlassSupported;
+} catch {
+  // Native module not available (simulator or Expo Go)
+}
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 

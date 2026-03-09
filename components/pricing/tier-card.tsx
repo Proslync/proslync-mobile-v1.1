@@ -1,9 +1,11 @@
 // Reusable tier display card with nested pricing rules
 
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { TicketTier, PricingRule } from '@/lib/types/pricing.types';
 
 interface TierCardProps {
@@ -32,18 +34,15 @@ export function TierCard({
 }: TierCardProps) {
   const { colors } = useAppTheme();
 
+  const [deleteTierVisible, setDeleteTierVisible] = useState(false);
+  const [deletePricingRule, setDeletePricingRule] = useState<PricingRule | null>(null);
+
   const handleDeleteTier = () => {
-    Alert.alert('Delete Tier', `Delete "${tier.name}" and all its pricing rules?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => onDeleteTier(tier.id) },
-    ]);
+    setDeleteTierVisible(true);
   };
 
   const handleDeletePricing = (rule: PricingRule) => {
-    Alert.alert('Delete Pricing', `Delete "${rule.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => onDeletePricing(tier.id, rule.id) },
-    ]);
+    setDeletePricingRule(rule);
   };
 
   return (
@@ -127,6 +126,27 @@ export function TierCard({
           <Text style={[styles.addPricingText, { color: colors.textSecondary }]}>Add Pricing</Text>
         </TouchableOpacity>
       )}
+      <ConfirmModal
+        visible={deleteTierVisible}
+        onClose={() => setDeleteTierVisible(false)}
+        onConfirm={() => { setDeleteTierVisible(false); onDeleteTier(tier.id); }}
+        title="Delete Tier"
+        message={`Delete "${tier.name}" and all its pricing rules?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
+
+      <ConfirmModal
+        visible={!!deletePricingRule}
+        onClose={() => setDeletePricingRule(null)}
+        onConfirm={() => { if (deletePricingRule) { onDeletePricing(tier.id, deletePricingRule.id); setDeletePricingRule(null); } }}
+        title="Delete Pricing"
+        message={`Delete "${deletePricingRule?.name}"?`}
+        confirmLabel="Delete"
+        destructive
+        icon="trash-outline"
+      />
     </GlassSurface>
   );
 }
