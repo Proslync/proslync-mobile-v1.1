@@ -31,6 +31,7 @@ export interface SearchPerson {
   lastName: string;
   userName?: string;
   avatar?: { id: string; url: string } | null;
+  mutualCount?: number;
 }
 
 export interface SearchResponse {
@@ -49,6 +50,7 @@ export interface DiscoverPerson {
   avatar?: string;
   followers: number;
   verified: boolean;
+  mutualCount?: number;
 }
 
 export interface DiscoverEvent {

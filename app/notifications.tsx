@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  FlatList,
   Image,
   ActivityIndicator,
 } from 'react-native';
@@ -20,9 +21,17 @@ import {
   useMyTeamInvitations,
   useAcceptTeamInvitation,
   useDeclineTeamInvitation,
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
 } from '@/hooks';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import type { MyTeamInvitation } from '@/lib/types/team.types';
+import type {
+  AppNotification,
+  NotificationType,
+} from '@/lib/types/notifications.types';
 
 type NotificationTab = 'activity' | 'teams';
 
@@ -39,30 +48,18 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-
-interface ActivityNotification {
-  id: string;
-  title: string;
-  body: string;
-  time: string;
-  read: boolean;
-  icon: keyof typeof Ionicons.glyphMap;
-}
-
-// Only show placeholder notifications in development
-const PLACEHOLDER_ACTIVITY: ActivityNotification[] = __DEV__
-  ? [
-      { id: '1', title: 'Sarah Chen', body: 'started following you', time: '2m ago', read: false, icon: 'person-add' },
-      { id: '2', title: 'Friday Night Live', body: "You're confirmed! Event starts at 9 PM tonight", time: '15m ago', read: false, icon: 'checkmark-circle' },
-      { id: '3', title: 'Mike Torres', body: 'liked your event post', time: '1h ago', read: false, icon: 'heart' },
-      { id: '4', title: 'Rooftop Sessions', body: "is happening tomorrow. Don't forget!", time: '2h ago', read: true, icon: 'calendar' },
-      { id: '5', title: 'Jess Kim', body: 'commented: "This is going to be amazing!"', time: '3h ago', read: true, icon: 'chatbubble' },
-      { id: '6', title: 'DJ Snake', body: 'started following you', time: '5h ago', read: true, icon: 'person-add' },
-      { id: '7', title: 'Summer Music Festival', body: 'Early bird tickets are now available', time: '8h ago', read: true, icon: 'ticket' },
-      { id: '8', title: 'Marcus J.', body: 'mentioned you in a comment', time: '12h ago', read: true, icon: 'at' },
-    ]
-  : [];
-
+const NOTIFICATION_ICONS: Record<
+  NotificationType,
+  keyof typeof Ionicons.glyphMap
+> = {
+  follow: 'person-add',
+  rsvp: 'calendar',
+  event_update: 'refresh-circle',
+  payment: 'card',
+  chat: 'chatbubble',
+  like: 'heart',
+  comment: 'chatbubble-ellipses',
+};
 
 function TeamInvitationRow({
   invitation,
@@ -156,15 +153,31 @@ function TeamInvitationRow({
 }
 
 
-function ActivityRow({ item, colors, isDark }: { item: ActivityNotification; colors: ThemeColors; isDark: boolean }) {
+function ActivityRow({
+  item,
+  colors,
+  isDark,
+  onPress,
+}: {
+  item: AppNotification;
+  colors: ThemeColors;
+  isDark: boolean;
+  onPress: (notification: AppNotification) => void;
+}) {
+  const icon = NOTIFICATION_ICONS[item.type] || 'notifications';
+
   return (
-    <View style={[
-      styles.activityRow,
-      { borderBottomColor: colors.separator },
-      !item.read && { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' },
-    ]}>
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={() => onPress(item)}
+      style={[
+        styles.activityRow,
+        { borderBottomColor: colors.separator },
+        !item.read && { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' },
+      ]}
+    >
       <View style={[styles.activityIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : colors.backgroundSecondary }]}>
-        <Ionicons name={item.icon} size={18} color={colors.textTertiary} />
+        <Ionicons name={icon} size={18} color={colors.textTertiary} />
       </View>
       <View style={styles.activityContent}>
         <Text style={[styles.activityText, { color: colors.textSecondary }]} numberOfLines={2}>
@@ -172,10 +185,10 @@ function ActivityRow({ item, colors, isDark }: { item: ActivityNotification; col
           {'  '}
           {item.body}
         </Text>
-        <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{item.time}</Text>
+        <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{timeAgo(item.createdAt)}</Text>
       </View>
       {!item.read && <View style={[styles.unreadDot, { backgroundColor: colors.text }]} />}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -186,20 +199,39 @@ export default function NotificationsScreen() {
   const { colors, isDark } = useAppTheme();
   const [activeTab, setActiveTab] = useState<NotificationTab>('activity');
 
+  // Team invitations
   const invitationsQuery = useMyTeamInvitations();
   const acceptMutation = useAcceptTeamInvitation();
   const declineMutation = useDeclineTeamInvitation();
-
   const invitations = invitationsQuery.data ?? [];
+
+  // Activity notifications
+  const {
+    notifications,
+    isLoading: notificationsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch: refetchNotifications,
+  } = useNotifications();
+  const { data: unreadCount } = useUnreadNotificationCount();
+  const markReadMutation = useMarkNotificationRead();
+  const markAllReadMutation = useMarkAllNotificationsRead();
 
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const [confirmType, setConfirmType] = useState<'accept' | 'decline' | null>(null);
   const [actionId, setActionId] = React.useState<number | null>(null);
   const [actionType, setActionType] = React.useState<'accept' | 'decline' | null>(null);
 
-  const { refreshControl } = useRefreshControl({
+  const { refreshControl: teamsRefreshControl } = useRefreshControl({
     onRefresh: async () => {
       await invitationsQuery.refetch();
+    },
+  });
+
+  const { refreshControl: activityRefreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await refetchNotifications();
     },
   });
 
@@ -236,6 +268,53 @@ export default function NotificationsScreen() {
     setConfirmType(null);
   }, []);
 
+  const handleNotificationPress = useCallback(
+    (notification: AppNotification) => {
+      // Mark as read
+      if (!notification.read) {
+        markReadMutation.mutate(notification.id);
+      }
+
+      // Navigate based on type
+      const { metadata } = notification;
+      switch (notification.type) {
+        case 'follow':
+          if (metadata?.actorId) {
+            router.push(`/user-profile/${metadata.actorId}`);
+          }
+          break;
+        case 'rsvp':
+          if (metadata?.eventId) {
+            router.push(`/manage-event/${metadata.eventId}`);
+          }
+          break;
+        case 'event_update':
+          if (metadata?.eventId) {
+            router.push(`/event/${metadata.eventId}`);
+          }
+          break;
+        case 'payment':
+          if (metadata?.eventId) {
+            router.push(`/manage-event/${metadata.eventId}`);
+          }
+          break;
+        case 'like':
+        case 'comment':
+          if (metadata?.postId) {
+            router.push(`/post/${metadata.postId}`);
+          }
+          break;
+        case 'chat':
+          break;
+      }
+    },
+    [markReadMutation, router],
+  );
+
+  const handleMarkAllRead = useCallback(() => {
+    markAllReadMutation.mutate();
+  }, [markAllReadMutation]);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
@@ -246,7 +325,13 @@ export default function NotificationsScreen() {
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
-        <View style={styles.backButton} />
+        {activeTab === 'activity' && !!unreadCount && unreadCount > 0 ? (
+          <TouchableOpacity style={styles.backButton} onPress={handleMarkAllRead}>
+            <Ionicons name="checkmark-done" size={22} color={colors.text} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.backButton} />
+        )}
       </View>
 
       {/* Tabs */}
@@ -267,6 +352,11 @@ export default function NotificationsScreen() {
           ]}>
             Activity
           </Text>
+          {!!unreadCount && unreadCount > 0 && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity
           style={[
@@ -294,27 +384,57 @@ export default function NotificationsScreen() {
 
       {/* Tab Content */}
       {activeTab === 'activity' ? (
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
-          showsVerticalScrollIndicator={false}
-        >
-          {PLACEHOLDER_ACTIVITY.length > 0 ? (
-            PLACEHOLDER_ACTIVITY.map((item) => (
-              <ActivityRow key={item.id} item={item} colors={colors} isDark={isDark} />
-            ))
-          ) : (
-            <View style={{ alignItems: 'center', paddingTop: 60 }}>
-              <Text style={{ color: colors.textTertiary, fontSize: 15 }}>No notifications yet</Text>
+        notificationsLoading ? (
+          <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />
+        ) : notifications.length > 0 ? (
+          <FlatList
+            data={notifications}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <ActivityRow
+                item={item}
+                colors={colors}
+                isDark={isDark}
+                onPress={handleNotificationPress}
+              />
+            )}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={activityRefreshControl}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 16 }} />
+              ) : null
+            }
+          />
+        ) : (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={activityRefreshControl}
+          >
+            <View style={styles.emptyState}>
+              <Ionicons name="notifications-outline" size={40} color={colors.textTertiary} />
+              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No notifications yet</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
+                When someone follows you, RSVPs to your event, or sends you a payment, it will appear here.
+              </Text>
             </View>
-          )}
-        </ScrollView>
+          </ScrollView>
+        )
       ) : (
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
           showsVerticalScrollIndicator={false}
-          refreshControl={refreshControl}
+          refreshControl={teamsRefreshControl}
         >
           {invitationsQuery.isLoading ? (
             <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />

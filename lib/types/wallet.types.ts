@@ -1,6 +1,7 @@
 // Wallet Types
 
 export type StatusTier =
+  | 'Standard'
   | 'Newcomer'
   | 'Regular'
   | 'Preferred'
@@ -18,6 +19,7 @@ export interface WalletUser {
   statusTier: StatusTier;
   memberSince: string;
   membershipCardId?: number;
+  isProfileComplete: boolean;
 }
 
 export interface WalletBalances {
@@ -104,6 +106,7 @@ export interface WalletContextType extends WalletState, WalletActions {}
 
 // Tier perks mapping
 export const TIER_PERKS: Record<StatusTier, string[]> = {
+  Standard: ['Early access to select events', 'Birthday reward'],
   Newcomer: ['Early access to select events', 'Birthday reward'],
   Regular: ['5% cashback on tickets', 'Early access to select events'],
   Preferred: ['Line skip at select venues', '10% cashback on tickets', 'Priority support'],

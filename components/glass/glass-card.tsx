@@ -2,6 +2,7 @@ import * as React from 'react';
 import { View, StyleSheet } from 'react-native';
 import type { ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import {
   glassFill as glassFillTokens,
   glassBorder as glassBorderTokens,
@@ -18,6 +19,8 @@ import type {
   ShadowLevel,
   BlurIntensity,
 } from '@/constants/glass/types';
+
+const useNativeGlass = isGlassEffectAPIAvailable();
 
 interface GlassCardProps {
   fill?: GlassFill;
@@ -59,6 +62,27 @@ export function GlassCard({
   // Auto-select blur tint based on theme if not specified
   const effectiveBlurTint = blurTint ?? (isDark ? 'dark' : 'light');
 
+  if (useNativeGlass) {
+    return (
+      <GlassView
+        glassEffectStyle="regular"
+        colorScheme={isDark ? 'dark' : 'light'}
+        style={[
+          {
+            borderRadius: r,
+            borderWidth: borderToken.borderWidth,
+            borderColor: borderColor,
+            overflow: 'hidden' as const,
+            ...shadowTokens[shadowLevel],
+          },
+          style,
+        ]}
+      >
+        {children}
+      </GlassView>
+    );
+  }
+
   return (
     <View
       style={[
@@ -73,14 +97,11 @@ export function GlassCard({
         style,
       ]}
     >
-      {/* Blur background */}
       <BlurView
         intensity={blurTokens[blurIntensity]}
         tint={effectiveBlurTint}
         style={styles.absolute}
       />
-
-      {/* Content */}
       {children}
     </View>
   );

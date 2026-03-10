@@ -1,7 +1,7 @@
 // Wallet Components - Barrel export
 
 export { BottomSheet } from './bottom-sheet';
-export { MembershipCard } from './membership-card';
+export { MembershipCard, IncompleteMembershipCard } from './membership-card';
 export { StatusCardMenuSheet } from './status-card-menu-sheet';
 export { AddToWalletButtons } from './add-to-wallet-buttons';
 export { EarningsSummary } from './earnings-summary';

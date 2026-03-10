@@ -12,6 +12,7 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import {
   blur as blurTokens,
   glassFill as glassFillTokens,
@@ -25,6 +26,8 @@ import { absoluteFill } from '@/constants/glass/helpers';
 import { buttonPress } from '@/constants/glass/animations';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { GlassButtonVariant, GlassButtonSize } from '@/constants/glass/types';
+
+const useNativeGlass = isGlassEffectAPIAvailable();
 
 const sizeMap: Record<GlassButtonSize, { height: number; fontSize: number; paddingH: number }> = {
   sm: { height: 36, fontSize: 13, paddingH: 14 },
@@ -142,6 +145,7 @@ export function GlassButton({
   const isAccentVariant = variant === 'accent';
   const isDangerVariant = variant === 'danger';
   const isSolidVariant = isAccentVariant || isDangerVariant;
+  const isGlassVariant = !isSolidVariant;
 
   const containerStyle: ViewStyle = {
     height: sizeConfig.height,
@@ -151,9 +155,11 @@ export function GlassButton({
       ? {
           backgroundColor: isDangerVariant ? accent.red : config.frostedBg,
         }
-      : {
-          backgroundColor: config.frostedBg,
-        }),
+      : useNativeGlass
+        ? {}
+        : {
+            backgroundColor: config.frostedBg,
+          }),
     ...shadowTokens.md,
     opacity: disabled ? 0.5 : 1,
   };
@@ -175,27 +181,36 @@ export function GlassButton({
       <Animated.View
         style={[containerStyle, fullWidth && styles.fullWidth, style, animatedStyle]}
       >
-        {/* Blur layer (glass / frosted only) */}
-        {!isSolidVariant && config.blurIntensity > 0 && (
-          <BlurView
-            intensity={config.blurIntensity}
-            tint={config.blurTint}
+        {/* Glass background layer */}
+        {isGlassVariant && useNativeGlass ? (
+          <GlassView
+            glassEffectStyle="regular"
+            isInteractive
+            colorScheme={isDark ? 'dark' : 'light'}
             style={styles.absolute}
           />
-        )}
-
-        {/* Fill layer */}
-        {!isSolidVariant && (
-          <View
-            style={[
-              styles.absolute,
-              {
-                backgroundColor: config.useFrostedFill
-                  ? config.frostedBg
-                  : `rgba(255, 255, 255, ${config.fillOpacity})`,
-              },
-            ]}
-          />
+        ) : (
+          <>
+            {isGlassVariant && config.blurIntensity > 0 && (
+              <BlurView
+                intensity={config.blurIntensity}
+                tint={config.blurTint}
+                style={styles.absolute}
+              />
+            )}
+            {isGlassVariant && (
+              <View
+                style={[
+                  styles.absolute,
+                  {
+                    backgroundColor: config.useFrostedFill
+                      ? config.frostedBg
+                      : `rgba(255, 255, 255, ${config.fillOpacity})`,
+                  },
+                ]}
+              />
+            )}
+          </>
         )}
 
         {/* Content */}

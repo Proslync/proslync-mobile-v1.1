@@ -7,15 +7,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  FlatList,
 } from "react-native";
-import BottomSheet, { BottomSheetFlatList } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { followsApi } from "@/lib/api/follows";
-import type {
-  UserFollowItem,
-  VenueFollowItem,
-} from "@/lib/types/follows.types";
+import { useFollowUser } from "@/hooks/use-follow-user";
+import { useUserFollowers, useUserFollowing } from "@/hooks/use-user-follows";
+import type { FollowUser } from "@/hooks/use-user-follows";
 
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
@@ -28,22 +28,97 @@ interface FollowersSheetProps {
   userId: number;
   followersCount: number;
   followingCount: number;
+  currentUserId?: number;
 }
 
-interface ListItem {
-  id: number;
-  name: string;
-  imageUrl?: string | null;
-  type: "user" | "venue";
-}
+function UserRow({
+  user,
+  currentUserId,
+  onNavigate,
+}: {
+  user: FollowUser;
+  currentUserId?: number;
+  onNavigate: () => void;
+}) {
+  const router = useStableRouter();
+  const { colors } = useAppTheme();
+  const {
+    isFollowing,
+    isLoading: followLoading,
+    follow,
+    unfollow,
+    isFollowInProgress,
+    isUnfollowInProgress,
+  } = useFollowUser(user.id);
 
-const SPRING_CONFIG = {
-  damping: 80,
-  overshootClamping: true,
-  restDisplacementThreshold: 0.1,
-  restSpeedThreshold: 0.1,
-  stiffness: 500,
-};
+  const isSelf = currentUserId?.toString() === user.id;
+  const isActionInProgress = isFollowInProgress || isUnfollowInProgress;
+
+  const handleFollowPress = async () => {
+    if (isActionInProgress) return;
+    if (isFollowing) {
+      await unfollow();
+    } else {
+      await follow();
+    }
+  };
+
+  const handlePress = () => {
+    onNavigate();
+    router.push({
+      pathname: "/user-profile/[userId]",
+      params: { userId: String(user.id) },
+    });
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.userRow}
+      activeOpacity={0.7}
+      onPress={handlePress}
+    >
+      <Image
+        source={user.avatar ? { uri: user.avatar } : DefaultAvatarImage}
+        style={styles.userAvatar}
+      />
+      <View style={styles.userInfo}>
+        <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
+          {user.userName}
+        </Text>
+        <Text style={[styles.userFullName, { color: colors.textTertiary }]} numberOfLines={1}>
+          {[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"}
+        </Text>
+      </View>
+      {!isSelf && (
+        <TouchableOpacity
+          style={[
+            styles.followBtn,
+            { borderColor: colors.border },
+            isFollowing
+              ? { backgroundColor: "transparent", borderWidth: 1 }
+              : { backgroundColor: colors.buttonSecondary },
+          ]}
+          activeOpacity={0.8}
+          onPress={handleFollowPress}
+          disabled={followLoading || isActionInProgress}
+        >
+          {isActionInProgress ? (
+            <ActivityIndicator size="small" color={colors.text} />
+          ) : (
+            <Text
+              style={[
+                styles.followBtnText,
+                { color: isFollowing ? colors.textTertiary : colors.text },
+              ]}
+            >
+              {isFollowing ? "Following" : "Follow"}
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
+  );
+}
 
 export function FollowersSheet({
   visible,
@@ -52,278 +127,165 @@ export function FollowersSheet({
   userId,
   followersCount,
   followingCount,
+  currentUserId,
 }: FollowersSheetProps) {
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
-  const router = useStableRouter();
   const { colors } = useAppTheme();
-  const snapPoints = React.useMemo(() => ["55%", "85%"], []);
-
   const [activeTab, setActiveTab] = React.useState<SheetTab>(initialTab);
-  const [followers, setFollowers] = React.useState<ListItem[]>([]);
-  const [following, setFollowing] = React.useState<ListItem[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [hasFetchedFollowers, setHasFetchedFollowers] = React.useState(false);
-  const [hasFetchedFollowing, setHasFetchedFollowing] = React.useState(false);
 
-  // Update tab when initialTab changes
   React.useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
-  // Open/close sheet
-  React.useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.snapToIndex(0);
-    } else {
-      bottomSheetRef.current?.close();
-    }
-  }, [visible]);
+  const {
+    followers,
+    isLoading: followersLoading,
+  } = useUserFollowers(userId, visible);
 
-  // Fetch data when tab changes or sheet opens
-  React.useEffect(() => {
-    if (!visible || !userId) return;
-
-    if (activeTab === "followers" && !hasFetchedFollowers) {
-      fetchFollowers();
-    } else if (activeTab === "following" && !hasFetchedFollowing) {
-      fetchFollowing();
-    }
-  }, [visible, activeTab, userId]);
-
-  const fetchFollowers = async () => {
-    setIsLoading(true);
-    try {
-      const res = await followsApi.getUserFollowers(userId);
-      const items: ListItem[] = [
-        ...res.userFollowers.map((u: UserFollowItem) => ({
-          id: u.id,
-          name:
-            u.userName ||
-            `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
-            "User",
-          imageUrl: u.avatarUrl,
-          type: "user" as const,
-        })),
-        ...res.venueFollowers.map((v: VenueFollowItem) => ({
-          id: v.id,
-          name: v.name,
-          imageUrl: v.logoUrl,
-          type: "venue" as const,
-        })),
-      ];
-      setFollowers(items);
-      setHasFetchedFollowers(true);
-    } catch (err) {
-      console.error("[FollowersSheet] Failed to fetch followers:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchFollowing = async () => {
-    setIsLoading(true);
-    try {
-      const res = await followsApi.getUserFollowing(userId);
-      const items: ListItem[] = [
-        ...res.followingUsers.map((u: UserFollowItem) => ({
-          id: u.id,
-          name:
-            u.userName ||
-            `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
-            "User",
-          imageUrl: u.avatarUrl,
-          type: "user" as const,
-        })),
-        ...res.followingVenues.map((v: VenueFollowItem) => ({
-          id: v.id,
-          name: v.name,
-          imageUrl: v.logoUrl,
-          type: "venue" as const,
-        })),
-      ];
-      setFollowing(items);
-      setHasFetchedFollowing(true);
-    } catch (err) {
-      console.error("[FollowersSheet] Failed to fetch following:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleClose = () => {
-    // Reset fetch state so data refreshes next time
-    setHasFetchedFollowers(false);
-    setHasFetchedFollowing(false);
-    onClose();
-  };
-
-  const handleUserPress = (item: ListItem) => {
-    if (item.type === "user") {
-      router.push({
-        pathname: "/user/[username]",
-        params: {
-          username: item.name || item.id.toString(),
-          userId: item.id.toString(),
-        },
-      });
-      handleClose();
-    }
-  };
+  const {
+    following,
+    isLoading: followingLoading,
+  } = useUserFollowing(userId, visible);
 
   const data = activeTab === "followers" ? followers : following;
+  const isLoading = activeTab === "followers" ? followersLoading : followingLoading;
 
   const renderItem = React.useCallback(
-    ({ item }: { item: ListItem }) => (
-      <TouchableOpacity
-        style={styles.row}
-        onPress={() => handleUserPress(item)}
-        activeOpacity={0.6}
-      >
-        <View style={styles.avatarWrap}>
-          <Image
-            source={item.imageUrl ? { uri: item.imageUrl } : DefaultAvatarImage}
-            style={styles.avatar}
-          />
-        </View>
-        <View style={styles.rowInfo}>
-          <Text style={styles.rowName} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.rowType}>
-            {item.type === "venue" ? "Venue" : "User"}
-          </Text>
-        </View>
-      </TouchableOpacity>
+    ({ item }: { item: FollowUser }) => (
+      <UserRow user={item} currentUserId={currentUserId} onNavigate={onClose} />
     ),
-    [colors],
+    [currentUserId, onClose],
   );
 
-  const ListEmpty = () => {
-    if (isLoading) {
-      return (
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color="rgba(255,255,255,0.3)" />
-        </View>
-      );
-    }
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>
-          {activeTab === "followers"
-            ? "No followers yet"
-            : "Not following anyone yet"}
-        </Text>
-      </View>
-    );
-  };
-
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={-1}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      onClose={handleClose}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.sheetIndicator}
-      enableDynamicSizing={false}
-      animateOnMount
-      animationConfigs={SPRING_CONFIG}
-      overDragResistanceFactor={4}
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
     >
-      {/* Tabs */}
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "followers" && styles.tabActive,
-          ]}
-          onPress={() => setActiveTab("followers")}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[
-              styles.tabCount,
-              activeTab === "followers" && styles.tabCountActive,
-            ]}
-          >
-            {followersCount}
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <Ionicons name="close" size={28} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            {activeTab === "followers" ? "Followers" : "Following"}
           </Text>
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "followers" && styles.tabLabelActive,
-            ]}
-          >
-            Followers
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === "following" && styles.tabActive,
-          ]}
-          onPress={() => setActiveTab("following")}
-          activeOpacity={0.7}
-        >
-          <Text
-            style={[
-              styles.tabCount,
-              activeTab === "following" && styles.tabCountActive,
-            ]}
-          >
-            {followingCount}
-          </Text>
-          <Text
-            style={[
-              styles.tabLabel,
-              activeTab === "following" && styles.tabLabelActive,
-            ]}
-          >
-            Following
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.closeBtn} />
+        </View>
 
-      {/* List */}
-      <BottomSheetFlatList
-        data={data}
-        keyExtractor={(item: ListItem) => `${item.type}-${item.id}`}
-        renderItem={renderItem}
-        ListEmptyComponent={ListEmpty}
-        contentContainerStyle={[
-          styles.listContent,
-          data.length === 0 && styles.listContentEmpty,
-          { paddingBottom: insets.bottom + 20 },
-        ]}
-        showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => (
-          <View style={styles.separator} />
+        {/* Tabs */}
+        <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "followers" && { borderBottomColor: colors.text, borderBottomWidth: 2 },
+            ]}
+            onPress={() => setActiveTab("followers")}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.tabCount,
+                { color: activeTab === "followers" ? colors.text : colors.textTertiary },
+              ]}
+            >
+              {followersCount}
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                { color: activeTab === "followers" ? colors.text : colors.textTertiary },
+              ]}
+            >
+              Followers
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === "following" && { borderBottomColor: colors.text, borderBottomWidth: 2 },
+            ]}
+            onPress={() => setActiveTab("following")}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.tabCount,
+                { color: activeTab === "following" ? colors.text : colors.textTertiary },
+              ]}
+            >
+              {followingCount}
+            </Text>
+            <Text
+              style={[
+                styles.tabLabel,
+                { color: activeTab === "following" ? colors.text : colors.textTertiary },
+              ]}
+            >
+              Following
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* List */}
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.textTertiary} />
+          </View>
+        ) : data.length > 0 ? (
+          <FlatList
+            data={data}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+              {activeTab === "followers"
+                ? "No followers yet"
+                : "Not following anyone yet"}
+            </Text>
+          </View>
         )}
-      />
-    </BottomSheet>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    backgroundColor: "#000",
+  container: {
+    flex: 1,
   },
-  sheetIndicator: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
+
+  // Header
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  closeBtn: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontFamily: "Lato_700Bold",
   },
 
   // Tabs
   tabBar: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   tab: {
     flex: 1,
@@ -332,83 +294,67 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
-  tabActive: {
-    borderBottomColor: "#fff",
-  },
   tabCount: {
     fontSize: 16,
     fontFamily: "Lato_700Bold",
-    color: "rgba(255, 255, 255, 0.4)",
-  },
-  tabCountActive: {
-    color: "#fff",
   },
   tabLabel: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
     marginTop: 1,
-    color: "rgba(255, 255, 255, 0.4)",
-  },
-  tabLabelActive: {
-    color: "#fff",
   },
 
-  // List
-  listContent: {
-    paddingTop: 4,
-  },
-  listContentEmpty: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  row: {
+  // User row
+  userRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
   },
-  avatarWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: "hidden",
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+  userAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-  },
-  rowInfo: {
+  userInfo: {
     flex: 1,
     marginLeft: 12,
   },
-  rowName: {
-    fontSize: 15,
-    fontFamily: "Lato_600SemiBold",
-    color: "#fff",
+  userName: {
+    fontSize: 14,
+    fontFamily: "Lato_700Bold",
   },
-  rowType: {
+  userFullName: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    marginTop: 1,
-    color: "rgba(255, 255, 255, 0.4)",
+    marginTop: 2,
   },
-  separator: {
-    height: 1,
-    marginLeft: 76,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-  },
-
-  // Empty
-  emptyContainer: {
+  followBtn: {
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    minWidth: 90,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 48,
+  },
+  followBtnText: {
+    fontSize: 13,
+    fontFamily: "Lato_700Bold",
+  },
+
+  // States
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyText: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255, 255, 255, 0.35)",
   },
 });

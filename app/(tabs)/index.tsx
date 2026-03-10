@@ -167,16 +167,16 @@ export default function FeedScreen() {
   const handleUserClick = (item: FeedItem) => {
     if (item.userId) {
       router.push({
-        pathname: '/user/[username]',
+        pathname: '/user-profile/[userId]',
         params: {
-          username: item.username || String(item.userId),
           userId: String(item.userId),
         },
       });
     } else if (item.username) {
       router.push({
-        pathname: '/user/[username]',
+        pathname: '/user-profile/[userId]',
         params: {
+          userId: 'lookup',
           username: item.username,
         },
       });
@@ -229,6 +229,7 @@ export default function FeedScreen() {
   if (visibleItems.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <FeedHeader activeTab={activeTab} onTabChange={setActiveTab} />
         <View style={styles.emptyContainer}>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>No content yet</Text>
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>

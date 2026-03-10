@@ -28,17 +28,6 @@ export const usersApi = {
   },
 
   /**
-   * Check if a user is blocked
-   */
-  getBlockStatus: async (userId: number): Promise<{ isBlocked: boolean }> => {
-    try {
-      return await apiClient.get<{ isBlocked: boolean }>(`/api/users/${userId}/block-status`);
-    } catch {
-      return { isBlocked: false };
-    }
-  },
-
-  /**
    * Report a user
    */
   reportUser: async (

@@ -11,8 +11,10 @@ export function LinkifiedText({ children, style }: LinkifiedTextProps) {
   const router = useStableRouter();
 
   const handleMentionPress = (username: string) => {
-    // Navigate to user profile
-    router.push(`/user/${username}`);
+    router.push({
+      pathname: '/user-profile/[userId]',
+      params: { userId: 'lookup', username },
+    });
   };
 
   // Parse text and split into regular text and @mentions

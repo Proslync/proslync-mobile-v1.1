@@ -72,6 +72,81 @@ export function MembershipCard({ user, onPress, enlarged = false }: MembershipCa
   );
 }
 
+// Incomplete Membership Card - Shown when profile is missing firstName/lastName
+interface IncompleteMembershipCardProps {
+  onPress: () => void;
+}
+
+export function IncompleteMembershipCard({ onPress }: IncompleteMembershipCardProps) {
+  return (
+    <View style={[styles.cardWrapper, { width: CARD_WIDTH }]}>
+      <View style={[styles.card, { width: CARD_WIDTH }]}>
+        <View style={styles.content}>
+          <Image
+            source={StatusLogo}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+
+          <View style={incompleteStyles.iconContainer}>
+            <Ionicons name="shield-checkmark-outline" size={48} color="#fff" />
+          </View>
+
+          <Text style={styles.displayName}>Activate Your Card</Text>
+
+          <Text style={incompleteStyles.subtitle}>
+            Complete your profile to unlock your membership card
+          </Text>
+
+          <TouchableOpacity
+            onPress={onPress}
+            activeOpacity={0.85}
+            style={incompleteStyles.button}
+          >
+            <Text style={incompleteStyles.buttonText}>Complete Profile</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const incompleteStyles = StyleSheet.create({
+  iconContainer: {
+    marginBottom: 10,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255, 255, 255, 0.45)',
+    textAlign: 'center',
+    marginTop: 6,
+    marginBottom: 16,
+    paddingHorizontal: 24,
+    lineHeight: 20,
+  },
+  button: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+  },
+  buttonText: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    textAlign: 'center',
+  },
+});
+
 const styles = StyleSheet.create({
   cardWrapper: {
     marginHorizontal: 16,

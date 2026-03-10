@@ -38,7 +38,7 @@ export interface CallHistoryItem {
 
 export const callsApi = {
   initiateCall: (recipientId: number, isVideo: boolean) =>
-    apiClient.post<InitiateCallResponse>('/api/calls/initiate', { recipientId, isVideo }),
+apiClient.post<InitiateCallResponse>('/api/calls/initiate', { recipientId, isVideo }),
 
   initiateGroupCall: (conversationId: string, isVideo: boolean) =>
     apiClient.post<InitiateCallResponse>('/api/calls/initiate-group', { conversationId, isVideo }),
@@ -55,8 +55,8 @@ export const callsApi = {
   getCallHistory: () =>
     apiClient.get<{ calls: CallHistoryItem[] }>('/api/calls/history'),
 
-  registerDeviceToken: (token: string, platform: 'ios' | 'android') =>
-    apiClient.post<{ success: boolean }>('/api/calls/device-token', { token, platform }),
+  registerDeviceToken: (token: string, platform: 'ios' | 'android', type: 'voip' | 'push' = 'voip') =>
+    apiClient.post<{ success: boolean }>('/api/calls/device-token', { token, platform, type }),
 
   unregisterDeviceToken: (token: string) =>
     apiClient.delete<{ success: boolean }>(`/api/calls/device-token/${token}`),

@@ -126,7 +126,23 @@ export {
   useAcceptTeamInvitation,
   useDeclineTeamInvitation,
   MY_TEAM_INVITATIONS_KEY,
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
+  NOTIFICATIONS_KEY,
+  UNREAD_COUNT_KEY,
 } from './use-notifications';
+
+// Membership card hooks
+export { useMembershipCard, MEMBERSHIP_CARD_KEY } from './use-membership-card';
+
+// User Preferences hooks
+export {
+  useUserPreferences,
+  useUpdatePreference,
+  USER_PREFERENCES_KEY,
+} from './use-user-preferences';
 
 // Wallet / Stripe Connect hooks
 export {

@@ -22,6 +22,19 @@ export interface FollowersResponse {
   totalFollowers: number;
 }
 
+export interface MutualFollower {
+  id: number;
+  userName?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatarUrl?: string | null;
+}
+
+export interface MutualFollowersResponse {
+  users: MutualFollower[];
+  totalCount: number;
+}
+
 export interface FollowingResponse {
   followingUsers: UserFollowItem[];
   followingVenues: VenueFollowItem[];

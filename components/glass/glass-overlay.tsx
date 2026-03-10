@@ -2,6 +2,7 @@ import * as React from 'react';
 import { View, StyleSheet } from 'react-native';
 import type { ViewStyle } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
 import {
   blur as blurTokens,
   glassFill as glassFillTokens,
@@ -10,6 +11,8 @@ import {
 import { absoluteFill } from '@/constants/glass/helpers';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { BlurIntensity, GlassFill, GlassBorder } from '@/constants/glass/types';
+
+const useNativeGlass = isGlassEffectAPIAvailable();
 
 interface GlassOverlayProps {
   blurIntensity?: BlurIntensity;
@@ -53,16 +56,25 @@ export function GlassOverlay({
       }
     : undefined;
 
+  if (useNativeGlass) {
+    return (
+      <GlassView
+        glassEffectStyle="regular"
+        colorScheme={isDark ? 'dark' : 'light'}
+        style={[styles.container, { borderRadius }, borderStyle, style]}
+      >
+        {children}
+      </GlassView>
+    );
+  }
+
   return (
     <View style={[styles.container, { borderRadius }, borderStyle, style]}>
-      {/* Layer 1: Blur */}
       <BlurView
         intensity={blurTokens[blurIntensity]}
         tint={effectiveBlurTint}
         style={styles.absolute}
       />
-
-      {/* Layer 2: Color fill */}
       <View
         style={[
           styles.absolute,
@@ -72,8 +84,6 @@ export function GlassOverlay({
           },
         ]}
       />
-
-      {/* Content */}
       {children}
     </View>
   );

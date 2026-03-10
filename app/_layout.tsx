@@ -4,13 +4,17 @@ import {
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
+import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import "react-native-reanimated";
+import { registerGlobals } from "@livekit/react-native";
+
+registerGlobals();
 
 import { ThemeProvider, useAppTheme } from "@/lib/providers/theme-provider";
 import { AuthProvider } from "@/lib/providers/auth-provider";
@@ -21,12 +25,42 @@ import { TabNavigationProvider } from "@/lib/providers/tab-navigation-provider";
 import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
 import { TerminalProvider } from "@/lib/providers/terminal-provider";
+import { ChatSocketProvider } from "@/lib/providers/chat-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
 
 SplashScreen.preventAutoHideAsync();
 
+function useNotificationObserver() {
+  useEffect(() => {
+    function redirect(notification: Notifications.Notification) {
+      const data = notification.request.content.data;
+      const url = data?.url;
+      if (typeof url === "string") {
+        router.push(url as any);
+      }
+    }
+
+    // Cold start — app was killed, user tapped notification to launch
+    const response = Notifications.getLastNotificationResponse();
+    if (response?.notification) {
+      redirect(response.notification);
+    }
+
+    // Foreground + background — user taps notification while app is running
+    const subscription =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        redirect(response.notification);
+      });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+}
+
 function RootLayoutNav() {
   const { isDark } = useAppTheme();
+  useNotificationObserver();
 
   return (
     <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
@@ -47,14 +81,14 @@ function RootLayoutNav() {
           options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
-          name="user/[username]"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
           name="event/[id]"
           options={{
             animation: "slide_from_right",
           }}
+        />
+        <Stack.Screen
+          name="post/[id]"
+          options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
           name="edit-profile"
@@ -100,6 +134,13 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
+          name="qr-card"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
+          }}
+        />
+        <Stack.Screen
           name="tap-to-pay"
           options={{ animation: "slide_from_right" }}
         />
@@ -113,6 +154,14 @@ function RootLayoutNav() {
         />
         <Stack.Screen
           name="settings"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+name="notification-settings"
+          options={{ animation: "slide_from_right" }}
+        />
+        <Stack.Screen
+          name="privacy-settings"
           options={{ animation: "slide_from_right" }}
         />
         <Stack.Screen
@@ -168,6 +217,7 @@ export default function RootLayout() {
           <StripeProvider>
             <ToastProvider>
               <AuthProvider>
+                <ChatSocketProvider>
                 <CallProvider>
                   <TerminalProvider>
                     <LiveLocationProvider>
@@ -179,6 +229,7 @@ export default function RootLayout() {
                     </LiveLocationProvider>
                   </TerminalProvider>
                 </CallProvider>
+                </ChatSocketProvider>
               </AuthProvider>
             </ToastProvider>
           </StripeProvider>

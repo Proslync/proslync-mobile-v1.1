@@ -11,10 +11,8 @@ import {
   type ConversationResponse,
 } from '@/lib/api/chat';
 import { useAuth } from '@/lib/providers/auth-provider';
+import { useChatSocket } from '@/lib/providers/chat-socket-provider';
 import { CONVERSATIONS_KEY } from './use-conversations';
-import io, { type Socket } from 'socket.io-client';
-import { config } from '@/lib/config';
-import { apiClient } from '@/lib/api/client';
 import { filesApi } from '@/lib/api/files';
 
 // --- Types ---
@@ -28,6 +26,9 @@ export interface ChatMessage {
   createdAt: Date;
   isOwn: boolean;
   isSystem?: boolean;
+  systemEvent?: string;
+  callType?: string;
+  callDuration?: number;
   attachments?: {
     type: 'image' | 'video' | 'audio';
     url: string;
@@ -62,6 +63,22 @@ export const CONVERSATION_MESSAGES_KEY = 'conversation-messages';
 // --- Helpers ---
 
 function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
+  // System messages (call events, etc.)
+  if (msg.type === 'system') {
+    return {
+      id: String(msg.id),
+      text: msg.text || '',
+      userId: '',
+      userName: '',
+      createdAt: new Date(msg.createdAt),
+      isOwn: false,
+      isSystem: true,
+      systemEvent: msg.systemMetadata?.event,
+      callType: msg.systemMetadata?.callType,
+      callDuration: msg.systemMetadata?.duration,
+    };
+  }
+
   const sender = msg.sender;
   const senderName = sender
     ? sender.userName ||
@@ -144,9 +161,9 @@ type InfiniteMessagesData = {
 
 export function useConversation(conversationId: string | undefined) {
   const { user } = useAuth();
+  const { socket } = useChatSocket();
   const queryClient = useQueryClient();
   const currentUserId = user?.id ?? 0;
-  const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherReadAt, setOtherReadAt] = useState<Date | null>(null);
@@ -208,82 +225,65 @@ export function useConversation(conversationId: string | undefined) {
     return deriveChannelInfo(conv, currentUserId);
   }, [conversationId, currentUserId, conversationsQuery.data]);
 
-  // --- Socket.IO for real-time updates ---
+  // --- Socket.IO for real-time updates (uses shared socket from ChatSocketProvider) ---
 
   useEffect(() => {
-    if (!conversationId || !currentUserId) return;
+    if (!socket || !conversationId || !currentUserId) return;
 
-    let socket: Socket | null = null;
-    let cancelled = false;
+    // Join conversation room
+    socket.emit('chat:join', { conversationId });
 
-    const initSocket = async () => {
-      const token = await apiClient.getAccessToken();
-      if (!token || cancelled) return;
+    const onMessage = (data: { message: MessageResponse }) => {
+      // Skip own messages — already added optimistically via sendMessage
+      if (data.message.senderId === currentUserId) return;
 
-      const s = io(`${config.websocket.url}/chat`, {
-        auth: { token },
-        transports: ['websocket'],
-      });
+      // Insert into React Query cache (prepend to newest page)
+      queryClient.setQueryData<InfiniteMessagesData>(
+        [CONVERSATION_MESSAGES_KEY, conversationId],
+        (old) => {
+          if (!old?.pages?.length) return old;
+          const pages = [...old.pages];
+          pages[0] = {
+            ...pages[0],
+            messages: [data.message, ...pages[0].messages],
+          };
+          return { ...old, pages };
+        },
+      );
 
-      socket = s;
-      socketRef.current = s;
-
-      s.on('connect', () => {
-        s.emit('chat:join', { conversationId });
-      });
-
-      s.on('chat:message', (data: { message: MessageResponse }) => {
-        // Skip own messages — already added optimistically via sendMessage
-        if (data.message.senderId === currentUserId) return;
-
-        // Insert into React Query cache (prepend to newest page)
-        queryClient.setQueryData<InfiniteMessagesData>(
-          [CONVERSATION_MESSAGES_KEY, conversationId],
-          (old) => {
-            if (!old?.pages?.length) return old;
-            const pages = [...old.pages];
-            pages[0] = {
-              ...pages[0],
-              messages: [data.message, ...pages[0].messages],
-            };
-            return { ...old, pages };
-          },
-        );
-
-        chatApi.markRead(conversationId).catch(() => {});
-        queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
-      });
-
-      s.on('chat:typing', (data: { userId: number }) => {
-        if (data.userId !== currentUserId) {
-          setIsTyping(true);
-          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-          typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
-        }
-      });
-
-      s.on('chat:read', (data: { userId: number; lastReadAt: string }) => {
-        if (data.userId !== currentUserId) {
-          setOtherReadAt(new Date(data.lastReadAt));
-        }
-      });
+      chatApi.markRead(conversationId).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
     };
 
-    initSocket();
+    const onTyping = (data: { userId: number }) => {
+      if (data.userId !== currentUserId) {
+        setIsTyping(true);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 3000);
+      }
+    };
+
+    const onRead = (data: { userId: number; lastReadAt: string }) => {
+      if (data.userId !== currentUserId) {
+        setOtherReadAt(new Date(data.lastReadAt));
+      }
+    };
+
+    socket.on('chat:message', onMessage);
+    socket.on('chat:typing', onTyping);
+    socket.on('chat:read', onRead);
 
     return () => {
-      cancelled = true;
+      socket.emit('chat:leave', { conversationId });
+      socket.off('chat:message', onMessage);
+      socket.off('chat:typing', onTyping);
+      socket.off('chat:read', onRead);
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
       }
-      if (socket) {
-        socket.emit('chat:leave', { conversationId });
-        socket.disconnect();
-      }
-      socketRef.current = null;
     };
-  }, [conversationId, currentUserId, queryClient]);
+  }, [socket, conversationId, currentUserId, queryClient]);
 
   // --- Send message (optimistic update) ---
 
@@ -543,9 +543,9 @@ export function useConversation(conversationId: string | undefined) {
   );
 
   const sendTypingStart = useCallback(async () => {
-    if (!conversationId || !socketRef.current) return;
-    socketRef.current.emit('chat:typing', { conversationId });
-  }, [conversationId]);
+    if (!conversationId || !socket) return;
+    socket.emit('chat:typing', { conversationId });
+  }, [conversationId, socket]);
 
   const sendTypingStop = useCallback(async () => {
     // No explicit stop event — typing auto-clears after timeout

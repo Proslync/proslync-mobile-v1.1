@@ -3,14 +3,28 @@ import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { io, Socket } from 'socket.io-client';
 import * as SecureStore from 'expo-secure-store';
+import * as Device from 'expo-device';
+import { AudioSession } from '@livekit/react-native';
 import { config } from '@/lib/config';
 import { callsApi, type IncomingCallData } from '@/lib/api/calls';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { IncomingCallOverlay } from '@/components/call/incoming-call-overlay';
-import { callkitService } from '@/lib/services/callkit-service';
 import { voipPushService } from '@/lib/services/voip-push-service';
+import { pushNotificationService } from '@/lib/services/push-notification-service';
+import {
+  addNotificationListener,
+  addCallAnsweredListener,
+  addCallEndedListener,
+  startOutgoingCall,
+  reportCallConnected,
+  fulfillAnswerAction,
+  endNativeCall,
+} from '@/modules/voip-push';
 
-interface ActiveCall {
+// CallKit crashes on simulator — only use on real iOS devices
+const useCallKit = Platform.OS === 'ios' && Device.isDevice;
+
+interface CurrentCall {
   callId: string;
   roomName: string;
   token: string;
@@ -23,14 +37,14 @@ interface ActiveCall {
 }
 
 interface CallContextType {
-  activeCall: ActiveCall | null;
+  currentCall: CurrentCall | null;
   incomingCall: IncomingCallData | null;
   startCall: (recipientId: number, name?: string, avatar?: string, isVideo?: boolean) => Promise<void>;
   startGroupCall: (conversationId: string, groupName: string, isVideo?: boolean) => Promise<void>;
   acceptIncoming: () => Promise<void>;
   declineIncoming: () => Promise<void>;
-  endActiveCall: () => Promise<void>;
-  clearActiveCall: () => void;
+  endCall: () => Promise<void>;
+  onCallConnected: (callId: string) => void;
 }
 
 const CallContext = React.createContext<CallContextType | null>(null);
@@ -47,58 +61,138 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const router = useRouter();
   const socketRef = React.useRef<Socket | null>(null);
-  const [activeCall, setActiveCall] = React.useState<ActiveCall | null>(null);
+  const [currentCall, setCurrentCall] = React.useState<CurrentCall | null>(null);
   const [incomingCall, setIncomingCall] = React.useState<IncomingCallData | null>(null);
 
-  // Initialize CallKit and VoIP push on iOS
+  // Refs to avoid stale closures in callbacks
+  const incomingCallRef = React.useRef<IncomingCallData | null>(null);
+  const currentCallRef = React.useRef<CurrentCall | null>(null);
+  // Store push payload synchronously so native answer handler can read it immediately
+  const pushPayloadRef = React.useRef<Record<string, IncomingCallData>>({});
+  // Track callIds already being handled by native answer/end to prevent double-processing
+  const handledCallIds = React.useRef<Set<string>>(new Set());
+
   React.useEffect(() => {
-    if (Platform.OS !== 'ios') return;
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
+  React.useEffect(() => {
+    currentCallRef.current = currentCall;
+  }, [currentCall]);
 
-    callkitService.setup();
+  // Handle ALL call events from native VoIP push + CallKit delegate (single CXProvider)
+  React.useEffect(() => {
+    if (!useCallKit) return;
 
-    // Handle CallKit answer — user tapped "Accept" on the native call screen
-    callkitService.setOnAnswer(async (callId: string) => {
+    // VoIP push payload arrives — store data for answer/end handlers
+    const notifSub = addNotificationListener((payload) => {
+      const callId = payload.callId as string;
+      if (!callId) return;
+
+      console.log('[VoipPush] Notification:', callId, payload.callerName);
+
+      const callData: IncomingCallData = {
+        callId,
+        callerId: Number(payload.callerId) || 0,
+        callerName: (payload.callerName as string) || 'Unknown',
+        isVideo: !!payload.isVideo,
+        roomName: (payload.roomName as string) || '',
+      };
+
+      pushPayloadRef.current[callId] = callData;
+      setIncomingCall(callData);
+    });
+
+    // Native CallKit answer — user tapped Accept on CallKit UI
+    // Note: CXAnswerCallAction is NOT yet fulfilled — we must call fulfillAnswerAction after connecting
+    const answerSub = addCallAnsweredListener(async (callId) => {
+      if (handledCallIds.current.has(callId)) return;
+      handledCallIds.current.add(callId);
+
+      console.log('[VoipPush] Answered:', callId);
+
+      // Read from synchronous ref — React state may not have updated yet
+      const callData = pushPayloadRef.current[callId] || incomingCallRef.current;
+
       try {
         const result = await callsApi.acceptCall(callId);
-        // Navigate to call screen with LiveKit credentials
-        router.push({
-          pathname: '/call',
-          params: {
-            callId,
-            recipientId: '0',
-            recipientName: 'Unknown',
-            recipientAvatar: '',
-            isVideo: '0',
-            isIncoming: '1',
-            livekitToken: result.token,
-            livekitUrl: result.wsUrl,
-          },
+        await AudioSession.startAudioSession().catch(() => {});
+        setCurrentCall({
+          callId,
+          roomName: callData?.roomName || '',
+          token: result.token,
+          wsUrl: result.wsUrl,
+          recipientId: callData?.callerId || 0,
+          recipientName: callData?.callerName || 'Unknown',
+          isVideo: callData?.isVideo || false,
+          isOutgoing: false,
         });
+        setIncomingCall(null);
+        delete pushPayloadRef.current[callId];
+        // Fulfill the CallKit answer action — switches from "Connecting..." to active call
+        fulfillAnswerAction(callId);
+        router.push('/call');
       } catch (error) {
-        console.error('[CallKit] Failed to accept call:', error);
-        callkitService.endCall(callId);
+        console.error('[VoipPush] Accept failed:', error);
+        setIncomingCall(null);
+        delete pushPayloadRef.current[callId];
+        handledCallIds.current.delete(callId);
+        // End the CallKit call since accept failed
+        endNativeCall(callId);
       }
     });
 
-    // Handle CallKit end — user tapped "Decline" or "End" on native call screen
-    callkitService.setOnEnd(async (callId: string) => {
-      try {
-        await callsApi.declineCall(callId);
-      } catch {
-        // Call may already be ended
+    // Native CallKit end — user tapped Decline or End on CallKit UI
+    const endSub = addCallEndedListener(async (callId) => {
+      if (handledCallIds.current.has(callId)) return;
+      handledCallIds.current.add(callId);
+
+      console.log('[VoipPush] Ended/Declined:', callId);
+
+      const incoming = incomingCallRef.current;
+      const active = currentCallRef.current;
+
+      if (incoming && incoming.callId === callId) {
+        try { await callsApi.declineCall(callId); } catch {}
+        setIncomingCall(null);
+      } else if (active && active.callId === callId) {
+        try { await callsApi.endCall(callId); } catch {}
+        setCurrentCall(null);
+        AudioSession.stopAudioSession().catch(() => {});
+      } else {
+        // No JS state yet — decline via API as a fallback
+        try { await callsApi.declineCall(callId); } catch {}
+        setIncomingCall(null);
       }
-      setIncomingCall(null);
-      setActiveCall(null);
+
+      delete pushPayloadRef.current[callId];
+      // Clean up after a delay so other handlers don't race
+      setTimeout(() => handledCallIds.current.delete(callId), 5000);
     });
+
+    return () => {
+      notifSub?.remove();
+      answerSub?.remove();
+      endSub?.remove();
+    };
   }, [router]);
 
-  // Register VoIP push when user is authenticated
+  // Register VoIP push when user is authenticated (real device only)
   React.useEffect(() => {
-    if (!user?.id || Platform.OS !== 'ios') return;
+    if (!user?.id || !useCallKit) return;
     voipPushService.register();
 
     return () => {
       voipPushService.unregister();
+    };
+  }, [user?.id]);
+
+  // Register for standard push notifications when user is authenticated
+  React.useEffect(() => {
+    if (!user?.id) return;
+    pushNotificationService.register();
+
+    return () => {
+      pushNotificationService.unregister();
     };
   }, [user?.id]);
 
@@ -125,22 +219,43 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       socketRef.current = s;
 
       s.on('call:incoming', (data: IncomingCallData) => {
-        if (Platform.OS === 'ios') {
-          // On iOS, report to CallKit instead of showing in-app overlay
-          // This is idempotent — if VoIP push already reported it, this is a no-op
-          callkitService.reportIncomingCall(data.callId, data.callerName, data.isVideo);
-        }
-        // Store the incoming call data so we can use it when answering
+        console.log('[WS] call:incoming', data.callId);
+        // On real device: native CXProvider already shows CallKit UI via VoIP push.
+        // NEVER report via CallKit from JS — it creates a duplicate CallKit call.
+        // Just update JS state so WebSocket-originated data (with roomName) is available.
         setIncomingCall(data);
+        // Also store in pushPayloadRef as fallback if VoIP push was slow
+        if (!pushPayloadRef.current[data.callId]) {
+          pushPayloadRef.current[data.callId] = data;
+        }
       });
 
-      s.on('call:declined', (_data: { callId: string }) => {
-        setActiveCall(null);
-        router.back();
+      s.on('call:declined', (data: { callId: string }) => {
+        setCurrentCall((cur) => {
+          if (cur?.callId === data.callId) {
+            AudioSession.stopAudioSession().catch(() => {});
+            return null;
+          }
+          return cur;
+        });
+        setIncomingCall((inc) => (inc?.callId === data.callId ? null : inc));
+        delete pushPayloadRef.current[data.callId];
+        // End the native CallKit call UI
+        if (useCallKit) endNativeCall(data.callId);
       });
 
-      s.on('call:ended', (_data: { callId: string }) => {
-        setActiveCall(null);
+      s.on('call:ended', (data: { callId: string }) => {
+        setCurrentCall((cur) => {
+          if (cur?.callId === data.callId) {
+            AudioSession.stopAudioSession().catch(() => {});
+            return null;
+          }
+          return cur;
+        });
+        setIncomingCall((inc) => (inc?.callId === data.callId ? null : inc));
+        delete pushPayloadRef.current[data.callId];
+        // End the native CallKit call UI
+        if (useCallKit) endNativeCall(data.callId);
       });
     };
 
@@ -153,13 +268,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         socketRef.current = null;
       }
     };
-  }, [user?.id, router]);
+  }, [user?.id]);
 
   const startCall = React.useCallback(
     async (recipientId: number, name?: string, avatar?: string, isVideo?: boolean) => {
       try {
+        await AudioSession.startAudioSession().catch(() => {});
         const result = await callsApi.initiateCall(recipientId, isVideo ?? false);
-        const call: ActiveCall = {
+        setCurrentCall({
           callId: result.callId,
           roomName: result.roomName,
           token: result.token,
@@ -169,29 +285,16 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           recipientAvatar: avatar,
           isVideo: isVideo ?? false,
           isOutgoing: true,
-        };
-        setActiveCall(call);
+        });
 
-        // Report outgoing call to CallKit
-        if (Platform.OS === 'ios') {
-          callkitService.reportOutgoingCall(result.callId, name || 'Unknown');
+        if (useCallKit) {
+          startOutgoingCall(result.callId, name || 'Unknown', isVideo ?? false);
         }
 
-        router.push({
-          pathname: '/call',
-          params: {
-            callId: result.callId,
-            recipientId: String(recipientId),
-            recipientName: name || 'Unknown',
-            recipientAvatar: avatar || '',
-            isVideo: isVideo ? '1' : '0',
-            isIncoming: '0',
-            livekitToken: result.token,
-            livekitUrl: result.wsUrl,
-          },
-        });
+        router.push('/call');
       } catch (error) {
         console.error('Failed to start call:', error);
+        AudioSession.stopAudioSession().catch(() => {});
       }
     },
     [router],
@@ -200,8 +303,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   const startGroupCall = React.useCallback(
     async (conversationId: string, groupName: string, isVideo?: boolean) => {
       try {
+        await AudioSession.startAudioSession().catch(() => {});
         const result = await callsApi.initiateGroupCall(conversationId, isVideo ?? false);
-        const call: ActiveCall = {
+        setCurrentCall({
           callId: result.callId,
           roomName: result.roomName,
           token: result.token,
@@ -210,40 +314,35 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
           recipientName: groupName,
           isVideo: isVideo ?? false,
           isOutgoing: true,
-        };
-        setActiveCall(call);
+        });
 
-        if (Platform.OS === 'ios') {
-          callkitService.reportOutgoingCall(result.callId, groupName);
+        if (useCallKit) {
+          startOutgoingCall(result.callId, groupName, isVideo ?? false);
         }
 
-        router.push({
-          pathname: '/call',
-          params: {
-            callId: result.callId,
-            recipientId: '0',
-            recipientName: groupName,
-            recipientAvatar: '',
-            isVideo: isVideo ? '1' : '0',
-            isIncoming: '0',
-            isGroupCall: '1',
-            livekitToken: result.token,
-            livekitUrl: result.wsUrl,
-          },
-        });
+        router.push('/call');
       } catch (error) {
         console.error('Failed to start group call:', error);
+        AudioSession.stopAudioSession().catch(() => {});
       }
     },
     [router],
   );
 
+  // Called from call screen when remote participant joins (LiveKit connected)
+  const onCallConnected = React.useCallback((callId: string) => {
+    if (useCallKit) {
+      reportCallConnected(callId);
+    }
+  }, []);
+
   const acceptIncoming = React.useCallback(async () => {
     if (!incomingCall) return;
 
     try {
+      await AudioSession.startAudioSession().catch(() => {});
       const result = await callsApi.acceptCall(incomingCall.callId);
-      const call: ActiveCall = {
+      setCurrentCall({
         callId: incomingCall.callId,
         roomName: incomingCall.roomName,
         token: result.token,
@@ -252,25 +351,14 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
         recipientName: incomingCall.callerName,
         isVideo: incomingCall.isVideo,
         isOutgoing: false,
-      };
-      setActiveCall(call);
-      setIncomingCall(null);
-      router.push({
-        pathname: '/call',
-        params: {
-          callId: incomingCall.callId,
-          recipientId: String(incomingCall.callerId),
-          recipientName: incomingCall.callerName,
-          recipientAvatar: '',
-          isVideo: incomingCall.isVideo ? '1' : '0',
-          isIncoming: '1',
-          isGroupCall: incomingCall.isGroup ? '1' : '0',
-          livekitToken: result.token,
-          livekitUrl: result.wsUrl,
-        },
       });
+      setIncomingCall(null);
+      // Fulfill native answer action if pending
+      if (useCallKit) fulfillAnswerAction(incomingCall.callId);
+      router.push('/call');
     } catch (error) {
       console.error('Failed to accept call:', error);
+      AudioSession.stopAudioSession().catch(() => {});
       setIncomingCall(null);
     }
   }, [incomingCall, router]);
@@ -284,54 +372,49 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to decline call:', error);
     }
 
-    // End in CallKit too
-    if (Platform.OS === 'ios') {
-      callkitService.endCall(incomingCall.callId);
+    if (useCallKit) {
+      endNativeCall(incomingCall.callId);
     }
 
+    delete pushPayloadRef.current[incomingCall.callId];
     setIncomingCall(null);
   }, [incomingCall]);
 
-  const endActiveCall = React.useCallback(async () => {
-    if (!activeCall) return;
+  const endCall = React.useCallback(async () => {
+    if (!currentCall) return;
 
     try {
-      await callsApi.endCall(activeCall.callId);
-    } catch (error) {
-      console.error('Failed to end call:', error);
+      await callsApi.endCall(currentCall.callId);
+    } catch {}
+
+    if (useCallKit) {
+      endNativeCall(currentCall.callId);
     }
 
-    // End in CallKit
-    if (Platform.OS === 'ios') {
-      callkitService.endCall(activeCall.callId);
-    }
-
-    setActiveCall(null);
-  }, [activeCall]);
-
-  const clearActiveCall = React.useCallback(() => {
-    setActiveCall(null);
-  }, []);
+    delete pushPayloadRef.current[currentCall.callId];
+    setCurrentCall(null);
+    AudioSession.stopAudioSession().catch(() => {});
+  }, [currentCall]);
 
   const value = React.useMemo(
     () => ({
-      activeCall,
+      currentCall,
       incomingCall,
       startCall,
       startGroupCall,
       acceptIncoming,
       declineIncoming,
-      endActiveCall,
-      clearActiveCall,
+      endCall,
+      onCallConnected,
     }),
-    [activeCall, incomingCall, startCall, startGroupCall, acceptIncoming, declineIncoming, endActiveCall, clearActiveCall],
+    [currentCall, incomingCall, startCall, startGroupCall, acceptIncoming, declineIncoming, endCall, onCallConnected],
   );
 
   return (
     <CallContext.Provider value={value}>
       {children}
-      {/* On iOS, CallKit handles the incoming call UI. On Android, show the in-app overlay. */}
-      {incomingCall && Platform.OS !== 'ios' && (
+      {/* CallKit handles incoming call UI on real iOS devices. Otherwise show in-app overlay. */}
+      {incomingCall && !useCallKit && (
         <IncomingCallOverlay
           callerName={incomingCall.callerName}
           isVideo={incomingCall.isVideo}

@@ -1,5 +1,5 @@
 // Wallet Screen - Membership card, offers, and events
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useCallback } from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -7,8 +7,10 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '@/lib/providers/wallet-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useMembershipCard } from '@/hooks/use-membership-card';
 import {
   MembershipCard,
+  IncompleteMembershipCard,
   StatusCardMenuSheet,
   OfferCarousel,
   TicketList,
@@ -29,6 +31,25 @@ export default function WalletScreen() {
     refreshWallet,
   } = useWallet();
 
+  const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
+
+  const { data: membershipCard, isLoading: isLoadingCard } = useMembershipCard(
+    !!user?.isProfileComplete
+  );
+
+  const handleExpandQR = useCallback(() => {
+    if (membershipCard?.pdf417Payload) {
+      setCardMenuVisible(false);
+      router.push({
+        pathname: '/qr-card',
+        params: {
+          payload: membershipCard.pdf417Payload,
+          cardNumber: membershipCard.cardNumber ?? '',
+        },
+      });
+    }
+  }, [membershipCard, router]);
+
   // RSVP-only events (no ticketId) that haven't ended yet — passed to TicketList separately
   const rsvpEvents = useMemo(() => {
     const now = Date.now();
@@ -41,8 +62,6 @@ export default function WalletScreen() {
       return cutoff > now;
     });
   }, [events]);
-
-  const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
@@ -64,8 +83,12 @@ export default function WalletScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
       >
-        {/* Membership Card - Tappable */}
-        <MembershipCard user={user} onPress={() => setCardMenuVisible(true)} />
+        {/* Membership Card */}
+        {user.isProfileComplete ? (
+          <MembershipCard user={user} onPress={() => setCardMenuVisible(true)} />
+        ) : (
+          <IncompleteMembershipCard onPress={() => router.push('/edit-profile')} />
+        )}
 
         {/* Promos Carousel */}
         <OfferCarousel
@@ -87,12 +110,18 @@ export default function WalletScreen() {
 
       </ScrollView>
 
-      {/* Status Card Menu Sheet */}
-      <StatusCardMenuSheet
-        visible={cardMenuVisible}
-        onClose={() => setCardMenuVisible(false)}
-        user={user}
-      />
+      {/* Status Card Menu Sheet - only for complete profiles */}
+      {user.isProfileComplete && (
+        <StatusCardMenuSheet
+          visible={cardMenuVisible}
+          onClose={() => setCardMenuVisible(false)}
+          onExpandQR={handleExpandQR}
+          user={user}
+          pdf417Payload={membershipCard?.pdf417Payload}
+          cardNumber={membershipCard?.cardNumber}
+          isLoadingCard={isLoadingCard}
+        />
+      )}
     </View>
   );
 }

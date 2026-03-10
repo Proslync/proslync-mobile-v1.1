@@ -114,7 +114,18 @@
       "WebFetch(domain:support.stripe.com)",
       "WebFetch(domain:dev.to)",
       "WebFetch(domain:help.passkit.com)",
-      "WebFetch(domain:docs.livekit.io)"
+      "WebFetch(domain:docs.livekit.io)",
+      "Bash(git show:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:www.reddit.com)",
+      "WebFetch(domain:libraries.io)",
+      "Read(//Users/alex/Projects/Work/ios-app-arshia/**)",
+      "Bash(sed -n '1095,1130p' app/event/[id].tsx)",
+      "Bash(wc:*)",
+      "Bash(head:*)",
+      "Bash(git ls-tree:*)"
     ]
   }
 }

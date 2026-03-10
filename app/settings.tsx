@@ -7,16 +7,42 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useAppTheme, type ThemeMode } from '@/hooks/use-app-theme';
+import { AnimatedCollapsible } from '@/components/ui/animated-collapsible';
+
+function AnimatedChevron({ expanded, color }: { expanded: boolean; color: string }) {
+  const style = useAnimatedStyle(() => ({
+    transform: [
+      {
+        rotate: withTiming(expanded ? '180deg' : '0deg', {
+          duration: 250,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        }),
+      },
+    ],
+  }));
+
+  return (
+    <Animated.View style={style}>
+      <Ionicons name="chevron-down" size={18} color={color} />
+    </Animated.View>
+  );
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark, themeMode, setThemeMode } = useAppTheme();
+  const [appearanceExpanded, setAppearanceExpanded] = React.useState(false);
 
   const themeOptions: { mode: ThemeMode; label: string; description: string }[] = [
     { mode: 'light', label: 'Light', description: 'Always use light theme' },
@@ -73,7 +99,11 @@ export default function SettingsScreen() {
             ]}
           >
             {/* Theme Options */}
-            <View style={styles.themeHeader}>
+            <TouchableOpacity
+              style={styles.themeHeader}
+              activeOpacity={0.7}
+              onPress={() => setAppearanceExpanded((prev) => !prev)}
+            >
               <View style={styles.themeHeaderLeft}>
                 <View
                   style={[
@@ -100,82 +130,134 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
-
-            <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+              <AnimatedChevron expanded={appearanceExpanded} color={colors.textTertiary} />
+            </TouchableOpacity>
 
             {/* Theme Selection */}
-            {themeOptions.map((option, index) => (
-              <React.Fragment key={option.mode}>
-                <TouchableOpacity
-                  style={styles.themeOption}
-                  onPress={() => setThemeMode(option.mode)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.themeOptionLeft}>
-                    <Ionicons
-                      name={
-                        option.mode === 'light'
-                          ? 'sunny-outline'
-                          : option.mode === 'dark'
-                          ? 'moon-outline'
-                          : 'phone-portrait-outline'
-                      }
-                      size={22}
-                      color={colors.textSecondary}
-                    />
-                    <View style={styles.themeOptionText}>
-                      <Text style={[styles.optionLabel, { color: colors.text }]}>
-                        {option.label}
-                      </Text>
-                      <Text style={[styles.optionDescription, { color: colors.textTertiary }]}>
-                        {option.description}
-                      </Text>
-                    </View>
-                  </View>
-                  <View
-                    style={[
-                      styles.radioOuter,
-                      {
-                        borderColor:
-                          themeMode === option.mode
-                            ? colors.buttonPrimary
-                            : colors.border,
-                      },
-                    ]}
+            <AnimatedCollapsible expanded={appearanceExpanded}>
+              <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+              {themeOptions.map((option, index) => (
+                <React.Fragment key={option.mode}>
+                  <TouchableOpacity
+                    style={styles.themeOption}
+                    onPress={() => setThemeMode(option.mode)}
+                    activeOpacity={0.7}
                   >
-                    {themeMode === option.mode && (
-                      <View
-                        style={[
-                          styles.radioInner,
-                          { backgroundColor: colors.buttonPrimary },
-                        ]}
+                    <View style={styles.themeOptionLeft}>
+                      <Ionicons
+                        name={
+                          option.mode === 'light'
+                            ? 'sunny-outline'
+                            : option.mode === 'dark'
+                            ? 'moon-outline'
+                            : 'phone-portrait-outline'
+                        }
+                        size={22}
+                        color={colors.textSecondary}
                       />
-                    )}
-                  </View>
-                </TouchableOpacity>
-                {index < themeOptions.length - 1 && (
-                  <View
-                    style={[
-                      styles.optionSeparator,
-                      { backgroundColor: colors.separator },
-                    ]}
-                  />
-                )}
-              </React.Fragment>
-            ))}
+                      <View style={styles.themeOptionText}>
+                        <Text style={[styles.optionLabel, { color: colors.text }]}>
+                          {option.label}
+                        </Text>
+                        <Text style={[styles.optionDescription, { color: colors.textTertiary }]}>
+                          {option.description}
+                        </Text>
+                      </View>
+                    </View>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        {
+                          borderColor:
+                            themeMode === option.mode
+                              ? colors.buttonPrimary
+                              : colors.border,
+                        },
+                      ]}
+                    >
+                      {themeMode === option.mode && (
+                        <View
+                          style={[
+                            styles.radioInner,
+                            { backgroundColor: colors.buttonPrimary },
+                          ]}
+                        />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                  {index < themeOptions.length - 1 && (
+                    <View
+                      style={[
+                        styles.optionSeparator,
+                        { backgroundColor: colors.separator },
+                      ]}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </AnimatedCollapsible>
           </View>
         </View>
 
-        {/* Future sections placeholder */}
-        {/*
+        {/* Account Section */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
             ACCOUNT
           </Text>
-          ...
+          <View
+            style={[
+              styles.sectionContent,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.navItem}
+              activeOpacity={0.7}
+              onPress={() => router.push('/notification-settings')}
+            >
+              <View style={styles.navItemLeft}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                  ]}
+                >
+                  <Ionicons name="notifications-outline" size={20} color={colors.text} />
+                </View>
+                <Text style={[styles.navItemLabel, { color: colors.text }]}>
+                  Notifications
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+
+            <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+
+            <TouchableOpacity
+              style={styles.navItem}
+              activeOpacity={0.7}
+              onPress={() => router.push('/privacy-settings')}
+            >
+              <View style={styles.navItemLeft}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                  ]}
+                >
+                  <Ionicons name="lock-closed-outline" size={20} color={colors.text} />
+                </View>
+                <Text style={[styles.navItemLabel, { color: colors.text }]}>
+                  Privacy
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          </View>
         </View>
-        */}
       </ScrollView>
     </View>
   );
@@ -300,5 +382,21 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
+  },
+  navItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  navItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  navItemLabel: {
+    fontSize: 16,
+    fontFamily: 'Lato_600SemiBold',
   },
 });

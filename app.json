@@ -16,7 +16,7 @@
           "merchant.statusdigitalinc.status"
         ],
         "com.apple.developer.proximity-reader.payment.acceptance": true,
-        "aps-environment": "development"
+        "aps-environment": "production"
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -105,13 +105,21 @@
           }
         }
       ],
+      "@livekit/react-native-expo-plugin",
       [
-        "@config-plugins/react-native-callkeep",
+        "@config-plugins/react-native-webrtc",
         {
-          "appName": "Status"
+          "cameraPermission": "Status needs camera access for video calls and scanning IDs",
+          "microphonePermission": "Status needs microphone access for voice and video calls"
         }
       ],
-      "./plugins/withVoipPushNotification"
+      "./plugins/withVoipPushNotification",
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

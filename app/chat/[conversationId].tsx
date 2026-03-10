@@ -95,6 +95,31 @@ function DaySeparator({ date, colors }: { date: Date; colors: ThemeColors }) {
   );
 }
 
+// System Message Row (call events, etc.)
+function SystemMessageRow({ message, colors }: { message: ChatMessage; colors: ThemeColors }) {
+  const isCallEnded = message.systemEvent === 'call_ended';
+  const isMissedOrDeclined =
+    message.systemEvent === 'call_missed' || message.systemEvent === 'call_declined';
+  const isVideo = message.callType === 'video';
+
+  const iconName = isVideo ? 'videocam' : 'call';
+  const iconColor = isCallEnded ? '#34c759' : '#FF3B30';
+
+  return (
+    <View style={styles.systemMessageRow}>
+      <View style={styles.systemMessageContent}>
+        <Ionicons name={iconName} size={14} color={iconColor} />
+        <Text style={[styles.systemMessageText, { color: colors.textSecondary }]}>
+          {message.text}
+        </Text>
+        <Text style={[styles.systemMessageTime, { color: colors.textTertiary }]}>
+          {formatMessageTime(message.createdAt)}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 // Message Bubble Component - Instagram/Snapchat style
 function MessageBubble({
   message,
@@ -121,6 +146,11 @@ function MessageBubble({
   isGroupChat?: boolean;
   isConciergeChat?: boolean;
 }) {
+  // System messages render as centered rows, not bubbles
+  if (message.isSystem) {
+    return <SystemMessageRow message={message} colors={colors} />;
+  }
+
   const isOwn = message.isOwn;
   const isSystem = message.isSystem;
   const hasAttachments = message.attachments && message.attachments.length > 0;
@@ -1166,10 +1196,23 @@ export default function ChatThreadScreen() {
         lastSenderId = null;
       }
 
+      // System messages break message groups
+      if (msg.isSystem) {
+        groups.push({
+          type: 'message',
+          message: msg,
+          isGroupStart: true,
+          showTime: false,
+        });
+        lastSenderId = null;
+        return;
+      }
+
       const isGroupStart = msg.userId !== lastSenderId;
       const nextMsg = messages[index + 1];
       const showTime =
         !nextMsg ||
+        nextMsg.isSystem ||
         nextMsg.userId !== msg.userId ||
         nextMsg.createdAt.getTime() - msg.createdAt.getTime() > 5 * 60 * 1000;
 
@@ -1338,9 +1381,8 @@ export default function ChatThreadScreen() {
     setShowChatInfo(false);
     if (channelInfo?.otherMember) {
       router.push({
-        pathname: '/user/[username]',
+        pathname: '/user-profile/[userId]',
         params: {
-          username: channelInfo.otherMember.name || channelInfo.otherMember.id,
           userId: channelInfo.otherMember.id,
         },
       });
@@ -1822,23 +1864,23 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  // System message styles
+// System message
   systemMessageRow: {
     alignItems: 'center',
-    marginVertical: 8,
-    paddingHorizontal: 32,
+    marginVertical: 12,
   },
-  systemMessageBubble: {
-    backgroundColor: 'rgba(128, 128, 128, 0.12)',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
+  systemMessageContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   systemMessageText: {
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(128, 128, 128, 0.8)',
-    textAlign: 'center',
+  },
+  systemMessageTime: {
+    fontSize: 11,
+    fontFamily: 'Lato_400Regular',
   },
   senderName: {
     fontSize: 12,

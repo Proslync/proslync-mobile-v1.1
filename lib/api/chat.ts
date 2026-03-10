@@ -27,7 +27,7 @@ export interface ConversationResponse {
 export interface MessageResponse {
   id: number;
   conversationId: string;
-  senderId: number;
+  senderId: number | null;
   type: 'text' | 'image' | 'video' | 'voice' | 'system';
   text: string | null;
   mediaUrl: string | null;
@@ -38,6 +38,11 @@ export interface MessageResponse {
     mimeType?: string;
     thumbnailUrl?: string;
   } | null;
+  systemMetadata?: {
+    event: string;
+    callType?: string;
+    duration?: number;
+  } | null;
   isDeleted: boolean;
   createdAt: string;
   sender?: {
@@ -46,7 +51,7 @@ export interface MessageResponse {
     firstName?: string;
     lastName?: string;
     avatarUrl?: string;
-  };
+  } | null;
 }
 
 export interface MessagesResponse {

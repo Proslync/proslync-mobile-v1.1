@@ -10,13 +10,11 @@ import {
   Dimensions,
   ActivityIndicator,
   Modal,
-  FlatList,
   Share,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -24,11 +22,12 @@ import Animated, {
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useUserFeed } from '@/hooks';
 import { useUserFollowers, useUserFollowing } from '@/hooks/use-user-follows';
-import { useFollowUser } from '@/hooks/use-follow-user';
 import { useToast } from '@/components/shared/toast';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 import { SwipeableTabView } from '@/components/shared/swipeable-tab-view';
 import { LinkifiedText } from '@/components/shared/linkified-text';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { FollowersSheet } from '@/components/feed/followers-sheet';
 import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -76,150 +75,6 @@ function StatButton({
   );
 }
 
-interface FollowUser {
-  id: string;
-  userName: string;
-  firstName: string;
-  lastName: string;
-  avatar: string;
-}
-
-// Individual user item with follow/unfollow functionality
-function UserListItem({
-  user,
-  currentUserId,
-}: {
-  user: FollowUser;
-  currentUserId?: number;
-}) {
-  const router = useStableRouter();
-  const {
-    isFollowing,
-    isLoading: followLoading,
-    follow,
-    unfollow,
-    isFollowInProgress,
-    isUnfollowInProgress,
-  } = useFollowUser(user.id);
-
-  const isSelf = currentUserId?.toString() === user.id;
-  const isActionInProgress = isFollowInProgress || isUnfollowInProgress;
-
-  const handleFollowPress = async () => {
-    if (isActionInProgress) return;
-
-    if (isFollowing) {
-      await unfollow();
-    } else {
-      await follow();
-    }
-  };
-
-  const handleUserPress = () => {
-    router.push({
-      pathname: '/user/[username]',
-      params: { username: user.userName || String(user.id), userId: String(user.id) },
-    });
-  };
-
-  return (
-    <TouchableOpacity
-      style={styles.userListItem}
-      activeOpacity={0.7}
-      onPress={handleUserPress}
-    >
-      <Image source={{ uri: user.avatar }} style={styles.userListAvatar} />
-      <View style={styles.userListInfo}>
-        <Text style={styles.userListName}>{user.userName}</Text>
-        <Text style={styles.userListFullName}>
-          {user.firstName} {user.lastName}
-        </Text>
-      </View>
-      {!isSelf && (
-        <TouchableOpacity
-          style={[
-            styles.followButton,
-            isFollowing && styles.followingButton,
-          ]}
-          activeOpacity={0.8}
-          onPress={handleFollowPress}
-          disabled={followLoading || isActionInProgress}
-        >
-          {isActionInProgress ? (
-            <ActivityIndicator size="small" color={isFollowing ? '#1a1a1a' : '#fff'} />
-          ) : (
-            <Text
-              style={[
-                styles.followButtonText,
-                isFollowing && styles.followingButtonText,
-              ]}
-            >
-              {isFollowing ? 'Following' : 'Follow'}
-            </Text>
-          )}
-        </TouchableOpacity>
-      )}
-    </TouchableOpacity>
-  );
-}
-
-function UserListModal({
-  visible,
-  title,
-  users,
-  isLoading,
-  onClose,
-  currentUserId,
-}: {
-  visible: boolean;
-  title: string;
-  users: FollowUser[];
-  isLoading?: boolean;
-  onClose: () => void;
-  currentUserId?: number;
-}) {
-  const insets = useSafeAreaInsets();
-
-  const renderUser = ({ item }: { item: FollowUser }) => (
-    <UserListItem user={item} currentUserId={currentUserId} />
-  );
-
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Ionicons name="close" size={28} color="#1a1a1a" />
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>{title}</Text>
-          <View style={styles.modalCloseButton} />
-        </View>
-        {isLoading ? (
-          <View style={styles.modalLoadingContainer}>
-            <ActivityIndicator color="#1a1a1a" size="large" />
-          </View>
-        ) : users.length > 0 ? (
-          <FlatList
-            data={users}
-            renderItem={renderUser}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.userList}
-            showsVerticalScrollIndicator={false}
-          />
-        ) : (
-          <View style={styles.modalEmptyContainer}>
-            <Text style={styles.modalEmptyText}>No {title.toLowerCase()} yet</Text>
-          </View>
-        )}
-      </View>
-    </Modal>
-  );
-}
 
 function AccountSwitcherModal({
   visible,
@@ -237,7 +92,6 @@ function AccountSwitcherModal({
   onAddAccount: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
 
   return (
     <Modal
@@ -246,12 +100,12 @@ function AccountSwitcherModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.modalContainer, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
+        <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Ionicons name="close" size={28} color={colors.text} />
+            <Ionicons name="close" size={28} color="#1a1a1a" />
           </TouchableOpacity>
-          <Text style={[styles.modalTitle, { color: colors.text }]}>Switch Account</Text>
+          <Text style={styles.modalTitle}>Switch Account</Text>
           <View style={styles.modalCloseButton} />
         </View>
 
@@ -274,10 +128,10 @@ function AccountSwitcherModal({
                   style={styles.accountAvatar}
                 />
                 <View style={styles.accountInfo}>
-                  <Text style={[styles.accountUsername, { color: colors.text }]}>
+                  <Text style={styles.accountUsername}>
                     {account.userName || 'username'}
                   </Text>
-                  <Text style={[styles.accountName, { color: colors.textSecondary }]}>{displayName}</Text>
+                  <Text style={styles.accountName}>{displayName}</Text>
                 </View>
                 {isCurrentAccount && (
                   <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
@@ -288,12 +142,12 @@ function AccountSwitcherModal({
 
           {/* Add Account Button */}
           <TouchableOpacity
-            style={[styles.addAccountButton, { borderTopColor: colors.border }]}
+            style={styles.addAccountButton}
             onPress={onAddAccount}
             activeOpacity={0.7}
           >
-            <View style={[styles.addAccountIcon, { backgroundColor: colors.cardElevated }]}>
-              <Ionicons name="add" size={24} color={colors.text} />
+            <View style={styles.addAccountIcon}>
+              <Ionicons name="add" size={24} color="#1a1a1a" />
             </View>
             <Text style={styles.addAccountText}>Add Account</Text>
           </TouchableOpacity>
@@ -310,8 +164,8 @@ export default function ProfileScreen() {
   const { showSuccess, showError } = useToast();
   const { isAccountSwitcherOpen, closeAccountSwitcher, openAccountSwitcher } = useTabNavigation();
   const { colors, isDark } = useAppTheme();
-  const [showFollowers, setShowFollowers] = React.useState(false);
-  const [showFollowing, setShowFollowing] = React.useState(false);
+  const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
+  const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
   const lastTapRef = React.useRef<number>(0);
 
@@ -488,12 +342,12 @@ export default function ProfileScreen() {
     }
   };
 
-
   if (isLoading) {
     return (
       <SwipeableTabView>
         <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
-              <ActivityIndicator size="large" color={colors.text} />
+          <DarkGradientBg />
+          <ActivityIndicator size="large" color={colors.text} />
         </View>
       </SwipeableTabView>
     );
@@ -502,6 +356,7 @@ export default function ProfileScreen() {
   return (
     <SwipeableTabView>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DarkGradientBg />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -511,7 +366,7 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
       >
-        {/* Header */}
+        {/* Header - Centered Username */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
           <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
             <Ionicons name="add" size={24} color={colors.text} />
@@ -523,9 +378,6 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.headerUsername, { color: colors.text }]}>{username}</Text>
-            {user?.isVerified && (
-              <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
-            )}
             <Ionicons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
 
@@ -554,7 +406,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={styles.statButton}
               activeOpacity={0.7}
-              onPress={() => setShowFollowers(true)}
+              onPress={() => { setFollowersSheetTab('followers'); setFollowersSheetVisible(true); }}
             >
               <Text style={[styles.statValue, { color: colors.text }]}>{followerCount}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Followers</Text>
@@ -562,7 +414,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={styles.statButton}
               activeOpacity={0.7}
-              onPress={() => setShowFollowing(true)}
+              onPress={() => { setFollowersSheetTab('following'); setFollowersSheetVisible(true); }}
             >
               <Text style={[styles.statValue, { color: colors.text }]}>{followingCount}</Text>
               <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Following</Text>
@@ -687,25 +539,18 @@ export default function ProfileScreen() {
         <View style={{ height: insets.bottom + 100 }} />
       </ScrollView>
 
-      {/* Followers Modal */}
-      <UserListModal
-        visible={showFollowers}
-        title="Followers"
-        users={followers}
-        isLoading={followersLoading}
-        onClose={() => setShowFollowers(false)}
-        currentUserId={user?.id}
-      />
-
-      {/* Following Modal */}
-      <UserListModal
-        visible={showFollowing}
-        title="Following"
-        users={following}
-        isLoading={followingLoading}
-        onClose={() => setShowFollowing(false)}
-        currentUserId={user?.id}
-      />
+      {/* Followers / Following Sheet */}
+      {user?.id && (
+        <FollowersSheet
+          visible={followersSheetVisible}
+          onClose={() => setFollowersSheetVisible(false)}
+          initialTab={followersSheetTab}
+          userId={user.id}
+          followersCount={followerCount}
+          followingCount={followingCount}
+          currentUserId={user.id}
+        />
+      )}
 
       {/* Account Switcher Modal - only show accounts with active sessions */}
       <AccountSwitcherModal
@@ -740,7 +585,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    marginBottom: 16,
   },
   usernameButton: {
     flexDirection: 'row',
@@ -905,6 +750,7 @@ const styles = StyleSheet.create({
   // Modal styles
   modalContainer: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -913,6 +759,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 12,
     borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   modalCloseButton: {
     width: 44,
@@ -923,72 +770,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-  },
-  userList: {
-    paddingVertical: 8,
-  },
-  userListItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  userListAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  userListInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  userListName: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#1a1a1a',
-  },
-  userListFullName: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.5)',
-    marginTop: 2,
-  },
-  followButton: {
-    backgroundColor: '#0095f6',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    minWidth: 90,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  followingButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.2)',
-  },
-  followButtonText: {
-    fontSize: 13,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  followingButtonText: {
-    color: 'rgba(0, 0, 0, 0.6)',
-  },
-  modalLoadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalEmptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalEmptyText: {
-    fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
   },
   // Account switcher styles
   accountList: {
@@ -1013,10 +795,12 @@ const styles = StyleSheet.create({
   accountUsername: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
+    color: '#1a1a1a',
   },
   accountName: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
+    color: 'rgba(0, 0, 0, 0.5)',
     marginTop: 2,
   },
   addAccountButton: {
@@ -1026,11 +810,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginTop: 8,
     borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   addAccountIcon: {
     width: 50,
     height: 50,
     borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },

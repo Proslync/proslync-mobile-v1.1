@@ -1,4 +1,4 @@
-// User Profile Screen — Instagram/TikTok-style with full actions
+// User Profile Screen — Consolidated profile with full actions, posts grid, followers sheet
 
 import React from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -27,6 +27,11 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useToast } from '@/components/shared/toast';
 import { useFollowUser } from '@/hooks/use-follow-user';
+import { useUserFeed } from '@/hooks/use-user-feed';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { useMutualFollowers } from '@/hooks/use-mutual-followers';
+import { FollowersSheet } from '@/components/feed/followers-sheet';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { chatApi } from '@/lib/api/chat';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
@@ -35,6 +40,7 @@ import { eventsApi } from '@/lib/api/events';
 import type { PublicUserProfile } from '@/lib/types/auth.types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const POST_SIZE = (SCREEN_WIDTH - 6) / 3;
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 const REPORT_REASONS = [
@@ -48,19 +54,21 @@ const REPORT_REASONS = [
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { showSuccess, showError } = useToast();
   const { user: currentUser } = useAuth();
-  // Chat handled via chatApi
   const params = useLocalSearchParams<{
     userId: string;
+    username: string;
     name: string;
     avatarUrl: string;
     role: string;
   }>();
 
-  const userId = params.userId;
-  const isSelf = currentUser && String(currentUser.id) === String(userId);
+  const needsLookup = params.userId === 'lookup' && !!params.username;
+  const [resolvedUserId, setResolvedUserId] = React.useState<string | undefined>(needsLookup ? undefined : params.userId);
+  const userId = resolvedUserId;
+  const isSelf = currentUser && userId && String(currentUser.id) === String(userId);
 
   const [profile, setProfile] = React.useState<PublicUserProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = React.useState(true);
@@ -70,6 +78,9 @@ export default function UserProfileScreen() {
   const [showMoreMenu, setShowMoreMenu] = React.useState(false);
   const [showReportSheet, setShowReportSheet] = React.useState(false);
   const [recentEvents, setRecentEvents] = React.useState<any[]>([]);
+  const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
+  const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
+  const [contentTab, setContentTab] = React.useState<'posts' | 'events'>('posts');
 
   const {
     isFollowing,
@@ -82,6 +93,12 @@ export default function UserProfileScreen() {
 
   const isFollowActionInProgress = isFollowInProgress || isUnfollowInProgress;
 
+  // Posts grid
+  const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserFeed(userId);
+
+  // Mutual followers
+  const { mutualFollowers, totalMutualCount } = useMutualFollowers(!isSelf ? userId : undefined);
+
   const displayName = profile
     ? [profile.firstName, profile.lastName].filter(Boolean).join(' ') || profile.userName || params.name || 'User'
     : params.name || 'User';
@@ -92,6 +109,33 @@ export default function UserProfileScreen() {
   const following = profile?.followStats?.following ?? 0;
   const totalEvents = profile?.eventStats?.totalEvents ?? 0;
 
+  // Username lookup (for @mention navigation where only username is known)
+  React.useEffect(() => {
+    if (params.userId && params.userId !== 'lookup') {
+      setResolvedUserId(params.userId);
+      return;
+    }
+    if (!params.username) return;
+
+    let cancelled = false;
+    async function lookupByUsername() {
+      try {
+        const result = await authApi.getUserByUsername(params.username);
+        if (cancelled) return;
+        if (result) {
+          setResolvedUserId(String(result.id));
+        } else {
+          setIsLoadingProfile(false);
+        }
+      } catch {
+        if (!cancelled) setIsLoadingProfile(false);
+      }
+    }
+    lookupByUsername();
+    return () => { cancelled = true; };
+  }, [params.userId, params.username]);
+
+  // Load profile + block status
   React.useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -100,13 +144,9 @@ export default function UserProfileScreen() {
       try {
         const numericId = Number(userId);
         if (isNaN(numericId)) return;
-        const [profileData, blockStatus] = await Promise.all([
-          authApi.getUserById(numericId),
-          usersApi.getBlockStatus(numericId),
-        ]);
+        const profileData = await authApi.getUserById(numericId);
         if (cancelled) return;
         if (profileData) setProfile(profileData);
-        setIsBlocked(blockStatus.isBlocked);
       } catch (err) {
         console.error('Failed to load profile:', err);
       } finally {
@@ -117,6 +157,7 @@ export default function UserProfileScreen() {
     return () => { cancelled = true; };
   }, [userId]);
 
+  // Load recent events
   React.useEffect(() => {
     let cancelled = false;
     async function loadEvents() {
@@ -137,15 +178,26 @@ export default function UserProfileScreen() {
     return () => { cancelled = true; };
   }, [userId]);
 
+  // Pull-to-refresh
+  const handleRefresh = React.useCallback(async () => {
+    if (!userId) return;
+    const numericId = Number(userId);
+    if (isNaN(numericId)) return;
+    await Promise.all([
+      authApi.getUserById(numericId).then(p => { if (p) setProfile(p); }).catch(() => {}),
+      refetchPosts(),
+    ]);
+  }, [userId, refetchPosts]);
+
+  const { refreshControl } = useRefreshControl({ onRefresh: handleRefresh });
+
   const handleFollowPress = async () => {
     if (isFollowActionInProgress || followLoading) return;
     try {
       if (isFollowing) {
         await unfollow();
-        showSuccess('Unfollowed');
       } else {
         await follow();
-        showSuccess('Following');
       }
     } catch (error: any) {
       showError(error?.message || 'Failed to update follow');
@@ -220,6 +272,8 @@ export default function UserProfileScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -252,6 +306,7 @@ export default function UserProfileScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {/* Profile Section */}
         <Animated.View entering={FadeIn.duration(400)} style={styles.profileSection}>
@@ -283,12 +338,20 @@ export default function UserProfileScreen() {
 
         {/* Stats Row */}
         <Animated.View entering={FadeInDown.delay(100).duration(400)} style={[styles.statsRow, { backgroundColor: colors.cardElevated, borderColor: colors.border }]}>
-          <TouchableOpacity style={styles.statItem} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.statItem}
+            activeOpacity={0.7}
+            onPress={() => { setFollowersSheetTab('followers'); setFollowersSheetVisible(true); }}
+          >
             <Text style={[styles.statNumber, { color: colors.text }]}>{formatStat(followers)}</Text>
             <Text style={[styles.statLabel, { color: colors.textTertiary }]}>Followers</Text>
           </TouchableOpacity>
           <View style={[styles.statDivider, { backgroundColor: colors.separator }]} />
-          <TouchableOpacity style={styles.statItem} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.statItem}
+            activeOpacity={0.7}
+            onPress={() => { setFollowersSheetTab('following'); setFollowersSheetVisible(true); }}
+          >
             <Text style={[styles.statNumber, { color: colors.text }]}>{formatStat(following)}</Text>
             <Text style={[styles.statLabel, { color: colors.textTertiary }]}>Following</Text>
           </TouchableOpacity>
@@ -350,68 +413,157 @@ export default function UserProfileScreen() {
           </Animated.View>
         )}
 
-        {/* Mutual Connections - only shown in dev until real mutual followers API is available */}
-        {__DEV__ && !isSelf && isFollowing && (
+        {/* Mutual Connections */}
+        {!isSelf && totalMutualCount > 0 && (
           <Animated.View entering={FadeInDown.delay(300).duration(400)} style={styles.mutualSection}>
             <View style={styles.mutualAvatars}>
-              {[1, 2, 3].map((_, i) => (
-                <View key={i} style={[styles.mutualAvatar, { marginLeft: i > 0 ? -8 : 0, borderColor: colors.background }]}>
+              {mutualFollowers.slice(0, 3).map((u, i) => (
+                <View key={u.id} style={[styles.mutualAvatar, { marginLeft: i > 0 ? -8 : 0, borderColor: colors.background }]}>
                   <Image
-                    source={{ uri: `https://i.pravatar.cc/60?img=${20 + i}` }}
+                    source={u.avatarUrl ? { uri: u.avatarUrl } : DefaultAvatarImage}
                     style={styles.mutualAvatarImage}
                   />
                 </View>
               ))}
             </View>
             <Text style={[styles.mutualText, { color: colors.textTertiary }]}>
-              Followed by <Text style={[styles.mutualBold, { color: colors.textSecondary }]}>3 people you follow</Text>
+              Followed by{' '}
+              <Text style={[styles.mutualBold, { color: colors.textSecondary }]}>
+                {totalMutualCount === 1
+                  ? `${mutualFollowers[0]?.firstName || mutualFollowers[0]?.userName || '1 person'} you follow`
+                  : `${totalMutualCount} people you follow`}
+              </Text>
             </Text>
           </Animated.View>
         )}
 
-        {/* Recent Events */}
-        {recentEvents.length > 0 && (
-          <Animated.View entering={FadeInDown.delay(350).duration(400)} style={[styles.section, { borderTopColor: colors.separator }]}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>EVENTS</Text>
+        {/* Content Tabs */}
+        <Animated.View entering={FadeInDown.delay(350).duration(400)} style={[styles.contentTabs, { borderTopColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.contentTab, contentTab === 'posts' && { borderBottomColor: colors.text, borderBottomWidth: 1 }]}
+            onPress={() => setContentTab('posts')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="grid-outline" size={24} color={contentTab === 'posts' ? colors.text : colors.textTertiary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.contentTab, contentTab === 'events' && { borderBottomColor: colors.text, borderBottomWidth: 1 }]}
+            onPress={() => setContentTab('events')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="calendar-outline" size={24} color={contentTab === 'events' ? colors.text : colors.textTertiary} />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Tab Content */}
+        {contentTab === 'posts' ? (
+          profile?.isPrivate && !isFollowing && !isSelf ? (
+            <View style={styles.privateAccountContainer}>
+              <View style={[styles.privateLockCircle, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
+                <Ionicons name="lock-closed" size={32} color={colors.textTertiary} />
+              </View>
+              <Text style={[styles.privateTitle, { color: colors.text }]}>
+                This account is private
+              </Text>
+              <Text style={[styles.privateSubtitle, { color: colors.textTertiary }]}>
+                Follow this account to see their posts
+              </Text>
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.eventsScroll}
-            >
-              {recentEvents.map((event: any) => (
+          ) : (
+          <View style={styles.postsGrid}>
+            {postsLoading ? (
+              <View style={styles.postsLoadingContainer}>
+                <ActivityIndicator color={colors.text} size="small" />
+              </View>
+            ) : userPosts.length > 0 ? (
+              userPosts.map((post) => (
                 <TouchableOpacity
-                  key={event.id}
-                  style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
-                  activeOpacity={0.85}
+                  key={post.id}
+                  activeOpacity={0.9}
+                  style={styles.postContainer}
                   onPress={() => router.push({
-                    pathname: '/event/[id]',
-                    params: { id: String(event.id) },
+                    pathname: '/post/[id]',
+                    params: { id: post.id },
                   })}
                 >
                   <Image
-                    source={{ uri: event.flyer?.url || event.flyerUrl || event.imageUrl || undefined }}
-                    style={styles.eventImage}
+                    source={{ uri: post.imageUrl || post.videoUrl }}
+                    style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
                   />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.8)']}
-                    style={styles.eventGradient}
-                  />
-                  <View style={styles.eventInfo}>
-                    <Text style={styles.eventTitle} numberOfLines={1}>
-                      {event.title || event.name || 'Event'}
-                    </Text>
-                    <Text style={styles.eventDate} numberOfLines={1}>
-                      {event.date || event.startDate || ''}
-                    </Text>
-                  </View>
+                  {post.mediaType === 'video' && (
+                    <View style={styles.videoIndicator}>
+                      <Ionicons name="play" size={16} color="#fff" />
+                    </View>
+                  )}
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Animated.View>
+              ))
+            ) : (
+              <View style={styles.noPostsContainer}>
+                <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
+                <Text style={[styles.noPostsText, { color: colors.textTertiary }]}>No posts yet</Text>
+              </View>
+            )}
+          </View>
+          )
+        ) : (
+          <View style={styles.eventsTabContent}>
+            {recentEvents.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.eventsScroll}
+              >
+                {recentEvents.map((event: any) => (
+                  <TouchableOpacity
+                    key={event.id}
+                    style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
+                    activeOpacity={0.85}
+                    onPress={() => router.push({
+                      pathname: '/event/[id]',
+                      params: { id: String(event.id) },
+                    })}
+                  >
+                    <Image
+                      source={{ uri: event.flyer?.url || event.flyerUrl || event.imageUrl || undefined }}
+                      style={styles.eventImage}
+                    />
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.8)']}
+                      style={styles.eventGradient}
+                    />
+                    <View style={styles.eventInfo}>
+                      <Text style={styles.eventTitle} numberOfLines={1}>
+                        {event.title || event.name || 'Event'}
+                      </Text>
+                      <Text style={styles.eventDate} numberOfLines={1}>
+                        {event.date || event.startDate || ''}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.noPostsContainer}>
+                <Ionicons name="calendar-outline" size={48} color={colors.textTertiary} />
+                <Text style={[styles.noPostsText, { color: colors.textTertiary }]}>No events yet</Text>
+              </View>
+            )}
+          </View>
         )}
       </ScrollView>
+
+      {/* Followers Sheet */}
+      {userId && (
+        <FollowersSheet
+          visible={followersSheetVisible}
+          onClose={() => setFollowersSheetVisible(false)}
+          initialTab={followersSheetTab}
+          userId={Number(userId)}
+          followersCount={followers}
+          followingCount={following}
+          currentUserId={currentUser?.id}
+        />
+      )}
 
       {/* More Menu Overlay */}
       {showMoreMenu && (
@@ -739,22 +891,23 @@ const styles = StyleSheet.create({
   },
   mutualBold: { fontFamily: 'Lato_700Bold' },
 
-  // Section
-  section: { paddingTop: 8, borderTopWidth: 1 },
-  sectionHeader: {
+  // Content tabs
+  contentTabs: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    borderTopWidth: 1,
+    marginTop: 8,
   },
-  sectionTitle: {
-    fontSize: 13,
-    fontFamily: 'Lato_700Bold',
-    letterSpacing: 1,
+  contentTab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
   },
 
   // Events
+  eventsTabContent: {
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
   eventsScroll: { paddingHorizontal: 24, gap: 12, paddingBottom: 8 },
   eventCard: {
     width: 140,
@@ -787,6 +940,66 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.6)',
+  },
+
+  // Posts grid
+  postsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 1,
+  },
+  postContainer: {
+    position: 'relative',
+  },
+  postImage: {
+    width: POST_SIZE,
+    height: POST_SIZE,
+    margin: 1,
+  },
+  videoIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 4,
+    padding: 4,
+  },
+  postsLoadingContainer: {
+    width: '100%',
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  noPostsContainer: {
+    width: '100%',
+    paddingVertical: 60,
+    alignItems: 'center',
+    gap: 12,
+  },
+  privateAccountContainer: {
+    width: '100%',
+    paddingVertical: 60,
+    alignItems: 'center',
+    gap: 8,
+  },
+  privateLockCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  privateTitle: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+  },
+  privateSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+  },
+  noPostsText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
   },
 
   // More menu

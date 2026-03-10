@@ -53,20 +53,20 @@ export async function generateAppleWalletTicketToken(ticketNumber: string): Prom
 
 
 export interface MembershipCardResponse {
-  success: boolean;
-  data: {
-    id: number;
-    userId: number;
-    tier: string;
-    points: number;
-    memberSince: string;
-    accountName: string;
-  };
-  message?: string;
+  id: number;
+  cardNumber: string;
+  userId: number;
+  userFirstName: string;
+  userLastName: string;
+  userPhoneNumber: string;
+  pdf417Payload: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export async function getMembershipCard(): Promise<MembershipCardResponse> {
-  return apiClient.get<MembershipCardResponse>('/api/membership-cards/me');
+  return apiClient.get<MembershipCardResponse>('/api/membership-cards/my-card');
 }
 
 
