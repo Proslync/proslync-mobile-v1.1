@@ -11,12 +11,10 @@ import {
   View,
 } from 'react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import {
   useCrossEventTextBlasts,
   useCrossEventRecipientCount,
-  useSendCrossEventBlast,
 } from '@/hooks';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -51,11 +49,9 @@ export default function DashboardTextBlastScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   const [message, setMessage] = useState('');
-  const [successAlert, setSuccessAlert] = useState(false);
 
   const { data: recipientData, isLoading: countLoading } = useCrossEventRecipientCount();
   const { data: blasts = [], isLoading } = useCrossEventTextBlasts();
-  const sendMutation = useSendCrossEventBlast();
 
   const recipientCount = recipientData?.count ?? 0;
 
@@ -65,16 +61,11 @@ export default function DashboardTextBlastScreen() {
   );
 
   const handleSend = () => {
-    if (!message.trim() || recipientCount === 0) return;
-    sendMutation.mutate(
-      { message: message.trim() },
-      {
-        onSuccess: () => {
-          setMessage('');
-          setSuccessAlert(true);
-        },
-      },
-    );
+    if (!message.trim()) return;
+    router.push({
+      pathname: '/dashboard/text-blast-confirm',
+      params: { message: message.trim() },
+    });
   };
 
   const renderBlastBubble = ({ item }: { item: TextBlastResponse }) => (
@@ -199,31 +190,18 @@ export default function DashboardTextBlastScreen() {
             <TouchableOpacity
               style={[
                 styles.sendButton,
-                (!message.trim() || recipientCount === 0 || sendMutation.isPending) &&
-                  styles.sendButtonDisabled,
+                !message.trim() && styles.sendButtonDisabled,
               ]}
               onPress={handleSend}
-              disabled={!message.trim() || recipientCount === 0 || sendMutation.isPending}
+              disabled={!message.trim()}
               activeOpacity={0.7}
             >
-              {sendMutation.isPending ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons name="send" size={18} color="#fff" />
-              )}
+              <Ionicons name="send" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
 
-      <ConfirmModal
-        visible={successAlert}
-        onClose={() => setSuccessAlert(false)}
-        title="Blast Sent"
-        message="Your message has been queued for delivery."
-        alertOnly
-        icon="checkmark-circle-outline"
-      />
     </View>
   );
 }

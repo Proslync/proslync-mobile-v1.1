@@ -10,31 +10,33 @@ import {
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { useRecipientCount, useSendTextBlast } from '@/hooks';
+import {
+  useCrossEventRecipientCount,
+  useSendCrossEventBlast,
+} from '@/hooks';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function TextBlastAudienceScreen() {
-  const { id, message: messageParam } = useLocalSearchParams<{ id: string; message: string }>();
+export default function DashboardTextBlastConfirmScreen() {
+  const { message: messageParam } = useLocalSearchParams<{ message: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
-  const eventId = id ? Number(id) : 0;
   const messageText = messageParam || '';
 
   const [successAlert, setSuccessAlert] = useState(false);
 
-  const { data: recipientData, isLoading: countLoading } = useRecipientCount(eventId, 'all');
-  const sendMutation = useSendTextBlast(eventId);
+  const { data: recipientData, isLoading: countLoading } = useCrossEventRecipientCount();
+  const sendMutation = useSendCrossEventBlast();
   const recipientCount = recipientData?.count ?? 0;
 
   const handleSend = () => {
     if (!messageText.trim() || recipientCount === 0) return;
     sendMutation.mutate(
-      { message: messageText.trim(), audience: 'all' },
+      { message: messageText.trim() },
       {
         onSuccess: () => {
           setSuccessAlert(true);
@@ -57,7 +59,7 @@ export default function TextBlastAudienceScreen() {
         <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Send To</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Confirm Blast</Text>
         <View style={styles.headerButton} />
       </Animated.View>
 
@@ -71,25 +73,21 @@ export default function TextBlastAudienceScreen() {
         <Animated.View entering={FadeInDown.duration(300)} style={styles.previewSection}>
           <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>Your message</Text>
           <View style={styles.previewBubble}>
-            <Text style={styles.previewText} numberOfLines={4}>
-              {messageText}
-            </Text>
+            <Text style={styles.previewText}>{messageText}</Text>
           </View>
         </Animated.View>
 
         {/* Audience Info */}
-        <Animated.View entering={FadeInDown.duration(300).delay(100)}>
-          <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>
-            Sending to
-          </Text>
+        <Animated.View entering={FadeInDown.duration(300).delay(100)} style={styles.audienceSection}>
+          <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>Sending to</Text>
           <View style={styles.audienceCard}>
             <View style={styles.audienceIcon}>
               <Ionicons name="people" size={20} color="#fff" />
             </View>
             <View style={styles.audienceInfo}>
-              <Text style={[styles.audienceTitle, { color: colors.text }]}>This Event</Text>
+              <Text style={[styles.audienceTitle, { color: colors.text }]}>All Contacts</Text>
               <Text style={[styles.audienceDesc, { color: colors.textTertiary }]}>
-                All RSVPs, ticket holders, and check-ins
+                Deduplicated across all your events
               </Text>
             </View>
           </View>
@@ -131,7 +129,7 @@ export default function TextBlastAudienceScreen() {
             <>
               <Ionicons name="send" size={18} color="#fff" />
               <Text style={styles.sendButtonText}>
-                Send to {recipientCount} {recipientCount === 1 ? 'guest' : 'guests'}
+                Send to {recipientCount} {recipientCount === 1 ? 'contact' : 'contacts'}
               </Text>
             </>
           )}
@@ -142,7 +140,8 @@ export default function TextBlastAudienceScreen() {
         visible={successAlert}
         onClose={() => {
           setSuccessAlert(false);
-          router.back();
+          // Go back two screens (confirm + composer)
+          router.dismiss(2);
         }}
         title="Blast Sent"
         message="Your message has been queued for delivery."
@@ -191,6 +190,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     color: '#fff',
     lineHeight: 21,
+  },
+  audienceSection: {
+    marginBottom: 16,
   },
   audienceCard: {
     flexDirection: 'row',

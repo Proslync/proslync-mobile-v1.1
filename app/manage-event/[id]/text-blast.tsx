@@ -4,7 +4,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -22,12 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { TextBlastAudience, TextBlastResponse } from '@/lib/types/text-blast.types';
-
-const AUDIENCES: { key: TextBlastAudience; label: string }[] = [
-  { key: 'my_list', label: 'My List' },
-  { key: 'all', label: 'This Event' },
-];
+import type { TextBlastResponse } from '@/lib/types/text-blast.types';
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString([], {
@@ -51,8 +45,9 @@ function formatDate(dateStr: string): string {
 
 function audienceLabel(filter: string): string {
   if (filter === 'all_contacts') return 'All Contacts';
-  const found = AUDIENCES.find((a) => a.key === filter);
-  return found ? found.label : 'All Guests';
+  if (filter === 'my_list') return 'My List';
+  if (filter === 'all') return 'This Event';
+  return 'All Guests';
 }
 
 export default function TextBlastScreen() {
@@ -66,10 +61,8 @@ export default function TextBlastScreen() {
   const { canSendMarketing, canViewMarketing } = useEventPermissions(eventId || undefined);
 
   const [message, setMessage] = useState('');
-  const [audience, setAudience] = useState<TextBlastAudience>('my_list');
-  const [showAudiencePicker, setShowAudiencePicker] = useState(false);
 
-  const { data: recipientData, error: recipientError } = useRecipientCount(eventId, audience);
+  const { data: recipientData, error: recipientError } = useRecipientCount(eventId, 'all');
   const { data: blasts = [], isLoading } = useTextBlasts(eventId);
 
   const recipientCount = recipientData?.count ?? 0;
@@ -183,63 +176,13 @@ export default function TextBlastScreen() {
         {/* Composer */}
         {canSendMarketing() && (
           <View style={[styles.composerContainer, { paddingBottom: insets.bottom + 8 }]}>
-            {/* Audience Selector */}
-            {showAudiencePicker && (
-              <View style={styles.audiencePickerRow}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.audienceChipRow}
-                >
-                  {AUDIENCES.map((a) => {
-                    const isSelected = audience === a.key;
-                    return (
-                      <TouchableOpacity
-                        key={a.key}
-                        onPress={() => {
-                          setAudience(a.key);
-                          setShowAudiencePicker(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <View
-                          style={[
-                            styles.audienceChip,
-                            isSelected && styles.audienceChipSelected,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.audienceChipText,
-                              isSelected && styles.audienceChipTextSelected,
-                            ]}
-                          >
-                            {a.label}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Audience Pill + Composer Row */}
-            <TouchableOpacity
-              style={styles.audiencePill}
-              onPress={() => setShowAudiencePicker(!showAudiencePicker)}
-              activeOpacity={0.7}
-            >
+            {/* Event Contacts Count */}
+            <View style={styles.audiencePill}>
               <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.6)" />
               <Text style={styles.audiencePillText}>
-                {audienceLabel(audience)} ({recipientCount})
+                Event Contacts ({recipientCount})
               </Text>
-              <Ionicons
-                name={showAudiencePicker ? 'chevron-down' : 'chevron-up'}
-                size={14}
-                color="rgba(255,255,255,0.4)"
-              />
-            </TouchableOpacity>
+            </View>
 
             <View style={styles.inputRow}>
               <View style={[styles.inputContainer, { borderColor: colors.border }]}>
@@ -358,30 +301,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.08)',
     paddingTop: 8,
     paddingHorizontal: 12,
-  },
-  audiencePickerRow: {
-    marginBottom: 8,
-  },
-  audienceChipRow: { gap: 8 },
-  audienceChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  audienceChipSelected: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  audienceChipText: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
-  },
-  audienceChipTextSelected: {
-    color: '#fff',
   },
   audiencePill: {
     flexDirection: 'row',
