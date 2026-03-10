@@ -38,3 +38,18 @@ export interface SendTextBlastResponse {
 export interface RecipientCountResponse {
   count: number;
 }
+
+export interface TemplateVariable {
+  label: string;
+  value: string;
+}
+
+export const PERSON_VARIABLES: TemplateVariable[] = [
+  { label: 'First Name', value: '{first_name}' },
+  { label: 'Last Name', value: '{last_name}' },
+];
+
+export const EVENT_VARIABLES: TemplateVariable[] = [
+  { label: 'Event Name', value: '{event_name}' },
+  { label: 'Event Date', value: '{event_date}' },
+];

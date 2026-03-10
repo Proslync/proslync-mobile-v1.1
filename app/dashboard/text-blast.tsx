@@ -4,6 +4,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -21,6 +22,7 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TextBlastResponse } from '@/lib/types/text-blast.types';
+import { PERSON_VARIABLES, type TemplateVariable } from '@/lib/types/text-blast.types';
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString([], {
@@ -49,6 +51,17 @@ export default function DashboardTextBlastScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   const [message, setMessage] = useState('');
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const inputRef = useRef<TextInput>(null);
+
+  const insertVariable = (variable: TemplateVariable) => {
+    const before = message.slice(0, selection.start);
+    const after = message.slice(selection.end);
+    const newMessage = before + variable.value + after;
+    const newCursor = before.length + variable.value.length;
+    setMessage(newMessage);
+    setSelection({ start: newCursor, end: newCursor });
+  };
 
   const { data: recipientData, isLoading: countLoading } = useCrossEventRecipientCount();
   const { data: blasts = [], isLoading } = useCrossEventTextBlasts();
@@ -62,9 +75,12 @@ export default function DashboardTextBlastScreen() {
 
   const handleSend = () => {
     if (!message.trim()) return;
+    const text = message.trim();
+    setMessage('');
+    setSelection({ start: 0, end: 0 });
     router.push({
       pathname: '/dashboard/text-blast-confirm',
-      params: { message: message.trim() },
+      params: { message: text },
     });
   };
 
@@ -170,14 +186,36 @@ export default function DashboardTextBlastScreen() {
             )}
           </View>
 
+          {/* Template Variable Chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.variableChipsRow}
+            keyboardShouldPersistTaps="always"
+          >
+            {PERSON_VARIABLES.map((v) => (
+              <TouchableOpacity
+                key={v.value}
+                style={styles.variableChip}
+                onPress={() => insertVariable(v)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.variableChipText}>{v.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
           <View style={styles.inputRow}>
             <View style={[styles.inputContainer, { borderColor: colors.border }]}>
               <TextInput
+                ref={inputRef}
                 style={[styles.textInput, { color: colors.text }]}
                 placeholder="Type your message..."
                 placeholderTextColor={colors.textTertiary}
                 value={message}
                 onChangeText={setMessage}
+                onSelectionChange={(e) => setSelection(e.nativeEvent.selection)}
+                selection={selection}
                 multiline
                 maxLength={1600}
               />
@@ -303,6 +341,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.6)',
+  },
+  variableChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 8,
+  },
+  variableChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  variableChipText: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.7)',
   },
   inputRow: {
     flexDirection: 'row',

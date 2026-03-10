@@ -19,6 +19,25 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+const MOCK_VARIABLES: Record<string, string> = {
+  '{first_name}': 'Alex',
+  '{last_name}': 'Johnson',
+  '{event_name}': '',
+  '{event_date}': '',
+};
+
+function resolveMockPreview(template: string): string {
+  let text = template;
+  for (const [key, value] of Object.entries(MOCK_VARIABLES)) {
+    text = text.replaceAll(key, value);
+  }
+  return text;
+}
+
+function hasTemplateVariables(text: string): boolean {
+  return /\{(first_name|last_name)\}/.test(text);
+}
+
 export default function DashboardTextBlastConfirmScreen() {
   const { message: messageParam } = useLocalSearchParams<{ message: string }>();
   const router = useRouter();
@@ -75,6 +94,16 @@ export default function DashboardTextBlastConfirmScreen() {
           <View style={styles.previewBubble}>
             <Text style={styles.previewText}>{messageText}</Text>
           </View>
+          {hasTemplateVariables(messageText) && (
+            <>
+              <Text style={[styles.mockLabel, { color: colors.textTertiary }]}>Preview</Text>
+              <View style={[styles.previewBubble, styles.mockBubble]}>
+                <Text style={styles.previewText}>
+                  {resolveMockPreview(messageText)}
+                </Text>
+              </View>
+            </>
+          )}
         </Animated.View>
 
         {/* Audience Info */}
@@ -190,6 +219,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     color: '#fff',
     lineHeight: 21,
+  },
+  mockLabel: {
+    fontSize: 11,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 10,
+    marginBottom: 6,
+    alignSelf: 'flex-end',
+  },
+  mockBubble: {
+    backgroundColor: 'rgba(0,122,255,0.5)',
   },
   audienceSection: {
     marginBottom: 16,
