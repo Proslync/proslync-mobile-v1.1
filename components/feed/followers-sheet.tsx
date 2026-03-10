@@ -37,6 +37,14 @@ interface ListItem {
   type: "user" | "venue";
 }
 
+const SPRING_CONFIG = {
+  damping: 80,
+  overshootClamping: true,
+  restDisplacementThreshold: 0.1,
+  restSpeedThreshold: 0.1,
+  stiffness: 500,
+};
+
 export function FollowersSheet({
   visible,
   onClose,
@@ -48,7 +56,7 @@ export function FollowersSheet({
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const snapPoints = React.useMemo(() => ["55%", "85%"], []);
 
   const [activeTab, setActiveTab] = React.useState<SheetTab>(initialTab);
@@ -172,25 +180,17 @@ export function FollowersSheet({
         onPress={() => handleUserPress(item)}
         activeOpacity={0.6}
       >
-        <View
-          style={[
-            styles.avatarWrap,
-            { backgroundColor: colors.backgroundSecondary },
-          ]}
-        >
+        <View style={styles.avatarWrap}>
           <Image
             source={item.imageUrl ? { uri: item.imageUrl } : DefaultAvatarImage}
             style={styles.avatar}
           />
         </View>
         <View style={styles.rowInfo}>
-          <Text
-            style={[styles.rowName, { color: colors.text }]}
-            numberOfLines={1}
-          >
+          <Text style={styles.rowName} numberOfLines={1}>
             {item.name}
           </Text>
-          <Text style={[styles.rowType, { color: colors.textTertiary }]}>
+          <Text style={styles.rowType}>
             {item.type === "venue" ? "Venue" : "User"}
           </Text>
         </View>
@@ -203,13 +203,13 @@ export function FollowersSheet({
     if (isLoading) {
       return (
         <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={colors.textTertiary} />
+          <ActivityIndicator size="large" color="rgba(255,255,255,0.3)" />
         </View>
       );
     }
     return (
       <View style={styles.emptyContainer}>
-        <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+        <Text style={styles.emptyText}>
           {activeTab === "followers"
             ? "No followers yet"
             : "Not following anyone yet"}
@@ -225,29 +225,19 @@ export function FollowersSheet({
       snapPoints={snapPoints}
       enablePanDownToClose
       onClose={handleClose}
-      backgroundStyle={[
-        styles.sheetBackground,
-        { backgroundColor: colors.background },
-      ]}
-      handleIndicatorStyle={[
-        styles.sheetIndicator,
-        {
-          backgroundColor: isDark
-            ? "rgba(255, 255, 255, 0.3)"
-            : "rgba(0, 0, 0, 0.2)",
-        },
-      ]}
+      backgroundStyle={styles.sheetBackground}
+      handleIndicatorStyle={styles.sheetIndicator}
       enableDynamicSizing={false}
+      animateOnMount
+      animationConfigs={SPRING_CONFIG}
+      overDragResistanceFactor={4}
     >
       {/* Tabs */}
-      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
+      <View style={styles.tabBar}>
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === "followers" && [
-              styles.tabActive,
-              { borderBottomColor: colors.text },
-            ],
+            activeTab === "followers" && styles.tabActive,
           ]}
           onPress={() => setActiveTab("followers")}
           activeOpacity={0.7}
@@ -255,8 +245,7 @@ export function FollowersSheet({
           <Text
             style={[
               styles.tabCount,
-              { color: colors.textTertiary },
-              activeTab === "followers" && { color: colors.text },
+              activeTab === "followers" && styles.tabCountActive,
             ]}
           >
             {followersCount}
@@ -264,8 +253,7 @@ export function FollowersSheet({
           <Text
             style={[
               styles.tabLabel,
-              { color: colors.textTertiary },
-              activeTab === "followers" && { color: colors.text },
+              activeTab === "followers" && styles.tabLabelActive,
             ]}
           >
             Followers
@@ -274,10 +262,7 @@ export function FollowersSheet({
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === "following" && [
-              styles.tabActive,
-              { borderBottomColor: colors.text },
-            ],
+            activeTab === "following" && styles.tabActive,
           ]}
           onPress={() => setActiveTab("following")}
           activeOpacity={0.7}
@@ -285,8 +270,7 @@ export function FollowersSheet({
           <Text
             style={[
               styles.tabCount,
-              { color: colors.textTertiary },
-              activeTab === "following" && { color: colors.text },
+              activeTab === "following" && styles.tabCountActive,
             ]}
           >
             {followingCount}
@@ -294,8 +278,7 @@ export function FollowersSheet({
           <Text
             style={[
               styles.tabLabel,
-              { color: colors.textTertiary },
-              activeTab === "following" && { color: colors.text },
+              activeTab === "following" && styles.tabLabelActive,
             ]}
           >
             Following
@@ -316,9 +299,7 @@ export function FollowersSheet({
         ]}
         showsVerticalScrollIndicator={false}
         ItemSeparatorComponent={() => (
-          <View
-            style={[styles.separator, { backgroundColor: colors.separator }]}
-          />
+          <View style={styles.separator} />
         )}
       />
     </BottomSheet>
@@ -329,17 +310,20 @@ const styles = StyleSheet.create({
   sheetBackground: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
+    backgroundColor: "#000",
   },
   sheetIndicator: {
     width: 40,
     height: 4,
     borderRadius: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
 
   // Tabs
   tabBar: {
     flexDirection: "row",
     borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
   tab: {
     flex: 1,
@@ -348,18 +332,26 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
-  tabActive: {},
+  tabActive: {
+    borderBottomColor: "#fff",
+  },
   tabCount: {
     fontSize: 16,
     fontFamily: "Lato_700Bold",
+    color: "rgba(255, 255, 255, 0.4)",
   },
-  tabCountActive: {},
+  tabCountActive: {
+    color: "#fff",
+  },
   tabLabel: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
     marginTop: 1,
+    color: "rgba(255, 255, 255, 0.4)",
   },
-  tabLabelActive: {},
+  tabLabelActive: {
+    color: "#fff",
+  },
 
   // List
   listContent: {
@@ -380,6 +372,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     overflow: "hidden",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
   },
   avatar: {
     width: 48,
@@ -393,15 +386,18 @@ const styles = StyleSheet.create({
   rowName: {
     fontSize: 15,
     fontFamily: "Lato_600SemiBold",
+    color: "#fff",
   },
   rowType: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
     marginTop: 1,
+    color: "rgba(255, 255, 255, 0.4)",
   },
   separator: {
     height: 1,
     marginLeft: 76,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
   },
 
   // Empty
@@ -413,5 +409,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
+    color: "rgba(255, 255, 255, 0.35)",
   },
 });

@@ -169,6 +169,20 @@ export default function AdminDashboard() {
               onPress={() => router.push('/admin/posts')}
               colors={colors}
             />
+            <MenuItem
+              title="Moderation"
+              subtitle="AI event moderation log"
+              icon="shield-outline"
+              onPress={() => router.push('/admin/moderation')}
+              colors={colors}
+            />
+            <MenuItem
+              title="Moderation Rules"
+              subtitle="Configure AI content rules"
+              icon="settings-outline"
+              onPress={() => router.push('/admin/rules')}
+              colors={colors}
+            />
           </View>
         </Animated.View>
 

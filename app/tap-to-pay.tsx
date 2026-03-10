@@ -2,18 +2,11 @@ import * as React from "react";
 import {
   View,
   Text,
-  FlatList,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
 } from "react-native";
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  FadeOut,
-  Layout,
-} from "react-native-reanimated";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,39 +14,24 @@ import * as Haptics from "expo-haptics";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
-import { GlassButton } from "@/components/glass/glass-button";
 import { paymentsApi } from "@/lib/api/payments";
-import { useEventSocket } from "@/hooks/use-event-socket";
 import { TerminalProvider, useTerminalPayment } from "@/lib/providers/terminal-provider";
-import type {
-  UnpaidGuest,
-  UnpaidAttendeesResponse,
-} from "@/lib/types/payments.types";
 
-function formatTimeAgo(dateStr?: string): string {
-  if (!dateStr) return "";
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
+function readerStatusLabel(
+  readerStatus: string,
+  paymentStatus: string,
+  isInitialized: boolean,
+): string {
+  if (paymentStatus === "collecting") return "Waiting for tap...";
+  if (paymentStatus === "processing") return "Processing...";
+  if (paymentStatus === "success") return "Payment received!";
+  if (paymentStatus === "error") return "Error";
 
-function readerStatusLabel(readerStatus: string, paymentStatus: string): string {
-  // Payment status takes priority when actively processing
-  if (paymentStatus === 'collecting') return "Waiting for tap...";
-  if (paymentStatus === 'processing') return "Processing...";
-  if (paymentStatus === 'success') return "Payment received!";
-  if (paymentStatus === 'error') return "Error";
-
-  // Reader connection status
   switch (readerStatus) {
     case "disconnected":
-      return "Initializing...";
+      return isInitialized ? "Discovering reader..." : "Initializing SDK...";
     case "connecting":
-      return "Connecting...";
+      return "Connecting to reader...";
     case "connected":
       return "Ready";
     default:
@@ -61,79 +39,37 @@ function readerStatusLabel(readerStatus: string, paymentStatus: string): string 
   }
 }
 
-function TapToPayContent() {
+const KEYPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "del"];
+
+function TapToChargeContent() {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { eventId: eventIdParam } = useLocalSearchParams<{ eventId: string }>();
   const eventId = eventIdParam ? Number(eventIdParam) : null;
 
-  const { readerStatus, isReaderConnected, isInitialized, initError, retryInit, connectReader, collectPayment, cancelCollect } = useTerminalPayment();
+  const {
+    readerStatus,
+    isReaderConnected,
+    isInitialized,
+    initError,
+    retryInit,
+    connectReader,
+    collectPayment,
+  } = useTerminalPayment();
 
-  const [guests, setGuests] = React.useState<UnpaidGuest[]>([]);
-  const [eventData, setEventData] = React.useState<Omit<
-    UnpaidAttendeesResponse,
-    "guests"
-  > | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const [chargingGuestId, setChargingGuestId] = React.useState<number | null>(
-    null,
-  );
-  const [paymentStatus, setPaymentStatus] = React.useState<'idle' | 'collecting' | 'processing' | 'success' | 'error'>('idle');
-  const [paymentError, setPaymentError] = React.useState<string | null>(null);
+  const [amount, setAmount] = React.useState("0");
+  const [paymentStatus, setPaymentStatus] = React.useState<
+    "idle" | "collecting" | "processing" | "success" | "error"
+  >("idle");
   const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<string | null>(null);
-
-  // Fetch unpaid guests
-  const fetchUnpaid = React.useCallback(async () => {
-    if (!eventId) return;
-    try {
-      const res = await paymentsApi.getUnpaidAttendees(eventId);
-      setGuests(res.guests);
-      setEventData({
-        defaultTierId: res.defaultTierId,
-        defaultPricingId: res.defaultPricingId,
-        defaultPrice: res.defaultPrice,
-        currency: res.currency,
-      });
-    } catch (err: any) {
-      console.error("[TapToPay] Fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [eventId]);
-
-  // Initial load
-  React.useEffect(() => {
-    fetchUnpaid();
-  }, [fetchUnpaid]);
-
-  // Polling fallback every 30s
-  React.useEffect(() => {
-    if (!eventId) return;
-    const interval = setInterval(fetchUnpaid, 30000);
-    return () => clearInterval(interval);
-  }, [eventId, fetchUnpaid]);
-
-  // WebSocket live updates
-  useEventSocket({
-    eventId,
-    onGuestCheckedIn: React.useCallback(() => {
-      fetchUnpaid();
-    }, [fetchUnpaid]),
-    onPaymentReceived: React.useCallback((data: { userId: number }) => {
-      setGuests((prev) => prev.filter((g) => g.userId !== data.userId));
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }, []),
-  });
-
-  // Connection error state
   const [connectError, setConnectError] = React.useState<string | null>(null);
   const connectAttemptedRef = React.useRef(false);
 
   // Auto-connect reader when SDK is initialized
   React.useEffect(() => {
     if (!eventId || !isInitialized || isReaderConnected || connectAttemptedRef.current) return;
-    if (readerStatus === 'connecting') return;
+    if (readerStatus === "connecting") return;
     connectAttemptedRef.current = true;
 
     (async () => {
@@ -141,131 +77,97 @@ function TapToPayContent() {
         setConnectError(null);
         await connectReader(eventId ?? undefined);
       } catch (err: any) {
-        const msg = err?.message || "Failed to connect";
-        console.warn("[TapToPay] Connect error:", msg);
-        setConnectError(msg);
+        setConnectError(err?.message || "Failed to connect");
       }
     })();
   }, [eventId, isInitialized, isReaderConnected, readerStatus, connectReader]);
 
-  // Handle charge for a guest
-  const handleCharge = React.useCallback(
-    async (guest: UnpaidGuest) => {
-      if (!eventId || !guest.canCollect || !isReaderConnected) return;
+  const amountCents = React.useMemo(() => {
+    const num = parseFloat(amount);
+    return isNaN(num) ? 0 : Math.round(num * 100);
+  }, [amount]);
 
-      setChargingGuestId(guest.id);
-      setPaymentStatus('collecting');
-      setPaymentError(null);
+  const displayAmount = React.useMemo(() => {
+    if (amount === "0") return "$0.00";
+    // If has decimal, format with exactly 2 decimal places for display
+    if (amount.includes(".")) {
+      const parts = amount.split(".");
+      return `$${parts[0]}.${(parts[1] || "").padEnd(2, "0").slice(0, 2)}`;
+    }
+    return `$${amount}.00`;
+  }, [amount]);
 
-      try {
-        // 1. Create a card_present payment intent via backend
-        const { clientSecret } = await paymentsApi.collectAtDoor(eventId, {
-          guestId: guest.id,
-          tierId: eventData?.defaultTierId,
-          pricingId: eventData?.defaultPricingId,
-          useTerminal: true,
+  const handleKeyPress = React.useCallback(
+    (key: string) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+      if (key === "del") {
+        setAmount((prev) => {
+          if (prev.length <= 1) return "0";
+          return prev.slice(0, -1);
         });
-
-        setPaymentStatus('processing');
-
-        // 2. Collect payment via NFC (retrieve → tap → confirm)
-        await collectPayment(clientSecret);
-
-        setPaymentStatus('success');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        // Optimistically remove from list
-        setGuests((prev) => prev.filter((g) => g.id !== guest.id));
-
-        // Reset status after a brief delay
-        setTimeout(() => setPaymentStatus('idle'), 1500);
-      } catch (err: any) {
-        console.error("[TapToPay] Charge error:", err);
-        setPaymentStatus('error');
-        setPaymentError(err?.message || "Something went wrong");
-        setPaymentFailedAlert(err?.message || "Something went wrong.");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setTimeout(() => setPaymentStatus('idle'), 2000);
-      } finally {
-        setChargingGuestId(null);
+        return;
       }
+
+      if (key === ".") {
+        setAmount((prev) => {
+          if (prev.includes(".")) return prev;
+          return prev + ".";
+        });
+        return;
+      }
+
+      setAmount((prev) => {
+        // Limit decimal places to 2
+        if (prev.includes(".")) {
+          const decimalPart = prev.split(".")[1] || "";
+          if (decimalPart.length >= 2) return prev;
+        }
+        // Limit total digits
+        if (prev.replace(".", "").length >= 7) return prev;
+        if (prev === "0") return key;
+        return prev + key;
+      });
     },
-    [eventId, eventData, isReaderConnected, collectPayment],
-  );
-
-  const priceDisplay = React.useMemo(() => {
-    if (!eventData?.defaultPrice) return null;
-    const amount = eventData.defaultPrice / 100;
-    const currency = (eventData.currency || "USD").toUpperCase();
-    return `$${amount.toFixed(2)} ${currency}`;
-  }, [eventData]);
-
-  const isReaderBusy = paymentStatus === "collecting" || paymentStatus === "processing";
-
-  const renderGuest = React.useCallback(
-    ({ item }: { item: UnpaidGuest }) => {
-      const isCharging = chargingGuestId === item.id;
-      const initials =
-        `${item.firstName?.[0] || ""}${item.lastName?.[0] || ""}`.toUpperCase();
-
-      return (
-        <Animated.View
-          entering={FadeInDown.duration(300)}
-          exiting={FadeOut.duration(200)}
-          layout={Layout.springify()}
-          style={styles.guestRow}
-        >
-          {/* Avatar */}
-          {item.avatar ? (
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarInitials}>{initials}</Text>
-            </View>
-          )}
-
-          {/* Info */}
-          <View style={styles.guestInfo}>
-            <Text style={styles.guestName} numberOfLines={1}>
-              {item.firstName} {item.lastName}
-            </Text>
-            <View style={styles.guestMeta}>
-              {item.age != null && (
-                <Text style={styles.guestMetaText}>Age {item.age}</Text>
-              )}
-              {item.checkedInAt && (
-                <Text style={styles.guestMetaText}>
-                  {formatTimeAgo(item.checkedInAt)}
-                </Text>
-              )}
-            </View>
-          </View>
-
-          {/* Charge Button */}
-          {item.canCollect ? (
-            <GlassButton
-              label={isCharging ? "" : "Charge"}
-              loading={isCharging}
-              size="sm"
-              variant="glass"
-              onPress={() => handleCharge(item)}
-              disabled={isCharging || isReaderBusy || !isReaderConnected}
-            />
-          ) : (
-            <View style={styles.disabledBadge}>
-              <Text style={styles.disabledText}>No account</Text>
-            </View>
-          )}
-        </Animated.View>
-      );
-    },
-    [chargingGuestId, handleCharge, isReaderBusy, isReaderConnected],
-  );
-
-  const keyExtractor = React.useCallback(
-    (item: UnpaidGuest) => String(item.id),
     [],
   );
+
+  const handleCharge = React.useCallback(async () => {
+    if (!eventId || amountCents <= 0 || !isReaderConnected) return;
+
+    setPaymentStatus("collecting");
+
+    try {
+      const { clientSecret } = await paymentsApi.collectAtDoor(eventId, {
+        customAmountCents: amountCents,
+        useTerminal: true,
+      });
+
+      setPaymentStatus("processing");
+      await collectPayment(clientSecret);
+
+      setPaymentStatus("success");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Reset after brief delay
+      setTimeout(() => {
+        setPaymentStatus("idle");
+        setAmount("0");
+      }, 1500);
+    } catch (err: any) {
+      if (err?.message?.includes("canceled")) {
+        setPaymentStatus("idle");
+        return;
+      }
+      setPaymentStatus("error");
+      setPaymentFailedAlert(err?.message || "Something went wrong.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setTimeout(() => setPaymentStatus("idle"), 2000);
+    }
+  }, [eventId, amountCents, isReaderConnected, collectPayment]);
+
+  const isProcessing = paymentStatus === "collecting" || paymentStatus === "processing";
+  const canCharge = amountCents > 0 && isReaderConnected && !isProcessing;
 
   if (!eventId) {
     return (
@@ -283,7 +185,7 @@ function TapToPayContent() {
         visible={!!paymentFailedAlert}
         onClose={() => setPaymentFailedAlert(null)}
         title="Payment Failed"
-        message={paymentFailedAlert || ''}
+        message={paymentFailedAlert || ""}
         alertOnly
         icon="card-outline"
       />
@@ -293,113 +195,119 @@ function TapToPayContent() {
         entering={FadeIn.duration(400)}
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Tap to Pay</Text>
-          <Text style={styles.headerSubtitle}>
-            {guests.length} unpaid guest{guests.length !== 1 ? "s" : ""}
-          </Text>
-        </View>
-        {priceDisplay ? (
-          <View style={styles.priceBadge}>
-            <Text style={styles.priceText}>{priceDisplay}</Text>
-          </View>
-        ) : (
-          <View style={styles.headerSpacer} />
-        )}
+        <Text style={styles.headerTitle}>Tap to Charge</Text>
+        <View style={styles.backButton} />
       </Animated.View>
 
       {/* Reader Status Bar */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.statusBar}>
+      <View style={styles.statusBar}>
         <View
           style={[
             styles.statusDot,
             {
-              backgroundColor: initError || connectError || paymentStatus === 'error'
-              ? "#f87171"
-              : isReaderConnected && paymentStatus !== 'collecting' && paymentStatus !== 'processing'
-                ? "#34d399"
-                : paymentStatus === 'success'
-                  ? "#34d399"
-                  : "#fbbf24",
+              backgroundColor:
+                initError || connectError || paymentStatus === "error"
+                  ? "#f87171"
+                  : isReaderConnected && !isProcessing
+                    ? "#34d399"
+                    : paymentStatus === "success"
+                      ? "#34d399"
+                      : "#fbbf24",
             },
           ]}
         />
-        <Text style={styles.statusText} numberOfLines={2}>
+        <Text style={styles.statusText} numberOfLines={1}>
           {initError
             ? `SDK error: ${initError}`
-            : connectError ? "Connection Failed" : readerStatusLabel(readerStatus, paymentStatus)}
+            : connectError
+              ? `Connection failed: ${connectError}`
+              : readerStatusLabel(readerStatus, paymentStatus, isInitialized)}
         </Text>
-        {initError ? (
-          <TouchableOpacity onPress={retryInit} activeOpacity={0.7}>
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
-        ) : (connectError || paymentError) ? (
+        {(initError || connectError) && (
           <TouchableOpacity
             onPress={() => {
-              setConnectError(null);
-              setPaymentError(null);
-              setPaymentStatus('idle');
-              connectAttemptedRef.current = false;
+              if (initError) {
+                retryInit();
+              } else {
+                setConnectError(null);
+                connectAttemptedRef.current = false;
+              }
             }}
             activeOpacity={0.7}
           >
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
-        ) : null}
-      </Animated.View>
+        )}
+      </View>
 
-      {connectError && (
-        <Text style={styles.errorDetail}>{connectError}</Text>
-      )}
-
-      {/* Content */}
-      {loading ? (
-        <View style={styles.centerContent}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Loading guests...</Text>
-        </View>
-      ) : guests.length === 0 ? (
-        <Animated.View
-          entering={FadeIn.duration(500)}
-          style={styles.centerContent}
-        >
-          <Ionicons
-            name="checkmark-circle-outline"
-            size={64}
-            color="rgba(255,255,255,0.4)"
-          />
-          <Text style={styles.emptyTitle}>All guests have paid</Text>
-          <Text style={styles.emptySubtitle}>
-            New unpaid guests will appear here automatically
-          </Text>
-        </Animated.View>
-      ) : (
-        <FlatList
-          data={guests}
-          renderItem={renderGuest}
-          keyExtractor={keyExtractor}
-          contentContainerStyle={[
-            styles.listContent,
-            { paddingBottom: insets.bottom + 20 },
+      {/* Amount Display */}
+      <View style={styles.amountSection}>
+        <Text
+          style={[
+            styles.amountText,
+            paymentStatus === "success" && styles.amountSuccess,
           ]}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+        >
+          {displayAmount}
+        </Text>
+        {paymentStatus === "success" && (
+          <Text style={styles.successLabel}>Charged</Text>
+        )}
+      </View>
+
+      {/* Keypad */}
+      <View style={[styles.keypad, { paddingBottom: insets.bottom + 16 }]}>
+        <View style={styles.keypadGrid}>
+          {KEYPAD_KEYS.map((key) => (
+            <TouchableOpacity
+              key={key}
+              style={styles.keypadKey}
+              onPress={() => handleKeyPress(key)}
+              activeOpacity={0.5}
+              disabled={isProcessing}
+            >
+              {key === "del" ? (
+                <Ionicons name="backspace-outline" size={24} color="rgba(255,255,255,0.7)" />
+              ) : (
+                <Text style={styles.keypadKeyText}>{key}</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Charge Button */}
+        <TouchableOpacity
+          style={[
+            styles.chargeButton,
+            !canCharge && styles.chargeButtonDisabled,
+          ]}
+          onPress={handleCharge}
+          disabled={!canCharge}
+          activeOpacity={0.7}
+        >
+          {isProcessing ? (
+            <ActivityIndicator size="small" color="#000" />
+          ) : (
+            <>
+              <Ionicons name="flash" size={20} color="#000" />
+              <Text style={styles.chargeButtonText}>
+                Charge {displayAmount}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-export default function TapToPayScreen() {
+export default function TapToChargeScreen() {
   return (
     <TerminalProvider>
-      <TapToPayContent />
+      <TapToChargeContent />
     </TerminalProvider>
   );
 }
@@ -411,10 +319,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.12)",
   },
   backButton: {
     width: 40,
@@ -422,34 +329,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  headerCenter: {
-    flex: 1,
-    alignItems: "center",
-  },
   headerTitle: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
-    color: "#fff",
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
-    marginTop: 2,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  priceBadge: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
-  },
-  priceText: {
-    fontSize: 13,
     fontFamily: "Lato_700Bold",
     color: "#fff",
   },
@@ -457,7 +338,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 10,
     gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(255,255,255,0.08)",
@@ -469,38 +350,35 @@ const styles = StyleSheet.create({
   },
   statusText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.6)",
   },
   retryText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
     color: "#0095f6",
   },
-  centerContent: {
+  amountSection: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 40,
-    gap: 12,
+    paddingHorizontal: 24,
   },
-  loadingText: {
-    fontSize: 14,
-    fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
-  },
-  emptyTitle: {
-    fontSize: 18,
+  amountText: {
+    fontSize: 56,
     fontFamily: "Lato_700Bold",
-    color: "rgba(255,255,255,0.6)",
-    marginTop: 8,
+    color: "#fff",
+    letterSpacing: -1,
   },
-  emptySubtitle: {
-    fontSize: 14,
-    fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.35)",
-    textAlign: "center",
+  amountSuccess: {
+    color: "#34d399",
+  },
+  successLabel: {
+    fontSize: 16,
+    fontFamily: "Lato_700Bold",
+    color: "#34d399",
+    marginTop: 8,
   },
   errorText: {
     fontSize: 15,
@@ -509,75 +387,40 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 100,
   },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+  keypad: {
+    paddingHorizontal: 24,
   },
-  guestRow: {
+  keypadGrid: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    flexWrap: "wrap",
   },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-  },
-  avatarPlaceholder: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "rgba(255,255,255,0.1)",
+  keypadKey: {
+    width: "33.33%",
+    height: 64,
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarInitials: {
-    fontSize: 15,
-    fontFamily: "Lato_700Bold",
-    color: "rgba(255,255,255,0.6)",
-  },
-  guestInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  guestName: {
-    fontSize: 15,
-    fontFamily: "Lato_700Bold",
+  keypadKeyText: {
+    fontSize: 28,
+    fontFamily: "Lato_400Regular",
     color: "#fff",
   },
-  guestMeta: {
+  chargeButton: {
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    marginTop: 3,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingVertical: 18,
+    marginTop: 12,
   },
-  guestMetaText: {
-    fontSize: 12,
-    fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.4)",
+  chargeButtonDisabled: {
+    opacity: 0.3,
   },
-  disabledBadge: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  disabledText: {
-    fontSize: 12,
-    fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.25)",
-  },
-  errorDetail: {
-    fontSize: 12,
-    fontFamily: "Lato_400Regular",
-    color: "rgba(248,113,113,0.7)",
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 8,
+  chargeButtonText: {
+    fontSize: 17,
+    fontFamily: "Lato_700Bold",
+    color: "#000",
   },
 });

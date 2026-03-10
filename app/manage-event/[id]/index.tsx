@@ -118,16 +118,9 @@ const SECTIONS = [
     permission: { resource: "team" as keyof RolePermissions, action: "view" },
   },
   {
-    key: "artists",
-    label: "Artists",
-    subtitle: "Manage event lineup",
-    icon: "musical-notes-outline" as const,
-    permission: { resource: "events" as keyof RolePermissions, action: "edit" },
-  },
-  {
     key: "tap-to-pay",
-    label: "Tap to Pay",
-    subtitle: "Accept contactless payments",
+    label: "Tap to Charge",
+    subtitle: "Charge custom amounts",
     icon: "phone-portrait-outline" as const,
     permission: {
       resource: "billing" as keyof RolePermissions,

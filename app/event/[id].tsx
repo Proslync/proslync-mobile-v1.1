@@ -101,6 +101,7 @@ export default function EventPage() {
     username?: string;
     userAvatar?: string;
     userId?: string;
+    isOrganizerVerified?: string;
     isPaid?: string;
     price?: string;
     isUserRegistered?: string;
@@ -349,7 +350,9 @@ export default function EventPage() {
                     <Text style={[styles.organizerName, { color: colors.text }]} numberOfLines={1}>
                       {username}
                     </Text>
-                    <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+                    {params.isOrganizerVerified === 'true' && (
+                      <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+                    )}
                   </View>
                 </TouchableOpacity>
               </View>

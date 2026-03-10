@@ -6,6 +6,7 @@ export interface ConversationMember {
   firstName?: string;
   lastName?: string;
   avatarUrl?: string;
+  isVerified?: boolean;
   lastReadAt?: string;
   joinedAt: string;
 }

@@ -11,7 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { authApi } from '@/lib/api/auth';
@@ -286,9 +286,14 @@ export default function UserProfileScreen() {
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
 
-          <Text style={[styles.headerUsername, dynamicStyles.headerUsername]} numberOfLines={1}>
-            {user.userName ? `@${user.userName}` : displayName}
-          </Text>
+          <View style={styles.headerNameRow}>
+            <Text style={[styles.headerUsername, dynamicStyles.headerUsername]} numberOfLines={1}>
+              {user.userName ? `@${user.userName}` : displayName}
+            </Text>
+            {user.isVerified && (
+              <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+            )}
+          </View>
 
           <TouchableOpacity
             style={styles.headerIcon}
@@ -470,8 +475,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 16,
   },
-  headerUsername: {
+  headerNameRow: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  headerUsername: {
     fontSize: 22,
     fontFamily: 'Lato_700Bold',
     textAlign: 'center',

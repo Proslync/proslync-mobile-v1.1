@@ -178,6 +178,7 @@ export interface PublicUserProfile {
   firstName?: string;
   lastName?: string;
   bio?: string;
+  isVerified?: boolean;
   avatar?: Avatar | null;
   eventStats?: EventStats;
   followStats?: FollowStats;

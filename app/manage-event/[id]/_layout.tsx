@@ -11,9 +11,10 @@ export default function ManageEventLayout() {
       <Stack.Screen name="pricing" />
       <Stack.Screen name="marketing" />
       <Stack.Screen name="text-blast" />
+      <Stack.Screen name="text-blast-audience" />
       <Stack.Screen name="payments" />
+      <Stack.Screen name="revenue" />
       <Stack.Screen name="team" />
-      <Stack.Screen name="artists" />
     </Stack>
   );
 }

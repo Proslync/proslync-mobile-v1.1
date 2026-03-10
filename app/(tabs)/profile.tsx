@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -523,6 +523,9 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.headerUsername, { color: colors.text }]}>{username}</Text>
+            {user?.isVerified && (
+              <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+            )}
             <Ionicons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
 

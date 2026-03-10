@@ -2,7 +2,7 @@
 
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Conversation } from "../../lib/types/messages.types";
 
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
@@ -93,10 +93,10 @@ export function ConversationRow({
               {conversation.title}
             </Text>
             {isVerified && (
-              <Ionicons
-                name="checkmark-circle"
+              <MaterialCommunityIcons
+                name="check-decagram"
                 size={14}
-                color="#3b82f6"
+                color="#3897F0"
                 style={styles.verifiedIcon}
               />
             )}

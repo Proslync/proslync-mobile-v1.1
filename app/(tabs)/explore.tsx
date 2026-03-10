@@ -219,11 +219,6 @@ function ConversationRow({
               >
                 {channel.name}
               </Text>
-              {channel.isConcierge && (
-                <View style={styles.aiBadge}>
-                  <Text style={styles.aiBadgeText}>AI</Text>
-                </View>
-              )}
               {channel.isPinned && !channel.isConcierge && (
                 <Ionicons name="pin" size={12} color={colors.textTertiary} style={{ marginLeft: 4 }} />
               )}

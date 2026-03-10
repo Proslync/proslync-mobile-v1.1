@@ -38,8 +38,8 @@ export const eventFormSchema = z
       .max(2000, 'Description must not exceed 2000 characters')
       .optional()
       .or(z.literal('')),
-    flyerUri: z.string().nullable().optional(),
-    flyerMediaType: z.enum(['image', 'video']).nullable().optional(),
+    flyerUri: z.string().min(1, 'A flyer image or video is required'),
+    flyerMediaType: z.enum(['image', 'video']),
 
     // Date & Time (Step 2)
     startDate: z.date(),
@@ -81,8 +81,8 @@ export const basicInfoSchema = z.object({
     .max(2000, 'Description must not exceed 2000 characters')
     .optional()
     .or(z.literal('')),
-  flyerUri: z.string().nullable().optional(),
-  flyerMediaType: z.enum(['image', 'video']).nullable().optional(),
+  flyerUri: z.string().min(1, 'A flyer image or video is required'),
+  flyerMediaType: z.enum(['image', 'video']),
 });
 
 export const dateTimeSchema = z

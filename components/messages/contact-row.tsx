@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { User } from '../../lib/types/messages.types';
 
@@ -57,10 +57,10 @@ export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
             {user.name}
           </Text>
           {user.isVerified && (
-            <Ionicons
-              name="checkmark-circle"
+            <MaterialCommunityIcons
+              name="check-decagram"
               size={14}
-              color="#3b82f6"
+              color="#3897F0"
               style={styles.verifiedIcon}
             />
           )}

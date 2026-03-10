@@ -114,6 +114,7 @@ export const authApi = {
         firstName: (raw.firstName ?? raw.firstname) as string | undefined,
         lastName: (raw.lastName ?? raw.lastname) as string | undefined,
         bio: (raw.bio) as string | undefined,
+        isVerified: (raw.isVerified as boolean) || false,
         avatar: (raw.avatar) as PublicUserProfile['avatar'],
         eventStats: (raw.eventStats) as PublicUserProfile['eventStats'],
         followStats: (raw.followStats) as PublicUserProfile['followStats'],

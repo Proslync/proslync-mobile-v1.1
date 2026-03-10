@@ -267,7 +267,7 @@ export default function UserProfileScreen() {
             <Text style={[styles.displayName, { color: colors.text }]} numberOfLines={1}>
               {displayName}
             </Text>
-            <MaterialCommunityIcons name="check-decagram" size={18} color={colors.verified} />
+            {profile?.isVerified && <MaterialCommunityIcons name="check-decagram" size={18} color={colors.verified} />}
           </View>
 
           {username && (

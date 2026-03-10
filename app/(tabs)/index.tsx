@@ -203,6 +203,7 @@ export default function FeedScreen() {
         userId: item.userId || '',
         isPaid: item.isPaid ? 'true' : 'false',
         price: item.price != null ? item.price.toString() : '',
+        isOrganizerVerified: item.verified ? 'true' : 'false',
         isUserRegistered: (item.isUserRegistered || localRsvp) ? 'true' : 'false',
       },
     });

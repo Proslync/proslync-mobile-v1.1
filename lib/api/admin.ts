@@ -114,6 +114,65 @@ export interface SuccessResponse {
   message: string;
 }
 
+export interface ModerationLogEntry {
+  id: number;
+  eventId: number;
+  eventName: string;
+  ownerUserId: number;
+  action: 'removed' | 'approved';
+  reason?: string;
+  violations?: string[];
+  reviewedBy: 'ai' | 'admin';
+  reviewedAt: string;
+}
+
+export interface ModerationLogResponse {
+  logs: ModerationLogEntry[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+// ── Content Moderation Types ─────────────────────────────────
+
+export type ContentType =
+  | 'post'
+  | 'profile_text'
+  | 'profile_picture'
+  | 'event_flyer'
+  | 'event_description';
+
+export interface ModerationRule {
+  id: number;
+  name: string;
+  description: string;
+  contentTypes: ContentType[];
+  isEnabled: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentModerationLogEntry {
+  id: number;
+  contentType: ContentType;
+  contentId: string;
+  userId: number;
+  action: 'approved' | 'removed' | 'cleared' | 'reverted';
+  reason?: string;
+  violations?: string[];
+  contentSnapshot?: Record<string, unknown>;
+  reviewedBy: 'ai' | 'admin';
+  reviewedAt: string;
+}
+
+export interface ContentModerationLogResponse {
+  logs: ContentModerationLogEntry[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
 // ── API Methods ──────────────────────────────────────────────
 
 export const adminApi = {
@@ -198,4 +257,63 @@ export const adminApi = {
 
   deletePost: (postId: number) =>
     apiClient.delete<SuccessResponse>(`/api/admin/posts/${postId}`),
+
+  getModerationLog: (page = 1, limit = 20) =>
+    apiClient.get<ModerationLogResponse>(
+      `/api/admin/moderation/log?page=${page}&limit=${limit}`,
+    ),
+
+  getRemovedEvents: (page = 1, limit = 20) =>
+    apiClient.get<ModerationLogResponse>(
+      `/api/admin/moderation/removed?page=${page}&limit=${limit}`,
+    ),
+
+  // Content Moderation Rules
+  getContentModerationRules: () =>
+    apiClient.get<ModerationRule[]>('/api/admin/content-moderation/rules'),
+
+  createContentModerationRule: (data: {
+    name: string;
+    description: string;
+    contentTypes: ContentType[];
+    isEnabled?: boolean;
+  }) =>
+    apiClient.post<ModerationRule>(
+      '/api/admin/content-moderation/rules',
+      data,
+    ),
+
+  updateContentModerationRule: (
+    id: number,
+    data: Partial<{
+      name: string;
+      description: string;
+      contentTypes: ContentType[];
+      isEnabled: boolean;
+      sortOrder: number;
+    }>,
+  ) =>
+    apiClient.patch<ModerationRule>(
+      `/api/admin/content-moderation/rules/${id}`,
+      data,
+    ),
+
+  deleteContentModerationRule: (id: number) =>
+    apiClient.delete<{ success: boolean }>(
+      `/api/admin/content-moderation/rules/${id}`,
+    ),
+
+  getContentModerationLogs: (
+    page = 1,
+    limit = 20,
+    contentType?: ContentType,
+  ) => {
+    const query = new URLSearchParams();
+    query.set('page', String(page));
+    query.set('limit', String(limit));
+    if (contentType) query.set('contentType', contentType);
+    return apiClient.get<ContentModerationLogResponse>(
+      `/api/admin/content-moderation/logs?${query.toString()}`,
+    );
+  },
 };

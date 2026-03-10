@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useStableRouter } from '@/hooks/use-stable-router';

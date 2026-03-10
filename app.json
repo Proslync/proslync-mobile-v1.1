@@ -106,13 +106,6 @@
         }
       ],
       [
-        "@config-plugins/react-native-webrtc",
-        {
-          "cameraPermission": "Status needs camera access for video calls and scanning IDs",
-          "microphonePermission": "Status needs microphone access for voice and video calls"
-        }
-      ],
-      [
         "@config-plugins/react-native-callkeep",
         {
           "appName": "Status"

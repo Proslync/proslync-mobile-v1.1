@@ -6,6 +6,8 @@ import type {
   AdminEventsResponse,
   AdminPostsResponse,
   ActivityItem,
+  ModerationRule,
+  ContentType,
 } from '@/lib/api/admin';
 
 export const ADMIN_STATS_KEY = 'admin-stats';
@@ -13,6 +15,7 @@ export const ADMIN_ACTIVITY_KEY = 'admin-activity';
 export const ADMIN_USERS_KEY = 'admin-users';
 export const ADMIN_EVENTS_KEY = 'admin-events';
 export const ADMIN_POSTS_KEY = 'admin-posts';
+export const ADMIN_MODERATION_RULES_KEY = 'admin-moderation-rules';
 
 // ── Queries ──────────────────────────────────────────────────
 
@@ -149,6 +152,68 @@ export function useAdminDeletePost() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [ADMIN_POSTS_KEY] });
       queryClient.invalidateQueries({ queryKey: [ADMIN_STATS_KEY] });
+    },
+  });
+}
+
+// ── Content Moderation Rules ────────────────────────────────
+
+export function useContentModerationRules() {
+  return useQuery<ModerationRule[]>({
+    queryKey: [ADMIN_MODERATION_RULES_KEY],
+    queryFn: () => adminApi.getContentModerationRules(),
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateModerationRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      name: string;
+      description: string;
+      contentTypes: ContentType[];
+      isEnabled?: boolean;
+    }) => adminApi.createContentModerationRule(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [ADMIN_MODERATION_RULES_KEY],
+      });
+    },
+  });
+}
+
+export function useUpdateModerationRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      ...data
+    }: {
+      id: number;
+      name?: string;
+      description?: string;
+      contentTypes?: ContentType[];
+      isEnabled?: boolean;
+      sortOrder?: number;
+    }) => adminApi.updateContentModerationRule(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [ADMIN_MODERATION_RULES_KEY],
+      });
+    },
+  });
+}
+
+export function useDeleteModerationRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => adminApi.deleteContentModerationRule(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [ADMIN_MODERATION_RULES_KEY],
+      });
     },
   });
 }

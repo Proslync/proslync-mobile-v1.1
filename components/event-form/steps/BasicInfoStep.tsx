@@ -37,7 +37,7 @@ interface BasicInfoStepProps {
 export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlyerRemoved }: BasicInfoStepProps = {}) {
   const { colors, isDark } = useAppTheme();
   const { showError } = useToast();
-  const { setValue, control } = useFormContext<EventFormData>();
+  const { setValue, control, formState: { errors } } = useFormContext<EventFormData>();
   const accentColor = isDark ? '#FFFFFF' : '#3897F0';
 
   // Watch flyerUri and mediaType for preview - use existing values as fallback
@@ -64,6 +64,14 @@ export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlye
       const asset = result.assets[0];
       const mediaType = asset.type === 'video' ? 'video' : 'image';
 
+      // Check file size (1GB max)
+      const maxBytes = 1024 * 1024 * 1024;
+      if (asset.fileSize && asset.fileSize > maxBytes) {
+        const sizeMb = Math.round(asset.fileSize / (1024 * 1024));
+        showError(`Your file is too large (${sizeMb} MB). Maximum allowed size is 1GB.`);
+        return;
+      }
+
       setValue('flyerUri', asset.uri, {
         shouldValidate: true,
         shouldDirty: true,
@@ -76,11 +84,11 @@ export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlye
   };
 
   const removeFlyer = () => {
-    setValue('flyerUri', null, {
+    setValue('flyerUri', '', {
       shouldValidate: true,
       shouldDirty: true,
     });
-    setValue('flyerMediaType', null, {
+    setValue('flyerMediaType', 'image', {
       shouldValidate: true,
       shouldDirty: true,
     });
@@ -108,7 +116,7 @@ export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlye
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.label, { color: colors.text }]}>Event Flyer</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Event Flyer <Text style={styles.required}>*</Text></Text>
         {displayFlyerUri ? (
           <View style={styles.flyerPreviewContainer}>
             {displayMediaType === 'video' ? (
@@ -141,6 +149,9 @@ export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlye
               Tap to upload an image or video
             </Text>
           </TouchableOpacity>
+        )}
+        {errors.flyerUri && (
+          <Text style={styles.errorText}>{errors.flyerUri.message as string}</Text>
         )}
       </View>
     </Animated.View>
@@ -211,5 +222,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
     color: '#fff',
+  },
+  required: {
+    color: '#ff3b30',
+  },
+  errorText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: '#ff3b30',
+    marginTop: 8,
   },
 });

@@ -73,7 +73,7 @@ export interface UnpaidAttendeesResponse {
 }
 
 export interface CollectAtDoorRequest {
-  guestId: number;
+  guestId?: number;
   tierId?: number;
   pricingId?: number;
   customAmountCents?: number;

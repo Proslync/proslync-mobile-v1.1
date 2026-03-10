@@ -41,7 +41,7 @@ export interface ChatMessage {
 
 export interface ChannelInfo {
   id: string;
-  type: 'direct' | 'group';
+  type: 'direct' | 'group' | 'system';
   name: string;
   imageUrl?: string;
   memberCount: number;
@@ -51,6 +51,7 @@ export interface ChannelInfo {
     name: string;
     image?: string;
     online?: boolean;
+    isVerified?: boolean;
   };
 }
 
@@ -128,6 +129,7 @@ function deriveChannelInfo(
               .join(' ') ||
             'Unknown',
           image: firstOther.avatarUrl,
+          isVerified: firstOther.isVerified,
         }
       : undefined,
   };

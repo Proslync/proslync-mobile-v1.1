@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -42,6 +42,7 @@ import { useConversation, type ChatMessage } from '@/hooks/use-conversation';
 import { useCall } from '@/lib/providers/call-provider';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { MiniEventCard } from '@/components/chat/mini-event-card';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -106,6 +107,7 @@ function MessageBubble({
   isLastOwnBeforeRead,
   readAt,
   isGroupChat,
+  isConciergeChat,
 }: {
   message: ChatMessage;
   isGroupStart?: boolean;
@@ -117,6 +119,7 @@ function MessageBubble({
   isLastOwnBeforeRead?: boolean;
   readAt?: Date | null;
   isGroupChat?: boolean;
+  isConciergeChat?: boolean;
 }) {
   const isOwn = message.isOwn;
   const isSystem = message.isSystem;
@@ -216,21 +219,70 @@ function MessageBubble({
         )}
 
         {/* Text bubble */}
-        {hasText && (
-          <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
-            <View
-              style={[
-                styles.messageBubble,
-                isOwn ? styles.messageBubbleOwn : [styles.messageBubbleOther, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' }],
-                !isGroupStart && (isOwn ? styles.messageBubbleGroupOwn : styles.messageBubbleGroupOther),
-              ]}
-            >
-              <Text style={isOwn ? styles.messageTextOwn : [styles.messageText, { color: colors.text }]}>
-                {message.text}
-              </Text>
+        {hasText && (() => {
+          const text = message.text || '';
+          const hasEventTags = isConciergeChat && !isOwn && /\[EVENT:\d+\]/.test(text);
+
+          if (hasEventTags) {
+            const parts: { type: 'text' | 'event'; value: string }[] = [];
+            let lastIndex = 0;
+            const regex = /\[EVENT:(\d+)\]/g;
+            let match = regex.exec(text);
+            while (match !== null) {
+              if (match.index > lastIndex) {
+                const chunk = text.slice(lastIndex, match.index).trim();
+                if (chunk) parts.push({ type: 'text', value: chunk });
+              }
+              parts.push({ type: 'event', value: match[1] });
+              lastIndex = match.index + match[0].length;
+              match = regex.exec(text);
+            }
+            if (lastIndex < text.length) {
+              const chunk = text.slice(lastIndex).trim();
+              if (chunk) parts.push({ type: 'text', value: chunk });
+            }
+
+            return (
+              <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
+                {parts.map((part, i) =>
+                  part.type === 'event' ? (
+                    <MiniEventCard key={`event-${part.value}-${i}`} eventId={Number(part.value)} />
+                  ) : (
+                    <View
+                      key={`text-${i}`}
+                      style={[
+                        styles.messageBubble,
+                        styles.messageBubbleOther,
+                        { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' },
+                        !isGroupStart && i === 0 && styles.messageBubbleGroupOther,
+                      ]}
+                    >
+                      <Text style={[styles.messageText, { color: colors.text }]}>
+                        {part.value}
+                      </Text>
+                    </View>
+                  ),
+                )}
+              </View>
+            );
+          }
+
+          return (
+            <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
+              <View
+                style={[
+                  styles.messageBubble,
+                  isOwn ? styles.messageBubbleOwn : [styles.messageBubbleOther, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' }],
+                  !isGroupStart && (isOwn ? styles.messageBubbleGroupOwn : styles.messageBubbleGroupOther),
+                ]}
+              >
+                <Text style={isOwn ? styles.messageTextOwn : [styles.messageText, { color: colors.text }]}>
+                  {message.text}
+                </Text>
+              </View>
             </View>
-          </View>
-        )}
+          );
+        })()}
 
         {/* Timestamp */}
         {showTime && (
@@ -292,17 +344,23 @@ function AnimatedDot({ delay, isDark }: { delay: number; isDark: boolean }) {
 }
 
 // Typing Indicator Component
-function TypingIndicator({ visible, userName, colors, isDark }: { visible: boolean; userName?: string; colors: ThemeColors; isDark: boolean }) {
+function TypingIndicator({ visible, isConcierge, avatarUri, colors, isDark }: { visible: boolean; isConcierge?: boolean; avatarUri?: string; colors: ThemeColors; isDark: boolean }) {
   if (!visible) return null;
 
   return (
     <Animated.View entering={FadeInDown} exiting={FadeOut} style={styles.typingContainer}>
+      {isConcierge ? (
+        <View style={styles.typingConciergeAvatar}>
+          <Ionicons name="sparkles" size={12} color="#fff" />
+        </View>
+      ) : (
+        <Avatar uri={avatarUri} size={28} colors={colors} />
+      )}
       <View style={[styles.typingBubble, { backgroundColor: isDark ? colors.cardElevated : 'rgba(0, 0, 0, 0.06)' }]}>
         <AnimatedDot delay={0} isDark={isDark} />
         <AnimatedDot delay={200} isDark={isDark} />
         <AnimatedDot delay={400} isDark={isDark} />
       </View>
-      {userName && <Text style={[styles.typingText, { color: colors.textTertiary }]}>{userName} is typing...</Text>}
     </Animated.View>
   );
 }
@@ -1073,6 +1131,8 @@ export default function ChatThreadScreen() {
     deleteMessage,
   } = useConversation(conversationId);
 
+  const isConcierge = channelInfo?.type === 'system';
+
   // Video calls removed
 
   // Mute state (not yet supported by backend)
@@ -1347,6 +1407,7 @@ export default function ChatThreadScreen() {
             isLastOwnBeforeRead={item.isLastOwnBeforeRead}
             readAt={otherReadAt}
             isGroupChat={isGroupChat}
+            isConciergeChat={isConcierge}
           />
         );
       }
@@ -1407,31 +1468,49 @@ export default function ChatThreadScreen() {
 
         <TouchableOpacity
           style={styles.headerCenter}
-          onPress={handleHeaderPress}
-          activeOpacity={0.7}
+          onPress={isConcierge ? undefined : handleHeaderPress}
+          activeOpacity={isConcierge ? 1 : 0.7}
+          disabled={isConcierge}
         >
           <View style={styles.headerAvatarContainer}>
-            <Avatar uri={channelInfo?.otherMember?.image} size={40} colors={colors} />
-            {channelInfo?.isOnline && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
+            {isConcierge ? (
+              <View style={styles.conciergeHeaderAvatar}>
+                <Ionicons name="sparkles" size={18} color="#fff" />
+              </View>
+            ) : (
+              <Avatar uri={channelInfo?.otherMember?.image} size={40} colors={colors} />
+            )}
+            {!isConcierge && channelInfo?.isOnline && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
           </View>
           <View style={styles.headerInfo}>
-            <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-              {channelInfo?.name || 'Chat'}
-            </Text>
+            <View style={styles.headerNameRow}>
+              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
+                {channelInfo?.name || 'Chat'}
+              </Text>
+              {channelInfo?.otherMember?.isVerified && (
+                <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+              )}
+            </View>
             <Text style={[styles.headerStatus, { color: colors.textSecondary }]}>
-              {channelInfo?.type === 'group'
-                ? `${channelInfo.memberCount} members`
-                : channelInfo?.isOnline ? 'Active now' : 'Tap to view profile'}
+              {isConcierge
+                ? 'AI Assistant'
+                : channelInfo?.type === 'group'
+                  ? `${channelInfo.memberCount} members`
+                  : channelInfo?.isOnline ? 'Active now' : 'Tap to view profile'}
             </Text>
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.headerRight} onPress={() => handleStartCall(false)}>
-          <Ionicons name="call-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.headerRight} onPress={() => handleStartCall(true)}>
-          <Ionicons name="videocam-outline" size={26} color={colors.text} />
-        </TouchableOpacity>
+        {!isConcierge && (
+          <>
+            <TouchableOpacity style={styles.headerRight} onPress={() => handleStartCall(false)}>
+              <Ionicons name="call-outline" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.headerRight} onPress={() => handleStartCall(true)}>
+              <Ionicons name="videocam-outline" size={26} color={colors.text} />
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {/* Messages */}
@@ -1460,7 +1539,7 @@ export default function ChatThreadScreen() {
           inverted={false}
           ListEmptyComponent={<EmptyChat userName={channelInfo?.name} colors={colors} />}
           ListFooterComponent={
-            isTyping ? <TypingIndicator visible={isTyping} userName={channelInfo?.name} colors={colors} isDark={isDark} /> : null
+            isTyping ? <TypingIndicator visible={isTyping} isConcierge={isConcierge} avatarUri={channelInfo?.otherMember?.image} colors={colors} isDark={isDark} /> : null
           }
         />
 
@@ -1666,6 +1745,16 @@ const styles = StyleSheet.create({
   headerAvatarContainer: {
     position: 'relative',
   },
+  conciergeHeaderAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1a1a2e',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerAvatar: {
     width: 40,
     height: 40,
@@ -1685,6 +1774,11 @@ const styles = StyleSheet.create({
   headerInfo: {
     marginLeft: 12,
     flex: 1,
+  },
+  headerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   headerTitle: {
     fontSize: 16,
@@ -1941,31 +2035,35 @@ const styles = StyleSheet.create({
   // Typing indicator
   typingContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    marginLeft: 36,
+    gap: 8,
   },
   typingBubble: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.06)',
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 5,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
   },
   typingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  typingText: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.45)',
-    marginLeft: 8,
+  typingConciergeAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#1a1a2e',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // Composer
   composerContainer: {

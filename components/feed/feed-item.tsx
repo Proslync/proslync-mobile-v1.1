@@ -235,7 +235,7 @@ export function FeedItem({
               <Text style={[styles.organizerName, { color: colors.text }]} numberOfLines={1}>
                 {item.username}
               </Text>
-              <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+              {item.verified && <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />}
             </View>
           </TouchableOpacity>
 

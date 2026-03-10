@@ -9,9 +9,12 @@ import {
   DetailsStep,
   PricingStep,
 } from '@/components/event-form';
+import { ArtistFormModal } from '@/components/artists/artist-form-modal';
 import { useCreateEvent, useEventForm } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
+import { artistsApi } from '@/lib/api/artists';
+import type { CreateEventArtistRequest } from '@/lib/types/artists.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
@@ -106,6 +109,19 @@ export default function CreateEventScreen() {
   const { form, canSubmit, isPaid } = useEventForm();
   const createEvent = useCreateEvent();
 
+  // Artists local state (created after event)
+  const [pendingArtists, setPendingArtists] = React.useState<CreateEventArtistRequest[]>([]);
+  const [showArtistModal, setShowArtistModal] = React.useState(false);
+
+  const handleAddArtist = React.useCallback((data: CreateEventArtistRequest) => {
+    setPendingArtists((prev) => [...prev, data]);
+    setShowArtistModal(false);
+  }, []);
+
+  const handleRemoveArtist = React.useCallback((index: number) => {
+    setPendingArtists((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   // Final submit handler
   const onSubmit = (data: EventFormData) => {
     const parsedData = parseEventFormData(data);
@@ -116,7 +132,15 @@ export default function CreateEventScreen() {
         shouldPublish: true,
       },
       {
-        onSuccess: ({ event }) => {
+        onSuccess: async ({ event }) => {
+          // Create artists if any were added
+          for (const artist of pendingArtists) {
+            try {
+              await artistsApi.createEventArtist(event.id, artist);
+            } catch (err) {
+              console.warn('Failed to create artist:', err);
+            }
+          }
           showSuccess('Event created successfully!');
           router.replace(`/event/${event.id}`);
         },
@@ -193,7 +217,50 @@ export default function CreateEventScreen() {
                 <PricingStep />
               </>
             )}
+            <View style={styles.divider} />
+            {/* Artists Section */}
+            <View style={sectionStyles.section}>
+              <Text style={[sectionStyles.sectionTitle, { color: colors.text }]}>Artists</Text>
+              <Text style={[sectionStyles.sectionSubtitle, { color: colors.textTertiary }]}>
+                Add performers to your event lineup
+              </Text>
+              {pendingArtists.map((artist, index) => (
+                <View
+                  key={index}
+                  style={[styles.artistRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}
+                >
+                  <Ionicons name="musical-notes-outline" size={18} color={colors.textSecondary} />
+                  <View style={styles.artistInfo}>
+                    <Text style={[styles.artistName, { color: colors.text }]} numberOfLines={1}>
+                      {artist.userName || artist.phoneNumber}
+                    </Text>
+                    {artist.description ? (
+                      <Text style={[styles.artistDesc, { color: colors.textTertiary }]} numberOfLines={1}>
+                        {artist.description}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <TouchableOpacity onPress={() => handleRemoveArtist(index)} activeOpacity={0.7}>
+                    <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+              <TouchableOpacity
+                style={[styles.addArtistBtn, { borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }]}
+                onPress={() => setShowArtistModal(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add" size={18} color={colors.textSecondary} />
+                <Text style={[styles.addArtistText, { color: colors.textSecondary }]}>Add Artist</Text>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
+
+          <ArtistFormModal
+            visible={showArtistModal}
+            onClose={() => setShowArtistModal(false)}
+            onSubmitCreate={handleAddArtist}
+          />
 
           {/* Bottom Actions */}
           <View
@@ -286,5 +353,41 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+  artistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  artistInfo: {
+    flex: 1,
+  },
+  artistName: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+  },
+  artistDesc: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 2,
+  },
+  addArtistBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    paddingVertical: 14,
+  },
+  addArtistText: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
   },
 });

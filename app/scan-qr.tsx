@@ -25,12 +25,6 @@ import Animated, {
   FadeIn,
   FadeInUp,
   FadeOutDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  withSequence,
-  Easing,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 import { usePaymentSheet } from '@stripe/stripe-react-native';
@@ -323,23 +317,6 @@ export default function ScannerScreen() {
     };
   }, []);
 
-
-  const scanLinePosition = useSharedValue(0);
-
-  React.useEffect(() => {
-    scanLinePosition.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 2000, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      false
-    );
-  }, []);
-
-  const scanLineStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: scanLinePosition.value * (SCAN_FRAME_SIZE - 4) }],
-  }));
 
 
   const handleMembershipScan = React.useCallback((data: string) => {
@@ -807,14 +784,6 @@ export default function ScannerScreen() {
             <View style={[styles.corner, styles.cornerTR]} />
             <View style={[styles.corner, styles.cornerBL]} />
             <View style={[styles.corner, styles.cornerBR]} />
-            <Animated.View style={[styles.scanLine, scanLineStyle]}>
-              <LinearGradient
-                colors={['transparent', '#10b981', 'transparent']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.scanLineGradient}
-              />
-            </Animated.View>
           </View>
         </View>
       )}
@@ -1126,8 +1095,6 @@ const styles = StyleSheet.create({
   cornerTR: { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3, borderTopRightRadius: 16 },
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 16 },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 16 },
-  scanLine: { position: 'absolute', left: 16, right: 16, height: 2 },
-  scanLineGradient: { flex: 1, borderRadius: 1 },
 
   header: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
   headerButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
