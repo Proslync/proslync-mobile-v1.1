@@ -47,4 +47,5 @@ app-example
 # Local Claude context
 CLAUDE.local.md
 
-/docs/*
+# Docs symlink (local — recreated by scripts/setup-docs.sh)
+/docs

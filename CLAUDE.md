@@ -1,4 +1,25 @@
-# Status App — Project Rules
+# Status App — Frontend
+
+## Documentation
+
+`docs/` is symlinked to the Obsidian vault. Search docs before guessing:
+```
+Grep pattern="<search term>" path="docs/" glob="*.md"
+```
+
+### AI Skills — Read Before Coding
+
+| Task | Read This First |
+|------|----------------|
+| Frontend code (screens, components, hooks) | `docs/AI Skills/Frontend Feature.md` |
+| Fixing bugs | `docs/AI Skills/Debugging.md` |
+| Reviewing code | `docs/AI Skills/Code Review.md` |
+
+After reading the skill, follow its **Consult** section, then its **Checklist**.
+
+---
+
+# Project Rules
 
 ## Design Language
 - UI palette: **liquid glass, white, and black only**
