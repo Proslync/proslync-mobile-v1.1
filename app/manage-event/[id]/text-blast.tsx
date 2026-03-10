@@ -25,10 +25,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TextBlastAudience, TextBlastResponse } from '@/lib/types/text-blast.types';
 
 const AUDIENCES: { key: TextBlastAudience; label: string }[] = [
-  { key: 'all', label: 'All Guests' },
-  { key: 'checked_in', label: 'Checked In' },
-  { key: 'verified', label: 'Verified' },
-  { key: 'pending', label: 'Pending' },
+  { key: 'my_list', label: 'My List' },
+  { key: 'all', label: 'This Event' },
 ];
 
 function formatTime(dateStr: string): string {
@@ -67,7 +65,7 @@ export default function TextBlastScreen() {
   const { canSendMarketing, canViewMarketing } = useEventPermissions(eventId || undefined);
 
   const [message, setMessage] = useState('');
-  const [audience, setAudience] = useState<TextBlastAudience>('all');
+  const [audience, setAudience] = useState<TextBlastAudience>('my_list');
   const [showAudiencePicker, setShowAudiencePicker] = useState(false);
 
   const { data: recipientData, error: recipientError } = useRecipientCount(eventId, audience);

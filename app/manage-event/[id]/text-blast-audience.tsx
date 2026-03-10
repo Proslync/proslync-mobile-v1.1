@@ -25,28 +25,16 @@ const AUDIENCE_OPTIONS: {
   icon: keyof typeof Ionicons.glyphMap;
 }[] = [
   {
+    key: 'my_list',
+    label: 'My List',
+    description: 'Guests you added to your list',
+    icon: 'list-outline',
+  },
+  {
     key: 'all',
-    label: 'All Guests',
-    description: 'Everyone on your guest list',
+    label: 'This Event',
+    description: "Everyone RSVP'd to this event",
     icon: 'people-outline',
-  },
-  {
-    key: 'checked_in',
-    label: 'Checked In',
-    description: 'Only guests who checked in',
-    icon: 'checkmark-circle-outline',
-  },
-  {
-    key: 'verified',
-    label: 'Verified',
-    description: 'Only verified guests',
-    icon: 'shield-checkmark-outline',
-  },
-  {
-    key: 'pending',
-    label: 'Pending',
-    description: 'Only pending guests',
-    icon: 'time-outline',
   },
 ];
 
@@ -59,7 +47,7 @@ export default function TextBlastAudienceScreen() {
   const eventId = id ? Number(id) : 0;
   const messageText = messageParam || '';
 
-  const [selectedAudience, setSelectedAudience] = useState<TextBlastAudience>('all');
+  const [selectedAudience, setSelectedAudience] = useState<TextBlastAudience>('my_list');
   const [successAlert, setSuccessAlert] = useState(false);
 
   const { data: recipientData, isLoading: countLoading } = useRecipientCount(

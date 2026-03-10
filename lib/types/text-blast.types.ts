@@ -1,4 +1,4 @@
-export type TextBlastAudience = 'all' | 'checked_in' | 'verified' | 'pending';
+export type TextBlastAudience = 'all' | 'my_list' | 'checked_in' | 'verified' | 'pending';
 
 export interface TextBlastResponse {
   id: number;
