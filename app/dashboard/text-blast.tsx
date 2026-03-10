@@ -4,7 +4,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -12,22 +11,18 @@ import {
   View,
 } from 'react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import {
-  useTextBlasts,
-  useRecipientCount,
-  useEventPermissions,
+  useCrossEventTextBlasts,
+  useCrossEventRecipientCount,
+  useSendCrossEventBlast,
 } from '@/hooks';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { TextBlastAudience, TextBlastResponse } from '@/lib/types/text-blast.types';
-
-const AUDIENCES: { key: TextBlastAudience; label: string }[] = [
-  { key: 'my_list', label: 'My List' },
-  { key: 'all', label: 'This Event' },
-];
+import type { TextBlastResponse } from '@/lib/types/text-blast.types';
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleTimeString([], {
@@ -49,35 +44,20 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function audienceLabel(filter: string): string {
-  if (filter === 'all_contacts') return 'All Contacts';
-  const found = AUDIENCES.find((a) => a.key === filter);
-  return found ? found.label : 'All Guests';
-}
-
-export default function TextBlastScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function DashboardTextBlastScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const flatListRef = useRef<FlatList>(null);
 
-  const eventId = id ? Number(id) : 0;
-  const { canSendMarketing, canViewMarketing } = useEventPermissions(eventId || undefined);
-
   const [message, setMessage] = useState('');
-  const [audience, setAudience] = useState<TextBlastAudience>('my_list');
-  const [showAudiencePicker, setShowAudiencePicker] = useState(false);
+  const [successAlert, setSuccessAlert] = useState(false);
 
-  const { data: recipientData, error: recipientError } = useRecipientCount(eventId, audience);
-  const { data: blasts = [], isLoading } = useTextBlasts(eventId);
+  const { data: recipientData, isLoading: countLoading } = useCrossEventRecipientCount();
+  const { data: blasts = [], isLoading } = useCrossEventTextBlasts();
+  const sendMutation = useSendCrossEventBlast();
 
   const recipientCount = recipientData?.count ?? 0;
-
-  // Debug: log recipient count errors
-  if (recipientError) {
-    console.warn('Text blast recipient count error:', recipientError);
-  }
 
   // Sort blasts oldest first (chat style)
   const sortedBlasts = [...blasts].sort(
@@ -85,11 +65,16 @@ export default function TextBlastScreen() {
   );
 
   const handleSend = () => {
-    if (!message.trim()) return;
-    router.push({
-      pathname: '/manage-event/[id]/text-blast-audience',
-      params: { id: String(eventId), message: message.trim() },
-    });
+    if (!message.trim() || recipientCount === 0) return;
+    sendMutation.mutate(
+      { message: message.trim() },
+      {
+        onSuccess: () => {
+          setMessage('');
+          setSuccessAlert(true);
+        },
+      },
+    );
   };
 
   const renderBlastBubble = ({ item }: { item: TextBlastResponse }) => (
@@ -100,7 +85,7 @@ export default function TextBlastScreen() {
         </View>
         <View style={styles.bubbleMeta}>
           <View style={styles.audienceBadge}>
-            <Text style={styles.audienceBadgeText}>{audienceLabel(item.audienceFilter)}</Text>
+            <Text style={styles.audienceBadgeText}>All Contacts</Text>
           </View>
           <Text style={[styles.timeText, { color: colors.textTertiary }]}>
             {formatTime(item.createdAt)}
@@ -140,7 +125,7 @@ export default function TextBlastScreen() {
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Text Blast</Text>
           <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>
-            SMS to event guests
+            SMS to all your contacts
           </Text>
         </View>
         <View style={styles.headerButton} />
@@ -173,7 +158,7 @@ export default function TextBlastScreen() {
                   No messages yet
                 </Text>
                 <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
-                  Send your first blast to event guests
+                  Send your first blast to all your contacts
                 </Text>
               </View>
             }
@@ -181,98 +166,64 @@ export default function TextBlastScreen() {
         )}
 
         {/* Composer */}
-        {canSendMarketing() && (
-          <View style={[styles.composerContainer, { paddingBottom: insets.bottom + 8 }]}>
-            {/* Audience Selector */}
-            {showAudiencePicker && (
-              <View style={styles.audiencePickerRow}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.audienceChipRow}
-                >
-                  {AUDIENCES.map((a) => {
-                    const isSelected = audience === a.key;
-                    return (
-                      <TouchableOpacity
-                        key={a.key}
-                        onPress={() => {
-                          setAudience(a.key);
-                          setShowAudiencePicker(false);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <View
-                          style={[
-                            styles.audienceChip,
-                            isSelected && styles.audienceChipSelected,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.audienceChipText,
-                              isSelected && styles.audienceChipTextSelected,
-                            ]}
-                          >
-                            {a.label}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              </View>
+        <View style={[styles.composerContainer, { paddingBottom: insets.bottom + 8 }]}>
+          {/* Recipient Count Pill */}
+          <View style={styles.audiencePill}>
+            <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.6)" />
+            {countLoading ? (
+              <ActivityIndicator size="small" color="rgba(255,255,255,0.6)" />
+            ) : (
+              <Text style={styles.audiencePillText}>
+                All Contacts ({recipientCount})
+              </Text>
             )}
+          </View>
 
-            {/* Audience Pill + Composer Row */}
+          <View style={styles.inputRow}>
+            <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="Type your message..."
+                placeholderTextColor={colors.textTertiary}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                maxLength={1600}
+              />
+              {message.length > 0 && (
+                <Text style={[styles.charCount, { color: colors.textTertiary }]}>
+                  {message.length}/1600
+                </Text>
+              )}
+            </View>
             <TouchableOpacity
-              style={styles.audiencePill}
-              onPress={() => setShowAudiencePicker(!showAudiencePicker)}
+              style={[
+                styles.sendButton,
+                (!message.trim() || recipientCount === 0 || sendMutation.isPending) &&
+                  styles.sendButtonDisabled,
+              ]}
+              onPress={handleSend}
+              disabled={!message.trim() || recipientCount === 0 || sendMutation.isPending}
               activeOpacity={0.7}
             >
-              <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.6)" />
-              <Text style={styles.audiencePillText}>
-                {audienceLabel(audience)} ({recipientCount})
-              </Text>
-              <Ionicons
-                name={showAudiencePicker ? 'chevron-down' : 'chevron-up'}
-                size={14}
-                color="rgba(255,255,255,0.4)"
-              />
-            </TouchableOpacity>
-
-            <View style={styles.inputRow}>
-              <View style={[styles.inputContainer, { borderColor: colors.border }]}>
-                <TextInput
-                  style={[styles.textInput, { color: colors.text }]}
-                  placeholder="Type your message..."
-                  placeholderTextColor={colors.textTertiary}
-                  value={message}
-                  onChangeText={setMessage}
-                  multiline
-                  maxLength={1600}
-                />
-                {message.length > 0 && (
-                  <Text style={[styles.charCount, { color: colors.textTertiary }]}>
-                    {message.length}/1600
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity
-                style={[
-                  styles.sendButton,
-                  !message.trim() && styles.sendButtonDisabled,
-                ]}
-                onPress={handleSend}
-                disabled={!message.trim()}
-                activeOpacity={0.7}
-              >
+              {sendMutation.isPending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
                 <Ionicons name="send" size={18} color="#fff" />
-              </TouchableOpacity>
-            </View>
+              )}
+            </TouchableOpacity>
           </View>
-        )}
+        </View>
       </KeyboardAvoidingView>
+
+      <ConfirmModal
+        visible={successAlert}
+        onClose={() => setSuccessAlert(false)}
+        title="Blast Sent"
+        message="Your message has been queued for delivery."
+        alertOnly
+        icon="checkmark-circle-outline"
+      />
     </View>
   );
 }
@@ -301,7 +252,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 15, fontFamily: 'Lato_700Bold' },
   emptySubtext: { fontSize: 13, fontFamily: 'Lato_400Regular' },
 
-  // Message bubble (right-aligned like own messages)
+  // Message bubble
   bubbleRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -358,30 +309,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.08)',
     paddingTop: 8,
     paddingHorizontal: 12,
-  },
-  audiencePickerRow: {
-    marginBottom: 8,
-  },
-  audienceChipRow: { gap: 8 },
-  audienceChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  audienceChipSelected: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  audienceChipText: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
-  },
-  audienceChipTextSelected: {
-    color: '#fff',
   },
   audiencePill: {
     flexDirection: 'row',

@@ -261,6 +261,13 @@ export default function DashboardScreen() {
               colors={colors}
             />
             <MenuItem
+              title="Text Blast"
+              subtitle="SMS to all your contacts"
+              icon="chatbubble-outline"
+              onPress={() => router.push("/dashboard/text-blast")}
+              colors={colors}
+            />
+            <MenuItem
               title="Wallet"
               subtitle="View earnings and payouts"
               icon="wallet-outline"

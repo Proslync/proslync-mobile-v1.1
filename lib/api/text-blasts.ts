@@ -3,11 +3,13 @@ import type {
   TextBlastResponse,
   SendTextBlastRequest,
   SendTextBlastResponse,
+  SendCrossEventBlastRequest,
   RecipientCountResponse,
   TextBlastAudience,
 } from '../types/text-blast.types';
 
 export const textBlastsApi = {
+  // Per-event text blasts
   sendTextBlast: async (
     eventId: number,
     data: SendTextBlastRequest,
@@ -39,6 +41,23 @@ export const textBlastsApi = {
   ): Promise<RecipientCountResponse> => {
     return apiClient.get<RecipientCountResponse>(
       `/api/events/${eventId}/text-blasts/recipient-count?audience=${audience}`,
+    );
+  },
+
+  // Cross-event text blasts
+  sendCrossEventBlast: async (
+    data: SendCrossEventBlastRequest,
+  ): Promise<SendTextBlastResponse> => {
+    return apiClient.post<SendTextBlastResponse>('/api/text-blasts', data);
+  },
+
+  getCrossEventBlasts: async (): Promise<TextBlastResponse[]> => {
+    return apiClient.get<TextBlastResponse[]>('/api/text-blasts');
+  },
+
+  getCrossEventRecipientCount: async (): Promise<RecipientCountResponse> => {
+    return apiClient.get<RecipientCountResponse>(
+      '/api/text-blasts/recipient-count',
     );
   },
 };

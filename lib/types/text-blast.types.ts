@@ -1,8 +1,14 @@
-export type TextBlastAudience = 'all' | 'my_list' | 'checked_in' | 'verified' | 'pending';
+export type TextBlastAudience =
+  | 'all'
+  | 'my_list'
+  | 'checked_in'
+  | 'verified'
+  | 'pending'
+  | 'all_contacts';
 
 export interface TextBlastResponse {
   id: number;
-  eventId: number;
+  eventId: number | null;
   message: string;
   recipientCount: number;
   batchId: string | null;
@@ -17,6 +23,10 @@ export interface TextBlastResponse {
 export interface SendTextBlastRequest {
   message: string;
   audience?: TextBlastAudience;
+}
+
+export interface SendCrossEventBlastRequest {
+  message: string;
 }
 
 export interface SendTextBlastResponse {

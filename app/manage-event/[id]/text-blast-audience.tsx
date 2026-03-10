@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -8,7 +9,6 @@ import {
 } from 'react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
-import { GlassButton } from '@/components/glass/glass-button';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRecipientCount, useSendTextBlast } from '@/hooks';
@@ -33,7 +33,7 @@ const AUDIENCE_OPTIONS: {
   {
     key: 'all',
     label: 'This Event',
-    description: "Everyone RSVP'd to this event",
+    description: 'All RSVPs, ticket holders, and check-ins',
     icon: 'people-outline',
   },
 ];
@@ -69,6 +69,8 @@ export default function TextBlastAudienceScreen() {
     );
   };
 
+  const canSend = messageText.trim().length > 0 && recipientCount > 0 && !sendMutation.isPending;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
@@ -85,7 +87,12 @@ export default function TextBlastAudienceScreen() {
         <View style={styles.headerButton} />
       </Animated.View>
 
-      <View style={[styles.body, { paddingBottom: insets.bottom + 24 }]}>
+      {/* Scrollable Content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Message Preview */}
         <Animated.View entering={FadeInDown.duration(300)} style={styles.previewSection}>
           <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>Your message</Text>
@@ -154,24 +161,35 @@ export default function TextBlastAudienceScreen() {
             </Text>
           )}
         </Animated.View>
+      </ScrollView>
 
-        {/* Send Button */}
-        <View style={styles.sendSection}>
-          <GlassButton
-            label={
-              sendMutation.isPending
-                ? 'Sending...'
-                : `Send to ${recipientCount} ${recipientCount === 1 ? 'guest' : 'guests'}`
-            }
-            icon="send-outline"
-            variant="glass"
-            size="lg"
-            fullWidth
-            onPress={handleSend}
-            disabled={!messageText.trim() || recipientCount === 0 || sendMutation.isPending}
-            loading={sendMutation.isPending}
-          />
-        </View>
+      {/* Fixed Bottom Send Button */}
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            paddingBottom: insets.bottom + 16,
+            borderTopColor: colors.border,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          style={[styles.sendButton, !canSend && styles.sendButtonDisabled]}
+          onPress={handleSend}
+          disabled={!canSend}
+          activeOpacity={0.8}
+        >
+          {sendMutation.isPending ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Ionicons name="send" size={18} color="#fff" />
+              <Text style={styles.sendButtonText}>
+                Send to {recipientCount} {recipientCount === 1 ? 'guest' : 'guests'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
       </View>
 
       <ConfirmModal
@@ -201,10 +219,8 @@ const styles = StyleSheet.create({
   },
   headerButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerTitle: { fontSize: 18, fontFamily: 'Lato_700Bold' },
-  body: {
-    flex: 1,
-    padding: 16,
-  },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: 16 },
   previewSection: {
     marginBottom: 24,
   },
@@ -267,13 +283,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginTop: 8,
-    marginBottom: 24,
   },
   recipientText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
   },
-  sendSection: {
-    marginTop: 'auto',
+  bottomBar: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+  },
+  sendButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#007AFF',
+  },
+  sendButtonDisabled: {
+    opacity: 0.4,
+  },
+  sendButtonText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
   },
 });

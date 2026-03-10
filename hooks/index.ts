@@ -171,6 +171,13 @@ export {
   TEXT_BLASTS_KEY,
   RECIPIENT_COUNT_KEY,
 } from './use-text-blasts';
+export {
+  useCrossEventTextBlasts,
+  useCrossEventRecipientCount,
+  useSendCrossEventBlast,
+  CROSS_EVENT_BLASTS_KEY,
+  CROSS_EVENT_RECIPIENT_COUNT_KEY,
+} from './use-cross-event-text-blasts';
 
 // Venue Menu hooks
 export {
