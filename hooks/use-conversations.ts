@@ -125,6 +125,53 @@ export function useUnpinConversation() {
   });
 }
 
+export function useAddMembers() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ conversationId, memberIds }: { conversationId: string; memberIds: number[] }) =>
+      chatApi.addMembers(conversationId, memberIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    },
+  });
+}
+
+export function useRemoveMember() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ conversationId, userId }: { conversationId: string; userId: number }) =>
+      chatApi.removeMember(conversationId, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    },
+  });
+}
+
+export function useLeaveConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationId: string) => chatApi.leaveConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    },
+  });
+}
+
+export function useUpdateConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ conversationId, data }: { conversationId: string; data: { name?: string; imageUrl?: string } }) =>
+      chatApi.updateConversation(conversationId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    },
+  });
+}
+
 export function useEnsureConcierge() {
   const queryClient = useQueryClient();
 

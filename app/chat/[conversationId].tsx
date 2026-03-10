@@ -16,6 +16,7 @@ import {
   Dimensions,
   Pressable,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
@@ -38,12 +39,14 @@ import Animated, {
   FadeInDown,
   FadeOut,
 } from 'react-native-reanimated';
-import { useConversation, type ChatMessage } from '@/hooks/use-conversation';
+import { useConversation, type ChatMessage, type ChannelMember } from '@/hooks/use-conversation';
 import { useCall } from '@/lib/providers/call-provider';
+import { useRemoveMember, useLeaveConversation, useUpdateConversation } from '@/hooks/use-conversations';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { MiniEventCard } from '@/components/chat/mini-event-card';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
+import { useAuth } from '@/lib/providers/auth-provider';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.75;
@@ -1146,6 +1149,15 @@ export default function ChatThreadScreen() {
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [removeMemberTarget, setRemoveMemberTarget] = useState<ChannelMember | null>(null);
+  const [isEditingGroupName, setIsEditingGroupName] = useState(false);
+  const [editGroupName, setEditGroupName] = useState('');
+
+  const { user } = useAuth();
+  const removeMemberMutation = useRemoveMember();
+  const leaveConversationMutation = useLeaveConversation();
+  const updateConversationMutation = useUpdateConversation();
 
   const {
     messages,
@@ -1398,6 +1410,53 @@ export default function ChatThreadScreen() {
   const handleBlock = useCallback(() => {
     setShowBlockConfirm(true);
   }, []);
+
+  const handleRemoveMember = useCallback(async () => {
+    if (!removeMemberTarget || !conversationId) return;
+    try {
+      await removeMemberMutation.mutateAsync({
+        conversationId,
+        userId: removeMemberTarget.id,
+      });
+    } catch {
+      // Silently fail — mutation invalidation handles UI
+    }
+    setRemoveMemberTarget(null);
+  }, [removeMemberTarget, conversationId, removeMemberMutation]);
+
+  const handleLeaveGroup = useCallback(async () => {
+    if (!conversationId) return;
+    try {
+      await leaveConversationMutation.mutateAsync(conversationId);
+      setShowChatInfo(false);
+      setShowLeaveConfirm(false);
+      router.back();
+    } catch {
+      // Silently fail
+    }
+  }, [conversationId, leaveConversationMutation, router]);
+
+  const handleSaveGroupName = useCallback(async () => {
+    if (!conversationId || !editGroupName.trim()) return;
+    try {
+      await updateConversationMutation.mutateAsync({
+        conversationId,
+        data: { name: editGroupName.trim() },
+      });
+      setIsEditingGroupName(false);
+    } catch {
+      // Silently fail
+    }
+  }, [conversationId, editGroupName, updateConversationMutation]);
+
+  const handleMemberPress = useCallback((member: ChannelMember) => {
+    if (member.id === user?.id) return;
+    setShowChatInfo(false);
+    router.push({
+      pathname: '/user-profile/[userId]',
+      params: { userId: String(member.id) },
+    });
+  }, [user?.id, router]);
 
   const handleLongPressMessage = useCallback(
     (message: ChatMessage) => {
@@ -1719,40 +1778,171 @@ export default function ChatThreadScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Avatar + Name */}
-          <View style={styles.chatInfoProfile}>
-            <View style={styles.chatInfoAvatarWrapper}>
-              <Avatar uri={channelInfo?.otherMember?.image} size={100} colors={colors} />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Avatar + Name */}
+            <View style={styles.chatInfoProfile}>
+              <View style={styles.chatInfoAvatarWrapper}>
+                {isGroupChat ? (
+                  <View style={[styles.chatInfoGroupAvatar, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+                    <Ionicons name="people" size={40} color={colors.textSecondary} />
+                  </View>
+                ) : (
+                  <Avatar uri={channelInfo?.otherMember?.image} size={100} colors={colors} />
+                )}
+              </View>
+              {isEditingGroupName ? (
+                <View style={styles.chatInfoEditNameRow}>
+                  <TextInput
+                    style={[styles.chatInfoEditNameInput, { color: colors.text, borderColor: colors.border }]}
+                    value={editGroupName}
+                    onChangeText={setEditGroupName}
+                    autoFocus
+                    returnKeyType="done"
+                    onSubmitEditing={handleSaveGroupName}
+                    placeholder="Group name"
+                    placeholderTextColor={colors.textTertiary}
+                  />
+                  <TouchableOpacity onPress={handleSaveGroupName} style={styles.chatInfoEditNameSave}>
+                    <Ionicons name="checkmark-circle" size={28} color={colors.text} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setIsEditingGroupName(false)} style={styles.chatInfoEditNameSave}>
+                    <Ionicons name="close-circle" size={28} color={colors.textTertiary} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={isGroupChat ? () => { setEditGroupName(channelInfo?.name || ''); setIsEditingGroupName(true); } : undefined}
+                  activeOpacity={isGroupChat ? 0.7 : 1}
+                  style={styles.chatInfoNameRow}
+                >
+                  <Text style={[styles.chatInfoName, { color: colors.text }]}>
+                    {channelInfo?.name || 'Chat'}
+                  </Text>
+                  {isGroupChat && (
+                    <Ionicons name="pencil" size={16} color={colors.textTertiary} style={{ marginLeft: 6 }} />
+                  )}
+                </TouchableOpacity>
+              )}
+              {isGroupChat && (
+                <Text style={[styles.chatInfoSubtitle, { color: colors.textSecondary }]}>
+                  {channelInfo?.memberCount} members
+                </Text>
+              )}
             </View>
-            <Text style={[styles.chatInfoName, { color: colors.text }]}>
-              {channelInfo?.name || 'User'}
-            </Text>
-          </View>
 
-          {/* Action buttons row */}
-          <View style={styles.chatInfoActions}>
-            <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleGoToProfile} activeOpacity={0.7}>
-              <View style={[styles.chatInfoActionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-                <Ionicons name="person-outline" size={22} color={colors.text} />
-              </View>
-              <Text style={[styles.chatInfoActionLabel, { color: colors.text }]}>Profile</Text>
-            </TouchableOpacity>
+            {/* Action buttons row */}
+            <View style={styles.chatInfoActions}>
+              {!isGroupChat && (
+                <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleGoToProfile} activeOpacity={0.7}>
+                  <View style={[styles.chatInfoActionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+                    <Ionicons name="person-outline" size={22} color={colors.text} />
+                  </View>
+                  <Text style={[styles.chatInfoActionLabel, { color: colors.text }]}>Profile</Text>
+                </TouchableOpacity>
+              )}
 
-            <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleMuteToggle} activeOpacity={0.7}>
-              <View style={[styles.chatInfoActionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-                <Ionicons name={isMuted ? 'notifications-off' : 'notifications-outline'} size={22} color={colors.text} />
-              </View>
-              <Text style={[styles.chatInfoActionLabel, { color: colors.text }]}>{isMuted ? 'Unmute' : 'Mute'}</Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleMuteToggle} activeOpacity={0.7}>
+                <View style={[styles.chatInfoActionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
+                  <Ionicons name={isMuted ? 'notifications-off' : 'notifications-outline'} size={22} color={colors.text} />
+                </View>
+                <Text style={[styles.chatInfoActionLabel, { color: colors.text }]}>{isMuted ? 'Unmute' : 'Mute'}</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleBlock} activeOpacity={0.7}>
-              <View style={[styles.chatInfoActionIcon, { backgroundColor: 'rgba(255,59,48,0.12)' }]}>
-                <Ionicons name="ban-outline" size={22} color="#FF3B30" />
+              {!isGroupChat && (
+                <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleBlock} activeOpacity={0.7}>
+                  <View style={[styles.chatInfoActionIcon, { backgroundColor: 'rgba(255,59,48,0.12)' }]}>
+                    <Ionicons name="ban-outline" size={22} color="#FF3B30" />
+                  </View>
+                  <Text style={[styles.chatInfoActionLabel, { color: '#FF3B30' }]}>Block</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Group Members */}
+            {isGroupChat && channelInfo?.members && (
+              <View style={[styles.chatInfoSection, { borderTopColor: colors.border }]}>
+                <Text style={[styles.chatInfoSectionTitle, { color: colors.textTertiary }]}>
+                  Members
+                </Text>
+                {channelInfo.members.map((member) => {
+                  const isSelf = member.id === user?.id;
+                  return (
+                    <TouchableOpacity
+                      key={member.id}
+                      style={styles.chatInfoMemberRow}
+                      onPress={() => handleMemberPress(member)}
+                      activeOpacity={isSelf ? 1 : 0.7}
+                    >
+                      <Avatar uri={member.image} size={44} colors={colors} />
+                      <View style={styles.chatInfoMemberInfo}>
+                        <View style={styles.chatInfoMemberNameRow}>
+                          <Text style={[styles.chatInfoMemberName, { color: colors.text }]} numberOfLines={1}>
+                            {member.name}{isSelf ? ' (You)' : ''}
+                          </Text>
+                          {member.isVerified && (
+                            <MaterialCommunityIcons name="check-decagram" size={14} color={colors.verified} style={{ marginLeft: 4 }} />
+                          )}
+                        </View>
+                        {member.userName && (
+                          <Text style={[styles.chatInfoMemberUsername, { color: colors.textTertiary }]} numberOfLines={1}>
+                            @{member.userName}
+                          </Text>
+                        )}
+                      </View>
+                      {!isSelf && user?.id === channelInfo?.createdById && (
+                        <TouchableOpacity
+                          style={styles.chatInfoMemberAction}
+                          onPress={() => setRemoveMemberTarget(member)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Ionicons name="person-remove-outline" size={18} color="#FF3B30" />
+                        </TouchableOpacity>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-              <Text style={[styles.chatInfoActionLabel, { color: '#FF3B30' }]}>Block</Text>
-            </TouchableOpacity>
-          </View>
+            )}
+
+            {/* Leave Group */}
+            {isGroupChat && (
+              <View style={[styles.chatInfoSection, { borderTopColor: colors.border }]}>
+                <TouchableOpacity
+                  style={styles.chatInfoDangerRow}
+                  onPress={() => setShowLeaveConfirm(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="exit-outline" size={22} color="#FF3B30" />
+                  <Text style={styles.chatInfoDangerText}>Leave Group</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
         </View>
+
+        {/* Remove member confirm */}
+        <ConfirmModal
+          visible={!!removeMemberTarget}
+          onClose={() => setRemoveMemberTarget(null)}
+          onConfirm={handleRemoveMember}
+          title="Remove Member"
+          message={`Remove ${removeMemberTarget?.name} from this group?`}
+          confirmLabel="Remove"
+          destructive
+          icon="person-remove-outline"
+        />
+
+        {/* Leave group confirm */}
+        <ConfirmModal
+          visible={showLeaveConfirm}
+          onClose={() => setShowLeaveConfirm(false)}
+          onConfirm={handleLeaveGroup}
+          title="Leave Group"
+          message="Are you sure you want to leave this group? You won't receive messages from this conversation anymore."
+          confirmLabel="Leave"
+          destructive
+          icon="exit-outline"
+        />
       </Modal>
     </View>
   );
@@ -2474,5 +2664,89 @@ const styles = StyleSheet.create({
   chatInfoActionLabel: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
+  },
+  chatInfoGroupAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatInfoNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chatInfoSubtitle: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 4,
+  },
+  chatInfoEditNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  chatInfoEditNameInput: {
+    flex: 1,
+    fontSize: 18,
+    fontFamily: 'Lato_400Regular',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  chatInfoEditNameSave: {
+    padding: 4,
+  },
+  chatInfoSection: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderTopWidth: 1,
+    marginTop: 16,
+  },
+  chatInfoSectionTitle: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  chatInfoMemberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  chatInfoMemberInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  chatInfoMemberNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chatInfoMemberName: {
+    fontSize: 15,
+    fontFamily: 'Lato_600SemiBold',
+    flexShrink: 1,
+  },
+  chatInfoMemberUsername: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 1,
+  },
+  chatInfoMemberAction: {
+    padding: 8,
+  },
+  chatInfoDangerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+  },
+  chatInfoDangerText: {
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
+    color: '#FF3B30',
   },
 });

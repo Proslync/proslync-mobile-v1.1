@@ -20,6 +20,7 @@ export interface ConversationResponse {
   lastMessagePreview: string | null;
   unreadCount: number;
   isPinned?: boolean;
+  createdById?: number;
   members: ConversationMember[];
   createdAt: string;
 }

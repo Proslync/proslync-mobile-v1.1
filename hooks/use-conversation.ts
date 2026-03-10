@@ -40,13 +40,23 @@ export interface ChatMessage {
   }[];
 }
 
+export interface ChannelMember {
+  id: number;
+  name: string;
+  userName?: string;
+  image?: string;
+  isVerified?: boolean;
+}
+
 export interface ChannelInfo {
   id: string;
   type: 'direct' | 'group' | 'system';
   name: string;
   imageUrl?: string;
   memberCount: number;
+  createdById?: number;
   isOnline?: boolean;
+  members: ChannelMember[];
   otherMember?: {
     id: string;
     name: string;
@@ -136,6 +146,14 @@ function deriveChannelInfo(
     name: displayName,
     imageUrl: conv.imageUrl || firstOther?.avatarUrl || undefined,
     memberCount: conv.members.length,
+    createdById: conv.createdById,
+    members: conv.members.map((m) => ({
+      id: m.userId,
+      name: m.userName || [m.firstName, m.lastName].filter(Boolean).join(' ') || 'Unknown',
+      userName: m.userName,
+      image: m.avatarUrl,
+      isVerified: m.isVerified,
+    })),
     otherMember: firstOther
       ? {
           id: String(firstOther.userId),
