@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Dimensions,
   Linking,
-  FlatList,
   Image,
 } from 'react-native';
 import {
@@ -28,13 +27,10 @@ import Animated, {
   FadeOutDown,
 } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
-import { usePaymentSheet } from '@stripe/stripe-react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { eventsApi } from '@/lib/api/events';
-import { paymentsApi } from '@/lib/api/payments';
 import { authApi } from '@/lib/api/auth';
 import type { EventAttendee } from '@/lib/types/events.types';
 import { EventUserStatus } from '@/lib/types/events.types';
@@ -212,17 +208,6 @@ export default function ScannerScreen() {
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back');
-  const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
-
-  // Payment state
-  const [chargingGuestId, setChargingGuestId] = React.useState<string | null>(null);
-  const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<string | null>(null);
-  const [eventPricing, setEventPricing] = React.useState<{
-    defaultTierId?: number;
-    defaultPricingId?: number;
-    defaultPrice?: number;
-    currency?: string;
-  } | null>(null);
 
   // Flow state
   const [scanStep, setScanStep] = React.useState<ScanStep>('membership');
@@ -247,7 +232,6 @@ export default function ScannerScreen() {
 
   // Guest list
   const [checkedInGuests, setCheckedInGuests] = React.useState<CheckedInGuest[]>([]);
-  const [showList, setShowList] = React.useState(false);
   const [listStats, setListStats] = React.useState<{ total: number; verified: number; pending: number }>({ total: 0, verified: 0, pending: 0 });
 
 
@@ -308,20 +292,6 @@ export default function ScannerScreen() {
   React.useEffect(() => {
     fetchGuestList();
   }, [fetchGuestList]);
-
-  // Fetch event pricing for collect-at-door
-  React.useEffect(() => {
-    if (!eventId) return;
-    paymentsApi.getUnpaidAttendees(eventId).then((res) => {
-      setEventPricing({
-        defaultTierId: res.defaultTierId,
-        defaultPricingId: res.defaultPricingId,
-        defaultPrice: res.defaultPrice,
-        currency: res.currency,
-      });
-    }).catch(() => {});
-  }, [eventId]);
-
 
   React.useEffect(() => {
     NfcManager.isSupported().then(setNfcSupported).catch(() => {});
@@ -603,54 +573,6 @@ export default function ScannerScreen() {
   };
 
 
-  const handleCharge = React.useCallback(async (guest: CheckedInGuest) => {
-    if (!eventId || !guest.guestIdNum) return;
-
-    setChargingGuestId(guest.id);
-    try {
-      // 1. Create payment intent
-      const result = await paymentsApi.collectAtDoor(eventId, {
-        guestId: guest.guestIdNum,
-        tierId: eventPricing?.defaultTierId,
-        pricingId: eventPricing?.defaultPricingId,
-      });
-
-      // 2. Init Stripe Payment Sheet
-      const { error: initError } = await initPaymentSheet({
-        paymentIntentClientSecret: result.clientSecret,
-        merchantDisplayName: 'Status',
-        style: 'alwaysDark',
-        applePay: { merchantCountryCode: 'US' },
-        googlePay: { merchantCountryCode: 'US', testEnv: true },
-      });
-
-      if (initError) throw new Error(initError.message);
-
-      // 3. Present payment sheet — guest taps phone/card
-      const { error: paymentError } = await presentPaymentSheet();
-
-      if (paymentError) {
-        if (paymentError.code === 'Canceled') {
-          setChargingGuestId(null);
-          return;
-        }
-        throw new Error(paymentError.message);
-      }
-
-      // 4. Success — mark as paid
-      setCheckedInGuests((prev) =>
-        prev.map((g) => g.id === guest.id ? { ...g, paid: true } : g)
-      );
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (err: any) {
-      setPaymentFailedAlert(err?.message || 'Something went wrong.');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      setChargingGuestId(null);
-    }
-  }, [eventId, eventPricing, initPaymentSheet, presentPaymentSheet]);
-
-
   React.useEffect(() => {
     if (!hasPermission) {
       requestPermission();
@@ -684,101 +606,6 @@ export default function ScannerScreen() {
         <DarkGradientBg />
         <ActivityIndicator size="large" color="#fff" />
         <Text style={styles.loadingText}>Initializing camera...</Text>
-      </View>
-    );
-  }
-
-
-  if (showList) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DarkGradientBg />
-        <ConfirmModal
-          visible={!!paymentFailedAlert}
-          onClose={() => setPaymentFailedAlert(null)}
-          title="Payment Failed"
-          message={paymentFailedAlert || ''}
-          alertOnly
-          icon="card-outline"
-        />
-        <View style={[styles.listHeader, { paddingTop: insets.top + 12 }]}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => setShowList(false)}>
-            <Ionicons name="chevron-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Guest List</Text>
-            <Text style={styles.listCount}>
-              {checkedInGuests.filter(g => g.status === 'approved').length} approved · {checkedInGuests.filter(g => g.status === 'denied').length} denied
-            </Text>
-          </View>
-          <TouchableOpacity style={styles.headerButton} onPress={fetchGuestList}>
-            <Ionicons name="refresh" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        <FlatList
-          data={checkedInGuests}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 20 }}
-          ListEmptyComponent={
-            <View style={styles.emptyList}>
-              <Ionicons name="people-outline" size={48} color="rgba(255,255,255,0.2)" />
-              <Text style={styles.emptyListText}>No guests checked in yet</Text>
-            </View>
-          }
-          renderItem={({ item }) => {
-            const isCharging = chargingGuestId === item.id;
-            const initials = item.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-            return (
-              <View style={styles.guestRow}>
-                {item.avatarUrl ? (
-                  <Image source={{ uri: item.avatarUrl }} style={styles.guestAvatar} />
-                ) : (
-                  <View style={[styles.guestAvatarPlaceholder, {
-                    backgroundColor: item.status === 'approved' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
-                  }]}>
-                    <Text style={styles.guestAvatarInitials}>{initials}</Text>
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.guestName}>{item.userName ? `@${item.userName}` : item.name}</Text>
-                  <Text style={styles.guestMeta}>
-                    {item.userName ? `${item.name} · ` : ''}{item.age ? `Age ${item.age} · ` : ''}{formatTime(item.time)}
-                  </Text>
-                </View>
-                {/* Charge / Paid / Denied status */}
-                {item.status === 'approved' && !item.paid && item.guestIdNum ? (
-                  <TouchableOpacity
-                    style={styles.chargeButton}
-                    onPress={() => handleCharge(item)}
-                    activeOpacity={0.8}
-                    disabled={isCharging || chargingGuestId !== null}
-                  >
-                    {isCharging ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <>
-                        <Ionicons name="card-outline" size={14} color="#fff" />
-                        <Text style={styles.chargeButtonText}>Charge</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                ) : item.paid ? (
-                  <View style={styles.paidBadge}>
-                    <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-                    <Text style={styles.paidBadgeText}>Paid</Text>
-                  </View>
-                ) : (
-                  <Text style={[styles.guestStatusText, {
-                    color: item.status === 'approved' ? '#10b981' : '#ef4444',
-                  }]}>
-                    {item.status === 'approved' ? 'Approved' : 'Denied'}
-                  </Text>
-                )}
-              </View>
-            );
-          }}
-        />
       </View>
     );
   }
@@ -1127,7 +954,11 @@ export default function ScannerScreen() {
           {checkedInGuests.length > 0 && (
             <TouchableOpacity
               style={styles.checkedInCounter}
-              onPress={() => { fetchGuestList(); setShowList(true); }}
+              onPress={() => {
+                if (eventId) {
+                  router.push(`/manage-event/${eventId}/check-ins`);
+                }
+              }}
               activeOpacity={0.8}
             >
               <View style={styles.checkedInDot} />
