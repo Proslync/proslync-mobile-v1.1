@@ -11,7 +11,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { venuesApi } from '@/lib/api/venues';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { useStableRouter } from '@/hooks/use-stable-router';
 
 interface MiniVenueCardProps {
   venueId: number;
@@ -19,7 +18,6 @@ interface MiniVenueCardProps {
 
 export function MiniVenueCard({ venueId }: MiniVenueCardProps) {
   const { colors, isDark } = useAppTheme();
-  const router = useStableRouter();
   const queryClient = useQueryClient();
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -55,10 +53,6 @@ export function MiniVenueCard({ venueId }: MiniVenueCardProps) {
     }
   };
 
-  const handlePress = () => {
-    router.push({ pathname: '/venue/[id]', params: { id: String(venueId) } });
-  };
-
   if (isLoading) {
     return (
       <View style={[styles.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }]}>
@@ -69,10 +63,10 @@ export function MiniVenueCard({ venueId }: MiniVenueCardProps) {
 
   if (!venue) return null;
 
-  const logoUrl = venue.logo?.url;
+  const logoUrl = venue.imageUrl;
 
   return (
-    <TouchableOpacity
+    <View
       style={[
         styles.card,
         {
@@ -80,8 +74,6 @@ export function MiniVenueCard({ venueId }: MiniVenueCardProps) {
           borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
         },
       ]}
-      onPress={handlePress}
-      activeOpacity={0.8}
     >
       <View style={styles.content}>
         {/* Venue Logo */}
@@ -113,10 +105,7 @@ export function MiniVenueCard({ venueId }: MiniVenueCardProps) {
               styles.followButton,
               isFollowing && styles.followButtonDone,
             ]}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              handleFollow();
-            }}
+            onPress={() => handleFollow()}
             disabled={followLoading}
             activeOpacity={0.8}
           >
@@ -130,7 +119,7 @@ export function MiniVenueCard({ venueId }: MiniVenueCardProps) {
           </TouchableOpacity>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 

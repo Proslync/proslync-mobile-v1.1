@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# vim swap files
+*.swp
+
 # Expo
 .expo/
 dist/
