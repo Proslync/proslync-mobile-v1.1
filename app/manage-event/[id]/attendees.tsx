@@ -78,9 +78,16 @@ function getDisplayName(attendee: EventAttendee): string {
 
 function getSubtext(attendee: EventAttendee): string {
   if (attendee.userName) return `@${attendee.userName}`;
-  if (attendee.phoneNumber) return attendee.phoneNumber;
   return '';
 }
+
+const TAG_COLORS: Record<string, string> = {
+  vip: '#f59e0b',
+  line_skip: '#22c55e',
+  backstage: '#a855f7',
+  comp: '#3b82f6',
+  plus_one: '#ec4899',
+};
 
 export default function AttendeesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -151,6 +158,20 @@ export default function AttendeesScreen() {
                   {subtext}
                 </Text>
               ) : null}
+              {item.tags && item.tags.length > 0 && (
+                <View style={styles.tagsRow}>
+                  {item.tags.map((tag) => (
+                    <View
+                      key={tag}
+                      style={[styles.tagBadge, { backgroundColor: `${TAG_COLORS[tag] || '#6b7280'}20` }]}
+                    >
+                      <Text style={[styles.tagText, { color: TAG_COLORS[tag] || '#6b7280' }]}>
+                        {tag.replace('_', ' ').toUpperCase()}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
             <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
               <Text style={styles.statusText}>{getStatusLabel(item.status)}</Text>
@@ -438,5 +459,20 @@ const styles = StyleSheet.create({
   footerLoader: {
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 3,
+  },
+  tagBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  tagText: {
+    fontSize: 9,
+    fontFamily: 'Lato_700Bold',
   },
 });

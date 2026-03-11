@@ -122,6 +122,7 @@ export interface EventAttendee {
   isBlacklisted?: boolean;
   blacklistReason?: string;
   blacklistedAt?: string;
+  tags?: string[];
 }
 
 export interface EventAttendeesResponse {

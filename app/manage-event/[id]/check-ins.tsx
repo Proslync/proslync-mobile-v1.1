@@ -46,6 +46,7 @@ interface ListContact {
   email?: string;
   birthDate?: string;
   documentNumber?: string;
+  tags?: string[];
 }
 
 function formatTimeAgo(dateStr?: string): string {
@@ -107,6 +108,7 @@ function mapAttendee(a: EventAttendee): ListContact {
     phoneNumber: a.phoneNumber,
     email: a.email,
     birthDate: a.birthDate,
+    tags: a.tags,
   };
 }
 
@@ -132,9 +134,6 @@ function ContactDetailModal({
 
   const rows: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
 
-  if (contact.phoneNumber) {
-    rows.push({ icon: 'call-outline', label: 'Phone', value: formatPhone(contact.phoneNumber) });
-  }
   if (contact.email) {
     rows.push({ icon: 'mail-outline', label: 'Email', value: contact.email });
   }
@@ -185,6 +184,24 @@ function ContactDetailModal({
                   {contact.isGuest ? 'Guest' : 'Member'}
                 </Text>
               </View>
+              {contact.tags && contact.tags.length > 0 && (
+                <View style={detailStyles.tagsRow}>
+                  {contact.tags.map((tag) => {
+                    const tagColors: Record<string, string> = {
+                      vip: '#f59e0b', line_skip: '#22c55e', backstage: '#a855f7',
+                      comp: '#3b82f6', plus_one: '#ec4899',
+                    };
+                    const color = tagColors[tag] || '#6b7280';
+                    return (
+                      <View key={tag} style={[detailStyles.tagChip, { backgroundColor: `${color}20` }]}>
+                        <Text style={[detailStyles.tagChipText, { color }]}>
+                          {tag.replace('_', ' ').toUpperCase()}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </View>
 
             {/* Info rows */}
@@ -455,6 +472,23 @@ function CheckInsContent() {
                   </Text>
                 )}
               </View>
+              {item.tags && item.tags.length > 0 && (
+                <View style={styles.tagsRow}>
+                  {item.tags.map((tag) => {
+                    const tc: Record<string, string> = {
+                      vip: '#f59e0b', line_skip: '#22c55e', backstage: '#a855f7',
+                      comp: '#3b82f6', plus_one: '#ec4899',
+                    };
+                    return (
+                      <View key={tag} style={[styles.tagBadge, { backgroundColor: `${tc[tag] || '#6b7280'}20` }]}>
+                        <Text style={[styles.tagBadgeText, { color: tc[tag] || '#6b7280' }]}>
+                          {tag.replace('_', ' ').toUpperCase()}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </View>
 
             {/* Charge / Paid */}
@@ -718,6 +752,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
   },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 3,
+  },
+  tagBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  tagBadgeText: {
+    fontSize: 9,
+    fontFamily: 'Lato_700Bold',
+  },
   chargeButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -849,5 +898,22 @@ const detailStyles = StyleSheet.create({
   closeText: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  tagChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  tagChipText: {
+    fontSize: 11,
+    fontFamily: 'Lato_700Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
 });

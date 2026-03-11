@@ -396,6 +396,14 @@ export const eventsApi = {
   },
 
   /**
+   * Update guest tags (VIP, line skip, etc.)
+   * Backend endpoint: PUT /api/events/:eventId/attendees/:guestId/tags
+   */
+  updateGuestTags: async (eventId: number, guestId: number, tags: string[]): Promise<{ id: number; tags: string[] }> => {
+    return apiClient.put<{ id: number; tags: string[] }>(`/api/events/${eventId}/attendees/${guestId}/tags`, { tags });
+  },
+
+  /**
    * Get current user's permissions for an event
    * Backend endpoint: GET /api/events/:eventId/permissions
    */
