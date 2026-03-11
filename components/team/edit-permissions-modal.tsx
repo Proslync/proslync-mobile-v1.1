@@ -25,61 +25,68 @@ type PermissionCategory = keyof RolePermissions;
 const CATEGORIES: {
   key: PermissionCategory;
   label: string;
-  permissions: { key: string; label: string }[];
+  icon: string;
+  permissions: { key: string; label: string; description: string }[];
 }[] = [
   {
     key: 'events',
-    label: 'Events',
+    label: 'Event Details',
+    icon: 'calendar',
     permissions: [
-      { key: 'view', label: 'View' },
-      { key: 'edit', label: 'Edit' },
-      { key: 'create', label: 'Create' },
-      { key: 'delete', label: 'Delete' },
+      { key: 'view', label: 'View event info', description: 'See event details, flyer, and settings' },
+      { key: 'edit', label: 'Edit event info', description: 'Change name, date, location, flyer' },
+      { key: 'create', label: 'Create events', description: 'Create new events for this venue' },
+      { key: 'delete', label: 'Delete events', description: 'Permanently remove events' },
     ],
   },
   {
     key: 'attendees',
-    label: 'Attendees',
+    label: 'Guest List',
+    icon: 'people',
     permissions: [
-      { key: 'view', label: 'View' },
-      { key: 'edit', label: 'Edit' },
-      { key: 'checkIn', label: 'Check In' },
-      { key: 'delete', label: 'Delete' },
+      { key: 'view', label: 'View guest list', description: 'See who RSVPed and checked in' },
+      { key: 'edit', label: 'Edit guests', description: 'Add tags, notes, and update guest info' },
+      { key: 'checkIn', label: 'Check in guests', description: 'Scan IDs and approve entry' },
+      { key: 'delete', label: 'Remove guests', description: 'Remove people from the guest list' },
     ],
   },
   {
     key: 'marketing',
-    label: 'Marketing',
+    label: 'Promotions',
+    icon: 'megaphone',
     permissions: [
-      { key: 'view', label: 'View' },
-      { key: 'send', label: 'Send' },
-      { key: 'manage', label: 'Manage' },
+      { key: 'view', label: 'View promotions', description: 'See marketing stats and campaigns' },
+      { key: 'send', label: 'Send blasts', description: 'Send text blasts to guests' },
+      { key: 'manage', label: 'Manage campaigns', description: 'Create and edit promo campaigns' },
     ],
   },
   {
     key: 'analytics',
-    label: 'Analytics',
+    label: 'Insights',
+    icon: 'stats-chart',
     permissions: [
-      { key: 'view', label: 'View' },
-      { key: 'export', label: 'Export' },
+      { key: 'view', label: 'View insights', description: 'See event analytics and trends' },
+      { key: 'export', label: 'Export data', description: 'Download reports and data files' },
     ],
   },
   {
     key: 'team',
     label: 'Team',
+    icon: 'people-circle',
     permissions: [
-      { key: 'view', label: 'View' },
-      { key: 'invite', label: 'Invite' },
-      { key: 'manage', label: 'Manage' },
-      { key: 'remove', label: 'Remove' },
+      { key: 'view', label: 'View team', description: 'See team members and roles' },
+      { key: 'invite', label: 'Invite people', description: 'Send team invitations' },
+      { key: 'manage', label: 'Manage roles', description: 'Create roles and change permissions' },
+      { key: 'remove', label: 'Remove members', description: 'Remove people from the team' },
     ],
   },
   {
     key: 'billing',
-    label: 'Billing',
+    label: 'Money',
+    icon: 'card',
     permissions: [
-      { key: 'view', label: 'View' },
-      { key: 'edit', label: 'Edit' },
+      { key: 'view', label: 'View earnings', description: 'See revenue, payments, and payouts' },
+      { key: 'edit', label: 'Manage payments', description: 'Set pricing, process refunds' },
     ],
   },
 ];
@@ -197,7 +204,10 @@ export function EditPermissionsModal({
                 </View>
                 {cat.permissions.map((perm) => (
                   <View key={perm.key} style={styles.permRow}>
-                    <Text style={styles.permLabel}>{perm.label}</Text>
+                    <View style={styles.permInfo}>
+                      <Text style={styles.permLabel}>{perm.label}</Text>
+                      <Text style={styles.permDescription}>{perm.description}</Text>
+                    </View>
                     <Switch
                       value={catPerms[perm.key]}
                       onValueChange={() => togglePermission(cat.key, perm.key)}
@@ -301,10 +311,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
     marginBottom: 4,
   },
+  permInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
   permLabel: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.8)',
+  },
+  permDescription: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: 2,
   },
   footer: {
     padding: 20,

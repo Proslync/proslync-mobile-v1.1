@@ -169,16 +169,7 @@ export default function TeamScreen() {
             </View>
           )}
         </View>
-        {canInviteTeam() ? (
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => setInviteModalVisible(true)}
-          >
-            <Ionicons name="person-add-outline" size={22} color={colors.text} />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerButton} />
-        )}
+        <View style={styles.headerButton} />
       </Animated.View>
 
       {isLoading ? (
@@ -249,6 +240,16 @@ export default function TeamScreen() {
                   />
                 ))}
               </View>
+            )}
+            {canInviteTeam() && (
+              <TouchableOpacity
+                style={styles.addMemberButton}
+                onPress={() => setInviteModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="person-add-outline" size={18} color="#fff" />
+                <Text style={styles.addMemberButtonText}>Add Team Member</Text>
+              </TouchableOpacity>
             )}
           </Animated.View>
 
@@ -549,5 +550,22 @@ const styles = StyleSheet.create({
   emptyCtaText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
+  },
+  addMemberButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  addMemberButtonText: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
   },
 });

@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
+  Dimensions,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
@@ -17,6 +18,11 @@ import Animated, {
   FadeInDown,
   FadeOut,
   Layout,
+  useSharedValue,
+  withTiming,
+  Easing,
+  useAnimatedStyle,
+  interpolate,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
@@ -270,6 +276,35 @@ function CheckInsContent() {
   const [event, setEvent] = React.useState<Event | null>(null);
   const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<string | null>(null);
   const [selectedContact, setSelectedContact] = React.useState<ListContact | null>(null);
+  const [activeTab, setActiveTab] = React.useState<'approved' | 'denied'>('approved');
+
+  const scrollPosition = useSharedValue(0);
+  const screenWidth = Dimensions.get('window').width;
+  const tabWidth = screenWidth / 2;
+
+  const handleTabPress = React.useCallback((tab: 'approved' | 'denied') => {
+    const pageIndex = tab === 'approved' ? 0 : 1;
+    scrollPosition.value = withTiming(pageIndex, {
+      duration: 200,
+      easing: Easing.out(Easing.cubic),
+    });
+    if (tab !== activeTab) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setActiveTab(tab);
+  }, [scrollPosition, activeTab]);
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: scrollPosition.value * tabWidth }],
+  }));
+
+  const approvedTabTextStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollPosition.value, [0, 1], [1, 0.5]),
+  }));
+
+  const deniedTabTextStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(scrollPosition.value, [0, 1], [0.5, 1]),
+  }));
 
   // Fetch event data (for doorCoverPriceCents)
   React.useEffect(() => {
@@ -431,6 +466,16 @@ function CheckInsContent() {
     ? `$${(event.doorCoverPriceCents / 100).toFixed(2)}`
     : 'Free';
 
+  const approvedContacts = React.useMemo(
+    () => contacts.filter((c) => c.checkInStatus === 'approved'),
+    [contacts],
+  );
+  const deniedContacts = React.useMemo(
+    () => contacts.filter((c) => c.checkInStatus === 'denied'),
+    [contacts],
+  );
+  const displayedContacts = activeTab === 'approved' ? approvedContacts : deniedContacts;
+
   const renderContact = React.useCallback(
     ({ item }: { item: ListContact }) => {
       const isCollecting = collectingGuestId === item.id;
@@ -477,21 +522,6 @@ function CheckInsContent() {
                 <Text style={[styles.guestMetaText, { color: item.isGuest ? '#fbbf24' : '#34d399' }]}>
                   {label}
                 </Text>
-                <View style={[
-                  styles.statusBadge,
-                  { backgroundColor: item.checkInStatus === 'approved' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)' },
-                ]}>
-                  <View style={[
-                    styles.statusDot,
-                    { backgroundColor: item.checkInStatus === 'approved' ? '#10b981' : '#ef4444' },
-                  ]} />
-                  <Text style={[
-                    styles.statusBadgeText,
-                    { color: item.checkInStatus === 'approved' ? '#10b981' : '#ef4444' },
-                  ]}>
-                    {item.checkInStatus === 'approved' ? 'Approved' : 'Denied'}
-                  </Text>
-                </View>
                 {item.eventCount > 1 && (
                   <Text style={[styles.guestMetaText, { color: colors.textTertiary }]}>
                     {item.eventCount} events
@@ -612,7 +642,9 @@ function CheckInsContent() {
               ]}
             />
             <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>
-              {contacts.length} attendee{contacts.length !== 1 ? 's' : ''}
+              {activeTab === 'approved'
+                ? `${approvedContacts.length} approved`
+                : `${deniedContacts.length} denied`}
             </Text>
           </View>
         </View>
@@ -625,30 +657,89 @@ function CheckInsContent() {
         </TouchableOpacity>
       </Animated.View>
 
+      {/* Tab Bar */}
+      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
+        <Animated.View
+          style={[
+            styles.tabIndicator,
+            { width: tabWidth, backgroundColor: colors.text },
+            indicatorStyle,
+          ]}
+        />
+        <TouchableOpacity
+          style={styles.tab}
+          onPress={() => handleTabPress('approved')}
+          activeOpacity={0.7}
+        >
+          <Animated.Text
+            style={[styles.tabText, { color: colors.text }, approvedTabTextStyle]}
+          >
+            Approved
+          </Animated.Text>
+          {approvedContacts.length > 0 && (
+            <View style={[
+              styles.tabBadge,
+              { backgroundColor: 'rgba(255,255,255,0.2)' },
+              activeTab === 'approved' && { backgroundColor: 'rgba(255,255,255,0.3)' },
+            ]}>
+              <Text style={[styles.tabBadgeText, { color: colors.text }]}>
+                {approvedContacts.length}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tab}
+          onPress={() => handleTabPress('denied')}
+          activeOpacity={0.7}
+        >
+          <Animated.Text
+            style={[styles.tabText, { color: colors.text }, deniedTabTextStyle]}
+          >
+            Denied
+          </Animated.Text>
+          {deniedContacts.length > 0 && (
+            <View style={[
+              styles.tabBadge,
+              { backgroundColor: 'rgba(255,255,255,0.2)' },
+              activeTab === 'denied' && { backgroundColor: 'rgba(255,255,255,0.3)' },
+            ]}>
+              <Text style={[styles.tabBadgeText, { color: colors.text }]}>
+                {deniedContacts.length}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
       {/* Content */}
       {loading ? (
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={colors.text} />
           <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Loading list...</Text>
         </View>
-      ) : contacts.length === 0 ? (
+      ) : displayedContacts.length === 0 ? (
         <Animated.View
           entering={FadeIn.duration(500)}
           style={styles.centerContent}
         >
           <Ionicons
-            name="people-outline"
+            name={activeTab === 'approved' ? 'people-outline' : 'close-circle-outline'}
             size={64}
             color={colors.textTertiary}
           />
-          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No attendees yet</Text>
+          <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
+            {activeTab === 'approved' ? 'No attendees yet' : 'No denied guests'}
+          </Text>
           <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
-            People who RSVP, buy tickets, or check in will appear here
+            {activeTab === 'approved'
+              ? 'People who RSVP, buy tickets, or check in will appear here'
+              : 'Guests who were denied entry will appear here'}
           </Text>
         </Animated.View>
       ) : (
         <FlatList
-          data={contacts}
+          data={displayedContacts}
           renderItem={renderContact}
           keyExtractor={keyExtractor}
           contentContainerStyle={[
@@ -783,23 +874,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
   },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  statusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontFamily: 'Lato_700Bold',
-  },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -841,6 +915,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
     color: '#10b981',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    position: 'relative',
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    height: 2,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  tabText: {
+    fontSize: 15,
+    fontFamily: 'Lato_600SemiBold',
+  },
+  tabBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  tabBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Lato_700Bold',
   },
 });
 
