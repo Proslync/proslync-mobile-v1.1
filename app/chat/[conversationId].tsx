@@ -1,6 +1,6 @@
 // Chat Thread Screen - Instagram/Snapchat-style messaging
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useStableRouter } from '@/hooks/use-stable-router';
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import { useStableRouter } from "@/hooks/use-stable-router";
 import {
   View,
   Text,
@@ -17,16 +17,16 @@ import {
   Pressable,
   Modal,
   ScrollView,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
-import * as Haptics from 'expo-haptics';
-import * as Clipboard from 'expo-clipboard';
-import { BlurView } from 'expo-blur';
-import { Audio } from 'expo-av';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import * as ImagePicker from "expo-image-picker";
+import * as Haptics from "expo-haptics";
+import * as Clipboard from "expo-clipboard";
+import { BlurView } from "expo-blur";
+import { Audio } from "expo-av";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -38,25 +38,35 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeOut,
-} from 'react-native-reanimated';
-import { useConversation, type ChatMessage, type ChannelMember } from '@/hooks/use-conversation';
-import { useCall } from '@/lib/providers/call-provider';
-import { useRemoveMember, useLeaveConversation, useUpdateConversation } from '@/hooks/use-conversations';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
-import { MiniEventCard } from '@/components/chat/mini-event-card';
-import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
-import { useAuth } from '@/lib/providers/auth-provider';
+} from "react-native-reanimated";
+import {
+  useConversation,
+  type ChatMessage,
+  type ChannelMember,
+} from "@/hooks/use-conversation";
+import { useCall } from "@/lib/providers/call-provider";
+import {
+  useRemoveMember,
+  useLeaveConversation,
+  useUpdateConversation,
+} from "@/hooks/use-conversations";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { MiniEventCard } from "@/components/chat/mini-event-card";
+import { MiniVenueCard } from "@/components/chat/mini-venue-card";
+import { MiniUserCard } from "@/components/chat/mini-user-card";
+import { useAppTheme, type ThemeColors } from "@/hooks/use-app-theme";
+import { useAuth } from "@/lib/providers/auth-provider";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.75;
 const MAX_IMAGE_WIDTH = SCREEN_WIDTH * 0.65;
 
 // Default avatar component with white background
-const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
 interface MessageGroup {
-  type: 'day' | 'message';
+  type: "day" | "message";
   date?: Date;
   message?: ChatMessage;
   isGroupStart?: boolean;
@@ -66,7 +76,7 @@ interface MessageGroup {
 
 interface PendingMedia {
   uri: string;
-  type: 'image' | 'video';
+  type: "image" | "video";
   width?: number;
   height?: number;
 }
@@ -74,48 +84,67 @@ interface PendingMedia {
 function formatDayHeader(date: Date): string {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const diffDays = Math.floor((today.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24));
+  const messageDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+  const diffDays = Math.floor(
+    (today.getTime() - messageDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
 
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
   if (diffDays < 7) {
-    return date.toLocaleDateString([], { weekday: 'long' });
+    return date.toLocaleDateString([], { weekday: "long" });
   }
-  return date.toLocaleDateString([], { month: 'long', day: 'numeric' });
+  return date.toLocaleDateString([], { month: "long", day: "numeric" });
 }
 
 function formatMessageTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 // Day Separator Component
 function DaySeparator({ date, colors }: { date: Date; colors: ThemeColors }) {
   return (
     <Animated.View entering={FadeIn} style={styles.daySeparator}>
-      <Text style={[styles.daySeparatorText, { color: colors.textTertiary }]}>{formatDayHeader(date)}</Text>
+      <Text style={[styles.daySeparatorText, { color: colors.textTertiary }]}>
+        {formatDayHeader(date)}
+      </Text>
     </Animated.View>
   );
 }
 
 // System Message Row (call events, etc.)
-function SystemMessageRow({ message, colors }: { message: ChatMessage; colors: ThemeColors }) {
-  const isCallEnded = message.systemEvent === 'call_ended';
+function SystemMessageRow({
+  message,
+  colors,
+}: {
+  message: ChatMessage;
+  colors: ThemeColors;
+}) {
+  const isCallEnded = message.systemEvent === "call_ended";
   const isMissedOrDeclined =
-    message.systemEvent === 'call_missed' || message.systemEvent === 'call_declined';
-  const isVideo = message.callType === 'video';
+    message.systemEvent === "call_missed" ||
+    message.systemEvent === "call_declined";
+  const isVideo = message.callType === "video";
 
-  const iconName = isVideo ? 'videocam' : 'call';
-  const iconColor = isCallEnded ? '#34c759' : '#FF3B30';
+  const iconName = isVideo ? "videocam" : "call";
+  const iconColor = isCallEnded ? "#34c759" : "#FF3B30";
 
   return (
     <View style={styles.systemMessageRow}>
       <View style={styles.systemMessageContent}>
         <Ionicons name={iconName} size={14} color={iconColor} />
-        <Text style={[styles.systemMessageText, { color: colors.textSecondary }]}>
+        <Text
+          style={[styles.systemMessageText, { color: colors.textSecondary }]}
+        >
           {message.text}
         </Text>
-        <Text style={[styles.systemMessageTime, { color: colors.textTertiary }]}>
+        <Text
+          style={[styles.systemMessageTime, { color: colors.textTertiary }]}
+        >
           {formatMessageTime(message.createdAt)}
         </Text>
       </View>
@@ -171,7 +200,9 @@ function MessageBubble({
   }
 
   // Check for audio attachments
-  const audioAttachment = message.attachments?.find((att) => att.type === 'audio');
+  const audioAttachment = message.attachments?.find(
+    (att) => att.type === "audio",
+  );
   const hasAudio = !!audioAttachment;
 
   // Render attachments (images/videos - not audio)
@@ -179,7 +210,9 @@ function MessageBubble({
     if (!message.attachments || message.attachments.length === 0) return null;
 
     // Filter out audio attachments (handled separately)
-    const visualAttachments = message.attachments.filter((att) => att.type !== 'audio');
+    const visualAttachments = message.attachments.filter(
+      (att) => att.type !== "audio",
+    );
     if (visualAttachments.length === 0) return null;
 
     return visualAttachments.map((attachment, index) => (
@@ -195,14 +228,15 @@ function MessageBubble({
             styles.attachmentImage,
             {
               width: MAX_IMAGE_WIDTH,
-              height: attachment.height && attachment.width
-                ? (MAX_IMAGE_WIDTH * attachment.height) / attachment.width
-                : MAX_IMAGE_WIDTH * 1.2,
+              height:
+                attachment.height && attachment.width
+                  ? (MAX_IMAGE_WIDTH * attachment.height) / attachment.width
+                  : MAX_IMAGE_WIDTH * 1.2,
             },
           ]}
           resizeMode="cover"
         />
-        {attachment.type === 'video' && (
+        {attachment.type === "video" && (
           <View style={styles.videoPlayIcon}>
             <Ionicons name="play" size={32} color="#fff" />
           </View>
@@ -217,7 +251,9 @@ function MessageBubble({
       {!isOwn && isGroupStart && (
         <Avatar uri={message.userImage} size={28} colors={colors} />
       )}
-      {!isOwn && !isGroupStart && <View style={styles.messageAvatarPlaceholder} />}
+      {!isOwn && !isGroupStart && (
+        <View style={styles.messageAvatarPlaceholder} />
+      )}
 
       <Pressable
         style={styles.messageContent}
@@ -233,7 +269,9 @@ function MessageBubble({
 
         {/* Audio attachment - Voice message */}
         {hasAudio && audioAttachment && (
-          <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
+          <View
+            style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}
+          >
             <VoiceMessagePlayer
               audioUrl={audioAttachment.url}
               duration={audioAttachment.duration}
@@ -246,87 +284,163 @@ function MessageBubble({
 
         {/* Visual Attachments (images/videos) */}
         {hasAttachments && !hasAudio && (
-          <View style={[styles.attachmentWrapper, isOwn && styles.attachmentWrapperOwn]}>
+          <View
+            style={[
+              styles.attachmentWrapper,
+              isOwn && styles.attachmentWrapperOwn,
+            ]}
+          >
             {renderAttachments()}
           </View>
         )}
 
         {/* Text bubble */}
-        {hasText && (() => {
-          const text = message.text || '';
-          const hasEventTags = isConciergeChat && !isOwn && /\[EVENT:\d+\]/.test(text);
+        {hasText &&
+          (() => {
+            const text = message.text || "";
+            const richTagPattern = /\[(EVENT|VENUE|USER):\d+\]/;
+            const hasRichTags =
+              isConciergeChat && !isOwn && richTagPattern.test(text);
 
-          if (hasEventTags) {
-            const parts: { type: 'text' | 'event'; value: string }[] = [];
-            let lastIndex = 0;
-            const regex = /\[EVENT:(\d+)\]/g;
-            let match = regex.exec(text);
-            while (match !== null) {
-              if (match.index > lastIndex) {
-                const chunk = text.slice(lastIndex, match.index).trim();
-                if (chunk) parts.push({ type: 'text', value: chunk });
+            if (hasRichTags) {
+              type TagType = "text" | "event" | "venue" | "user";
+              const parts: { type: TagType; value: string }[] = [];
+              let lastIndex = 0;
+              const tagRegex = /\[(EVENT|VENUE|USER):(\d+)\]/g;
+              let match = tagRegex.exec(text);
+              while (match !== null) {
+                if (match.index > lastIndex) {
+                  const chunk = text.slice(lastIndex, match.index).trim();
+                  if (chunk) parts.push({ type: "text", value: chunk });
+                }
+                const tagType = match[1].toLowerCase() as
+                  | "event"
+                  | "venue"
+                  | "user";
+                parts.push({ type: tagType, value: match[2] });
+                lastIndex = match.index + match[0].length;
+                match = tagRegex.exec(text);
               }
-              parts.push({ type: 'event', value: match[1] });
-              lastIndex = match.index + match[0].length;
-              match = regex.exec(text);
-            }
-            if (lastIndex < text.length) {
-              const chunk = text.slice(lastIndex).trim();
-              if (chunk) parts.push({ type: 'text', value: chunk });
+              if (lastIndex < text.length) {
+                const chunk = text.slice(lastIndex).trim();
+                if (chunk) parts.push({ type: "text", value: chunk });
+              }
+
+              return (
+                <View
+                  style={[
+                    styles.bubbleWrapper,
+                    isOwn && styles.bubbleWrapperOwn,
+                  ]}
+                >
+                  {parts.map((part, i) => {
+                    if (part.type === "event") {
+                      return (
+                        <MiniEventCard
+                          key={`event-${part.value}-${i}`}
+                          eventId={Number(part.value)}
+                        />
+                      );
+                    }
+                    if (part.type === "venue") {
+                      return (
+                        <MiniVenueCard
+                          key={`venue-${part.value}-${i}`}
+                          venueId={Number(part.value)}
+                        />
+                      );
+                    }
+                    if (part.type === "user") {
+                      return (
+                        <MiniUserCard
+                          key={`user-${part.value}-${i}`}
+                          userId={Number(part.value)}
+                        />
+                      );
+                    }
+                    return (
+                      <View
+                        key={`text-${i}`}
+                        style={[
+                          styles.messageBubble,
+                          styles.messageBubbleOther,
+                          {
+                            backgroundColor: isDark
+                              ? colors.cardElevated
+                              : "#f0f0f0",
+                          },
+                          !isGroupStart &&
+                            i === 0 &&
+                            styles.messageBubbleGroupOther,
+                        ]}
+                      >
+                        <Text
+                          style={[styles.messageText, { color: colors.text }]}
+                        >
+                          {part.value}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              );
             }
 
             return (
-              <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
-                {parts.map((part, i) =>
-                  part.type === 'event' ? (
-                    <MiniEventCard key={`event-${part.value}-${i}`} eventId={Number(part.value)} />
-                  ) : (
-                    <View
-                      key={`text-${i}`}
-                      style={[
-                        styles.messageBubble,
-                        styles.messageBubbleOther,
-                        { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' },
-                        !isGroupStart && i === 0 && styles.messageBubbleGroupOther,
-                      ]}
-                    >
-                      <Text style={[styles.messageText, { color: colors.text }]}>
-                        {part.value}
-                      </Text>
-                    </View>
-                  ),
-                )}
+              <View
+                style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}
+              >
+                <View
+                  style={[
+                    styles.messageBubble,
+                    isOwn
+                      ? styles.messageBubbleOwn
+                      : [
+                          styles.messageBubbleOther,
+                          {
+                            backgroundColor: isDark
+                              ? colors.cardElevated
+                              : "#f0f0f0",
+                          },
+                        ],
+                    !isGroupStart &&
+                      (isOwn
+                        ? styles.messageBubbleGroupOwn
+                        : styles.messageBubbleGroupOther),
+                  ]}
+                >
+                  <Text
+                    style={
+                      isOwn
+                        ? styles.messageTextOwn
+                        : [styles.messageText, { color: colors.text }]
+                    }
+                  >
+                    {message.text}
+                  </Text>
+                </View>
               </View>
             );
-          }
-
-          return (
-            <View style={[styles.bubbleWrapper, isOwn && styles.bubbleWrapperOwn]}>
-              <View
-                style={[
-                  styles.messageBubble,
-                  isOwn ? styles.messageBubbleOwn : [styles.messageBubbleOther, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' }],
-                  !isGroupStart && (isOwn ? styles.messageBubbleGroupOwn : styles.messageBubbleGroupOther),
-                ]}
-              >
-                <Text style={isOwn ? styles.messageTextOwn : [styles.messageText, { color: colors.text }]}>
-                  {message.text}
-                </Text>
-              </View>
-            </View>
-          );
-        })()}
+          })()}
 
         {/* Timestamp */}
         {showTime && (
-          <Text style={[styles.messageTime, { color: colors.textTertiary }, isOwn && styles.messageTimeOwn]}>
+          <Text
+            style={[
+              styles.messageTime,
+              { color: colors.textTertiary },
+              isOwn && styles.messageTimeOwn,
+            ]}
+          >
             {formatMessageTime(message.createdAt)}
           </Text>
         )}
 
         {/* Read receipt - "Seen at X:XX" */}
         {isLastOwnBeforeRead && readAt && (
-          <View style={[styles.readReceiptRow, isOwn && styles.readReceiptRowOwn]}>
+          <View
+            style={[styles.readReceiptRow, isOwn && styles.readReceiptRowOwn]}
+          >
             <Ionicons name="checkmark-done" size={12} color="#0095f6" />
             <Text style={styles.readReceiptText}>
               Seen {formatMessageTime(readAt)}
@@ -349,22 +463,22 @@ function AnimatedDot({ delay, isDark }: { delay: number; isDark: boolean }) {
       withRepeat(
         withSequence(
           withTiming(1.3, { duration: 400 }),
-          withTiming(1, { duration: 400 })
+          withTiming(1, { duration: 400 }),
         ),
         -1,
-        false
-      )
+        false,
+      ),
     );
     opacity.value = withDelay(
       delay,
       withRepeat(
         withSequence(
           withTiming(1, { duration: 400 }),
-          withTiming(0.4, { duration: 400 })
+          withTiming(0.4, { duration: 400 }),
         ),
         -1,
-        false
-      )
+        false,
+      ),
     );
   }, [delay, scale, opacity]);
 
@@ -373,15 +487,43 @@ function AnimatedDot({ delay, isDark }: { delay: number; isDark: boolean }) {
     opacity: opacity.value,
   }));
 
-  return <Animated.View style={[styles.typingDot, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }, animatedStyle]} />;
+  return (
+    <Animated.View
+      style={[
+        styles.typingDot,
+        {
+          backgroundColor: isDark
+            ? "rgba(255, 255, 255, 0.5)"
+            : "rgba(0, 0, 0, 0.5)",
+        },
+        animatedStyle,
+      ]}
+    />
+  );
 }
 
 // Typing Indicator Component
-function TypingIndicator({ visible, isConcierge, avatarUri, colors, isDark }: { visible: boolean; isConcierge?: boolean; avatarUri?: string; colors: ThemeColors; isDark: boolean }) {
+function TypingIndicator({
+  visible,
+  isConcierge,
+  avatarUri,
+  colors,
+  isDark,
+}: {
+  visible: boolean;
+  isConcierge?: boolean;
+  avatarUri?: string;
+  colors: ThemeColors;
+  isDark: boolean;
+}) {
   if (!visible) return null;
 
   return (
-    <Animated.View entering={FadeInDown} exiting={FadeOut} style={styles.typingContainer}>
+    <Animated.View
+      entering={FadeInDown}
+      exiting={FadeOut}
+      style={styles.typingContainer}
+    >
       {isConcierge ? (
         <View style={styles.typingConciergeAvatar}>
           <Ionicons name="sparkles" size={12} color="#fff" />
@@ -389,7 +531,16 @@ function TypingIndicator({ visible, isConcierge, avatarUri, colors, isDark }: { 
       ) : (
         <Avatar uri={avatarUri} size={28} colors={colors} />
       )}
-      <View style={[styles.typingBubble, { backgroundColor: isDark ? colors.cardElevated : 'rgba(0, 0, 0, 0.06)' }]}>
+      <View
+        style={[
+          styles.typingBubble,
+          {
+            backgroundColor: isDark
+              ? colors.cardElevated
+              : "rgba(0, 0, 0, 0.06)",
+          },
+        ]}
+      >
         <AnimatedDot delay={0} isDark={isDark} />
         <AnimatedDot delay={200} isDark={isDark} />
         <AnimatedDot delay={400} isDark={isDark} />
@@ -399,11 +550,29 @@ function TypingIndicator({ visible, isConcierge, avatarUri, colors, isDark }: { 
 }
 
 // Avatar component with white background for default avatar
-function Avatar({ uri, size = 28, colors }: { uri?: string; size?: number; colors: ThemeColors }) {
+function Avatar({
+  uri,
+  size = 28,
+  colors,
+}: {
+  uri?: string;
+  size?: number;
+  colors: ThemeColors;
+}) {
   const hasCustomAvatar = uri && uri.length > 0;
 
   return (
-    <View style={[styles.avatarWrapper, { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.background }]}>
+    <View
+      style={[
+        styles.avatarWrapper,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
       <Image
         source={hasCustomAvatar ? { uri } : DefaultAvatarImage}
         style={{ width: size, height: size, borderRadius: size / 2 }}
@@ -440,7 +609,10 @@ function VoiceMessagePlayer({
   colors: ThemeColors;
   isDark: boolean;
 }) {
-  const barHeights = useMemo(() => generateWaveformBars(audioUrl, 20), [audioUrl]);
+  const barHeights = useMemo(
+    () => generateWaveformBars(audioUrl, 20),
+    [audioUrl],
+  );
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -461,7 +633,7 @@ function VoiceMessagePlayer({
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const loadAndPlayAudio = async () => {
@@ -484,7 +656,10 @@ function VoiceMessagePlayer({
             // Pause
             await sound.pauseAsync();
             setIsPlaying(false);
-          } else if (hasFinished || status.positionMillis >= (status.durationMillis || 0) - 100) {
+          } else if (
+            hasFinished ||
+            status.positionMillis >= (status.durationMillis || 0) - 100
+          ) {
             // Replay from beginning
             await sound.setPositionAsync(0);
             await sound.playAsync();
@@ -506,7 +681,7 @@ function VoiceMessagePlayer({
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: audioUrl },
         { shouldPlay: true },
-        onPlaybackStatusUpdate
+        onPlaybackStatusUpdate,
       );
 
       setSound(newSound);
@@ -514,9 +689,9 @@ function VoiceMessagePlayer({
       setHasFinished(false);
       setIsLoading(false);
     } catch (error) {
-      console.error('Error playing audio:', error);
+      console.error("Error playing audio:", error);
       setIsLoading(false);
-      setErrorAlert('Failed to play voice message');
+      setErrorAlert("Failed to play voice message");
     }
   };
 
@@ -532,7 +707,9 @@ function VoiceMessagePlayer({
 
       // Update progress animation
       if (totalDuration > 0) {
-        progressAnim.value = withTiming(currentPosition / totalDuration, { duration: 100 });
+        progressAnim.value = withTiming(currentPosition / totalDuration, {
+          duration: 100,
+        });
       }
 
       if (status.didJustFinish) {
@@ -549,20 +726,33 @@ function VoiceMessagePlayer({
   }));
 
   return (
-    <View style={[styles.voiceMessageContainer, isOwn ? styles.voiceMessageOwn : [styles.voiceMessageOther, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' }]]}>
+    <View
+      style={[
+        styles.voiceMessageContainer,
+        isOwn
+          ? styles.voiceMessageOwn
+          : [
+              styles.voiceMessageOther,
+              { backgroundColor: isDark ? colors.cardElevated : "#f0f0f0" },
+            ],
+      ]}
+    >
       <TouchableOpacity
-        style={[styles.voicePlayButton, isOwn ? styles.voicePlayButtonOwn : styles.voicePlayButtonOther]}
+        style={[
+          styles.voicePlayButton,
+          isOwn ? styles.voicePlayButtonOwn : styles.voicePlayButtonOther,
+        ]}
         onPress={loadAndPlayAudio}
         disabled={isLoading}
         activeOpacity={0.7}
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color={isOwn ? '#fff' : '#0095f6'} />
+          <ActivityIndicator size="small" color={isOwn ? "#fff" : "#0095f6"} />
         ) : (
           <Ionicons
-            name={isPlaying ? 'pause' : 'play'}
+            name={isPlaying ? "pause" : "play"}
             size={20}
-            color={isOwn ? '#fff' : '#0095f6'}
+            color={isOwn ? "#fff" : "#0095f6"}
           />
         )}
       </TouchableOpacity>
@@ -578,8 +768,8 @@ function VoiceMessagePlayer({
                 {
                   height: h,
                   backgroundColor: isOwn
-                    ? 'rgba(255,255,255,0.35)'
-                    : 'rgba(0,149,246,0.4)',
+                    ? "rgba(255,255,255,0.35)"
+                    : "rgba(0,149,246,0.4)",
                 },
               ]}
             />
@@ -593,7 +783,7 @@ function VoiceMessagePlayer({
                   styles.voiceWaveformBar,
                   {
                     height: h,
-                    backgroundColor: isOwn ? '#fff' : '#0095f6',
+                    backgroundColor: isOwn ? "#fff" : "#0095f6",
                   },
                 ]}
               />
@@ -602,7 +792,13 @@ function VoiceMessagePlayer({
         </View>
 
         {/* Duration */}
-        <Text style={[styles.voiceDuration, { color: isDark && !isOwn ? colors.textSecondary : undefined }, isOwn && styles.voiceDurationOwn]}>
+        <Text
+          style={[
+            styles.voiceDuration,
+            { color: isDark && !isOwn ? colors.textSecondary : undefined },
+            isOwn && styles.voiceDurationOwn,
+          ]}
+        >
           {isPlaying ? formatTime(position) : formatTime(audioDuration)}
         </Text>
       </View>
@@ -636,11 +832,14 @@ function Composer({
   colors: ThemeColors;
   isDark: boolean;
 }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   // Review state: after recording stops, user can relisten before sending
-  const [reviewAudio, setReviewAudio] = useState<{ uri: string; duration: number } | null>(null);
+  const [reviewAudio, setReviewAudio] = useState<{
+    uri: string;
+    duration: number;
+  } | null>(null);
   const [reviewSound, setReviewSound] = useState<Audio.Sound | null>(null);
   const [isReviewPlaying, setIsReviewPlaying] = useState(false);
   const [reviewPosition, setReviewPosition] = useState(0);
@@ -648,7 +847,9 @@ function Composer({
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<TextInput>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
-  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
   // Recording animation
   const recordingScale = useSharedValue(1);
@@ -658,10 +859,10 @@ function Composer({
       recordingScale.value = withRepeat(
         withSequence(
           withTiming(1.2, { duration: 500 }),
-          withTiming(1, { duration: 500 })
+          withTiming(1, { duration: 500 }),
         ),
         -1,
-        false
+        false,
       );
     } else {
       recordingScale.value = withTiming(1, { duration: 200 });
@@ -695,7 +896,7 @@ function Composer({
   const handleSend = () => {
     if (text.trim() || pendingMedia.length > 0) {
       onSend(text.trim());
-      setText('');
+      setText("");
     }
   };
 
@@ -703,8 +904,8 @@ function Composer({
     try {
       // Request permissions
       const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') {
-        setErrorAlert('Please allow microphone access to send voice messages.');
+      if (status !== "granted") {
+        setErrorAlert("Please allow microphone access to send voice messages.");
         return;
       }
 
@@ -716,7 +917,7 @@ function Composer({
 
       // Start recording
       const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
+        Audio.RecordingOptionsPresets.HIGH_QUALITY,
       );
 
       recordingRef.current = recording;
@@ -727,10 +928,9 @@ function Composer({
       durationIntervalRef.current = setInterval(() => {
         setRecordingDuration((prev) => prev + 1);
       }, 1000);
-
     } catch (error) {
-      console.error('Failed to start recording:', error);
-      setErrorAlert('Failed to start recording. Please try again.');
+      console.error("Failed to start recording:", error);
+      setErrorAlert("Failed to start recording. Please try again.");
     }
   };
 
@@ -762,9 +962,8 @@ function Composer({
       if (uri && duration > 0) {
         setReviewAudio({ uri, duration });
       }
-
     } catch (error) {
-      console.error('Failed to stop recording:', error);
+      console.error("Failed to stop recording:", error);
       setIsRecording(false);
       setRecordingDuration(0);
     }
@@ -788,7 +987,7 @@ function Composer({
       setRecordingDuration(0);
       recordingRef.current = null;
     } catch (error) {
-      console.error('Failed to cancel recording:', error);
+      console.error("Failed to cancel recording:", error);
       setIsRecording(false);
       setRecordingDuration(0);
     }
@@ -810,7 +1009,10 @@ function Composer({
           if (isReviewPlaying) {
             await reviewSound.pauseAsync();
             setIsReviewPlaying(false);
-          } else if (status.positionMillis >= (status.durationMillis || 0) - 100) {
+          } else if (
+            status.positionMillis >=
+            (status.durationMillis || 0) - 100
+          ) {
             await reviewSound.setPositionAsync(0);
             await reviewSound.playAsync();
             setIsReviewPlaying(true);
@@ -834,12 +1036,12 @@ function Composer({
               setReviewPosition(0);
             }
           }
-        }
+        },
       );
       setReviewSound(newSound);
       setIsReviewPlaying(true);
     } catch (error) {
-      console.error('Failed to play review audio:', error);
+      console.error("Failed to play review audio:", error);
     }
   };
 
@@ -848,7 +1050,10 @@ function Composer({
     if (!reviewAudio) return;
     // Stop playback if playing
     if (reviewSound) {
-      try { await reviewSound.stopAsync(); await reviewSound.unloadAsync(); } catch {}
+      try {
+        await reviewSound.stopAsync();
+        await reviewSound.unloadAsync();
+      } catch {}
     }
     onSendAudio(reviewAudio.uri, reviewAudio.duration);
     setReviewAudio(null);
@@ -860,7 +1065,10 @@ function Composer({
   // Discard the reviewed audio
   const discardReviewAudio = async () => {
     if (reviewSound) {
-      try { await reviewSound.stopAsync(); await reviewSound.unloadAsync(); } catch {}
+      try {
+        await reviewSound.stopAsync();
+        await reviewSound.unloadAsync();
+      } catch {}
     }
     setReviewAudio(null);
     setReviewSound(null);
@@ -879,20 +1087,43 @@ function Composer({
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const canSend = text.trim().length > 0 || pendingMedia.length > 0;
 
   return (
-    <View style={[styles.composerContainer, { paddingBottom: Math.max(insets.bottom, 8), backgroundColor: colors.background, borderTopColor: colors.border }]}>
+    <View
+      style={[
+        styles.composerContainer,
+        {
+          paddingBottom: Math.max(insets.bottom, 8),
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+        },
+      ]}
+    >
       {/* Recording indicator */}
       {isRecording && (
         <View style={styles.recordingIndicator}>
-          <Animated.View style={[styles.recordingDot, recordingAnimatedStyle]} />
-          <Text style={styles.recordingText}>Recording {formatDuration(recordingDuration)}</Text>
-          <TouchableOpacity onPress={cancelRecording} style={styles.cancelRecordingButton}>
-            <Text style={[styles.cancelRecordingText, { color: colors.textSecondary }]}>Cancel</Text>
+          <Animated.View
+            style={[styles.recordingDot, recordingAnimatedStyle]}
+          />
+          <Text style={styles.recordingText}>
+            Recording {formatDuration(recordingDuration)}
+          </Text>
+          <TouchableOpacity
+            onPress={cancelRecording}
+            style={styles.cancelRecordingButton}
+          >
+            <Text
+              style={[
+                styles.cancelRecordingText,
+                { color: colors.textSecondary },
+              ]}
+            >
+              Cancel
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -900,12 +1131,24 @@ function Composer({
       {/* Audio review bar */}
       {reviewAudio && !isRecording && (
         <View style={[styles.reviewBar, { borderColor: colors.border }]}>
-          <TouchableOpacity onPress={discardReviewAudio} style={styles.reviewDeleteButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={discardReviewAudio}
+            style={styles.reviewDeleteButton}
+            activeOpacity={0.7}
+          >
             <Ionicons name="trash-outline" size={20} color="#ff3b30" />
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={toggleReviewPlayback} style={styles.reviewPlayButton} activeOpacity={0.7}>
-            <Ionicons name={isReviewPlaying ? 'pause' : 'play'} size={18} color="#fff" />
+          <TouchableOpacity
+            onPress={toggleReviewPlayback}
+            style={styles.reviewPlayButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={isReviewPlaying ? "pause" : "play"}
+              size={18}
+              color="#fff"
+            />
           </TouchableOpacity>
 
           <View style={styles.reviewWaveformArea}>
@@ -914,20 +1157,29 @@ function Composer({
                 style={[
                   styles.reviewWaveformProgress,
                   {
-                    width: reviewAudio.duration > 0
-                      ? `${Math.min((reviewPosition / reviewAudio.duration) * 100, 100)}%`
-                      : '0%',
+                    width:
+                      reviewAudio.duration > 0
+                        ? `${Math.min((reviewPosition / reviewAudio.duration) * 100, 100)}%`
+                        : "0%",
                   },
                 ]}
               />
             </View>
           </View>
 
-          <Text style={[styles.reviewDuration, { color: colors.textSecondary }]}>
-            {isReviewPlaying ? formatDuration(Math.floor(reviewPosition)) : formatDuration(reviewAudio.duration)}
+          <Text
+            style={[styles.reviewDuration, { color: colors.textSecondary }]}
+          >
+            {isReviewPlaying
+              ? formatDuration(Math.floor(reviewPosition))
+              : formatDuration(reviewAudio.duration)}
           </Text>
 
-          <TouchableOpacity onPress={confirmReviewAudio} style={styles.reviewSendButton} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={confirmReviewAudio}
+            style={styles.reviewSendButton}
+            activeOpacity={0.7}
+          >
             <Ionicons name="send" size={20} color="#0095f6" />
           </TouchableOpacity>
         </View>
@@ -938,9 +1190,15 @@ function Composer({
         <View style={styles.pendingMediaContainer}>
           {pendingMedia.map((media, index) => (
             <View key={index} style={styles.pendingMediaItem}>
-              <Image source={{ uri: media.uri }} style={styles.pendingMediaImage} />
+              <Image
+                source={{ uri: media.uri }}
+                style={styles.pendingMediaImage}
+              />
               <TouchableOpacity
-                style={[styles.pendingMediaRemove, { backgroundColor: colors.background }]}
+                style={[
+                  styles.pendingMediaRemove,
+                  { backgroundColor: colors.background },
+                ]}
                 onPress={() => onClearMedia(index)}
               >
                 <Ionicons name="close-circle" size={20} color="#fff" />
@@ -960,7 +1218,7 @@ function Composer({
               activeOpacity={0.7}
             >
               <LinearGradient
-                colors={['#007AFF', '#0095f6']}
+                colors={["#007AFF", "#0095f6"]}
                 style={styles.cameraButtonGradient}
               >
                 <Ionicons name="camera" size={20} color="#fff" />
@@ -970,13 +1228,21 @@ function Composer({
 
           {/* Input area */}
           {!isRecording ? (
-            <View style={[styles.inputWrapper, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
+            <View
+              style={[
+                styles.inputWrapper,
+                {
+                  backgroundColor: colors.input,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+            >
               <TextInput
                 ref={inputRef}
                 style={[styles.composerInput, { color: colors.text }]}
                 value={text}
                 onChangeText={handleChangeText}
-                placeholder={placeholder || 'Message...'}
+                placeholder={placeholder || "Message..."}
                 placeholderTextColor={colors.placeholder}
                 multiline
                 maxLength={1000}
@@ -988,12 +1254,21 @@ function Composer({
                 onPress={onPickImage}
                 activeOpacity={0.7}
               >
-                <Ionicons name="image-outline" size={24} color={colors.iconSecondary} />
+                <Ionicons
+                  name="image-outline"
+                  size={24}
+                  color={colors.iconSecondary}
+                />
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.recordingInputWrapper}>
-              <Text style={[styles.recordingInputText, { color: colors.textSecondary }]}>
+              <Text
+                style={[
+                  styles.recordingInputText,
+                  { color: colors.textSecondary },
+                ]}
+              >
                 Tap stop to finish recording
               </Text>
             </View>
@@ -1015,14 +1290,17 @@ function Composer({
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.micButton, isRecording && styles.micButtonRecording]}
+              style={[
+                styles.micButton,
+                isRecording && styles.micButtonRecording,
+              ]}
               onPress={handleMicPress}
               activeOpacity={0.7}
             >
               <Ionicons
-                name={isRecording ? 'stop' : 'mic'}
+                name={isRecording ? "stop" : "mic"}
                 size={24}
-                color={isRecording ? '#fff' : colors.iconSecondary}
+                color={isRecording ? "#fff" : colors.iconSecondary}
               />
             </TouchableOpacity>
           )}
@@ -1033,20 +1311,30 @@ function Composer({
 }
 
 // Empty Chat State
-function EmptyChat({ userName, colors }: { userName?: string; colors: ThemeColors }) {
+function EmptyChat({
+  userName,
+  colors,
+}: {
+  userName?: string;
+  colors: ThemeColors;
+}) {
   return (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyAvatarContainer}>
         <LinearGradient
-          colors={['#007AFF', '#0095f6']}
+          colors={["#007AFF", "#0095f6"]}
           style={styles.emptyAvatarGradient}
         >
           <Ionicons name="chatbubbles" size={40} color="#fff" />
         </LinearGradient>
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>Start a conversation</Text>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
+        Start a conversation
+      </Text>
       <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        {userName ? `Say hi to ${userName}!` : 'Send a message or share a photo'}
+        {userName
+          ? `Say hi to ${userName}!`
+          : "Send a message or share a photo"}
       </Text>
     </View>
   );
@@ -1065,7 +1353,12 @@ function ImageViewerModal({
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
       <Pressable style={styles.imageViewerOverlay} onPress={onClose}>
         <TouchableOpacity
           style={[styles.imageViewerClose, { top: insets.top + 16 }]}
@@ -1084,13 +1377,28 @@ function ImageViewerModal({
 }
 
 // Loading Screen
-function LoadingScreen({ insets, colors, isDark }: { insets: { top: number }; colors: ThemeColors; isDark: boolean }) {
+function LoadingScreen({
+  insets,
+  colors,
+  isDark,
+}: {
+  insets: { top: number };
+  colors: ThemeColors;
+  isDark: boolean;
+}) {
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: colors.background },
+      ]}
+    >
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.text} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading chat...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Loading chat...
+        </Text>
       </View>
     </View>
   );
@@ -1111,8 +1419,13 @@ function ErrorScreen({
   isDark: boolean;
 }) {
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: colors.background },
+      ]}
+    >
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Ionicons name="chevron-back" size={28} color={colors.text} />
@@ -1123,9 +1436,17 @@ function ErrorScreen({
         <View style={styles.headerRight} />
       </View>
       <View style={styles.emptyContainer}>
-        <Ionicons name="alert-circle-outline" size={64} color={colors.textTertiary} />
-        <Text style={[styles.emptyTitle, { color: colors.text }]}>Unable to load chat</Text>
-        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>{error}</Text>
+        <Ionicons
+          name="alert-circle-outline"
+          size={64}
+          color={colors.textTertiary}
+        />
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>
+          Unable to load chat
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          {error}
+        </Text>
       </View>
     </View>
   );
@@ -1144,15 +1465,18 @@ export default function ChatThreadScreen() {
   const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
-  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<ChatMessage | null>(
+    null,
+  );
   const [showChatInfo, setShowChatInfo] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const [removeMemberTarget, setRemoveMemberTarget] = useState<ChannelMember | null>(null);
+  const [removeMemberTarget, setRemoveMemberTarget] =
+    useState<ChannelMember | null>(null);
   const [isEditingGroupName, setIsEditingGroupName] = useState(false);
-  const [editGroupName, setEditGroupName] = useState('');
+  const [editGroupName, setEditGroupName] = useState("");
 
   const { user } = useAuth();
   const removeMemberMutation = useRemoveMember();
@@ -1173,7 +1497,7 @@ export default function ChatThreadScreen() {
     deleteMessage,
   } = useConversation(conversationId);
 
-  const isConcierge = channelInfo?.type === 'system';
+  const isConcierge = channelInfo?.type === "system";
 
   // Video calls removed
 
@@ -1203,7 +1527,7 @@ export default function ChatThreadScreen() {
       const dayKey = msgDate.toDateString();
 
       if (dayKey !== currentDay) {
-        groups.push({ type: 'day', date: msgDate });
+        groups.push({ type: "day", date: msgDate });
         currentDay = dayKey;
         lastSenderId = null;
       }
@@ -1211,7 +1535,7 @@ export default function ChatThreadScreen() {
       // System messages break message groups
       if (msg.isSystem) {
         groups.push({
-          type: 'message',
+          type: "message",
           message: msg,
           isGroupStart: true,
           showTime: false,
@@ -1229,7 +1553,7 @@ export default function ChatThreadScreen() {
         nextMsg.createdAt.getTime() - msg.createdAt.getTime() > 5 * 60 * 1000;
 
       groups.push({
-        type: 'message',
+        type: "message",
         message: msg,
         isGroupStart,
         showTime,
@@ -1261,39 +1585,50 @@ export default function ChatThreadScreen() {
   }, [messages.length]);
 
   const { startCall, startGroupCall } = useCall();
-  const isGroupChat = channelInfo?.type === 'group';
+  const isGroupChat = channelInfo?.type === "group";
   const handleStartCall = useCallback(
     async (video: boolean) => {
       if (isGroupChat) {
         if (!conversationId) return;
-        const groupName = channelInfo?.name || 'Group Call';
+        const groupName = channelInfo?.name || "Group Call";
         startGroupCall(conversationId, groupName, video);
         return;
       }
       const otherId = Number(channelInfo?.otherMember?.id);
       if (!otherId) return;
-      startCall(otherId, channelInfo?.otherMember?.name, channelInfo?.otherMember?.image, video);
+      startCall(
+        otherId,
+        channelInfo?.otherMember?.name,
+        channelInfo?.otherMember?.image,
+        video,
+      );
     },
-    [channelInfo, startCall, startGroupCall, isGroupChat, conversationId]
+    [channelInfo, startCall, startGroupCall, isGroupChat, conversationId],
   );
 
   const handleSend = useCallback(
     async (text: string) => {
       try {
         setIsSending(true);
-        const attachments = pendingMedia.map((m) => ({ type: m.type, uri: m.uri }));
-        await sendMessage(text, attachments.length > 0 ? attachments : undefined);
+        const attachments = pendingMedia.map((m) => ({
+          type: m.type,
+          uri: m.uri,
+        }));
+        await sendMessage(
+          text,
+          attachments.length > 0 ? attachments : undefined,
+        );
         setPendingMedia([]);
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
       } catch (err) {
-        console.error('Failed to send message:', err);
+        console.error("Failed to send message:", err);
       } finally {
         setIsSending(false);
       }
     },
-    [sendMessage, pendingMedia]
+    [sendMessage, pendingMedia],
   );
 
   const handlePickImage = useCallback(async () => {
@@ -1308,21 +1643,23 @@ export default function ChatThreadScreen() {
       if (!result.canceled && result.assets) {
         const newMedia = result.assets.map((asset) => ({
           uri: asset.uri,
-          type: (asset.type === 'video' ? 'video' : 'image') as 'image' | 'video',
+          type: (asset.type === "video" ? "video" : "image") as
+            | "image"
+            | "video",
           width: asset.width,
           height: asset.height,
         }));
         setPendingMedia((prev) => [...prev, ...newMedia].slice(0, 5));
       }
     } catch (err) {
-      console.error('Failed to pick image:', err);
+      console.error("Failed to pick image:", err);
     }
   }, []);
 
   const handleOpenCamera = useCallback(async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
+      if (status !== "granted") {
         return;
       }
 
@@ -1333,18 +1670,22 @@ export default function ChatThreadScreen() {
 
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        setPendingMedia((prev) => [
-          ...prev,
-          {
-            uri: asset.uri,
-            type: (asset.type === 'video' ? 'video' : 'image') as 'image' | 'video',
-            width: asset.width,
-            height: asset.height,
-          },
-        ].slice(0, 5));
+        setPendingMedia((prev) =>
+          [
+            ...prev,
+            {
+              uri: asset.uri,
+              type: (asset.type === "video" ? "video" : "image") as
+                | "image"
+                | "video",
+              width: asset.width,
+              height: asset.height,
+            },
+          ].slice(0, 5),
+        );
       }
     } catch (err) {
-      console.error('Failed to open camera:', err);
+      console.error("Failed to open camera:", err);
     }
   }, []);
 
@@ -1362,22 +1703,24 @@ export default function ChatThreadScreen() {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
       } catch (err) {
-        console.error('Failed to send voice message:', err);
-        setErrorAlert('Failed to send voice message. Please try again.');
+        console.error("Failed to send voice message:", err);
+        setErrorAlert("Failed to send voice message. Please try again.");
       } finally {
         setIsSending(false);
       }
     },
-    [sendVoiceMessage]
+    [sendVoiceMessage],
   );
 
   const handleScroll = useCallback(
     (event: any) => {
-      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-      const distanceFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+      const { contentOffset, contentSize, layoutMeasurement } =
+        event.nativeEvent;
+      const distanceFromBottom =
+        contentSize.height - contentOffset.y - layoutMeasurement.height;
       scrollToBottomOpacity.value = distanceFromBottom > 200 ? 1 : 0;
     },
-    [scrollToBottomOpacity]
+    [scrollToBottomOpacity],
   );
 
   const scrollToBottomStyle = useAnimatedStyle(() => ({
@@ -1393,7 +1736,7 @@ export default function ChatThreadScreen() {
     setShowChatInfo(false);
     if (channelInfo?.otherMember) {
       router.push({
-        pathname: '/user-profile/[userId]',
+        pathname: "/user-profile/[userId]",
         params: {
           userId: channelInfo.otherMember.id,
         },
@@ -1449,29 +1792,29 @@ export default function ChatThreadScreen() {
     }
   }, [conversationId, editGroupName, updateConversationMutation]);
 
-  const handleMemberPress = useCallback((member: ChannelMember) => {
-    if (member.id === user?.id) return;
-    setShowChatInfo(false);
-    router.push({
-      pathname: '/user-profile/[userId]',
-      params: { userId: String(member.id) },
-    });
-  }, [user?.id, router]);
-
-  const handleLongPressMessage = useCallback(
-    (message: ChatMessage) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      setSelectedMessage(message);
+  const handleMemberPress = useCallback(
+    (member: ChannelMember) => {
+      if (member.id === user?.id) return;
+      setShowChatInfo(false);
+      router.push({
+        pathname: "/user-profile/[userId]",
+        params: { userId: String(member.id) },
+      });
     },
-    []
+    [user?.id, router],
   );
+
+  const handleLongPressMessage = useCallback((message: ChatMessage) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setSelectedMessage(message);
+  }, []);
 
   const handleUnsend = useCallback(async () => {
     if (!selectedMessage) return;
     try {
       await deleteMessage(selectedMessage.id);
     } catch {
-      setErrorAlert('Failed to unsend message.');
+      setErrorAlert("Failed to unsend message.");
     } finally {
       setSelectedMessage(null);
     }
@@ -1483,7 +1826,7 @@ export default function ChatThreadScreen() {
       await Clipboard.setStringAsync(selectedMessage.text);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     } finally {
       setSelectedMessage(null);
     }
@@ -1491,11 +1834,11 @@ export default function ChatThreadScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: MessageGroup }) => {
-      if (item.type === 'day' && item.date) {
+      if (item.type === "day" && item.date) {
         return <DaySeparator date={item.date} colors={colors} />;
       }
 
-      if (item.type === 'message' && item.message) {
+      if (item.type === "message" && item.message) {
         return (
           <MessageBubble
             message={item.message}
@@ -1515,7 +1858,7 @@ export default function ChatThreadScreen() {
 
       return null;
     },
-    [colors, isDark, handleLongPressMessage, otherReadAt]
+    [colors, isDark, handleLongPressMessage, otherReadAt],
   );
 
   if (isLoading) {
@@ -1535,14 +1878,19 @@ export default function ChatThreadScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: colors.background },
+      ]}
+    >
       {isDark && <DarkGradientBg />}
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <ConfirmModal
         visible={!!errorAlert}
         onClose={() => setErrorAlert(null)}
         title="Error"
-        message={errorAlert || ''}
+        message={errorAlert || ""}
         alertOnly
         icon="alert-circle-outline"
       />
@@ -1563,7 +1911,10 @@ export default function ChatThreadScreen() {
 
       {/* Header - Instagram style */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
 
@@ -1579,35 +1930,63 @@ export default function ChatThreadScreen() {
                 <Ionicons name="sparkles" size={18} color="#fff" />
               </View>
             ) : (
-              <Avatar uri={channelInfo?.otherMember?.image} size={40} colors={colors} />
+              <Avatar
+                uri={channelInfo?.otherMember?.image}
+                size={40}
+                colors={colors}
+              />
             )}
-            {!isConcierge && channelInfo?.isOnline && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
+            {!isConcierge && channelInfo?.isOnline && (
+              <View
+                style={[
+                  styles.onlineIndicator,
+                  { borderColor: colors.background },
+                ]}
+              />
+            )}
           </View>
           <View style={styles.headerInfo}>
             <View style={styles.headerNameRow}>
-              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-                {channelInfo?.name || 'Chat'}
+              <Text
+                style={[styles.headerTitle, { color: colors.text }]}
+                numberOfLines={1}
+              >
+                {channelInfo?.name || "Chat"}
               </Text>
               {channelInfo?.otherMember?.isVerified && (
-                <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+                <MaterialCommunityIcons
+                  name="check-decagram"
+                  size={16}
+                  color={colors.verified}
+                />
               )}
             </View>
-            <Text style={[styles.headerStatus, { color: colors.textSecondary }]}>
+            <Text
+              style={[styles.headerStatus, { color: colors.textSecondary }]}
+            >
               {isConcierge
-                ? 'AI Assistant'
-                : channelInfo?.type === 'group'
+                ? "AI Assistant"
+                : channelInfo?.type === "group"
                   ? `${channelInfo.memberCount} members`
-                  : channelInfo?.isOnline ? 'Active now' : 'Tap to view profile'}
+                  : channelInfo?.isOnline
+                    ? "Active now"
+                    : "Tap to view profile"}
             </Text>
           </View>
         </TouchableOpacity>
 
         {!isConcierge && (
           <>
-            <TouchableOpacity style={styles.headerRight} onPress={() => handleStartCall(false)}>
+            <TouchableOpacity
+              style={styles.headerRight}
+              onPress={() => handleStartCall(false)}
+            >
               <Ionicons name="call-outline" size={24} color={colors.text} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.headerRight} onPress={() => handleStartCall(true)}>
+            <TouchableOpacity
+              style={styles.headerRight}
+              onPress={() => handleStartCall(true)}
+            >
               <Ionicons name="videocam-outline" size={26} color={colors.text} />
             </TouchableOpacity>
           </>
@@ -1617,37 +1996,51 @@ export default function ChatThreadScreen() {
       {/* Messages */}
       <KeyboardAvoidingView
         style={styles.content}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
         <FlatList
           ref={flatListRef}
           data={messageGroups}
           keyExtractor={(item, index) =>
-            item.type === 'day'
+            item.type === "day"
               ? `day-${item.date?.toISOString()}`
               : `msg-${item.message?.id || index}`
           }
           renderItem={renderItem}
           contentContainerStyle={
-            messages.length === 0
-              ? styles.emptyList
-              : styles.messagesList
+            messages.length === 0 ? styles.emptyList : styles.messagesList
           }
           onScroll={handleScroll}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           inverted={false}
-          ListEmptyComponent={<EmptyChat userName={channelInfo?.name} colors={colors} />}
+          ListEmptyComponent={
+            <EmptyChat userName={channelInfo?.name} colors={colors} />
+          }
           ListFooterComponent={
-            isTyping ? <TypingIndicator visible={isTyping} isConcierge={isConcierge} avatarUri={channelInfo?.otherMember?.image} colors={colors} isDark={isDark} /> : null
+            isTyping ? (
+              <TypingIndicator
+                visible={isTyping}
+                isConcierge={isConcierge}
+                avatarUri={channelInfo?.otherMember?.image}
+                colors={colors}
+                isDark={isDark}
+              />
+            ) : null
           }
         />
 
         {/* Scroll to Bottom Button */}
         <Animated.View style={[styles.scrollToBottom, scrollToBottomStyle]}>
           <TouchableOpacity
-            style={[styles.scrollToBottomButton, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0', borderColor: colors.border }]}
+            style={[
+              styles.scrollToBottomButton,
+              {
+                backgroundColor: isDark ? colors.cardElevated : "#f0f0f0",
+                borderColor: colors.border,
+              },
+            ]}
             onPress={() => flatListRef.current?.scrollToEnd({ animated: true })}
             activeOpacity={0.8}
           >
@@ -1662,7 +2055,7 @@ export default function ChatThreadScreen() {
           onPickImage={handlePickImage}
           onOpenCamera={handleOpenCamera}
           onSendAudio={handleSendAudio}
-          placeholder={`Message ${channelInfo?.name || ''}...`}
+          placeholder={`Message ${channelInfo?.name || ""}...`}
           pendingMedia={pendingMedia}
           onClearMedia={handleClearMedia}
           isSending={isSending}
@@ -1674,7 +2067,7 @@ export default function ChatThreadScreen() {
       {/* Image Viewer Modal */}
       <ImageViewerModal
         visible={!!viewerImage}
-        imageUrl={viewerImage || ''}
+        imageUrl={viewerImage || ""}
         onClose={() => setViewerImage(null)}
       />
 
@@ -1689,55 +2082,123 @@ export default function ChatThreadScreen() {
           style={styles.contextMenuOverlay}
           onPress={() => setSelectedMessage(null)}
         >
-          <BlurView intensity={40} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+          <BlurView
+            intensity={40}
+            tint={isDark ? "dark" : "light"}
+            style={StyleSheet.absoluteFill}
+          />
 
           <View style={styles.contextMenuContent}>
             {/* Selected message preview */}
             {selectedMessage && (
-              <Animated.View entering={FadeIn.duration(150)} style={[styles.contextMessagePreview, selectedMessage.isOwn && styles.contextMessagePreviewOwn]}>
+              <Animated.View
+                entering={FadeIn.duration(150)}
+                style={[
+                  styles.contextMessagePreview,
+                  selectedMessage.isOwn && styles.contextMessagePreviewOwn,
+                ]}
+              >
                 {selectedMessage.text ? (
-                  <View style={[
-                    styles.messageBubble,
-                    selectedMessage.isOwn ? styles.messageBubbleOwn : [styles.messageBubbleOther, { backgroundColor: isDark ? colors.cardElevated : '#f0f0f0' }],
-                  ]}>
-                    <Text style={selectedMessage.isOwn ? styles.messageTextOwn : [styles.messageText, { color: colors.text }]}>
+                  <View
+                    style={[
+                      styles.messageBubble,
+                      selectedMessage.isOwn
+                        ? styles.messageBubbleOwn
+                        : [
+                            styles.messageBubbleOther,
+                            {
+                              backgroundColor: isDark
+                                ? colors.cardElevated
+                                : "#f0f0f0",
+                            },
+                          ],
+                    ]}
+                  >
+                    <Text
+                      style={
+                        selectedMessage.isOwn
+                          ? styles.messageTextOwn
+                          : [styles.messageText, { color: colors.text }]
+                      }
+                    >
                       {selectedMessage.text}
                     </Text>
                   </View>
                 ) : selectedMessage.attachments?.[0] ? (
                   <Image
-                    source={{ uri: selectedMessage.attachments[0].thumbUrl || selectedMessage.attachments[0].url }}
+                    source={{
+                      uri:
+                        selectedMessage.attachments[0].thumbUrl ||
+                        selectedMessage.attachments[0].url,
+                    }}
                     style={styles.contextPreviewImage}
                     resizeMode="cover"
                   />
                 ) : null}
-                <Text style={[styles.contextTimestamp, { color: colors.textTertiary }]}>
+                <Text
+                  style={[
+                    styles.contextTimestamp,
+                    { color: colors.textTertiary },
+                  ]}
+                >
                   {formatMessageTime(selectedMessage.createdAt)}
                 </Text>
               </Animated.View>
             )}
 
             {/* Action Menu */}
-            <Animated.View entering={FadeInDown.delay(50).duration(200)} style={[styles.actionMenu, { backgroundColor: isDark ? 'rgba(40,40,40,0.95)' : 'rgba(255,255,255,0.95)' }]}>
+            <Animated.View
+              entering={FadeInDown.delay(50).duration(200)}
+              style={[
+                styles.actionMenu,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(40,40,40,0.95)"
+                    : "rgba(255,255,255,0.95)",
+                },
+              ]}
+            >
               {selectedMessage?.text ? (
                 <TouchableOpacity
-                  style={[styles.actionMenuItem, { borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}
+                  style={[
+                    styles.actionMenuItem,
+                    {
+                      borderBottomColor: isDark
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.08)",
+                    },
+                  ]}
                   onPress={handleCopyMessage}
                   activeOpacity={0.6}
                 >
                   <Ionicons name="copy-outline" size={20} color={colors.text} />
-                  <Text style={[styles.actionMenuText, { color: colors.text }]}>Copy</Text>
+                  <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                    Copy
+                  </Text>
                 </TouchableOpacity>
               ) : null}
 
               {selectedMessage?.isOwn && (
                 <TouchableOpacity
-                  style={[styles.actionMenuItem, { borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}
+                  style={[
+                    styles.actionMenuItem,
+                    {
+                      borderBottomColor: isDark
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.08)",
+                    },
+                  ]}
                   onPress={handleUnsend}
                   activeOpacity={0.6}
                 >
-                  <Ionicons name="arrow-undo-outline" size={20} color="#FF3B30" />
-                  <Text style={[styles.actionMenuText, { color: '#FF3B30' }]}>Unsend</Text>
+                  <Ionicons
+                    name="arrow-undo-outline"
+                    size={20}
+                    color="#FF3B30"
+                  />
+                  <Text style={[styles.actionMenuText, { color: "#FF3B30" }]}>
+                    Unsend
+                  </Text>
                 </TouchableOpacity>
               )}
 
@@ -1749,10 +2210,20 @@ export default function ChatThreadScreen() {
                 }}
                 activeOpacity={0.6}
               >
-                <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
-                <Text style={[styles.actionMenuText, { color: colors.text }]}>More</Text>
+                <Ionicons
+                  name="ellipsis-horizontal"
+                  size={20}
+                  color={colors.text}
+                />
+                <Text style={[styles.actionMenuText, { color: colors.text }]}>
+                  More
+                </Text>
                 <View style={{ flex: 1 }} />
-                <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color={colors.textTertiary}
+                />
               </TouchableOpacity>
             </Animated.View>
           </View>
@@ -1766,7 +2237,12 @@ export default function ChatThreadScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowChatInfo(false)}
       >
-        <View style={[styles.chatInfoContainer, { backgroundColor: colors.background }]}>
+        <View
+          style={[
+            styles.chatInfoContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
           {isDark && <DarkGradientBg />}
           {/* Back button */}
           <View style={[styles.chatInfoHeader, { paddingTop: insets.top }]}>
@@ -1783,17 +2259,37 @@ export default function ChatThreadScreen() {
             <View style={styles.chatInfoProfile}>
               <View style={styles.chatInfoAvatarWrapper}>
                 {isGroupChat ? (
-                  <View style={[styles.chatInfoGroupAvatar, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-                    <Ionicons name="people" size={40} color={colors.textSecondary} />
+                  <View
+                    style={[
+                      styles.chatInfoGroupAvatar,
+                      {
+                        backgroundColor: isDark
+                          ? "rgba(255,255,255,0.1)"
+                          : "rgba(0,0,0,0.06)",
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name="people"
+                      size={40}
+                      color={colors.textSecondary}
+                    />
                   </View>
                 ) : (
-                  <Avatar uri={channelInfo?.otherMember?.image} size={100} colors={colors} />
+                  <Avatar
+                    uri={channelInfo?.otherMember?.image}
+                    size={100}
+                    colors={colors}
+                  />
                 )}
               </View>
               {isEditingGroupName ? (
                 <View style={styles.chatInfoEditNameRow}>
                   <TextInput
-                    style={[styles.chatInfoEditNameInput, { color: colors.text, borderColor: colors.border }]}
+                    style={[
+                      styles.chatInfoEditNameInput,
+                      { color: colors.text, borderColor: colors.border },
+                    ]}
                     value={editGroupName}
                     onChangeText={setEditGroupName}
                     autoFocus
@@ -1802,29 +2298,60 @@ export default function ChatThreadScreen() {
                     placeholder="Group name"
                     placeholderTextColor={colors.textTertiary}
                   />
-                  <TouchableOpacity onPress={handleSaveGroupName} style={styles.chatInfoEditNameSave}>
-                    <Ionicons name="checkmark-circle" size={28} color={colors.text} />
+                  <TouchableOpacity
+                    onPress={handleSaveGroupName}
+                    style={styles.chatInfoEditNameSave}
+                  >
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={28}
+                      color={colors.text}
+                    />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setIsEditingGroupName(false)} style={styles.chatInfoEditNameSave}>
-                    <Ionicons name="close-circle" size={28} color={colors.textTertiary} />
+                  <TouchableOpacity
+                    onPress={() => setIsEditingGroupName(false)}
+                    style={styles.chatInfoEditNameSave}
+                  >
+                    <Ionicons
+                      name="close-circle"
+                      size={28}
+                      color={colors.textTertiary}
+                    />
                   </TouchableOpacity>
                 </View>
               ) : (
                 <TouchableOpacity
-                  onPress={isGroupChat ? () => { setEditGroupName(channelInfo?.name || ''); setIsEditingGroupName(true); } : undefined}
+                  onPress={
+                    isGroupChat
+                      ? () => {
+                          setEditGroupName(channelInfo?.name || "");
+                          setIsEditingGroupName(true);
+                        }
+                      : undefined
+                  }
                   activeOpacity={isGroupChat ? 0.7 : 1}
                   style={styles.chatInfoNameRow}
                 >
                   <Text style={[styles.chatInfoName, { color: colors.text }]}>
-                    {channelInfo?.name || 'Chat'}
+                    {channelInfo?.name || "Chat"}
                   </Text>
                   {isGroupChat && (
-                    <Ionicons name="pencil" size={16} color={colors.textTertiary} style={{ marginLeft: 6 }} />
+                    <Ionicons
+                      name="pencil"
+                      size={16}
+                      color={colors.textTertiary}
+                      style={{ marginLeft: 6 }}
+                    />
                   )}
                 </TouchableOpacity>
               )}
               {isGroupChat && (
-                <Text style={[styles.chatInfoSubtitle, { color: colors.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.chatInfoSubtitle,
+                    { color: colors.textSecondary },
+                  ]}
+                >
                   {channelInfo?.memberCount} members
                 </Text>
               )}
@@ -1833,35 +2360,102 @@ export default function ChatThreadScreen() {
             {/* Action buttons row */}
             <View style={styles.chatInfoActions}>
               {!isGroupChat && (
-                <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleGoToProfile} activeOpacity={0.7}>
-                  <View style={[styles.chatInfoActionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-                    <Ionicons name="person-outline" size={22} color={colors.text} />
+                <TouchableOpacity
+                  style={styles.chatInfoActionBtn}
+                  onPress={handleGoToProfile}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.chatInfoActionIcon,
+                      {
+                        backgroundColor: isDark
+                          ? "rgba(255,255,255,0.1)"
+                          : "rgba(0,0,0,0.06)",
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name="person-outline"
+                      size={22}
+                      color={colors.text}
+                    />
                   </View>
-                  <Text style={[styles.chatInfoActionLabel, { color: colors.text }]}>Profile</Text>
+                  <Text
+                    style={[styles.chatInfoActionLabel, { color: colors.text }]}
+                  >
+                    Profile
+                  </Text>
                 </TouchableOpacity>
               )}
 
-              <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleMuteToggle} activeOpacity={0.7}>
-                <View style={[styles.chatInfoActionIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)' }]}>
-                  <Ionicons name={isMuted ? 'notifications-off' : 'notifications-outline'} size={22} color={colors.text} />
+              <TouchableOpacity
+                style={styles.chatInfoActionBtn}
+                onPress={handleMuteToggle}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.chatInfoActionIcon,
+                    {
+                      backgroundColor: isDark
+                        ? "rgba(255,255,255,0.1)"
+                        : "rgba(0,0,0,0.06)",
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={
+                      isMuted ? "notifications-off" : "notifications-outline"
+                    }
+                    size={22}
+                    color={colors.text}
+                  />
                 </View>
-                <Text style={[styles.chatInfoActionLabel, { color: colors.text }]}>{isMuted ? 'Unmute' : 'Mute'}</Text>
+                <Text
+                  style={[styles.chatInfoActionLabel, { color: colors.text }]}
+                >
+                  {isMuted ? "Unmute" : "Mute"}
+                </Text>
               </TouchableOpacity>
 
               {!isGroupChat && (
-                <TouchableOpacity style={styles.chatInfoActionBtn} onPress={handleBlock} activeOpacity={0.7}>
-                  <View style={[styles.chatInfoActionIcon, { backgroundColor: 'rgba(255,59,48,0.12)' }]}>
+                <TouchableOpacity
+                  style={styles.chatInfoActionBtn}
+                  onPress={handleBlock}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.chatInfoActionIcon,
+                      { backgroundColor: "rgba(255,59,48,0.12)" },
+                    ]}
+                  >
                     <Ionicons name="ban-outline" size={22} color="#FF3B30" />
                   </View>
-                  <Text style={[styles.chatInfoActionLabel, { color: '#FF3B30' }]}>Block</Text>
+                  <Text
+                    style={[styles.chatInfoActionLabel, { color: "#FF3B30" }]}
+                  >
+                    Block
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Group Members */}
             {isGroupChat && channelInfo?.members && (
-              <View style={[styles.chatInfoSection, { borderTopColor: colors.border }]}>
-                <Text style={[styles.chatInfoSectionTitle, { color: colors.textTertiary }]}>
+              <View
+                style={[
+                  styles.chatInfoSection,
+                  { borderTopColor: colors.border },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.chatInfoSectionTitle,
+                    { color: colors.textTertiary },
+                  ]}
+                >
                   Members
                 </Text>
                 {channelInfo.members.map((member) => {
@@ -1876,15 +2470,33 @@ export default function ChatThreadScreen() {
                       <Avatar uri={member.image} size={44} colors={colors} />
                       <View style={styles.chatInfoMemberInfo}>
                         <View style={styles.chatInfoMemberNameRow}>
-                          <Text style={[styles.chatInfoMemberName, { color: colors.text }]} numberOfLines={1}>
-                            {member.name}{isSelf ? ' (You)' : ''}
+                          <Text
+                            style={[
+                              styles.chatInfoMemberName,
+                              { color: colors.text },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {member.name}
+                            {isSelf ? " (You)" : ""}
                           </Text>
                           {member.isVerified && (
-                            <MaterialCommunityIcons name="check-decagram" size={14} color={colors.verified} style={{ marginLeft: 4 }} />
+                            <MaterialCommunityIcons
+                              name="check-decagram"
+                              size={14}
+                              color={colors.verified}
+                              style={{ marginLeft: 4 }}
+                            />
                           )}
                         </View>
                         {member.userName && (
-                          <Text style={[styles.chatInfoMemberUsername, { color: colors.textTertiary }]} numberOfLines={1}>
+                          <Text
+                            style={[
+                              styles.chatInfoMemberUsername,
+                              { color: colors.textTertiary },
+                            ]}
+                            numberOfLines={1}
+                          >
                             @{member.userName}
                           </Text>
                         )}
@@ -1895,7 +2507,11 @@ export default function ChatThreadScreen() {
                           onPress={() => setRemoveMemberTarget(member)}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
-                          <Ionicons name="person-remove-outline" size={18} color="#FF3B30" />
+                          <Ionicons
+                            name="person-remove-outline"
+                            size={18}
+                            color="#FF3B30"
+                          />
                         </TouchableOpacity>
                       )}
                     </TouchableOpacity>
@@ -1906,7 +2522,12 @@ export default function ChatThreadScreen() {
 
             {/* Leave Group */}
             {isGroupChat && (
-              <View style={[styles.chatInfoSection, { borderTopColor: colors.border }]}>
+              <View
+                style={[
+                  styles.chatInfoSection,
+                  { borderTopColor: colors.border },
+                ]}
+              >
                 <TouchableOpacity
                   style={styles.chatInfoDangerRow}
                   onPress={() => setShowLeaveConfirm(true)}
@@ -1951,41 +2572,41 @@ export default function ChatThreadScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   // Header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 4,
     paddingVertical: 10,
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
+    borderBottomColor: "rgba(0, 0, 0, 0.08)",
   },
   backButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerCenter: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 4,
   },
   headerAvatarContainer: {
-    position: 'relative',
+    position: "relative",
   },
   conciergeHeaderAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerAvatar: {
     width: 40,
@@ -1993,41 +2614,41 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   onlineIndicator: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#34c759',
+    backgroundColor: "#34c759",
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: "#fff",
   },
   headerInfo: {
     marginLeft: 12,
     flex: 1,
   },
   headerNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   headerTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
+    fontFamily: "Lato_700Bold",
+    color: "#1a1a1a",
   },
   headerStatus: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.5)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0, 0, 0, 0.5)",
     marginTop: 1,
   },
   headerRight: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   // Content
   content: {
@@ -2040,58 +2661,58 @@ const styles = StyleSheet.create({
   },
   emptyList: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   // Day separator
   daySeparator: {
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: 16,
   },
   daySeparatorText: {
     fontSize: 12,
-    fontFamily: 'Lato_600SemiBold',
-    color: 'rgba(0, 0, 0, 0.45)',
-    textTransform: 'uppercase',
+    fontFamily: "Lato_600SemiBold",
+    color: "rgba(0, 0, 0, 0.45)",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-// System message
+  // System message
   systemMessageRow: {
-    alignItems: 'center',
+    alignItems: "center",
     marginVertical: 12,
   },
   systemMessageContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   systemMessageText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   systemMessageTime: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   senderName: {
     fontSize: 12,
-    fontFamily: 'Lato_600SemiBold',
+    fontFamily: "Lato_600SemiBold",
     marginBottom: 2,
     marginLeft: 4,
   },
   // Message styles
   messageRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: 2,
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   messageRowOwn: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   avatarWrapper: {
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
     marginRight: 8,
   },
   messageAvatar: {
@@ -2108,10 +2729,10 @@ const styles = StyleSheet.create({
     maxWidth: MAX_BUBBLE_WIDTH,
   },
   bubbleWrapper: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   bubbleWrapperOwn: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   messageBubble: {
     paddingHorizontal: 16,
@@ -2119,11 +2740,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   messageBubbleOther: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     borderBottomLeftRadius: 4,
   },
   messageBubbleOwn: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     borderBottomRightRadius: 4,
   },
   messageBubbleGroupOther: {
@@ -2136,55 +2757,55 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    color: '#1a1a1a',
+    fontFamily: "Lato_400Regular",
+    color: "#1a1a1a",
     lineHeight: 20,
   },
   messageTextOwn: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    fontFamily: "Lato_400Regular",
+    color: "#fff",
     lineHeight: 20,
   },
   messageTime: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.45)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0, 0, 0, 0.45)",
     marginTop: 4,
     marginLeft: 4,
   },
   messageTimeOwn: {
-    textAlign: 'right',
+    textAlign: "right",
     marginRight: 4,
     marginLeft: 0,
   },
   readReceiptRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 2,
     marginLeft: 4,
     gap: 3,
   },
   readReceiptRowOwn: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
     marginRight: 4,
     marginLeft: 0,
   },
   readReceiptText: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
-    color: '#0095f6',
+    fontFamily: "Lato_400Regular",
+    color: "#0095f6",
   },
   // Attachments
   attachmentWrapper: {
     marginBottom: 4,
   },
   attachmentWrapperOwn: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   attachmentContainer: {
     borderRadius: 18,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 4,
   },
   attachmentImage: {
@@ -2192,19 +2813,19 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_HEIGHT * 0.4,
   },
   videoPlayIcon: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
   },
   // Voice message player
   voiceMessageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderRadius: 22,
@@ -2212,70 +2833,70 @@ const styles = StyleSheet.create({
     maxWidth: MAX_BUBBLE_WIDTH,
   },
   voiceMessageOwn: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
   },
   voiceMessageOther: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
   },
   voicePlayButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 10,
   },
   voicePlayButtonOwn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   voicePlayButtonOther: {
-    backgroundColor: 'rgba(0, 149, 246, 0.15)',
+    backgroundColor: "rgba(0, 149, 246, 0.15)",
   },
   voiceWaveformContainer: {
     flex: 1,
   },
   voiceWaveform: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     height: 24,
     gap: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   voiceWaveformBar: {
     width: 3,
     borderRadius: 1.5,
   },
   voiceProgressOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 2,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   voiceDuration: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.6)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0, 0, 0, 0.6)",
     marginTop: 4,
   },
   voiceDurationOwn: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: "rgba(255, 255, 255, 0.8)",
   },
   // Typing indicator
   typingContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     paddingHorizontal: 12,
     paddingVertical: 8,
     gap: 8,
   },
   typingBubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.06)",
     borderRadius: 18,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -2285,34 +2906,34 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   typingConciergeAvatar: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: "#1a1a2e",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderColor: "rgba(255,255,255,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   // Composer
   composerContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)',
+    borderTopColor: "rgba(0, 0, 0, 0.08)",
     paddingTop: 8,
     paddingHorizontal: 8,
   },
   pendingMediaContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 8,
     paddingBottom: 12,
     gap: 8,
   },
   pendingMediaItem: {
-    position: 'relative',
+    position: "relative",
   },
   pendingMediaImage: {
     width: 60,
@@ -2320,38 +2941,38 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   pendingMediaRemove: {
-    position: 'absolute',
+    position: "absolute",
     top: -6,
     right: -6,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 10,
   },
   composerInner: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: 8,
   },
   composerButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   cameraButtonGradient: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   inputWrapper: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    flexDirection: "row",
+    alignItems: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.04)",
     borderRadius: 22,
     borderWidth: 0.5,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: "rgba(0, 0, 0, 0.1)",
     paddingHorizontal: 16,
     paddingVertical: 8,
     minHeight: 44,
@@ -2359,42 +2980,42 @@ const styles = StyleSheet.create({
   composerInput: {
     flex: 1,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-    color: '#1a1a1a',
+    fontFamily: "Lato_400Regular",
+    color: "#1a1a1a",
     maxHeight: 100,
     paddingVertical: 4,
   },
   galleryButton: {
     width: 32,
     height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 4,
   },
   sendButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   micButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   micButtonRecording: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: "#ff3b30",
     borderRadius: 22,
   },
   // Recording indicator
   recordingIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 8,
-    backgroundColor: 'rgba(255, 59, 48, 0.15)',
+    backgroundColor: "rgba(255, 59, 48, 0.15)",
     borderRadius: 12,
     marginHorizontal: 8,
   },
@@ -2402,14 +3023,14 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#ff3b30',
+    backgroundColor: "#ff3b30",
     marginRight: 10,
   },
   recordingText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-    color: '#ff3b30',
+    fontFamily: "Lato_600SemiBold",
+    color: "#ff3b30",
   },
   cancelRecordingButton: {
     paddingHorizontal: 12,
@@ -2417,84 +3038,84 @@ const styles = StyleSheet.create({
   },
   cancelRecordingText: {
     fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-    color: 'rgba(0, 0, 0, 0.6)',
+    fontFamily: "Lato_600SemiBold",
+    color: "rgba(0, 0, 0, 0.6)",
   },
   // Audio review bar
   reviewBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginHorizontal: 8,
     marginBottom: 8,
-    backgroundColor: 'rgba(0, 149, 246, 0.08)',
+    backgroundColor: "rgba(0, 149, 246, 0.08)",
     borderRadius: 22,
     borderWidth: 0.5,
-    borderColor: 'rgba(0, 149, 246, 0.2)',
+    borderColor: "rgba(0, 149, 246, 0.2)",
     gap: 10,
   },
   reviewDeleteButton: {
     width: 32,
     height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   reviewPlayButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#0095f6',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#0095f6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   reviewWaveformArea: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   reviewWaveformTrack: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(0, 149, 246, 0.2)',
-    overflow: 'hidden',
+    backgroundColor: "rgba(0, 149, 246, 0.2)",
+    overflow: "hidden",
   },
   reviewWaveformProgress: {
-    height: '100%',
+    height: "100%",
     borderRadius: 2,
-    backgroundColor: '#0095f6',
+    backgroundColor: "#0095f6",
   },
   reviewDuration: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     minWidth: 32,
-    textAlign: 'center',
+    textAlign: "center",
   },
   reviewSendButton: {
     width: 36,
     height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   recordingInputWrapper: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 59, 48, 0.1)",
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: 'rgba(255, 59, 48, 0.3)',
+    borderColor: "rgba(255, 59, 48, 0.3)",
     paddingHorizontal: 16,
     paddingVertical: 12,
     minHeight: 44,
   },
   recordingInputText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.5)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0, 0, 0, 0.5)",
   },
   // Scroll to bottom
   scrollToBottom: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     bottom: 100,
   },
@@ -2502,17 +3123,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#f0f0f0",
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 0.5,
-    borderColor: 'rgba(0, 0, 0, 0.08)',
+    borderColor: "rgba(0, 0, 0, 0.08)",
   },
   // Empty state
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 24,
   },
   emptyAvatarContainer: {
@@ -2522,48 +3143,48 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
+    fontFamily: "Lato_700Bold",
+    color: "#1a1a1a",
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
-    textAlign: 'center',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.5)",
+    textAlign: "center",
   },
   // Loading
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.5)",
   },
   // Image viewer
   imageViewerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.95)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   imageViewerClose: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     zIndex: 10,
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   imageViewerImage: {
     width: SCREEN_WIDTH,
@@ -2572,21 +3193,21 @@ const styles = StyleSheet.create({
   // Instagram-style context menu
   contextMenuOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   contextMenuContent: {
     width: SCREEN_WIDTH - 48,
     maxWidth: 340,
-    alignItems: 'stretch',
+    alignItems: "stretch",
     gap: 8,
   },
   contextMessagePreview: {
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
     paddingHorizontal: 8,
   },
   contextMessagePreviewOwn: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   contextPreviewImage: {
     width: MAX_IMAGE_WIDTH * 0.6,
@@ -2595,17 +3216,17 @@ const styles = StyleSheet.create({
   },
   contextTimestamp: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 4,
     paddingHorizontal: 4,
   },
   actionMenu: {
     borderRadius: 14,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   actionMenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 12,
@@ -2616,7 +3237,7 @@ const styles = StyleSheet.create({
   },
   actionMenuText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   // Chat Info Screen
   chatInfoContainer: {
@@ -2629,11 +3250,11 @@ const styles = StyleSheet.create({
   chatInfoBackButton: {
     width: 44,
     height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   chatInfoProfile: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 20,
     paddingBottom: 28,
   },
@@ -2642,55 +3263,55 @@ const styles = StyleSheet.create({
   },
   chatInfoName: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   chatInfoActions: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 32,
     paddingHorizontal: 24,
   },
   chatInfoActionBtn: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 6,
   },
   chatInfoActionIcon: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   chatInfoActionLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   chatInfoGroupAvatar: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   chatInfoNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   chatInfoSubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 4,
   },
   chatInfoEditNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 24,
     gap: 8,
   },
   chatInfoEditNameInput: {
     flex: 1,
     fontSize: 18,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 14,
@@ -2707,14 +3328,14 @@ const styles = StyleSheet.create({
   },
   chatInfoSectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
-    textTransform: 'uppercase',
+    fontFamily: "Lato_700Bold",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 12,
   },
   chatInfoMemberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 10,
   },
   chatInfoMemberInfo: {
@@ -2722,31 +3343,31 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   chatInfoMemberNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   chatInfoMemberName: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
+    fontFamily: "Lato_600SemiBold",
     flexShrink: 1,
   },
   chatInfoMemberUsername: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   chatInfoMemberAction: {
     padding: 8,
   },
   chatInfoDangerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     paddingVertical: 12,
   },
   chatInfoDangerText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-    color: '#FF3B30',
+    fontFamily: "Lato_400Regular",
+    color: "#FF3B30",
   },
 });
