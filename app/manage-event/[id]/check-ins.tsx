@@ -47,6 +47,7 @@ interface ListContact {
   birthDate?: string;
   documentNumber?: string;
   tags?: string[];
+  checkInStatus: 'approved' | 'denied';
 }
 
 function formatTimeAgo(dateStr?: string): string {
@@ -94,6 +95,7 @@ function mapAttendee(a: EventAttendee): ListContact {
   let source = 'check_in';
   if (a.status === EventUserStatus.SIGNED_UP) source = 'rsvp';
   else if (a.isRegistered && !isCheckedIn) source = 'rsvp';
+  const checkInStatus = a.status === EventUserStatus.REJECTED ? 'denied' : 'approved';
   return {
     id: a.id,
     name,
@@ -109,6 +111,7 @@ function mapAttendee(a: EventAttendee): ListContact {
     email: a.email,
     birthDate: a.birthDate,
     tags: a.tags,
+    checkInStatus,
   };
 }
 
@@ -179,10 +182,21 @@ function ContactDetailModal({
               {contact.userName && (
                 <Text style={[detailStyles.profileSubname, { color: colors.textTertiary }]}>{contact.name}</Text>
               )}
-              <View style={[detailStyles.badge, { backgroundColor: contact.isGuest ? 'rgba(251,191,36,0.15)' : 'rgba(52,211,153,0.15)' }]}>
-                <Text style={[detailStyles.badgeText, { color: contact.isGuest ? '#fbbf24' : '#34d399' }]}>
-                  {contact.isGuest ? 'Guest' : 'Member'}
-                </Text>
+              <View style={detailStyles.badgeRow}>
+                <View style={[detailStyles.badge, { backgroundColor: contact.isGuest ? 'rgba(251,191,36,0.15)' : 'rgba(52,211,153,0.15)' }]}>
+                  <Text style={[detailStyles.badgeText, { color: contact.isGuest ? '#fbbf24' : '#34d399' }]}>
+                    {contact.isGuest ? 'Guest' : 'Member'}
+                  </Text>
+                </View>
+                <View style={[detailStyles.badge, {
+                  backgroundColor: contact.checkInStatus === 'approved' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
+                }]}>
+                  <Text style={[detailStyles.badgeText, {
+                    color: contact.checkInStatus === 'approved' ? '#10b981' : '#ef4444',
+                  }]}>
+                    {contact.checkInStatus === 'approved' ? 'Approved' : 'Denied'}
+                  </Text>
+                </View>
               </View>
               {contact.tags && contact.tags.length > 0 && (
                 <View style={detailStyles.tagsRow}>
@@ -273,6 +287,7 @@ function CheckInsContent() {
           EventUserStatus.VERIFIED,
           EventUserStatus.CHECKED_IN,
           EventUserStatus.SIGNED_UP,
+          EventUserStatus.REJECTED,
         ],
       });
       const mapped = response.attendees.map(mapAttendee);
@@ -325,6 +340,7 @@ function CheckInsContent() {
           lastSeenAt: data.checkedInAt || new Date().toISOString(),
           paid: false,
           userId: data.userId,
+          checkInStatus: data.status === 'rejected' ? 'denied' : 'approved',
         };
         setContacts((prev) => {
           // Replace if already exists (e.g. membership scan updates a guest entry)
@@ -461,6 +477,21 @@ function CheckInsContent() {
                 <Text style={[styles.guestMetaText, { color: item.isGuest ? '#fbbf24' : '#34d399' }]}>
                   {label}
                 </Text>
+                <View style={[
+                  styles.statusBadge,
+                  { backgroundColor: item.checkInStatus === 'approved' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)' },
+                ]}>
+                  <View style={[
+                    styles.statusDot,
+                    { backgroundColor: item.checkInStatus === 'approved' ? '#10b981' : '#ef4444' },
+                  ]} />
+                  <Text style={[
+                    styles.statusBadgeText,
+                    { color: item.checkInStatus === 'approved' ? '#10b981' : '#ef4444' },
+                  ]}>
+                    {item.checkInStatus === 'approved' ? 'Approved' : 'Denied'}
+                  </Text>
+                </View>
                 {item.eventCount > 1 && (
                   <Text style={[styles.guestMetaText, { color: colors.textTertiary }]}>
                     {item.eventCount} events
@@ -752,6 +783,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
   },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Lato_700Bold',
+  },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -851,8 +899,12 @@ const detailStyles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
-  badge: {
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 8,
     marginTop: 10,
+  },
+  badge: {
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
