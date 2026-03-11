@@ -45,6 +45,7 @@ import { useRemoveMember, useLeaveConversation, useUpdateConversation } from '@/
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { MiniEventCard } from '@/components/chat/mini-event-card';
+import { MiniVenueCard } from '@/components/chat/mini-venue-card';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
 
@@ -254,19 +255,19 @@ function MessageBubble({
         {/* Text bubble */}
         {hasText && (() => {
           const text = message.text || '';
-          const hasEventTags = isConciergeChat && !isOwn && /\[EVENT:\d+\]/.test(text);
+          const hasRichTags = isConciergeChat && !isOwn && /\[(EVENT|VENUE):\d+\]/.test(text);
 
-          if (hasEventTags) {
-            const parts: { type: 'text' | 'event'; value: string }[] = [];
+          if (hasRichTags) {
+            const parts: { type: 'text' | 'event' | 'venue'; value: string }[] = [];
             let lastIndex = 0;
-            const regex = /\[EVENT:(\d+)\]/g;
+            const regex = /\[(EVENT|VENUE):(\d+)\]/g;
             let match = regex.exec(text);
             while (match !== null) {
               if (match.index > lastIndex) {
                 const chunk = text.slice(lastIndex, match.index).trim();
                 if (chunk) parts.push({ type: 'text', value: chunk });
               }
-              parts.push({ type: 'event', value: match[1] });
+              parts.push({ type: match[1].toLowerCase() as 'event' | 'venue', value: match[2] });
               lastIndex = match.index + match[0].length;
               match = regex.exec(text);
             }
@@ -280,6 +281,8 @@ function MessageBubble({
                 {parts.map((part, i) =>
                   part.type === 'event' ? (
                     <MiniEventCard key={`event-${part.value}-${i}`} eventId={Number(part.value)} />
+                  ) : part.type === 'venue' ? (
+                    <MiniVenueCard key={`venue-${part.value}-${i}`} venueId={Number(part.value)} />
                   ) : (
                     <View
                       key={`text-${i}`}
