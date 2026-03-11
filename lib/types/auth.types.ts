@@ -183,4 +183,5 @@ export interface PublicUserProfile {
   eventStats?: EventStats;
   followStats?: FollowStats;
   isPrivate?: boolean;
+  createdAt?: string;
 }
