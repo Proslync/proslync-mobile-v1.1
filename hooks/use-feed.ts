@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useInfiniteQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { postsApi, type FeedItemResponse } from '@/lib/api/posts';
 import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
@@ -116,8 +117,9 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
     gcTime: 5 * 60 * 1000,
   });
 
-  const items = (query.data?.pages ?? []).flatMap((page) =>
-    page.items.map(mapResponseToFeedItem),
+  const items = useMemo(
+    () => (query.data?.pages ?? []).flatMap((page) => page.items.map(mapResponseToFeedItem)),
+    [query.data?.pages],
   );
 
   const refetch = async () => {

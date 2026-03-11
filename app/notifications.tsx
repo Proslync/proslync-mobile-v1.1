@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
-import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { ThemeColors } from '@/hooks/use-app-theme';
 import {
@@ -465,7 +465,7 @@ export default function NotificationsScreen() {
         </ScrollView>
       )}
 
-      <ConfirmDialog
+      <ConfirmModal
         visible={!!confirmId}
         title={confirmType === 'accept' ? 'Accept Invitation' : 'Decline Invitation'}
         message={
@@ -476,7 +476,7 @@ export default function NotificationsScreen() {
         confirmLabel={confirmType === 'accept' ? 'Accept' : 'Decline'}
         destructive={confirmType === 'decline'}
         onConfirm={handleConfirm}
-        onCancel={handleCancelConfirm}
+        onClose={handleCancelConfirm}
       />
     </View>
   );

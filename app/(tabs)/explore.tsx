@@ -11,7 +11,6 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-  Dimensions,
   Modal,
 } from 'react-native';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -30,32 +29,10 @@ import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
+import { formatTimestamp } from '@/lib/utils/date';
 
 // Local default avatar with white background
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
-
-function formatTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-
-  if (diffMins < 1) {
-    return 'now';
-  } else if (diffMins < 60) {
-    return `${diffMins}m`;
-  } else if (diffHours < 24) {
-    return `${diffHours}h`;
-  } else if (diffDays === 1) {
-    return '1d';
-  } else if (diffDays < 7) {
-    return `${diffDays}d`;
-  } else {
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  }
-}
 
 // Avatar with online indicator
 function ConversationAvatar({
@@ -224,7 +201,7 @@ function ConversationRow({
               )}
             </View>
             <Text style={[styles.timestamp, { color: colors.textTertiary }, hasUnread && { color: colors.text }]}>
-              {channel.lastMessage ? formatTime(channel.lastMessage.createdAt) : ''}
+              {channel.lastMessage ? formatTimestamp(channel.lastMessage.createdAt) : ''}
             </Text>
           </View>
 

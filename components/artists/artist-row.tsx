@@ -3,10 +3,10 @@ import { GlassSurface } from '@/components/glass/glass-surface';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { EventArtist } from '@/lib/types/artists.types';
 import { Ionicons } from '@expo/vector-icons';
-import { format, parseISO } from 'date-fns';
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { WebView } from 'react-native-webview';
+import { formatTimeRange } from '@/lib/utils/date';
 
 interface ArtistRowProps {
   artist: EventArtist;
@@ -21,16 +21,6 @@ function getDisplayName(artist: EventArtist): string {
 function getInitial(artist: EventArtist): string {
   const name = getDisplayName(artist);
   return name[0]?.toUpperCase() || 'A';
-}
-
-function formatTimeRange(startTime: string, endTime: string): string {
-  try {
-    const start = parseISO(startTime);
-    const end = parseISO(endTime);
-    return `${format(start, 'h:mm a')} - ${format(end, 'h:mm a')}`;
-  } catch {
-    return 'Time TBD';
-  }
 }
 
 function buildSpotifyEmbedHtml(url?: string | null): string | undefined {

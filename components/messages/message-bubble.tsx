@@ -7,14 +7,14 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Message, User } from '../../lib/types/messages.types';
+import { formatMessageTime } from '@/lib/utils/date';
+import { SCREEN_WIDTH } from '@/lib/utils/layout';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.72;
 const MAX_IMAGE_WIDTH = SCREEN_WIDTH * 0.65;
 
@@ -29,15 +29,6 @@ interface MessageBubbleProps {
   sender?: User;
   isGroupStart?: boolean;
   isGroupEnd?: boolean;
-}
-
-function formatTime(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
 }
 
 export function MessageBubble({
@@ -75,7 +66,7 @@ export function MessageBubble({
       <View style={[styles.systemContainer, { marginTop: 16 }]}>
         <Text style={styles.systemText}>{message.text}</Text>
         {showTimestamp && (
-          <Text style={styles.systemTime}>{formatTime(message.createdAt)}</Text>
+          <Text style={styles.systemTime}>{formatMessageTime(message.createdAt)}</Text>
         )}
       </View>
     );
@@ -194,7 +185,7 @@ export function MessageBubble({
 
         {showTimestamp && (
           <View style={[styles.timestampRow, isOwn && styles.timestampRowOwn]}>
-            <Text style={styles.timestamp}>{formatTime(message.createdAt)}</Text>
+            <Text style={styles.timestamp}>{formatMessageTime(message.createdAt)}</Text>
             {renderStatus()}
           </View>
         )}
@@ -241,7 +232,7 @@ export function MessageBubble({
 
       {showTimestamp && (
         <View style={[styles.timestampRow, isOwn && styles.timestampRowOwn]}>
-          <Text style={styles.timestamp}>{formatTime(message.createdAt)}</Text>
+          <Text style={styles.timestamp}>{formatMessageTime(message.createdAt)}</Text>
           {renderStatus()}
         </View>
       )}

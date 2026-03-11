@@ -22,7 +22,7 @@ import {
   useAdminDeleteEvent,
 } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ActionMenu, type ActionMenuItem } from '@/components/shared/action-menu';
+import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { AdminEvent } from '@/lib/api/admin';
 
@@ -122,7 +122,7 @@ export default function AdminEventsScreen() {
     [],
   );
 
-  const getEventActionItems = (e: AdminEvent): ActionMenuItem[] => [
+  const getEventActionItems = (e: AdminEvent): ActionSheetOption[] => [
     {
       label: 'Change Status',
       icon: 'swap-horizontal-outline',
@@ -141,7 +141,7 @@ export default function AdminEventsScreen() {
     },
   ];
 
-  const getStatusItems = (e: AdminEvent): ActionMenuItem[] =>
+  const getStatusItems = (e: AdminEvent): ActionSheetOption[] =>
     EVENT_STATUS_OPTIONS.filter((s) => s !== e.status).map((status) => ({
       label: status.charAt(0).toUpperCase() + status.slice(1),
       onPress: () => { setStatusEvent(null); updateStatus.mutate({ eventId: e.id, status }); },
@@ -235,16 +235,16 @@ export default function AdminEventsScreen() {
         />
       )}
 
-      <ActionMenu
+      <ActionSheet
         visible={!!actionEvent}
         onClose={() => setActionEvent(null)}
-        items={actionEvent ? getEventActionItems(actionEvent) : []}
+        options={actionEvent ? getEventActionItems(actionEvent) : []}
       />
 
-      <ActionMenu
+      <ActionSheet
         visible={!!statusEvent}
         onClose={() => setStatusEvent(null)}
-        items={statusEvent ? getStatusItems(statusEvent) : []}
+        options={statusEvent ? getStatusItems(statusEvent) : []}
       />
 
       <ConfirmModal

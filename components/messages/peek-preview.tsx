@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  Dimensions,
   TouchableOpacity,
 } from 'react-native';
 import Animated, {
@@ -18,10 +17,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Conversation, Message } from '../../lib/types/messages.types';
+import { formatMessageTime } from '@/lib/utils/date';
+import { SCREEN_WIDTH, SCREEN_HEIGHT } from '@/lib/utils/layout';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PREVIEW_WIDTH = SCREEN_WIDTH * 0.85;
 
 interface PeekPreviewProps {
@@ -29,15 +29,6 @@ interface PeekPreviewProps {
   messages: Message[];
   translateX: SharedValue<number>;
   currentUserId: string;
-}
-
-function formatTime(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
 }
 
 function PreviewMessage({ message, isOwn }: { message: Message; isOwn: boolean }) {
@@ -83,7 +74,7 @@ function PreviewMessage({ message, isOwn }: { message: Message; isOwn: boolean }
   return (
     <View style={[styles.messageBubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
       {renderContent()}
-      <Text style={styles.messageTime}>{formatTime(message.createdAt)}</Text>
+      <Text style={styles.messageTime}>{formatMessageTime(message.createdAt)}</Text>
     </View>
   );
 }

@@ -12,25 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { eventsApi } from '@/lib/api/events';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useStableRouter } from '@/hooks/use-stable-router';
-
-function formatEventDate(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
-    return `${days[date.getDay()]}, ${months[date.getMonth()]} ${date.getDate()} · ${hours}:${minutesStr}${ampm}`;
-  } catch {
-    return dateString;
-  }
-}
+import { formatEventDate } from '@/lib/utils/date';
 
 interface MiniEventCardProps {
   eventId: number;

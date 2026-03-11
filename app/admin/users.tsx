@@ -23,7 +23,7 @@ import {
   useUpdateUserVerified,
 } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ActionMenu, type ActionMenuItem } from '@/components/shared/action-menu';
+import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { AdminUser } from '@/lib/api/admin';
 
@@ -113,7 +113,7 @@ export default function AdminUsersScreen() {
     [],
   );
 
-  const getActionItems = (u: AdminUser): ActionMenuItem[] => [
+  const getActionItems = (u: AdminUser): ActionSheetOption[] => [
     {
       label: 'Change Role',
       icon: 'shield-outline',
@@ -132,7 +132,7 @@ export default function AdminUsersScreen() {
     },
   ];
 
-  const getRoleItems = (u: AdminUser): ActionMenuItem[] =>
+  const getRoleItems = (u: AdminUser): ActionSheetOption[] =>
     ROLE_OPTIONS.filter((r) => r !== u.role).map((role) => ({
       label: role.charAt(0).toUpperCase() + role.slice(1),
       onPress: () => { setRoleUser(null); updateRole.mutate({ userId: u.id, role }); },
@@ -227,16 +227,16 @@ export default function AdminUsersScreen() {
         />
       )}
 
-      <ActionMenu
+      <ActionSheet
         visible={!!actionUser}
         onClose={() => setActionUser(null)}
-        items={actionUser ? getActionItems(actionUser) : []}
+        options={actionUser ? getActionItems(actionUser) : []}
       />
 
-      <ActionMenu
+      <ActionSheet
         visible={!!roleUser}
         onClose={() => setRoleUser(null)}
-        items={roleUser ? getRoleItems(roleUser) : []}
+        options={roleUser ? getRoleItems(roleUser) : []}
       />
 
       <ConfirmModal

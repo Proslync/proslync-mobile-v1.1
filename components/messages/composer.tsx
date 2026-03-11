@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ActionMenu, type ActionMenuItem } from '@/components/shared/action-menu';
+import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -46,7 +46,7 @@ export function Composer({
     setShowAttachMenu(true);
   };
 
-  const attachmentItems: ActionMenuItem[] = [
+  const attachmentItems: ActionSheetOption[] = [
     { label: 'Camera', icon: 'camera-outline', onPress: () => {} },
     { label: 'Photo Library', icon: 'images-outline', onPress: () => {} },
     { label: 'Share Event', icon: 'calendar-outline', onPress: () => {} },
@@ -61,10 +61,10 @@ export function Composer({
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8), backgroundColor: colors.background }]}>
-      <ActionMenu
+      <ActionSheet
         visible={showAttachMenu}
         onClose={() => setShowAttachMenu(false)}
-        items={attachmentItems}
+        options={attachmentItems}
       />
       <ConfirmModal
         visible={showVoiceAlert}

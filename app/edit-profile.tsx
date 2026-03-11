@@ -19,7 +19,7 @@ import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { ActionMenu } from '@/components/shared/action-menu';
+import { ActionSheet } from '@/components/shared/action-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { UpdateProfileRequest } from '@/lib/types/auth.types';
 
@@ -372,10 +372,10 @@ export default function EditProfileScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <ActionMenu
+      <ActionSheet
         visible={showPhotoMenu}
         onClose={() => setShowPhotoMenu(false)}
-        items={[
+        options={[
           {
             label: 'Take Photo',
             icon: 'camera-outline',

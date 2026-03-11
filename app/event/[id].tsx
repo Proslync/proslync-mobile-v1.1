@@ -38,6 +38,8 @@ import { useEventTables, EVENT_TABLES_KEY } from '@/hooks/use-venue-tables';
 import { useQueryClient } from '@tanstack/react-query';
 import type { Event } from '@/lib/types/events.types';
 import type { EventTableItem } from '@/lib/types/tables.types';
+import { formatEventDate } from '@/lib/utils/date';
+import { SCREEN_WIDTH } from '@/lib/utils/layout';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
@@ -46,7 +48,6 @@ if (MAPBOX_TOKEN && !isExpoGo) {
 }
 const DARK_STYLE_URL = 'mapbox://styles/mapbox/dark-v11';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 16;
 const CARD_WIDTH = SCREEN_WIDTH - (CARD_MARGIN * 2);
 const CARD_BORDER_RADIUS = 20;
@@ -55,33 +56,6 @@ function getOrdinalSuffix(n: number): string {
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
   return s[(v - 20) % 10] || s[v] || s[0];
-}
-
-function formatEventDate(dateString: string, venueName?: string): string {
-  try {
-    const date = new Date(dateString);
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    const dayName = days[date.getDay()];
-    const monthName = months[date.getMonth()];
-    const dayNum = date.getDate();
-
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
-
-    let result = `${dayName}, ${monthName} ${dayNum} at ${hours}:${minutesStr}${ampm}`;
-    if (venueName) {
-      result += ` at ${venueName}`;
-    }
-    return result;
-  } catch {
-    return dateString;
-  }
 }
 
 export default function EventPage() {

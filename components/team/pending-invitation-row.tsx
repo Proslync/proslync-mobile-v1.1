@@ -3,21 +3,12 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import type { InvitationResponseDto } from '@/lib/types/team.types';
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { formatTimeAgo } from '@/lib/utils/date';
 
 interface PendingInvitationRowProps {
   invitation: InvitationResponseDto;
   roleName?: string;
   onCancel?: (invitationId: number) => void;
-}
-
-function formatTimeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 export function PendingInvitationRow({

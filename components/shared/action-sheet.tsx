@@ -2,11 +2,13 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassSurface } from '@/components/glass/glass-surface';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface ActionSheetOption {
   label: string;
   onPress: () => void;
   destructive?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
 interface ActionSheetProps {
@@ -18,6 +20,7 @@ interface ActionSheetProps {
 
 export function ActionSheet({ visible, title, options, onClose }: ActionSheetProps) {
   const insets = useSafeAreaInsets();
+  const hasIcons = options.some((o) => o.icon);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -32,7 +35,7 @@ export function ActionSheet({ visible, title, options, onClose }: ActionSheetPro
               <TouchableOpacity
                 key={index}
                 style={[
-                  styles.option,
+                  hasIcons ? styles.optionWithIcon : styles.option,
                   index < options.length - 1 && styles.optionBorder,
                 ]}
                 onPress={() => {
@@ -41,6 +44,13 @@ export function ActionSheet({ visible, title, options, onClose }: ActionSheetPro
                 }}
                 activeOpacity={0.7}
               >
+                {option.icon && (
+                  <Ionicons
+                    name={option.icon}
+                    size={20}
+                    color={option.destructive ? '#FF3B30' : '#fff'}
+                  />
+                )}
                 <Text
                   style={[
                     styles.optionText,
@@ -89,6 +99,13 @@ const styles = StyleSheet.create({
   option: {
     paddingVertical: 16,
     alignItems: 'center',
+  },
+  optionWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 12,
   },
   optionBorder: {
     borderBottomWidth: 1,

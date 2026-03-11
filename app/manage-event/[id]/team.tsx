@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { ActionSheet } from '@/components/shared/action-sheet';
-import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { TeamMemberRow } from '@/components/team/team-member-row';
 import { PendingInvitationRow } from '@/components/team/pending-invitation-row';
 import { RoleCard } from '@/components/team/role-card';
@@ -358,13 +358,13 @@ export default function TeamScreen() {
       />
 
       {/* Remove Member Confirmation */}
-      <ConfirmDialog
+      <ConfirmModal
         visible={!!confirmRemoveMember}
         title="Remove Member"
         message={`Remove ${confirmRemoveMember?.user.firstName || 'this member'} from the team?`}
         confirmLabel="Remove"
         destructive
-        loading={removeMember.isPending}
+        isLoading={removeMember.isPending}
         onConfirm={() => {
           if (confirmRemoveMember) {
             removeMember.mutate(confirmRemoveMember.id, {
@@ -372,17 +372,17 @@ export default function TeamScreen() {
             });
           }
         }}
-        onCancel={() => setConfirmRemoveMember(null)}
+        onClose={() => setConfirmRemoveMember(null)}
       />
 
       {/* Delete Role Confirmation */}
-      <ConfirmDialog
+      <ConfirmModal
         visible={!!confirmDeleteRole}
         title="Delete Role"
         message={`Delete "${confirmDeleteRole?.name}"? Members with this role will need to be reassigned.`}
         confirmLabel="Delete"
         destructive
-        loading={deleteRole.isPending}
+        isLoading={deleteRole.isPending}
         onConfirm={() => {
           if (confirmDeleteRole) {
             deleteRole.mutate(confirmDeleteRole.id, {
@@ -390,17 +390,17 @@ export default function TeamScreen() {
             });
           }
         }}
-        onCancel={() => setConfirmDeleteRole(null)}
+        onClose={() => setConfirmDeleteRole(null)}
       />
 
       {/* Cancel Invitation Confirmation */}
-      <ConfirmDialog
+      <ConfirmModal
         visible={!!confirmCancelInvitation}
         title="Cancel Invitation"
         message="Cancel this pending invitation?"
         confirmLabel="Cancel Invite"
         destructive
-        loading={cancelInvitation.isPending}
+        isLoading={cancelInvitation.isPending}
         onConfirm={() => {
           if (confirmCancelInvitation) {
             cancelInvitation.mutate(confirmCancelInvitation, {
@@ -408,7 +408,7 @@ export default function TeamScreen() {
             });
           }
         }}
-        onCancel={() => setConfirmCancelInvitation(null)}
+        onClose={() => setConfirmCancelInvitation(null)}
       />
     </View>
   );

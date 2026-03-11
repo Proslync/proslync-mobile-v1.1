@@ -2,41 +2,17 @@
 
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { formatDateLabel } from '@/lib/utils/date';
 
 interface DaySeparatorProps {
   date: Date;
-}
-
-function formatDate(date: Date): string {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 86400000);
-  const inputDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (inputDate.getTime() === today.getTime()) {
-    return 'Today';
-  }
-  if (inputDate.getTime() === yesterday.getTime()) {
-    return 'Yesterday';
-  }
-
-  const diffDays = Math.floor((today.getTime() - inputDate.getTime()) / 86400000);
-  if (diffDays < 7) {
-    return date.toLocaleDateString('en-US', { weekday: 'long' });
-  }
-
-  return date.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
 }
 
 export function DaySeparator({ date }: DaySeparatorProps) {
   return (
     <View style={styles.container}>
       <View style={styles.line} />
-      <Text style={styles.text}>{formatDate(date)}</Text>
+      <Text style={styles.text}>{formatDateLabel(date)}</Text>
       <View style={styles.line} />
     </View>
   );

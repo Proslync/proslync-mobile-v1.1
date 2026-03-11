@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
   Image,
   ActivityIndicator,
   Share,
@@ -16,7 +15,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Ionicons } from '@expo/vector-icons';
 import { usersApi } from '@/lib/api/users';
-import { ActionMenu, type ActionMenuItem } from '@/components/shared/action-menu';
+import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { FeedBottomCTA } from './feed-bottom-cta';
 import { FeedMediaPlayer } from './feed-media-player';
@@ -24,35 +23,13 @@ import { useFollowUser } from '@/hooks/use-follow-user';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
+import { formatEventDate } from '@/lib/utils/date';
+import { SCREEN_WIDTH, SCREEN_HEIGHT } from '@/lib/utils/layout';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 16;
 const CARD_WIDTH = SCREEN_WIDTH - (CARD_MARGIN * 2);
 const CARD_BORDER_RADIUS = 20;
 const MAX_MEDIA_HEIGHT = SCREEN_WIDTH * 1.25;
-
-function formatEventDate(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    const dayName = days[date.getDay()];
-    const monthName = months[date.getMonth()];
-    const dayNum = date.getDate();
-
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
-    const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
-
-    return `${dayName}, ${monthName} ${dayNum} at ${hours}:${minutesStr}${ampm}`;
-  } catch {
-    return dateString;
-  }
-}
 
 interface FeedItemProps {
   item: FeedItemType;
@@ -152,7 +129,7 @@ export function FeedItem({
     ? ['transparent', 'rgba(15, 9, 12, 0.15)', 'rgba(15, 9, 12, 0.5)', 'rgba(15, 9, 12, 0.85)', colors.background] as const
     : ['transparent', 'rgba(255, 255, 255, 0.15)', 'rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0.85)', colors.background] as const;
 
-  const menuItems: ActionMenuItem[] = [
+  const menuItems: ActionSheetOption[] = [
     {
       label: 'View Profile',
       icon: 'person-outline',
@@ -309,10 +286,10 @@ export function FeedItem({
         />
       </View>
 
-      <ActionMenu
+      <ActionSheet
         visible={showMenu}
         onClose={() => setShowMenu(false)}
-        items={menuItems}
+        options={menuItems}
       />
 
       <ConfirmModal
@@ -337,7 +314,6 @@ export function FeedItem({
   );
 }
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {

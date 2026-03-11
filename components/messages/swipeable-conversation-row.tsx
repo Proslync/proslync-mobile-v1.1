@@ -1,7 +1,7 @@
 // Swipeable Conversation Row - Row with half-swipe peek preview gesture
 
 import React, { useCallback } from "react";
-import { View, Text, StyleSheet, Image, Dimensions } from "react-native";
+import { View, Text, StyleSheet, Image } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,
@@ -11,10 +11,11 @@ import Animated, {
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { Conversation } from "../../lib/types/messages.types";
+import { formatTimestamp } from "@/lib/utils/date";
+import { SCREEN_WIDTH } from "@/lib/utils/layout";
 
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const PEEK_THRESHOLD = -SCREEN_WIDTH * 0.25;
 const OPEN_THRESHOLD = -SCREEN_WIDTH * 0.5;
 
@@ -27,22 +28,6 @@ interface SwipeableConversationRowProps {
   onPeekOpen: () => void;
   translateX: SharedValue<number>;
   isActive: boolean;
-}
-
-function formatTimestamp(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "now";
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays < 7) return `${diffDays}d`;
-
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function getMessagePreview(

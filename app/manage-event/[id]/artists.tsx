@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ActionSheet } from '@/components/shared/action-sheet';
-import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { ArtistRow } from '@/components/artists/artist-row';
 import { ArtistFormModal } from '@/components/artists/artist-form-modal';
 import {
@@ -203,15 +203,15 @@ export default function ArtistsScreen() {
       />
 
       {/* Delete Confirmation */}
-      <ConfirmDialog
+      <ConfirmModal
         visible={!!confirmDeleteArtist}
         title="Remove Artist"
         message={`Remove ${confirmDeleteArtist?.userName || confirmDeleteArtist?.userFullName || 'this artist'} from the event?`}
         confirmLabel="Remove"
         destructive
-        loading={deleteArtist.isPending}
+        isLoading={deleteArtist.isPending}
         onConfirm={handleConfirmDelete}
-        onCancel={() => setConfirmDeleteArtist(null)}
+        onClose={() => setConfirmDeleteArtist(null)}
       />
     </View>
   );
