@@ -86,6 +86,7 @@ export interface EventsSearchResponse {
 export enum EventUserStatus {
   REQUESTED = 'requested',
   PENDING = 'pending',
+  SIGNED_UP = 'signed_up',
   VERIFIED = 'verified',
   REJECTED = 'rejected',
   CONFIRMED = 'confirmed',
@@ -116,6 +117,8 @@ export interface EventAttendee {
   registeredAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  checkedIn?: boolean;
+  checkedInAt?: string;
   isBlacklisted?: boolean;
   blacklistReason?: string;
   blacklistedAt?: string;
@@ -131,6 +134,8 @@ export interface EventAttendeesResponse {
   hasPrev?: boolean;
   statistics?: {
     totalAttendees: number;
+    signedUpAttendees: number;
+    checkedInAttendees: number;
     verifiedAttendees: number;
     pendingAttendees: number;
   };
@@ -163,4 +168,32 @@ export interface ContactsResponse {
 export interface EventPermissionsResponse {
   isOwner: boolean;
   permissions: RolePermissions;
+}
+
+export interface OwnerContact {
+  id: number;
+  userId?: number;
+  firstName: string;
+  lastName: string;
+  userName?: string;
+  avatar?: string;
+  birthDate?: string;
+  phoneNumber?: string;
+  email?: string;
+  documentNumber?: string;
+  isGuest: boolean;
+  source: string;
+  eventCount: number;
+  lastSeenAt: string;
+  createdAt: string;
+}
+
+export interface OwnerContactsResponse {
+  contacts: OwnerContact[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }

@@ -11,7 +11,11 @@ interface GuestCheckedInPayload {
   userId?: number;
   firstName: string;
   lastName: string;
+  userName?: string;
+  avatarUrl?: string;
   status: string;
+  isGuest?: boolean;
+  checkedInAt?: string;
   eventId: number;
 }
 

@@ -8,6 +8,7 @@ import {
   Dimensions,
   Linking,
   FlatList,
+  Image,
 } from 'react-native';
 import {
   Camera,
@@ -31,10 +32,13 @@ import { usePaymentSheet } from '@stripe/stripe-react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { eventsApi } from '@/lib/api/events';
 import { paymentsApi } from '@/lib/api/payments';
+import { authApi } from '@/lib/api/auth';
 import type { EventAttendee } from '@/lib/types/events.types';
 import { EventUserStatus } from '@/lib/types/events.types';
+import type { PublicUserProfile } from '@/lib/types/auth.types';
 import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
 
 
@@ -69,6 +73,8 @@ interface IdScanResult {
 interface CheckedInGuest {
   id: string;
   name: string;
+  userName?: string;
+  avatarUrl?: string;
   time: string;
   status: 'approved' | 'denied';
   age?: number;
@@ -223,6 +229,8 @@ export default function ScannerScreen() {
   const [membershipData, setMembershipData] = React.useState<MembershipData | null>(null);
   const [skippedMembership, setSkippedMembership] = React.useState(false);
   const [showMembershipResult, setShowMembershipResult] = React.useState(false);
+  const [memberProfile, setMemberProfile] = React.useState<PublicUserProfile | null>(null);
+  const [memberProfileLoading, setMemberProfileLoading] = React.useState(false);
 
   // NFC state
   const [nfcSupported, setNfcSupported] = React.useState(false);
@@ -245,8 +253,10 @@ export default function ScannerScreen() {
 
   const mapAttendeeToGuest = React.useCallback((a: EventAttendee): CheckedInGuest => {
     const name = [a.firstName, a.lastName].filter(Boolean).join(' ') || a.guestName || 'Unknown';
-    const isApproved = a.status === EventUserStatus.VERIFIED ||
-      a.status === EventUserStatus.CHECKED_IN;
+    const isApproved = a.checkedIn ||
+      a.status === EventUserStatus.VERIFIED ||
+      a.status === EventUserStatus.CHECKED_IN ||
+      a.status === EventUserStatus.SIGNED_UP;
     let age: number | undefined;
     if (a.birthDate) {
       const bd = new Date(a.birthDate);
@@ -258,6 +268,8 @@ export default function ScannerScreen() {
     return {
       id: String(a.id),
       name,
+      userName: a.userName,
+      avatarUrl: a.avatarUrl || a.avatar,
       time: a.verifiedAt || a.createdAt || new Date().toISOString(),
       status: isApproved ? 'approved' : 'denied',
       age,
@@ -270,11 +282,12 @@ export default function ScannerScreen() {
     if (!eventId) return;
     try {
       const response = await eventsApi.getEventAttendees(eventId, {
-        limit: 200,
+        limit: 5000,
         status: [
           EventUserStatus.VERIFIED,
           EventUserStatus.REJECTED,
           EventUserStatus.CHECKED_IN,
+          EventUserStatus.SIGNED_UP,
         ],
       });
       const mapped = response.attendees.map(mapAttendeeToGuest);
@@ -319,14 +332,14 @@ export default function ScannerScreen() {
 
 
 
-  const handleMembershipScan = React.useCallback((data: string) => {
+  const handleMembershipScan = React.useCallback(async (data: string) => {
     let parsed: any = null;
     try {
       parsed = JSON.parse(data);
     } catch {}
 
-    const memberName = parsed?.name || parsed?.memberName || undefined;
-    const memberId = parsed?.memberId || parsed?.userId || undefined;
+    const memberName = parsed?.userName || parsed?.name || parsed?.memberName || undefined;
+    const memberId = parsed?.userId || parsed?.memberId || undefined;
     const cardId = parsed?.cardId || parsed?.id || data.substring(0, 20);
 
     setMembershipData({
@@ -336,7 +349,21 @@ export default function ScannerScreen() {
       cardId,
     });
     setShowMembershipResult(true);
+    setMemberProfile(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    // Fetch the member's full profile for professional display
+    if (memberId) {
+      setMemberProfileLoading(true);
+      try {
+        const profile = await authApi.getUserById(Number(memberId));
+        setMemberProfile(profile);
+      } catch {
+        // Silently fail — will show basic info from QR payload
+      } finally {
+        setMemberProfileLoading(false);
+      }
+    }
   }, []);
 
 
@@ -373,6 +400,7 @@ export default function ScannerScreen() {
     NfcManager.cancelTechnologyRequest().catch(() => {});
     setSkippedMembership(true);
     setMembershipData(null);
+    setMemberProfile(null);
     setShowMembershipResult(false);
     setScanStep('id');
     setIsActive(true);
@@ -700,15 +728,22 @@ export default function ScannerScreen() {
           }
           renderItem={({ item }) => {
             const isCharging = chargingGuestId === item.id;
+            const initials = item.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
             return (
               <View style={styles.guestRow}>
-                <View style={[styles.guestStatusDot, {
-                  backgroundColor: item.status === 'approved' ? '#10b981' : '#ef4444',
-                }]} />
+                {item.avatarUrl ? (
+                  <Image source={{ uri: item.avatarUrl }} style={styles.guestAvatar} />
+                ) : (
+                  <View style={[styles.guestAvatarPlaceholder, {
+                    backgroundColor: item.status === 'approved' ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
+                  }]}>
+                    <Text style={styles.guestAvatarInitials}>{initials}</Text>
+                  </View>
+                )}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.guestName}>{item.name}</Text>
+                  <Text style={styles.guestName}>{item.userName ? `@${item.userName}` : item.name}</Text>
                   <Text style={styles.guestMeta}>
-                    {item.age ? `Age ${item.age} · ` : ''}{formatTime(item.time)}
+                    {item.userName ? `${item.name} · ` : ''}{item.age ? `Age ${item.age} · ` : ''}{formatTime(item.time)}
                   </Text>
                 </View>
                 {/* Charge / Paid / Denied status */}
@@ -873,28 +908,69 @@ export default function ScannerScreen() {
         >
           <BlurView intensity={60} tint="dark" style={styles.membershipResultBlur}>
             <View style={[styles.membershipResultCard, { paddingBottom: insets.bottom + 28 }]}>
-              {/* Member icon */}
-              <View style={styles.memberIcon}>
-                <Ionicons name="person-circle" size={56} color="#fff" />
-              </View>
+              {/* Profile Card */}
+              <View style={mcStyles.card}>
+                {/* Avatar */}
+                <View style={mcStyles.avatarContainer}>
+                  {memberProfileLoading ? (
+                    <View style={mcStyles.avatarPlaceholder}>
+                      <ActivityIndicator size="small" color="#fff" />
+                    </View>
+                  ) : memberProfile?.avatar?.url ? (
+                    <Image source={{ uri: memberProfile.avatar.url }} style={mcStyles.avatar} />
+                  ) : (
+                    <View style={mcStyles.avatarPlaceholder}>
+                      <Ionicons name="person" size={28} color="rgba(255,255,255,0.5)" />
+                    </View>
+                  )}
+                  <View style={mcStyles.avatarRing} />
+                </View>
 
-              {/* Member name */}
-              <Text style={styles.memberName}>
-                {membershipData.memberName || 'Member'}
-              </Text>
+                {/* Display name */}
+                <Text style={mcStyles.displayName} numberOfLines={1}>
+                  {memberProfile
+                    ? [memberProfile.firstName, memberProfile.lastName].filter(Boolean).join(' ') || membershipData.memberName || 'Member'
+                    : membershipData.memberName || 'Member'}
+                </Text>
 
-              {/* Member info */}
-              <View style={styles.memberInfoRow}>
-                {membershipData.memberId && (
-                  <View style={styles.memberBadge}>
-                    <Text style={styles.memberBadgeText}>ID: {membershipData.memberId}</Text>
+                {/* Username + verified badge */}
+                {(memberProfile?.userName || membershipData.memberId) && (
+                  <View style={mcStyles.handleRow}>
+                    <Text style={mcStyles.handle} numberOfLines={1}>
+                      @{memberProfile?.userName || `user${membershipData.memberId}`}
+                    </Text>
+                    {memberProfile?.isVerified && (
+                      <MaterialCommunityIcons name="check-decagram" size={15} color="#3897F0" />
+                    )}
                   </View>
                 )}
-                {membershipData.cardId && (
-                  <View style={styles.memberBadge}>
-                    <Text style={styles.memberBadgeText}>Card: {membershipData.cardId}</Text>
-                  </View>
-                )}
+
+                {/* Member since */}
+                {(memberProfile?.createdAt || membershipData.rawPayload) && (() => {
+                  let dateStr = memberProfile?.createdAt;
+                  if (!dateStr) {
+                    try {
+                      const p = JSON.parse(membershipData.rawPayload);
+                      dateStr = p.issuedAt;
+                    } catch {}
+                  }
+                  if (!dateStr) return null;
+                  const date = new Date(dateStr);
+                  const month = date.toLocaleString('en-US', { month: 'short' });
+                  const year = date.getFullYear();
+                  return (
+                    <View style={mcStyles.memberRow}>
+                      <Ionicons name="calendar-outline" size={11} color="rgba(255,255,255,0.6)" />
+                      <Text style={mcStyles.memberSince}>Member since {month} {year}</Text>
+                    </View>
+                  );
+                })()}
+
+                {/* Status member badge */}
+                <View style={mcStyles.statusBadge}>
+                  <Ionicons name="shield-checkmark" size={12} color="#10b981" />
+                  <Text style={mcStyles.statusBadgeText}>Status Member</Text>
+                </View>
               </View>
 
               {/* Continue button */}
@@ -913,6 +989,7 @@ export default function ScannerScreen() {
                 onPress={() => {
                   setShowMembershipResult(false);
                   setMembershipData(null);
+                  setMemberProfile(null);
                   setIsActive(true);
                 }}
                 activeOpacity={0.7}
@@ -1128,11 +1205,6 @@ const styles = StyleSheet.create({
 
   membershipResultBlur: { borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
   membershipResultCard: { padding: 28, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' },
-  memberIcon: { marginBottom: 12, opacity: 0.9 },
-  memberName: { fontSize: 24, fontFamily: 'Lato_700Bold', color: '#fff', textAlign: 'center', marginBottom: 12 },
-  memberInfoRow: { flexDirection: 'row', gap: 8, marginBottom: 28 },
-  memberBadge: { backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
-  memberBadgeText: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.7)' },
 
   continueButton: {
     flexDirection: 'row',
@@ -1214,6 +1286,9 @@ const styles = StyleSheet.create({
   listCount: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
   guestRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', gap: 12 },
   guestStatusDot: { width: 10, height: 10, borderRadius: 5 },
+  guestAvatar: { width: 36, height: 36, borderRadius: 18 },
+  guestAvatarPlaceholder: { width: 36, height: 36, borderRadius: 18, alignItems: 'center' as const, justifyContent: 'center' as const },
+  guestAvatarInitials: { fontSize: 13, fontFamily: 'Lato_700Bold', color: 'rgba(255,255,255,0.6)' },
   guestName: { fontSize: 15, fontFamily: 'Lato_600SemiBold', color: '#fff' },
   guestMeta: { fontSize: 12, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.4)', marginTop: 2 },
   guestStatusText: { fontSize: 13, fontFamily: 'Lato_700Bold', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -1262,4 +1337,97 @@ const styles = StyleSheet.create({
   permissionButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
   settingsLink: { marginTop: 16, padding: 12 },
   settingsLinkText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.4)' },
+});
+
+// Membership card profile styles (matches wallet MembershipCard design)
+const mcStyles = StyleSheet.create({
+  card: {
+    width: '100%',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#0c0c0c',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 24,
+    paddingBottom: 20,
+    marginBottom: 24,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  avatarPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarRing: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  displayName: {
+    fontSize: 22,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+  },
+  handleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  handle: {
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: 6,
+  },
+  memberSince: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.6)',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 12,
+    backgroundColor: 'rgba(16,185,129,0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontFamily: 'Lato_700Bold',
+    color: '#10b981',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 });

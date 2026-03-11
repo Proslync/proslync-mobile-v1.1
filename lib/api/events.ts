@@ -1,6 +1,6 @@
 // Events API client for fetching event details
 import { apiClient } from './client';
-import type { Event, EventsSearchResponse, EventAttendeesResponse, EventPermissionsResponse, ContactsResponse } from '../types/events.types';
+import type { Event, EventsSearchResponse, EventAttendeesResponse, EventPermissionsResponse, ContactsResponse, OwnerContactsResponse } from '../types/events.types';
 
 export interface RsvpResponse {
   success: boolean;
@@ -434,5 +434,22 @@ export const eventsApi = {
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.search) query.set('search', params.search);
     return apiClient.get<ContactsResponse>(`/api/events/contacts?${query.toString()}`);
+  },
+
+  /**
+   * Get owner's contact list (My List) — deduplicated across all events
+   */
+  getOwnerContacts: async (
+    params?: { page?: number; limit?: number; search?: string; filter?: string },
+  ): Promise<OwnerContactsResponse> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    if (params?.filter) query.set('filter', params.filter);
+    const qs = query.toString();
+    return apiClient.get<OwnerContactsResponse>(
+      `/api/owner-contacts${qs ? `?${qs}` : ''}`,
+    );
   },
 };
