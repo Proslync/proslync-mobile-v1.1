@@ -46,6 +46,7 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { MiniEventCard } from '@/components/chat/mini-event-card';
 import { MiniVenueCard } from '@/components/chat/mini-venue-card';
+import { MiniUserCard } from '@/components/chat/mini-user-card';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
 
@@ -255,19 +256,19 @@ function MessageBubble({
         {/* Text bubble */}
         {hasText && (() => {
           const text = message.text || '';
-          const hasRichTags = isConciergeChat && !isOwn && /\[(EVENT|VENUE):\d+\]/.test(text);
+          const hasRichTags = isConciergeChat && !isOwn && /\[(EVENT|VENUE|USER):\d+\]/.test(text);
 
           if (hasRichTags) {
-            const parts: { type: 'text' | 'event' | 'venue'; value: string }[] = [];
+            const parts: { type: 'text' | 'event' | 'venue' | 'user'; value: string }[] = [];
             let lastIndex = 0;
-            const regex = /\[(EVENT|VENUE):(\d+)\]/g;
+            const regex = /\[(EVENT|VENUE|USER):(\d+)\]/g;
             let match = regex.exec(text);
             while (match !== null) {
               if (match.index > lastIndex) {
                 const chunk = text.slice(lastIndex, match.index).trim();
                 if (chunk) parts.push({ type: 'text', value: chunk });
               }
-              parts.push({ type: match[1].toLowerCase() as 'event' | 'venue', value: match[2] });
+              parts.push({ type: match[1].toLowerCase() as 'event' | 'venue' | 'user', value: match[2] });
               lastIndex = match.index + match[0].length;
               match = regex.exec(text);
             }
@@ -283,6 +284,8 @@ function MessageBubble({
                     <MiniEventCard key={`event-${part.value}-${i}`} eventId={Number(part.value)} />
                   ) : part.type === 'venue' ? (
                     <MiniVenueCard key={`venue-${part.value}-${i}`} venueId={Number(part.value)} />
+                  ) : part.type === 'user' ? (
+                    <MiniUserCard key={`user-${part.value}-${i}`} userId={Number(part.value)} />
                   ) : (
                     <View
                       key={`text-${i}`}
