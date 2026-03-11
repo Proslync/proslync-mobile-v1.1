@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 import {
   View,
   Text,
@@ -10,9 +10,9 @@ import {
   Modal,
   ScrollView,
   Dimensions,
-} from 'react-native';
-import { BlurView } from 'expo-blur';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+} from "react-native";
+import { BlurView } from "expo-blur";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -23,19 +23,22 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   interpolate,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { TerminalProvider, useTerminalPayment } from '@/lib/providers/terminal-provider';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { eventsApi } from '@/lib/api/events';
-import { paymentsApi } from '@/lib/api/payments';
-import { useEventSocket } from '@/hooks/use-event-socket';
-import type { Event, EventAttendee } from '@/lib/types/events.types';
-import { EventUserStatus } from '@/lib/types/events.types';
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import {
+  TerminalProvider,
+  useTerminalPayment,
+} from "@/lib/providers/terminal-provider";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { eventsApi } from "@/lib/api/events";
+import { paymentsApi } from "@/lib/api/payments";
+import { useEventSocket } from "@/hooks/use-event-socket";
+import type { Event, EventAttendee } from "@/lib/types/events.types";
+import { EventUserStatus } from "@/lib/types/events.types";
 
 interface ListContact {
   id: number;
@@ -53,14 +56,14 @@ interface ListContact {
   birthDate?: string;
   documentNumber?: string;
   tags?: string[];
-  checkInStatus: 'approved' | 'denied';
+  checkInStatus: "approved" | "denied";
 }
 
 function formatTimeAgo(dateStr?: string): string {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
+  if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
@@ -68,40 +71,37 @@ function formatTimeAgo(dateStr?: string): string {
 }
 
 function formatDate(dateStr?: string): string {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function formatPhone(phone?: string): string {
-  if (!phone) return '';
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 11 && digits[0] === '1') {
-    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
-  }
-  if (digits.length === 10) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-  }
-  return phone;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function sourceLabel(source: string, isGuest: boolean): string {
-  if (isGuest) return 'Guest';
-  if (source === 'rsvp') return 'RSVP';
-  if (source === 'ticket_purchase') return 'Ticket';
-  return 'Check-in';
+  if (isGuest) return "Guest";
+  if (source === "rsvp") return "RSVP";
+  if (source === "ticket_purchase") return "Ticket";
+  return "Check-in";
 }
 
 function mapAttendee(a: EventAttendee): ListContact {
-  const name = [a.firstName, a.lastName].filter(Boolean).join(' ') || a.guestName || 'Unknown';
+  const name =
+    [a.firstName, a.lastName].filter(Boolean).join(" ") ||
+    a.guestName ||
+    "Unknown";
   const isGuest = a.isGuest ?? !a.userId;
-  const isCheckedIn = a.checkedIn ||
+  const isCheckedIn =
+    a.checkedIn ||
     a.status === EventUserStatus.CHECKED_IN ||
     a.status === EventUserStatus.VERIFIED;
-  let source = 'check_in';
-  if (a.status === EventUserStatus.SIGNED_UP) source = 'rsvp';
-  else if (a.isRegistered && !isCheckedIn) source = 'rsvp';
-  const checkInStatus = a.status === EventUserStatus.REJECTED ? 'denied' : 'approved';
+  let source = "check_in";
+  if (a.status === EventUserStatus.SIGNED_UP) source = "rsvp";
+  else if (a.isRegistered && !isCheckedIn) source = "rsvp";
+  const checkInStatus =
+    a.status === EventUserStatus.REJECTED ? "denied" : "approved";
   return {
     id: a.id,
     name,
@@ -135,72 +135,165 @@ function ContactDetailModal({
   if (!contact) return null;
 
   const initials = contact.name
-    .split(' ')
+    .split(" ")
     .map((n) => n[0])
-    .join('')
+    .join("")
     .toUpperCase()
     .slice(0, 2);
 
-  const rows: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }[] = [];
+  const rows: {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    value: string;
+  }[] = [];
 
   if (contact.email) {
-    rows.push({ icon: 'mail-outline', label: 'Email', value: contact.email });
+    rows.push({ icon: "mail-outline", label: "Email", value: contact.email });
   }
   if (contact.birthDate) {
-    rows.push({ icon: 'calendar-outline', label: 'Date of Birth', value: formatDate(contact.birthDate) });
+    rows.push({
+      icon: "calendar-outline",
+      label: "Date of Birth",
+      value: formatDate(contact.birthDate),
+    });
   }
   if (contact.documentNumber) {
-    rows.push({ icon: 'id-card-outline', label: 'ID Number', value: contact.documentNumber });
+    rows.push({
+      icon: "id-card-outline",
+      label: "ID Number",
+      value: contact.documentNumber,
+    });
   }
   rows.push({
-    icon: 'enter-outline',
-    label: 'Source',
+    icon: "enter-outline",
+    label: "Source",
     value: sourceLabel(contact.source, contact.isGuest),
   });
-  rows.push({ icon: 'ticket-outline', label: 'Events', value: String(contact.eventCount) });
+  rows.push({
+    icon: "ticket-outline",
+    label: "Events",
+    value: String(contact.eventCount),
+  });
   if (contact.lastSeenAt) {
-    rows.push({ icon: 'time-outline', label: 'Last Seen', value: formatDate(contact.lastSeenAt) });
+    rows.push({
+      icon: "time-outline",
+      label: "Last Seen",
+      value: formatDate(contact.lastSeenAt),
+    });
   }
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={detailStyles.overlay}>
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
 
-        <View style={[detailStyles.sheet, { paddingBottom: insets.bottom + 24 }]}>
-          <View style={[detailStyles.card, { backgroundColor: colors.cardElevated, borderColor: colors.border }]}>
+        <View
+          style={[detailStyles.sheet, { paddingBottom: insets.bottom + 24 }]}
+        >
+          <View
+            style={[
+              detailStyles.card,
+              {
+                backgroundColor: colors.cardElevated,
+                borderColor: colors.border,
+              },
+            ]}
+          >
             {/* Handle */}
-            <View style={[detailStyles.handle, { backgroundColor: colors.textTertiary }]} />
+            <View
+              style={[
+                detailStyles.handle,
+                { backgroundColor: colors.textTertiary },
+              ]}
+            />
 
             {/* Profile header */}
             <View style={detailStyles.profileHeader}>
               {contact.avatarUrl ? (
-                <Image source={{ uri: contact.avatarUrl }} style={detailStyles.profileAvatar} />
+                <Image
+                  source={{ uri: contact.avatarUrl }}
+                  style={detailStyles.profileAvatar}
+                />
               ) : (
-                <View style={[detailStyles.profileAvatarPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
-                  <Text style={[detailStyles.profileInitials, { color: colors.textSecondary }]}>{initials}</Text>
+                <View
+                  style={[
+                    detailStyles.profileAvatarPlaceholder,
+                    { backgroundColor: colors.backgroundSecondary },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      detailStyles.profileInitials,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {initials}
+                  </Text>
                 </View>
               )}
               <Text style={[detailStyles.profileName, { color: colors.text }]}>
                 {contact.userName ? `@${contact.userName}` : contact.name}
               </Text>
               {contact.userName && (
-                <Text style={[detailStyles.profileSubname, { color: colors.textTertiary }]}>{contact.name}</Text>
+                <Text
+                  style={[
+                    detailStyles.profileSubname,
+                    { color: colors.textTertiary },
+                  ]}
+                >
+                  {contact.name}
+                </Text>
               )}
               <View style={detailStyles.badgeRow}>
-                <View style={[detailStyles.badge, { backgroundColor: contact.isGuest ? 'rgba(251,191,36,0.15)' : 'rgba(52,211,153,0.15)' }]}>
-                  <Text style={[detailStyles.badgeText, { color: contact.isGuest ? '#fbbf24' : '#34d399' }]}>
-                    {contact.isGuest ? 'Guest' : 'Member'}
+                <View
+                  style={[
+                    detailStyles.badge,
+                    {
+                      backgroundColor: contact.isGuest
+                        ? "rgba(251,191,36,0.15)"
+                        : "rgba(52,211,153,0.15)",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      detailStyles.badgeText,
+                      { color: contact.isGuest ? "#fbbf24" : "#34d399" },
+                    ]}
+                  >
+                    {contact.isGuest ? "Guest" : "Member"}
                   </Text>
                 </View>
-                <View style={[detailStyles.badge, {
-                  backgroundColor: contact.checkInStatus === 'approved' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)',
-                }]}>
-                  <Text style={[detailStyles.badgeText, {
-                    color: contact.checkInStatus === 'approved' ? '#10b981' : '#ef4444',
-                  }]}>
-                    {contact.checkInStatus === 'approved' ? 'Approved' : 'Denied'}
+                <View
+                  style={[
+                    detailStyles.badge,
+                    {
+                      backgroundColor:
+                        contact.checkInStatus === "approved"
+                          ? "rgba(16,185,129,0.15)"
+                          : "rgba(239,68,68,0.15)",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      detailStyles.badgeText,
+                      {
+                        color:
+                          contact.checkInStatus === "approved"
+                            ? "#10b981"
+                            : "#ef4444",
+                      },
+                    ]}
+                  >
+                    {contact.checkInStatus === "approved"
+                      ? "Approved"
+                      : "Denied"}
                   </Text>
                 </View>
               </View>
@@ -208,14 +301,23 @@ function ContactDetailModal({
                 <View style={detailStyles.tagsRow}>
                   {contact.tags.map((tag) => {
                     const tagColors: Record<string, string> = {
-                      vip: '#f59e0b', line_skip: '#22c55e', backstage: '#a855f7',
-                      comp: '#3b82f6', plus_one: '#ec4899',
+                      vip: "#f59e0b",
+                      line_skip: "#22c55e",
+                      backstage: "#a855f7",
+                      comp: "#3b82f6",
+                      plus_one: "#ec4899",
                     };
-                    const color = tagColors[tag] || '#6b7280';
+                    const color = tagColors[tag] || "#6b7280";
                     return (
-                      <View key={tag} style={[detailStyles.tagChip, { backgroundColor: `${color}20` }]}>
+                      <View
+                        key={tag}
+                        style={[
+                          detailStyles.tagChip,
+                          { backgroundColor: `${color}20` },
+                        ]}
+                      >
                         <Text style={[detailStyles.tagChipText, { color }]}>
-                          {tag.replace('_', ' ').toUpperCase()}
+                          {tag.replace("_", " ").toUpperCase()}
                         </Text>
                       </View>
                     );
@@ -231,13 +333,33 @@ function ContactDetailModal({
                   key={row.label}
                   style={[
                     detailStyles.infoRow,
-                    i < rows.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                    i < rows.length - 1 && {
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    },
                   ]}
                 >
-                  <Ionicons name={row.icon} size={18} color={colors.textTertiary} style={detailStyles.infoIcon} />
+                  <Ionicons
+                    name={row.icon}
+                    size={18}
+                    color={colors.textTertiary}
+                    style={detailStyles.infoIcon}
+                  />
                   <View style={detailStyles.infoContent}>
-                    <Text style={[detailStyles.infoLabel, { color: colors.textTertiary }]}>{row.label}</Text>
-                    <Text style={[detailStyles.infoValue, { color: colors.text }]} selectable>{row.value}</Text>
+                    <Text
+                      style={[
+                        detailStyles.infoLabel,
+                        { color: colors.textTertiary },
+                      ]}
+                    >
+                      {row.label}
+                    </Text>
+                    <Text
+                      style={[detailStyles.infoValue, { color: colors.text }]}
+                      selectable
+                    >
+                      {row.value}
+                    </Text>
                   </View>
                 </View>
               ))}
@@ -249,7 +371,9 @@ function ContactDetailModal({
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Text style={[detailStyles.closeText, { color: colors.text }]}>Close</Text>
+              <Text style={[detailStyles.closeText, { color: colors.text }]}>
+                Close
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -267,32 +391,48 @@ function CheckInsContent() {
   const { colors, isDark } = useAppTheme();
   const eventId = id ? Number(id) : null;
 
-  const { readerStatus, isReaderConnected, isInitialized, connectReader, collectPayment } = useTerminalPayment();
+  const {
+    readerStatus,
+    isReaderConnected,
+    isInitialized,
+    connectReader,
+    collectPayment,
+  } = useTerminalPayment();
   const connectAttemptedRef = React.useRef(false);
 
   const [contacts, setContacts] = React.useState<ListContact[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [collectingGuestId, setCollectingGuestId] = React.useState<number | null>(null);
+  const [collectingGuestId, setCollectingGuestId] = React.useState<
+    number | null
+  >(null);
   const [event, setEvent] = React.useState<Event | null>(null);
-  const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<string | null>(null);
-  const [selectedContact, setSelectedContact] = React.useState<ListContact | null>(null);
-  const [activeTab, setActiveTab] = React.useState<'approved' | 'denied'>('approved');
+  const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<
+    string | null
+  >(null);
+  const [selectedContact, setSelectedContact] =
+    React.useState<ListContact | null>(null);
+  const [activeTab, setActiveTab] = React.useState<"approved" | "denied">(
+    "approved",
+  );
 
   const scrollPosition = useSharedValue(0);
-  const screenWidth = Dimensions.get('window').width;
+  const screenWidth = Dimensions.get("window").width;
   const tabWidth = screenWidth / 2;
 
-  const handleTabPress = React.useCallback((tab: 'approved' | 'denied') => {
-    const pageIndex = tab === 'approved' ? 0 : 1;
-    scrollPosition.value = withTiming(pageIndex, {
-      duration: 200,
-      easing: Easing.out(Easing.cubic),
-    });
-    if (tab !== activeTab) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    setActiveTab(tab);
-  }, [scrollPosition, activeTab]);
+  const handleTabPress = React.useCallback(
+    (tab: "approved" | "denied") => {
+      const pageIndex = tab === "approved" ? 0 : 1;
+      scrollPosition.value = withTiming(pageIndex, {
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+      });
+      if (tab !== activeTab) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+      setActiveTab(tab);
+    },
+    [scrollPosition, activeTab],
+  );
 
   const indicatorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: scrollPosition.value * tabWidth }],
@@ -309,7 +449,10 @@ function CheckInsContent() {
   // Fetch event data (for doorCoverPriceCents)
   React.useEffect(() => {
     if (!eventId) return;
-    eventsApi.getEvent(eventId).then(setEvent).catch(() => {});
+    eventsApi
+      .getEvent(eventId)
+      .then(setEvent)
+      .catch(() => {});
   }, [eventId]);
 
   // Fetch this event's attendees
@@ -326,10 +469,14 @@ function CheckInsContent() {
         ],
       });
       const mapped = response.attendees.map(mapAttendee);
-      mapped.sort((a, b) => new Date(b.lastSeenAt || 0).getTime() - new Date(a.lastSeenAt || 0).getTime());
+      mapped.sort(
+        (a, b) =>
+          new Date(b.lastSeenAt || 0).getTime() -
+          new Date(a.lastSeenAt || 0).getTime(),
+      );
       setContacts(mapped);
     } catch (err) {
-      console.error('Fetch error:', err);
+      console.error("Fetch error:", err);
     } finally {
       setLoading(false);
     }
@@ -339,7 +486,7 @@ function CheckInsContent() {
   useFocusEffect(
     React.useCallback(() => {
       fetchContacts();
-    }, [fetchContacts])
+    }, [fetchContacts]),
   );
 
   // Polling fallback every 30s
@@ -363,25 +510,29 @@ function CheckInsContent() {
         isGuest?: boolean;
         checkedInAt?: string;
       }) => {
-        const name = [data.firstName, data.lastName].filter(Boolean).join(' ') || 'Unknown';
+        const name =
+          [data.firstName, data.lastName].filter(Boolean).join(" ") ||
+          "Unknown";
         const newEntry: ListContact = {
           id: data.guestId,
           name,
           userName: data.userName,
           avatarUrl: data.avatarUrl,
           isGuest: data.isGuest ?? !data.userId,
-          source: 'check_in',
+          source: "check_in",
           eventCount: 1,
           lastSeenAt: data.checkedInAt || new Date().toISOString(),
           paid: false,
           userId: data.userId,
-          checkInStatus: data.status === 'rejected' ? 'denied' : 'approved',
+          checkInStatus: data.status === "rejected" ? "denied" : "approved",
         };
         setContacts((prev) => {
           // Replace if already exists (e.g. membership scan updates a guest entry)
           const exists = prev.some((g) => g.id === data.guestId);
           if (exists) {
-            return prev.map((g) => (g.id === data.guestId ? { ...g, ...newEntry } : g));
+            return prev.map((g) =>
+              g.id === data.guestId ? { ...g, ...newEntry } : g,
+            );
           }
           return [newEntry, ...prev];
         });
@@ -393,8 +544,10 @@ function CheckInsContent() {
       (data: { userId?: number | null; guestId?: number | null }) => {
         setContacts((prev) =>
           prev.map((g) => {
-            if (data.guestId && g.id === data.guestId) return { ...g, paid: true };
-            if (data.userId && g.userId && g.userId === data.userId) return { ...g, paid: true };
+            if (data.guestId && g.id === data.guestId)
+              return { ...g, paid: true };
+            if (data.userId && g.userId && g.userId === data.userId)
+              return { ...g, paid: true };
             return g;
           }),
         );
@@ -413,68 +566,72 @@ function CheckInsContent() {
   }, [isInitialized, isReaderConnected, connectReader]);
 
   // Auto-charge door cover price
-  const handleCharge = React.useCallback(async (guest: ListContact) => {
-    if (!eventId) return;
+  const handleCharge = React.useCallback(
+    async (guest: ListContact) => {
+      if (!eventId) return;
 
-    const doorCoverCents = event?.doorCoverPriceCents;
+      const doorCoverCents = event?.doorCoverPriceCents;
 
-    // Free event or no door cover — mark as paid instantly
-    if (!doorCoverCents || doorCoverCents <= 0) {
-      setContacts((prev) =>
-        prev.map((g) => (g.id === guest.id ? { ...g, paid: true } : g)),
-      );
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      return;
-    }
-
-    setCollectingGuestId(guest.id);
-
-    try {
-      // Connect reader if not connected
-      if (!isReaderConnected) {
-        await connectReader(eventId ?? undefined);
-      }
-
-      // Create payment intent with door cover price
-      const result = await paymentsApi.collectAtDoor(eventId, {
-        guestId: guest.id,
-        customAmountCents: doorCoverCents,
-        useTerminal: true,
-      });
-
-      // Collect payment via NFC tap-to-pay
-      await collectPayment(result.clientSecret);
-
-      // Success
-      setContacts((prev) =>
-        prev.map((g) => (g.id === guest.id ? { ...g, paid: true } : g)),
-      );
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (err: any) {
-      if (err?.message?.includes('canceled')) {
-        setCollectingGuestId(null);
+      // Free event or no door cover — mark as paid instantly
+      if (!doorCoverCents || doorCoverCents <= 0) {
+        setContacts((prev) =>
+          prev.map((g) => (g.id === guest.id ? { ...g, paid: true } : g)),
+        );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         return;
       }
-      setPaymentFailedAlert(err?.message || 'Something went wrong.');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      setCollectingGuestId(null);
-    }
-  }, [eventId, event, isReaderConnected, connectReader, collectPayment]);
+
+      setCollectingGuestId(guest.id);
+
+      try {
+        // Connect reader if not connected
+        if (!isReaderConnected) {
+          await connectReader(eventId ?? undefined);
+        }
+
+        // Create payment intent with door cover price
+        const result = await paymentsApi.collectAtDoor(eventId, {
+          guestId: guest.id,
+          customAmountCents: doorCoverCents,
+          useTerminal: true,
+        });
+
+        // Collect payment via NFC tap-to-pay
+        await collectPayment(result.clientSecret);
+
+        // Success
+        setContacts((prev) =>
+          prev.map((g) => (g.id === guest.id ? { ...g, paid: true } : g)),
+        );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } catch (err: any) {
+        if (err?.message?.includes("canceled")) {
+          setCollectingGuestId(null);
+          return;
+        }
+        setPaymentFailedAlert(err?.message || "Something went wrong.");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } finally {
+        setCollectingGuestId(null);
+      }
+    },
+    [eventId, event, isReaderConnected, connectReader, collectPayment],
+  );
 
   const doorCoverDisplay = event?.doorCoverPriceCents
     ? `$${(event.doorCoverPriceCents / 100).toFixed(2)}`
-    : 'Free';
+    : "Free";
 
   const approvedContacts = React.useMemo(
-    () => contacts.filter((c) => c.checkInStatus === 'approved'),
+    () => contacts.filter((c) => c.checkInStatus === "approved"),
     [contacts],
   );
   const deniedContacts = React.useMemo(
-    () => contacts.filter((c) => c.checkInStatus === 'denied'),
+    () => contacts.filter((c) => c.checkInStatus === "denied"),
     [contacts],
   );
-  const displayedContacts = activeTab === 'approved' ? approvedContacts : deniedContacts;
+  const displayedContacts =
+    activeTab === "approved" ? approvedContacts : deniedContacts;
 
   const renderContact = React.useCallback(
     ({ item }: { item: ListContact }) => {
@@ -490,18 +647,34 @@ function CheckInsContent() {
             entering={FadeInDown.duration(300)}
             exiting={FadeOut.duration(200)}
             layout={Layout.springify()}
-            style={[styles.guestRow, { backgroundColor: colors.cardElevated, borderColor: colors.border }]}
+            style={[
+              styles.guestRow,
+              {
+                backgroundColor: colors.cardElevated,
+                borderColor: colors.border,
+              },
+            ]}
           >
             {/* Avatar */}
             {item.avatarUrl ? (
               <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
             ) : (
-              <View style={[styles.avatarPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
-                <Text style={[styles.avatarInitials, { color: colors.textSecondary }]}>
+              <View
+                style={[
+                  styles.avatarPlaceholder,
+                  { backgroundColor: colors.backgroundSecondary },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.avatarInitials,
+                    { color: colors.textSecondary },
+                  ]}
+                >
                   {item.name
-                    .split(' ')
+                    .split(" ")
                     .map((n) => n[0])
-                    .join('')
+                    .join("")
                     .toUpperCase()
                     .slice(0, 2)}
                 </Text>
@@ -510,25 +683,49 @@ function CheckInsContent() {
 
             {/* Info */}
             <View style={styles.guestInfo}>
-              <Text style={[styles.guestName, { color: colors.text }]} numberOfLines={1}>
+              <Text
+                style={[styles.guestName, { color: colors.text }]}
+                numberOfLines={1}
+              >
                 {item.userName ? `@${item.userName}` : item.name}
               </Text>
               <View style={styles.guestMeta}>
                 {item.userName && (
-                  <Text style={[styles.guestMetaText, { color: colors.textTertiary }]} numberOfLines={1}>
+                  <Text
+                    style={[
+                      styles.guestMetaText,
+                      { color: colors.textTertiary },
+                    ]}
+                    numberOfLines={1}
+                  >
                     {item.name}
                   </Text>
                 )}
-                <Text style={[styles.guestMetaText, { color: item.isGuest ? '#fbbf24' : '#34d399' }]}>
+                <Text
+                  style={[
+                    styles.guestMetaText,
+                    { color: item.isGuest ? "#fbbf24" : "#34d399" },
+                  ]}
+                >
                   {label}
                 </Text>
                 {item.eventCount > 1 && (
-                  <Text style={[styles.guestMetaText, { color: colors.textTertiary }]}>
+                  <Text
+                    style={[
+                      styles.guestMetaText,
+                      { color: colors.textTertiary },
+                    ]}
+                  >
                     {item.eventCount} events
                   </Text>
                 )}
                 {item.lastSeenAt && (
-                  <Text style={[styles.guestMetaText, { color: colors.textTertiary }]}>
+                  <Text
+                    style={[
+                      styles.guestMetaText,
+                      { color: colors.textTertiary },
+                    ]}
+                  >
                     {formatTimeAgo(item.lastSeenAt)}
                   </Text>
                 )}
@@ -537,13 +734,27 @@ function CheckInsContent() {
                 <View style={styles.tagsRow}>
                   {item.tags.map((tag) => {
                     const tc: Record<string, string> = {
-                      vip: '#f59e0b', line_skip: '#22c55e', backstage: '#a855f7',
-                      comp: '#3b82f6', plus_one: '#ec4899',
+                      vip: "#f59e0b",
+                      line_skip: "#22c55e",
+                      backstage: "#a855f7",
+                      comp: "#3b82f6",
+                      plus_one: "#ec4899",
                     };
                     return (
-                      <View key={tag} style={[styles.tagBadge, { backgroundColor: `${tc[tag] || '#6b7280'}20` }]}>
-                        <Text style={[styles.tagBadgeText, { color: tc[tag] || '#6b7280' }]}>
-                          {tag.replace('_', ' ').toUpperCase()}
+                      <View
+                        key={tag}
+                        style={[
+                          styles.tagBadge,
+                          { backgroundColor: `${tc[tag] || "#6b7280"}20` },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.tagBadgeText,
+                            { color: tc[tag] || "#6b7280" },
+                          ]}
+                        >
+                          {tag.replace("_", " ").toUpperCase()}
                         </Text>
                       </View>
                     );
@@ -560,7 +771,13 @@ function CheckInsContent() {
               </View>
             ) : (
               <TouchableOpacity
-                style={[styles.chargeButton, { backgroundColor: colors.cardElevated, borderColor: colors.border }]}
+                style={[
+                  styles.chargeButton,
+                  {
+                    backgroundColor: colors.cardElevated,
+                    borderColor: colors.border,
+                  },
+                ]}
                 onPress={() => handleCharge(item)}
                 activeOpacity={0.8}
                 disabled={isCollecting || collectingGuestId !== null}
@@ -569,8 +786,14 @@ function CheckInsContent() {
                   <ActivityIndicator size="small" color={colors.text} />
                 ) : (
                   <>
-                    <Ionicons name="phone-portrait-outline" size={14} color={colors.text} />
-                    <Text style={[styles.chargeButtonText, { color: colors.text }]}>
+                    <Ionicons
+                      name="phone-portrait-outline"
+                      size={14}
+                      color={colors.text}
+                    />
+                    <Text
+                      style={[styles.chargeButtonText, { color: colors.text }]}
+                    >
                       Charge {doorCoverDisplay}
                     </Text>
                   </>
@@ -593,7 +816,9 @@ function CheckInsContent() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {isDark && <DarkGradientBg />}
-        <Text style={[styles.errorText, { color: colors.textSecondary }]}>No event selected</Text>
+        <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+          No event selected
+        </Text>
       </View>
     );
   }
@@ -605,7 +830,7 @@ function CheckInsContent() {
         visible={!!paymentFailedAlert}
         onClose={() => setPaymentFailedAlert(null)}
         title="Payment Failed"
-        message={paymentFailedAlert || ''}
+        message={paymentFailedAlert || ""}
         alertOnly
         icon="card-outline"
       />
@@ -617,7 +842,10 @@ function CheckInsContent() {
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
+        ]}
       >
         <TouchableOpacity
           style={styles.backButton}
@@ -627,22 +855,26 @@ function CheckInsContent() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Check Ins</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Check Ins
+          </Text>
           <View style={styles.headerStatusRow}>
             <View
               style={[
                 styles.readerDot,
                 {
                   backgroundColor: isReaderConnected
-                    ? '#34d399'
-                    : readerStatus === 'connecting'
-                      ? '#fbbf24'
-                      : '#f87171',
+                    ? "#34d399"
+                    : readerStatus === "connecting"
+                      ? "#fbbf24"
+                      : "#f87171",
                 },
               ]}
             />
-            <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>
-              {activeTab === 'approved'
+            <Text
+              style={[styles.headerSubtitle, { color: colors.textTertiary }]}
+            >
+              {activeTab === "approved"
                 ? `${approvedContacts.length} approved`
                 : `${deniedContacts.length} denied`}
             </Text>
@@ -668,20 +900,28 @@ function CheckInsContent() {
         />
         <TouchableOpacity
           style={styles.tab}
-          onPress={() => handleTabPress('approved')}
+          onPress={() => handleTabPress("approved")}
           activeOpacity={0.7}
         >
           <Animated.Text
-            style={[styles.tabText, { color: colors.text }, approvedTabTextStyle]}
+            style={[
+              styles.tabText,
+              { color: colors.text },
+              approvedTabTextStyle,
+            ]}
           >
             Approved
           </Animated.Text>
           {approvedContacts.length > 0 && (
-            <View style={[
-              styles.tabBadge,
-              { backgroundColor: 'rgba(255,255,255,0.2)' },
-              activeTab === 'approved' && { backgroundColor: 'rgba(255,255,255,0.3)' },
-            ]}>
+            <View
+              style={[
+                styles.tabBadge,
+                { backgroundColor: "rgba(255,255,255,0.2)" },
+                activeTab === "approved" && {
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                },
+              ]}
+            >
               <Text style={[styles.tabBadgeText, { color: colors.text }]}>
                 {approvedContacts.length}
               </Text>
@@ -690,7 +930,7 @@ function CheckInsContent() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.tab}
-          onPress={() => handleTabPress('denied')}
+          onPress={() => handleTabPress("denied")}
           activeOpacity={0.7}
         >
           <Animated.Text
@@ -699,11 +939,15 @@ function CheckInsContent() {
             Denied
           </Animated.Text>
           {deniedContacts.length > 0 && (
-            <View style={[
-              styles.tabBadge,
-              { backgroundColor: 'rgba(255,255,255,0.2)' },
-              activeTab === 'denied' && { backgroundColor: 'rgba(255,255,255,0.3)' },
-            ]}>
+            <View
+              style={[
+                styles.tabBadge,
+                { backgroundColor: "rgba(255,255,255,0.2)" },
+                activeTab === "denied" && {
+                  backgroundColor: "rgba(255,255,255,0.3)",
+                },
+              ]}
+            >
               <Text style={[styles.tabBadgeText, { color: colors.text }]}>
                 {deniedContacts.length}
               </Text>
@@ -716,7 +960,9 @@ function CheckInsContent() {
       {loading ? (
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={colors.text} />
-          <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Loading list...</Text>
+          <Text style={[styles.loadingText, { color: colors.textTertiary }]}>
+            Loading list...
+          </Text>
         </View>
       ) : displayedContacts.length === 0 ? (
         <Animated.View
@@ -724,17 +970,21 @@ function CheckInsContent() {
           style={styles.centerContent}
         >
           <Ionicons
-            name={activeTab === 'approved' ? 'people-outline' : 'close-circle-outline'}
+            name={
+              activeTab === "approved"
+                ? "people-outline"
+                : "close-circle-outline"
+            }
             size={64}
             color={colors.textTertiary}
           />
           <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>
-            {activeTab === 'approved' ? 'No attendees yet' : 'No denied guests'}
+            {activeTab === "approved" ? "No attendees yet" : "No denied guests"}
           </Text>
           <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
-            {activeTab === 'approved'
-              ? 'People who RSVP, buy tickets, or check in will appear here'
-              : 'Guests who were denied entry will appear here'}
+            {activeTab === "approved"
+              ? "People who RSVP, buy tickets, or check in will appear here"
+              : "Guests who were denied entry will appear here"}
           </Text>
         </Animated.View>
       ) : (
@@ -766,8 +1016,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
@@ -775,20 +1025,20 @@ const styles = StyleSheet.create({
   backButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerCenter: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   headerStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginTop: 2,
   },
@@ -799,33 +1049,33 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   centerContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
     gap: 12,
   },
   loadingText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
   },
   errorText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
     marginTop: 100,
   },
   listContent: {
@@ -833,8 +1083,8 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   guestRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 12,
     marginBottom: 8,
@@ -850,12 +1100,12 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   avatarInitials: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   guestInfo: {
     flex: 1,
@@ -863,20 +1113,20 @@ const styles = StyleSheet.create({
   },
   guestName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   guestMeta: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginTop: 3,
   },
   guestMetaText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 4,
     marginTop: 3,
   },
@@ -887,11 +1137,11 @@ const styles = StyleSheet.create({
   },
   tagBadgeText: {
     fontSize: 9,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   chargeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -900,44 +1150,44 @@ const styles = StyleSheet.create({
   },
   chargeButtonText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   paidBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: 'rgba(16,185,129,0.15)',
+    backgroundColor: "rgba(16,185,129,0.15)",
   },
   paidBadgeText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
-    color: '#10b981',
+    fontFamily: "Lato_700Bold",
+    color: "#10b981",
   },
   tabBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderBottomWidth: 1,
-    position: 'relative',
+    position: "relative",
   },
   tabIndicator: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     height: 2,
   },
   tab: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 14,
     gap: 8,
   },
   tabText: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
+    fontFamily: "Lato_600SemiBold",
   },
   tabBadge: {
     borderRadius: 10,
@@ -946,14 +1196,14 @@ const styles = StyleSheet.create({
   },
   tabBadgeText: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
 });
 
 const detailStyles = StyleSheet.create({
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   sheet: {
     paddingHorizontal: 20,
@@ -964,18 +1214,18 @@ const detailStyles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    maxHeight: '80%',
+    maxHeight: "80%",
   },
   handle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 20,
     opacity: 0.4,
   },
   profileHeader: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 24,
   },
   profileAvatar: {
@@ -988,25 +1238,25 @@ const detailStyles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 12,
   },
   profileInitials: {
     fontSize: 26,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   profileName: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   profileSubname: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   badgeRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginTop: 10,
   },
@@ -1017,16 +1267,16 @@ const detailStyles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
-    textTransform: 'uppercase',
+    fontFamily: "Lato_700Bold",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   infoList: {
     marginBottom: 16,
   },
   infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
   },
   infoIcon: {
@@ -1037,29 +1287,29 @@ const detailStyles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
-    textTransform: 'uppercase',
+    fontFamily: "Lato_400Regular",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   infoValue: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   closeButton: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   closeText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   tagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 6,
     marginTop: 8,
   },
@@ -1070,8 +1320,8 @@ const detailStyles = StyleSheet.create({
   },
   tagChipText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
-    textTransform: 'uppercase',
+    fontFamily: "Lato_700Bold",
+    textTransform: "uppercase",
     letterSpacing: 0.3,
   },
 });

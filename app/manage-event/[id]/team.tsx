@@ -1,15 +1,15 @@
-import { useState, useCallback, useMemo } from 'react';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { GlassSurface } from '@/components/glass/glass-surface';
-import { ActionSheet } from '@/components/shared/action-sheet';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
-import { TeamMemberRow } from '@/components/team/team-member-row';
-import { PendingInvitationRow } from '@/components/team/pending-invitation-row';
-import { RoleCard } from '@/components/team/role-card';
-import { InviteModal } from '@/components/team/invite-modal';
-import { ChangeRoleModal } from '@/components/team/change-role-modal';
-import { CreateRoleModal } from '@/components/team/create-role-modal';
-import { EditPermissionsModal } from '@/components/team/edit-permissions-modal';
+import { useState, useCallback, useMemo } from "react";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { GlassSurface } from "@/components/glass/glass-surface";
+import { ActionSheet } from "@/components/shared/action-sheet";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { TeamMemberRow } from "@/components/team/team-member-row";
+import { PendingInvitationRow } from "@/components/team/pending-invitation-row";
+import { RoleCard } from "@/components/team/role-card";
+import { InviteModal } from "@/components/team/invite-modal";
+import { ChangeRoleModal } from "@/components/team/change-role-modal";
+import { CreateRoleModal } from "@/components/team/create-role-modal";
+import { EditPermissionsModal } from "@/components/team/edit-permissions-modal";
 import {
   useTeamMembers,
   useTeamRoles,
@@ -22,16 +22,16 @@ import {
   useUpdateRolePermissions,
   useCancelInvitation,
   useEventPermissions,
-} from '@/hooks';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { useRefreshControl } from '@/hooks/use-refresh-control';
+} from "@/hooks";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { useRefreshControl } from "@/hooks/use-refresh-control";
 import type {
   TeamMemberResponseDto,
   RoleResponseDto,
   RolePermissions,
-} from '@/lib/types/team.types';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+} from "@/lib/types/team.types";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ActivityIndicator,
   ScrollView,
@@ -39,9 +39,9 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function TeamScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -51,7 +51,8 @@ export default function TeamScreen() {
 
   const eventId = id ? Number(id) : 0;
 
-  const { canInviteTeam, canManageTeam, canRemoveTeam } = useEventPermissions(eventId);
+  const { canInviteTeam, canManageTeam, canRemoveTeam } =
+    useEventPermissions(eventId);
 
   const membersQuery = useTeamMembers(eventId);
   const rolesQuery = useTeamRoles(eventId);
@@ -71,13 +72,20 @@ export default function TeamScreen() {
   const cancelInvitation = useCancelInvitation(eventId);
 
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
-  const [changeRoleMember, setChangeRoleMember] = useState<TeamMemberResponseDto | null>(null);
+  const [changeRoleMember, setChangeRoleMember] =
+    useState<TeamMemberResponseDto | null>(null);
   const [createRoleModalVisible, setCreateRoleModalVisible] = useState(false);
-  const [editPermissionsRole, setEditPermissionsRole] = useState<RoleResponseDto | null>(null);
-  const [actionSheetMember, setActionSheetMember] = useState<TeamMemberResponseDto | null>(null);
-  const [confirmRemoveMember, setConfirmRemoveMember] = useState<TeamMemberResponseDto | null>(null);
-  const [confirmDeleteRole, setConfirmDeleteRole] = useState<RoleResponseDto | null>(null);
-  const [confirmCancelInvitation, setConfirmCancelInvitation] = useState<number | null>(null);
+  const [editPermissionsRole, setEditPermissionsRole] =
+    useState<RoleResponseDto | null>(null);
+  const [actionSheetMember, setActionSheetMember] =
+    useState<TeamMemberResponseDto | null>(null);
+  const [confirmRemoveMember, setConfirmRemoveMember] =
+    useState<TeamMemberResponseDto | null>(null);
+  const [confirmDeleteRole, setConfirmDeleteRole] =
+    useState<RoleResponseDto | null>(null);
+  const [confirmCancelInvitation, setConfirmCancelInvitation] = useState<
+    number | null
+  >(null);
 
   const roleNameMap = useMemo(() => {
     const map = new Map<number, string>();
@@ -96,12 +104,9 @@ export default function TeamScreen() {
     },
   });
 
-  const handleMemberAction = useCallback(
-    (member: TeamMemberResponseDto) => {
-      setActionSheetMember(member);
-    },
-    [],
-  );
+  const handleMemberAction = useCallback((member: TeamMemberResponseDto) => {
+    setActionSheetMember(member);
+  }, []);
 
   const handleChangeRole = useCallback(
     (roleId: number) => {
@@ -123,12 +128,9 @@ export default function TeamScreen() {
     [createRole],
   );
 
-  const handleDeleteRole = useCallback(
-    (role: RoleResponseDto) => {
-      setConfirmDeleteRole(role);
-    },
-    [],
-  );
+  const handleDeleteRole = useCallback((role: RoleResponseDto) => {
+    setConfirmDeleteRole(role);
+  }, []);
 
   const handleSavePermissions = useCallback(
     (roleId: number, permissions: RolePermissions) => {
@@ -140,12 +142,9 @@ export default function TeamScreen() {
     [updatePermissions],
   );
 
-  const handleCancelInvitation = useCallback(
-    (invitationId: number) => {
-      setConfirmCancelInvitation(invitationId);
-    },
-    [],
-  );
+  const handleCancelInvitation = useCallback((invitationId: number) => {
+    setConfirmCancelInvitation(invitationId);
+  }, []);
 
   const isLoading = membersQuery.isLoading || rolesQuery.isLoading;
 
@@ -156,16 +155,24 @@ export default function TeamScreen() {
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
+        ]}
       >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.back()}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Team</Text>
           {stats && (
             <View style={styles.countBadge}>
-              <Text style={[styles.countText, { color: colors.text }]}>{stats.totalMembers}</Text>
+              <Text style={[styles.countText, { color: colors.text }]}>
+                {stats.totalMembers}
+              </Text>
             </View>
           )}
         </View>
@@ -179,25 +186,57 @@ export default function TeamScreen() {
       ) : (
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + 24 },
+          ]}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
         >
           {/* Stats Grid */}
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.statsGrid}>
-            <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.statCard}>
+          <Animated.View
+            entering={FadeInDown.duration(300)}
+            style={styles.statsGrid}
+          >
+            <GlassSurface
+              fill="subtle"
+              border="subtle"
+              cornerRadius="lg"
+              style={styles.statCard}
+            >
               <View style={styles.statHeader}>
-                <Ionicons name="people-outline" size={18} color={colors.textSecondary} />
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Members</Text>
+                <Ionicons
+                  name="people-outline"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Members
+                </Text>
               </View>
               <Text style={[styles.statValue, { color: colors.text }]}>
                 {stats?.totalMembers ?? members.length}
               </Text>
             </GlassSurface>
-            <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.statCard}>
+            <GlassSurface
+              fill="subtle"
+              border="subtle"
+              cornerRadius="lg"
+              style={styles.statCard}
+            >
               <View style={styles.statHeader}>
-                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
-                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Pending Invites</Text>
+                <Ionicons
+                  name="mail-outline"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={[styles.statLabel, { color: colors.textSecondary }]}
+                >
+                  Pending Invites
+                </Text>
               </View>
               <Text style={[styles.statValue, { color: colors.text }]}>
                 {stats?.pendingInvitations ?? invitations.length}
@@ -207,14 +246,24 @@ export default function TeamScreen() {
 
           {/* Team Members Section */}
           <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Team Members</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Team Members
+            </Text>
             {members.length === 0 ? (
               <View style={styles.emptySection}>
-                <Ionicons name="people-outline" size={32} color={colors.textTertiary} />
-                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+                <Ionicons
+                  name="people-outline"
+                  size={32}
+                  color={colors.textTertiary}
+                />
+                <Text
+                  style={[styles.emptyText, { color: colors.textTertiary }]}
+                >
                   No team members yet
                 </Text>
-                <Text style={[styles.emptySubtext, { color: colors.textTertiary }]}>
+                <Text
+                  style={[styles.emptySubtext, { color: colors.textTertiary }]}
+                >
                   Invite people to help manage your event
                 </Text>
                 {canInviteTeam() && (
@@ -223,8 +272,14 @@ export default function TeamScreen() {
                     onPress={() => setInviteModalVisible(true)}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="person-add-outline" size={18} color={colors.text} />
-                    <Text style={[styles.emptyCtaText, { color: colors.text }]}>Invite Member</Text>
+                    <Ionicons
+                      name="person-add-outline"
+                      size={18}
+                      color={colors.text}
+                    />
+                    <Text style={[styles.emptyCtaText, { color: colors.text }]}>
+                      Invite Member
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -234,9 +289,17 @@ export default function TeamScreen() {
                   <TeamMemberRow
                     key={member.id}
                     member={member}
-                    isOwner={member.isOwner || member.role.name === 'Owner'}
-                    onChangeRole={(canManageTeam() || canRemoveTeam()) ? handleMemberAction : undefined}
-                    onRemove={(canManageTeam() || canRemoveTeam()) ? handleMemberAction : undefined}
+                    isOwner={member.isOwner || member.role.name === "Owner"}
+                    onChangeRole={
+                      canManageTeam() || canRemoveTeam()
+                        ? handleMemberAction
+                        : undefined
+                    }
+                    onRemove={
+                      canManageTeam() || canRemoveTeam()
+                        ? handleMemberAction
+                        : undefined
+                    }
                   />
                 ))}
               </View>
@@ -255,15 +318,22 @@ export default function TeamScreen() {
 
           {/* Pending Invitations Section */}
           {invitations.length > 0 && (
-            <Animated.View entering={FadeInDown.delay(200).duration(300)} style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Pending Invitations</Text>
+            <Animated.View
+              entering={FadeInDown.delay(200).duration(300)}
+              style={styles.section}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Pending Invitations
+              </Text>
               <View style={styles.membersList}>
                 {invitations.map((inv) => (
                   <PendingInvitationRow
                     key={inv.id}
                     invitation={inv}
                     roleName={roleNameMap.get(inv.roleId)}
-                    onCancel={canInviteTeam() ? handleCancelInvitation : undefined}
+                    onCancel={
+                      canInviteTeam() ? handleCancelInvitation : undefined
+                    }
                   />
                 ))}
               </View>
@@ -271,9 +341,14 @@ export default function TeamScreen() {
           )}
 
           {/* Roles & Permissions Section */}
-          <Animated.View entering={FadeInDown.delay(300).duration(300)} style={styles.section}>
+          <Animated.View
+            entering={FadeInDown.delay(300).duration(300)}
+            style={styles.section}
+          >
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Roles</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Roles
+              </Text>
               {canManageTeam() && (
                 <TouchableOpacity
                   style={styles.addButton}
@@ -281,7 +356,9 @@ export default function TeamScreen() {
                   activeOpacity={0.7}
                 >
                   <Ionicons name="add" size={18} color={colors.text} />
-                  <Text style={[styles.addButtonText, { color: colors.text }]}>Add Role</Text>
+                  <Text style={[styles.addButtonText, { color: colors.text }]}>
+                    Add Role
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -290,7 +367,9 @@ export default function TeamScreen() {
                 <RoleCard
                   key={role.id}
                   role={role}
-                  onEditPermissions={canManageTeam() ? setEditPermissionsRole : undefined}
+                  onEditPermissions={
+                    canManageTeam() ? setEditPermissionsRole : undefined
+                  }
                   onDelete={canManageTeam() ? handleDeleteRole : undefined}
                 />
               ))}
@@ -314,8 +393,8 @@ export default function TeamScreen() {
         currentRoleId={changeRoleMember?.role.id ?? 0}
         memberName={
           changeRoleMember
-            ? `${changeRoleMember.user.firstName || ''} ${changeRoleMember.user.lastName || ''}`.trim()
-            : ''
+            ? `${changeRoleMember.user.firstName || ""} ${changeRoleMember.user.lastName || ""}`.trim()
+            : ""
         }
         onSave={handleChangeRole}
         loading={updateMemberRole.isPending}
@@ -339,21 +418,31 @@ export default function TeamScreen() {
       {/* Member Action Sheet */}
       <ActionSheet
         visible={!!actionSheetMember}
-        title={actionSheetMember?.user.firstName || 'Member'}
+        title={actionSheetMember?.user.firstName || "Member"}
         options={[
-          ...(canManageTeam() ? [{
-            label: 'Change Role',
-            onPress: () => {
-              if (actionSheetMember) setChangeRoleMember(actionSheetMember);
-            },
-          }] : []),
-          ...(canRemoveTeam() ? [{
-            label: 'Remove',
-            destructive: true,
-            onPress: () => {
-              if (actionSheetMember) setConfirmRemoveMember(actionSheetMember);
-            },
-          }] : []),
+          ...(canManageTeam()
+            ? [
+                {
+                  label: "Change Role",
+                  onPress: () => {
+                    if (actionSheetMember)
+                      setChangeRoleMember(actionSheetMember);
+                  },
+                },
+              ]
+            : []),
+          ...(canRemoveTeam()
+            ? [
+                {
+                  label: "Remove",
+                  destructive: true,
+                  onPress: () => {
+                    if (actionSheetMember)
+                      setConfirmRemoveMember(actionSheetMember);
+                  },
+                },
+              ]
+            : []),
         ]}
         onClose={() => setActionSheetMember(null)}
       />
@@ -362,7 +451,7 @@ export default function TeamScreen() {
       <ConfirmModal
         visible={!!confirmRemoveMember}
         title="Remove Member"
-        message={`Remove ${confirmRemoveMember?.user.firstName || 'this member'} from the team?`}
+        message={`Remove ${confirmRemoveMember?.user.firstName || "this member"} from the team?`}
         confirmLabel="Remove"
         destructive
         isLoading={removeMember.isPending}
@@ -420,9 +509,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
@@ -430,32 +519,32 @@ const styles = StyleSheet.create({
   headerButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   countBadge: {
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   countText: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scrollView: {
     flex: 1,
@@ -464,7 +553,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statsGrid: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
     marginBottom: 24,
   },
@@ -473,47 +562,47 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   statHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginBottom: 10,
   },
   statLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   statValue: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginBottom: 12,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 12,
   },
   section: {
     marginTop: 24,
   },
   addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: "rgba(255,255,255,0.15)",
   },
   addButtonText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   membersList: {
     gap: 8,
@@ -522,50 +611,50 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptySection: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 32,
     gap: 8,
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   emptySubtext: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
   },
   emptyCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     marginTop: 16,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: "rgba(255,255,255,0.15)",
   },
   emptyCtaText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   addMemberButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     marginTop: 12,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: "rgba(255,255,255,0.15)",
   },
   addMemberButtonText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
 });
