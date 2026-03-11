@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FeedContainer, FeedHeader, FeedLoadingSkeleton } from '@/components/feed';
+import { useQueryClient } from '@tanstack/react-query';
 import { useFeed } from '@/hooks/use-feed';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAuth } from '@/lib/providers/auth-provider';
@@ -18,6 +19,7 @@ import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
 
 export default function FeedScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
@@ -78,6 +80,9 @@ export default function FeedScreen() {
       const response = await eventsApi.registerForEvent(item.eventId);
       if (response.success) {
         showSuccess(response.message || 'You have successfully RSVP\'d!');
+        queryClient.invalidateQueries({ queryKey: ['my-tickets'] });
+        queryClient.invalidateQueries({ queryKey: ['eventAttendees', item.eventId] });
+        queryClient.invalidateQueries({ queryKey: ['allAttendees'] });
       } else {
         // Revert on failure
         setRsvpItems((prev) => {
@@ -119,6 +124,9 @@ export default function FeedScreen() {
       const response = await eventsApi.registerForEvent(item.eventId);
       if (response.success) {
         showSuccess(response.message || 'Your request has been submitted for approval.');
+        queryClient.invalidateQueries({ queryKey: ['my-tickets'] });
+        queryClient.invalidateQueries({ queryKey: ['eventAttendees', item.eventId] });
+        queryClient.invalidateQueries({ queryKey: ['allAttendees'] });
       } else {
         setPendingRsvpItems((prev) => {
           const newMap = new Map(prev);
@@ -156,8 +164,11 @@ export default function FeedScreen() {
         return newSet;
       });
       showSuccess(`${ticketCount} ticket${ticketCount > 1 ? 's' : ''} purchased!`);
+      queryClient.invalidateQueries({ queryKey: ['my-tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['eventAttendees', purchaseItem.eventId] });
+      queryClient.invalidateQueries({ queryKey: ['allAttendees'] });
     }
-  }, [purchaseItem, showSuccess]);
+  }, [purchaseItem, showSuccess, queryClient]);
 
   const handleRefer = (id: string) => {
     // TODO: Open refer/earn drawer

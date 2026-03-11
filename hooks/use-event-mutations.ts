@@ -155,6 +155,9 @@ export function useRegisterForEvent() {
     },
     onSuccess: (_, eventId) => {
       queryClient.invalidateQueries({ queryKey: ['event', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['eventAttendees', eventId] });
+      queryClient.invalidateQueries({ queryKey: ['allAttendees'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tickets'] });
     },
   });
 }

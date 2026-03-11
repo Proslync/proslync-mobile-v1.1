@@ -221,6 +221,9 @@ export default function EventPage() {
     setIsPurchased(true);
     setIsRsvpd(true);
     showSuccess(`${ticketCount} ticket${ticketCount > 1 ? 's' : ''} purchased!`);
+    queryClient.invalidateQueries({ queryKey: ['my-tickets'] });
+    queryClient.invalidateQueries({ queryKey: ['eventAttendees', numericEventId] });
+    queryClient.invalidateQueries({ queryKey: ['allAttendees'] });
   };
 
   const buttonAnimatedStyle = useAnimatedStyle(() => ({
