@@ -55,6 +55,8 @@ public class VoipPushModule: Module {
          let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
         // Insert at the beginning so payload arrives before answer/end events
         self.queuedEvents.insert((name: "onVoipNotification", body: payload), at: self.latestToken != nil ? 1 : 0)
+        // Clear so it doesn't replay on every app launch
+        UserDefaults.standard.removeObject(forKey: "VoipPendingCallPayload")
       }
 
       // Defer flush to next run loop iteration — gives JS time to register all listeners

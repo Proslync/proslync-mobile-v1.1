@@ -49,7 +49,10 @@ class PushNotificationService {
     // Listen for token changes (OS update, restore from backup, etc.)
     this.tokenRefreshSubscription =
       Notifications.addPushTokenListener((newToken) => {
-        this.registerTokenWithBackend(newToken.data as string);
+        const token = newToken.data as string;
+        // Skip if same token already registered (avoids duplicate calls on login)
+        if (token === this.currentToken) return;
+        this.registerTokenWithBackend(token);
       });
 
     // Clear badge when app comes to foreground

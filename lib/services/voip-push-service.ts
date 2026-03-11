@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { addTokenListener, addNotificationListener, type Subscription } from '@/modules/voip-push';
+import { addTokenListener, addNotificationListener, getToken, type Subscription } from '@/modules/voip-push';
 import { callsApi } from '@/lib/api/calls';
 
 class VoipPushService {
@@ -16,14 +16,21 @@ class VoipPushService {
    */
   register() {
     if (Platform.OS !== 'ios' || this.registered) return;
+    console.log('[VoipPush] Registering for VoIP push...');
 
-    // Handle receiving the VoIP push token
+    // Check for a cached token (arrives before JS listeners are set up)
+    const cachedToken = getToken();
+    if (cachedToken) {
+      console.log('[VoipPush] Cached token found:', cachedToken.substring(0, 8) + '...');
+      this.registerTokenWithBackend(cachedToken);
+    }
+
+    // Handle receiving the VoIP push token (for future token refreshes)
     this.subscriptions.push(
       addTokenListener((token: string) => {
-        this.currentToken = token;
-        callsApi.registerDeviceToken(token, 'ios').catch((err) => {
-          console.error('[VoipPush] Failed to register token:', err);
-        });
+        if (token === this.currentToken) return;
+        console.log('[VoipPush] Token received:', token.substring(0, 8) + '...');
+        this.registerTokenWithBackend(token);
       }),
     );
 
@@ -37,6 +44,13 @@ class VoipPushService {
     );
 
     this.registered = true;
+  }
+
+  private registerTokenWithBackend(token: string) {
+    this.currentToken = token;
+    callsApi.registerDeviceToken(token, 'ios').catch((err: unknown) => {
+      console.error('[VoipPush] Failed to register token:', err);
+    });
   }
 
   /**
