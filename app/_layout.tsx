@@ -37,7 +37,9 @@ SplashScreen.preventAutoHideAsync();
 function useNotificationObserver() {
   useEffect(() => {
     function redirect(notification: Notifications.Notification) {
-      const data = notification.request.content.data;
+      const data = notification.request.content.data as
+        | { url?: string }
+        | undefined;
       const url = data?.url;
       if (typeof url === "string") {
         router.push(url as any);
