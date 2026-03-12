@@ -20,7 +20,9 @@ import { chatApi } from '@/lib/api/chat';
 
 import { useUserFeed } from '@/hooks/use-user-feed';
 import { useFollowUser } from '@/hooks/use-follow-user';
+import { useMutualFollowers } from '@/hooks/use-mutual-followers';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { useAuth } from '@/lib/providers/auth-provider';
 import { LinkifiedText } from '@/components/shared/linkified-text';
 import { FollowersSheet } from '@/components/feed/followers-sheet';
 import type { PublicUserProfile } from '@/lib/types/auth.types';
@@ -90,6 +92,11 @@ export default function UserProfileScreen() {
     isFollowInProgress,
     isUnfollowInProgress,
   } = useFollowUser(user?.id);
+
+  const { user: currentUser } = useAuth();
+  const { mutuals, totalCount: mutualCount } = useMutualFollowers(
+    currentUser?.id !== user?.id ? user?.id : undefined
+  );
 
   React.useEffect(() => {
     async function loadUser() {
@@ -339,6 +346,42 @@ export default function UserProfileScreen() {
           <Text style={[styles.displayName, dynamicStyles.displayName]}>{displayName}</Text>
           {user.bio ? <LinkifiedText style={[styles.bio, dynamicStyles.bio]}>{user.bio}</LinkifiedText> : null}
         </Animated.View>
+
+        {/* Mutual Followers */}
+        {mutualCount > 0 && (
+          <Animated.View
+            entering={FadeInDown.delay(250).duration(500).springify()}
+            style={styles.mutualsSection}
+          >
+            <TouchableOpacity
+              style={styles.mutualsRow}
+              activeOpacity={0.7}
+              onPress={() => { setFollowersSheetTab('followers'); setFollowersSheetVisible(true); }}
+            >
+              <View style={styles.mutualsAvatars}>
+                {mutuals.slice(0, 3).map((m, i) => (
+                  <Image
+                    key={m.id}
+                    source={m.avatarUrl ? { uri: m.avatarUrl } : DEFAULT_AVATAR}
+                    style={[
+                      styles.mutualAvatar,
+                      { marginLeft: i > 0 ? -8 : 0, zIndex: 3 - i, borderColor: colors.background },
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={[styles.mutualsText, { color: colors.textSecondary }]} numberOfLines={2}>
+                Followed by{' '}
+                <Text style={{ fontFamily: 'Lato_700Bold' }}>
+                  {mutuals.slice(0, 2).map(m => m.userName || m.firstName || 'User').join(', ')}
+                </Text>
+                {mutualCount > 2 && (
+                  <Text>, and {mutualCount - 2} {mutualCount - 2 === 1 ? 'other' : 'others'}</Text>
+                )}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Action Buttons - Follow + Message */}
         <Animated.View
@@ -615,6 +658,31 @@ const styles = StyleSheet.create({
   noPostsText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
+  },
+  mutualsSection: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  mutualsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mutualsAvatars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  mutualAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+  },
+  mutualsText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    lineHeight: 16,
   },
   errorContainer: {
     flex: 1,

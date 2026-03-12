@@ -73,7 +73,7 @@ function sourceLabel(source: string, isGuest: boolean): string {
   if (isGuest) return "Guest";
   if (source === "rsvp") return "RSVP";
   if (source === "ticket_purchase") return "Ticket";
-  return "Check-in";
+  return "";
 }
 
 function mapAttendee(a: EventAttendee): ListContact {
@@ -457,7 +457,6 @@ function CheckInsContent() {
         status: [
           EventUserStatus.VERIFIED,
           EventUserStatus.CHECKED_IN,
-          EventUserStatus.SIGNED_UP,
           EventUserStatus.CONFIRMED,
           EventUserStatus.REJECTED,
           EventUserStatus.CANCELLED,
@@ -699,14 +698,16 @@ function CheckInsContent() {
                     {item.name}
                   </Text>
                 )}
-                <Text
-                  style={[
-                    styles.guestMetaText,
-                    { color: item.isGuest ? "#fbbf24" : "#34d399" },
-                  ]}
-                >
-                  {label}
-                </Text>
+                {!!label && (
+                  <Text
+                    style={[
+                      styles.guestMetaText,
+                      { color: item.isGuest ? "#fbbf24" : "#34d399" },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                )}
                 {item.eventCount > 1 && (
                   <Text
                     style={[

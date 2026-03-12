@@ -4,20 +4,18 @@ import type { MutualFollowersResponse } from '@/lib/types/follows.types';
 
 export const MUTUAL_FOLLOWERS_KEY = 'mutual-followers';
 
-export function useMutualFollowers(userId: string | number | null | undefined) {
-  const numericId = userId ? Number(userId) : null;
-
+export function useMutualFollowers(userId: number | null | undefined) {
   const query = useQuery<MutualFollowersResponse>({
-    queryKey: [MUTUAL_FOLLOWERS_KEY, numericId],
-    queryFn: () => followsApi.getMutualFollowers(numericId!),
-    enabled: !!numericId && !isNaN(numericId),
+    queryKey: [MUTUAL_FOLLOWERS_KEY, userId],
+    queryFn: () => followsApi.getMutualFollowers(userId!),
+    enabled: !!userId,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 
   return {
-    mutualFollowers: query.data?.users ?? [],
-    totalMutualCount: query.data?.totalCount ?? 0,
+    mutuals: query.data?.users ?? [],
+    totalCount: query.data?.totalCount ?? 0,
     isLoading: query.isLoading,
   };
 }

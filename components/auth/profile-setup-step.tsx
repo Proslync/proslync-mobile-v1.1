@@ -16,6 +16,8 @@ import Animated, {
   FadeIn,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { authApi } from "@/lib/api/auth";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { handleApiError } from "@/lib/api/errors";
@@ -40,12 +42,56 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
   >(null);
   const [usernameError, setUsernameError] = React.useState<string | null>(null);
 
+  const [avatarUri, setAvatarUri] = React.useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = React.useState(false);
+
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const { refreshUser } = useAuth();
 
   const lastNameRef = React.useRef<TextInput>(null);
   const userNameRef = React.useRef<TextInput>(null);
+
+  const handlePickAvatar = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setAvatarUri(asset.uri);
+        // Upload in background
+        setIsUploadingAvatar(true);
+        try {
+          const fileName = asset.uri.split("/").pop() || "avatar.jpg";
+          const ext = fileName.split(".").pop()?.toLowerCase();
+          let mimeType = "image/jpeg";
+          if (ext === "png") mimeType = "image/png";
+          else if (ext === "gif") mimeType = "image/gif";
+          else if (ext === "webp") mimeType = "image/webp";
+
+          const presigned = await authApi.getAvatarPresignedUrl(
+            fileName,
+            mimeType,
+            asset.fileSize || 1024 * 1024,
+          );
+          await authApi.uploadToPresignedUrl(presigned.uploadUrl, asset.uri, mimeType);
+          await authApi.confirmUpload(presigned.fileId);
+        } catch (err) {
+          console.error("Avatar upload error:", err);
+          // Don't block signup — avatar is optional
+        } finally {
+          setIsUploadingAvatar(false);
+        }
+      }
+    } catch {
+      // cancelled
+    }
+  };
 
   // Validate username format
   const isValidUsername = (value: string) => /^[a-zA-Z0-9_]+$/.test(value);
@@ -176,8 +222,37 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
           entering={FadeInUp.duration(500).delay(450)}
           style={[styles.subtitle, { color: colors.textSecondary }]}
         >
-          Choose a username and enter your name.
+          Add a photo, choose a username, and enter your name.
         </Animated.Text>
+
+        {/* Avatar Picker */}
+        <Animated.View
+          entering={FadeIn.duration(600).delay(480)}
+          style={styles.avatarSection}
+        >
+          <TouchableOpacity
+            style={[styles.avatarPicker, { backgroundColor: colors.input }]}
+            onPress={handlePickAvatar}
+            activeOpacity={0.7}
+            disabled={isUploadingAvatar}
+          >
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Ionicons name="camera" size={28} color={colors.textTertiary} />
+              </View>
+            )}
+            {isUploadingAvatar && (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator color="#fff" size="small" />
+              </View>
+            )}
+          </TouchableOpacity>
+          <Text style={[styles.avatarLabel, { color: colors.textSecondary }]}>
+            Add Photo
+          </Text>
+        </Animated.View>
 
         {/* First Name */}
         <Animated.View
@@ -376,7 +451,40 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  avatarSection: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  avatarPicker: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+  },
+  avatarPlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 45,
+  },
+  avatarLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    marginTop: 8,
   },
   inputContainer: {
     flexDirection: "row",
@@ -394,6 +502,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "500",
     paddingLeft: 16,
+    marginRight: 4,
   },
   availabilityIndicator: {
     paddingRight: 16,

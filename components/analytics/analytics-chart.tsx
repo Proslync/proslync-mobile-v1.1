@@ -71,10 +71,16 @@ export function getRangeLabel(range: TimeRange): string {
 
 export function calcDelta(series: number[]): { text: string; isPositive: boolean } {
   if (series.length < 2) return { text: '', isPositive: true };
-  const first = series[0];
-  const last = series[series.length - 1];
-  const diff = last - first;
-  const pct = first > 0 ? (diff / first) * 100 : 0;
+
+  const mid = Math.floor(series.length / 2);
+  const firstHalf = series.slice(0, mid);
+  const secondHalf = series.slice(mid);
+
+  const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+  const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+
+  const diff = avgSecond - avgFirst;
+  const pct = avgFirst > 0 ? (diff / avgFirst) * 100 : avgSecond > 0 ? 100 : 0;
   const isPositive = diff >= 0;
   const arrow = isPositive ? '▲' : '▼';
   return {
@@ -256,21 +262,39 @@ function formatTooltipDate(dateStr: string, range: TimeRange): string {
   return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-/** Pick evenly-spaced date strings and format for X-axis */
+/** Pick evenly-spaced date strings and format for X-axis, positioned by actual timestamp */
 function formatXAxisDates(dates: string[], range: TimeRange): { label: string; fraction: number }[] {
   if (dates.length < 2) return [];
 
-  // Fewer labels to avoid crowding
-  const labelCount = Math.min(4, dates.length);
+  const timestamps = dates.map(d => new Date(d).getTime());
+  const minT = timestamps[0];
+  const maxT = timestamps[timestamps.length - 1];
+  const totalSpan = maxT - minT;
+  if (totalSpan <= 0) return [];
+
+  const labelCount = Math.min(5, dates.length);
   const result: { label: string; fraction: number }[] = [];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   for (let i = 0; i < labelCount; i++) {
-    // Inset the first and last labels slightly so they don't clip edges
-    const fraction = labelCount === 1 ? 0.5 : i / (labelCount - 1);
-    const dataIndex = Math.round(fraction * (dates.length - 1));
-    const d = new Date(dates[dataIndex]);
+    const targetFraction = labelCount === 1 ? 0.5 : i / (labelCount - 1);
+    const targetTime = minT + targetFraction * totalSpan;
+
+    // Find closest data point to this target time
+    let closestIdx = 0;
+    let closestDist = Infinity;
+    for (let j = 0; j < timestamps.length; j++) {
+      const dist = Math.abs(timestamps[j] - targetTime);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closestIdx = j;
+      }
+    }
+
+    // Position based on actual timestamp, not array index
+    const fraction = (timestamps[closestIdx] - minT) / totalSpan;
+    const d = new Date(dates[closestIdx]);
 
     let label: string;
     if (range === '12H' || range === '1D') {
@@ -289,7 +313,10 @@ function formatXAxisDates(dates: string[], range: TimeRange): { label: string; f
       label = `${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     }
 
-    result.push({ label, fraction });
+    // Avoid duplicate labels
+    if (result.length === 0 || result[result.length - 1].label !== label) {
+      result.push({ label, fraction });
+    }
   }
 
   return result;
@@ -385,14 +412,15 @@ export function HeroLineChart({
         : Math.round(activePoint.value).toLocaleString()
     : '';
 
-  // Tooltip floats above the line — positioned at the interpolated point
-  const tooltipGap = 24;
-  const tooltipX = activePoint
-    ? Math.max(8, Math.min(activePoint.x, chartWidth - 8))
-    : 0;
-  const tooltipY = activePoint
-    ? Math.max(12, activePoint.y - tooltipGap)
-    : 0;
+  // Compute tooltip date from the active point's interpolated position
+  const tooltipDateStr = React.useMemo(() => {
+    if (!activePoint || !dates || dates.length < 2) return '';
+    const chartW = chartWidth - chartPadding * 2;
+    const frac = (activePoint.x - chartPadding) / chartW;
+    const idx = Math.round(frac * (dates.length - 1));
+    const clampedIdx = Math.max(0, Math.min(dates.length - 1, idx));
+    return formatTooltipDate(dates[clampedIdx], selectedRange);
+  }, [activePoint, dates, chartWidth, selectedRange]);
 
   // Y-axis: map data value to chart Y coordinate
   const dataMin = data.length > 0 ? Math.min(...data) : 0;
@@ -480,17 +508,6 @@ export function HeroLineChart({
                   stroke={isDark ? '#000' : '#fff'}
                   strokeWidth={2}
                 />
-                <SvgText
-                  x={tooltipX}
-                  y={tooltipY}
-                  fontSize={13}
-                  fontFamily="Lato_700Bold"
-                  fontWeight="700"
-                  fill={isDark ? '#fff' : '#000'}
-                  textAnchor="middle"
-                >
-                  {tooltipValue}
-                </SvgText>
               </>
             )}
           </G>
@@ -513,6 +530,40 @@ export function HeroLineChart({
             );
           })}
         </Svg>
+
+        {activePoint && (
+          <View
+            style={{
+              position: 'absolute',
+              left: yAxisWidth + Math.max(0, Math.min(activePoint.x - 50, chartWidth - 100)),
+              top: Math.max(0, activePoint.y - 52),
+              width: 100,
+              alignItems: 'center',
+            }}
+            pointerEvents="none"
+          >
+            <View
+              style={{
+                backgroundColor: 'rgba(30,30,30,0.92)',
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.1)',
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#fff', fontSize: 14, fontFamily: 'Lato_700Bold' }}>
+                {tooltipValue}
+              </Text>
+              {tooltipDateStr ? (
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontFamily: 'Lato_400Regular', marginTop: 2 }}>
+                  {tooltipDateStr}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        )}
 
       </Animated.View>
     </GestureDetector>
@@ -570,6 +621,20 @@ export function HeroMetricHeader({
   );
 }
 
+function rangeDisplayLabel(r: TimeRange): string {
+  switch (r) {
+    case '12H': return '12h';
+    case '1D': return '1d';
+    case '1W': return '1wk';
+    case '2W': return '2wk';
+    case '1M': return '1mo';
+    case '3M': return '3m';
+    case '6M': return '6m';
+    case '1Y': return '1y';
+    case '5Y': return 'All';
+  }
+}
+
 export function RangeSelector({
   selected,
   onSelect,
@@ -593,7 +658,7 @@ export function RangeSelector({
             activeOpacity={0.7}
           >
             <Text style={[styles.rangeText, { color: colors.textTertiary }, isActive && styles.rangeTextActive]}>
-              {r}
+              {rangeDisplayLabel(r)}
             </Text>
           </TouchableOpacity>
         );
@@ -673,35 +738,18 @@ export function AnalyticsScreenShell({
     setSelectedRange(range);
     onRangeChange?.(range);
   }, [onRangeChange]);
-  const [metricsOrder, setMetricsOrder] = React.useState<string[]>([]);
-
   const doRefresh = React.useCallback(async () => {
     setRefreshing(true);
     await onRefresh();
     setRefreshing(false);
   }, [onRefresh]);
 
-  // Sync order when metrics first load
-  React.useEffect(() => {
-    if (metrics.length > 0 && metricsOrder.length === 0) {
-      setMetricsOrder(metrics.slice(1).map((m) => m.id));
-    }
-  }, [metrics]);
-
   const heroMetric = metrics.find((m) => m.id === heroMetricId) ?? metrics[0];
-  const tileMetrics = metricsOrder
-    .map((id) => metrics.find((m) => m.id === id)!)
-    .filter(Boolean);
+  const tileMetrics = metrics.filter((m) => m.id !== (heroMetric?.id ?? heroMetricId));
 
-  const handleSwap = (tappedId: string) => {
-    LayoutAnimation.configureNext(
-      LayoutAnimation.create(350, 'easeInEaseOut', 'opacity'),
-    );
-    const previousHeroId = heroMetricId;
+  const handleSelectMetric = (tappedId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.create(350, 'easeInEaseOut', 'opacity'));
     setHeroMetricId(tappedId);
-    setMetricsOrder((prev) =>
-      prev.map((id) => (id === tappedId ? previousHeroId : id)),
-    );
   };
 
   const heroData = heroMetric?.seriesByRange[selectedRange] ?? [];
@@ -805,7 +853,7 @@ export function AnalyticsScreenShell({
               <MetricTile
                 metric={metric}
                 selectedRange={selectedRange}
-                onPress={() => handleSwap(metric.id)}
+                onPress={() => handleSelectMetric(metric.id)}
                 colors={colors}
               />
             </React.Fragment>

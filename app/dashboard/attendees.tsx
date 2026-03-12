@@ -1,11 +1,13 @@
 import { useState, useCallback } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
-import { useContacts, useDebounce } from '@/hooks';
+import { useDebounce } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAuth } from '@/lib/providers/auth-provider';
-import type { Contact } from '@/lib/types/events.types';
+import { eventsApi } from '@/lib/api/events';
+import type { OwnerContact, OwnerContactsResponse } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import {
@@ -21,25 +23,34 @@ import {
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-function getInitials(contact: Contact): string {
+function getInitials(contact: OwnerContact): string {
   const first = contact.firstName?.[0] || '';
   const last = contact.lastName?.[0] || '';
   if (first || last) return `${first}${last}`.toUpperCase();
   return '?';
 }
 
-function getDisplayName(contact: Contact): string {
+function getDisplayName(contact: OwnerContact): string {
   if (contact.firstName || contact.lastName) {
     return `${contact.firstName || ''} ${contact.lastName || ''}`.trim();
   }
   return 'Guest';
 }
 
-function getSubtext(contact: Contact): string {
+function getSubtext(contact: OwnerContact): string {
   if (contact.userName) return `@${contact.userName}`;
   if (contact.phoneNumber) return contact.phoneNumber;
   return '';
 }
+
+function sourceLabel(contact: OwnerContact): string {
+  if (contact.isGuest) return 'Guest';
+  if (contact.source === 'rsvp') return 'RSVP';
+  if (contact.source === 'ticket_purchase') return 'Ticket';
+  return '';
+}
+
+const PAGE_SIZE = 20;
 
 export default function ContactsListScreen() {
   const router = useRouter();
@@ -50,20 +61,30 @@ export default function ContactsListScreen() {
   const [searchText, setSearchText] = useState('');
   const debouncedSearch = useDebounce(searchText, 300);
 
-  const ownerId = user?.id;
-
-  const {
-    contacts,
-    total,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refetch,
-  } = useContacts({
-    ownerId,
-    search: debouncedSearch || undefined,
+  const query = useInfiniteQuery<OwnerContactsResponse, Error>({
+    queryKey: ['owner-contacts', debouncedSearch],
+    queryFn: async ({ pageParam }) => {
+      return eventsApi.getOwnerContacts({
+        page: pageParam as number,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+      });
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.hasNext && lastPage.page) return lastPage.page + 1;
+      return undefined;
+    },
+    staleTime: 1000 * 60 * 2,
   });
+
+  const contacts: OwnerContact[] = query.data?.pages.flatMap((page) => page.contacts) ?? [];
+  const total = query.data?.pages[0]?.total ?? 0;
+  const isLoading = query.isLoading;
+  const isFetchingNextPage = query.isFetchingNextPage;
+  const hasNextPage = query.hasNextPage;
+  const fetchNextPage = query.fetchNextPage;
+  const refetch = query.refetch;
 
   const { refreshControl } = useRefreshControl({
     onRefresh: async () => {
@@ -78,9 +99,10 @@ export default function ContactsListScreen() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderContact = useCallback(
-    ({ item, index }: { item: Contact; index: number }) => {
+    ({ item, index }: { item: OwnerContact; index: number }) => {
       const name = getDisplayName(item);
       const subtext = getSubtext(item);
+      const label = sourceLabel(item);
 
       return (
         <Animated.View entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}>
@@ -104,11 +126,20 @@ export default function ContactsListScreen() {
                 </Text>
               ) : null}
             </View>
-            <View style={[styles.eventCountBadge, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
-              <Text style={[styles.eventCountText, { color: colors.text }]}>
-                {item.eventCount} {item.eventCount === 1 ? 'check-in' : 'check-ins'}
-              </Text>
-            </View>
+            {!!label && (
+              <View style={[styles.eventCountBadge, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+                <Text style={[styles.eventCountText, { color: colors.text }]}>
+                  {label}
+                </Text>
+              </View>
+            )}
+            {item.eventCount > 1 && (
+              <View style={[styles.eventCountBadge, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
+                <Text style={[styles.eventCountText, { color: colors.text }]}>
+                  {item.eventCount} events
+                </Text>
+              </View>
+            )}
           </GlassSurface>
         </Animated.View>
       );
@@ -184,7 +215,7 @@ export default function ContactsListScreen() {
         <FlatList
           data={contacts}
           renderItem={renderContact}
-          keyExtractor={(item) => item.userId?.toString() || item.phoneNumber || String(Math.random())}
+          keyExtractor={(item) => String(item.id)}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
