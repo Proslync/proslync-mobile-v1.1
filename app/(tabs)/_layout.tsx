@@ -99,9 +99,9 @@ const TabPageWrapper = React.memo(function TabPageWrapper({ index, shouldRender,
 });
 
 // Profile Tab Icon with avatar
-function ProfileTabIcon({ focused, avatarUrl, activeColor }: { focused: boolean; avatarUrl?: string; activeColor: string }) {
+function ProfileTabIcon({ focused, avatarUrl, defaultColor }: { focused: boolean; avatarUrl?: string; defaultColor: string }) {
   return (
-    <View style={[styles.profileWrapper, focused && [styles.profileWrapperActive, { borderColor: activeColor }]]}>
+    <View style={[styles.profileWrapper, { borderColor: focused ? '#fff' : defaultColor }]}>
       <Image
         source={avatarUrl ? { uri: avatarUrl } : require('@/assets/images/default-avatar.png')}
         style={styles.profileImage}
@@ -135,21 +135,25 @@ export default function SwipeableTabLayout() {
   const { openAccountSwitcher, syncTabIndex } = useTabNavigation();
   const { colors, isDark } = useAppTheme();
   const { channelData } = useConversations(user?.id);
-  const hasUnreadMessages = channelData.some((ch) => ch.unreadCount > 0);
+  const hasUnreadMessages = React.useMemo(
+    () => channelData.some((ch) => ch.unreadCount > 0),
+    [channelData],
+  );
 
   const pagerRef = React.useRef<PagerView>(null);
   const [currentIndex, setCurrentIndex] = React.useState(DEFAULT_TAB_INDEX);
   const isNavigatingProgrammatically = React.useRef(false);
 
-  // Pre-load all pages after initial render to avoid jank during swipes
-  const [loadedPages, setLoadedPages] = React.useState<Set<number>>(() => new Set([DEFAULT_TAB_INDEX]));
+  // Pre-load adjacent pages immediately, remaining after first frame
+  const [loadedPages, setLoadedPages] = React.useState<Set<number>>(
+    () => new Set([DEFAULT_TAB_INDEX - 1, DEFAULT_TAB_INDEX, DEFAULT_TAB_INDEX + 1]),
+  );
 
   React.useEffect(() => {
-    // Load all pages shortly after mount so swipes are always smooth
-    const timer = setTimeout(() => {
+    // Load remaining pages on next frame so swipes are always smooth
+    requestAnimationFrame(() => {
       setLoadedPages(new Set(TAB_CONFIG.map((_, i) => i)));
-    }, 500);
-    return () => clearTimeout(timer);
+    });
   }, []);
 
   const avatarUrl = user?.avatar?.url;
@@ -181,26 +185,21 @@ export default function SwipeableTabLayout() {
     pagerRef.current?.setPage(index);
   }, [currentIndex]);
 
-  // Double-tap handler for profile tab
+  // Profile tab: navigate immediately, double-tap opens account switcher
   const lastProfileTapRef = React.useRef<number>(0);
-  const DOUBLE_TAP_DELAY = 300;
 
   const handleProfilePress = React.useCallback(() => {
     const now = Date.now();
     const timeSinceLastTap = now - lastProfileTapRef.current;
+    lastProfileTapRef.current = now;
 
-    if (timeSinceLastTap < DOUBLE_TAP_DELAY) {
-      // Double tap - open account switcher
+    if (timeSinceLastTap < 300) {
+      // Double tap — open account switcher
       openAccountSwitcher();
       lastProfileTapRef.current = 0;
     } else {
-      lastProfileTapRef.current = now;
-      setTimeout(() => {
-        if (lastProfileTapRef.current === now) {
-          // Single tap - navigate
-          goToPage(4);
-        }
-      }, DOUBLE_TAP_DELAY);
+      // Single tap — navigate immediately (no delay)
+      goToPage(4);
     }
   }, [goToPage, openAccountSwitcher]);
 
@@ -243,7 +242,7 @@ export default function SwipeableTabLayout() {
               accessibilityLabel={tab.title}
             >
               {tab.name === 'profile' ? (
-                <ProfileTabIcon focused={isFocused} avatarUrl={avatarUrl} activeColor={colors.tabIconSelected} />
+                <ProfileTabIcon focused={isFocused} avatarUrl={avatarUrl} defaultColor={colors.tabIconDefault} />
               ) : (
                 <TabIcon index={index} focused={isFocused} color={color} showBadge={tab.name === 'explore' && hasUnreadMessages} />
               )}

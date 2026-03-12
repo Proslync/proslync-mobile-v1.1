@@ -467,7 +467,14 @@ function FullMapScreen() {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         const location = await Location.getCurrentPositionAsync({});
-        setUserLocation([location.coords.longitude, location.coords.latitude]);
+        const coords: [number, number] = [location.coords.longitude, location.coords.latitude];
+        setUserLocation(coords);
+        // Animate camera to user's location once obtained
+        cameraRef.current?.setCamera({
+          centerCoordinate: coords,
+          zoomLevel: 13,
+          animationDuration: 800,
+        });
       }
     })();
   }, []);

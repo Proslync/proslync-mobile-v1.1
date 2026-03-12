@@ -12,8 +12,8 @@ export function LinkifiedText({ children, style }: LinkifiedTextProps) {
 
   const handleMentionPress = (username: string) => {
     router.push({
-      pathname: '/user-profile/[userId]',
-      params: { userId: 'lookup', username },
+      pathname: '/user/[username]',
+      params: { username },
     });
   };
 

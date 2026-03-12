@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   View,
@@ -10,6 +10,7 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
+  InteractionManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -237,20 +238,54 @@ function RecentSearchRow({
   onDelete: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
 }) {
+  const imageUrl = item.displayImage || item.avatar?.url;
+  const isPerson = item.selectedType === 'person';
+  const isVenue = item.selectedType === 'venue';
+  const name = isPerson
+    ? `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.displayName || 'User'
+    : item.displayName || item.query || 'Search';
+
   return (
     <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
-      <View style={[styles.recentIcon, { backgroundColor: colors.input }]}>
-        <Ionicons
-          name={item.selectedType ? getTypeIcon(item.selectedType) : 'time-outline'}
-          size={18}
-          color={colors.textSecondary}
+      {imageUrl ? (
+        <Image
+          source={{ uri: imageUrl }}
+          style={isPerson || !item.selectedType ? styles.avatar : styles.venueThumb}
         />
-      </View>
+      ) : isPerson ? (
+        <Image source={DefaultAvatarImage} style={styles.avatar} />
+      ) : (
+        <View style={[styles.recentIcon, { backgroundColor: colors.input }]}>
+          <Ionicons
+            name={item.selectedType ? getTypeIcon(item.selectedType) : 'time-outline'}
+            size={18}
+            color={colors.textSecondary}
+          />
+        </View>
+      )}
       <View style={styles.resultInfo}>
-        <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
-          {item.displayName || item.query || 'Search'}
-        </Text>
-        {item.selectedType && (
+        <View style={styles.nameRow}>
+          <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+            {name}
+          </Text>
+          {isPerson && item.isVerified && (
+            <MaterialCommunityIcons name="check-decagram" size={15} color={colors.verified} style={{ marginLeft: 4 }} />
+          )}
+        </View>
+        {isPerson && item.userName && (
+          <Text style={[styles.resultSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+            @{item.userName}
+          </Text>
+        )}
+        {isVenue && (
+          <View style={styles.metaRow}>
+            <Ionicons name="location-outline" size={12} color={colors.textTertiary} />
+            <Text style={[styles.resultSubtitle, { color: colors.textTertiary }]} numberOfLines={1}>
+              Venue
+            </Text>
+          </View>
+        )}
+        {!isPerson && !isVenue && item.selectedType && (
           <Text style={[styles.resultSubtitle, { color: colors.textTertiary }]}>
             {item.selectedType}
           </Text>
@@ -361,6 +396,15 @@ export default function SearchScreen() {
   const router = useStableRouter();
   const { colors } = useAppTheme();
   const inputRef = useRef<TextInput>(null);
+  const [ready, setReady] = useState(false);
+
+  // Defer heavy content until screen transition finishes
+  useEffect(() => {
+    const handle = InteractionManager.runAfterInteractions(() => {
+      setReady(true);
+    });
+    return () => handle.cancel();
+  }, []);
 
   const {
     searchQuery,
@@ -465,19 +509,46 @@ export default function SearchScreen() {
     [router, setSearchQuery],
   );
 
-  // Render unified result item
-  const renderResultItem = useCallback(
-    ({ item }: { item: UnifiedSearchItem }) => {
+  // Group results by category and sort categories by best score
+  const groupedSections = React.useMemo(() => {
+    if (results.length === 0) return [];
+
+    const groups: Record<string, UnifiedSearchItem[]> = {};
+    for (const item of results) {
+      if (!groups[item.type]) groups[item.type] = [];
+      groups[item.type].push(item);
+    }
+
+    const categoryLabels: Record<string, string> = {
+      person: 'People',
+      event: 'Events',
+      venue: 'Venues',
+      post: 'Posts',
+    };
+
+    // Sort categories by the highest score in each group (best match first)
+    return Object.entries(groups)
+      .map(([type, items]) => ({
+        type,
+        label: categoryLabels[type] || type,
+        data: items,
+        topScore: Math.max(...items.map((i) => i.score)),
+      }))
+      .sort((a, b) => b.topScore - a.topScore);
+  }, [results]);
+
+  const renderResultRow = useCallback(
+    (item: UnifiedSearchItem) => {
       const onPress = () => handleResultPress(item);
       switch (item.type) {
         case 'person':
-          return <PersonRow item={item} onPress={onPress} colors={colors} />;
+          return <PersonRow key={`person-${item.id}`} item={item} onPress={onPress} colors={colors} />;
         case 'event':
-          return <EventRow item={item} onPress={onPress} colors={colors} />;
+          return <EventRow key={`event-${item.id}`} item={item} onPress={onPress} colors={colors} />;
         case 'venue':
-          return <VenueRow item={item} onPress={onPress} colors={colors} />;
+          return <VenueRow key={`venue-${item.id}`} item={item} onPress={onPress} colors={colors} />;
         case 'post':
-          return <PostRow item={item} onPress={onPress} colors={colors} />;
+          return <PostRow key={`post-${item.id}`} item={item} onPress={onPress} colors={colors} />;
         default:
           return null;
       }
@@ -494,8 +565,7 @@ export default function SearchScreen() {
       <DarkGradientBg />
 
       {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
+      <View
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
@@ -525,10 +595,14 @@ export default function SearchScreen() {
             </TouchableOpacity>
           )}
         </View>
-      </Animated.View>
+      </View>
 
       {/* Content */}
-      {hasQuery ? (
+      {!ready ? (
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={colors.textTertiary} />
+        </View>
+      ) : hasQuery ? (
         // ── Search results ──
         isSearching && results.length === 0 ? (
           <View style={styles.loadingState}>
@@ -542,14 +616,20 @@ export default function SearchScreen() {
             </Text>
           </View>
         ) : (
-          <FlatList
-            data={results}
-            keyExtractor={(item) => `${item.type}-${item.id}`}
-            renderItem={renderResultItem}
+          <ScrollView
             contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
-          />
+          >
+            {groupedSections.map((section) => (
+              <View key={section.type}>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>{section.label}</Text>
+                </View>
+                {section.data.map((item) => renderResultRow(item))}
+              </View>
+            ))}
+          </ScrollView>
         )
       ) : (
         // ── Suggestions (no query) ──
@@ -663,6 +743,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
+    paddingTop: 4,
   },
   suggestionsContent: {
     paddingHorizontal: 16,
@@ -711,15 +792,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   followButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#0095F6',
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
   },
   followButtonFollowing: {
     backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
   followButtonText: {

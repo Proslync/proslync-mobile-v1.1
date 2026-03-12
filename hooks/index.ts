@@ -179,6 +179,20 @@ export {
   CROSS_EVENT_RECIPIENT_COUNT_KEY,
 } from './use-cross-event-text-blasts';
 
+// Venue Tables hooks
+export {
+  useVenueSections,
+  useCreateSection,
+  useUpdateSection,
+  useDeleteSection,
+  useCreateTable,
+  useUpdateTable,
+  useDeleteTable,
+  useEventTables,
+  VENUE_SECTIONS_KEY,
+  EVENT_TABLES_KEY,
+} from './use-venue-tables';
+
 // Venue Menu hooks
 export {
   useVenueMenu,

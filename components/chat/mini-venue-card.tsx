@@ -213,14 +213,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   followButton: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "#0095F6",
     borderRadius: 8,
     paddingVertical: 8,
     alignSelf: "stretch",
     marginTop: 8,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
   },
   followButtonDone: {
     backgroundColor: "rgba(255,255,255,0.08)",

@@ -70,6 +70,7 @@ function mapResponseToFeedItem(item: FeedItemResponse): FeedItem {
     username: item.type === 'event' && item.venueName ? item.venueName : displayName,
     userAvatar: item.authorAvatarUrl || '',
     description: item.text || '',
+    verified: item.authorIsVerified ?? false,
     likes: item.likeCount,
     comments: item.commentCount,
     shares: 0,

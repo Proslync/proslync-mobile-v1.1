@@ -64,20 +64,19 @@ export function OTPInput({
         ))}
       </View>
 
-      {/* Real visible TextInput on top — transparent text so digits show through boxes */}
+      {/* Hidden TextInput on top — receives keyboard/paste/autofill, digits show through boxes */}
       <TextInput
         ref={inputRef}
-        style={[styles.realInput, { fontSize: 24 }]}
+        style={styles.realInput}
         value={value}
         onChangeText={handleChange}
         keyboardType="number-pad"
         keyboardAppearance={isDark ? 'dark' : 'light'}
         maxLength={maxLength}
-        autoComplete="sms-otp"
+        autoComplete="one-time-code"
         textContentType="oneTimeCode"
         editable={!disabled}
         caretHidden
-        selectionColor="transparent"
         autoFocus
       />
     </Pressable>
@@ -176,11 +175,9 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
   realInput: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    color: 'transparent',
+    ...StyleSheet.absoluteFillObject,
+    fontSize: 24,
+    letterSpacing: 20,
+    opacity: 0.01,
   },
 });

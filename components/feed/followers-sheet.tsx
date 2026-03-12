@@ -66,8 +66,8 @@ function UserRow({
   const handlePress = () => {
     onNavigate();
     router.push({
-      pathname: "/user-profile/[userId]",
-      params: { userId: String(user.id) },
+      pathname: "/user/[username]",
+      params: { username: user.userName || "_", userId: String(user.id) },
     });
   };
 
@@ -93,22 +93,21 @@ function UserRow({
         <TouchableOpacity
           style={[
             styles.followBtn,
-            { borderColor: colors.border },
             isFollowing
-              ? { backgroundColor: "transparent", borderWidth: 1 }
-              : { backgroundColor: colors.buttonSecondary },
+              ? { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.border }
+              : { backgroundColor: "#0095F6" },
           ]}
           activeOpacity={0.8}
           onPress={handleFollowPress}
           disabled={followLoading || isActionInProgress}
         >
           {isActionInProgress ? (
-            <ActivityIndicator size="small" color={colors.text} />
+            <ActivityIndicator size="small" color={isFollowing ? colors.text : "#fff"} />
           ) : (
             <Text
               style={[
                 styles.followBtnText,
-                { color: isFollowing ? colors.textTertiary : colors.text },
+                { color: isFollowing ? colors.textTertiary : "#fff" },
               ]}
             >
               {isFollowing ? "Following" : "Follow"}

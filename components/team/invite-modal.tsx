@@ -12,20 +12,29 @@ import {
   Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { useDebounce } from '@/hooks/use-debounce';
+import { useUnifiedSearch } from '@/hooks/use-unified-search';
 import { useInviteByUserId } from '@/hooks';
-import { searchApi } from '@/lib/api/search';
-import type { SearchPerson } from '@/lib/types/search.types';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { RoleResponseDto } from '@/lib/types/team.types';
+import type { UnifiedSearchItem, SearchSuggestion } from '@/lib/types/search.types';
+
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 interface InviteModalProps {
   visible: boolean;
   onClose: () => void;
   roles: RoleResponseDto[];
   eventId: number;
+}
+
+interface SelectedUser {
+  id: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  userName?: string | null;
+  avatarUrl?: string | null;
 }
 
 export function InviteModal({
@@ -38,56 +47,60 @@ export function InviteModal({
   const { colors } = useAppTheme();
   const inviteMutation = useInviteByUserId(eventId);
 
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchPerson[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<SearchPerson | null>(null);
+  const {
+    searchQuery,
+    setSearchQuery,
+    debouncedQuery,
+    results,
+    isSearching,
+    suggestions,
+  } = useUnifiedSearch();
+
+  const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
   const [sent, setSent] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
-  const debouncedQuery = useDebounce(query, 400);
-
   const assignableRoles = roles.filter((r) => r.name !== 'Owner');
+
+  // Filter to people only
+  const peopleResults = results.filter((r) => r.type === 'person');
+
+  const hasQuery = debouncedQuery.length > 0;
+  const frequentFriends = suggestions?.frequentFriends ?? [];
+  const mutualSuggestions = suggestions?.mutualFollowSuggestions ?? [];
 
   // Reset state when modal opens
   useEffect(() => {
     if (visible) {
-      setQuery('');
-      setResults([]);
+      setSearchQuery('');
       setSelectedUser(null);
       setSent(false);
+      setInviteError(null);
       const defaultRole = assignableRoles[0];
       setSelectedRoleId(defaultRole?.id ?? null);
     }
   }, [visible]);
 
-  // Search as user types
-  useEffect(() => {
-    if (!debouncedQuery.trim()) {
-      setResults([]);
-      return;
-    }
+  const handleSelectPerson = useCallback((item: UnifiedSearchItem) => {
+    setSelectedUser({
+      id: item.id,
+      firstName: item.firstName,
+      lastName: item.lastName,
+      userName: item.userName,
+      avatarUrl: item.avatar?.url,
+    });
+  }, []);
 
-    let cancelled = false;
-    setSearching(true);
-
-    searchApi
-      .search({ query: debouncedQuery, peopleLimit: 10, eventsLimit: 0, venuesLimit: 0 })
-      .then((res) => {
-        if (!cancelled) setResults(res.people);
-      })
-      .catch(() => {
-        if (!cancelled) setResults([]);
-      })
-      .finally(() => {
-        if (!cancelled) setSearching(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedQuery]);
+  const handleSelectSuggestion = useCallback((item: SearchSuggestion) => {
+    setSelectedUser({
+      id: item.selectedId ?? item.id,
+      firstName: item.firstName,
+      lastName: item.lastName,
+      userName: item.userName,
+      avatarUrl: item.avatar?.url ?? item.displayImage,
+    });
+  }, []);
 
   const handleSendInvite = useCallback(() => {
     if (!selectedUser || !selectedRoleId) return;
@@ -107,27 +120,75 @@ export function InviteModal({
     onClose();
   };
 
-  const renderUserRow = ({ item }: { item: SearchPerson }) => {
+  const renderPersonRow = ({ item }: { item: UnifiedSearchItem }) => {
     const isSelected = selectedUser?.id === item.id;
-    const fullName = `${item.firstName} ${item.lastName}`.trim();
+    const fullName = `${item.firstName || ''} ${item.lastName || ''}`.trim();
 
     return (
       <TouchableOpacity
         style={[styles.userRow, isSelected && styles.userRowSelected]}
-        onPress={() => setSelectedUser(item)}
+        onPress={() => handleSelectPerson(item)}
         activeOpacity={0.7}
       >
         {item.avatar?.url ? (
           <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Ionicons name="person" size={18} color="rgba(255,255,255,0.4)" />
-          </View>
+          <Image source={DefaultAvatarImage} style={styles.avatar} />
         )}
         <View style={styles.userInfo}>
-          <Text style={styles.userName} numberOfLines={1}>{fullName}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.userName} numberOfLines={1}>{fullName || 'User'}</Text>
+            {item.isVerified && (
+              <MaterialCommunityIcons name="check-decagram" size={14} color={colors.verified} style={{ marginLeft: 4 }} />
+            )}
+          </View>
           {item.userName && (
             <Text style={styles.userHandle} numberOfLines={1}>@{item.userName}</Text>
+          )}
+          {(item.mutualCount ?? 0) > 0 && (
+            <Text style={styles.mutualText}>
+              {item.mutualCount} mutual {item.mutualCount === 1 ? 'friend' : 'friends'}
+            </Text>
+          )}
+        </View>
+        {isSelected && (
+          <Ionicons name="checkmark-circle" size={22} color="#fff" />
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderSuggestionRow = (item: SearchSuggestion) => {
+    const userId = item.selectedId ?? item.id;
+    const isSelected = selectedUser?.id === userId;
+    const fullName = `${item.firstName || ''} ${item.lastName || ''}`.trim();
+
+    return (
+      <TouchableOpacity
+        key={userId}
+        style={[styles.userRow, isSelected && styles.userRowSelected]}
+        onPress={() => handleSelectSuggestion(item)}
+        activeOpacity={0.7}
+      >
+        {item.avatar?.url ? (
+          <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
+        ) : (
+          <Image source={DefaultAvatarImage} style={styles.avatar} />
+        )}
+        <View style={styles.userInfo}>
+          <View style={styles.nameRow}>
+            <Text style={styles.userName} numberOfLines={1}>{fullName || item.displayName || 'User'}</Text>
+            {item.isVerified && (
+              <MaterialCommunityIcons name="check-decagram" size={14} color={colors.verified} style={{ marginLeft: 4 }} />
+            )}
+          </View>
+          {item.userName && (
+            <Text style={styles.userHandle} numberOfLines={1}>@{item.userName}</Text>
+          )}
+          {(item.mutualCount ?? 0) > 0 && (
+            <Text style={styles.mutualText}>
+              {item.mutualCount} mutual {item.mutualCount === 1 ? 'friend' : 'friends'}
+            </Text>
           )}
         </View>
         {isSelected && (
@@ -152,7 +213,7 @@ export function InviteModal({
         <View style={styles.header}>
           <Text style={styles.title}>Invite Team Member</Text>
           <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-            <Text style={styles.closeText}>✕</Text>
+            <Text style={styles.closeText}>{'\u2715'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -163,7 +224,7 @@ export function InviteModal({
             <Text style={styles.successTitle}>Invite Sent!</Text>
             <Text style={styles.successSubtitle}>
               {selectedUser
-                ? `${selectedUser.firstName} ${selectedUser.lastName}`.trim()
+                ? `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim()
                 : 'User'}{' '}
               will see the invitation in their notifications.
             </Text>
@@ -184,43 +245,70 @@ export function InviteModal({
                 style={styles.searchInput}
                 placeholder="Search by name or username..."
                 placeholderTextColor="rgba(255,255,255,0.3)"
-                value={query}
-                onChangeText={setQuery}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              {query.length > 0 && (
-                <TouchableOpacity onPress={() => setQuery('')}>
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
                   <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
                 </TouchableOpacity>
               )}
             </View>
 
-            {/* Search Results */}
+            {/* Results / Suggestions */}
             <View style={styles.resultsContainer}>
-              {searching ? (
-                <ActivityIndicator
-                  color="rgba(255,255,255,0.5)"
-                  style={styles.loadingIndicator}
-                />
-              ) : results.length > 0 ? (
-                <FlatList
-                  data={results}
-                  keyExtractor={(item) => String(item.id)}
-                  renderItem={renderUserRow}
-                  keyboardShouldPersistTaps="handled"
-                  showsVerticalScrollIndicator={false}
-                />
-              ) : debouncedQuery.trim().length > 0 ? (
-                <View style={styles.emptyState}>
-                  <Ionicons name="search-outline" size={32} color="rgba(255,255,255,0.2)" />
-                  <Text style={styles.emptyText}>No users found</Text>
-                </View>
+              {hasQuery ? (
+                // Active search
+                isSearching && peopleResults.length === 0 ? (
+                  <ActivityIndicator
+                    color="rgba(255,255,255,0.5)"
+                    style={styles.loadingIndicator}
+                  />
+                ) : peopleResults.length > 0 ? (
+                  <FlatList
+                    data={peopleResults}
+                    keyExtractor={(item) => String(item.id)}
+                    renderItem={renderPersonRow}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  />
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="search-outline" size={32} color="rgba(255,255,255,0.2)" />
+                    <Text style={styles.emptyText}>No users found</Text>
+                  </View>
+                )
               ) : (
-                <View style={styles.emptyState}>
-                  <Ionicons name="person-add-outline" size={32} color="rgba(255,255,255,0.2)" />
-                  <Text style={styles.emptyText}>Search for a user to invite</Text>
-                </View>
+                // Suggestions (no query)
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {frequentFriends.length > 0 && (
+                    <>
+                      <Text style={styles.sectionLabel}>Frequently searched</Text>
+                      {frequentFriends.map((item) => renderSuggestionRow(item))}
+                    </>
+                  )}
+
+                  {mutualSuggestions.length > 0 && (
+                    <>
+                      <Text style={[styles.sectionLabel, frequentFriends.length > 0 && { marginTop: 16 }]}>
+                        Suggested for you
+                      </Text>
+                      {mutualSuggestions.map((item) => renderSuggestionRow(item))}
+                    </>
+                  )}
+
+                  {frequentFriends.length === 0 && mutualSuggestions.length === 0 && (
+                    <View style={styles.emptyState}>
+                      <Ionicons name="person-add-outline" size={32} color="rgba(255,255,255,0.2)" />
+                      <Text style={styles.emptyText}>Search for a user to invite</Text>
+                    </View>
+                  )}
+                </ScrollView>
               )}
             </View>
 
@@ -336,6 +424,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.3)',
   },
+  sectionLabel: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+    color: 'rgba(255,255,255,0.5)',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -350,25 +448,32 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-  },
-  avatarPlaceholder: {
     backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   userInfo: {
     flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   userName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
+    flexShrink: 1,
   },
   userHandle: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
     marginTop: 1,
+  },
+  mutualText: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(255,255,255,0.35)',
+    marginTop: 2,
   },
   footer: {
     padding: 20,

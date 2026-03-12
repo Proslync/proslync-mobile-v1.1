@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import { chatApi, type ConversationResponse } from '@/lib/api/chat';
 
 export const CONVERSATIONS_KEY = 'conversations';
@@ -22,6 +22,8 @@ export interface ChannelData {
   otherUserLastReadAt?: string;
   isPinned: boolean;
   isConcierge: boolean;
+  otherUserId?: number;
+  isVerified?: boolean;
 }
 
 function mapConversation(conv: ConversationResponse, currentUserId?: number): ChannelData {
@@ -54,6 +56,8 @@ function mapConversation(conv: ConversationResponse, currentUserId?: number): Ch
     updatedAt: conv.lastMessageAt || conv.createdAt,
     isPinned: conv.isPinned || false,
     isConcierge,
+    otherUserId: firstOther?.userId,
+    isVerified: firstOther?.isVerified,
   };
 }
 
@@ -70,28 +74,28 @@ export function useConversations(currentUserId?: number) {
     },
   });
 
-  const channelData = (query.data ?? [])
-    .map((conv) => mapConversation(conv, currentUserId))
-    .sort((a, b) => {
-      // Concierge always first
-      if (a.isConcierge && !b.isConcierge) return -1;
-      if (!a.isConcierge && b.isConcierge) return 1;
-      // Then pinned
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      // Then by time
-      const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-      const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-      return bTime - aTime;
-    });
+  const channelData = useMemo(() => {
+    const data = query.data ?? [];
+    return data
+      .map((conv) => mapConversation(conv, currentUserId))
+      .sort((a, b) => {
+        if (a.isConcierge && !b.isConcierge) return -1;
+        if (!a.isConcierge && b.isConcierge) return 1;
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [query.data, currentUserId]);
 
-  const deleteChannel = async (conversationId: string) => {
+  const deleteChannel = useCallback(async (conversationId: string) => {
     queryClient.setQueryData<ConversationResponse[]>(
       [CONVERSATIONS_KEY],
       (old) => old?.filter((c) => c.id !== conversationId),
     );
     return true;
-  };
+  }, [queryClient]);
 
   return {
     channelData,
@@ -176,10 +180,11 @@ export function useEnsureConcierge() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    let cancelled = false;
     chatApi.getConciergeConversation().then(() => {
-      queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
-    }).catch(() => {
-      // Silently fail — concierge will be created on next attempt
-    });
-  }, [queryClient]);
+      if (!cancelled) queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+    }).catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 }

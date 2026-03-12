@@ -22,6 +22,7 @@ import { FeedMediaPlayer } from './feed-media-player';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
 import { formatEventDate } from '@/lib/utils/date';
 import { SCREEN_WIDTH, SCREEN_HEIGHT } from '@/lib/utils/layout';
@@ -64,6 +65,7 @@ export function FeedItem({
   onBlock,
 }: FeedItemProps) {
   const { colors, isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
   const currentUserId = authUser ? String(authUser.id) : null;
   const {
@@ -158,7 +160,7 @@ export function FeedItem({
   ];
 
   return (
-    <View style={[styles.container, { height: itemHeight }]}>
+    <View style={[styles.container, { height: itemHeight, paddingBottom: 50 + insets.bottom }]}>
       {/* Background glow — blurred image/video behind card */}
       <View style={styles.glowWrapper}>
         {isVideoItem && bgPlayer ? (
@@ -319,9 +321,8 @@ const styles = StyleSheet.create({
   container: {
     width: SCREEN_WIDTH,
     overflow: 'hidden',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingTop: 20,
     paddingHorizontal: 0,
   },
   glowWrapper: {

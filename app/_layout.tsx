@@ -10,6 +10,7 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
 import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import "react-native-reanimated";
 import { registerGlobals } from "@livekit/react-native";
@@ -66,7 +67,10 @@ function RootLayoutNav() {
     <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="signin" />
+        <Stack.Screen
+          name="signin"
+          options={{ presentation: "modal", animation: "slide_from_bottom", gestureEnabled: true }}
+        />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="chat/[conversationId]"
@@ -223,7 +227,9 @@ export default function RootLayout() {
                     <LiveLocationProvider>
                       <TabNavigationProvider>
                         <WalletProvider>
-                          <RootLayoutNav />
+                          <BottomSheetModalProvider>
+                            <RootLayoutNav />
+                          </BottomSheetModalProvider>
                         </WalletProvider>
                       </TabNavigationProvider>
                     </LiveLocationProvider>

@@ -178,16 +178,16 @@ export default function FeedScreen() {
   const handleUserClick = (item: FeedItem) => {
     if (item.userId) {
       router.push({
-        pathname: '/user-profile/[userId]',
+        pathname: '/user/[username]',
         params: {
+          username: item.username || '_',
           userId: String(item.userId),
         },
       });
     } else if (item.username) {
       router.push({
-        pathname: '/user-profile/[userId]',
+        pathname: '/user/[username]',
         params: {
-          userId: 'lookup',
           username: item.username,
         },
       });

@@ -1,7 +1,13 @@
-// Messages Screen - Clean conversations list with message search
+// Messages Screen - DMs with profile-style header
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { useStableRouter } from '@/hooks/use-stable-router';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from "react";
+import { useStableRouter } from "@/hooks/use-stable-router";
 import {
   View,
   Text,
@@ -12,27 +18,35 @@ import {
   TextInput,
   ActivityIndicator,
   Modal,
-} from 'react-native';
-import { useRefreshControl } from '@/hooks/use-refresh-control';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+  Keyboard,
+} from "react-native";
+import { useRefreshControl } from "@/hooks/use-refresh-control";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedStyle, withTiming, runOnJS } from "react-native-reanimated";
+import { Gesture, GestureDetector, TouchableOpacity as GHTouchableOpacity } from "react-native-gesture-handler";
+import { BlurView } from "expo-blur";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import {
   useConversations,
   usePinConversation,
   useUnpinConversation,
   useEnsureConcierge,
   type ChannelData,
-} from '@/hooks/use-conversations';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { useAuth } from '@/lib/providers/auth-provider';
-import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
-import { formatTimestamp } from '@/lib/utils/date';
+} from "@/hooks/use-conversations";
+import { useUnifiedSearch } from "@/hooks/use-unified-search";
+import { chatApi } from "@/lib/api/chat";
+import { usersApi } from "@/lib/api/users";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { useAuth } from "@/lib/providers/auth-provider";
+import { useTabNavigation } from "@/lib/providers/tab-navigation-provider";
+import { formatTimestamp } from "@/lib/utils/date";
+import type { UnifiedSearchItem } from "@/lib/types/search.types";
 
 // Local default avatar with white background
-const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
 // Avatar with online indicator
 function ConversationAvatar({
@@ -50,21 +64,32 @@ function ConversationAvatar({
 
   return (
     <View style={[styles.avatarContainer, { width: size, height: size }]}>
-      <View style={[styles.avatarWrapper, { width: size, height: size, borderRadius: size / 2 }]}>
+      <View
+        style={[
+          styles.avatarWrapper,
+          { width: size, height: size, borderRadius: size / 2 },
+        ]}
+      >
         <Image
           source={hasCustomAvatar ? { uri: imageUrl } : DefaultAvatarImage}
-          style={[styles.avatarImage, { width: size, height: size, borderRadius: size / 2 }]}
+          style={[
+            styles.avatarImage,
+            { width: size, height: size, borderRadius: size / 2 },
+          ]}
         />
       </View>
       {hasUnread && (
         <View style={styles.unreadRing}>
           <LinearGradient
-            colors={['#0095f6', '#0095f6']}
-            style={[styles.unreadRingGradient, {
-              width: size + 4,
-              height: size + 4,
-              borderRadius: (size + 4) / 2
-            }]}
+            colors={["#0095f6", "#0095f6"]}
+            style={[
+              styles.unreadRingGradient,
+              {
+                width: size + 4,
+                height: size + 4,
+                borderRadius: (size + 4) / 2,
+              },
+            ]}
           />
         </View>
       )}
@@ -77,15 +102,6 @@ function ConversationAvatar({
   );
 }
 
-interface SearchResult {
-  channelId: string;
-  channelName: string;
-  channelImage?: string;
-  isOnline?: boolean;
-  matchedMessage?: string;
-  matchedAt?: string;
-}
-
 function ConciergeAvatar({ size = 56 }: { size?: number }) {
   return (
     <View
@@ -95,9 +111,9 @@ function ConciergeAvatar({ size = 56 }: { size?: number }) {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: '#1a1a2e',
+          backgroundColor: "#1a1a2e",
           borderWidth: 1.5,
-          borderColor: 'rgba(255,255,255,0.15)',
+          borderColor: "rgba(255,255,255,0.15)",
         },
       ]}
     >
@@ -114,7 +130,6 @@ function ConversationRow({
   index,
   searchMatch,
   colors,
-  isDark,
 }: {
   channel: ChannelData;
   onPress: () => void;
@@ -122,8 +137,7 @@ function ConversationRow({
   currentUserId?: string;
   index: number;
   searchMatch?: string;
-  colors: any;
-  isDark: boolean;
+  colors: ReturnType<typeof useAppTheme>["colors"];
 }) {
   const hasUnread = channel.unreadCount > 0;
   const isOwnMessage = channel.lastMessage?.userId === currentUserId;
@@ -132,24 +146,21 @@ function ConversationRow({
     if (searchMatch) {
       return searchMatch;
     }
-    if (!channel.lastMessage) return 'Start a conversation';
+    if (!channel.lastMessage) return "Start a conversation";
 
-    // Check attachment type
     const attachmentType = channel.lastMessage.attachmentType;
 
-    if (attachmentType === 'audio') {
-      return isOwnMessage ? 'You sent a voice message' : 'Sent a voice message';
+    if (attachmentType === "audio") {
+      return isOwnMessage ? "You sent a voice message" : "Sent a voice message";
+    }
+    if (attachmentType === "video") {
+      return isOwnMessage ? "You sent a video" : "Sent a video";
+    }
+    if (attachmentType === "image" || !channel.lastMessage.text) {
+      return isOwnMessage ? "You sent an image" : "Sent an image";
     }
 
-    if (attachmentType === 'video') {
-      return isOwnMessage ? 'You sent a video' : 'Sent a video';
-    }
-
-    if (attachmentType === 'image' || !channel.lastMessage.text) {
-      return isOwnMessage ? 'You sent an image' : 'Sent an image';
-    }
-
-    const prefix = isOwnMessage ? 'You: ' : '';
+    const prefix = isOwnMessage ? "You: " : "";
     return `${prefix}${channel.lastMessage.text}`;
   };
 
@@ -159,17 +170,28 @@ function ConversationRow({
 
     if (channel.lastMessageReadByOther) {
       return (
-        <Ionicons name="checkmark-done" size={14} color="#0095f6" style={{ marginRight: 4 }} />
+        <Ionicons
+          name="checkmark-done"
+          size={14}
+          color="#0095f6"
+          style={{ marginRight: 4 }}
+        />
       );
     }
-    // Delivered (sent but not read)
     return (
-      <Ionicons name="checkmark-done" size={14} color={colors.textTertiary} style={{ marginRight: 4 }} />
+      <Ionicons
+        name="checkmark-done"
+        size={14}
+        color={colors.textTertiary}
+        style={{ marginRight: 4 }}
+      />
     );
   };
 
   return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}>
+    <Animated.View
+      entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}
+    >
       <TouchableOpacity
         style={styles.conversationRow}
         onPress={onPress}
@@ -191,17 +213,42 @@ function ConversationRow({
           <View style={styles.conversationHeader}>
             <View style={styles.titleRow}>
               <Text
-                style={[styles.conversationTitle, { color: colors.text }, hasUnread && styles.conversationTitleUnread]}
+                style={[
+                  styles.conversationTitle,
+                  { color: colors.text },
+                  hasUnread && styles.conversationTitleUnread,
+                ]}
                 numberOfLines={1}
               >
                 {channel.name}
               </Text>
+              {channel.isVerified && (
+                <MaterialCommunityIcons
+                  name="check-decagram"
+                  size={14}
+                  color="#3897F0"
+                  style={{ marginLeft: 4 }}
+                />
+              )}
               {channel.isPinned && !channel.isConcierge && (
-                <Ionicons name="pin" size={12} color={colors.textTertiary} style={{ marginLeft: 4 }} />
+                <Ionicons
+                  name="pin"
+                  size={12}
+                  color={colors.textTertiary}
+                  style={{ marginLeft: 4 }}
+                />
               )}
             </View>
-            <Text style={[styles.timestamp, { color: colors.textTertiary }, hasUnread && { color: colors.text }]}>
-              {channel.lastMessage ? formatTimestamp(channel.lastMessage.createdAt) : ''}
+            <Text
+              style={[
+                styles.timestamp,
+                { color: colors.textTertiary },
+                hasUnread && { color: colors.text },
+              ]}
+            >
+              {channel.lastMessage
+                ? formatTimestamp(channel.lastMessage.createdAt)
+                : ""}
             </Text>
           </View>
 
@@ -211,7 +258,10 @@ function ConversationRow({
               style={[
                 styles.lastMessage,
                 { color: colors.textSecondary },
-                hasUnread && { color: colors.text, fontFamily: 'Lato_700Bold' },
+                hasUnread && {
+                  color: colors.text,
+                  fontFamily: "Lato_700Bold",
+                },
               ]}
               numberOfLines={1}
             >
@@ -225,56 +275,98 @@ function ConversationRow({
   );
 }
 
-function EmptyMessages({ onSendMessage, colors }: { onSendMessage: () => void; colors: any }) {
+function EmptyMessages({
+  onSendMessage,
+  colors,
+}: {
+  onSendMessage: () => void;
+  colors: ReturnType<typeof useAppTheme>["colors"];
+}) {
   return (
     <View style={styles.emptyContainer}>
       <View style={styles.emptyIconContainer}>
-        <Ionicons name="chatbubbles-outline" size={64} color={colors.textTertiary} />
+        <Ionicons
+          name="chatbubbles-outline"
+          size={64}
+          color={colors.textTertiary}
+        />
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>Your Messages</Text>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
+        Your Messages
+      </Text>
       <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
         Send private photos and messages to a friend
       </Text>
-      <TouchableOpacity style={styles.sendMessageButton} onPress={onSendMessage}>
+      <TouchableOpacity
+        style={styles.sendMessageButton}
+        onPress={onSendMessage}
+      >
         <Text style={styles.sendMessageButtonText}>Send Message</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-function SearchEmptyState({ query, colors }: { query: string; colors: any }) {
+function SearchEmptyState({
+  query,
+  colors,
+}: {
+  query: string;
+  colors: ReturnType<typeof useAppTheme>["colors"];
+}) {
   return (
     <View style={styles.emptyContainer}>
       <Ionicons name="search-outline" size={64} color={colors.textTertiary} />
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>No results</Text>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
+        No results
+      </Text>
       <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        No messages or conversations found for "{query}"
+        No messages or conversations found for &quot;{query}&quot;
       </Text>
     </View>
   );
 }
 
-function ConnectionError({ onRetry, colors }: { onRetry: () => void; colors: any }) {
-  return (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="cloud-offline-outline" size={64} color={colors.textTertiary} />
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>Connection Error</Text>
-      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        Unable to connect to chat. Please try again.
-      </Text>
-      <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-        <Text style={styles.retryButtonText}>Retry</Text>
-      </TouchableOpacity>
-    </View>
-  );
-}
+// --- New DM Compose Overlay ---
 
-function LoadingState({ colors }: { colors: any }) {
+function PersonSearchRow({
+  item,
+  isSelected,
+  onPress,
+  colors,
+}: {
+  item: UnifiedSearchItem;
+  isSelected: boolean;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>["colors"];
+}) {
+  const displayName = [item.firstName, item.lastName].filter(Boolean).join(" ") || item.userName || "User";
+  const avatarUrl = item.avatar?.url;
+
   return (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={colors.text} />
-      <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Connecting...</Text>
-    </View>
+    <TouchableOpacity
+      style={styles.personRow}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Image
+        source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage}
+        style={styles.personAvatar}
+      />
+      <View style={styles.personInfo}>
+        <Text style={[styles.personName, { color: colors.text }]}>
+          {displayName}
+        </Text>
+        {item.userName && (
+          <Text style={[styles.personUsername, { color: colors.textSecondary }]}>
+            @{item.userName}
+          </Text>
+        )}
+      </View>
+      {isSelected && (
+        <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+      )}
+    </TouchableOpacity>
   );
 }
 
@@ -283,100 +375,108 @@ export default function MessagesScreen() {
   const router = useStableRouter();
   const { colors, isDark } = useAppTheme();
   const { user } = useAuth();
-  const { openAccountSwitcher } = useTabNavigation();
-  const { channelData, isLoading, refetch, deleteChannel } = useConversations(user?.id);
+  const { openAccountSwitcher, tabBarTopOffset } = useTabNavigation();
+  const { channelData, isLoading, refetch, deleteChannel } = useConversations(
+    user?.id,
+  );
   const pinMutation = usePinConversation();
   const unpinMutation = useUnpinConversation();
   useEnsureConcierge();
-  const headerTitle = user?.userName ? `@${user.userName}` : 'Messages';
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<Map<string, string>>(new Map());
+  const searchInputRef = useRef<TextInput>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchResults, setSearchResults] = useState<Map<string, string>>(
+    new Map(),
+  );
+
+  // Compose new DM state
+  const [showCompose, setShowCompose] = useState(false);
+  const [selectedPeople, setSelectedPeople] = useState<UnifiedSearchItem[]>([]);
+  const [groupName, setGroupName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const composeSearchRef = useRef<TextInput>(null);
+  const {
+    searchQuery: composeQuery,
+    setSearchQuery: setComposeQuery,
+    results: composeResults,
+    isSearching: isComposeSearching,
+    suggestions,
+  } = useUnifiedSearch();
+
+  // Filter compose results to people only
+  const peopleResults = useMemo(
+    () => composeResults.filter((r) => r.type === "person"),
+    [composeResults],
+  );
+
+  // Suggested people from frequent friends
+  const suggestedPeople = useMemo(() => {
+    if (!suggestions) return [];
+    return suggestions.frequentFriends.slice(0, 10);
+  }, [suggestions]);
+
+  const selectedIds = useMemo(
+    () => new Set(selectedPeople.map((p) => p.id)),
+    [selectedPeople],
+  );
 
   const currentUserId = user ? String(user.id) : undefined;
 
-  // Pull-to-refresh with haptic feedback
+  // Pull-to-refresh
   const { refreshControl } = useRefreshControl({
     onRefresh: refetch,
   });
 
-  // Search through conversations locally (name + last message)
-  const performSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults(new Map());
-      return;
-    }
+  // Local search through channel names and last messages
+  const performLocalSearch = useCallback(
+    (query: string) => {
+      const results = new Map<string, string>();
+      const lowerQuery = query.toLowerCase();
 
-    setIsSearching(true);
-    try {
-      performLocalSearch(query);
-    } finally {
-      setIsSearching(false);
-    }
-  }, [performLocalSearch]);
+      channelData.forEach((channel) => {
+        if (channel.name.toLowerCase().includes(lowerQuery)) {
+          results.set(channel.id, "");
+        } else if (
+          channel.lastMessage?.text?.toLowerCase().includes(lowerQuery)
+        ) {
+          const text = channel.lastMessage.text;
+          const idx = text.toLowerCase().indexOf(lowerQuery);
+          const start = Math.max(0, idx - 15);
+          const end = Math.min(text.length, idx + query.length + 15);
+          const snippet =
+            (start > 0 ? "..." : "") +
+            text.substring(start, end) +
+            (end < text.length ? "..." : "");
+          results.set(channel.id, `"${snippet}"`);
+        }
+      });
 
-  // Fallback local search through channel names and last messages
-  const performLocalSearch = useCallback((query: string) => {
-    const results = new Map<string, string>();
-    const lowerQuery = query.toLowerCase();
-
-    channelData.forEach((channel) => {
-      // Check channel name
-      if (channel.name.toLowerCase().includes(lowerQuery)) {
-        results.set(channel.id, '');
-      }
-      // Check last message
-      else if (channel.lastMessage?.text?.toLowerCase().includes(lowerQuery)) {
-        const text = channel.lastMessage.text;
-        const index = text.toLowerCase().indexOf(lowerQuery);
-        const start = Math.max(0, index - 15);
-        const end = Math.min(text.length, index + query.length + 15);
-        const snippet = (start > 0 ? '...' : '') +
-                       text.substring(start, end) +
-                       (end < text.length ? '...' : '');
-        results.set(channel.id, `"${snippet}"`);
-      }
-    });
-
-    setSearchResults(results);
-  }, [channelData]);
+      setSearchResults(results);
+    },
+    [channelData],
+  );
 
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery.trim()) {
-        performSearch(searchQuery);
+        performLocalSearch(searchQuery);
       } else {
         setSearchResults(new Map());
       }
     }, 300);
-
     return () => clearTimeout(timer);
-  }, [searchQuery, performSearch]);
+  }, [searchQuery, performLocalSearch]);
 
-  // Filter channels by search query (names + content matches)
+  // Filter channels by search
   const filteredChannels = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return channelData;
-    }
-
-    const lowerQuery = searchQuery.toLowerCase();
+    if (!searchQuery.trim()) return channelData;
 
     return channelData.filter((channel) => {
-      // Match by name
-      if (channel.name.toLowerCase().includes(lowerQuery)) {
-        return true;
-      }
-      // Match by search results (message content)
-      if (searchResults.has(channel.id)) {
-        return true;
-      }
-      // Match by last message text
-      if (channel.lastMessage?.text?.toLowerCase().includes(lowerQuery)) {
-        return true;
-      }
+      if (searchResults.has(channel.id)) return true;
+      const lowerQuery = searchQuery.toLowerCase();
+      if (channel.name.toLowerCase().includes(lowerQuery)) return true;
       return false;
     });
   }, [channelData, searchQuery, searchResults]);
@@ -384,27 +484,167 @@ export default function MessagesScreen() {
   const handleConversationPress = useCallback(
     (channel: ChannelData) => {
       router.push({
-        pathname: '/chat/[conversationId]',
+        pathname: "/chat/[conversationId]",
         params: { conversationId: channel.id },
       });
     },
-    [router]
+    [router],
   );
 
-  const handleNewMessage = useCallback(() => {
-    router.push('/new-message');
+  const handleNotificationsPress = useCallback(() => {
+    router.push("/notifications");
   }, [router]);
 
+  const handleSearchPress = useCallback(() => {
+    setIsSearchActive(true);
+    setTimeout(() => searchInputRef.current?.focus(), 100);
+  }, []);
+
+  const handleSearchCancel = useCallback(() => {
+    setSearchQuery("");
+    setIsSearchActive(false);
+    Keyboard.dismiss();
+  }, []);
+
+  // Compose handlers
+  const handleOpenCompose = useCallback(() => {
+    setShowCompose(true);
+    setSelectedPeople([]);
+    setGroupName("");
+    setComposeQuery("");
+    setTimeout(() => composeSearchRef.current?.focus(), 200);
+  }, [setComposeQuery]);
+
+  const handleCloseCompose = useCallback(() => {
+    setShowCompose(false);
+    setSelectedPeople([]);
+    setGroupName("");
+    setComposeQuery("");
+    Keyboard.dismiss();
+  }, [setComposeQuery]);
+
+  const togglePersonSelection = useCallback((person: UnifiedSearchItem) => {
+    setSelectedPeople((prev) => {
+      const exists = prev.find((p) => p.id === person.id);
+      if (exists) return prev.filter((p) => p.id !== person.id);
+      return [...prev, person];
+    });
+  }, []);
+
+  const handlePersonPress = useCallback(
+    (person: UnifiedSearchItem) => {
+      if (selectedPeople.length > 0) {
+        // Multi-select mode — toggle
+        togglePersonSelection(person);
+        return;
+      }
+      // Single tap with no selections — open DM directly
+      setIsCreating(true);
+      chatApi
+        .createConversation([person.id])
+        .then((conversation) => {
+          handleCloseCompose();
+          router.push({
+            pathname: "/chat/[conversationId]",
+            params: { conversationId: conversation.id },
+          });
+        })
+        .catch((err) => {
+          console.error("Create conversation error:", err);
+        })
+        .finally(() => {
+          setIsCreating(false);
+        });
+    },
+    [selectedPeople.length, togglePersonSelection, handleCloseCompose, router],
+  );
+
+  const handleLongPressPerson = useCallback(
+    (person: UnifiedSearchItem) => {
+      togglePersonSelection(person);
+    },
+    [togglePersonSelection],
+  );
+
+  const handleCreateGroup = useCallback(async () => {
+    if (isCreating || selectedPeople.length < 2) return;
+    setIsCreating(true);
+    try {
+      const memberIds = selectedPeople.map((p) => p.id);
+      const name =
+        groupName.trim() ||
+        selectedPeople
+          .map((p) => (p.firstName || p.userName || "").split(" ")[0])
+          .join(", ");
+      const conversation = await chatApi.createConversation(memberIds, name);
+      handleCloseCompose();
+      router.push({
+        pathname: "/chat/[conversationId]",
+        params: { conversationId: conversation.id },
+      });
+    } catch (err) {
+      console.error("Create group error:", err);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [isCreating, selectedPeople, groupName, handleCloseCompose, router]);
+
+  // Handle tapping a suggested person (from frequent friends)
+  const handleSuggestedPersonPress = useCallback(
+    (suggestion: { selectedId?: number | null; displayName?: string | null; displayImage?: string | null; userName?: string | null; firstName?: string | null; lastName?: string | null; avatar?: { id: string; url: string } | null }) => {
+      if (!suggestion.selectedId) return;
+      // Build a minimal UnifiedSearchItem for consistent handling
+      const person: UnifiedSearchItem = {
+        type: "person",
+        id: suggestion.selectedId,
+        score: 0,
+        userName: suggestion.userName,
+        firstName: suggestion.firstName || suggestion.displayName,
+        lastName: suggestion.lastName,
+        avatar: suggestion.avatar || (suggestion.displayImage ? { id: "", url: suggestion.displayImage } : null),
+      };
+      handlePersonPress(person);
+    },
+    [handlePersonPress],
+  );
+
+  // Long-press action sheet state
   const [deleteTarget, setDeleteTarget] = useState<ChannelData | null>(null);
   const [deleteError, setDeleteError] = useState(false);
   const [actionTarget, setActionTarget] = useState<ChannelData | null>(null);
+  const [blockTarget, setBlockTarget] = useState<ChannelData | null>(null);
+  const [blockError, setBlockError] = useState(false);
+  const actionSheetTranslateY = useSharedValue(400);
 
-  const handleLongPress = useCallback(
-    (channel: ChannelData) => {
-      setActionTarget(channel);
-    },
-    []
-  );
+  const handleLongPress = useCallback((channel: ChannelData) => {
+    setActionTarget(channel);
+    actionSheetTranslateY.value = withTiming(0, { duration: 300 });
+  }, []);
+
+  const dismissActionSheet = useCallback(() => {
+    actionSheetTranslateY.value = withTiming(400, { duration: 200 });
+    setTimeout(() => setActionTarget(null), 200);
+  }, []);
+
+  const actionSheetPanGesture = Gesture.Pan()
+    .activeOffsetY(10)
+    .onUpdate((e) => {
+      if (e.translationY > 0) {
+        actionSheetTranslateY.value = e.translationY;
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > 80 || e.velocityY > 500) {
+        actionSheetTranslateY.value = withTiming(400, { duration: 200 });
+        runOnJS(setActionTarget)(null);
+      } else {
+        actionSheetTranslateY.value = withTiming(0, { duration: 200 });
+      }
+    });
+
+  const actionSheetAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: actionSheetTranslateY.value }],
+  }));
 
   const handleTogglePin = useCallback(async () => {
     if (!actionTarget) return;
@@ -413,14 +653,32 @@ export default function MessagesScreen() {
     } else {
       pinMutation.mutate(actionTarget.id);
     }
-    setActionTarget(null);
-  }, [actionTarget, pinMutation, unpinMutation]);
+    dismissActionSheet();
+  }, [actionTarget, pinMutation, unpinMutation, dismissActionSheet]);
 
   const handleDeleteFromAction = useCallback(() => {
     if (!actionTarget) return;
     setDeleteTarget(actionTarget);
-    setActionTarget(null);
-  }, [actionTarget]);
+    dismissActionSheet();
+  }, [actionTarget, dismissActionSheet]);
+
+  const handleBlockFromAction = useCallback(() => {
+    if (!actionTarget) return;
+    setBlockTarget(actionTarget);
+    dismissActionSheet();
+  }, [actionTarget, dismissActionSheet]);
+
+  const handleConfirmBlock = useCallback(async () => {
+    if (!blockTarget?.otherUserId) return;
+    try {
+      await usersApi.blockUser(blockTarget.otherUserId);
+      // Also delete the conversation after blocking
+      await deleteChannel(blockTarget.id);
+    } catch {
+      setBlockError(true);
+    }
+    setBlockTarget(null);
+  }, [blockTarget, deleteChannel]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: ChannelData; index: number }) => (
@@ -432,34 +690,41 @@ export default function MessagesScreen() {
         index={index}
         searchMatch={searchResults.get(item.id)}
         colors={colors}
-        isDark={isDark}
       />
     ),
-    [handleConversationPress, handleLongPress, currentUserId, searchResults, colors, isDark]
+    [
+      handleConversationPress,
+      handleLongPress,
+      currentUserId,
+      searchResults,
+      colors,
+    ],
   );
 
   const renderEmptyState = useCallback(() => {
     if (searchQuery) {
       return <SearchEmptyState query={searchQuery} colors={colors} />;
     }
-    return <EmptyMessages onSendMessage={handleNewMessage} colors={colors} />;
-  }, [searchQuery, handleNewMessage, colors]);
+    return <EmptyMessages onSendMessage={handleOpenCompose} colors={colors} />;
+  }, [searchQuery, handleOpenCompose, colors]);
 
-
-  // Show loading while fetching conversations
+  // Loading state
   if (isLoading && channelData.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-          <View style={styles.header}>
-          <View style={styles.headerButton} />
-          <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
-          <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
-            <Ionicons name="create-outline" size={24} color={colors.text} />
-          </TouchableOpacity>
+        <DarkGradientBg />
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.headerIcon} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Messages
+          </Text>
+          <View style={styles.headerIcon} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.text} />
-          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading messages...</Text>
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Loading messages...
+          </Text>
         </View>
       </View>
     );
@@ -467,111 +732,386 @@ export default function MessagesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
-        <View style={styles.headerButton} />
+      <DarkGradientBg />
+
+      {/* Profile-style Header */}
+      <Animated.View
+        entering={FadeIn.duration(400)}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
+      >
+        <View style={styles.headerIcon} />
+
+        <View style={styles.headerTitleButton}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Messages
+          </Text>
+        </View>
+
         <TouchableOpacity
-          style={styles.usernameButton}
-          onPress={openAccountSwitcher}
+          style={styles.headerIcon}
+          onPress={handleOpenCompose}
           activeOpacity={0.7}
         >
-          <Text style={[styles.title, { color: colors.text }]}>{headerTitle}</Text>
-          <Ionicons name="chevron-down" size={18} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.headerButton} onPress={handleNewMessage}>
           <Ionicons name="create-outline" size={24} color={colors.text} />
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
       {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { backgroundColor: colors.backgroundSecondary, borderColor: colors.border }, isSearchFocused && { borderColor: colors.textTertiary }]}>
-          <Ionicons name="search" size={18} color={colors.placeholder} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search messages..."
-            placeholderTextColor={colors.placeholder}
-            autoCapitalize="none"
-            autoCorrect={false}
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => setIsSearchFocused(false)}
-          />
-          {isSearching && (
-            <ActivityIndicator size="small" color={colors.placeholder} />
-          )}
-          {searchQuery.length > 0 && !isSearching && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.placeholder} />
-            </TouchableOpacity>
-          )}
+      {isSearchActive ? (
+        <View style={styles.searchBarContainer}>
+          <View style={[styles.searchBar, { backgroundColor: colors.input }]}>
+            <Ionicons name="search" size={18} color={colors.textTertiary} />
+            <TextInput
+              ref={searchInputRef}
+              style={[styles.searchBarInput, { color: colors.text }]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search messages..."
+              placeholderTextColor={colors.textTertiary}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")}>
+                <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity onPress={handleSearchCancel} style={styles.searchCancelBtn}>
+            <Text style={[styles.searchCancelText, { color: colors.text }]}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
         </View>
-      </View>
+      ) : (
+        <TouchableOpacity
+          style={styles.searchBarContainer}
+          onPress={handleSearchPress}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.searchBar, { backgroundColor: colors.input }]}>
+            <Ionicons name="search" size={18} color={colors.textTertiary} />
+            <Text style={[styles.searchBarPlaceholder, { color: colors.textTertiary }]}>
+              Search
+            </Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Conversations List */}
-      <Animated.View entering={FadeIn.duration(300)} style={styles.listContainer}>
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={styles.listContainer}
+      >
         <FlatList
           data={filteredChannels}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           ListEmptyComponent={renderEmptyState}
           contentContainerStyle={[
-            filteredChannels.length === 0 ? styles.emptyListContainer : styles.listContent,
-            { paddingBottom: insets.bottom + 90 },
+            filteredChannels.length === 0
+              ? styles.emptyListContainer
+              : styles.listContent,
+            { paddingBottom: tabBarTopOffset + 20 },
           ]}
           refreshControl={refreshControl}
           showsVerticalScrollIndicator={false}
         />
       </Animated.View>
 
-      {/* Long press action sheet */}
+      {/* Compose New DM Modal */}
+      <Modal
+        visible={showCompose}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseCompose}
+      >
+        <View style={[styles.composeContainer, { backgroundColor: colors.background }]}>
+          <DarkGradientBg />
+
+          {/* Creating overlay */}
+          {isCreating && (
+            <View style={styles.composeOverlay}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={styles.composeOverlayText}>Opening conversation...</Text>
+            </View>
+          )}
+
+          {/* Compose Header */}
+          <View style={[styles.composeHeader, { paddingTop: insets.top + 8 }]}>
+            <TouchableOpacity onPress={handleCloseCompose}>
+              <Text style={styles.composeCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={[styles.composeTitle, { color: colors.text }]}>
+              New Message
+            </Text>
+            <View style={{ width: 60 }} />
+          </View>
+
+          {/* Selected chips + group name */}
+          {selectedPeople.length > 0 && (
+            <View style={[styles.chipsSection, { borderBottomColor: colors.border }]}>
+              <FlatList
+                horizontal
+                data={selectedPeople}
+                keyExtractor={(item) => String(item.id)}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[styles.chip, { backgroundColor: "rgba(255,255,255,0.08)" }]}
+                    onPress={() => togglePersonSelection(item)}
+                    activeOpacity={0.7}
+                  >
+                    <Image
+                      source={
+                        item.avatar?.url
+                          ? { uri: item.avatar.url }
+                          : DefaultAvatarImage
+                      }
+                      style={styles.chipAvatar}
+                    />
+                    <Text style={[styles.chipName, { color: colors.text }]}>
+                      {(item.firstName || item.userName || "").split(" ")[0]}
+                    </Text>
+                    <Ionicons name="close" size={14} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                )}
+              />
+              {selectedPeople.length >= 2 && (
+                <View style={styles.groupRow}>
+                  <TextInput
+                    style={[
+                      styles.groupInput,
+                      {
+                        color: colors.text,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    value={groupName}
+                    onChangeText={setGroupName}
+                    placeholder="Group name (optional)"
+                    placeholderTextColor={colors.textTertiary}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.createGroupBtn,
+                      selectedPeople.length < 2 && { opacity: 0.4 },
+                    ]}
+                    onPress={handleCreateGroup}
+                    disabled={selectedPeople.length < 2}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.createGroupText}>Create</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Search input */}
+          <View style={[styles.composeSearchRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.toLabel, { color: colors.textSecondary }]}>
+              To:
+            </Text>
+            <TextInput
+              ref={composeSearchRef}
+              style={[styles.composeSearchInput, { color: colors.text }]}
+              value={composeQuery}
+              onChangeText={setComposeQuery}
+              placeholder="Search people..."
+              placeholderTextColor={colors.textTertiary}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {isComposeSearching && (
+              <ActivityIndicator size="small" color={colors.textTertiary} />
+            )}
+            {composeQuery.length > 0 && !isComposeSearching && (
+              <TouchableOpacity onPress={() => setComposeQuery("")}>
+                <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Results / Suggestions */}
+          {composeQuery.trim() ? (
+            <FlatList
+              data={peopleResults}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => handlePersonPress(item)}
+                  onLongPress={() => handleLongPressPerson(item)}
+                  activeOpacity={0.7}
+                >
+                  <PersonSearchRow
+                    item={item}
+                    isSelected={selectedIds.has(item.id)}
+                    onPress={() => handlePersonPress(item)}
+                    colors={colors}
+                  />
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                isComposeSearching ? null : (
+                  <View style={styles.composeEmpty}>
+                    <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+                    <Text style={[styles.composeEmptyText, { color: colors.textSecondary }]}>
+                      No people found for &quot;{composeQuery}&quot;
+                    </Text>
+                  </View>
+                )
+              }
+              contentContainerStyle={peopleResults.length === 0 ? { paddingTop: 60 } : undefined}
+              showsVerticalScrollIndicator={false}
+            />
+          ) : (
+            <FlatList
+              data={suggestedPeople}
+              keyExtractor={(item) => String(item.id)}
+              ListHeaderComponent={
+                suggestedPeople.length > 0 ? (
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
+                      Suggested
+                    </Text>
+                  </View>
+                ) : null
+              }
+              renderItem={({ item: suggestion }) => {
+                const displayName =
+                  [suggestion.firstName, suggestion.lastName].filter(Boolean).join(" ") ||
+                  suggestion.displayName ||
+                  suggestion.userName ||
+                  "User";
+                const avatarUrl = suggestion.avatar?.url || suggestion.displayImage;
+                const isSelected = suggestion.selectedId ? selectedIds.has(suggestion.selectedId) : false;
+
+                return (
+                  <TouchableOpacity
+                    style={styles.personRow}
+                    onPress={() => handleSuggestedPersonPress(suggestion)}
+                    onLongPress={() => {
+                      if (!suggestion.selectedId) return;
+                      const person: UnifiedSearchItem = {
+                        type: "person",
+                        id: suggestion.selectedId,
+                        score: 0,
+                        userName: suggestion.userName,
+                        firstName: suggestion.firstName || suggestion.displayName,
+                        lastName: suggestion.lastName,
+                        avatar: suggestion.avatar || (suggestion.displayImage ? { id: "", url: suggestion.displayImage } : null),
+                      };
+                      togglePersonSelection(person);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Image
+                      source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage}
+                      style={styles.personAvatar}
+                    />
+                    <View style={styles.personInfo}>
+                      <Text style={[styles.personName, { color: colors.text }]}>
+                        {displayName}
+                      </Text>
+                      {suggestion.userName && (
+                        <Text style={[styles.personUsername, { color: colors.textSecondary }]}>
+                          @{suggestion.userName}
+                        </Text>
+                      )}
+                    </View>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+              ListEmptyComponent={
+                <View style={styles.composeEmpty}>
+                  <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
+                  <Text style={[styles.composeEmptyText, { color: colors.textSecondary }]}>
+                    Search for someone to message
+                  </Text>
+                </View>
+              }
+              contentContainerStyle={suggestedPeople.length === 0 ? { paddingTop: 60 } : undefined}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
+      </Modal>
+
+      {/* Long press action sheet - account switcher style */}
       <Modal
         visible={!!actionTarget}
         transparent
         animationType="fade"
-        onRequestClose={() => setActionTarget(null)}
+        onRequestClose={dismissActionSheet}
       >
-        <TouchableOpacity
-          style={styles.actionOverlay}
-          activeOpacity={1}
-          onPress={() => setActionTarget(null)}
-        >
-          <View style={[styles.actionSheet, { backgroundColor: colors.backgroundSecondary }]}>
-            <Text style={[styles.actionTitle, { color: colors.text }]} numberOfLines={1}>
-              {actionTarget?.name}
-            </Text>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleTogglePin}
-            >
-              <Ionicons
-                name={actionTarget?.isPinned ? 'pin-outline' : 'pin'}
-                size={20}
-                color={colors.text}
-              />
-              <Text style={[styles.actionText, { color: colors.text }]}>
-                {actionTarget?.isPinned ? 'Unpin conversation' : 'Pin conversation'}
-              </Text>
-            </TouchableOpacity>
-            {actionTarget && !actionTarget.isConcierge && (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleDeleteFromAction}
-              >
-                <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
-                <Text style={[styles.actionText, { color: '#ff6b6b' }]}>Delete conversation</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[styles.actionButton, { marginTop: 4 }]}
-              onPress={() => setActionTarget(null)}
-            >
-              <Ionicons name="close" size={20} color={colors.textSecondary} />
-              <Text style={[styles.actionText, { color: colors.textSecondary }]}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
+        <View style={styles.actionOverlay}>
+          <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={dismissActionSheet} />
+
+          <GestureDetector gesture={actionSheetPanGesture}>
+            <Animated.View style={[styles.actionSheet, actionSheetAnimStyle]}>
+              <View style={styles.actionSheetContent}>
+                {/* Handle bar */}
+                <View style={styles.actionSheetHandle} />
+
+                {/* Header */}
+                <View style={styles.actionSheetHeader}>
+                  <Text style={styles.actionTitle} numberOfLines={1}>
+                    {actionTarget?.name}
+                  </Text>
+                  <GHTouchableOpacity onPress={dismissActionSheet} style={styles.actionSheetClose}>
+                    <Ionicons name="close-circle" size={24} color="rgba(255,255,255,0.4)" />
+                  </GHTouchableOpacity>
+                </View>
+
+                {/* Actions */}
+                <View style={[styles.actionList, { paddingBottom: insets.bottom + 14 }]}>
+                  <GHTouchableOpacity style={styles.actionItem} onPress={handleTogglePin}>
+                    <View style={styles.actionItemIcon}>
+                      <Ionicons
+                        name={actionTarget?.isPinned ? "pin-outline" : "pin"}
+                        size={20}
+                        color="#fff"
+                      />
+                    </View>
+                    <Text style={styles.actionText}>
+                      {actionTarget?.isPinned ? "Unpin conversation" : "Pin conversation"}
+                    </Text>
+                  </GHTouchableOpacity>
+
+                  {actionTarget && !actionTarget.isConcierge && (
+                    <>
+                      <GHTouchableOpacity style={styles.actionItem} onPress={handleDeleteFromAction}>
+                        <View style={styles.actionItemIcon}>
+                          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                        </View>
+                        <Text style={[styles.actionText, { color: "#FF3B30" }]}>
+                          Delete conversation
+                        </Text>
+                      </GHTouchableOpacity>
+
+                      {actionTarget.otherUserId && (
+                        <GHTouchableOpacity style={styles.actionItem} onPress={handleBlockFromAction}>
+                          <View style={styles.actionItemIcon}>
+                            <Ionicons name="ban-outline" size={20} color="#FF3B30" />
+                          </View>
+                          <Text style={[styles.actionText, { color: "#FF3B30" }]}>
+                            Block user
+                          </Text>
+                        </GHTouchableOpacity>
+                      )}
+                    </>
+                  )}
+                </View>
+              </View>
+            </Animated.View>
+          </GestureDetector>
+        </View>
       </Modal>
 
       <ConfirmModal
@@ -598,6 +1138,26 @@ export default function MessagesScreen() {
         alertOnly
         icon="alert-circle-outline"
       />
+
+      <ConfirmModal
+        visible={!!blockTarget}
+        onClose={() => setBlockTarget(null)}
+        onConfirm={handleConfirmBlock}
+        title="Block User"
+        message={`Are you sure you want to block ${blockTarget?.name}? They won't be able to message you and this conversation will be deleted.`}
+        confirmLabel="Block"
+        destructive
+        icon="ban-outline"
+      />
+
+      <ConfirmModal
+        visible={blockError}
+        onClose={() => setBlockError(false)}
+        title="Error"
+        message="Failed to block user. Please try again."
+        alertOnly
+        icon="alert-circle-outline"
+      />
     </View>
   );
 }
@@ -606,52 +1166,64 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Profile-style header
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingBottom: 10,
   },
-  usernameButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerTitleButton: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
-  title: {
-    fontSize: 24,
-    fontFamily: 'Lato_700Bold',
-    textAlign: 'center',
+  headerTitle: {
+    fontSize: 22,
+    fontFamily: "Lato_700Bold",
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerIcon: {
+    padding: 4,
+    width: 40,
+    alignItems: "center",
   },
-  searchContainer: {
+  // Search bar
+  searchBarContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: 10,
+    gap: 10,
   },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 40,
-    gap: 8,
-    borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    height: 36,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    gap: 6,
   },
-  searchBarFocused: {
-    // borderColor set dynamically
-  },
-  searchInput: {
+  searchBarInput: {
     flex: 1,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
+    height: 36,
+    paddingVertical: 0,
   },
+  searchBarPlaceholder: {
+    fontSize: 16,
+    fontFamily: "Lato_400Regular",
+  },
+  searchCancelBtn: {
+    paddingVertical: 4,
+  },
+  searchCancelText: {
+    fontSize: 15,
+    fontFamily: "Lato_400Regular",
+  },
+  // List
   listContainer: {
     flex: 1,
   },
@@ -659,95 +1231,95 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   conversationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
   },
-  // Avatar styles
   avatarContainer: {
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatar: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
   },
   avatarWrapper: {
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
   avatarImage: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   unreadRing: {
-    position: 'absolute',
+    position: "absolute",
     top: -2,
     left: -2,
     right: -2,
     bottom: -2,
   },
   unreadRingGradient: {
-    position: 'absolute',
+    position: "absolute",
     opacity: 0,
   },
   onlineIndicator: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     bottom: 0,
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#fff",
+    justifyContent: "center",
+    alignItems: "center",
   },
   onlineDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#34c759',
+    backgroundColor: "#34c759",
   },
   conversationContent: {
     flex: 1,
     marginLeft: 12,
   },
   conversationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 3,
+  },
+  titleRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 8,
   },
   conversationTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     flexShrink: 1,
   },
   conversationTitleUnread: {
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   timestamp: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   conversationFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   lastMessage: {
     flex: 1,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#0095f6',
+    backgroundColor: "#0095f6",
     marginLeft: 8,
   },
   emptyListContainer: {
@@ -755,8 +1327,8 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
   },
   emptyIconContainer: {
@@ -764,97 +1336,259 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
     lineHeight: 20,
   },
   sendMessageButton: {
     marginTop: 24,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#0095f6',
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
     borderRadius: 8,
   },
   sendMessageButtonText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
-  retryButton: {
-    marginTop: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#0095f6',
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  titleRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  aiBadge: {
-    marginLeft: 6,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  aiBadgeText: {
-    fontSize: 10,
-    fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.7)',
-  },
+  // Action sheet (account-switcher style)
   actionOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 16,
-    paddingBottom: 40,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
   actionSheet: {
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
   },
-  actionTitle: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    textAlign: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+  actionSheetContent: {
+    backgroundColor: "rgba(30,30,30,0.95)",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  actionSheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignSelf: "center",
+    marginTop: 10,
     marginBottom: 4,
   },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  actionSheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  actionSheetClose: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionTitle: {
+    fontSize: 17,
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
+    flex: 1,
+  },
+  actionList: {
+  },
+  actionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
     paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    gap: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(255,255,255,0.06)",
+  },
+  actionItemIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
   },
   actionText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
+    color: "#fff",
+  },
+  // Compose modal
+  composeContainer: {
+    flex: 1,
+  },
+  composeOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 100,
+  },
+  composeOverlayText: {
+    marginTop: 16,
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
+    color: "#fff",
+  },
+  composeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  composeCancelText: {
+    fontSize: 17,
+    fontFamily: "Lato_400Regular",
+    color: "#0095f6",
+    width: 60,
+  },
+  composeTitle: {
+    fontSize: 17,
+    fontFamily: "Lato_700Bold",
+  },
+  chipsSection: {
+    borderBottomWidth: 1,
+    paddingBottom: 8,
+  },
+  chipsRow: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    gap: 8,
+  },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  chipAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  chipName: {
+    fontSize: 13,
+    fontFamily: "Lato_700Bold",
+  },
+  groupRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
+  },
+  groupInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Lato_400Regular",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  createGroupBtn: {
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  createGroupText: {
+    fontSize: 14,
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
+  },
+  composeSearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  toLabel: {
+    fontSize: 16,
+    fontFamily: "Lato_400Regular",
+    marginRight: 12,
+  },
+  composeSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: "Lato_400Regular",
+    paddingVertical: 0,
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontFamily: "Lato_700Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  personRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  personAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  personInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  personName: {
+    fontSize: 16,
+    fontFamily: "Lato_700Bold",
+  },
+  personUsername: {
+    fontSize: 13,
+    fontFamily: "Lato_400Regular",
+    marginTop: 1,
+  },
+  composeEmpty: {
+    alignItems: "center",
+    gap: 12,
+  },
+  composeEmptyText: {
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
   },
 });

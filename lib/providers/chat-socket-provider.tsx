@@ -44,15 +44,25 @@ export function ChatSocketProvider({ children }: { children: React.ReactNode }) 
         if (!cancelled) setIsConnected(false);
       });
 
-      // Global listener: conversation list refresh on new messages
+      // Debounced invalidation — batch rapid socket events (e.g. burst of messages)
+      let chatTimer: ReturnType<typeof setTimeout> | null = null;
+      let notifTimer: ReturnType<typeof setTimeout> | null = null;
+
       s.on('chat:new-message', () => {
-        queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+        if (chatTimer) clearTimeout(chatTimer);
+        chatTimer = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+          chatTimer = null;
+        }, 300);
       });
 
-      // Global listener: real-time notification delivery
       s.on('notification:new', () => {
-        queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
-        queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY] });
+        if (notifTimer) clearTimeout(notifTimer);
+        notifTimer = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: [NOTIFICATIONS_KEY] });
+          queryClient.invalidateQueries({ queryKey: [UNREAD_COUNT_KEY] });
+          notifTimer = null;
+        }, 300);
       });
     };
 

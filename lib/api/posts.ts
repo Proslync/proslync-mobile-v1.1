@@ -21,6 +21,7 @@ export interface FeedItemResponse {
   authorFirstName: string | null;
   authorLastName: string | null;
   authorAvatarUrl: string | null;
+  authorIsVerified?: boolean;
   media: PostMedia[];
   likeCount: number;
   commentCount: number;

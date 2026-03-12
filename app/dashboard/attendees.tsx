@@ -129,7 +129,7 @@ export default function ContactsListScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>List</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>My List</Text>
           {!isLoading && (
             <View style={[styles.countBadge, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
               <Text style={[styles.countText, { color: colors.text }]}>{total}</Text>

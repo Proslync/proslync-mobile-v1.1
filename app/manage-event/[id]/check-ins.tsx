@@ -804,7 +804,7 @@ function CheckInsContent() {
         </TouchableOpacity>
       );
     },
-    [collectingGuestId, handleCharge, doorCoverDisplay],
+    [collectingGuestId, handleCharge, doorCoverDisplay, colors],
   );
 
   const keyExtractor = React.useCallback(

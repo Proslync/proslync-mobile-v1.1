@@ -292,8 +292,8 @@ export default function PostDetailScreen() {
               onPress={() => {
                 if (post?.authorId) {
                   router.push({
-                    pathname: '/user-profile/[userId]',
-                    params: { userId: String(post.authorId) },
+                    pathname: '/user/[username]',
+                    params: { username: post.authorUserName || '_', userId: String(post.authorId) },
                   });
                 }
               }}

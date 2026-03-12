@@ -13,15 +13,23 @@ import {
   Share,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, {
   FadeIn,
   FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector, TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
+import { BlurView } from 'expo-blur';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useUserFeed } from '@/hooks';
 import { useUserFollowers, useUserFollowing } from '@/hooks/use-user-follows';
+import { useMyVenues } from '@/hooks/use-venues-query';
 import { useToast } from '@/components/shared/toast';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 import { SwipeableTabView } from '@/components/shared/swipeable-tab-view';
@@ -31,6 +39,7 @@ import { FollowersSheet } from '@/components/feed/followers-sheet';
 import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useUnreadNotificationCount } from '@/hooks/use-notifications';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 // 3 columns with 2px gaps between them (2 gaps × 2px = 4px total)
@@ -76,82 +85,184 @@ function StatButton({
 }
 
 
+interface VenueItem {
+  id: number;
+  name: string;
+  imageUrl?: string;
+  ownerId?: number;
+}
+
 function AccountSwitcherModal({
   visible,
   currentUserId,
   savedAccounts,
+  venues,
+  unreadCount,
   onClose,
   onSelectAccount,
   onAddAccount,
+  onSelectVenue,
 }: {
   visible: boolean;
   currentUserId?: number;
   savedAccounts: SavedAccount[];
+  venues: VenueItem[];
+  unreadCount: number;
   onClose: () => void;
   onSelectAccount: (account: SavedAccount) => void;
   onAddAccount: () => void;
+  onSelectVenue: (venue: VenueItem) => void;
 }) {
   const insets = useSafeAreaInsets();
+  const translateY = useSharedValue(400);
+
+  React.useEffect(() => {
+    if (visible) {
+      translateY.value = withTiming(0, { duration: 300 });
+    }
+  }, [visible]);
+
+  const dismiss = React.useCallback(() => {
+    translateY.value = withTiming(400, { duration: 200 });
+    setTimeout(onClose, 200);
+  }, [onClose]);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetY(10)
+    .onUpdate((e) => {
+      if (e.translationY > 0) {
+        translateY.value = e.translationY;
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > 80 || e.velocityY > 500) {
+        translateY.value = withTiming(400, { duration: 200 });
+        runOnJS(onClose)();
+      } else {
+        translateY.value = withTiming(0, { duration: 200 });
+      }
+    });
+
+  const sheetAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      transparent
+      animationType="fade"
+      onRequestClose={dismiss}
     >
-      <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
-            <Ionicons name="close" size={28} color="#1a1a1a" />
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>Switch Account</Text>
-          <View style={styles.modalCloseButton} />
-        </View>
+      <View style={styles.modalOverlay}>
+        <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={dismiss} />
 
-        <ScrollView style={styles.accountList} showsVerticalScrollIndicator={false}>
-          {savedAccounts.map((account) => {
-            const isCurrentAccount = account.id === currentUserId;
-            const displayName = account.firstName
-              ? `${account.firstName}${account.lastName ? ' ' + account.lastName : ''}`
-              : account.userName || 'User';
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.modalSheet, sheetAnimStyle]}>
+            <View style={styles.modalContent}>
 
-            return (
-              <TouchableOpacity
-                key={account.id}
-                style={styles.accountItem}
-                onPress={() => !isCurrentAccount && onSelectAccount(account)}
-                activeOpacity={isCurrentAccount ? 1 : 0.7}
-              >
-                <Image
-                  source={account.avatarUrl ? { uri: account.avatarUrl } : DefaultAvatarImage}
-                  style={styles.accountAvatar}
-                />
-                <View style={styles.accountInfo}>
-                  <Text style={styles.accountUsername}>
-                    {account.userName || 'username'}
-                  </Text>
-                  <Text style={styles.accountName}>{displayName}</Text>
-                </View>
-                {isCurrentAccount && (
-                  <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+              {/* Handle bar */}
+              <View style={styles.modalHandle} />
+
+              {/* Header */}
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Switch Account</Text>
+                <GHTouchableOpacity onPress={dismiss} style={styles.modalCloseButton}>
+                  <Ionicons name="close-circle" size={24} color="rgba(255,255,255,0.4)" />
+                </GHTouchableOpacity>
+              </View>
+
+              {/* Account list */}
+              <View style={styles.accountList}>
+                {savedAccounts.map((account, index) => {
+                  const isCurrentAccount = account.id === currentUserId;
+                  const displayName = account.firstName
+                    ? `${account.firstName}${account.lastName ? ' ' + account.lastName : ''}`
+                    : account.userName || 'User';
+
+                  return (
+                    <GHTouchableOpacity
+                      key={account.id}
+                      style={[
+                        styles.accountItem,
+                        index < savedAccounts.length - 1 && styles.accountItemBorder,
+                      ]}
+                      onPress={() => !isCurrentAccount && onSelectAccount(account)}
+                      activeOpacity={isCurrentAccount ? 1 : 0.7}
+                    >
+                      <Image
+                        source={account.avatarUrl ? { uri: account.avatarUrl } : DefaultAvatarImage}
+                        style={[styles.accountAvatar, isCurrentAccount && styles.accountAvatarActive]}
+                      />
+                      <View style={styles.accountInfo}>
+                        <Text style={styles.accountUsername}>
+                          {account.userName || 'username'}
+                        </Text>
+                        <Text style={styles.accountName}>{displayName}</Text>
+                      </View>
+                      {isCurrentAccount && unreadCount > 0 && (
+                        <View style={styles.unreadBadge}>
+                          <Text style={styles.unreadBadgeText}>
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </Text>
+                        </View>
+                      )}
+                      {isCurrentAccount && (
+                        <Ionicons name="checkmark-circle" size={22} color="#fff" />
+                      )}
+                    </GHTouchableOpacity>
+                  );
+                })}
+
+                {/* Venues Section */}
+                {venues.length > 0 && (
+                  <>
+                    <View style={styles.venuesSectionHeader}>
+                      <Ionicons name="business-outline" size={14} color="rgba(255,255,255,0.4)" />
+                      <Text style={styles.venuesSectionTitle}>Your Venues</Text>
+                    </View>
+                    {venues.map((venue, vIndex) => (
+                      <GHTouchableOpacity
+                        key={`venue-${venue.id}`}
+                        style={[
+                          styles.accountItem,
+                          vIndex < venues.length - 1 && styles.accountItemBorder,
+                        ]}
+                        onPress={() => onSelectVenue(venue)}
+                        activeOpacity={0.7}
+                      >
+                        <Image
+                          source={venue.imageUrl ? { uri: venue.imageUrl } : DefaultAvatarImage}
+                          style={styles.accountAvatar}
+                        />
+                        <View style={styles.accountInfo}>
+                          <Text style={styles.accountUsername}>{venue.name}</Text>
+                          <Text style={styles.accountName}>Venue</Text>
+                        </View>
+                        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
+                      </GHTouchableOpacity>
+                    ))}
+                  </>
                 )}
-              </TouchableOpacity>
-            );
-          })}
 
-          {/* Add Account Button */}
-          <TouchableOpacity
-            style={styles.addAccountButton}
-            onPress={onAddAccount}
-            activeOpacity={0.7}
-          >
-            <View style={styles.addAccountIcon}>
-              <Ionicons name="add" size={24} color="#1a1a1a" />
+                {/* Add Account Button */}
+                <GHTouchableOpacity
+                  style={[styles.addAccountButton, { paddingBottom: insets.bottom + 14 }]}
+                  onPress={onAddAccount}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.addAccountIcon}>
+                    <Ionicons name="add" size={22} color="#fff" />
+                  </View>
+                  <Text style={styles.addAccountText}>Add Account</Text>
+                </GHTouchableOpacity>
+              </View>
             </View>
-            <Text style={styles.addAccountText}>Add Account</Text>
-          </TouchableOpacity>
-        </ScrollView>
+          </Animated.View>
+        </GestureDetector>
       </View>
     </Modal>
   );
@@ -164,6 +275,8 @@ export default function ProfileScreen() {
   const { showSuccess, showError } = useToast();
   const { isAccountSwitcherOpen, closeAccountSwitcher, openAccountSwitcher } = useTabNavigation();
   const { colors, isDark } = useAppTheme();
+  const { data: myVenues = [] } = useMyVenues();
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
   const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
@@ -228,9 +341,9 @@ export default function ProfileScreen() {
     async function saveCurrentAccount() {
       if (!user) return;
 
-      // Get current tokens to save with account (keys must match config.auth)
-      const accessToken = await AsyncStorage.getItem('accessToken');
-      const refreshToken = await AsyncStorage.getItem('refreshToken');
+      // Get current tokens from SecureStore (where apiClient stores them)
+      const accessToken = await SecureStore.getItemAsync('accessToken');
+      const refreshToken = await SecureStore.getItemAsync('refreshToken');
 
       setSavedAccounts((prev) => {
         const exists = prev.some((a) => a.id === user.id);
@@ -317,19 +430,46 @@ export default function ProfileScreen() {
 
   const handleAddAccount = async () => {
     closeAccountSwitcher();
-    // Clear tokens from saved account so it shows as inactive
-    if (user?.id) {
-      setSavedAccounts((prev) => {
-        const updated = prev.map((a) =>
-          a.id === user.id ? { ...a, accessToken: undefined, refreshToken: undefined } : a
-        );
-        AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated)).catch(() => {});
-        return updated;
-      });
-    }
-    // Navigate to sign in screen to add new account
+    // Log out first so the auth guard doesn't bounce us back to (tabs).
+    // The current account's tokens are already persisted in savedAccounts,
+    // so the user can switch back later.
     logout();
   };
+
+  const handleSelectVenue = React.useCallback(async (venue: VenueItem) => {
+    if (!venue.ownerId) {
+      closeAccountSwitcher();
+      router.push({
+        pathname: '/venue-profile/[venueId]',
+        params: { venueId: String(venue.id) },
+      });
+      return;
+    }
+
+    // If the current user IS the owner, just go to manage venue
+    if (user && venue.ownerId === user.id) {
+      closeAccountSwitcher();
+      router.push(`/manage-venue/${venue.id}`);
+      return;
+    }
+
+    // Try to switch to the venue owner's account
+    const ownerAccount = savedAccounts.find((a) => a.id === venue.ownerId);
+    if (!ownerAccount || !ownerAccount.accessToken) {
+      showError('Venue owner account not saved on this device.');
+      closeAccountSwitcher();
+      return;
+    }
+
+    closeAccountSwitcher();
+    const success = await switchAccount(ownerAccount.accessToken, ownerAccount.refreshToken);
+    if (success) {
+      showSuccess(`Switched to ${venue.name}'s account`);
+    } else {
+      showError('Session expired for venue owner. Please log in again.');
+      removeSavedAccount(ownerAccount.id);
+    }
+  }, [closeAccountSwitcher, router, user, savedAccounts, switchAccount, showSuccess, showError, removeSavedAccount]);
 
   const handleShareProfile = async () => {
     try {
@@ -378,6 +518,9 @@ export default function ProfileScreen() {
             activeOpacity={0.7}
           >
             <Text style={[styles.headerUsername, { color: colors.text }]}>{username}</Text>
+            {user?.isVerified && (
+              <MaterialCommunityIcons name="check-decagram" size={20} color="#3897F0" />
+            )}
             <Ionicons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
 
@@ -557,9 +700,12 @@ export default function ProfileScreen() {
         visible={isAccountSwitcherOpen}
         currentUserId={user?.id}
         savedAccounts={savedAccounts.filter((a) => a.id === user?.id || !!a.accessToken)}
+        venues={myVenues}
+        unreadCount={unreadCount}
         onClose={closeAccountSwitcher}
         onSelectAccount={handleSelectAccount}
         onAddAccount={handleAddAccount}
+        onSelectVenue={handleSelectVenue}
       />
     </View>
     </SwipeableTabView>
@@ -747,83 +893,142 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_700Bold',
     color: '#ff4444',
   },
-  // Modal styles
-  modalContainer: {
+  // Account switcher modal styles
+  modalOverlay: {
     flex: 1,
-    backgroundColor: '#fff',
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  modalSheet: {
+    paddingHorizontal: 0,
+  },
+  modalContent: {
+    backgroundColor: 'rgba(30,30,30,0.95)',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  modalHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 4,
   },
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
   },
   modalCloseButton: {
-    width: 44,
-    height: 44,
+    width: 32,
+    height: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  modalTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
-  },
-  // Account switcher styles
   accountList: {
-    flex: 1,
-    paddingVertical: 8,
   },
   accountItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+  accountItemBorder: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   accountAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  accountAvatarActive: {
+    borderColor: '#fff',
   },
   accountInfo: {
     flex: 1,
     marginLeft: 12,
   },
   accountUsername: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
+    color: '#fff',
   },
   accountName: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.5)',
+    color: 'rgba(255,255,255,0.5)',
     marginTop: 2,
   },
   addAccountButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   addAccountIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addAccountText: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
+    color: '#fff',
     marginLeft: 12,
+  },
+  unreadBadge: {
+    backgroundColor: '#ff3b30',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  unreadBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  venuesSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  venuesSectionTitle: {
+    fontSize: 12,
+    fontFamily: 'Lato_700Bold',
+    color: 'rgba(255,255,255,0.4)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

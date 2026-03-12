@@ -1,19 +1,19 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import {
   useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
-} from '@tanstack/react-query';
+} from "@tanstack/react-query";
 import {
   chatApi,
   type MessageResponse,
   type ConversationResponse,
-} from '@/lib/api/chat';
-import { useAuth } from '@/lib/providers/auth-provider';
-import { useChatSocket } from '@/lib/providers/chat-socket-provider';
-import { CONVERSATIONS_KEY } from './use-conversations';
-import { filesApi } from '@/lib/api/files';
+} from "@/lib/api/chat";
+import { useAuth } from "@/lib/providers/auth-provider";
+import { useChatSocket } from "@/lib/providers/chat-socket-provider";
+import { CONVERSATIONS_KEY } from "./use-conversations";
+import { filesApi } from "@/lib/api/files";
 
 // --- Types ---
 
@@ -30,7 +30,7 @@ export interface ChatMessage {
   callType?: string;
   callDuration?: number;
   attachments?: {
-    type: 'image' | 'video' | 'audio';
+    type: "image" | "video" | "audio";
     url: string;
     thumbUrl?: string;
     width?: number;
@@ -50,7 +50,7 @@ export interface ChannelMember {
 
 export interface ChannelInfo {
   id: string;
-  type: 'direct' | 'group' | 'system';
+  type: "direct" | "group" | "system";
   name: string;
   imageUrl?: string;
   memberCount: number;
@@ -68,18 +68,18 @@ export interface ChannelInfo {
 
 // --- Constants ---
 
-export const CONVERSATION_MESSAGES_KEY = 'conversation-messages';
+export const CONVERSATION_MESSAGES_KEY = "conversation-messages";
 
 // --- Helpers ---
 
 function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
   // System messages (call events, etc.)
-  if (msg.type === 'system') {
+  if (msg.type === "system") {
     return {
       id: String(msg.id),
-      text: msg.text || '',
-      userId: '',
-      userName: '',
+      text: msg.text || "",
+      userId: "",
+      userName: "",
       createdAt: new Date(msg.createdAt),
       isOwn: false,
       isSystem: true,
@@ -92,15 +92,18 @@ function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
   const sender = msg.sender;
   const senderName = sender
     ? sender.userName ||
-      [sender.firstName, sender.lastName].filter(Boolean).join(' ') ||
-      'Unknown'
-    : 'Unknown';
+      [sender.firstName, sender.lastName].filter(Boolean).join(" ") ||
+      "Unknown"
+    : "Unknown";
 
-  let attachments: ChatMessage['attachments'];
-  if (msg.mediaUrl && msg.type !== 'text') {
+  let attachments: ChatMessage["attachments"];
+  if (msg.mediaUrl && msg.type !== "text") {
     attachments = [
       {
-        type: msg.type as 'image' | 'video' | 'audio',
+        type: (msg.type === "voice" ? "audio" : msg.type) as
+          | "image"
+          | "video"
+          | "audio",
         url: msg.mediaUrl,
         thumbUrl: msg.mediaMetadata?.thumbnailUrl,
         width: msg.mediaMetadata?.width,
@@ -111,11 +114,11 @@ function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
     ];
   }
 
-  const isSystem = msg.type === 'system' || msg.isDeleted;
+  const isSystem = msg.type === "system" || msg.isDeleted;
 
   return {
     id: String(msg.id),
-    text: msg.isDeleted ? 'This message was deleted' : msg.text || '',
+    text: msg.isDeleted ? "This message was deleted" : msg.text || "",
     userId: String(msg.senderId),
     userName: senderName,
     userImage: sender?.avatarUrl,
@@ -136,9 +139,9 @@ function deriveChannelInfo(
     conv.name ||
     (firstOther
       ? firstOther.userName ||
-        [firstOther.firstName, firstOther.lastName].filter(Boolean).join(' ') ||
-        'Chat'
-      : 'Chat');
+        [firstOther.firstName, firstOther.lastName].filter(Boolean).join(" ") ||
+        "Chat"
+      : "Chat");
 
   return {
     id: conv.id,
@@ -149,7 +152,10 @@ function deriveChannelInfo(
     createdById: conv.createdById,
     members: conv.members.map((m) => ({
       id: m.userId,
-      name: m.userName || [m.firstName, m.lastName].filter(Boolean).join(' ') || 'Unknown',
+      name:
+        m.userName ||
+        [m.firstName, m.lastName].filter(Boolean).join(" ") ||
+        "Unknown",
       userName: m.userName,
       image: m.avatarUrl,
       isVerified: m.isVerified,
@@ -161,8 +167,8 @@ function deriveChannelInfo(
             firstOther.userName ||
             [firstOther.firstName, firstOther.lastName]
               .filter(Boolean)
-              .join(' ') ||
-            'Unknown',
+              .join(" ") ||
+            "Unknown",
           image: firstOther.avatarUrl,
           isVerified: firstOther.isVerified,
         }
@@ -171,7 +177,11 @@ function deriveChannelInfo(
 }
 
 type InfiniteMessagesData = {
-  pages: { messages: MessageResponse[]; nextCursor: string | null; hasMore: boolean }[];
+  pages: {
+    messages: MessageResponse[];
+    nextCursor: string | null;
+    hasMore: boolean;
+  }[];
   pageParams: (string | undefined)[];
 };
 
@@ -193,17 +203,24 @@ export function useConversation(conversationId: string | undefined) {
     enabled: !!conversationId && !!currentUserId,
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
-      const response = await chatApi.getMessages(conversationId!, pageParam, 50);
+      const response = await chatApi.getMessages(
+        conversationId!,
+        pageParam,
+        50,
+      );
       // Mark as read on initial load only
       if (!pageParam) {
-        chatApi.markRead(conversationId!).then(() => {
-          queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
-        }).catch(() => {});
+        chatApi
+          .markRead(conversationId!)
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
+          })
+          .catch(() => {});
       }
       return response;
     },
     getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? lastPage.nextCursor ?? undefined : undefined,
+      lastPage.hasMore ? (lastPage.nextCursor ?? undefined) : undefined,
     staleTime: 0,
     gcTime: 5 * 60 * 1000,
   });
@@ -249,7 +266,7 @@ export function useConversation(conversationId: string | undefined) {
     if (!socket || !conversationId || !currentUserId) return;
 
     // Join conversation room
-    socket.emit('chat:join', { conversationId });
+    socket.emit("chat:join", { conversationId });
 
     const onMessage = (data: { message: MessageResponse }) => {
       // Skip own messages — already added optimistically via sendMessage
@@ -287,15 +304,15 @@ export function useConversation(conversationId: string | undefined) {
       }
     };
 
-    socket.on('chat:message', onMessage);
-    socket.on('chat:typing', onTyping);
-    socket.on('chat:read', onRead);
+    socket.on("chat:message", onMessage);
+    socket.on("chat:typing", onTyping);
+    socket.on("chat:read", onRead);
 
     return () => {
-      socket.emit('chat:leave', { conversationId });
-      socket.off('chat:message', onMessage);
-      socket.off('chat:typing', onTyping);
-      socket.off('chat:read', onRead);
+      socket.emit("chat:leave", { conversationId });
+      socket.off("chat:message", onMessage);
+      socket.off("chat:typing", onTyping);
+      socket.off("chat:read", onRead);
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
         typingTimeoutRef.current = null;
@@ -308,10 +325,10 @@ export function useConversation(conversationId: string | undefined) {
   const sendMessageMutation = useMutation({
     mutationFn: async (params: {
       text: string;
-      attachments?: { type: 'image' | 'video'; uri: string }[];
+      attachments?: { type: "image" | "video"; uri: string }[];
     }) => {
       return chatApi.sendMessage(conversationId!, {
-        type: 'text',
+        type: "text",
         text: params.text.trim() || undefined,
       });
     },
@@ -324,7 +341,7 @@ export function useConversation(conversationId: string | undefined) {
         id: -Date.now(),
         conversationId: conversationId!,
         senderId: currentUserId,
-        type: 'text',
+        type: "text",
         text: params.text.trim(),
         mediaUrl: null,
         mediaMetadata: null,
@@ -415,9 +432,7 @@ export function useConversation(conversationId: string | undefined) {
             ...old,
             pages: old.pages.map((page) => ({
               ...page,
-              messages: page.messages.filter(
-                (m) => String(m.id) !== messageId,
-              ),
+              messages: page.messages.filter((m) => String(m.id) !== messageId),
             })),
           };
         },
@@ -444,11 +459,11 @@ export function useConversation(conversationId: string | undefined) {
 
       // Send message with uploaded URL
       return chatApi.sendMessage(conversationId!, {
-        type: 'voice',
+        type: "voice",
         mediaUrl,
         mediaMetadata: {
           duration: params.duration,
-          mimeType: 'audio/mp4',
+          mimeType: "audio/mp4",
         },
       });
     },
@@ -461,12 +476,12 @@ export function useConversation(conversationId: string | undefined) {
         id: -Date.now(),
         conversationId: conversationId!,
         senderId: currentUserId,
-        type: 'voice',
+        type: "voice",
         text: null,
         mediaUrl: params.uri,
         mediaMetadata: {
           duration: params.duration,
-          mimeType: 'audio/mp4',
+          mimeType: "audio/mp4",
         },
         isDeleted: false,
         createdAt: new Date().toISOString(),
@@ -536,7 +551,7 @@ export function useConversation(conversationId: string | undefined) {
   const sendMessage = useCallback(
     async (
       text: string,
-      attachments?: { type: 'image' | 'video'; uri: string }[],
+      attachments?: { type: "image" | "video"; uri: string }[],
     ) => {
       if (!conversationId) return;
       if (!text.trim() && (!attachments || attachments.length === 0)) return;
@@ -562,7 +577,7 @@ export function useConversation(conversationId: string | undefined) {
 
   const sendTypingStart = useCallback(async () => {
     if (!conversationId || !socket) return;
-    socket.emit('chat:typing', { conversationId });
+    socket.emit("chat:typing", { conversationId });
   }, [conversationId, socket]);
 
   const sendTypingStop = useCallback(async () => {

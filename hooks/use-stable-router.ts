@@ -1,48 +1,53 @@
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useRef, useCallback, useMemo } from 'react';
 import type { Router } from 'expo-router';
-
-const DEBOUNCE_MS = 500;
 
 /**
  * Drop-in replacement for `useRouter()` that prevents duplicate pushes.
  *
- * Two guards:
- * 1. Debounce — ignores pushes within 500 ms of the last one.
- * 2. Same-route check — ignores push if the target pathname matches
- *    the current deepest segment path.
+ * Guards:
+ * 1. Navigation lock — blocks pushes while a previous one is still settling.
+ * 2. Rapid-tap debounce — ignores pushes within 250ms of the last one.
  */
 export function useStableRouter(): Router {
   const router = useRouter();
-  const segments = useSegments();
   const lastPushTime = useRef(0);
-  const lastPushPath = useRef('');
-
-  const currentPath = useMemo(() => '/' + segments.join('/'), [segments]);
+  const isNavigating = useRef(false);
 
   const stablePush: Router['push'] = useCallback(
     (href: any) => {
       const now = Date.now();
 
-      // Extract pathname string from href
-      const targetPath =
-        typeof href === 'string'
-          ? href.split('?')[0]
-          : (href as any)?.pathname ?? '';
+      // Guard 1: block if currently navigating
+      if (isNavigating.current) return;
 
-      // Guard 1: debounce rapid taps
-      if (now - lastPushTime.current < DEBOUNCE_MS) {
-        return;
-      }
-
-      // Guard 2: already on this page
-      if (targetPath && targetPath === lastPushPath.current && now - lastPushTime.current < 2000) {
-        return;
-      }
+      // Guard 2: debounce rapid taps (250ms)
+      if (now - lastPushTime.current < 250) return;
 
       lastPushTime.current = now;
-      lastPushPath.current = targetPath;
+      isNavigating.current = true;
+
+      // Unlock after navigation animation settles
+      setTimeout(() => {
+        isNavigating.current = false;
+      }, 350);
+
       router.push(href);
+    },
+    [router],
+  );
+
+  const stableReplace: Router['replace'] = useCallback(
+    (href: any) => {
+      const now = Date.now();
+      if (isNavigating.current) return;
+      if (now - lastPushTime.current < 250) return;
+
+      lastPushTime.current = now;
+      isNavigating.current = true;
+      setTimeout(() => { isNavigating.current = false; }, 350);
+
+      router.replace(href);
     },
     [router],
   );
@@ -51,7 +56,8 @@ export function useStableRouter(): Router {
     () => ({
       ...router,
       push: stablePush,
+      replace: stableReplace,
     }),
-    [router, stablePush],
+    [router, stablePush, stableReplace],
   );
 }

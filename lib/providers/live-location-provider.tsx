@@ -633,18 +633,21 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
     }
   };
 
-  const value: LiveLocationContextType = {
-    connectionState,
-    sharingState,
-    remainingTime,
-    friendLocations,
-    startSharing,
-    stopSharing,
-    hasLocationPermission,
-    hasBackgroundPermission,
-    requestLocationPermission,
-    requestBackgroundPermission,
-  };
+  const value = React.useMemo<LiveLocationContextType>(
+    () => ({
+      connectionState,
+      sharingState,
+      remainingTime,
+      friendLocations,
+      startSharing,
+      stopSharing,
+      hasLocationPermission,
+      hasBackgroundPermission,
+      requestLocationPermission,
+      requestBackgroundPermission,
+    }),
+    [connectionState, sharingState, remainingTime, friendLocations, startSharing, stopSharing, hasLocationPermission, hasBackgroundPermission, requestLocationPermission, requestBackgroundPermission],
+  );
 
   return (
     <LiveLocationContext.Provider value={value}>

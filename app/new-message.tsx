@@ -40,46 +40,16 @@ interface SearchUser {
   online?: boolean;
 }
 
-function ContactRow({
-  contact,
-  onPress,
-  colors,
-  isSelected,
-}: {
-  contact: ContactItem;
-  onPress: () => void;
-  colors: ThemeColors;
-  isSelected?: boolean;
-}) {
-  return (
-    <TouchableOpacity style={styles.contactRow} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.avatarContainer}>
-        <Image
-          source={contact.image ? { uri: contact.image } : DefaultAvatarImage}
-          style={styles.avatar}
-        />
-      </View>
-      <View style={styles.contactInfo}>
-        <Text style={[styles.contactName, { color: colors.text }]}>{contact.name}</Text>
-        {contact.userName ? (
-          <Text style={[styles.contactUsername, { color: colors.textSecondary }]}>@{contact.userName}</Text>
-        ) : null}
-      </View>
-      {isSelected && (
-        <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
-      )}
-    </TouchableOpacity>
-  );
-}
-
 function SearchResultRow({
   user,
   onPress,
   colors,
+  isSelected,
 }: {
   user: SearchUser;
   onPress: () => void;
   colors: ThemeColors;
+  isSelected?: boolean;
 }) {
   return (
     <TouchableOpacity style={styles.contactRow} onPress={onPress} activeOpacity={0.7}>
@@ -93,6 +63,9 @@ function SearchResultRow({
       <View style={styles.contactInfo}>
         <Text style={[styles.contactName, { color: colors.text }]}>{user.name}</Text>
       </View>
+      {isSelected && (
+        <Ionicons name="checkmark-circle" size={24} color={colors.text} />
+      )}
     </TouchableOpacity>
   );
 }
@@ -128,6 +101,7 @@ export default function NewMessageScreen() {
   const [isLoadingContacts, setIsLoadingContacts] = useState(true);
   const [selectedContacts, setSelectedContacts] = useState<ContactItem[]>([]);
   const [groupName, setGroupName] = useState('');
+  const [isGroupMode, setIsGroupMode] = useState(false);
 
   // Fetch following + followers and build sorted contact list
   useEffect(() => {
@@ -258,27 +232,19 @@ export default function NewMessageScreen() {
 
   const handleSelectContact = useCallback(
     (contact: ContactItem) => {
-      // If already have selections, toggle multi-select mode
-      if (selectedContacts.length > 0) {
+      if (isGroupMode) {
         toggleContact(contact);
         return;
       }
       // Single tap with no selections = open DM directly
       openChannelWithUser(String(contact.id));
     },
-    [openChannelWithUser, selectedContacts.length, toggleContact],
-  );
-
-  const handleLongPressContact = useCallback(
-    (contact: ContactItem) => {
-      toggleContact(contact);
-    },
-    [toggleContact],
+    [openChannelWithUser, isGroupMode, toggleContact],
   );
 
   const handleSelectSearchResult = useCallback(
     (user: SearchUser) => {
-      if (selectedContacts.length > 0) {
+      if (isGroupMode) {
         const contact: ContactItem = {
           id: Number(user.id),
           name: user.name,
@@ -290,8 +256,14 @@ export default function NewMessageScreen() {
       }
       openChannelWithUser(user.id);
     },
-    [openChannelWithUser, selectedContacts.length, toggleContact],
+    [openChannelWithUser, isGroupMode, toggleContact],
   );
+
+  const exitGroupMode = useCallback(() => {
+    setIsGroupMode(false);
+    setSelectedContacts([]);
+    setGroupName('');
+  }, []);
 
   const handleCreateGroup = useCallback(async () => {
     if (isCreating || selectedContacts.length < 2) return;
@@ -312,8 +284,12 @@ export default function NewMessageScreen() {
   }, [isCreating, selectedContacts, groupName, router]);
 
   const handleClose = useCallback(() => {
+    if (isGroupMode) {
+      exitGroupMode();
+      return;
+    }
     router.back();
-  }, [router]);
+  }, [router, isGroupMode, exitGroupMode]);
 
   const selectedIds = React.useMemo(() => new Set(selectedContacts.map((c) => c.id)), [selectedContacts]);
 
@@ -321,7 +297,6 @@ export default function NewMessageScreen() {
     ({ item }: { item: ContactItem }) => (
       <TouchableOpacity
         onPress={() => handleSelectContact(item)}
-        onLongPress={() => handleLongPressContact(item)}
         activeOpacity={0.7}
         style={styles.contactRow}
       >
@@ -338,18 +313,23 @@ export default function NewMessageScreen() {
           ) : null}
         </View>
         {selectedIds.has(item.id) && (
-          <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+          <Ionicons name="checkmark-circle" size={24} color={colors.text} />
         )}
       </TouchableOpacity>
     ),
-    [handleSelectContact, handleLongPressContact, colors, selectedIds],
+    [handleSelectContact, colors, selectedIds],
   );
 
   const renderSearchResult = useCallback(
     ({ item }: { item: SearchUser }) => (
-      <SearchResultRow user={item} onPress={() => handleSelectSearchResult(item)} colors={colors} />
+      <SearchResultRow
+        user={item}
+        onPress={() => handleSelectSearchResult(item)}
+        colors={colors}
+        isSelected={selectedIds.has(Number(item.id))}
+      />
     ),
-    [handleSelectSearchResult, colors],
+    [handleSelectSearchResult, colors, selectedIds],
   );
 
   return (
@@ -368,14 +348,39 @@ export default function NewMessageScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity style={styles.cancelButton} onPress={handleClose}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          {isGroupMode ? (
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          ) : (
+            <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
+          )}
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text }]}>New Message</Text>
-        <View style={styles.cancelButton} />
+        <Text style={[styles.title, { color: colors.text }]}>
+          {isGroupMode ? 'New Group' : 'New Message'}
+        </Text>
+        {isGroupMode ? (
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={handleCreateGroup}
+            disabled={selectedContacts.length < 2 || isCreating}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[
+                styles.headerActionText,
+                { color: colors.text },
+                selectedContacts.length < 2 && { opacity: 0.3 },
+              ]}
+            >
+              Create
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.cancelButton} />
+        )}
       </View>
 
       {/* Selected contacts chips */}
-      {selectedContacts.length > 0 && (
+      {isGroupMode && selectedContacts.length > 0 && (
         <View style={[styles.chipsContainer, { borderBottomColor: colors.border }]}>
           <FlatList
             horizontal
@@ -385,7 +390,7 @@ export default function NewMessageScreen() {
             contentContainerStyle={styles.chipsContent}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.chip, { backgroundColor: colors.backgroundSecondary }]}
+                style={[styles.chip, { backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1 }]}
                 onPress={() => toggleContact(item)}
                 activeOpacity={0.7}
               >
@@ -401,20 +406,12 @@ export default function NewMessageScreen() {
           {selectedContacts.length >= 2 && (
             <View style={styles.groupNameRow}>
               <TextInput
-                style={[styles.groupNameInput, { color: colors.text, borderColor: colors.border }]}
+                style={[styles.groupNameInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.input }]}
                 value={groupName}
                 onChangeText={setGroupName}
                 placeholder="Group name (optional)"
                 placeholderTextColor={colors.placeholder}
               />
-              <TouchableOpacity
-                style={[styles.createGroupButton, selectedContacts.length < 2 && { opacity: 0.4 }]}
-                onPress={handleCreateGroup}
-                disabled={selectedContacts.length < 2}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.createGroupText}>Create</Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -465,11 +462,28 @@ export default function NewMessageScreen() {
           keyExtractor={(item) => String(item.id)}
           renderItem={renderContact}
           ListHeaderComponent={
-            contacts.length > 0 ? (
-              <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
-                <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>Suggested</Text>
-              </View>
-            ) : null
+            <>
+              {!isGroupMode && (
+                <TouchableOpacity
+                  style={styles.newGroupRow}
+                  onPress={() => setIsGroupMode(true)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.newGroupIcon, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                    <Ionicons name="people" size={22} color={colors.text} />
+                  </View>
+                  <Text style={[styles.contactName, { color: colors.text }]}>Create a Group</Text>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                </TouchableOpacity>
+              )}
+              {contacts.length > 0 && (
+                <View style={[styles.sectionHeader, { backgroundColor: 'transparent' }]}>
+                  <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
+                    {isGroupMode ? 'Add People' : 'Suggested'}
+                  </Text>
+                </View>
+              )}
+            </>
           }
           ListEmptyComponent={
             isLoadingContacts ? (
@@ -511,7 +525,11 @@ const styles = StyleSheet.create({
   cancelText: {
     fontSize: 17,
     fontFamily: 'Lato_400Regular',
-    color: '#0095f6',
+  },
+  headerActionText: {
+    fontSize: 17,
+    fontFamily: 'Lato_700Bold',
+    textAlign: 'right',
   },
   title: {
     fontSize: 17,
@@ -636,6 +654,20 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
   },
+  newGroupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  newGroupIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   chipsContainer: {
     borderBottomWidth: 1,
     paddingBottom: 8,
@@ -677,17 +709,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-  },
-  createGroupButton: {
-    backgroundColor: '#0095f6',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  createGroupText: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,

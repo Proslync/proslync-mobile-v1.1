@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
@@ -27,11 +28,14 @@ import {
   useMarkAllNotificationsRead,
 } from '@/hooks';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { authApi } from '@/lib/api/auth';
 import type { MyTeamInvitation } from '@/lib/types/team.types';
 import type {
   AppNotification,
   NotificationType,
 } from '@/lib/types/notifications.types';
+
+const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 type NotificationTab = 'activity' | 'teams';
 
@@ -50,16 +54,19 @@ function timeAgo(dateStr: string): string {
 
 const NOTIFICATION_ICONS: Record<
   NotificationType,
-  keyof typeof Ionicons.glyphMap
+  { name: keyof typeof Ionicons.glyphMap; color: string; bg: string }
 > = {
-  follow: 'person-add',
-  rsvp: 'calendar',
-  event_update: 'refresh-circle',
-  payment: 'card',
-  chat: 'chatbubble',
-  like: 'heart',
-  comment: 'chatbubble-ellipses',
+  follow: { name: 'person-add', color: '#0095F6', bg: 'rgba(0,149,246,0.15)' },
+  rsvp: { name: 'calendar', color: '#34C759', bg: 'rgba(52,199,89,0.15)' },
+  event_update: { name: 'refresh-circle', color: '#FF9500', bg: 'rgba(255,149,0,0.15)' },
+  payment: { name: 'card', color: '#34C759', bg: 'rgba(52,199,89,0.15)' },
+  chat: { name: 'chatbubble-ellipses', color: '#0095F6', bg: 'rgba(0,149,246,0.15)' },
+  like: { name: 'heart', color: '#FF3B30', bg: 'rgba(255,59,48,0.15)' },
+  comment: { name: 'chatbubble', color: '#AF52DE', bg: 'rgba(175,82,222,0.15)' },
 };
+
+// Types where we show the actor's profile photo instead of an icon
+const ACTOR_PHOTO_TYPES: NotificationType[] = ['follow', 'like', 'comment'];
 
 function TeamInvitationRow({
   invitation,
@@ -153,6 +160,27 @@ function TeamInvitationRow({
 }
 
 
+function useActorUser(actorId?: number) {
+  return useQuery({
+    queryKey: ['user', actorId],
+    queryFn: () => authApi.getUserById(actorId!),
+    enabled: !!actorId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+function ActorAvatar({ actorId }: { actorId: number }) {
+  const { data: user } = useActorUser(actorId);
+
+  return (
+    <Image
+      source={user?.avatar?.url ? { uri: user.avatar.url } : DefaultAvatarImage}
+      style={styles.actorAvatar}
+    />
+  );
+}
+
 function ActivityRow({
   item,
   colors,
@@ -164,7 +192,10 @@ function ActivityRow({
   isDark: boolean;
   onPress: (notification: AppNotification) => void;
 }) {
-  const icon = NOTIFICATION_ICONS[item.type] || 'notifications';
+  const iconConfig = NOTIFICATION_ICONS[item.type] || { name: 'notifications', color: colors.textTertiary, bg: 'rgba(255,255,255,0.08)' };
+  const actorId = item.metadata?.actorId as number | undefined;
+  const showActorPhoto = ACTOR_PHOTO_TYPES.includes(item.type) && actorId;
+  const { data: actorUser } = useActorUser(actorId);
 
   return (
     <TouchableOpacity
@@ -176,18 +207,24 @@ function ActivityRow({
         !item.read && { backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)' },
       ]}
     >
-      <View style={[styles.activityIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : colors.backgroundSecondary }]}>
-        <Ionicons name={icon} size={18} color={colors.textTertiary} />
-      </View>
+      {showActorPhoto ? (
+        <ActorAvatar actorId={actorId} />
+      ) : (
+        <View style={[styles.activityIcon, { backgroundColor: iconConfig.bg }]}>
+          <Ionicons name={iconConfig.name} size={18} color={iconConfig.color} />
+        </View>
+      )}
       <View style={styles.activityContent}>
         <Text style={[styles.activityText, { color: colors.textSecondary }]} numberOfLines={2}>
           <Text style={[styles.activityTitle, { color: colors.text }]}>{item.title}</Text>
+          {actorUser?.isVerified && ' '}
+          {actorUser?.isVerified && <MaterialCommunityIcons name="check-decagram" size={14} color="#3897F0" />}
           {'  '}
           {item.body}
         </Text>
         <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{timeAgo(item.createdAt)}</Text>
       </View>
-      {!item.read && <View style={[styles.unreadDot, { backgroundColor: colors.text }]} />}
+      {!item.read && <View style={styles.unreadDot} />}
     </TouchableOpacity>
   );
 }
@@ -280,7 +317,7 @@ export default function NotificationsScreen() {
       switch (notification.type) {
         case 'follow':
           if (metadata?.actorId) {
-            router.push(`/user-profile/${metadata.actorId}`);
+            router.push({ pathname: '/user/[username]', params: { username: '_', userId: String(metadata.actorId) } });
           }
           break;
         case 'rsvp':
@@ -334,134 +371,47 @@ export default function NotificationsScreen() {
         )}
       </View>
 
-      {/* Tabs */}
-      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.backgroundSecondary, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border },
-            activeTab === 'activity' && (isDark ? styles.tabActiveDark : { backgroundColor: colors.text, borderColor: colors.text }),
-          ]}
-          onPress={() => setActiveTab('activity')}
-          activeOpacity={0.7}
-        >
-          <Text style={[
-            styles.tabText,
-            { color: colors.textTertiary },
-            activeTab === 'activity' && { fontFamily: 'Lato_700Bold', color: isDark ? '#fff' : colors.textInverse },
-          ]}>
-            Activity
-          </Text>
-          {!!unreadCount && unreadCount > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
-            </View>
+      {/* Notifications */}
+      {notificationsLoading ? (
+        <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />
+      ) : notifications.length > 0 ? (
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <ActivityRow
+              item={item}
+              colors={colors}
+              isDark={isDark}
+              onPress={handleNotificationPress}
+            />
           )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : colors.backgroundSecondary, borderColor: isDark ? 'rgba(255,255,255,0.08)' : colors.border },
-            activeTab === 'teams' && (isDark ? styles.tabActiveDark : { backgroundColor: colors.text, borderColor: colors.text }),
-          ]}
-          onPress={() => setActiveTab('teams')}
-          activeOpacity={0.7}
-        >
-          <Text style={[
-            styles.tabText,
-            { color: colors.textTertiary },
-            activeTab === 'teams' && { fontFamily: 'Lato_700Bold', color: isDark ? '#fff' : colors.textInverse },
-          ]}>
-            Teams
-          </Text>
-          {invitations.length > 0 && (
-            <View style={styles.tabBadge}>
-              <Text style={styles.tabBadgeText}>{invitations.length}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Tab Content */}
-      {activeTab === 'activity' ? (
-        notificationsLoading ? (
-          <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />
-        ) : notifications.length > 0 ? (
-          <FlatList
-            data={notifications}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <ActivityRow
-                item={item}
-                colors={colors}
-                isDark={isDark}
-                onPress={handleNotificationPress}
-              />
-            )}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-            showsVerticalScrollIndicator={false}
-            refreshControl={activityRefreshControl}
-            onEndReached={() => {
-              if (hasNextPage && !isFetchingNextPage) {
-                fetchNextPage();
-              }
-            }}
-            onEndReachedThreshold={0.3}
-            ListFooterComponent={
-              isFetchingNextPage ? (
-                <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 16 }} />
-              ) : null
+          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={activityRefreshControl}
+          onEndReached={() => {
+            if (hasNextPage && !isFetchingNextPage) {
+              fetchNextPage();
             }
-          />
-        ) : (
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
-            showsVerticalScrollIndicator={false}
-            refreshControl={activityRefreshControl}
-          >
-            <View style={styles.emptyState}>
-              <Ionicons name="notifications-outline" size={40} color={colors.textTertiary} />
-              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No notifications yet</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
-                When someone follows you, RSVPs to your event, or sends you a payment, it will appear here.
-              </Text>
-            </View>
-          </ScrollView>
-        )
+          }}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 16 }} />
+            ) : null
+          }
+        />
       ) : (
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
           showsVerticalScrollIndicator={false}
-          refreshControl={teamsRefreshControl}
+          refreshControl={activityRefreshControl}
         >
-          {invitationsQuery.isLoading ? (
-            <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />
-          ) : invitations.length > 0 ? (
-            <View style={styles.invitationsList}>
-              {invitations.map((inv) => (
-                <TeamInvitationRow
-                  key={inv.id}
-                  invitation={inv}
-                  onAccept={handleAccept}
-                  onDecline={handleDecline}
-                  accepting={actionId === inv.id && actionType === 'accept'}
-                  declining={actionId === inv.id && actionType === 'decline'}
-                  colors={colors}
-                  isDark={isDark}
-                />
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={40} color={colors.textTertiary} />
-              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No team invitations</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
-                When someone invites you to their event team, it will appear here.
-              </Text>
-            </View>
-          )}
+          <View style={styles.emptyState}>
+            <Ionicons name="notifications-outline" size={40} color={colors.textTertiary} />
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No notifications yet</Text>
+          </View>
         </ScrollView>
       )}
 
@@ -673,5 +623,28 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+    backgroundColor: '#FF3B30',
+  },
+  actorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  actorAvatarWrapper: {
+    position: 'relative',
+    width: 40,
+    height: 40,
+  },
+  activityTypeBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#000',
   },
 });

@@ -106,7 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const login = async (partialUser: PartialUser, accessToken: string, refreshToken?: string) => {
+  const login = React.useCallback(async (partialUser: PartialUser, accessToken: string, refreshToken?: string) => {
     // Store tokens
     await apiClient.setAccessToken(accessToken);
     if (refreshToken) {
@@ -119,9 +119,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {      // Fallback to partial user if full fetch fails
       setUser(partialUser as unknown as User);
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = React.useCallback(async () => {
     try {
       await authApi.logout();
     } catch (error) {
@@ -133,22 +133,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       router.replace('/signin');
     }
-  };
+  }, [queryClient, router]);
 
-  const hasRole = (role: UserRole): boolean => {
+  const hasRole = React.useCallback((role: UserRole): boolean => {
     return user?.role === role;
-  };
+  }, [user?.role]);
 
-  const refreshUser = async () => {
+  const refreshUser = React.useCallback(async () => {
     try {
       const userData = await authApi.getCurrentUser();
       setUser(userData);
     } catch (error) {
       console.log('Failed to refresh user:', error);
     }
-  };
+  }, []);
 
-  const switchAccount = async (accessToken: string, refreshToken?: string): Promise<boolean> => {
+  const switchAccount = React.useCallback(async (accessToken: string, refreshToken?: string): Promise<boolean> => {
     try {
       // Clear previous user's cached data
       queryClient.clear();
@@ -168,18 +168,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // If switch fails, the tokens are still set - user might need to re-login
       return false;
     }
-  };
+  }, [queryClient]);
 
-  const value: AuthContextType = {
-    user,
-    isAuthenticated,
-    isLoading,
-    login,
-    logout,
-    switchAccount,
-    hasRole,
-    refreshUser,
-  };
+  const value = React.useMemo<AuthContextType>(
+    () => ({
+      user,
+      isAuthenticated,
+      isLoading,
+      login,
+      logout,
+      switchAccount,
+      hasRole,
+      refreshUser,
+    }),
+    [user, isAuthenticated, isLoading, login, logout, switchAccount, hasRole, refreshUser],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

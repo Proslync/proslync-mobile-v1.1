@@ -240,6 +240,13 @@ export default function DashboardScreen() {
               colors={colors}
             />
             <MenuItem
+              title="My List"
+              subtitle="Everyone who RSVP'd to your events"
+              icon="list-outline"
+              onPress={() => router.push("/dashboard/attendees")}
+              colors={colors}
+            />
+            <MenuItem
               title="Analytics"
               subtitle="View detailed insights"
               icon="bar-chart-outline"
@@ -251,13 +258,6 @@ export default function DashboardScreen() {
               subtitle="Track earnings and trends"
               icon="trending-up-outline"
               onPress={() => router.push("/dashboard/revenue")}
-              colors={colors}
-            />
-            <MenuItem
-              title="List"
-              subtitle="Everyone who RSVP'd to your events"
-              icon="list-outline"
-              onPress={() => router.push("/dashboard/attendees")}
               colors={colors}
             />
             <MenuItem

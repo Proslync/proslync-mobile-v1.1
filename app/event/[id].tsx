@@ -10,6 +10,7 @@ import {
   Platform,
   Linking,
   ActivityIndicator,
+  InteractionManager,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -135,31 +136,35 @@ export default function EventPage() {
     return groups;
   }, [eventTables]);
 
-  // Fetch event details
+  // Fetch event details — deferred until navigation animation completes
   React.useEffect(() => {
-    async function fetchEventDetails() {
-      if (!eventId) return;
-      try {
-        const numId = parseInt(eventId, 10);
-        if (isNaN(numId)) return;
-        const fetchedEvent = await eventsApi.getEvent(numId);
-        setEventData(fetchedEvent);
-        if (fetchedEvent.isUserRegistered) setIsRsvpd(true);
-        if (fetchedEvent.isPaid) setIsPaid(true);
-      } catch {} finally {
-        setIsFetchingEvent(false);
-      }
-    }
-    fetchEventDetails();
+    if (!eventId) return;
+    const task = InteractionManager.runAfterInteractions(() => {
+      (async () => {
+        try {
+          const numId = parseInt(eventId, 10);
+          if (isNaN(numId)) return;
+          const fetchedEvent = await eventsApi.getEvent(numId);
+          setEventData(fetchedEvent);
+          if (fetchedEvent.isUserRegistered) setIsRsvpd(true);
+          if (fetchedEvent.isPaid) setIsPaid(true);
+        } catch {} finally {
+          setIsFetchingEvent(false);
+        }
+      })();
+    });
+    return () => task.cancel();
   }, [eventId]);
 
-  // Track event page view
+  // Track event page view — deferred
   const { trackView } = useTrackEventView(
     numericEventId && !isNaN(numericEventId) ? numericEventId : undefined,
   );
 
   React.useEffect(() => {
-    if (numericEventId && !isNaN(numericEventId)) trackView();
+    if (!numericEventId || isNaN(numericEventId)) return;
+    const task = InteractionManager.runAfterInteractions(() => trackView());
+    return () => task.cancel();
   }, [numericEventId, trackView]);
 
   const handleBack = () => router.back();
@@ -371,7 +376,7 @@ export default function EventPage() {
         {/* Description */}
         {eventData?.description && (
           <View style={styles.descriptionSection}>
-            <Text style={[styles.descriptionText, { color: colors.textTertiary }]}>
+            <Text style={[styles.descriptionText, { color: colors.text }]}>
               {eventData.description}
             </Text>
           </View>

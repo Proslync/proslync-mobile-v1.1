@@ -944,9 +944,9 @@ function Composer({
         durationIntervalRef.current = null;
       }
 
-      // Stop recording
-      await recordingRef.current.stopAndUnloadAsync();
+      // Get URI before unloading (getURI returns null after stopAndUnloadAsync)
       const uri = recordingRef.current.getURI();
+      await recordingRef.current.stopAndUnloadAsync();
       const duration = recordingDuration;
 
       // Reset audio mode
@@ -1565,6 +1565,9 @@ export default function ChatThreadScreen() {
     return groups;
   }, [messages, otherReadAt]);
 
+  // Track whether initial scroll has happened
+  const hasInitiallyScrolled = useRef(false);
+
   // Auto-scroll to bottom when new messages arrive (not when loading older history)
   useEffect(() => {
     const prevCount = prevMessageCountRef.current;
@@ -1580,7 +1583,17 @@ export default function ChatThreadScreen() {
       // Initial load — scroll to bottom without animation
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
-      }, 100);
+      }, 200);
+    }
+  }, [messages.length]);
+
+  // Ensure scroll to bottom on content size change (catches layout after initial render)
+  const handleContentSizeChange = useCallback(() => {
+    if (!hasInitiallyScrolled.current && messages.length > 0) {
+      hasInitiallyScrolled.current = true;
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 50);
     }
   }, [messages.length]);
 
@@ -1736,9 +1749,10 @@ export default function ChatThreadScreen() {
     setShowChatInfo(false);
     if (channelInfo?.otherMember) {
       router.push({
-        pathname: "/user-profile/[userId]",
+        pathname: "/user/[username]",
         params: {
-          userId: channelInfo.otherMember.id,
+          username: channelInfo.otherMember.userName || "_",
+          userId: String(channelInfo.otherMember.id),
         },
       });
     }
@@ -1797,8 +1811,8 @@ export default function ChatThreadScreen() {
       if (member.id === user?.id) return;
       setShowChatInfo(false);
       router.push({
-        pathname: "/user-profile/[userId]",
-        params: { userId: String(member.id) },
+        pathname: "/user/[username]",
+        params: { username: member.userName || "_", userId: String(member.id) },
       });
     },
     [user?.id, router],
@@ -2012,6 +2026,7 @@ export default function ChatThreadScreen() {
             messages.length === 0 ? styles.emptyList : styles.messagesList
           }
           onScroll={handleScroll}
+          onContentSizeChange={handleContentSizeChange}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           inverted={false}

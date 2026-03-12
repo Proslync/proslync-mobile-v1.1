@@ -1,6 +1,7 @@
 // Wallet Provider - Connects to Stripe Connect API for earnings & payouts
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
+import { InteractionManager } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
 import {
@@ -429,9 +430,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
       return;
     }
 
-    // Fetch all wallet data
-    const loadWalletData = async () => {
-      setIsLoading(true);
+    // Defer wallet data fetch until animations settle
+    setIsLoading(true);
+    const task = InteractionManager.runAfterInteractions(async () => {
       try {
         const [status] = await Promise.all([
           fetchAccountStatus(),
@@ -439,7 +440,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
           fetchPromos(),
         ]);
 
-        // Only fetch financial data if account is set up
         if (status?.hasAccount && status.payoutsEnabled) {
           await Promise.all([
             fetchBalance(),
@@ -452,9 +452,9 @@ export function WalletProvider({ children }: WalletProviderProps) {
       } finally {
         setIsLoading(false);
       }
-    };
+    });
 
-    loadWalletData();
+    return () => task.cancel();
   }, [isAuthenticated, fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchTicketsAndEvents, fetchPromos]);
 
   const refreshWallet = useCallback(async () => {
@@ -480,26 +480,28 @@ export function WalletProvider({ children }: WalletProviderProps) {
     }
   }, [fetchAccountStatus, fetchBalance, fetchPayoutMethods, fetchTransactions, fetchTicketsAndEvents, fetchPromos]);
 
-  const value: ExtendedWalletContextType = {
-    user,
-    balances,
-    payoutMethods,
-    transactions,
-    offers,
-    events,
-    isLoading,
-    withdraw,
-    claimOffer,
-    addPayoutMethod,
-    removePayoutMethod,
-    setDefaultPayoutMethod,
-    clearPendingTransaction,
-    refreshWallet,
-    // Extended Stripe Connect features
-    stripeAccountStatus,
-    setupStripeAccount,
-    openStripeDashboard,
-  };
+  const value = React.useMemo<ExtendedWalletContextType>(
+    () => ({
+      user,
+      balances,
+      payoutMethods,
+      transactions,
+      offers,
+      events,
+      isLoading,
+      withdraw,
+      claimOffer,
+      addPayoutMethod,
+      removePayoutMethod,
+      setDefaultPayoutMethod,
+      clearPendingTransaction,
+      refreshWallet,
+      stripeAccountStatus,
+      setupStripeAccount,
+      openStripeDashboard,
+    }),
+    [user, balances, payoutMethods, transactions, offers, events, isLoading, withdraw, claimOffer, addPayoutMethod, removePayoutMethod, setDefaultPayoutMethod, clearPendingTransaction, refreshWallet, stripeAccountStatus, setupStripeAccount, openStripeDashboard],
+  );
 
   return (
     <WalletContext.Provider value={value}>{children}</WalletContext.Provider>
