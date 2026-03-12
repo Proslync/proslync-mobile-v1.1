@@ -59,17 +59,6 @@ interface ListContact {
   checkInStatus: "approved" | "denied";
 }
 
-function formatTimeAgo(dateStr?: string): string {
-  if (!dateStr) return "";
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
 function formatDate(dateStr?: string): string {
   if (!dateStr) return "";
   const d = new Date(dateStr);
@@ -96,12 +85,16 @@ function mapAttendee(a: EventAttendee): ListContact {
   const isCheckedIn =
     a.checkedIn ||
     a.status === EventUserStatus.CHECKED_IN ||
-    a.status === EventUserStatus.VERIFIED;
+    a.status === EventUserStatus.VERIFIED ||
+    a.status === EventUserStatus.CONFIRMED;
   let source = "check_in";
   if (a.status === EventUserStatus.SIGNED_UP) source = "rsvp";
   else if (a.isRegistered && !isCheckedIn) source = "rsvp";
   const checkInStatus =
-    a.status === EventUserStatus.REJECTED ? "denied" : "approved";
+    a.status === EventUserStatus.REJECTED ||
+    a.status === EventUserStatus.CANCELLED
+      ? "denied"
+      : "approved";
   return {
     id: a.id,
     name,
@@ -465,7 +458,9 @@ function CheckInsContent() {
           EventUserStatus.VERIFIED,
           EventUserStatus.CHECKED_IN,
           EventUserStatus.SIGNED_UP,
+          EventUserStatus.CONFIRMED,
           EventUserStatus.REJECTED,
+          EventUserStatus.CANCELLED,
         ],
       });
       const mapped = response.attendees.map(mapAttendee);
@@ -524,7 +519,10 @@ function CheckInsContent() {
           lastSeenAt: data.checkedInAt || new Date().toISOString(),
           paid: false,
           userId: data.userId,
-          checkInStatus: data.status === "rejected" ? "denied" : "approved",
+          checkInStatus:
+            data.status === "rejected" || data.status === "cancelled"
+              ? "denied"
+              : "approved",
         };
         setContacts((prev) => {
           // Replace if already exists (e.g. membership scan updates a guest entry)
@@ -717,16 +715,6 @@ function CheckInsContent() {
                     ]}
                   >
                     {item.eventCount} events
-                  </Text>
-                )}
-                {item.lastSeenAt && (
-                  <Text
-                    style={[
-                      styles.guestMetaText,
-                      { color: colors.textTertiary },
-                    ]}
-                  >
-                    {formatTimeAgo(item.lastSeenAt)}
                   </Text>
                 )}
               </View>

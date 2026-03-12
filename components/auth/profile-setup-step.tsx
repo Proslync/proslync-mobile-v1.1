@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 import {
   View,
   Text,
@@ -9,17 +9,17 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   FadeInDown,
   FadeInUp,
   FadeIn,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { authApi } from '@/lib/api/auth';
-import { useAuth } from '@/lib/providers/auth-provider';
-import { handleApiError } from '@/lib/api/errors';
-import { useAppTheme } from '@/hooks/use-app-theme';
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { authApi } from "@/lib/api/auth";
+import { useAuth } from "@/lib/providers/auth-provider";
+import { handleApiError } from "@/lib/api/errors";
+import { useAppTheme } from "@/hooks/use-app-theme";
 
 interface ProfileSetupStepProps {
   onSuccess: () => void;
@@ -27,15 +27,17 @@ interface ProfileSetupStepProps {
 }
 
 export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
-  const [firstName, setFirstName] = React.useState('');
-  const [lastName, setLastName] = React.useState('');
-  const [userName, setUserName] = React.useState('');
+  const [firstName, setFirstName] = React.useState("");
+  const [lastName, setLastName] = React.useState("");
+  const [userName, setUserName] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   // Username availability
   const [isCheckingUsername, setIsCheckingUsername] = React.useState(false);
-  const [usernameAvailable, setUsernameAvailable] = React.useState<boolean | null>(null);
+  const [usernameAvailable, setUsernameAvailable] = React.useState<
+    boolean | null
+  >(null);
   const [usernameError, setUsernameError] = React.useState<string | null>(null);
 
   const insets = useSafeAreaInsets();
@@ -56,7 +58,7 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
     if (!userName || userName.length < 3) return;
 
     if (!isValidUsername(userName)) {
-      setUsernameError('Letters, numbers, and underscores only');
+      setUsernameError("Letters, numbers, and underscores only");
       return;
     }
 
@@ -84,7 +86,7 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
 
   const handleUsernameChange = (text: string) => {
     // Strip spaces and special chars except underscores
-    const cleaned = text.replace(/[^a-zA-Z0-9_]/g, '');
+    const cleaned = text.replace(/[^a-zA-Z0-9_]/g, "");
     setUserName(cleaned);
     if (error) setError(null);
   };
@@ -112,7 +114,8 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
       await refreshUser();
       onSuccess();
     } catch (err) {
-      const message = err instanceof Error ? handleApiError(err) : 'Failed to create profile';
+      const message =
+        err instanceof Error ? handleApiError(err) : "Failed to create profile";
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -122,9 +125,14 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+      <View
+        style={[
+          styles.content,
+          { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
+        ]}
+      >
         {/* Back Button */}
         {onBack && (
           <Animated.View
@@ -149,7 +157,7 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
           style={styles.logoContainer}
         >
           <Image
-            source={require('@/assets/images/status_logo.png')}
+            source={require("@/assets/images/status_logo.png")}
             style={[styles.logo, { tintColor: colors.text }]}
             resizeMode="contain"
           />
@@ -180,9 +188,12 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
             style={[styles.textInput, { color: colors.text }]}
             placeholder="First Name"
             placeholderTextColor={colors.placeholder}
-            keyboardAppearance={isDark ? 'dark' : 'light'}
+            keyboardAppearance={isDark ? "dark" : "light"}
             value={firstName}
-            onChangeText={(t) => { setFirstName(t); if (error) setError(null); }}
+            onChangeText={(t) => {
+              setFirstName(t);
+              if (error) setError(null);
+            }}
             autoFocus
             autoCapitalize="words"
             autoCorrect={false}
@@ -198,16 +209,22 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
         {/* Last Name */}
         <Animated.View
           entering={FadeInDown.duration(600).delay(550)}
-          style={[styles.inputContainer, { backgroundColor: colors.input, marginTop: 12 }]}
+          style={[
+            styles.inputContainer,
+            { backgroundColor: colors.input, marginTop: 14 },
+          ]}
         >
           <TextInput
             ref={lastNameRef}
             style={[styles.textInput, { color: colors.text }]}
             placeholder="Last Name"
             placeholderTextColor={colors.placeholder}
-            keyboardAppearance={isDark ? 'dark' : 'light'}
+            keyboardAppearance={isDark ? "dark" : "light"}
             value={lastName}
-            onChangeText={(t) => { setLastName(t); if (error) setError(null); }}
+            onChangeText={(t) => {
+              setLastName(t);
+              if (error) setError(null);
+            }}
             autoCapitalize="words"
             autoCorrect={false}
             returnKeyType="next"
@@ -222,15 +239,20 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
         {/* Username */}
         <Animated.View
           entering={FadeInDown.duration(600).delay(600)}
-          style={[styles.inputContainer, { backgroundColor: colors.input, marginTop: 12 }]}
+          style={[
+            styles.inputContainer,
+            { backgroundColor: colors.input, marginTop: 14 },
+          ]}
         >
-          <Text style={[styles.atPrefix, { color: colors.textSecondary }]}>@</Text>
+          <Text style={[styles.atPrefix, { color: colors.textSecondary }]}>
+            @
+          </Text>
           <TextInput
             ref={userNameRef}
             style={[styles.textInput, { color: colors.text, paddingLeft: 0 }]}
             placeholder="username"
             placeholderTextColor={colors.placeholder}
-            keyboardAppearance={isDark ? 'dark' : 'light'}
+            keyboardAppearance={isDark ? "dark" : "light"}
             value={userName}
             onChangeText={handleUsernameChange}
             autoCapitalize="none"
@@ -293,7 +315,10 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
           style={styles.buttonContainer}
         >
           <TouchableOpacity
-            style={[styles.button, (!isFormValid || isSubmitting) && styles.buttonDisabled]}
+            style={[
+              styles.button,
+              (!isFormValid || isSubmitting) && styles.buttonDisabled,
+            ]}
             onPress={handleSubmit}
             disabled={!isFormValid || isSubmitting}
             activeOpacity={0.7}
@@ -319,24 +344,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   backButtonContainer: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   backButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   backIcon: {
     fontSize: 22,
   },
   topSpacer: {
-    height: 40,
+    height: 20,
   },
   logoContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
+    alignItems: "center",
+    marginBottom: 16,
   },
   logo: {
     width: 120,
@@ -344,19 +369,19 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 8,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 40,
+    textAlign: "center",
+    marginBottom: 24,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
     borderRadius: 12,
   },
   textInput: {
@@ -367,61 +392,62 @@ const styles = StyleSheet.create({
   },
   atPrefix: {
     fontSize: 17,
-    fontWeight: '500',
+    fontWeight: "500",
     paddingLeft: 16,
   },
   availabilityIndicator: {
     paddingRight: 16,
   },
   availableIcon: {
-    color: '#4ade80',
+    color: "#4ade80",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   takenIcon: {
-    color: '#ff6b6b',
+    color: "#ff6b6b",
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   usernameError: {
-    color: '#ff6b6b',
+    color: "#ff6b6b",
     fontSize: 13,
     marginTop: 8,
     paddingLeft: 4,
   },
   usernameAvailable: {
-    color: '#4ade80',
+    color: "#4ade80",
     fontSize: 13,
     marginTop: 8,
     paddingLeft: 4,
   },
   errorText: {
-    color: '#ff6b6b',
+    color: "#ff6b6b",
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 16,
   },
   spacer: {
     flex: 1,
+    minHeight: 24,
   },
   buttonContainer: {
-    width: '100%',
-    marginBottom: 16,
+    width: "100%",
+    marginBottom: 20,
   },
   button: {
-    width: '100%',
+    width: "100%",
     height: 56,
-    backgroundColor: '#3897F0',
+    backgroundColor: "#3897F0",
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

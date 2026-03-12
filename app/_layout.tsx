@@ -13,7 +13,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import "react-native-reanimated";
+import { enableFreeze } from "react-native-screens";
 import { registerGlobals } from "@livekit/react-native";
+
+enableFreeze(true);
 
 registerGlobals();
 
@@ -48,10 +51,11 @@ function useNotificationObserver() {
     }
 
     // Foreground + background — user taps notification while app is running
-    const subscription =
-      Notifications.addNotificationResponseReceivedListener((response) => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
         redirect(response.notification);
-      });
+      },
+    );
 
     return () => {
       subscription.remove();
@@ -65,62 +69,57 @@ function RootLayoutNav() {
 
   return (
     <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "ios_from_right",
+          gestureEnabled: true,
+          fullScreenGestureEnabled: true,
+          fullScreenGestureShadowEnabled: true,
+          gestureDirection: "horizontal",
+          customAnimationOnGesture: true,
+          animationMatchesGesture: true,
+          animationDuration: 350,
+          freezeOnBlur: true,
+          gestureResponseDistance: 300,
+        }}
+      >
         <Stack.Screen name="index" />
         <Stack.Screen
           name="signin"
-          options={{ presentation: "modal", animation: "slide_from_bottom", gestureEnabled: true }}
-        />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="chat/[conversationId]"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="new-message"
-          options={{ presentation: "modal", animation: "slide_from_bottom" }}
-        />
-        <Stack.Screen
-          name="user-profile/[userId]"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="event/[id]"
           options={{
-            animation: "slide_from_right",
+            presentation: "modal",
+            animation: "slide_from_bottom",
+            gestureEnabled: true,
+            fullScreenGestureEnabled: false,
           }}
         />
+        <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+        <Stack.Screen name="chat/[conversationId]" />
         <Stack.Screen
-          name="post/[id]"
-          options={{ animation: "slide_from_right" }}
+          name="new-message"
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom",
+            fullScreenGestureEnabled: false,
+          }}
         />
-        <Stack.Screen
-          name="edit-profile"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="dashboard"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="create-event"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="my-events"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="manage-event/[id]"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="manage-venue/[id]"
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="user-profile/[userId]" />
+        <Stack.Screen name="event/[id]" />
+        <Stack.Screen name="post/[id]" />
+        <Stack.Screen name="edit-profile" />
+        <Stack.Screen name="dashboard" />
+        <Stack.Screen name="create-event" />
+        <Stack.Screen name="my-events" />
+        <Stack.Screen name="manage-event/[id]" />
+        <Stack.Screen name="manage-venue/[id]" />
         <Stack.Screen
           name="create-post"
-          options={{ presentation: "modal", animation: "slide_from_bottom" }}
+          options={{
+            presentation: "modal",
+            animation: "slide_from_bottom",
+            fullScreenGestureEnabled: false,
+          }}
         />
         <Stack.Screen
           name="call"
@@ -128,6 +127,7 @@ function RootLayoutNav() {
             presentation: "fullScreenModal",
             animation: "slide_from_bottom",
             gestureEnabled: false,
+            fullScreenGestureEnabled: false,
           }}
         />
         <Stack.Screen
@@ -135,6 +135,7 @@ function RootLayoutNav() {
           options={{
             presentation: "fullScreenModal",
             animation: "slide_from_bottom",
+            fullScreenGestureEnabled: false,
           }}
         />
         <Stack.Screen
@@ -142,39 +143,26 @@ function RootLayoutNav() {
           options={{
             presentation: "fullScreenModal",
             animation: "slide_from_bottom",
+            fullScreenGestureEnabled: false,
           }}
         />
-        <Stack.Screen
-          name="tap-to-pay"
-          options={{ animation: "slide_from_right" }}
-        />
+        <Stack.Screen name="tap-to-pay" />
         <Stack.Screen
           name="wallet"
-          options={{ headerShown: false, animation: "none" }}
+          options={{ animation: "none", gestureEnabled: false }}
         />
-        <Stack.Screen
-          name="notifications"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="settings"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-name="notification-settings"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="privacy-settings"
-          options={{ animation: "slide_from_right" }}
-        />
-        <Stack.Screen
-          name="admin"
-          options={{ headerShown: false, animation: "slide_from_right" }}
-        />
+        <Stack.Screen name="notifications" />
+        <Stack.Screen name="settings" />
+        <Stack.Screen name="notification-settings" />
+        <Stack.Screen name="privacy-settings" />
+        <Stack.Screen name="admin" />
         <Stack.Screen
           name="modal"
-          options={{ presentation: "modal", title: "Modal" }}
+          options={{
+            presentation: "modal",
+            title: "Modal",
+            fullScreenGestureEnabled: false,
+          }}
         />
       </Stack>
       <StatusBar style={isDark ? "light" : "dark"} />
@@ -222,19 +210,19 @@ export default function RootLayout() {
             <ToastProvider>
               <AuthProvider>
                 <ChatSocketProvider>
-                <CallProvider>
-                  <TerminalProvider>
-                    <LiveLocationProvider>
-                      <TabNavigationProvider>
-                        <WalletProvider>
-                          <BottomSheetModalProvider>
-                            <RootLayoutNav />
-                          </BottomSheetModalProvider>
-                        </WalletProvider>
-                      </TabNavigationProvider>
-                    </LiveLocationProvider>
-                  </TerminalProvider>
-                </CallProvider>
+                  <CallProvider>
+                    <TerminalProvider>
+                      <LiveLocationProvider>
+                        <TabNavigationProvider>
+                          <WalletProvider>
+                            <BottomSheetModalProvider>
+                              <RootLayoutNav />
+                            </BottomSheetModalProvider>
+                          </WalletProvider>
+                        </TabNavigationProvider>
+                      </LiveLocationProvider>
+                    </TerminalProvider>
+                  </CallProvider>
                 </ChatSocketProvider>
               </AuthProvider>
             </ToastProvider>
