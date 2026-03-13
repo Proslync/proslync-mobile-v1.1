@@ -56,7 +56,7 @@ export default function StripeOnboardingScreen() {
 
   const [stepIndex, setStepIndex] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isComplete, setIsComplete] = useState(false); // TODO: revert to false
+  const [isComplete, setIsComplete] = useState(false);
 
   const createAccount = useCreateCustomAccount();
   const updateAccount = useUpdateCustomAccount();

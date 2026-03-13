@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
-import type { StripeAccountStatus } from '@/lib/api/wallet';
+import { needsDocumentUpload, type StripeAccountStatus } from '@/lib/api/wallet';
 
 interface OnboardingCardProps {
   onSetup: () => Promise<void>;
@@ -22,6 +22,7 @@ export function OnboardingCard({ onSetup, onCheckStatus, isSettingUp, accountSta
     (accountStatus?.requirements?.pastDue?.length ?? 0) > 0;
   const isRestricted = accountStatus?.onboardingStatus === 'restricted';
   const isInProgress = accountStatus?.onboardingStatus === 'in_progress';
+  const needsDocUpload = needsDocumentUpload(accountStatus?.requirements, accountStatus?.futureRequirements);
 
   // Details submitted and no outstanding requirements — Stripe is reviewing
   const isPendingReview = (detailsSubmitted && !hasRequirements) || isInProgress;
@@ -31,17 +32,19 @@ export function OnboardingCard({ onSetup, onCheckStatus, isSettingUp, accountSta
       <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.container}>
         <View style={styles.iconContainer}>
           <Ionicons
-            name={isPendingReview ? 'time-outline' : isRestricted ? 'alert-circle-outline' : 'wallet-outline'}
+            name={isPendingReview ? 'time-outline' : needsDocUpload ? 'document-text-outline' : isRestricted ? 'alert-circle-outline' : 'wallet-outline'}
             size={56}
-            color={isRestricted ? '#f59e0b' : '#fff'}
+            color={isRestricted || needsDocUpload ? '#f59e0b' : '#fff'}
           />
         </View>
         <Text style={styles.title}>
-          {isPendingReview ? 'Under Review' : isRestricted ? 'Action Required' : 'Set Up Payouts'}
+          {isPendingReview ? 'Under Review' : needsDocUpload ? 'Document Required' : isRestricted ? 'Action Required' : 'Set Up Payouts'}
         </Text>
         <Text style={styles.description}>
           {isPendingReview
             ? 'Your application has been submitted and is being reviewed by Stripe. This usually takes a few minutes.'
+            : needsDocUpload
+            ? 'Stripe needs a document to verify your account. Upload a bank statement or ID to continue.'
             : isRestricted
             ? 'Stripe needs additional information to verify your account. Tap below to resolve.'
             : 'Connect your bank account or debit card to receive earnings from ticket sales and tips.'}
@@ -71,8 +74,8 @@ export function OnboardingCard({ onSetup, onCheckStatus, isSettingUp, accountSta
             </View>
           ) : (
             <GlassButton
-              label={isPendingReview ? 'Check Status' : hasRequirements ? 'Continue Setup' : 'Connect Payout Account'}
-              icon={<Ionicons name={isPendingReview ? 'refresh' : 'link'} size={20} color="#fff" />}
+              label={isPendingReview ? 'Check Status' : needsDocUpload ? 'Upload Document' : hasRequirements ? 'Continue Setup' : 'Connect Payout Account'}
+              icon={<Ionicons name={isPendingReview ? 'refresh' : needsDocUpload ? 'cloud-upload-outline' : 'link'} size={20} color="#fff" />}
               variant="glass"
               size="lg"
               onPress={isPendingReview && onCheckStatus ? onCheckStatus : onSetup}

@@ -70,6 +70,12 @@ export async function getMembershipCard(): Promise<MembershipCardResponse> {
 }
 
 
+export interface StripeRequirements {
+  currentlyDue: string[];
+  eventuallyDue: string[];
+  pastDue: string[];
+}
+
 export interface StripeAccountStatus {
   hasAccount: boolean;
   accountId?: string;
@@ -77,11 +83,8 @@ export interface StripeAccountStatus {
   chargesEnabled: boolean;
   payoutsEnabled: boolean;
   detailsSubmitted: boolean;
-  requirements?: {
-    currentlyDue: string[];
-    eventuallyDue: string[];
-    pastDue: string[];
-  };
+  requirements?: StripeRequirements;
+  futureRequirements?: StripeRequirements;
 }
 
 export interface CreateAccountResponse {
@@ -276,6 +279,63 @@ export interface TransferFundsResponse {
   }>;
 }
 
+// Document verification types
+export type DocumentType = 'bank_account_ownership_verification' | 'identity_document';
+export type DocumentSide = 'front' | 'back';
+
+export interface UploadDocumentResponse {
+  fileId: string;
+  documentType: DocumentType;
+  success: boolean;
+}
+
+// Document requirement detection helpers
+const DOCUMENT_REQUIREMENT_PATTERNS = [
+  'documents.bank_account_ownership_verification',
+  'individual.verification.document',
+];
+
+function collectDueRequirements(
+  requirements?: StripeRequirements,
+  futureRequirements?: StripeRequirements,
+): string[] {
+  const items: string[] = [];
+  if (requirements) {
+    items.push(...(requirements.currentlyDue ?? []), ...(requirements.pastDue ?? []), ...(requirements.eventuallyDue ?? []));
+  }
+  if (futureRequirements) {
+    items.push(...(futureRequirements.currentlyDue ?? []), ...(futureRequirements.pastDue ?? []), ...(futureRequirements.eventuallyDue ?? []));
+  }
+  return items;
+}
+
+export function needsDocumentUpload(
+  requirements?: StripeRequirements,
+  futureRequirements?: StripeRequirements,
+): boolean {
+  const allDue = collectDueRequirements(requirements, futureRequirements);
+  return allDue.some(req =>
+    DOCUMENT_REQUIREMENT_PATTERNS.some(pattern => req.includes(pattern))
+  );
+}
+
+export function getRequiredDocumentTypes(
+  requirements?: StripeRequirements,
+  futureRequirements?: StripeRequirements,
+): DocumentType[] {
+  const allDue = collectDueRequirements(requirements, futureRequirements);
+  const types: DocumentType[] = [];
+
+  if (allDue.some(req => req.includes('documents.bank_account_ownership_verification'))) {
+    types.push('bank_account_ownership_verification');
+  }
+  if (allDue.some(req => req.includes('individual.verification.document'))) {
+    types.push('identity_document');
+  }
+
+  return types;
+}
+
 export const stripeConnectApi = {
   getAccountStatus: async (): Promise<StripeAccountStatus> => {
     return apiClient.get<StripeAccountStatus>('/api/stripe-connect/accounts/status');
@@ -299,6 +359,22 @@ export const stripeConnectApi = {
 
   getDashboardLink: async (): Promise<DashboardLinkResponse> => {
     return apiClient.get<DashboardLinkResponse>('/api/stripe-connect/accounts/dashboard-link');
+  },
+
+  uploadDocument: async (
+    fileUri: string,
+    documentType: DocumentType,
+    documentSide: DocumentSide = 'front',
+  ): Promise<UploadDocumentResponse> => {
+    const fileName = fileUri.split('/').pop() || 'document.jpg';
+    const fileType = fileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg';
+    const queryParams = `documentType=${documentType}&documentSide=${documentSide}`;
+
+    return apiClient.uploadFile<UploadDocumentResponse>(
+      `/api/stripe-connect/accounts/upload-document?${queryParams}`,
+      { uri: fileUri, name: fileName, type: fileType },
+      'file',
+    );
   },
 
   deleteAccount: async (): Promise<void> => {

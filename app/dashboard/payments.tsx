@@ -27,6 +27,7 @@ import {
 } from "@/hooks/use-wallet-queries";
 import {
   stripeConnectApi,
+  needsDocumentUpload,
   type EarningsItem,
   type PayoutItem,
   type StripeAccountStatus,
@@ -126,6 +127,10 @@ export default function PaymentsScreen() {
   const isAccountActive =
     !!accountStatus?.chargesEnabled && !!accountStatus?.payoutsEnabled;
   const needsSetup = !isAccountActive;
+  const hasDocRequirement = needsDocumentUpload(
+    accountStatus?.requirements,
+    accountStatus?.futureRequirements,
+  );
 
   // Derived data
   const availableCents = Array.isArray(balance?.available)
@@ -146,7 +151,9 @@ export default function PaymentsScreen() {
   };
 
   const handleSetup = async () => {
-    if (accountStatus?.hasAccount) {
+    if (accountStatus?.hasAccount && needsDocumentUpload(accountStatus?.requirements, accountStatus?.futureRequirements)) {
+      router.push("/stripe-document-upload");
+    } else if (accountStatus?.hasAccount) {
       router.push("/stripe-onboarding?from=dashboard&mode=update");
     } else {
       router.push("/stripe-onboarding?from=dashboard");
@@ -285,6 +292,30 @@ export default function PaymentsScreen() {
             />
           }
         >
+          {/* Document upload warning banner */}
+          {hasDocRequirement && (
+            <Animated.View entering={FadeInDown.duration(300)}>
+              <TouchableOpacity
+                style={styles.docBanner}
+                onPress={() => router.push("/stripe-document-upload")}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="document-text-outline"
+                  size={20}
+                  color="#f59e0b"
+                />
+                <Text style={styles.docBannerText}>
+                  Document verification required. Tap to upload.
+                </Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color="rgba(255,255,255,0.5)"
+                />
+              </TouchableOpacity>
+            </Animated.View>
+          )}
           <BalanceCard
             availableCents={availableCents}
             pendingCents={balancesForSheet.pendingCents}
@@ -490,6 +521,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Lato_400Regular",
     color: "rgba(255, 255, 255, 0.5)",
+  },
+  docBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    backgroundColor: "rgba(245, 158, 11, 0.12)",
+    borderColor: "rgba(245, 158, 11, 0.25)",
+  },
+  docBannerText: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Lato_600SemiBold",
+    color: "#fff",
   },
   header: {
     flexDirection: "row",

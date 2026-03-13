@@ -14,6 +14,9 @@ import {
   type CreateCustomAccountRequest,
   type CreateCustomAccountResponse,
   type UpdateCustomAccountRequest,
+  type UploadDocumentResponse,
+  type DocumentType,
+  type DocumentSide,
 } from '@/lib/api/wallet';
 
 
@@ -90,6 +93,21 @@ export function useUpdateCustomAccount() {
   const queryClient = useQueryClient();
   return useMutation<CreateCustomAccountResponse, Error, UpdateCustomAccountRequest>({
     mutationFn: (data) => stripeConnectApi.updateCustomAccount(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] });
+    },
+  });
+}
+
+export function useUploadDocument() {
+  const queryClient = useQueryClient();
+  return useMutation<
+    UploadDocumentResponse,
+    Error,
+    { fileUri: string; documentType: DocumentType; documentSide?: DocumentSide }
+  >({
+    mutationFn: ({ fileUri, documentType, documentSide }) =>
+      stripeConnectApi.uploadDocument(fileUri, documentType, documentSide),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] });
     },
