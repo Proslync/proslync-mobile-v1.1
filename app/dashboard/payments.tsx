@@ -1,52 +1,62 @@
 // Dashboard Payments Screen - Tabbed wallet dashboard with earnings, payouts, and overview
 
-import React, { useState, useCallback } from 'react';
+import { GlassSurface } from "@/components/glass/glass-surface";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { SegmentedControl } from "@/components/shared/segmented-control";
+import { useToast } from "@/components/shared/toast";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeInDown, FadeInRight, FadeInLeft, FadeOutRight, FadeOutLeft } from 'react-native-reanimated';
-import { useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
-import * as Linking from 'expo-linking';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { useToast } from '@/components/shared/toast';
-import { SegmentedControl } from '@/components/shared/segmented-control';
-import {
+  AccountStatusCard,
   BalanceCard,
-  OnboardingCard,
   EarningsList,
+  OnboardingCard,
   PayoutsList,
   WithdrawalSheet,
-  AccountStatusCard,
-} from '@/components/wallet';
-import { GlassSurface } from '@/components/glass/glass-surface';
+} from "@/components/wallet";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import {
-  useStripeAccountStatus,
-  useStripeBalance,
-  useExternalAccounts,
-  useEarnings,
-  usePayouts,
-  useSetupStripeAccount,
   STRIPE_ACCOUNT_STATUS_KEY,
   STRIPE_BALANCE_KEY,
-  STRIPE_EXTERNAL_ACCOUNTS_KEY,
   STRIPE_EARNINGS_KEY,
+  STRIPE_EXTERNAL_ACCOUNTS_KEY,
   STRIPE_PAYOUTS_KEY,
-} from '@/hooks/use-wallet-queries';
-import { stripeConnectApi, type EarningsItem, type PayoutItem, type StripeAccountStatus } from '@/lib/api/wallet';
-import type { WalletBalances, PayoutMethod } from '@/lib/types/wallet.types';
+  useEarnings,
+  useExternalAccounts,
+  usePayouts,
+  useStripeAccountStatus,
+  useStripeBalance,
+} from "@/hooks/use-wallet-queries";
+import {
+  stripeConnectApi,
+  type EarningsItem,
+  type PayoutItem,
+  type StripeAccountStatus,
+} from "@/lib/api/wallet";
+import type { PayoutMethod, WalletBalances } from "@/lib/types/wallet.types";
+import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  FadeInLeft,
+  FadeInRight,
+  FadeOutLeft,
+  FadeOutRight,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const TAB_SEGMENTS = ['Overview', 'Earnings', 'Payouts'];
+const TAB_SEGMENTS = ["Overview", "Earnings", "Payouts"];
 
 function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -57,10 +67,12 @@ function formatCents(cents: number): string {
 function toPayoutMethod(account: any): PayoutMethod {
   return {
     id: account.id,
-    type: (account.type ?? account.object) === 'bank_account' ? 'bank' : 'debit',
-    label: account.bankName ?? account.bank_name ?? account.brand ?? 'Account',
+    type:
+      (account.type ?? account.object) === "bank_account" ? "bank" : "debit",
+    label: account.bankName ?? account.bank_name ?? account.brand ?? "Account",
     last4: account.last4,
-    isDefault: account.defaultForCurrency ?? account.default_for_currency ?? false,
+    isDefault:
+      account.defaultForCurrency ?? account.default_for_currency ?? false,
   };
 }
 
@@ -75,39 +87,44 @@ export default function PaymentsScreen() {
   const [selectedTab, setSelectedTab] = useState(0);
   const previousTabRef = React.useRef(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isSettingUp, setIsSettingUp] = useState(false);
   const [withdrawalSheetVisible, setWithdrawalSheetVisible] = useState(false);
-  const [setupResult, setSetupResult] = useState<'success' | 'pending' | null>(null);
+  const [setupResult, setSetupResult] = useState<"success" | "pending" | null>(
+    null,
+  );
   const setupHandledRef = React.useRef(false);
 
   // React Query hooks — all fetch independently (matching web app pattern)
-  const { data: accountStatus, isLoading: statusLoading } = useStripeAccountStatus();
+  const { data: accountStatus, isLoading: statusLoading } =
+    useStripeAccountStatus();
   const { data: balance } = useStripeBalance();
   const { data: externalAccounts } = useExternalAccounts();
   const { data: earningsData } = useEarnings();
   const { data: payoutsData } = usePayouts();
-  const setupMutation = useSetupStripeAccount();
-
   // Handle return from Stripe onboarding deep link
   React.useEffect(() => {
     if (!setup || setupHandledRef.current) return;
     setupHandledRef.current = true;
 
     // Refetch account status from Stripe, then show result based on actual state
-    queryClient.refetchQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] }).then(() => {
-      const fresh = queryClient.getQueryData<StripeAccountStatus>([STRIPE_ACCOUNT_STATUS_KEY]);
-      if (fresh?.chargesEnabled && fresh?.payoutsEnabled) {
-        setSetupResult('success');
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else {
-        setSetupResult('pending');
-      }
-      setTimeout(() => setSetupResult(null), 4000);
-    });
+    queryClient
+      .refetchQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] })
+      .then(() => {
+        const fresh = queryClient.getQueryData<StripeAccountStatus>([
+          STRIPE_ACCOUNT_STATUS_KEY,
+        ]);
+        if (fresh?.chargesEnabled && fresh?.payoutsEnabled) {
+          setSetupResult("success");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } else {
+          setSetupResult("pending");
+        }
+        setTimeout(() => setSetupResult(null), 4000);
+      });
   }, [setup, queryClient]);
 
   // Account active = chargesEnabled && payoutsEnabled (matches web app)
-  const isAccountActive = !!accountStatus?.chargesEnabled && !!accountStatus?.payoutsEnabled;
+  const isAccountActive =
+    !!accountStatus?.chargesEnabled && !!accountStatus?.payoutsEnabled;
   const needsSetup = !isAccountActive;
 
   // Derived data
@@ -129,33 +146,24 @@ export default function PaymentsScreen() {
   };
 
   const handleSetup = async () => {
-    try {
-      setIsSettingUp(true);
-      await setupMutation.mutateAsync();
-    } catch (error: any) {
-      toast.showError(error?.message || 'Failed to set up payout account');
-    } finally {
-      setIsSettingUp(false);
-    }
-  };
-
-  const handleOpenDashboard = async () => {
-    try {
-      const response = await stripeConnectApi.getDashboardLink();
-      await Linking.openURL(response.url);
-    } catch (error: any) {
-      toast.showError(error?.message || 'Failed to open Stripe dashboard');
+    if (accountStatus?.hasAccount) {
+      router.push("/stripe-onboarding?from=dashboard&mode=update");
+    } else {
+      router.push("/stripe-onboarding?from=dashboard");
     }
   };
 
   const handleWithdraw = async (amountCents: number, methodId: string) => {
     try {
-      await stripeConnectApi.createPayout({ amount: amountCents, destination: methodId });
+      await stripeConnectApi.createPayout({
+        amount: amountCents,
+        destination: methodId,
+      });
       queryClient.invalidateQueries({ queryKey: [STRIPE_BALANCE_KEY] });
       queryClient.invalidateQueries({ queryKey: [STRIPE_PAYOUTS_KEY] });
-      toast.showSuccess('Your withdrawal has been submitted!');
+      toast.showSuccess("Your withdrawal has been submitted!");
     } catch (error: any) {
-      toast.showError(error?.message || 'Failed to process withdrawal');
+      toast.showError(error?.message || "Failed to process withdrawal");
     }
   };
 
@@ -164,7 +172,9 @@ export default function PaymentsScreen() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] }),
       queryClient.invalidateQueries({ queryKey: [STRIPE_BALANCE_KEY] }),
-      queryClient.invalidateQueries({ queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY] }),
+      queryClient.invalidateQueries({
+        queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY],
+      }),
       queryClient.invalidateQueries({ queryKey: [STRIPE_EARNINGS_KEY] }),
       queryClient.invalidateQueries({ queryKey: [STRIPE_PAYOUTS_KEY] }),
     ]);
@@ -174,7 +184,13 @@ export default function PaymentsScreen() {
   // Loading state
   if (statusLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <View
+        style={[
+          styles.container,
+          styles.loadingContainer,
+          { backgroundColor: colors.background },
+        ]}
+      >
         <DarkGradientBg />
         <ActivityIndicator size="large" color="#fff" />
         <Text style={styles.loadingText}>Loading payments...</Text>
@@ -208,18 +224,20 @@ export default function PaymentsScreen() {
           entering={FadeInDown.duration(300)}
           style={[
             styles.setupBanner,
-            setupResult === 'success' ? styles.setupBannerSuccess : styles.setupBannerPending,
+            setupResult === "success"
+              ? styles.setupBannerSuccess
+              : styles.setupBannerPending,
           ]}
         >
           <Ionicons
-            name={setupResult === 'success' ? 'checkmark-circle' : 'time'}
+            name={setupResult === "success" ? "checkmark-circle" : "time"}
             size={20}
             color="#fff"
           />
           <Text style={styles.setupBannerText}>
-            {setupResult === 'success'
-              ? 'Payout account connected successfully!'
-              : 'Account setup is being reviewed by Stripe. This usually takes a few minutes.'}
+            {setupResult === "success"
+              ? "Payout account connected successfully!"
+              : "Account setup is being reviewed by Stripe. This usually takes a few minutes."}
           </Text>
         </Animated.View>
       )}
@@ -229,7 +247,7 @@ export default function PaymentsScreen() {
         <AccountStatusCard
           accountStatus={accountStatus}
           onContinueSetup={needsSetup ? handleSetup : undefined}
-          isSettingUp={isSettingUp}
+          isSettingUp={false}
         />
       )}
 
@@ -239,12 +257,17 @@ export default function PaymentsScreen() {
           style={styles.scrollView}
           contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#fff" />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor="#fff"
+            />
           }
         >
           <OnboardingCard
             onSetup={handleSetup}
-            isSettingUp={isSettingUp}
+            onCheckStatus={handleRefresh}
+            isSettingUp={false}
             accountStatus={accountStatus}
           />
         </ScrollView>
@@ -255,7 +278,11 @@ export default function PaymentsScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#fff" />
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor="#fff"
+            />
           }
         >
           <BalanceCard
@@ -275,8 +302,16 @@ export default function PaymentsScreen() {
 
           <Animated.View
             key={`tab-${selectedTab}`}
-            entering={selectedTab > previousTabRef.current ? FadeInRight.duration(250) : FadeInLeft.duration(250)}
-            exiting={selectedTab > previousTabRef.current ? FadeOutLeft.duration(150) : FadeOutRight.duration(150)}
+            entering={
+              selectedTab > previousTabRef.current
+                ? FadeInRight.duration(250)
+                : FadeInLeft.duration(250)
+            }
+            exiting={
+              selectedTab > previousTabRef.current
+                ? FadeOutLeft.duration(150)
+                : FadeOutRight.duration(150)
+            }
           >
             {selectedTab === 0 && (
               <OverviewTab
@@ -302,42 +337,49 @@ export default function PaymentsScreen() {
         balances={balancesForSheet}
         payoutMethods={payoutMethods}
         onWithdraw={handleWithdraw}
-        onAddPayoutMethod={handleOpenDashboard}
+        onAddPayoutMethod={handleSetup}
       />
     </View>
   );
 }
-
 
 interface OverviewTabProps {
   earnings: EarningsItem[];
   payouts: PayoutItem[];
 }
 
-function OverviewTab({
-  earnings,
-  payouts,
-}: OverviewTabProps) {
+function OverviewTab({ earnings, payouts }: OverviewTabProps) {
   // Combine and sort recent activity (last 10)
-  type ActivityItem = { id: string; type: 'earning' | 'payout'; title: string; date: string; amount: number; positive: boolean };
+  type ActivityItem = {
+    id: string;
+    type: "earning" | "payout";
+    title: string;
+    date: string;
+    amount: number;
+    positive: boolean;
+  };
 
   const recentActivity: ActivityItem[] = [
-    ...earnings.slice(0, 10).map((e): ActivityItem => ({
-      id: `e-${e.id}`,
-      type: 'earning',
-      title: e.eventName,
-      date: e.createdAt,
-      amount: e.netAmount,
-      positive: true,
-    })),
-    ...payouts.slice(0, 10).map((p): ActivityItem => ({
-      id: `p-${p.id}`,
-      type: 'payout',
-      title: `${p.destination.bankName || p.destination.brand || 'Account'} ••${p.destination.last4}`,
-      date: p.created,
-      amount: p.amount,
-      positive: false,
-    })),
+    ...earnings.slice(0, 10).map(
+      (e): ActivityItem => ({
+        id: `e-${e.id}`,
+        type: "earning",
+        title: e.eventName,
+        date: e.createdAt,
+        amount: e.netAmount,
+        positive: true,
+      }),
+    ),
+    ...payouts.slice(0, 10).map(
+      (p): ActivityItem => ({
+        id: `p-${p.id}`,
+        type: "payout",
+        title: `${p.destination.bankName || p.destination.brand || "Account"} ••${p.destination.last4}`,
+        date: p.created,
+        amount: p.amount,
+        positive: false,
+      }),
+    ),
   ]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 10);
@@ -348,33 +390,62 @@ function OverviewTab({
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent Activity</Text>
         {recentActivity.length > 0 ? (
-          <GlassSurface fill="subtle" cornerRadius="md" style={styles.activityList}>
+          <GlassSurface
+            fill="subtle"
+            cornerRadius="md"
+            style={styles.activityList}
+          >
             {recentActivity.map((item) => (
               <View key={item.id} style={styles.activityItem}>
-                <View style={[styles.activityIcon, item.positive ? styles.earningIcon : styles.payoutIcon]}>
+                <View
+                  style={[
+                    styles.activityIcon,
+                    item.positive ? styles.earningIcon : styles.payoutIcon,
+                  ]}
+                >
                   <Ionicons
-                    name={item.positive ? 'arrow-down' : 'arrow-up'}
+                    name={item.positive ? "arrow-down" : "arrow-up"}
                     size={14}
                     color="#fff"
                   />
                 </View>
                 <View style={styles.activityInfo}>
-                  <Text style={styles.activityTitle} numberOfLines={1}>{item.title}</Text>
+                  <Text style={styles.activityTitle} numberOfLines={1}>
+                    {item.title}
+                  </Text>
                   <Text style={styles.activityDate}>
                     {new Date(item.date).toLocaleDateString()}
                   </Text>
                 </View>
-                <Text style={[styles.activityAmount, item.positive ? styles.positiveAmount : styles.negativeAmount]}>
-                  {item.positive ? '+' : '-'}{formatCents(item.amount)}
+                <Text
+                  style={[
+                    styles.activityAmount,
+                    item.positive
+                      ? styles.positiveAmount
+                      : styles.negativeAmount,
+                  ]}
+                >
+                  {item.positive ? "+" : "-"}
+                  {formatCents(item.amount)}
                 </Text>
               </View>
             ))}
           </GlassSurface>
         ) : (
-          <GlassSurface fill="subtle" cornerRadius="md" style={styles.emptyActivity}>
-            <Ionicons name="receipt-outline" size={40} color="rgba(255,255,255,0.3)" />
+          <GlassSurface
+            fill="subtle"
+            cornerRadius="md"
+            style={styles.emptyActivity}
+          >
+            <Ionicons
+              name="receipt-outline"
+              size={40}
+              color="rgba(255,255,255,0.3)"
+            />
             <Text style={styles.emptyText}>No activity yet</Text>
-            <Text style={styles.emptyHint}>Your earnings and withdrawals will appear here</Text>
+            <Text style={styles.emptyHint}>
+              Your earnings and withdrawals will appear here
+            </Text>
           </GlassSurface>
         )}
       </View>
@@ -382,18 +453,17 @@ function OverviewTab({
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
   loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   setupBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     marginHorizontal: 16,
     marginTop: 12,
@@ -402,44 +472,44 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   setupBannerSuccess: {
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
-    borderColor: 'rgba(34, 197, 94, 0.25)',
+    backgroundColor: "rgba(34, 197, 94, 0.12)",
+    borderColor: "rgba(34, 197, 94, 0.25)",
   },
   setupBannerPending: {
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
-    borderColor: 'rgba(245, 158, 11, 0.25)',
+    backgroundColor: "rgba(245, 158, 11, 0.12)",
+    borderColor: "rgba(245, 158, 11, 0.25)",
   },
   setupBannerText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    fontFamily: "Lato_400Regular",
+    color: "#fff",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(255, 255, 255, 0.5)",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomColor: "rgba(255, 255, 255, 0.08)",
   },
   headerButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   scrollView: {
     flex: 1,
@@ -454,33 +524,33 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
     marginBottom: 10,
   },
   // Activity
   activityList: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
+    borderBottomColor: "rgba(255, 255, 255, 0.06)",
   },
   activityIcon: {
     width: 30,
     height: 30,
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   earningIcon: {
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    backgroundColor: "rgba(34, 197, 94, 0.15)",
   },
   payoutIcon: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
   },
   activityInfo: {
     flex: 1,
@@ -488,40 +558,40 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
+    fontFamily: "Lato_600SemiBold",
+    color: "#fff",
   },
   activityDate: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(255, 255, 255, 0.5)",
     marginTop: 2,
   },
   activityAmount: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   positiveAmount: {
-    color: '#22c55e',
+    color: "#22c55e",
   },
   negativeAmount: {
-    color: '#ef4444',
+    color: "#ef4444",
   },
   emptyActivity: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: 32,
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
+    fontFamily: "Lato_700Bold",
+    color: "rgba(255, 255, 255, 0.5)",
     marginTop: 12,
   },
   emptyHint: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.3)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(255, 255, 255, 0.3)",
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

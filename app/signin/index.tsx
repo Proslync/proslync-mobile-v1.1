@@ -8,13 +8,12 @@ import Animated, {
 import { PhoneStep } from '@/components/auth/phone-step';
 import { OtpStep } from '@/components/auth/otp-step';
 import { ProfileSetupStep } from '@/components/auth/profile-setup-step';
-import { WalletSetupStep } from '@/components/auth/wallet-setup-step';
 import { ContactsStep } from '@/components/auth/contacts-step';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function SignInScreen() {
-  const [step, setStep] = useState<'phone' | 'otp' | 'profile' | 'contacts' | 'wallet'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp' | 'profile' | 'contacts'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -47,10 +46,6 @@ export default function SignInScreen() {
   };
 
   const handleContactsComplete = () => {
-    setStep('wallet');
-  };
-
-  const handleWalletComplete = () => {
     router.replace(redirectUrl as any);
   };
 
@@ -99,16 +94,6 @@ export default function SignInScreen() {
           style={styles.stepContainer}
         >
           <ContactsStep onSuccess={handleContactsComplete} />
-        </Animated.View>
-      )}
-
-      {step === 'wallet' && (
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          exiting={FadeOut.duration(300)}
-          style={styles.stepContainer}
-        >
-          <WalletSetupStep onSuccess={handleWalletComplete} />
         </Animated.View>
       )}
     </View>

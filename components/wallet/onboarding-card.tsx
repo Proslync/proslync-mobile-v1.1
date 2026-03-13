@@ -10,38 +10,44 @@ import type { StripeAccountStatus } from '@/lib/api/wallet';
 
 interface OnboardingCardProps {
   onSetup: () => Promise<void>;
+  onCheckStatus?: () => void;
   isSettingUp: boolean;
   accountStatus: StripeAccountStatus | null | undefined;
 }
 
-export function OnboardingCard({ onSetup, isSettingUp, accountStatus }: OnboardingCardProps) {
-  const detailsSubmitted = accountStatus?.detailsSubmitted && accountStatus?.hasAccount;
+export function OnboardingCard({ onSetup, onCheckStatus, isSettingUp, accountStatus }: OnboardingCardProps) {
+  const hasAccount = accountStatus?.hasAccount;
+  const detailsSubmitted = accountStatus?.detailsSubmitted && hasAccount;
   const hasRequirements = (accountStatus?.requirements?.currentlyDue?.length ?? 0) > 0 ||
     (accountStatus?.requirements?.pastDue?.length ?? 0) > 0;
+  const isRestricted = accountStatus?.onboardingStatus === 'restricted';
+  const isInProgress = accountStatus?.onboardingStatus === 'in_progress';
 
   // Details submitted and no outstanding requirements — Stripe is reviewing
-  const isPendingReview = detailsSubmitted && !hasRequirements;
+  const isPendingReview = (detailsSubmitted && !hasRequirements) || isInProgress;
 
   return (
     <Animated.View entering={FadeInDown.duration(400)} style={styles.wrapper}>
       <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.container}>
         <View style={styles.iconContainer}>
           <Ionicons
-            name={isPendingReview ? 'time-outline' : 'wallet-outline'}
+            name={isPendingReview ? 'time-outline' : isRestricted ? 'alert-circle-outline' : 'wallet-outline'}
             size={56}
-            color="#fff"
+            color={isRestricted ? '#f59e0b' : '#fff'}
           />
         </View>
         <Text style={styles.title}>
-          {isPendingReview ? 'Under Review' : 'Set Up Payouts'}
+          {isPendingReview ? 'Under Review' : isRestricted ? 'Action Required' : 'Set Up Payouts'}
         </Text>
         <Text style={styles.description}>
           {isPendingReview
-            ? 'Your application has been submitted and is being reviewed by Stripe. This usually takes 1-2 business days.'
+            ? 'Your application has been submitted and is being reviewed by Stripe. This usually takes a few minutes.'
+            : isRestricted
+            ? 'Stripe needs additional information to verify your account. Tap below to resolve.'
             : 'Connect your bank account or debit card to receive earnings from ticket sales and tips.'}
         </Text>
 
-        {!isPendingReview && (
+        {!isPendingReview && !isRestricted && (
           <View style={styles.features}>
             <View style={styles.feature}>
               <Ionicons name="shield-checkmark" size={20} color="#22c55e" />
@@ -69,7 +75,7 @@ export function OnboardingCard({ onSetup, isSettingUp, accountStatus }: Onboardi
               icon={<Ionicons name={isPendingReview ? 'refresh' : 'link'} size={20} color="#fff" />}
               variant="glass"
               size="lg"
-              onPress={onSetup}
+              onPress={isPendingReview && onCheckStatus ? onCheckStatus : onSetup}
               fullWidth
             />
           )}

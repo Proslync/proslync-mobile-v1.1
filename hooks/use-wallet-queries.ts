@@ -11,6 +11,9 @@ import {
   type GetPayoutsParams,
   type CreatePayoutResponse,
   type CreatePayoutDto,
+  type CreateCustomAccountRequest,
+  type CreateCustomAccountResponse,
+  type UpdateCustomAccountRequest,
 } from '@/lib/api/wallet';
 
 
@@ -69,6 +72,26 @@ export function useCreatePayout() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [STRIPE_BALANCE_KEY] });
       queryClient.invalidateQueries({ queryKey: [STRIPE_PAYOUTS_KEY] });
+    },
+  });
+}
+
+export function useCreateCustomAccount() {
+  const queryClient = useQueryClient();
+  return useMutation<CreateCustomAccountResponse, Error, CreateCustomAccountRequest>({
+    mutationFn: (data) => stripeConnectApi.createCustomAccount(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] });
+    },
+  });
+}
+
+export function useUpdateCustomAccount() {
+  const queryClient = useQueryClient();
+  return useMutation<CreateCustomAccountResponse, Error, UpdateCustomAccountRequest>({
+    mutationFn: (data) => stripeConnectApi.updateCustomAccount(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] });
     },
   });
 }

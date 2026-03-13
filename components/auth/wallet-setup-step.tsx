@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
 interface WalletSetupStepProps {
@@ -18,17 +18,10 @@ interface WalletSetupStepProps {
 export function WalletSetupStep({ onSuccess }: WalletSetupStepProps) {
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const router = useRouter();
 
   const handleContinue = () => {
-    // Placeholder: Stripe onboarding flow will be wired here.
-    // For now we just advance so the rest of the app is usable.
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onSuccess();
-    }, 300);
+    router.push('/stripe-onboarding?from=signup');
   };
 
   return (
@@ -107,22 +100,16 @@ export function WalletSetupStep({ onSuccess }: WalletSetupStepProps) {
           ]}
           activeOpacity={0.7}
           onPress={handleContinue}
-          disabled={isSubmitting}
         >
-          {isSubmitting ? (
-            <ActivityIndicator color={colors.text} size="small" />
-          ) : (
-            <Text style={[styles.buttonText, { color: colors.text }]}>
-              Continue
-            </Text>
-          )}
+          <Text style={[styles.buttonText, { color: colors.text }]}>
+            Continue
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.skipButton}
           activeOpacity={0.7}
           onPress={onSuccess}
-          disabled={isSubmitting}
         >
           <Text style={[styles.skipText, { color: colors.textSecondary }]}>
             Skip for now

@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
 import { InteractionManager } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as Linking from 'expo-linking';
 import {
   WalletContextType,
   WalletUser,
@@ -28,8 +27,6 @@ import {
 // Extended context type with Stripe Connect features
 interface ExtendedWalletContextType extends WalletContextType {
   stripeAccountStatus: StripeAccountStatus | null;
-  setupStripeAccount: () => Promise<void>;
-  openStripeDashboard: () => Promise<void>;
 }
 
 const WalletContext = createContext<ExtendedWalletContextType | null>(null);
@@ -314,50 +311,6 @@ export function WalletProvider({ children }: WalletProviderProps) {
     setEvents(cards);
   }, [authUser?.id]);
 
-  // Setup Stripe Connect account
-  const setupStripeAccount = useCallback(async () => {
-    try {
-      setIsLoading(true);
-
-      // Check if account exists
-      const status = await fetchAccountStatus();
-
-      if (!status?.hasAccount) {
-        // Create new account
-        const response = await stripeConnectApi.createAccount();
-
-        // Open onboarding URL
-        if (response.onboardingUrl) {
-          await Linking.openURL(response.onboardingUrl);
-        }
-      } else if (!status.chargesEnabled || !status.payoutsEnabled) {
-        // Account exists but not fully active — get fresh onboarding link
-        // This handles both incomplete details AND pending requirements
-        const response = await stripeConnectApi.getOnboardingLink();
-        await Linking.openURL(response.url);
-      }
-
-      // Refresh status after setup
-      await fetchAccountStatus();
-    } catch (error) {
-      console.error('Error setting up Stripe account:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchAccountStatus]);
-
-  // Open Stripe Express Dashboard
-  const openStripeDashboard = useCallback(async () => {
-    try {
-      const response = await stripeConnectApi.getDashboardLink();
-      await Linking.openURL(response.url);
-    } catch (error) {
-      console.error('Error opening Stripe dashboard:', error);
-      throw error;
-    }
-  }, []);
-
   // Withdraw (create payout)
   const withdraw = useCallback(async (amountCents: number, methodId: string) => {
     const method = payoutMethods.find((m) => m.id === methodId);
@@ -396,11 +349,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
     );
   }, [offers]);
 
-  // Note: Adding payout methods is done through Stripe Dashboard
+  // Note: Adding payout methods is done through the onboarding screen
   const addPayoutMethod = useCallback(async () => {
-    // Open Stripe dashboard for adding payout methods
-    await openStripeDashboard();
-  }, [openStripeDashboard]);
+    // Payout method management is handled via the onboarding form
+  }, []);
 
   const removePayoutMethod = useCallback((methodId: string) => {
     // Payout method removal is done through Stripe Dashboard
@@ -497,10 +449,8 @@ export function WalletProvider({ children }: WalletProviderProps) {
       clearPendingTransaction,
       refreshWallet,
       stripeAccountStatus,
-      setupStripeAccount,
-      openStripeDashboard,
     }),
-    [user, balances, payoutMethods, transactions, offers, events, isLoading, withdraw, claimOffer, addPayoutMethod, removePayoutMethod, setDefaultPayoutMethod, clearPendingTransaction, refreshWallet, stripeAccountStatus, setupStripeAccount, openStripeDashboard],
+    [user, balances, payoutMethods, transactions, offers, events, isLoading, withdraw, claimOffer, addPayoutMethod, removePayoutMethod, setDefaultPayoutMethod, clearPendingTransaction, refreshWallet, stripeAccountStatus],
   );
 
   return (

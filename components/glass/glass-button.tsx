@@ -231,7 +231,7 @@ export function GlassButton({
 
 const styles = StyleSheet.create({
   fullWidth: {
-    flex: 1,
+    width: '100%',
   },
   absolute: absoluteFill(),
   content: {

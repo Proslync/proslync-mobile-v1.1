@@ -73,6 +73,7 @@ export async function getMembershipCard(): Promise<MembershipCardResponse> {
 export interface StripeAccountStatus {
   hasAccount: boolean;
   accountId?: string;
+  onboardingStatus: 'pending' | 'in_progress' | 'complete' | 'rejected' | 'restricted';
   chargesEnabled: boolean;
   payoutsEnabled: boolean;
   detailsSubmitted: boolean;
@@ -96,6 +97,55 @@ export interface OnboardingLinkResponse {
 export interface DashboardLinkResponse {
   url: string;
   expiresAt: string;
+}
+
+// Custom account onboarding types
+export interface OnboardingPersonalInfo {
+  firstName: string;
+  lastName: string;
+  dobDay: number;
+  dobMonth: number;
+  dobYear: number;
+  ssnLast4: string;
+}
+
+export interface OnboardingAddress {
+  line1: string;
+  line2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+}
+
+export interface OnboardingBankAccount {
+  routingNumber: string;
+  accountNumber: string;
+  accountHolderName: string;
+}
+
+export interface CreateCustomAccountRequest {
+  personalInfo: OnboardingPersonalInfo;
+  address: OnboardingAddress;
+  bankAccount: OnboardingBankAccount;
+}
+
+export interface CreateCustomAccountResponse {
+  accountId: string;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  onboardingStatus: string;
+  requirements?: {
+    currentlyDue: string[];
+    eventuallyDue: string[];
+    pastDue: string[];
+  };
+}
+
+export interface UpdateCustomAccountRequest {
+  personalInfo?: OnboardingPersonalInfo;
+  address?: OnboardingAddress;
+  bankAccount?: OnboardingBankAccount;
+  fullSsn?: string;
 }
 
 export interface BalanceResponse {
@@ -233,6 +283,14 @@ export const stripeConnectApi = {
 
   createAccount: async (): Promise<CreateAccountResponse> => {
     return apiClient.post<CreateAccountResponse>('/api/stripe-connect/accounts/create');
+  },
+
+  createCustomAccount: async (data: CreateCustomAccountRequest): Promise<CreateCustomAccountResponse> => {
+    return apiClient.post<CreateCustomAccountResponse>('/api/stripe-connect/accounts/create', data);
+  },
+
+  updateCustomAccount: async (data: UpdateCustomAccountRequest): Promise<CreateCustomAccountResponse> => {
+    return apiClient.patch<CreateCustomAccountResponse>('/api/stripe-connect/accounts/update', data);
   },
 
   getOnboardingLink: async (): Promise<OnboardingLinkResponse> => {
