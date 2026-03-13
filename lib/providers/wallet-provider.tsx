@@ -349,18 +349,10 @@ export function WalletProvider({ children }: WalletProviderProps) {
     );
   }, [offers]);
 
-  // Note: Adding payout methods is done through the onboarding screen
-  const addPayoutMethod = useCallback(async () => {
-    // Payout method management is handled via the onboarding form
-  }, []);
-
-  const removePayoutMethod = useCallback((methodId: string) => {
-    // Payout method removal is done through Stripe Dashboard
-  }, []);
-
-  const setDefaultPayoutMethod = useCallback((methodId: string) => {
-    // Default payout method is set through Stripe Dashboard
-  }, []);
+  // Payout method management is now handled via hooks in WithdrawalSheet
+  const addPayoutMethod = useCallback(async () => {}, []);
+  const removePayoutMethod = useCallback((_methodId: string) => {}, []);
+  const setDefaultPayoutMethod = useCallback((_methodId: string) => {}, []);
 
   const clearPendingTransaction = useCallback((transactionId: string) => {
     // This is handled by the backend/Stripe webhooks

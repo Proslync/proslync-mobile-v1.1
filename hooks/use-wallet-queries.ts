@@ -17,6 +17,9 @@ import {
   type UploadDocumentResponse,
   type DocumentType,
   type DocumentSide,
+  type ExternalAccount,
+  type AddBankAccountRequest,
+  type AddDebitCardRequest,
 } from '@/lib/api/wallet';
 
 
@@ -110,6 +113,46 @@ export function useUploadDocument() {
       stripeConnectApi.uploadDocument(fileUri, documentType, documentSide),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] });
+    },
+  });
+}
+
+export function useAddBankAccount() {
+  const queryClient = useQueryClient();
+  return useMutation<ExternalAccount, Error, AddBankAccountRequest>({
+    mutationFn: (data) => stripeConnectApi.addBankAccount(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY] });
+    },
+  });
+}
+
+export function useAddDebitCard() {
+  const queryClient = useQueryClient();
+  return useMutation<ExternalAccount, Error, AddDebitCardRequest>({
+    mutationFn: (data) => stripeConnectApi.addDebitCard(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY] });
+    },
+  });
+}
+
+export function useRemoveExternalAccount() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (externalAccountId) => stripeConnectApi.removeExternalAccount(externalAccountId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY] });
+    },
+  });
+}
+
+export function useSetDefaultExternalAccount() {
+  const queryClient = useQueryClient();
+  return useMutation<ExternalAccount, Error, string>({
+    mutationFn: (externalAccountId) => stripeConnectApi.setDefaultExternalAccount(externalAccountId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY] });
     },
   });
 }

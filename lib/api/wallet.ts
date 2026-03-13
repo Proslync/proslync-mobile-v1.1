@@ -97,11 +97,6 @@ export interface OnboardingLinkResponse {
   expiresAt: string;
 }
 
-export interface DashboardLinkResponse {
-  url: string;
-  expiresAt: string;
-}
-
 // Custom account onboarding types
 export interface OnboardingPersonalInfo {
   firstName: string;
@@ -149,6 +144,16 @@ export interface UpdateCustomAccountRequest {
   address?: OnboardingAddress;
   bankAccount?: OnboardingBankAccount;
   fullSsn?: string;
+}
+
+export interface AddBankAccountRequest {
+  routingNumber: string;
+  accountNumber: string;
+  accountHolderName: string;
+}
+
+export interface AddDebitCardRequest {
+  token: string;
 }
 
 export interface BalanceResponse {
@@ -357,10 +362,6 @@ export const stripeConnectApi = {
     return apiClient.post<OnboardingLinkResponse>('/api/stripe-connect/accounts/onboarding-link');
   },
 
-  getDashboardLink: async (): Promise<DashboardLinkResponse> => {
-    return apiClient.get<DashboardLinkResponse>('/api/stripe-connect/accounts/dashboard-link');
-  },
-
   uploadDocument: async (
     fileUri: string,
     documentType: DocumentType,
@@ -472,5 +473,21 @@ export const stripeConnectApi = {
       : '/api/stripe-connect/payouts';
 
     return apiClient.get<PayoutsListResponse>(endpoint);
+  },
+
+  addBankAccount: async (data: AddBankAccountRequest): Promise<ExternalAccount> => {
+    return apiClient.post<ExternalAccount>('/api/stripe-connect/payouts/external-accounts/bank', data);
+  },
+
+  addDebitCard: async (data: AddDebitCardRequest): Promise<ExternalAccount> => {
+    return apiClient.post<ExternalAccount>('/api/stripe-connect/payouts/external-accounts/card', data);
+  },
+
+  removeExternalAccount: async (externalAccountId: string): Promise<void> => {
+    return apiClient.delete(`/api/stripe-connect/payouts/external-accounts/${externalAccountId}`);
+  },
+
+  setDefaultExternalAccount: async (externalAccountId: string): Promise<ExternalAccount> => {
+    return apiClient.patch<ExternalAccount>(`/api/stripe-connect/payouts/external-accounts/${externalAccountId}/default`);
   },
 };

@@ -44,6 +44,21 @@ export const bankAccountSchema = z.object({
   }),
 });
 
+export const addBankAccountSchema = z.object({
+  routingNumber: z
+    .string()
+    .length(9, 'Must be 9-digit routing number')
+    .regex(/^\d{9}$/, 'Must be 9-digit routing number'),
+  accountNumber: z
+    .string()
+    .min(4, 'Must be at least 4 digits')
+    .max(17, 'Must be at most 17 digits')
+    .regex(/^\d+$/, 'Must contain only digits'),
+  accountHolderName: z.string().min(1, 'Account holder name is required'),
+});
+
+export type AddBankAccountFormData = z.infer<typeof addBankAccountSchema>;
+
 export const stripeOnboardingSchema = z.object({
   ...personalInfoSchema.shape,
   ...addressSchema.shape,

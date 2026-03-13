@@ -1,5 +1,5 @@
 // Withdrawal Sheet - Comprehensive withdraw flow with integrated payout management
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,24 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { CardField, StripeProvider, createToken } from '@stripe/stripe-react-native';
+import type { CardFieldInput } from '@stripe/stripe-react-native';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useToast } from '@/components/shared/toast';
+import {
+  useAddBankAccount,
+  useAddDebitCard,
+  useRemoveExternalAccount,
+  useSetDefaultExternalAccount,
+  useStripeAccountStatus,
+} from '@/hooks/use-wallet-queries';
+import { addBankAccountSchema, type AddBankAccountFormData } from '@/lib/validation/stripe-onboarding';
+import { config } from '@/lib/config';
 import { BottomSheet } from './bottom-sheet';
 import { WalletBalances, PayoutMethod } from '../../lib/types/wallet.types';
 
@@ -21,10 +35,9 @@ interface WithdrawalSheetProps {
   balances: WalletBalances;
   payoutMethods: PayoutMethod[];
   onWithdraw: (amountCents: number, methodId: string) => void | Promise<void>;
-  onAddPayoutMethod: (method: Omit<PayoutMethod, 'id'>) => void | Promise<void>;
 }
 
-type SheetView = 'withdraw' | 'confirm' | 'select-method' | 'add-method-choice';
+type SheetView = 'withdraw' | 'confirm' | 'select-method' | 'add-method-choice' | 'add-bank' | 'add-card';
 
 function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -42,7 +55,6 @@ export function WithdrawalSheet({
   balances,
   payoutMethods,
   onWithdraw,
-  onAddPayoutMethod,
 }: WithdrawalSheetProps) {
   const { colors, isDark } = useAppTheme();
   const toast = useToast();
@@ -52,6 +64,18 @@ export function WithdrawalSheet({
     payoutMethods.find((m) => m.isDefault)?.id || payoutMethods[0]?.id || null
   );
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cardComplete, setCardComplete] = useState(false);
+
+  const { data: stripeStatus } = useStripeAccountStatus();
+  const addBankMutation = useAddBankAccount();
+  const addCardMutation = useAddDebitCard();
+  const removeMutation = useRemoveExternalAccount();
+  const setDefaultMutation = useSetDefaultExternalAccount();
+
+  const bankForm = useForm<AddBankAccountFormData>({
+    resolver: zodResolver(addBankAccountSchema),
+    defaultValues: { routingNumber: '', accountNumber: '', accountHolderName: '' },
+  });
 
   const amountCents = useMemo(() => {
     const parsed = parseFloat(amountInput);
@@ -68,6 +92,8 @@ export function WithdrawalSheet({
   const handleClose = () => {
     setView('withdraw');
     setAmountInput('');
+    bankForm.reset();
+    setCardComplete(false);
     onClose();
   };
 
@@ -100,6 +126,82 @@ export function WithdrawalSheet({
     setView('withdraw');
   };
 
+  const handleAddBank = useCallback(async (data: AddBankAccountFormData) => {
+    try {
+      await addBankMutation.mutateAsync(data);
+      toast.showSuccess('Bank account added');
+      bankForm.reset();
+      setView('select-method');
+    } catch (error: any) {
+      toast.showError(error?.message || 'Failed to add bank account');
+    }
+  }, [addBankMutation, bankForm, toast]);
+
+  const handleAddCard = useCallback(async () => {
+    if (!cardComplete) return;
+    try {
+      setIsProcessing(true);
+      const { token, error } = await createToken({ type: 'Card' });
+      if (error) {
+        toast.showError(error.message);
+        return;
+      }
+      if (!token) {
+        toast.showError('Failed to create card token');
+        return;
+      }
+      await addCardMutation.mutateAsync({ token: token.id });
+      toast.showSuccess('Debit card added');
+      setCardComplete(false);
+      setView('select-method');
+    } catch (error: any) {
+      toast.showError(error?.message || 'Failed to add debit card');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [cardComplete, addCardMutation, toast]);
+
+  const handleRemoveMethod = useCallback((methodId: string, label: string) => {
+    if (payoutMethods.length <= 1) {
+      toast.showError('Cannot remove the last payout method');
+      return;
+    }
+    Alert.alert(
+      'Remove Payout Method',
+      `Remove ${label}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await removeMutation.mutateAsync(methodId);
+              toast.showSuccess('Payout method removed');
+              if (selectedMethodId === methodId) {
+                const remaining = payoutMethods.filter((m) => m.id !== methodId);
+                setSelectedMethodId(remaining[0]?.id || null);
+              }
+            } catch (error: any) {
+              toast.showError(error?.message || 'Failed to remove payout method');
+            }
+          },
+        },
+      ],
+    );
+  }, [payoutMethods, removeMutation, selectedMethodId, toast]);
+
+  const handleSetDefault = useCallback(async (methodId: string) => {
+    try {
+      await setDefaultMutation.mutateAsync(methodId);
+      toast.showSuccess('Default payout method updated');
+    } catch (error: any) {
+      toast.showError(error?.message || 'Failed to set default');
+    }
+  }, [setDefaultMutation, toast]);
+
+  const inputBg = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+
   // Render different views
   const renderWithdrawView = () => (
     <>
@@ -114,10 +216,7 @@ export function WithdrawalSheet({
       {/* Amount Input */}
       <View style={styles.inputSection}>
         <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Amount</Text>
-        <View style={[
-          styles.inputContainer,
-          { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
-        ]}>
+        <View style={[styles.inputContainer, { backgroundColor: inputBg }]}>
           <Text style={[styles.currencySymbol, { color: colors.textTertiary }]}>$</Text>
           <TextInput
             style={[styles.amountInput, { color: colors.text }]}
@@ -151,10 +250,7 @@ export function WithdrawalSheet({
       <View style={styles.methodSection}>
         <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Payout method</Text>
         <TouchableOpacity
-          style={[
-            styles.methodSelector,
-            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }
-          ]}
+          style={[styles.methodSelector, { backgroundColor: inputBg }]}
           onPress={() => setView('select-method')}
         >
           {selectedMethod ? (
@@ -217,34 +313,67 @@ export function WithdrawalSheet({
         <TouchableOpacity onPress={() => setView('withdraw')} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color="#0095f6" />
         </TouchableOpacity>
-        <Text style={[styles.viewTitle, { color: colors.text }]}>Select Payout Method</Text>
+        <Text style={[styles.viewTitle, { color: colors.text }]}>Payout Methods</Text>
         <View style={styles.backButton} />
       </View>
 
       <ScrollView style={styles.methodList}>
         {payoutMethods.map((method) => (
-          <TouchableOpacity
+          <View
             key={method.id}
             style={[
               styles.methodOption,
               { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' },
               selectedMethodId === method.id && styles.methodOptionSelected,
             ]}
-            onPress={() => handleSelectMethod(method.id)}
           >
-            <Ionicons
-              name={method.type === 'bank' ? 'business-outline' : 'card-outline'}
-              size={22}
-              color={selectedMethodId === method.id ? '#0095f6' : colors.textSecondary}
-            />
-            <View style={styles.methodOptionInfo}>
-              <Text style={[styles.methodOptionLabel, { color: colors.text }]}>{method.label}</Text>
-              <Text style={[styles.methodOptionLast4, { color: colors.textTertiary }]}>••••{method.last4}</Text>
+            <TouchableOpacity
+              style={styles.methodOptionTap}
+              onPress={() => handleSelectMethod(method.id)}
+            >
+              <Ionicons
+                name={method.type === 'bank' ? 'business-outline' : 'card-outline'}
+                size={22}
+                color={selectedMethodId === method.id ? '#0095f6' : colors.textSecondary}
+              />
+              <View style={styles.methodOptionInfo}>
+                <View style={styles.methodLabelRow}>
+                  <Text style={[styles.methodOptionLabel, { color: colors.text }]}>{method.label}</Text>
+                  {method.isDefault && (
+                    <View style={styles.defaultBadge}>
+                      <Text style={styles.defaultBadgeText}>Default</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.methodOptionLast4, { color: colors.textTertiary }]}>••••{method.last4}</Text>
+              </View>
+              {selectedMethodId === method.id && (
+                <Ionicons name="checkmark-circle" size={22} color="#0095f6" />
+              )}
+            </TouchableOpacity>
+
+            {/* Method actions */}
+            <View style={styles.methodActions}>
+              {!method.isDefault && (
+                <TouchableOpacity
+                  style={styles.methodActionBtn}
+                  onPress={() => handleSetDefault(method.id)}
+                  disabled={setDefaultMutation.isPending}
+                >
+                  <Text style={styles.methodActionText}>Set Default</Text>
+                </TouchableOpacity>
+              )}
+              {payoutMethods.length > 1 && (
+                <TouchableOpacity
+                  style={styles.methodActionBtn}
+                  onPress={() => handleRemoveMethod(method.id, `${method.label} ••••${method.last4}`)}
+                  disabled={removeMutation.isPending}
+                >
+                  <Text style={[styles.methodActionText, { color: '#ef4444' }]}>Remove</Text>
+                </TouchableOpacity>
+              )}
             </View>
-            {selectedMethodId === method.id && (
-              <Ionicons name="checkmark-circle" size={22} color="#0095f6" />
-            )}
-          </TouchableOpacity>
+          </View>
         ))}
 
         {/* Add Payout Method Option */}
@@ -321,29 +450,181 @@ export function WithdrawalSheet({
       </View>
 
       <View style={styles.methodChoices}>
-        <View style={styles.stripeInfoContainer}>
-          <Ionicons name="shield-checkmark" size={32} color="#8b5cf6" />
-          <Text style={[styles.stripeInfoTitle, { color: colors.text }]}>Secure Setup via Stripe</Text>
-          <Text style={[styles.stripeInfoText, { color: colors.textSecondary }]}>
-            To add a bank account or debit card, you'll be redirected to Stripe's secure dashboard where you can manage your payout methods.
-          </Text>
-        </View>
+        <TouchableOpacity
+          style={[styles.choiceOption, { backgroundColor: inputBg }]}
+          onPress={() => setView('add-bank')}
+        >
+          <View style={styles.choiceIconWrap}>
+            <Ionicons name="business-outline" size={24} color={colors.text} />
+          </View>
+          <View style={styles.choiceInfo}>
+            <Text style={[styles.choiceTitle, { color: colors.text }]}>Bank Account</Text>
+            <Text style={[styles.choiceSubtitle, { color: colors.textTertiary }]}>1-3 business days</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+        </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.openStripeButton}
-          onPress={async () => {
-            try {
-              await onAddPayoutMethod({} as any);
-              handleClose();
-            } catch (error) {
-              // Error handled in provider
-            }
-          }}
+          style={[styles.choiceOption, { backgroundColor: inputBg }]}
+          onPress={() => setView('add-card')}
         >
-          <Ionicons name="open-outline" size={20} color="#fff" />
-          <Text style={styles.openStripeButtonText}>Open Stripe Dashboard</Text>
+          <View style={styles.choiceIconWrap}>
+            <Ionicons name="card-outline" size={24} color={colors.text} />
+          </View>
+          <View style={styles.choiceInfo}>
+            <Text style={[styles.choiceTitle, { color: colors.text }]}>Debit Card</Text>
+            <Text style={[styles.choiceSubtitle, { color: colors.textTertiary }]}>Instant payouts</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
         </TouchableOpacity>
       </View>
+    </>
+  );
+
+  const renderAddBankView = () => (
+    <>
+      <View style={styles.viewHeader}>
+        <TouchableOpacity onPress={() => { bankForm.reset(); setView('add-method-choice'); }} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#0095f6" />
+        </TouchableOpacity>
+        <Text style={[styles.viewTitle, { color: colors.text }]}>Add Bank Account</Text>
+        <View style={styles.backButton} />
+      </View>
+
+      <ScrollView style={styles.formContainer} keyboardShouldPersistTaps="handled">
+        <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Routing Number</Text>
+        <Controller
+          control={bankForm.control}
+          name="routingNumber"
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: inputBg, color: colors.text }]}
+                value={value}
+                onChangeText={onChange}
+                placeholder="9-digit routing number"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+                maxLength={9}
+              />
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </>
+          )}
+        />
+
+        <Text style={[styles.inputLabel, { color: colors.textTertiary, marginTop: 16 }]}>Account Number</Text>
+        <Controller
+          control={bankForm.control}
+          name="accountNumber"
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: inputBg, color: colors.text }]}
+                value={value}
+                onChangeText={onChange}
+                placeholder="Account number"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+                maxLength={17}
+                secureTextEntry
+              />
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </>
+          )}
+        />
+
+        <Text style={[styles.inputLabel, { color: colors.textTertiary, marginTop: 16 }]}>Account Holder Name</Text>
+        <Controller
+          control={bankForm.control}
+          name="accountHolderName"
+          render={({ field: { onChange, value }, fieldState: { error } }) => (
+            <>
+              <TextInput
+                style={[styles.formInput, { backgroundColor: inputBg, color: colors.text }]}
+                value={value}
+                onChangeText={onChange}
+                placeholder="Full name on account"
+                placeholderTextColor={colors.placeholder}
+                autoCapitalize="words"
+              />
+              {error && <Text style={styles.errorText}>{error.message}</Text>}
+            </>
+          )}
+        />
+
+        <TouchableOpacity
+          style={[
+            styles.submitButton,
+            addBankMutation.isPending && { opacity: 0.6 },
+          ]}
+          onPress={bankForm.handleSubmit(handleAddBank)}
+          disabled={addBankMutation.isPending}
+        >
+          {addBankMutation.isPending ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.submitButtonText}>Add Bank Account</Text>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
+    </>
+  );
+
+  const renderAddCardView = () => (
+    <>
+      <View style={styles.viewHeader}>
+        <TouchableOpacity onPress={() => { setCardComplete(false); setView('add-method-choice'); }} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#0095f6" />
+        </TouchableOpacity>
+        <Text style={[styles.viewTitle, { color: colors.text }]}>Add Debit Card</Text>
+        <View style={styles.backButton} />
+      </View>
+
+      {/* Nest a StripeProvider scoped to the connected account so createToken
+          produces a token usable on the Custom account */}
+      <StripeProvider
+        publishableKey={config.stripe.publishableKey}
+        stripeAccountId={stripeStatus?.accountId}
+      >
+        <View style={styles.formContainer}>
+          <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Card Details</Text>
+          <CardField
+            postalCodeEnabled={false}
+            cardStyle={{
+              backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
+              textColor: isDark ? '#ffffff' : '#000000',
+              placeholderColor: isDark ? '#666666' : '#999999',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+              borderWidth: 1,
+              borderRadius: 12,
+              fontSize: 16,
+            }}
+            style={styles.cardField}
+            onCardChange={(details: CardFieldInput.Details) => {
+              setCardComplete(details.complete);
+            }}
+          />
+
+          <Text style={[styles.cardNote, { color: colors.textTertiary }]}>
+            Only debit cards are accepted for instant payouts. Credit cards cannot receive payouts.
+          </Text>
+
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              (!cardComplete || isProcessing) && { opacity: 0.6 },
+            ]}
+            onPress={handleAddCard}
+            disabled={!cardComplete || isProcessing}
+          >
+            {isProcessing || addCardMutation.isPending ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.submitButtonText}>Add Debit Card</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </StripeProvider>
     </>
   );
 
@@ -353,6 +634,8 @@ export function WithdrawalSheet({
       {view === 'confirm' && renderConfirmView()}
       {view === 'select-method' && renderSelectMethodView()}
       {view === 'add-method-choice' && renderAddMethodChoiceView()}
+      {view === 'add-bank' && renderAddBankView()}
+      {view === 'add-card' && renderAddCardView()}
     </BottomSheet>
   );
 }
@@ -497,32 +780,65 @@ const styles = StyleSheet.create({
   },
   // Method list
   methodList: {
-    maxHeight: 300,
+    maxHeight: 400,
   },
   methodOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 2,
     borderColor: 'transparent',
+    overflow: 'hidden',
   },
   methodOptionSelected: {
     borderColor: '#0095f6',
     backgroundColor: 'rgba(0, 149, 246, 0.1)',
   },
+  methodOptionTap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+  },
   methodOptionInfo: {
     flex: 1,
     marginLeft: 12,
+  },
+  methodLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   methodOptionLabel: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
   },
+  defaultBadge: {
+    backgroundColor: 'rgba(0, 149, 246, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  defaultBadgeText: {
+    fontSize: 11,
+    fontFamily: 'Lato_700Bold',
+    color: '#0095f6',
+  },
   methodOptionLast4: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
+  },
+  methodActions: {
+    flexDirection: 'row',
+    paddingHorizontal: 14,
+    paddingBottom: 10,
+    gap: 16,
+  },
+  methodActionBtn: {
+    paddingVertical: 4,
+  },
+  methodActionText: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    color: '#0095f6',
   },
   addMethodOption: {
     flexDirection: 'row',
@@ -541,41 +857,76 @@ const styles = StyleSheet.create({
   },
   // Method choices
   methodChoices: {
-    gap: 16,
+    gap: 12,
   },
-  stripeInfoContainer: {
-    backgroundColor: 'rgba(139, 92, 246, 0.1)',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.3)',
-  },
-  stripeInfoTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  stripeInfoText: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  openStripeButton: {
+  choiceOption: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: 12,
+    padding: 16,
+  },
+  choiceIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
-    backgroundColor: '#8b5cf6',
+    alignItems: 'center',
+  },
+  choiceInfo: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  choiceTitle: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+  },
+  choiceSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 2,
+  },
+  // Forms
+  formContainer: {
+    paddingBottom: 8,
+  },
+  formInput: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
+  },
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 4,
+  },
+  submitButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
     paddingVertical: 16,
     borderRadius: 12,
-    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 24,
   },
-  openStripeButtonText: {
+  submitButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
+  },
+  cardField: {
+    height: 50,
+    marginBottom: 8,
+  },
+  cardNote: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    lineHeight: 18,
+    marginTop: 8,
   },
   // Confirm view
   confirmContainer: {

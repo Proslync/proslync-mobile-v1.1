@@ -368,7 +368,6 @@ export default function PaymentsScreen() {
         balances={balancesForSheet}
         payoutMethods={payoutMethods}
         onWithdraw={handleWithdraw}
-        onAddPayoutMethod={handleSetup}
       />
     </View>
   );
