@@ -211,8 +211,10 @@ export default function EventPage() {
 
   const handleShare = async () => {
     try {
+      const url = `status://event/${eventId}`;
       await Share.share({
-        message: `Check out ${eventTitle}${venueName ? ` at ${venueName}` : ''}`,
+        message: `Check out ${eventTitle}${venueName ? ` at ${venueName}` : ''} on Status!`,
+        url,
       });
     } catch {}
   };

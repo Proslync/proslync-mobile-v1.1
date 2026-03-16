@@ -16,9 +16,10 @@ import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 
 interface FeedActionBarProps {
   eventTitle?: string;
+  eventId?: number;
 }
 
-export function FeedActionBar({ eventTitle }: FeedActionBarProps) {
+export function FeedActionBar({ eventTitle, eventId }: FeedActionBarProps) {
   const { isDark } = useAppTheme();
   const { tabBarTopOffset } = useTabNavigation();
   const router = useRouter();
@@ -31,8 +32,10 @@ export function FeedActionBar({ eventTitle }: FeedActionBarProps) {
 
   const handleShare = async () => {
     try {
+      const url = eventId ? `status://event/${eventId}` : undefined;
       await Share.share({
         message: eventTitle ? `Check out ${eventTitle} on Status!` : 'Check out this event on Status!',
+        ...(url && { url }),
       });
     } catch {}
   };

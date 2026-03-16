@@ -84,7 +84,7 @@ export default function VenueProfileScreen() {
     try {
       await Share.share({
         message: `Check out ${venueName} on Status!`,
-        url: `https://statusapp.us/venue/${venueId}`,
+        url: `status://venue-profile/${venueId}`,
       });
     } catch {
       /* cancelled */

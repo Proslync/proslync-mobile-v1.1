@@ -475,7 +475,7 @@ export default function ProfileScreen() {
     try {
       await Share.share({
         message: `Check out @${username} on Status!`,
-        url: `https://status.app/user/${username}`,
+        url: `status://user/${username}`,
       });
     } catch (error) {
       console.log('Share error:', error);

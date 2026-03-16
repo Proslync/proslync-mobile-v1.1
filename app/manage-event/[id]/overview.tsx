@@ -62,7 +62,7 @@ export default function OverviewScreen() {
   };
 
   const handleShare = async () => {
-    const url = event?.publicUrl || `https://status.app/event/${id}`;
+    const url = `status://event/${id}`;
     await Share.share({
       message: `Check out ${event?.name || 'this event'} on Status!`,
       url,

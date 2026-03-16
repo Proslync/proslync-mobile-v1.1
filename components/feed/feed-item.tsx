@@ -170,10 +170,14 @@ export function FeedItem({
       onPress: async () => {
         setShowMenu(false);
         try {
+          const url = item.eventId
+            ? `status://event/${item.eventId}`
+            : undefined;
           await Share.share({
             message: item.eventTitle
               ? `Check out ${item.eventTitle} on Status!`
               : "Check out this event on Status!",
+            ...(url && { url }),
           });
         } catch {}
       },

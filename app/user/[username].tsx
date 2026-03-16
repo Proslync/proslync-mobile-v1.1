@@ -158,6 +158,7 @@ export default function UserProfileScreen() {
         try {
           await Share.share({
             message: `Check out ${displayName}'s profile on Status!`,
+            url: `status://user/${username}`,
           });
         } catch {}
       },
