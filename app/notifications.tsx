@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -63,6 +63,7 @@ const NOTIFICATION_ICONS: Record<
   chat: { name: 'chatbubble-ellipses', color: '#0095F6', bg: 'rgba(0,149,246,0.15)' },
   like: { name: 'heart', color: '#FF3B30', bg: 'rgba(255,59,48,0.15)' },
   comment: { name: 'chatbubble', color: '#AF52DE', bg: 'rgba(175,82,222,0.15)' },
+  team_invitation: { name: 'people', color: '#FF9500', bg: 'rgba(255,149,0,0.15)' },
 };
 
 // Types where we show the actor's profile photo instead of an icon
@@ -85,9 +86,17 @@ function TeamInvitationRow({
   colors: ThemeColors;
   isDark: boolean;
 }) {
+  const router = useRouter();
   const busy = accepting || declining;
+  const tappable = invitation.status === 'accepted';
 
-  const card = isDark ? (
+  const handleCardPress = () => {
+    if (tappable) {
+      router.push(`/manage-event/${invitation.eventId}`);
+    }
+  };
+
+  const cardContent = isDark ? (
     <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.invitationCard}>
       {renderContent()}
     </GlassSurface>
@@ -96,6 +105,12 @@ function TeamInvitationRow({
       {renderContent()}
     </View>
   );
+
+  const card = tappable ? (
+    <TouchableOpacity activeOpacity={0.7} onPress={handleCardPress}>
+      {cardContent}
+    </TouchableOpacity>
+  ) : cardContent;
 
   function renderContent() {
     return (
@@ -116,42 +131,65 @@ function TeamInvitationRow({
             </Text>
           </View>
         </View>
-        <View style={styles.invitationActions}>
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              isDark
-                ? styles.acceptButtonDark
-                : { backgroundColor: colors.text, borderColor: colors.text },
-            ]}
-            onPress={() => onAccept(invitation.id)}
-            disabled={busy}
-            activeOpacity={0.7}
-          >
-            {accepting ? (
-              <ActivityIndicator color={isDark ? '#fff' : colors.textInverse} size="small" />
-            ) : (
-              <Text style={[styles.actionText, { color: isDark ? '#fff' : colors.textInverse }]}>Accept</Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              isDark
-                ? styles.declineButtonDark
-                : { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
-            ]}
-            onPress={() => onDecline(invitation.id)}
-            disabled={busy}
-            activeOpacity={0.7}
-          >
-            {declining ? (
-              <ActivityIndicator color={colors.text} size="small" />
-            ) : (
-              <Text style={[styles.actionText, { color: colors.text }]}>Decline</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        {invitation.status === 'pending' ? (
+          <View style={styles.invitationActions}>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                isDark
+                  ? styles.acceptButtonDark
+                  : { backgroundColor: colors.text, borderColor: colors.text },
+              ]}
+              onPress={() => onAccept(invitation.id)}
+              disabled={busy}
+              activeOpacity={0.7}
+            >
+              {accepting ? (
+                <ActivityIndicator color={isDark ? '#fff' : colors.textInverse} size="small" />
+              ) : (
+                <Text style={[styles.actionText, { color: isDark ? '#fff' : colors.textInverse }]}>Accept</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.actionButton,
+                isDark
+                  ? styles.declineButtonDark
+                  : { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
+              ]}
+              onPress={() => onDecline(invitation.id)}
+              disabled={busy}
+              activeOpacity={0.7}
+            >
+              {declining ? (
+                <ActivityIndicator color={colors.text} size="small" />
+              ) : (
+                <Text style={[styles.actionText, { color: colors.text }]}>Decline</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.statusBadgeRow}>
+            <View style={[
+              styles.statusBadge,
+              invitation.status === 'accepted'
+                ? { backgroundColor: 'rgba(52,199,89,0.15)' }
+                : { backgroundColor: 'rgba(255,59,48,0.15)' },
+            ]}>
+              <Ionicons
+                name={invitation.status === 'accepted' ? 'checkmark-circle' : 'close-circle'}
+                size={14}
+                color={invitation.status === 'accepted' ? '#34C759' : '#FF3B30'}
+              />
+              <Text style={[
+                styles.statusBadgeText,
+                { color: invitation.status === 'accepted' ? '#34C759' : '#FF3B30' },
+              ]}>
+                {invitation.status === 'accepted' ? 'Accepted' : 'Declined'}
+              </Text>
+            </View>
+          </View>
+        )}
       </>
     );
   }
@@ -233,8 +271,11 @@ function ActivityRow({
 export default function NotificationsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const { colors, isDark } = useAppTheme();
-  const [activeTab, setActiveTab] = useState<NotificationTab>('activity');
+  const [activeTab, setActiveTab] = useState<NotificationTab>(
+    tab === 'teams' ? 'teams' : 'activity',
+  );
 
   // Team invitations
   const invitationsQuery = useMyTeamInvitations();
@@ -343,6 +384,9 @@ export default function NotificationsScreen() {
           break;
         case 'chat':
           break;
+        case 'team_invitation':
+          setActiveTab('teams');
+          break;
       }
     },
     [markReadMutation, router],
@@ -371,48 +415,127 @@ export default function NotificationsScreen() {
         )}
       </View>
 
-      {/* Notifications */}
-      {notificationsLoading ? (
-        <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />
-      ) : notifications.length > 0 ? (
-        <FlatList
-          data={notifications}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <ActivityRow
-              item={item}
-              colors={colors}
-              isDark={isDark}
-              onPress={handleNotificationPress}
-            />
-          )}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={activityRefreshControl}
-          onEndReached={() => {
-            if (hasNextPage && !isFetchingNextPage) {
-              fetchNextPage();
-            }
-          }}
-          onEndReachedThreshold={0.3}
-          ListFooterComponent={
-            isFetchingNextPage ? (
-              <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 16 }} />
-            ) : null
-          }
-        />
-      ) : (
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={activityRefreshControl}
+      {/* Tabs */}
+      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'activity'
+              ? isDark ? styles.tabActiveDark : { backgroundColor: colors.text, borderColor: colors.text }
+              : { borderColor: colors.border },
+          ]}
+          onPress={() => setActiveTab('activity')}
+          activeOpacity={0.7}
         >
-          <View style={styles.emptyState}>
-            <Ionicons name="notifications-outline" size={40} color={colors.textTertiary} />
-            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No notifications yet</Text>
-          </View>
-        </ScrollView>
+          <Text style={[styles.tabText, { color: activeTab === 'activity' ? (isDark ? '#fff' : colors.textInverse) : colors.textSecondary }]}>Activity</Text>
+          {!!unreadCount && unreadCount > 0 && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'teams'
+              ? isDark ? styles.tabActiveDark : { backgroundColor: colors.text, borderColor: colors.text }
+              : { borderColor: colors.border },
+          ]}
+          onPress={() => setActiveTab('teams')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, { color: activeTab === 'teams' ? (isDark ? '#fff' : colors.textInverse) : colors.textSecondary }]}>Teams</Text>
+          {invitations.filter((i) => i.status === 'pending').length > 0 && (
+            <View style={styles.tabBadge}>
+              <Text style={styles.tabBadgeText}>{invitations.filter((i) => i.status === 'pending').length}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Content */}
+      {activeTab === 'activity' ? (
+        notificationsLoading ? (
+          <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />
+        ) : notifications.length > 0 ? (
+          <FlatList
+            data={notifications}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={({ item }) => (
+              <ActivityRow
+                item={item}
+                colors={colors}
+                isDark={isDark}
+                onPress={handleNotificationPress}
+              />
+            )}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={activityRefreshControl}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={
+              isFetchingNextPage ? (
+                <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 16 }} />
+              ) : null
+            }
+          />
+        ) : (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={activityRefreshControl}
+          >
+            <View style={styles.emptyState}>
+              <Ionicons name="notifications-outline" size={40} color={colors.textTertiary} />
+              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No notifications yet</Text>
+            </View>
+          </ScrollView>
+        )
+      ) : (
+        invitationsQuery.isLoading ? (
+          <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 40 }} />
+        ) : invitations.length > 0 ? (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.invitationsList, { paddingBottom: insets.bottom + 40 }]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={teamsRefreshControl}
+          >
+            {invitations.map((inv) => (
+              <TeamInvitationRow
+                key={inv.id}
+                invitation={inv}
+                onAccept={handleAccept}
+                onDecline={handleDecline}
+                accepting={actionId === inv.id && actionType === 'accept'}
+                declining={actionId === inv.id && actionType === 'decline'}
+                colors={colors}
+                isDark={isDark}
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={teamsRefreshControl}
+          >
+            <View style={styles.emptyState}>
+              <Ionicons name="people-outline" size={40} color={colors.textTertiary} />
+              <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>No team invitations</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textTertiary }]}>
+                When someone invites you to their event team, it will appear here
+              </Text>
+            </View>
+          </ScrollView>
+        )
       )}
 
       <ConfirmModal
@@ -566,6 +689,22 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+  },
+
+  statusBadgeRow: {
+    alignItems: 'flex-start',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  statusBadgeText: {
+    fontSize: 13,
     fontFamily: 'Lato_700Bold',
   },
 

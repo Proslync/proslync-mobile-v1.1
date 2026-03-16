@@ -15,7 +15,7 @@ export function useMyTeamInvitations() {
   return useQuery({
     queryKey: [MY_TEAM_INVITATIONS_KEY],
     queryFn: () => notificationsApi.getMyTeamInvitations(),
-    staleTime: 30_000,
+    staleTime: 0,
   });
 }
 

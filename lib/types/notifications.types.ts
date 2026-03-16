@@ -5,7 +5,8 @@ export type NotificationType =
   | 'payment'
   | 'chat'
   | 'like'
-  | 'comment';
+  | 'comment'
+  | 'team_invitation';
 
 export interface AppNotification {
   id: number;
