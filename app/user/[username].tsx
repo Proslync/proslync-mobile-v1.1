@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Dimensions,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,7 +17,10 @@ import { useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
+import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
+import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { chatApi } from '@/lib/api/chat';
+import { usersApi } from '@/lib/api/users';
 
 import { useUserFeed } from '@/hooks/use-user-feed';
 import { useFollowUser } from '@/hooks/use-follow-user';
@@ -63,9 +67,7 @@ export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { username, userId } = useLocalSearchParams<{ username: string; userId?: string }>();
-  const { showSuccess, showError } = useToast();
-  // Chat handled via chatApi
-
+  const { showError, showSuccess } = useToast();
   const { colors, isDark } = useAppTheme();
   const [user, setUser] = React.useState<PublicUserProfile | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -73,6 +75,9 @@ export default function UserProfileScreen() {
   const [error, setError] = React.useState<string | null>(null);
   const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
   const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
+  const [showMenu, setShowMenu] = React.useState(false);
+  const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
+  const [showReportConfirm, setShowReportConfirm] = React.useState(false);
 
   // Fetch user posts from our backend
   const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserFeed(user?.id);
@@ -81,7 +86,7 @@ export default function UserProfileScreen() {
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
-    onRefresh: refetchPosts,
+    onRefresh: async () => { await refetchPosts(); },
   });
 
   // Follow/unfollow via backend
@@ -150,11 +155,13 @@ export default function UserProfileScreen() {
   const avatarUrl = user?.avatar?.url;
 
   const handleFollow = async () => {
-    if (!user?.id || isFollowInProgress || isUnfollowInProgress) return;    try {
-      if (isFollowing) {        await unfollow();
-      } else {        await follow();
+    if (!user?.id || isFollowInProgress || isUnfollowInProgress) return;
+    try {
+      if (isFollowing) {
+        await unfollow();
+      } else {
+        await follow();
       }
-      // Refetch posts
       await refetchPosts();
     } catch (err: any) {
       console.error('Follow error:', err);
@@ -187,9 +194,33 @@ export default function UserProfileScreen() {
     }
   };
 
-  const handleMoreOptions = () => {
-    showSuccess('More options coming soon');
-  };
+  const isSelf = currentUser && user?.id && String(currentUser.id) === String(user.id);
+
+  const menuOptions: ActionSheetOption[] = [
+    {
+      label: 'Share this profile',
+      icon: 'share-outline',
+      onPress: async () => {
+        try {
+          await Share.share({
+            message: `Check out ${displayName}'s profile on Status!`,
+          });
+        } catch {}
+      },
+    },
+    {
+      label: 'Block',
+      icon: 'ban',
+      destructive: true,
+      onPress: () => setShowBlockConfirm(true),
+    },
+    {
+      label: 'Report',
+      icon: 'flag-outline',
+      destructive: true,
+      onPress: () => setShowReportConfirm(true),
+    },
+  ];
 
   // Dynamic styles based on theme
   const dynamicStyles = {
@@ -302,13 +333,17 @@ export default function UserProfileScreen() {
             )}
           </View>
 
-          <TouchableOpacity
-            style={styles.headerIcon}
-            activeOpacity={0.7}
-            onPress={handleMoreOptions}
-          >
-            <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
-          </TouchableOpacity>
+          {!isSelf ? (
+            <TouchableOpacity
+              style={styles.headerIcon}
+              activeOpacity={0.7}
+              onPress={() => setShowMenu(true)}
+            >
+              <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerIcon} />
+          )}
         </Animated.View>
 
         {/* Profile Info Row - Same as own profile */}
@@ -344,7 +379,7 @@ export default function UserProfileScreen() {
           style={styles.bioSection}
         >
           <Text style={[styles.displayName, dynamicStyles.displayName]}>{displayName}</Text>
-          {user.bio ? <LinkifiedText style={[styles.bio, dynamicStyles.bio]}>{user.bio}</LinkifiedText> : null}
+          {user.bio ? <LinkifiedText style={[styles.bio, dynamicStyles.bio] as any}>{user.bio}</LinkifiedText> : null}
         </Animated.View>
 
         {/* Mutual Followers */}
@@ -451,7 +486,12 @@ export default function UserProfileScreen() {
             </View>
           ) : userPosts.length > 0 ? (
             userPosts.map((post) => (
-              <TouchableOpacity key={post.id} activeOpacity={0.9} style={styles.postContainer}>
+              <TouchableOpacity
+                key={post.id}
+                activeOpacity={0.9}
+                style={styles.postContainer}
+                onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
+              >
                 {post.mediaType === 'video' && post.videoUrl ? (
                   <VideoThumbnailImage
                     videoUrl={post.videoUrl}
@@ -482,6 +522,53 @@ export default function UserProfileScreen() {
         {/* Bottom spacing */}
         <View style={{ height: insets.bottom + 100 }} />
       </ScrollView>
+
+      <ActionSheet
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        options={menuOptions}
+      />
+
+      <ConfirmModal
+        visible={showBlockConfirm}
+        onClose={() => setShowBlockConfirm(false)}
+        onConfirm={async () => {
+          setShowBlockConfirm(false);
+          if (!user?.id) return;
+          try {
+            await usersApi.blockUser(user.id);
+            showSuccess(`Blocked ${displayName}`);
+            router.back();
+          } catch {
+            showError('Failed to block user');
+          }
+        }}
+        title="Block User"
+        message="They won't be able to find your profile, see your posts, or message you."
+        confirmLabel="Block"
+        destructive
+        icon="ban"
+      />
+
+      <ConfirmModal
+        visible={showReportConfirm}
+        onClose={() => setShowReportConfirm(false)}
+        onConfirm={async () => {
+          setShowReportConfirm(false);
+          if (!user?.id) return;
+          try {
+            await usersApi.reportUser(user.id, 'inappropriate');
+            showSuccess('Report submitted');
+          } catch {
+            showError('Failed to submit report');
+          }
+        }}
+        title="Report User"
+        message="We'll review this report and take action if it violates our guidelines."
+        confirmLabel="Report"
+        destructive
+        icon="flag-outline"
+      />
 
       {user?.id && (
         <FollowersSheet
