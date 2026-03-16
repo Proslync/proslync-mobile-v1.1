@@ -21,6 +21,7 @@ export const DEFAULT_EVENT_FORM_VALUES: EventFormData = {
   locationDetails: undefined,
   maxCapacity: '',
   minimumAge: '21',
+  dressCode: undefined,
   isPublic: true,
   isPaid: false,
   tiers: [],
@@ -87,6 +88,7 @@ export function useEditEventForm(options: UseEventFormOptions = {}) {
       minimumAge?: number;
       isPublic?: boolean;
       isPaid?: boolean;
+      dressCode?: string;
       doorCoverPriceCents?: number;
     }) => {
       eventForm.form.reset({
@@ -101,6 +103,7 @@ export function useEditEventForm(options: UseEventFormOptions = {}) {
         location: eventData.location || '',
         maxCapacity: eventData.maxCapacity?.toString() || '',
         minimumAge: eventData.minimumAge?.toString() || '21',
+        dressCode: eventData.dressCode || undefined,
         isPublic: eventData.isPublic ?? true,
         isPaid: eventData.isPaid ?? false,
         tiers: [],

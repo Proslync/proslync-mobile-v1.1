@@ -1,9 +1,10 @@
-// Step 4: Details - Capacity, age requirement, visibility, paid/free
+// Step 4: Details - Capacity, age requirement, dress code, visibility, paid/free
 
 import { View, StyleSheet } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { FormTextInput, FormSwitch } from '@/components/forms';
+import { FormTextInput, FormSwitch, FormSelect } from '@/components/forms';
 import type { EventFormData } from '@/lib/schemas/events';
+import { DRESS_CODE_OPTIONS } from '@/lib/constants/dress-codes';
 
 export function DetailsStep() {
   return (
@@ -23,6 +24,14 @@ export function DetailsStep() {
           keyboardType="number-pad"
         />
       </View>
+
+      <FormSelect<EventFormData>
+        name="dressCode"
+        label="Dress Code"
+        description="Let guests know what to wear"
+        options={DRESS_CODE_OPTIONS}
+        placeholder="None"
+      />
 
       <FormSwitch<EventFormData>
         name="isPublic"

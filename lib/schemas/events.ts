@@ -56,6 +56,7 @@ export const eventFormSchema = z
     // Details (Step 4) - keep as strings for form state
     maxCapacity: z.string().optional().or(z.literal('')),
     minimumAge: z.string().optional().or(z.literal('')),
+    dressCode: z.string().optional(),
     isPublic: z.boolean(),
     isPaid: z.boolean(),
 
@@ -107,6 +108,7 @@ export const locationSchema = z.object({
 export const detailsSchema = z.object({
   maxCapacity: z.string().optional().or(z.literal('')),
   minimumAge: z.string().optional().or(z.literal('')),
+  dressCode: z.string().optional(),
   isPublic: z.boolean(),
   isPaid: z.boolean(),
 });
@@ -141,6 +143,7 @@ export function parseEventFormData(data: EventFormData) {
     minimumAge: data.minimumAge && data.minimumAge.trim() !== ''
       ? parseInt(data.minimumAge, 10)
       : 21,
+    dressCode: data.dressCode || undefined,
     isPublic: data.isPublic,
     // Include inline tiers when event is paid
     ...(data.isPaid && data.tiers?.length

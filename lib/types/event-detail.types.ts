@@ -60,7 +60,6 @@ export interface BottleMenuItem {
 
 /** Extended event with fields not yet on backend */
 export type EventDetailExtended = Event & {
-  dressCode?: string;
   doorTime?: string;
   coverCharge?: string;
   ageRequirement?: string;

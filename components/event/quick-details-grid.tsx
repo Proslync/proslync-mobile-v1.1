@@ -2,6 +2,7 @@ import * as React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { DRESS_CODE_LABELS } from '@/lib/constants/dress-codes';
 import type { EventDetailExtended } from '@/lib/types/event-detail.types';
 
 interface QuickDetailsGridProps {
@@ -12,8 +13,12 @@ export function QuickDetailsGrid({ event }: QuickDetailsGridProps) {
   const { colors, isDark } = useAppTheme();
   const glassColor = isDark ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
 
+  const dressCodeLabel = event.dressCode
+    ? DRESS_CODE_LABELS[event.dressCode] || event.dressCode
+    : undefined;
+
   const items = [
-    { icon: 'shirt-outline' as const, label: 'Dress Code', value: event.dressCode || 'Smart Casual' },
+    { icon: 'shirt-outline' as const, label: 'Dress Code', value: dressCodeLabel || 'None' },
     { icon: 'person-outline' as const, label: 'Age', value: event.ageRequirement || (event.minimumAge ? `${event.minimumAge}+` : '21+') },
     { icon: 'cash-outline' as const, label: 'Cover', value: event.coverCharge || (event.doorCoverPriceCents ? `$${(event.doorCoverPriceCents / 100).toFixed(0)}` : 'Free') },
     { icon: 'time-outline' as const, label: 'Doors', value: event.doorTime || 'TBA' },

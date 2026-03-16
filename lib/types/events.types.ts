@@ -50,6 +50,7 @@ export interface Event {
   endDate: string;
   maxCapacity?: number;
   minimumAge?: number;
+  dressCode?: string;
   eventType?: string;
   imageUrl?: string;
   isPublic: boolean;
