@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   View,
   Text,
@@ -27,23 +28,30 @@ export default function GuestListPage() {
   const [total, setTotal] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
 
-  React.useEffect(() => {
-    async function fetchAttendees() {
-      if (!params.eventId) return;
-      const numericId = parseInt(params.eventId, 10);
-      if (isNaN(numericId)) return;
+  const fetchAttendees = React.useCallback(async () => {
+    if (!params.eventId) return;
+    const numericId = parseInt(params.eventId, 10);
+    if (isNaN(numericId)) return;
 
-      setIsLoading(true);
-      try {
-        const response = await eventsApi.getEventAttendees(numericId);
-        setAttendees(response.attendees);
-        setTotal(response.total);
-      } catch (error) {      } finally {
-        setIsLoading(false);
-      }
+    setIsLoading(true);
+    try {
+      const response = await eventsApi.getEventAttendees(numericId);
+      setAttendees(response.attendees);
+      setTotal(response.total);
+    } catch (error) {      } finally {
+      setIsLoading(false);
     }
-    fetchAttendees();
   }, [params.eventId]);
+
+  React.useEffect(() => {
+    fetchAttendees();
+  }, [fetchAttendees]);
+
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await fetchAttendees();
+    },
+  });
 
   const navigateToProfile = (attendee: EventAttendee) => {
     router.push({
@@ -144,6 +152,7 @@ export default function GuestListPage() {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          refreshControl={refreshControl}
         />
       )}
     </View>

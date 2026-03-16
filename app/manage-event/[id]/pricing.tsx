@@ -19,6 +19,7 @@ import {
   useEventPermissions,
 } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { EventStatus } from '@/lib/types/events.types';
 import type { TicketTier, PricingRule } from '@/lib/types/pricing.types';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,8 +43,13 @@ export default function PricingScreen() {
 
   const eventId = id ? Number(id) : 0;
   const { data: event } = useEvent(eventId || undefined);
-  const { data: tiers = [], isLoading: tiersLoading } = useGetTiers(eventId);
-  const { data: promoCodes = [], isLoading: promosLoading } = useGetPromoCodes(eventId);
+  const { data: tiers = [], isLoading: tiersLoading, refetch: refetchTiers } = useGetTiers(eventId);
+  const { data: promoCodes = [], isLoading: promosLoading, refetch: refetchPromos } = useGetPromoCodes(eventId);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await Promise.all([refetchTiers(), refetchPromos()]);
+    },
+  });
 
   const { canEditBilling } = useEventPermissions(eventId || undefined);
   const isPastEvent = event?.status === EventStatus.FINISHED || event?.status === EventStatus.CANCELLED;
@@ -142,6 +148,7 @@ export default function PricingScreen() {
           style={styles.scrollView}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
         >
           {/* Ticket Pricing Section */}
           <Animated.View entering={FadeInDown.duration(300)}>

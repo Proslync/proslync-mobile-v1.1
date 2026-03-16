@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   useTextBlasts,
   useRecipientCount,
@@ -82,7 +83,9 @@ export default function TextBlastScreen() {
   };
 
   const { data: recipientData, error: recipientError } = useRecipientCount(eventId, 'all');
-  const { data: blasts = [], isLoading } = useTextBlasts(eventId);
+  const { data: blasts = [], isLoading, refetch } = useTextBlasts(eventId);
+
+  const { refreshControl } = useRefreshControl({ onRefresh: async () => { await refetch(); } });
 
   const recipientCount = recipientData?.count ?? 0;
 
@@ -177,6 +180,7 @@ export default function TextBlastScreen() {
             data={sortedBlasts}
             keyExtractor={(item) => String(item.id)}
             renderItem={renderBlastBubble}
+            refreshControl={refreshControl}
             contentContainerStyle={
               sortedBlasts.length === 0 ? styles.emptyList : styles.messagesList
             }

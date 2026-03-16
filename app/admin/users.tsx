@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   useAdminUsers,
   useUpdateUserRole,
@@ -97,6 +98,8 @@ export default function AdminUsersScreen() {
     page,
     limit: 30,
   });
+
+  const { refreshControl } = useRefreshControl({ onRefresh: async () => { await refetch(); } });
 
   const updateRole = useUpdateUserRole();
   const updateStatus = useUpdateUserStatus();
@@ -211,6 +214,7 @@ export default function AdminUsersScreen() {
           renderItem={({ item }) => (
             <UserRow user={item} onPress={() => showActions(item)} colors={colors} />
           )}
+          refreshControl={refreshControl}
           contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.center}>

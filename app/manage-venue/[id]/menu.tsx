@@ -4,6 +4,7 @@ import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
 import { BottomSheet } from '@/components/wallet/bottom-sheet';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   useVenueMenu,
@@ -40,7 +41,12 @@ export default function VenueMenuScreen() {
 
   const venueId = id ? Number(id) : undefined;
 
-  const { data: categories = [], isLoading } = useVenueMenu(venueId);
+  const { data: categories = [], isLoading, refetch } = useVenueMenu(venueId);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
   const createCategory = useCreateMenuCategory(venueId!);
   const deleteCategory = useDeleteMenuCategory(venueId!);
   const createItem = useCreateMenuItem(venueId!);
@@ -150,6 +156,7 @@ export default function VenueMenuScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {/* Empty state */}
         {categories.length === 0 ? (

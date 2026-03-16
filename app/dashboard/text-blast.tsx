@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   useCrossEventTextBlasts,
   useCrossEventRecipientCount,
@@ -64,7 +65,9 @@ export default function DashboardTextBlastScreen() {
   };
 
   const { data: recipientData, isLoading: countLoading } = useCrossEventRecipientCount();
-  const { data: blasts = [], isLoading } = useCrossEventTextBlasts();
+  const { data: blasts = [], isLoading, refetch } = useCrossEventTextBlasts();
+
+  const { refreshControl } = useRefreshControl({ onRefresh: async () => { await refetch(); } });
 
   const recipientCount = recipientData?.count ?? 0;
 
@@ -154,6 +157,7 @@ export default function DashboardTextBlastScreen() {
             data={sortedBlasts}
             keyExtractor={(item) => String(item.id)}
             renderItem={renderBlastBubble}
+            refreshControl={refreshControl}
             contentContainerStyle={
               sortedBlasts.length === 0 ? styles.emptyList : styles.messagesList
             }

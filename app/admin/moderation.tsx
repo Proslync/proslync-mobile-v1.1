@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { adminApi, type ModerationLogEntry } from '@/lib/api/admin';
 
@@ -68,17 +69,19 @@ export default function ModerationScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
   const [page] = useState(1);
 
-  const { data: allLogs, isLoading: allLoading } = useQuery({
+  const { data: allLogs, isLoading: allLoading, refetch: refetchAll } = useQuery({
     queryKey: ['admin-moderation-log', page],
     queryFn: () => adminApi.getModerationLog(page, 50),
     staleTime: 60_000,
   });
 
-  const { data: removedLogs, isLoading: removedLoading } = useQuery({
+  const { data: removedLogs, isLoading: removedLoading, refetch: refetchRemoved } = useQuery({
     queryKey: ['admin-moderation-removed', page],
     queryFn: () => adminApi.getRemovedEvents(page, 50),
     staleTime: 60_000,
   });
+
+  const { refreshControl } = useRefreshControl({ onRefresh: async () => { await refetchAll(); await refetchRemoved(); } });
 
   const isLoading = activeFilter === 'all' ? allLoading : removedLoading;
 
@@ -152,6 +155,7 @@ export default function ModerationScreen() {
           data={displayData}
           renderItem={renderItem}
           keyExtractor={(item) => String(item.id)}
+          refreshControl={refreshControl}
           contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
           showsVerticalScrollIndicator={false}
         />

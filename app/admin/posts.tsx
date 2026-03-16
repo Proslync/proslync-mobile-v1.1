@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAdminPosts, useAdminDeletePost } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
@@ -100,11 +101,13 @@ export default function AdminPostsScreen() {
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data, isLoading } = useAdminPosts({
+  const { data, isLoading, refetch } = useAdminPosts({
     search: debouncedSearch || undefined,
     page,
     limit: 30,
   });
+
+  const { refreshControl } = useRefreshControl({ onRefresh: async () => { await refetch(); } });
 
   const deletePost = useAdminDeletePost();
 
@@ -170,6 +173,7 @@ export default function AdminPostsScreen() {
           renderItem={({ item }) => (
             <PostRow post={item} onDelete={() => confirmDelete(item)} colors={colors} />
           )}
+          refreshControl={refreshControl}
           contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.center}>

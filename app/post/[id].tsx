@@ -22,6 +22,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   usePost,
   usePostComments,
@@ -139,10 +140,12 @@ export default function PostDetailScreen() {
   const { post, isLoading, refetch: refetchPost } = usePost(postId);
 
   // Fetch comments
-  const { comments: postComments, isLoading: commentsLoading } = usePostComments({
+  const { comments: postComments, isLoading: commentsLoading, refetch: refetchComments } = usePostComments({
     postId,
     enabled: Boolean(postId),
   });
+
+  const { refreshControl } = useRefreshControl({ onRefresh: async () => { await refetchPost(); await refetchComments(); } });
 
   // Hooks for mutations
   const { addComment, isAdding: isAddingComment } = useAddComment();
@@ -283,6 +286,7 @@ export default function PostDetailScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {/* Post Author */}
         <Animated.View entering={FadeIn.duration(300)} style={styles.authorSection}>

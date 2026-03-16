@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useVenue } from "@/hooks/use-venue-query";
 import { useFollowVenue } from "@/hooks/use-follow-venue";
 import { useVenueFollowers } from "@/hooks/use-venue-followers";
@@ -43,7 +44,12 @@ export default function VenueProfileScreen() {
   const params = useLocalSearchParams<{ venueId: string }>();
   const venueId = params.venueId ? Number(params.venueId) : undefined;
 
-  const { data: venue, isLoading } = useVenue(venueId);
+  const { data: venue, isLoading, refetch } = useVenue(venueId);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
   const {
     isFollowing,
     isLoading: followLoading,
@@ -178,6 +184,7 @@ export default function VenueProfileScreen() {
           { paddingBottom: insets.bottom + 40 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {/* Profile Section */}
         <Animated.View

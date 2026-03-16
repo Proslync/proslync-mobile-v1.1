@@ -5,6 +5,7 @@ import { GlassButton } from "@/components/glass/glass-button";
 import { BottomSheet } from "@/components/wallet/bottom-sheet";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import {
   useVenueStaff,
@@ -61,7 +62,12 @@ export default function VenueStaffScreen() {
   const { colors } = useAppTheme();
 
   const venueId = id ? Number(id) : 0;
-  const { data: staff = [], isLoading } = useVenueStaff(venueId);
+  const { data: staff = [], isLoading, refetch } = useVenueStaff(venueId);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
   const addStaff = useAddVenueStaff(venueId);
   const updateStaff = useUpdateVenueStaff(venueId);
   const removeStaff = useRemoveVenueStaff(venueId);
@@ -153,6 +159,7 @@ export default function VenueStaffScreen() {
           { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {staff.length === 0 ? (
           <View style={styles.emptyContainer}>

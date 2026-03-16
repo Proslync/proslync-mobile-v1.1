@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   useAdminEvents,
   useUpdateEventStatus,
@@ -101,12 +102,14 @@ export default function AdminEventsScreen() {
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 300);
 
-  const { data, isLoading } = useAdminEvents({
+  const { data, isLoading, refetch } = useAdminEvents({
     search: debouncedSearch || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     page,
     limit: 30,
   });
+
+  const { refreshControl } = useRefreshControl({ onRefresh: async () => { await refetch(); } });
 
   const updateStatus = useUpdateEventStatus();
   const deleteEvent = useAdminDeleteEvent();
@@ -219,6 +222,7 @@ export default function AdminEventsScreen() {
           renderItem={({ item }) => (
             <EventRow event={item} onPress={() => showActions(item)} colors={colors} />
           )}
+          refreshControl={refreshControl}
           contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.center}>

@@ -5,6 +5,7 @@ import { useStableRouter } from '@/hooks/use-stable-router';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useEvent, useEventMarketingStats, usePublishEvent, useDeleteEvent, useEventPermissions } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { EventStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
@@ -45,8 +46,13 @@ export default function OverviewScreen() {
   const { colors, isDark } = useAppTheme();
 
   const eventId = id ? Number(id) : undefined;
-  const { data: event } = useEvent(eventId);
-  const { data: stats, isLoading: statsLoading } = useEventMarketingStats(eventId);
+  const { data: event, refetch: refetchEvent } = useEvent(eventId);
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useEventMarketingStats(eventId);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await Promise.all([refetchEvent(), refetchStats()]);
+    },
+  });
   const publishEvent = usePublishEvent();
   const deleteEvent = useDeleteEvent();
   const { canEditEvents } = useEventPermissions(eventId);
@@ -104,6 +110,7 @@ export default function OverviewScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {/* Stats Section */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>Statistics</Text>

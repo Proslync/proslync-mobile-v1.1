@@ -4,6 +4,7 @@ import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
 import { BottomSheet } from '@/components/wallet/bottom-sheet';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import {
   useVenueSections,
@@ -39,7 +40,12 @@ export default function VenueTablesScreen() {
 
   const venueId = id ? Number(id) : undefined;
 
-  const { data: sections = [], isLoading } = useVenueSections(venueId);
+  const { data: sections = [], isLoading, refetch } = useVenueSections(venueId);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
   const createSection = useCreateSection(venueId!);
   const deleteSection = useDeleteSection(venueId!);
   const createTable = useCreateTable(venueId!);
@@ -196,6 +202,7 @@ export default function VenueTablesScreen() {
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {/* Empty state */}
         {sections.length === 0 ? (
