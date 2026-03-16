@@ -31,13 +31,13 @@ import Mapbox, { MapView, Camera, MarkerView } from '@rnmapbox/maps';
 import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useEvent } from '@/hooks';
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet';
 import { PurchaseTableSheet } from '@/components/tables/purchase-table-sheet';
 import { useTrackEventView } from '@/hooks/use-track-event-view';
 import { useEventTables, EVENT_TABLES_KEY } from '@/hooks/use-venue-tables';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Event } from '@/lib/types/events.types';
 import type { EventTableItem } from '@/lib/types/tables.types';
 import { formatEventDate } from '@/lib/utils/date';
 import { SCREEN_WIDTH } from '@/lib/utils/layout';
@@ -86,8 +86,6 @@ export default function EventPage() {
   const [isPurchased, setIsPurchased] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [showPurchaseSheet, setShowPurchaseSheet] = React.useState(false);
-  const [eventData, setEventData] = React.useState<Event | null>(null);
-  const [isFetchingEvent, setIsFetchingEvent] = React.useState(true);
   const [selectedTable, setSelectedTable] = React.useState<EventTableItem | null>(null);
   const [showTableSheet, setShowTableSheet] = React.useState(false);
   const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({});
@@ -95,6 +93,9 @@ export default function EventPage() {
   const buttonScale = useSharedValue(1);
 
   const eventId = params.id;
+  const numericEventId = eventId ? parseInt(eventId, 10) : undefined;
+  const { data: eventData, isLoading: isFetchingEvent } = useEvent(numericEventId);
+
   const eventTitle = eventData?.name || params.title || 'Event';
   const eventDate = params.date || eventData?.startDate;
   const flyerImage = params.imageUrl || eventData?.flyer?.url || eventData?.imageUrl;
@@ -117,7 +118,12 @@ export default function EventPage() {
   const userId = params.userId;
   const [isPaid, setIsPaid] = React.useState(params.isPaid === 'true');
   const eventPrice = params.price ? parseFloat(params.price) : undefined;
-  const numericEventId = eventId ? parseInt(eventId, 10) : undefined;
+
+  // Sync RSVP/paid state from fetched event data
+  React.useEffect(() => {
+    if (eventData?.isUserRegistered) setIsRsvpd(true);
+    if (eventData?.isPaid) setIsPaid(true);
+  }, [eventData]);
 
   // Fetch event tables
   const { data: eventTables } = useEventTables(
@@ -135,26 +141,6 @@ export default function EventPage() {
     }
     return groups;
   }, [eventTables]);
-
-  // Fetch event details — deferred until navigation animation completes
-  React.useEffect(() => {
-    if (!eventId) return;
-    const task = InteractionManager.runAfterInteractions(() => {
-      (async () => {
-        try {
-          const numId = parseInt(eventId, 10);
-          if (isNaN(numId)) return;
-          const fetchedEvent = await eventsApi.getEvent(numId);
-          setEventData(fetchedEvent);
-          if (fetchedEvent.isUserRegistered) setIsRsvpd(true);
-          if (fetchedEvent.isPaid) setIsPaid(true);
-        } catch {} finally {
-          setIsFetchingEvent(false);
-        }
-      })();
-    });
-    return () => task.cancel();
-  }, [eventId]);
 
   // Track event page view — deferred
   const { trackView } = useTrackEventView(

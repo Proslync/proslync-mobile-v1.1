@@ -43,6 +43,9 @@ export { useDeletePost } from './use-delete-post';
 export { useFollowUser } from './use-follow-user';
 export { useMutualFollowers, MUTUAL_FOLLOWERS_KEY } from './use-mutual-followers';
 
+// User profile hooks
+export { useUserProfile, USER_PROFILE_KEY } from './use-user-profile';
+
 // Search/Discover hooks
 export { useDebounce } from './use-debounce';
 export {

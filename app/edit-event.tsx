@@ -9,11 +9,9 @@ import {
   DetailsStep,
   PricingStep,
 } from '@/components/event-form';
-import { useEditEventForm, useUpdateEvent } from '@/hooks';
+import { useEditEventForm, useUpdateEvent, useEvent } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { eventsApi } from '@/lib/api/events';
 import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
-import type { Event } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
@@ -106,68 +104,40 @@ export default function EditEventScreen() {
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
 
-  // Loading and event state
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [event, setEvent] = React.useState<Event | null>(null);
+  // Event data from React Query
+  const eventId = id ? Number(id) : undefined;
+  const { data: event, isLoading } = useEvent(isNaN(eventId as number) ? undefined : eventId);
   const [existingFlyerUrl, setExistingFlyerUrl] = React.useState<string | null>(null);
   const [existingFlyerMediaType, setExistingFlyerMediaType] = React.useState<'image' | 'video' | null>(null);
 
   const { form, canSubmit, isPaid, resetWithEvent } = useEditEventForm();
   const updateEvent = useUpdateEvent();
 
-  // Load event data
+  // Populate form when event data loads
   React.useEffect(() => {
-    async function loadEvent() {
-      if (!id) {
-        showError('No event ID provided');
-        router.back();
-        return;
-      }
+    if (!event) return;
 
-      try {
-        setIsLoading(true);
-        const eventId = parseInt(id, 10);
-        if (isNaN(eventId)) {
-          throw new Error('Invalid event ID');
-        }
+    resetWithEvent({
+      name: event.name,
+      description: event.description,
+      startDate: event.startDate,
+      endDate: event.endDate,
+      location: event.location,
+      maxCapacity: event.maxCapacity,
+      minimumAge: event.minimumAge,
+      isPublic: event.isPublic,
+      isPaid: event.isPaid,
+      doorCoverPriceCents: event.doorCoverPriceCents,
+    });
 
-        const eventData = await eventsApi.getEvent(eventId);
-        setEvent(eventData);
-
-        // Populate form with event data
-        resetWithEvent({
-          name: eventData.name,
-          description: eventData.description,
-          startDate: eventData.startDate,
-          endDate: eventData.endDate,
-          location: eventData.location,
-          maxCapacity: eventData.maxCapacity,
-          minimumAge: eventData.minimumAge,
-          isPublic: eventData.isPublic,
-          isPaid: eventData.isPaid,
-          doorCoverPriceCents: eventData.doorCoverPriceCents,
-        });
-
-        // Set existing flyer URL and media type
-        if (eventData.flyer?.url) {
-          setExistingFlyerUrl(eventData.flyer.url);
-          const isVideo = eventData.flyer.mimeType?.startsWith('video/');
-          setExistingFlyerMediaType(isVideo ? 'video' : 'image');
-        } else if (eventData.imageUrl) {
-          setExistingFlyerUrl(eventData.imageUrl);
-          setExistingFlyerMediaType('image');
-        }
-      } catch (error: any) {
-        console.error('Error loading event:', error);
-        showError(error?.message || 'Failed to load event');
-        router.back();
-      } finally {
-        setIsLoading(false);
-      }
+    if (event.flyer?.url) {
+      setExistingFlyerUrl(event.flyer.url);
+      setExistingFlyerMediaType(event.flyer.mimeType?.startsWith('video/') ? 'video' : 'image');
+    } else if (event.imageUrl) {
+      setExistingFlyerUrl(event.imageUrl);
+      setExistingFlyerMediaType('image');
     }
-
-    loadEvent();
-  }, [id]);
+  }, [event]);
 
   // Clear existing flyer when user removes it
   const handleFlyerRemoved = () => {

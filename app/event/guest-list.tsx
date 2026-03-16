@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { eventsApi } from '@/lib/api/events';
+import { useEventAttendees } from '@/hooks/use-event-attendees';
 import type { EventAttendee } from '@/lib/types/events.types';
 
 export default function GuestListPage() {
@@ -24,32 +24,14 @@ export default function GuestListPage() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ eventId?: string; eventTitle?: string }>();
 
-  const [attendees, setAttendees] = React.useState<EventAttendee[]>([]);
-  const [total, setTotal] = React.useState(0);
-  const [isLoading, setIsLoading] = React.useState(true);
-
-  const fetchAttendees = React.useCallback(async () => {
-    if (!params.eventId) return;
-    const numericId = parseInt(params.eventId, 10);
-    if (isNaN(numericId)) return;
-
-    setIsLoading(true);
-    try {
-      const response = await eventsApi.getEventAttendees(numericId);
-      setAttendees(response.attendees);
-      setTotal(response.total);
-    } catch (error) {      } finally {
-      setIsLoading(false);
-    }
-  }, [params.eventId]);
-
-  React.useEffect(() => {
-    fetchAttendees();
-  }, [fetchAttendees]);
+  const numericId = params.eventId ? parseInt(params.eventId, 10) : undefined;
+  const { attendees, total, isLoading, refetch } = useEventAttendees({
+    eventId: numericId && !isNaN(numericId) ? numericId : undefined,
+  });
 
   const { refreshControl } = useRefreshControl({
     onRefresh: async () => {
-      await fetchAttendees();
+      await refetch();
     },
   });
 

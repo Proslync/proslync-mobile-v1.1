@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
 import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
@@ -23,13 +22,13 @@ import { chatApi } from '@/lib/api/chat';
 import { usersApi } from '@/lib/api/users';
 
 import { useUserFeed } from '@/hooks/use-user-feed';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { useFollowUser } from '@/hooks/use-follow-user';
 import { useMutualFollowers } from '@/hooks/use-mutual-followers';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { LinkifiedText } from '@/components/shared/linkified-text';
 import { FollowersSheet } from '@/components/feed/followers-sheet';
-import type { PublicUserProfile } from '@/lib/types/auth.types';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -69,10 +68,8 @@ export default function UserProfileScreen() {
   const { username, userId } = useLocalSearchParams<{ username: string; userId?: string }>();
   const { showError, showSuccess } = useToast();
   const { colors, isDark } = useAppTheme();
-  const [user, setUser] = React.useState<PublicUserProfile | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { data: user, isLoading, error: queryError, refetch: refetchUser } = useUserProfile({ username, userId });
   const [isCreatingChat, setIsCreatingChat] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
   const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
   const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
   const [showMenu, setShowMenu] = React.useState(false);
@@ -86,7 +83,7 @@ export default function UserProfileScreen() {
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
-    onRefresh: async () => { await refetchPosts(); },
+    onRefresh: async () => { await Promise.all([refetchUser(), refetchPosts()]); },
   });
 
   // Follow/unfollow via backend
@@ -103,50 +100,7 @@ export default function UserProfileScreen() {
     currentUser?.id !== user?.id ? user?.id : undefined
   );
 
-  React.useEffect(() => {
-    async function loadUser() {
-      if (!username && !userId) {
-        setError('No username provided');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        let profile: PublicUserProfile | null = null;
-
-        if (userId) {
-          // Look up directly by ID when userId is provided
-          const numericId = Number(userId);
-          if (!isNaN(numericId)) {
-            profile = await authApi.getUserById(numericId);
-          }
-        } else if (username) {
-          // Look up by username (original @mention flow)
-          const searchResult = await authApi.getUserByUsername(username);
-          if (searchResult) {
-            profile = await authApi.getUserById(searchResult.id) || searchResult;
-          }
-        }
-
-        if (!profile) {
-          setError('User not found');
-          return;
-        }
-
-        setUser(profile);
-      } catch (err: any) {
-        console.error('Error loading user:', err);
-        setError(err?.message || 'User not found');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    loadUser();
-  }, [username, userId]);
+  const error = queryError?.message || (!user && !isLoading ? 'User not found' : null);
 
   const displayName = user?.firstName
     ? `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`
