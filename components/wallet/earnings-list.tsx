@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEarnings } from '@/hooks/use-wallet-queries';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { EarningsItem } from '@/lib/api/wallet';
 
 type EarningsFilter = 'all' | 'pending' | 'transferred';
@@ -39,18 +40,20 @@ function StatusBadge({ status }: { status: EarningsItem['status'] }) {
 }
 
 function EarningsRow({ item }: { item: EarningsItem }) {
+  const { colors } = useAppTheme();
+
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { borderBottomColor: colors.border }]}>
       <View style={styles.rowLeft}>
-        <Text style={styles.eventName} numberOfLines={1}>{item.eventName}</Text>
-        <Text style={styles.rowDate}>
+        <Text style={[styles.eventName, { color: colors.text }]} numberOfLines={1}>{item.eventName}</Text>
+        <Text style={[styles.rowDate, { color: colors.textSecondary }]}>
           {new Date(item.createdAt).toLocaleDateString()}
         </Text>
       </View>
       <View style={styles.rowRight}>
         <View style={styles.amountsRow}>
-          <Text style={styles.grossAmount}>{formatCents(item.grossAmount)}</Text>
-          <Text style={styles.netAmount}>net {formatCents(item.netAmount)}</Text>
+          <Text style={[styles.grossAmount, { color: colors.text }]}>{formatCents(item.grossAmount)}</Text>
+          <Text style={[styles.netAmount, { color: colors.textSecondary }]}>net {formatCents(item.netAmount)}</Text>
         </View>
         <StatusBadge status={item.status} />
       </View>
@@ -60,6 +63,7 @@ function EarningsRow({ item }: { item: EarningsItem }) {
 
 export function EarningsList() {
   const [filter, setFilter] = useState<EarningsFilter>('all');
+  const { colors, isDark } = useAppTheme();
   const params = filter === 'all' ? undefined : { status: filter as 'pending' | 'transferred' };
   const { data, isLoading, refetch, isRefetching } = useEarnings(params);
 
@@ -69,11 +73,20 @@ export function EarningsList() {
         {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
+            style={[
+              styles.filterChip,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
+              filter === f.key && { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' },
+            ]}
             onPress={() => setFilter(f.key)}
             activeOpacity={0.7}
           >
-            <Text style={[styles.filterText, filter === f.key && styles.filterTextActive]}>
+            <Text style={[
+              styles.filterText,
+              { color: colors.textSecondary },
+              filter === f.key && styles.filterTextActive,
+              filter === f.key && { color: colors.text },
+            ]}>
               {f.label}
             </Text>
           </TouchableOpacity>
@@ -82,7 +95,7 @@ export function EarningsList() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.text} />
         </View>
       ) : (
         <View style={styles.listContent}>
@@ -92,9 +105,9 @@ export function EarningsList() {
             ))
           ) : (
             <View style={styles.emptyContainer}>
-              <Ionicons name="receipt-outline" size={40} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.emptyText}>No earnings yet</Text>
-              <Text style={styles.emptyHint}>
+              <Ionicons name="receipt-outline" size={40} color={colors.textTertiary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No earnings yet</Text>
+              <Text style={[styles.emptyHint, { color: colors.textTertiary }]}>
                 Earnings from ticket sales will appear here
               </Text>
             </View>
@@ -119,18 +132,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  filterChipActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   filterText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
   },
   filterTextActive: {
-    color: '#fff',
     fontFamily: 'Lato_700Bold',
   },
   loadingContainer: {
@@ -148,7 +155,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
   rowLeft: {
     flex: 1,
@@ -157,12 +163,10 @@ const styles = StyleSheet.create({
   eventName: {
     fontSize: 15,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
   },
   rowDate: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
   },
   rowRight: {
@@ -175,12 +179,10 @@ const styles = StyleSheet.create({
   grossAmount: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   netAmount: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   badge: {
     paddingHorizontal: 8,
@@ -199,12 +201,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   emptyHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.3)',
     textAlign: 'center',
   },
 });

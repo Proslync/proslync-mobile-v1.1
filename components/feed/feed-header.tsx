@@ -9,7 +9,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAppTheme } from '@/hooks/use-app-theme';
 import { useUnreadNotificationCount } from '@/hooks';
 import type { FeedTab } from '@/lib/types/feed.types';
 
@@ -23,7 +22,7 @@ export function FeedHeader({
   onTabChange,
 }: FeedHeaderProps) {
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
+  // Feed always has dark overlay — white text regardless of theme
   const router = useRouter();
   const { data: unreadCount } = useUnreadNotificationCount();
 
@@ -38,7 +37,7 @@ export function FeedHeader({
           activeOpacity={0.7}
           onPress={() => router.push('/notifications')}
         >
-          <Ionicons name="notifications-outline" size={22} color={colors.text} />
+          <Ionicons name="notifications-outline" size={22} color="#fff" />
           {!!unreadCount && unreadCount > 0 && (
             <View style={styles.unreadBadge} />
           )}
@@ -50,10 +49,10 @@ export function FeedHeader({
             activeOpacity={0.7}
             style={styles.tab}
           >
-            <Text style={[styles.tabText, { color: colors.textTertiary }, activeTab === 'foryou' && { color: colors.text }]}>
+            <Text style={[styles.tabText, { color: "rgba(255,255,255,0.5)" }, activeTab === 'foryou' && { color: "#fff" }]}>
               For You
             </Text>
-            {activeTab === 'foryou' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
+            {activeTab === 'foryou' && <View style={[styles.tabIndicator, { backgroundColor: "#fff" }]} />}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -61,10 +60,10 @@ export function FeedHeader({
             activeOpacity={0.7}
             style={styles.tab}
           >
-            <Text style={[styles.tabText, { color: colors.textTertiary }, activeTab === 'following' && { color: colors.text }]}>
+            <Text style={[styles.tabText, { color: "rgba(255,255,255,0.5)" }, activeTab === 'following' && { color: "#fff" }]}>
               Following
             </Text>
-            {activeTab === 'following' && <View style={[styles.tabIndicator, { backgroundColor: colors.text }]} />}
+            {activeTab === 'following' && <View style={[styles.tabIndicator, { backgroundColor: "#fff" }]} />}
           </TouchableOpacity>
         </View>
 
@@ -73,7 +72,7 @@ export function FeedHeader({
           onPress={() => router.push('/search-screen')}
           activeOpacity={0.7}
         >
-<Ionicons name="search-outline" size={22} color={colors.text} />
+<Ionicons name="search-outline" size={22} color="#fff" />
         </TouchableOpacity>
       </View>
     </Animated.View>

@@ -40,7 +40,7 @@ const DOC_INFO: Record<DocumentType, { title: string; description: string; icon:
 };
 
 export default function StripeDocumentUploadScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
@@ -142,22 +142,22 @@ export default function StripeDocumentUploadScreen() {
   if (isComplete) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DarkGradientBg />
+        {isDark && <DarkGradientBg />}
         <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
           <Animated.View entering={FadeIn.duration(400)} style={styles.successIcon}>
             <View style={styles.successCircle}>
-              <Ionicons name="checkmark" size={40} color="#fff" />
+              <Ionicons name="checkmark" size={40} color={colors.text} />
             </View>
           </Animated.View>
           <Animated.Text
             entering={FadeInDown.duration(400).delay(200)}
-            style={styles.successTitle}
+            style={[styles.successTitle, { color: colors.text }]}
           >
             Document Submitted
           </Animated.Text>
           <Animated.Text
             entering={FadeInDown.duration(400).delay(300)}
-            style={styles.successDescription}
+            style={[styles.successDescription, { color: colors.textSecondary }]}
           >
             Your document has been submitted for review. Stripe will verify it
             shortly and update your account status.
@@ -165,7 +165,7 @@ export default function StripeDocumentUploadScreen() {
         </View>
         <Animated.View
           entering={FadeIn.duration(400).delay(400)}
-          style={[styles.bottomButton, { paddingBottom: insets.bottom + 24 }]}
+          style={[styles.bottomButton, { paddingBottom: insets.bottom + 24, backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)' }]}
         >
           <GlassButton
             label="Continue"
@@ -182,17 +182,17 @@ export default function StripeDocumentUploadScreen() {
   if (requiredTypes.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DarkGradientBg />
+        {isDark && <DarkGradientBg />}
         <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
-          <Ionicons name="checkmark-circle" size={64} color="rgba(255,255,255,0.5)" />
-          <Text style={[styles.successTitle, { marginTop: 16 }]}>
+          <Ionicons name="checkmark-circle" size={64} color={colors.textTertiary} />
+          <Text style={[styles.successTitle, { marginTop: 16, color: colors.text }]}>
             No Documents Needed
           </Text>
-          <Text style={styles.successDescription}>
+          <Text style={[styles.successDescription, { color: colors.textSecondary }]}>
             Your account doesn't currently require any document uploads.
           </Text>
         </View>
-        <View style={[styles.bottomButton, { paddingBottom: insets.bottom + 24 }]}>
+        <View style={[styles.bottomButton, { paddingBottom: insets.bottom + 24, backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)' }]}>
           <GlassButton label="Go Back" onPress={() => router.back()} fullWidth size="lg" />
         </View>
       </View>
@@ -201,22 +201,22 @@ export default function StripeDocumentUploadScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+      {isDark && <DarkGradientBg />}
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
       >
         <GlassButton
           label=""
-          icon={<Ionicons name="arrow-back" size={24} color="#fff" />}
+          icon={<Ionicons name="arrow-back" size={24} color={colors.text} />}
           variant="glass"
           size="sm"
           onPress={() => router.back()}
           style={styles.backButton}
         />
-        <Text style={styles.headerTitle}>Upload Document</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Upload Document</Text>
         <View style={styles.headerSpacer} />
       </Animated.View>
 
@@ -232,20 +232,20 @@ export default function StripeDocumentUploadScreen() {
         {docInfo && (
           <Animated.View entering={FadeInDown.duration(400).delay(100)}>
             <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.infoCard}>
-              <View style={styles.infoIconContainer}>
+              <View style={[styles.infoIconContainer, { backgroundColor: colors.cardElevated }]}>
                 <Ionicons
                   name={docInfo.icon as any}
                   size={40}
-                  color="#fff"
+                  color={colors.text}
                 />
               </View>
-              <Text style={styles.infoTitle}>
+              <Text style={[styles.infoTitle, { color: colors.text }]}>
                 {docInfo.title}
                 {isIdentityDoc && ` (${identitySide === 'front' ? 'Front' : 'Back'})`}
               </Text>
-              <Text style={styles.infoDescription}>{docInfo.description}</Text>
+              <Text style={[styles.infoDescription, { color: colors.textSecondary }]}>{docInfo.description}</Text>
               {requiredTypes.length > 1 && (
-                <Text style={styles.progressText}>
+                <Text style={[styles.progressText, { color: colors.textTertiary }]}>
                   Document {currentTypeIndex + 1} of {requiredTypes.length}
                 </Text>
               )}
@@ -298,12 +298,12 @@ export default function StripeDocumentUploadScreen() {
       {selectedImage && (
         <Animated.View
           entering={FadeIn.duration(300)}
-          style={[styles.bottomButton, { paddingBottom: insets.bottom + 24 }]}
+          style={[styles.bottomButton, { paddingBottom: insets.bottom + 24, backgroundColor: isDark ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)' }]}
         >
           {uploadMutation.isPending ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator color="#fff" size="small" />
-              <Text style={styles.loadingText}>Uploading...</Text>
+              <Text style={[styles.loadingText, { color: colors.text }]}>Uploading...</Text>
             </View>
           ) : (
             <GlassButton
@@ -334,7 +334,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   backButton: {
     width: 40,
@@ -343,7 +342,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   headerSpacer: {
     width: 40,
@@ -364,7 +362,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -372,21 +369,18 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 8,
     textAlign: 'center',
   },
   infoDescription: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     lineHeight: 20,
   },
   progressText: {
     fontSize: 13,
     fontFamily: 'Lato_600SemiBold',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 12,
   },
   previewCard: {
@@ -416,7 +410,6 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 20,
     paddingTop: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   loadingContainer: {
     height: 48,
@@ -428,7 +421,6 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 15,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
   },
   // Success state
   successContent: {
@@ -453,14 +445,12 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
     marginBottom: 12,
     textAlign: 'center',
   },
   successDescription: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
     lineHeight: 22,
   },

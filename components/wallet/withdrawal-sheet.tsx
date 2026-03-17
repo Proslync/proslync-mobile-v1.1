@@ -454,7 +454,7 @@ export function WithdrawalSheet({
           style={[styles.choiceOption, { backgroundColor: inputBg }]}
           onPress={() => setView('add-bank')}
         >
-          <View style={styles.choiceIconWrap}>
+          <View style={[styles.choiceIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
             <Ionicons name="business-outline" size={24} color={colors.text} />
           </View>
           <View style={styles.choiceInfo}>
@@ -468,7 +468,7 @@ export function WithdrawalSheet({
           style={[styles.choiceOption, { backgroundColor: inputBg }]}
           onPress={() => setView('add-card')}
         >
-          <View style={styles.choiceIconWrap}>
+          <View style={[styles.choiceIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
             <Ionicons name="card-outline" size={24} color={colors.text} />
           </View>
           <View style={styles.choiceInfo}>
@@ -555,6 +555,7 @@ export function WithdrawalSheet({
         <TouchableOpacity
           style={[
             styles.submitButton,
+            { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)' },
             addBankMutation.isPending && { opacity: 0.6 },
           ]}
           onPress={bankForm.handleSubmit(handleAddBank)}
@@ -563,7 +564,7 @@ export function WithdrawalSheet({
           {addBankMutation.isPending ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.submitButtonText}>Add Bank Account</Text>
+            <Text style={[styles.submitButtonText, { color: colors.text }]}>Add Bank Account</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -612,6 +613,7 @@ export function WithdrawalSheet({
           <TouchableOpacity
             style={[
               styles.submitButton,
+              { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)' },
               (!cardComplete || isProcessing) && { opacity: 0.6 },
             ]}
             onPress={handleAddCard}
@@ -620,7 +622,7 @@ export function WithdrawalSheet({
             {isProcessing || addCardMutation.isPending ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.submitButtonText}>Add Debit Card</Text>
+              <Text style={[styles.submitButtonText, { color: colors.text }]}>Add Debit Card</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -869,7 +871,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -904,9 +905,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   submitButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -916,7 +915,6 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   cardField: {
     height: 50,

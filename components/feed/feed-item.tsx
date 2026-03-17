@@ -139,6 +139,7 @@ export function FeedItem({
     return () => sub.remove();
   }, [bgPlayer, isVideoItem, isActive]);
 
+  // Dark theme: full dark overlay. Light theme: softer dark — lets flyer colors bleed through
   const gradientColors = isDark
     ? ([
         "transparent",
@@ -149,10 +150,10 @@ export function FeedItem({
       ] as const)
     : ([
         "transparent",
-        "rgba(255, 255, 255, 0.15)",
-        "rgba(255, 255, 255, 0.5)",
-        "rgba(255, 255, 255, 0.85)",
-        colors.background,
+        "rgba(15, 9, 12, 0.08)",
+        "rgba(15, 9, 12, 0.3)",
+        "rgba(15, 9, 12, 0.6)",
+        "rgba(15, 9, 12, 0.8)",
       ] as const);
 
   const menuItems: ActionSheetOption[] = [
@@ -217,8 +218,8 @@ export function FeedItem({
           />
         ) : null}
         <BlurView
-          intensity={40}
-          tint={isDark ? "dark" : "light"}
+          intensity={isDark ? 40 : 25}
+          tint="dark"
           style={StyleSheet.absoluteFill}
         />
         <LinearGradient
@@ -229,10 +230,10 @@ export function FeedItem({
       </View>
 
       {/* Glassy card */}
-      <View style={[styles.card, { borderColor: colors.border }]}>
+      <View style={[styles.card, { borderColor: "rgba(255,255,255,0.1)" }]}>
         <BlurView
-          intensity={25}
-          tint={isDark ? "dark" : "light"}
+          intensity={isDark ? 25 : 15}
+          tint="dark"
           style={StyleSheet.absoluteFill}
         />
 
@@ -249,15 +250,15 @@ export function FeedItem({
                 style={[
                   styles.organizerAvatar,
                   {
-                    borderColor: colors.border,
-                    backgroundColor: colors.backgroundSecondary,
+                    borderColor: "rgba(255,255,255,0.2)",
+                    backgroundColor: "rgba(255,255,255,0.1)",
                   },
                 ]}
               />
             )}
             <View style={styles.organizerNameRow}>
               <Text
-                style={[styles.organizerName, { color: colors.text }]}
+                style={[styles.organizerName, { color: "#fff" }]}
                 numberOfLines={1}
               >
                 {item.username}
@@ -285,7 +286,7 @@ export function FeedItem({
               {isFollowActionInProgress ? (
                 <ActivityIndicator
                   size="small"
-                  color={isFollowing ? colors.textSecondary : "#fff"}
+                  color={isFollowing ? "rgba(255,255,255,0.7)" : "#fff"}
                 />
               ) : (
                 <Text
@@ -324,13 +325,13 @@ export function FeedItem({
         {/* Card Footer — event title + date */}
         <View style={styles.cardFooter}>
           <Text
-            style={[styles.eventTitle, { color: colors.text }]}
+            style={[styles.eventTitle, { color: "#fff" }]}
             numberOfLines={2}
           >
             {item.eventTitle || item.description || "Untitled Event"}
           </Text>
           {item.eventDate && (
-            <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
+            <Text style={[styles.eventDate, { color: "rgba(255,255,255,0.7)" }]}>
               {formatEventDate(item.eventDate)}
             </Text>
           )}

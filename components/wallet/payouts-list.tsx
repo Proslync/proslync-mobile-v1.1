@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { GlassButton } from '@/components/glass/glass-button';
 import { usePayouts } from '@/hooks/use-wallet-queries';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import type { PayoutItem } from '@/lib/api/wallet';
 
 interface PayoutsListProps {
@@ -30,28 +31,29 @@ const STATUS_CONFIG: Record<PayoutItem['status'], { color: string; bg: string; l
 };
 
 function PayoutRow({ item }: { item: PayoutItem }) {
+  const { colors, isDark } = useAppTheme();
   const statusConfig = STATUS_CONFIG[item.status];
   const destLabel = item.destination.bankName || item.destination.brand || 'Account';
 
   return (
-    <View style={styles.row}>
-      <View style={styles.rowIcon}>
+    <View style={[styles.row, { borderBottomColor: colors.border }]}>
+      <View style={[styles.rowIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
         <Ionicons
           name={item.destination.type === 'bank_account' ? 'business-outline' : 'card-outline'}
           size={18}
-          color="rgba(255, 255, 255, 0.7)"
+          color={colors.textSecondary}
         />
       </View>
       <View style={styles.rowLeft}>
-        <Text style={styles.destLabel} numberOfLines={1}>
+        <Text style={[styles.destLabel, { color: colors.text }]} numberOfLines={1}>
           {destLabel} ••{item.destination.last4}
         </Text>
-        <Text style={styles.rowDate}>
+        <Text style={[styles.rowDate, { color: colors.textSecondary }]}>
           {new Date(item.created).toLocaleDateString()}
         </Text>
       </View>
       <View style={styles.rowRight}>
-        <Text style={styles.payoutAmount}>{formatCents(item.amount)}</Text>
+        <Text style={[styles.payoutAmount, { color: colors.text }]}>{formatCents(item.amount)}</Text>
         <View style={[styles.badge, { backgroundColor: statusConfig.bg }]}>
           <Text style={[styles.badgeText, { color: statusConfig.color }]}>
             {statusConfig.label}
@@ -63,6 +65,7 @@ function PayoutRow({ item }: { item: PayoutItem }) {
 }
 
 export function PayoutsList({ onWithdraw, canWithdraw }: PayoutsListProps) {
+  const { colors, isDark } = useAppTheme();
   const { data, isLoading, refetch, isRefetching } = usePayouts();
 
   return (
@@ -71,7 +74,7 @@ export function PayoutsList({ onWithdraw, canWithdraw }: PayoutsListProps) {
         <View style={styles.withdrawCta}>
           <GlassButton
             label="Withdraw Funds"
-            icon={<Ionicons name="arrow-down-circle" size={18} color="#fff" />}
+            icon={<Ionicons name="arrow-down-circle" size={18} color={colors.text} />}
             variant="glass"
             size="md"
             onPress={onWithdraw}
@@ -82,7 +85,7 @@ export function PayoutsList({ onWithdraw, canWithdraw }: PayoutsListProps) {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.text} />
         </View>
       ) : (
         <View style={styles.listContent}>
@@ -92,9 +95,9 @@ export function PayoutsList({ onWithdraw, canWithdraw }: PayoutsListProps) {
             ))
           ) : (
             <View style={styles.emptyContainer}>
-              <Ionicons name="wallet-outline" size={40} color="rgba(255,255,255,0.3)" />
-              <Text style={styles.emptyText}>No payouts yet</Text>
-              <Text style={styles.emptyHint}>
+              <Ionicons name="wallet-outline" size={40} color={colors.textTertiary} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No payouts yet</Text>
+              <Text style={[styles.emptyHint, { color: colors.textTertiary }]}>
                 Your withdrawal history will appear here
               </Text>
             </View>
@@ -129,13 +132,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
   },
   rowIcon: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -147,12 +148,10 @@ const styles = StyleSheet.create({
   destLabel: {
     fontSize: 15,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
   },
   rowDate: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
   },
   rowRight: {
@@ -162,7 +161,6 @@ const styles = StyleSheet.create({
   payoutAmount: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
   badge: {
     paddingHorizontal: 8,
@@ -181,12 +179,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
   },
   emptyHint: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.3)',
     textAlign: 'center',
   },
 });

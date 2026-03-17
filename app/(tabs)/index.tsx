@@ -22,7 +22,8 @@ export default function FeedScreen() {
   const queryClient = useQueryClient();
   const { user, isAuthenticated } = useAuth();
   const { showSuccess, showError } = useToast();
-  const { colors, isDark } = useAppTheme();
+  const { isDark } = useAppTheme();
+  const feedBg = isDark ? '#000' : '#1a1a1a';
   const [currentIndex, setCurrentIndex] = useState(0);
   const [rsvpItems, setRsvpItems] = useState<Map<string, boolean>>(new Map());
   const [pendingRsvpItems, setPendingRsvpItems] = useState<Map<string, boolean>>(new Map());
@@ -226,10 +227,10 @@ export default function FeedScreen() {
 
   if (isError) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: feedBg }]}>
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>Something went wrong</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.emptyTitle, { color: '#fff' }]}>Something went wrong</Text>
+          <Text style={[styles.emptySubtitle, { color: 'rgba(255,255,255,0.6)' }]}>
             Unable to load feed. Please try again.
           </Text>
         </View>
@@ -239,11 +240,11 @@ export default function FeedScreen() {
 
   if (visibleItems.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: feedBg }]}>
         <FeedHeader activeTab={activeTab} onTabChange={setActiveTab} />
         <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>No content yet</Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          <Text style={[styles.emptyTitle, { color: '#fff' }]}>No content yet</Text>
+          <Text style={[styles.emptySubtitle, { color: 'rgba(255,255,255,0.6)' }]}>
             Check back later for new content!
           </Text>
         </View>
@@ -252,7 +253,7 @@ export default function FeedScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: feedBg }]}>
       <FeedContainer
         items={visibleItems}
         currentIndex={currentIndex}

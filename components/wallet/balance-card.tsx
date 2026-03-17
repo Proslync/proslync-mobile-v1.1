@@ -5,6 +5,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface BalanceCardProps {
   availableCents: number;
@@ -23,18 +24,19 @@ export function BalanceCard({
   lifetimeCents,
   onWithdraw,
 }: BalanceCardProps) {
+  const { colors } = useAppTheme();
   const canWithdraw = availableCents >= 100; // $1 minimum
 
   return (
     <GlassSurface fill="subtle" cornerRadius="lg" style={styles.container}>
       <View style={styles.balanceRow}>
         <View style={styles.balanceItem}>
-          <Text style={styles.balanceLabel}>Available</Text>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Available</Text>
           <Text style={styles.availableAmount}>{formatCents(availableCents)}</Text>
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <View style={styles.balanceItem}>
-          <Text style={styles.balanceLabel}>Pending</Text>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Pending</Text>
           <Text style={styles.pendingAmount}>{formatCents(pendingCents)}</Text>
         </View>
       </View>
@@ -42,7 +44,7 @@ export function BalanceCard({
       <View style={styles.buttonRow}>
         <GlassButton
           label={canWithdraw ? `Withdraw ${formatCents(availableCents)}` : 'Withdraw'}
-          icon={<Ionicons name="arrow-down-circle" size={18} color="#fff" />}
+          icon={<Ionicons name="arrow-down-circle" size={18} color={colors.text} />}
           variant="glass"
           size="md"
           onPress={onWithdraw}
@@ -52,10 +54,10 @@ export function BalanceCard({
       </View>
 
       {lifetimeCents > 0 && (
-        <View style={styles.lifetimeRow}>
+        <View style={[styles.lifetimeRow, { borderTopColor: colors.border }]}>
           <Ionicons name="trending-up" size={16} color="#22c55e" />
-          <Text style={styles.lifetimeLabel}>Lifetime Earnings</Text>
-          <Text style={styles.lifetimeAmount}>{formatCents(lifetimeCents)}</Text>
+          <Text style={[styles.lifetimeLabel, { color: colors.textSecondary }]}>Lifetime Earnings</Text>
+          <Text style={[styles.lifetimeAmount, { color: colors.text }]}>{formatCents(lifetimeCents)}</Text>
         </View>
       )}
     </GlassSurface>
@@ -79,12 +81,10 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     height: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   balanceLabel: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
     marginBottom: 4,
   },
   availableAmount: {
@@ -107,18 +107,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
     gap: 8,
   },
   lifetimeLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
     flex: 1,
   },
   lifetimeAmount: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
 });

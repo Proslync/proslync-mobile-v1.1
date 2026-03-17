@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { WalletBalances } from '../../lib/types/wallet.types';
 
 interface EarningsSummaryProps {
@@ -14,27 +15,28 @@ function formatCents(cents: number): string {
 }
 
 export function EarningsSummary({ balances, onWithdraw }: EarningsSummaryProps) {
+  const { colors, isDark } = useAppTheme();
   const canWithdraw = balances.availableCents >= balances.minimumCashOutCents;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Earnings</Text>
+    <View style={[styles.container, { borderTopColor: colors.border }]}>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Earnings</Text>
 
       {/* Balance Cards */}
       <View style={styles.balanceRow}>
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Available</Text>
+        <View style={[styles.balanceCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Available</Text>
           <Text style={styles.balanceAmount}>{formatCents(balances.availableCents)}</Text>
         </View>
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Pending</Text>
+        <View style={[styles.balanceCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Pending</Text>
           <Text style={[styles.balanceAmount, styles.pendingAmount]}>
             {formatCents(balances.pendingCents)}
           </Text>
         </View>
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>Lifetime</Text>
-          <Text style={[styles.balanceAmount, styles.lifetimeAmount]}>
+        <View style={[styles.balanceCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}>
+          <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Lifetime</Text>
+          <Text style={[styles.balanceAmount, { color: colors.text }]}>
             {formatCents(balances.lifetimeCents)}
           </Text>
         </View>
@@ -42,24 +44,24 @@ export function EarningsSummary({ balances, onWithdraw }: EarningsSummaryProps) 
 
       {/* Withdraw Button - Directly below balances */}
       <TouchableOpacity
-        style={[styles.withdrawButton, !canWithdraw && styles.withdrawButtonDisabled]}
+        style={[styles.withdrawButton, !canWithdraw && [styles.withdrawButtonDisabled, { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }]]}
         onPress={onWithdraw}
         disabled={!canWithdraw}
         activeOpacity={0.8}
       >
-        <Ionicons name="arrow-down-circle" size={20} color="#fff" />
+        <Ionicons name="arrow-down-circle" size={20} color={colors.text} />
         <Text style={styles.withdrawButtonText}>Withdraw</Text>
       </TouchableOpacity>
 
       {/* Helper Texts - Reordered */}
       <View style={styles.helperTexts}>
         {!canWithdraw && (
-          <Text style={styles.minCashoutText}>
+          <Text style={[styles.minCashoutText, { color: colors.textSecondary }]}>
             Min. cash out: {formatCents(balances.minimumCashOutCents)}
           </Text>
         )}
-        <Text style={styles.helperText}>Pending clears after event check-in validation.</Text>
-        <Text style={styles.helperText}>Fees may apply.</Text>
+        <Text style={[styles.helperText, { color: colors.textTertiary }]}>Pending clears after event check-in validation.</Text>
+        <Text style={[styles.helperText, { color: colors.textTertiary }]}>Fees may apply.</Text>
       </View>
     </View>
   );
@@ -70,12 +72,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
   },
   sectionTitle: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 16,
@@ -87,7 +87,6 @@ const styles = StyleSheet.create({
   },
   balanceCard: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderRadius: 12,
     padding: 14,
     alignItems: 'center',
@@ -95,7 +94,6 @@ const styles = StyleSheet.create({
   balanceLabel: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
     marginBottom: 6,
   },
   balanceAmount: {
@@ -105,9 +103,6 @@ const styles = StyleSheet.create({
   },
   pendingAmount: {
     color: '#f59e0b',
-  },
-  lifetimeAmount: {
-    color: 'rgba(255, 255, 255, 0.8)',
   },
   withdrawButton: {
     flexDirection: 'row',
@@ -119,9 +114,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  withdrawButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-  },
+  withdrawButtonDisabled: {},
   withdrawButtonText: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
@@ -134,13 +127,11 @@ const styles = StyleSheet.create({
   minCashoutText: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
   },
   helperText: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.3)',
     textAlign: 'center',
   },
 });

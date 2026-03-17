@@ -279,7 +279,7 @@ export default function PaymentsScreen() {
             size={20}
             color="#fff"
           />
-          <Text style={styles.setupBannerText}>
+          <Text style={[styles.setupBannerText, { color: colors.text }]}>
             {setupResult === "success"
               ? "Payout account connected successfully!"
               : "Account setup is being reviewed by Stripe. This usually takes a few minutes."}
@@ -305,7 +305,7 @@ export default function PaymentsScreen() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#fff"
+              tintColor={colors.text}
             />
           }
         >
@@ -329,7 +329,7 @@ export default function PaymentsScreen() {
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
-              tintColor="#fff"
+              tintColor={colors.text}
             />
           }
         >
@@ -346,13 +346,13 @@ export default function PaymentsScreen() {
                   size={20}
                   color="#f59e0b"
                 />
-                <Text style={styles.docBannerText}>
+                <Text style={[styles.docBannerText, { color: colors.text }]}>
                   Document verification required. Tap to upload.
                 </Text>
                 <Ionicons
                   name="chevron-forward"
                   size={18}
-                  color="rgba(255,255,255,0.5)"
+                  color={colors.textTertiary}
                 />
               </TouchableOpacity>
             </Animated.View>
@@ -373,15 +373,15 @@ export default function PaymentsScreen() {
                       size={20}
                       color="#3b82f6"
                     />
-                    <Text style={styles.futureReqTitle}>
+                    <Text style={[styles.futureReqTitle, { color: colors.text }]}>
                       Upcoming Requirements
                     </Text>
                   </View>
                   {getRequiredRemediationFields(accountStatus.futureRequirements).map(
                     (item) => (
                       <View key={item.requirement} style={styles.futureReqItem}>
-                        <Text style={styles.futureReqDot}>•</Text>
-                        <Text style={styles.futureReqText}>{item.label}</Text>
+                        <Text style={[styles.futureReqDot, { color: colors.textTertiary }]}>•</Text>
+                        <Text style={[styles.futureReqText, { color: colors.textSecondary }]}>{item.label}</Text>
                       </View>
                     ),
                   )}
@@ -452,6 +452,7 @@ interface OverviewTabProps {
 }
 
 function OverviewTab({ earnings, payouts }: OverviewTabProps) {
+  const { colors } = useAppTheme();
   // Combine and sort recent activity (last 10)
   type ActivityItem = {
     id: string;
@@ -491,7 +492,7 @@ function OverviewTab({ earnings, payouts }: OverviewTabProps) {
     <View style={styles.overviewContent}>
       {/* Recent Activity */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Activity</Text>
         {recentActivity.length > 0 ? (
           <GlassSurface
             fill="subtle"
@@ -499,7 +500,7 @@ function OverviewTab({ earnings, payouts }: OverviewTabProps) {
             style={styles.activityList}
           >
             {recentActivity.map((item) => (
-              <View key={item.id} style={styles.activityItem}>
+              <View key={item.id} style={[styles.activityItem, { borderBottomColor: colors.border }]}>
                 <View
                   style={[
                     styles.activityIcon,
@@ -513,10 +514,10 @@ function OverviewTab({ earnings, payouts }: OverviewTabProps) {
                   />
                 </View>
                 <View style={styles.activityInfo}>
-                  <Text style={styles.activityTitle} numberOfLines={1}>
+                  <Text style={[styles.activityTitle, { color: colors.text }]} numberOfLines={1}>
                     {item.title}
                   </Text>
-                  <Text style={styles.activityDate}>
+                  <Text style={[styles.activityDate, { color: colors.textSecondary }]}>
                     {new Date(item.date).toLocaleDateString()}
                   </Text>
                 </View>
@@ -543,10 +544,10 @@ function OverviewTab({ earnings, payouts }: OverviewTabProps) {
             <Ionicons
               name="receipt-outline"
               size={40}
-              color="rgba(255,255,255,0.3)"
+              color={colors.textTertiary}
             />
-            <Text style={styles.emptyText}>No activity yet</Text>
-            <Text style={styles.emptyHint}>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No activity yet</Text>
+            <Text style={[styles.emptyHint, { color: colors.textTertiary }]}>
               Your earnings and withdrawals will appear here
             </Text>
           </GlassSurface>
@@ -586,7 +587,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "#fff",
   },
   loadingText: {
     marginTop: 12,
@@ -609,7 +609,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontFamily: "Lato_600SemiBold",
-    color: "#fff",
   },
   header: {
     flexDirection: "row",
@@ -643,7 +642,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
     marginBottom: 10,
   },
   // Activity
@@ -655,7 +653,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.06)",
   },
   activityIcon: {
     width: 30,
@@ -677,12 +674,10 @@ const styles = StyleSheet.create({
   activityTitle: {
     fontSize: 14,
     fontFamily: "Lato_600SemiBold",
-    color: "#fff",
   },
   activityDate: {
     fontSize: 12,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255, 255, 255, 0.5)",
     marginTop: 2,
   },
   activityAmount: {
@@ -702,13 +697,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontFamily: "Lato_700Bold",
-    color: "rgba(255, 255, 255, 0.5)",
     marginTop: 12,
   },
   emptyHint: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255, 255, 255, 0.3)",
     marginTop: 4,
     textAlign: "center",
   },
@@ -726,7 +719,6 @@ const styles = StyleSheet.create({
   futureReqTitle: {
     fontSize: 14,
     fontFamily: "Lato_600SemiBold",
-    color: "#fff",
   },
   futureReqItem: {
     flexDirection: "row",
@@ -736,11 +728,9 @@ const styles = StyleSheet.create({
   },
   futureReqDot: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.5)",
   },
   futureReqText: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255, 255, 255, 0.7)",
   },
 });
