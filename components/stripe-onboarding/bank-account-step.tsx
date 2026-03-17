@@ -3,10 +3,11 @@ import { useFormContext, Controller } from 'react-hook-form';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
+import { CardField, createToken } from '@stripe/stripe-react-native';
+import { useMemo, useState } from 'react';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassButton } from '@/components/glass/glass-button';
 import type { StripeOnboardingFormData } from '@/lib/validation/stripe-onboarding';
-import { bankAccountFields } from '@/lib/validation/stripe-onboarding';
 
 interface BankAccountStepProps {
   onSubmit: () => void;
@@ -15,14 +16,72 @@ interface BankAccountStepProps {
 }
 
 export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountStepProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { control, trigger, formState: { errors }, setValue, watch } = useFormContext<StripeOnboardingFormData>();
   const tosAccepted = watch('tosAccepted');
+  const payoutMethodType = watch('payoutMethodType');
+  const [cardComplete, setCardComplete] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+
+  const isBank = payoutMethodType === 'bank';
+
+  const switchMethod = (method: 'bank' | 'card') => {
+    setValue('payoutMethodType', method, { shouldValidate: false });
+    setCardError(null);
+  };
+
+  // CardField is a native Stripe component — needs explicit color values per theme
+  const cardStyle = useMemo(() => ({
+    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F5F5F5',
+    textColor: isDark ? '#ffffff' : '#1A1A1A',
+    placeholderColor: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)',
+    borderWidth: 1,
+    borderColor: cardError
+      ? '#ef4444'
+      : isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+    borderRadius: 12,
+    fontSize: 16,
+    cursorColor: isDark ? '#ffffff' : '#1A1A1A',
+  }), [isDark, cardError]);
 
   const handleSubmit = async () => {
-    const valid = await trigger(bankAccountFields);
+    if (payoutMethodType === 'card') {
+      try {
+        const { token, error } = await createToken({ type: 'Card', currency: 'usd' });
+        if (error) {
+          const msg = error.message || 'Invalid card details';
+          if (msg.toLowerCase().includes('credit') || msg.toLowerCase().includes('not a debit')) {
+            setCardError('Only debit cards are accepted for payouts');
+          } else {
+            setCardError(msg);
+          }
+          return;
+        }
+        if (!token?.id) {
+          setCardError('Failed to tokenize card. Please try again.');
+          return;
+        }
+        setValue('cardToken', token.id);
+      } catch (e: any) {
+        setCardError(e?.message || 'Failed to process card');
+        return;
+      }
+    }
+
+    const fieldsToValidate: (keyof StripeOnboardingFormData)[] = ['tosAccepted'];
+    if (isBank) {
+      fieldsToValidate.push('routingNumber', 'accountNumber', 'accountHolderName');
+    }
+    const valid = await trigger(fieldsToValidate);
     if (valid) onSubmit();
   };
+
+  const inputStyle = [styles.input, {
+    color: colors.text,
+    backgroundColor: colors.input,
+    borderColor: colors.borderStrong,
+  }];
+  const errorBorder = { borderColor: '#ef4444' };
 
   return (
     <View style={styles.container}>
@@ -30,7 +89,7 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
         entering={FadeInDown.duration(300)}
         style={[styles.stepTitle, { color: colors.text }]}
       >
-        Bank Account
+        Payout Method
       </Animated.Text>
       <Animated.Text
         entering={FadeInDown.duration(300).delay(50)}
@@ -39,69 +98,126 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
         Where your earnings will be deposited.
       </Animated.Text>
 
-      <Animated.View entering={FadeInDown.duration(300).delay(100)}>
-        <Text style={[styles.label, { color: colors.text }]}>Account Holder Name</Text>
-        <Controller
-          name="accountHolderName"
-          control={control}
-          render={({ field: { onChange, value, onBlur } }) => (
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: errors.accountHolderName ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="John Doe"
-              placeholderTextColor="rgba(255,255,255,0.3)"
-              autoCapitalize="words"
-              autoCorrect={false}
-            />
-          )}
-        />
-        {errors.accountHolderName && <Text style={styles.error}>{errors.accountHolderName.message}</Text>}
+      {/* Method Toggle */}
+      <Animated.View entering={FadeInDown.duration(300).delay(75)} style={styles.toggleRow}>
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            { borderColor: colors.border, backgroundColor: colors.input },
+            isBank && { borderColor: colors.borderStrong, backgroundColor: colors.cardElevated },
+          ]}
+          activeOpacity={0.7}
+          onPress={() => switchMethod('bank')}
+        >
+          <Ionicons name="business-outline" size={18} color={colors.text} style={styles.toggleIcon} />
+          <Text style={[styles.toggleText, { color: colors.textTertiary }, isBank && { color: colors.text, fontFamily: 'Lato_700Bold' }]}>
+            Bank Account
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            { borderColor: colors.border, backgroundColor: colors.input },
+            !isBank && { borderColor: colors.borderStrong, backgroundColor: colors.cardElevated },
+          ]}
+          activeOpacity={0.7}
+          onPress={() => switchMethod('card')}
+        >
+          <Ionicons name="card-outline" size={18} color={colors.text} style={styles.toggleIcon} />
+          <Text style={[styles.toggleText, { color: colors.textTertiary }, !isBank && { color: colors.text, fontFamily: 'Lato_700Bold' }]}>
+            Debit Card
+          </Text>
+        </TouchableOpacity>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.duration(300).delay(150)}>
-        <Text style={[styles.label, { color: colors.text }]}>Routing Number</Text>
-        <Controller
-          name="routingNumber"
-          control={control}
-          render={({ field: { onChange, value, onBlur } }) => (
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: errors.routingNumber ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="110000000"
-              placeholderTextColor="rgba(255,255,255,0.3)"
-              keyboardType="number-pad"
-              maxLength={9}
+      {isBank ? (
+        <>
+          <Animated.View entering={FadeInDown.duration(300).delay(100)}>
+            <Text style={[styles.label, { color: colors.text }]}>Account Holder Name</Text>
+            <Controller
+              name="accountHolderName"
+              control={control}
+              render={({ field: { onChange, value, onBlur } }) => (
+                <TextInput
+                  style={[inputStyle, errors.accountHolderName && errorBorder]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="John Doe"
+                  placeholderTextColor={colors.placeholder}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              )}
             />
-          )}
-        />
-        {errors.routingNumber && <Text style={styles.error}>{errors.routingNumber.message}</Text>}
-      </Animated.View>
+            {errors.accountHolderName && <Text style={styles.error}>{errors.accountHolderName.message}</Text>}
+          </Animated.View>
 
-      <Animated.View entering={FadeInDown.duration(300).delay(200)}>
-        <Text style={[styles.label, { color: colors.text }]}>Account Number</Text>
-        <Controller
-          name="accountNumber"
-          control={control}
-          render={({ field: { onChange, value, onBlur } }) => (
-            <TextInput
-              style={[styles.input, { color: colors.text, borderColor: errors.accountNumber ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="000123456789"
-              placeholderTextColor="rgba(255,255,255,0.3)"
-              keyboardType="number-pad"
-              maxLength={17}
-              secureTextEntry
+          <Animated.View entering={FadeInDown.duration(300).delay(150)}>
+            <Text style={[styles.label, { color: colors.text }]}>Routing Number</Text>
+            <Controller
+              name="routingNumber"
+              control={control}
+              render={({ field: { onChange, value, onBlur } }) => (
+                <TextInput
+                  style={[inputStyle, errors.routingNumber && errorBorder]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="110000000"
+                  placeholderTextColor={colors.placeholder}
+                  keyboardType="number-pad"
+                  maxLength={9}
+                />
+              )}
             />
-          )}
-        />
-        {errors.accountNumber && <Text style={styles.error}>{errors.accountNumber.message}</Text>}
-      </Animated.View>
+            {errors.routingNumber && <Text style={styles.error}>{errors.routingNumber.message}</Text>}
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.duration(300).delay(200)}>
+            <Text style={[styles.label, { color: colors.text }]}>Account Number</Text>
+            <Controller
+              name="accountNumber"
+              control={control}
+              render={({ field: { onChange, value, onBlur } }) => (
+                <TextInput
+                  style={[inputStyle, errors.accountNumber && errorBorder]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="000123456789"
+                  placeholderTextColor={colors.placeholder}
+                  keyboardType="number-pad"
+                  maxLength={17}
+                  secureTextEntry
+                />
+              )}
+            />
+            {errors.accountNumber && <Text style={styles.error}>{errors.accountNumber.message}</Text>}
+          </Animated.View>
+        </>
+      ) : (
+        <Animated.View entering={FadeInDown.duration(300).delay(100)}>
+          <Text style={[styles.label, { color: colors.text }]}>Debit Card</Text>
+          <Text style={[styles.cardNote, { color: colors.textSecondary }]}>
+            Only debit cards are accepted for payouts. Credit cards will be declined.
+          </Text>
+          <View style={styles.cardFieldWrapper}>
+            <CardField
+              postalCodeEnabled={false}
+              placeholders={{ number: '4242 4242 4242 4242' }}
+              cardStyle={cardStyle}
+              style={styles.cardField}
+              onCardChange={(details) => {
+                setCardComplete(details.complete);
+                if (details.complete) setCardError(null);
+              }}
+            />
+          </View>
+          {cardError && <Text style={styles.error}>{cardError}</Text>}
+          {errors.cardToken && !cardError && <Text style={styles.error}>{errors.cardToken.message}</Text>}
+        </Animated.View>
+      )}
 
       {/* TOS Checkbox */}
       <Animated.View entering={FadeInDown.duration(300).delay(250)}>
@@ -110,13 +226,17 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
           activeOpacity={0.7}
           onPress={() => setValue('tosAccepted', !tosAccepted as true, { shouldValidate: true })}
         >
-          <View style={[styles.checkbox, tosAccepted ? styles.checkboxChecked : undefined]}>
-            {tosAccepted && <Ionicons name="checkmark" size={14} color="#fff" />}
+          <View style={[
+            styles.checkbox,
+            { borderColor: colors.borderStrong, backgroundColor: colors.input },
+            tosAccepted && { backgroundColor: colors.cardElevated, borderColor: colors.textSecondary },
+          ]}>
+            {tosAccepted && <Ionicons name="checkmark" size={14} color={colors.text} />}
           </View>
           <Text style={[styles.tosText, { color: colors.textSecondary }]}>
             I agree to the{' '}
             <Text
-              style={styles.tosLink}
+              style={[styles.tosLink, { color: colors.text }]}
               onPress={() => Linking.openURL('https://stripe.com/connect-account/legal/full')}
             >
               Stripe Connected Account Agreement
@@ -135,7 +255,7 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
             fullWidth
             size="lg"
             loading={isSubmitting}
-            disabled={isSubmitting}
+            disabled={isSubmitting || (payoutMethodType === 'card' && !cardComplete)}
           />
         </View>
       </View>
@@ -157,6 +277,26 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 4,
   },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  toggleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  toggleIcon: {
+    marginRight: 6,
+  },
+  toggleText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+  },
   label: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
@@ -169,7 +309,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
     borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  cardNote: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  cardFieldWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  cardField: {
+    width: '100%',
+    height: 50,
   },
   error: {
     fontSize: 13,
@@ -188,15 +341,9 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 1,
-  },
-  checkboxChecked: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderColor: 'rgba(255,255,255,0.5)',
   },
   tosText: {
     flex: 1,
@@ -205,7 +352,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   tosLink: {
-    color: '#fff',
     textDecorationLine: 'underline',
   },
   buttonRow: {

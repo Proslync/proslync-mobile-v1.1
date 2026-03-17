@@ -19,6 +19,13 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
     if (valid) onNext();
   };
 
+  const inputStyle = [styles.input, {
+    color: colors.text,
+    backgroundColor: colors.input,
+    borderColor: colors.borderStrong,
+  }];
+  const errorBorder = { borderColor: '#ef4444' };
+
   return (
     <View style={styles.container}>
       <Animated.Text
@@ -42,12 +49,12 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
             control={control}
             render={({ field: { onChange, value, onBlur } }) => (
               <TextInput
-                style={[styles.input, { color: colors.text, borderColor: errors.firstName ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+                style={[inputStyle, errors.firstName && errorBorder]}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
                 placeholder="John"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="words"
                 autoCorrect={false}
               />
@@ -62,12 +69,12 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
             control={control}
             render={({ field: { onChange, value, onBlur } }) => (
               <TextInput
-                style={[styles.input, { color: colors.text, borderColor: errors.lastName ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+                style={[inputStyle, errors.lastName && errorBorder]}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
                 placeholder="Doe"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="words"
                 autoCorrect={false}
               />
@@ -86,7 +93,7 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
               control={control}
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
-                  style={[styles.input, { color: colors.text, borderColor: errors.dobMonth ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+                  style={[inputStyle, errors.dobMonth && errorBorder]}
                   value={value ? String(value) : ''}
                   onChangeText={(t) => {
                     const n = parseInt(t, 10);
@@ -94,7 +101,7 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
                   }}
                   onBlur={onBlur}
                   placeholder="MM"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor={colors.placeholder}
                   keyboardType="number-pad"
                   maxLength={2}
                 />
@@ -107,7 +114,7 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
               control={control}
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
-                  style={[styles.input, { color: colors.text, borderColor: errors.dobDay ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+                  style={[inputStyle, errors.dobDay && errorBorder]}
                   value={value ? String(value) : ''}
                   onChangeText={(t) => {
                     const n = parseInt(t, 10);
@@ -115,7 +122,7 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
                   }}
                   onBlur={onBlur}
                   placeholder="DD"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor={colors.placeholder}
                   keyboardType="number-pad"
                   maxLength={2}
                 />
@@ -128,7 +135,7 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
               control={control}
               render={({ field: { onChange, value, onBlur } }) => (
                 <TextInput
-                  style={[styles.input, { color: colors.text, borderColor: errors.dobYear ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+                  style={[inputStyle, errors.dobYear && errorBorder]}
                   value={value ? String(value) : ''}
                   onChangeText={(t) => {
                     const n = parseInt(t, 10);
@@ -136,7 +143,7 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
                   }}
                   onBlur={onBlur}
                   placeholder="YYYY"
-                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  placeholderTextColor={colors.placeholder}
                   keyboardType="number-pad"
                   maxLength={4}
                 />
@@ -158,12 +165,12 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
           control={control}
           render={({ field: { onChange, value, onBlur } }) => (
             <TextInput
-              style={[styles.input, { color: colors.text, borderColor: errors.ssnLast4 ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+              style={[inputStyle, errors.ssnLast4 && errorBorder]}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               placeholder="1234"
-              placeholderTextColor="rgba(255,255,255,0.3)"
+              placeholderTextColor={colors.placeholder}
               keyboardType="number-pad"
               maxLength={4}
               secureTextEntry
@@ -206,7 +213,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
     borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   row: {
     flexDirection: 'row',

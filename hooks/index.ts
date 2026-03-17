@@ -163,6 +163,7 @@ export {
   useAddDebitCard,
   useRemoveExternalAccount,
   useSetDefaultExternalAccount,
+  useDeleteStripeAccount,
   useSetupStripeAccount,
   STRIPE_ACCOUNT_STATUS_KEY,
   STRIPE_BALANCE_KEY,
@@ -170,6 +171,7 @@ export {
   STRIPE_EARNINGS_KEY,
   STRIPE_PAYOUTS_KEY,
 } from './use-wallet-queries';
+export { useAccountStatusSocket } from './use-account-status-socket';
 
 // Call hooks
 export { useCall } from '../lib/providers/call-provider';

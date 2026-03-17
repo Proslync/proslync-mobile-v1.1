@@ -20,6 +20,13 @@ export function AddressStep({ onNext, onBack }: AddressStepProps) {
     if (valid) onNext();
   };
 
+  const inputStyle = [styles.input, {
+    color: colors.text,
+    backgroundColor: colors.input,
+    borderColor: colors.borderStrong,
+  }];
+  const errorBorder = { borderColor: '#ef4444' };
+
   return (
     <View style={styles.container}>
       <Animated.Text
@@ -42,12 +49,12 @@ export function AddressStep({ onNext, onBack }: AddressStepProps) {
           control={control}
           render={({ field: { onChange, value, onBlur } }) => (
             <TextInput
-              style={[styles.input, { color: colors.text, borderColor: errors.line1 ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+              style={[inputStyle, errors.line1 && errorBorder]}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               placeholder="123 Main St"
-              placeholderTextColor="rgba(255,255,255,0.3)"
+              placeholderTextColor={colors.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
             />
@@ -63,12 +70,12 @@ export function AddressStep({ onNext, onBack }: AddressStepProps) {
           control={control}
           render={({ field: { onChange, value, onBlur } }) => (
             <TextInput
-              style={[styles.input, { color: colors.text, borderColor: 'rgba(255,255,255,0.2)' }]}
+              style={inputStyle}
               value={value ?? ''}
               onChangeText={onChange}
               onBlur={onBlur}
               placeholder="Apt 4B"
-              placeholderTextColor="rgba(255,255,255,0.3)"
+              placeholderTextColor={colors.placeholder}
               autoCapitalize="words"
             />
           )}
@@ -82,12 +89,12 @@ export function AddressStep({ onNext, onBack }: AddressStepProps) {
           control={control}
           render={({ field: { onChange, value, onBlur } }) => (
             <TextInput
-              style={[styles.input, { color: colors.text, borderColor: errors.city ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+              style={[inputStyle, errors.city && errorBorder]}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
               placeholder="San Francisco"
-              placeholderTextColor="rgba(255,255,255,0.3)"
+              placeholderTextColor={colors.placeholder}
               autoCapitalize="words"
             />
           )}
@@ -103,12 +110,12 @@ export function AddressStep({ onNext, onBack }: AddressStepProps) {
             control={control}
             render={({ field: { onChange, value, onBlur } }) => (
               <TextInput
-                style={[styles.input, { color: colors.text, borderColor: errors.state ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+                style={[inputStyle, errors.state && errorBorder]}
                 value={value}
                 onChangeText={(t) => onChange(t.toUpperCase())}
                 onBlur={onBlur}
                 placeholder="CA"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="characters"
                 maxLength={2}
               />
@@ -123,12 +130,12 @@ export function AddressStep({ onNext, onBack }: AddressStepProps) {
             control={control}
             render={({ field: { onChange, value, onBlur } }) => (
               <TextInput
-                style={[styles.input, { color: colors.text, borderColor: errors.postalCode ? '#ef4444' : 'rgba(255,255,255,0.2)' }]}
+                style={[inputStyle, errors.postalCode && errorBorder]}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
                 placeholder="94105"
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor={colors.placeholder}
                 keyboardType="number-pad"
                 maxLength={5}
               />
@@ -174,7 +181,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
     borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
   },
   row: {
     flexDirection: 'row',

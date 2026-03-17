@@ -85,6 +85,90 @@ export interface StripeAccountStatus {
   detailsSubmitted: boolean;
   requirements?: StripeRequirements;
   futureRequirements?: StripeRequirements;
+  disabledReason?: string;
+}
+
+// Disabled reason message helper
+export interface DisabledReasonInfo {
+  title: string;
+  description: string;
+  isRecoverable: boolean;
+}
+
+export function getDisabledReasonMessage(reason?: string): DisabledReasonInfo {
+  if (!reason) {
+    return { title: 'Account Restricted', description: 'Your account has restrictions. Contact support for help.', isRecoverable: false };
+  }
+
+  if (reason === 'requirements.pending_verification') {
+    return { title: 'Under Review', description: 'Your account is being verified by Stripe. This usually takes a few minutes.', isRecoverable: true };
+  }
+
+  if (reason === 'requirements.past_due') {
+    return { title: 'Action Required', description: 'Stripe needs additional information to keep your account active.', isRecoverable: true };
+  }
+
+  if (reason.startsWith('rejected.')) {
+    const subReason = reason.replace('rejected.', '');
+    const descriptions: Record<string, string> = {
+      fraud: 'Your account was declined due to suspected fraudulent activity.',
+      terms_of_service: 'Your account was declined for violating Stripe\'s terms of service.',
+      listed: 'Your account was declined because it appears on a prohibited persons list.',
+      other: 'Your account was declined. Please contact support for more information.',
+    };
+    return {
+      title: 'Account Declined',
+      description: descriptions[subReason] || descriptions.other,
+      isRecoverable: false,
+    };
+  }
+
+  return { title: 'Account Restricted', description: 'Your account has restrictions. Please resolve outstanding requirements.', isRecoverable: true };
+}
+
+// Remediation field mapping
+export type RemediationTarget = 'personal_info' | 'address' | 'bank_account' | 'document' | 'unknown';
+
+export interface RemediationItem {
+  requirement: string;
+  target: RemediationTarget;
+  label: string;
+}
+
+const REQUIREMENT_MAP: { pattern: string; target: RemediationTarget; label: string }[] = [
+  { pattern: 'individual.dob', target: 'personal_info', label: 'Date of birth' },
+  { pattern: 'individual.ssn_last_4', target: 'personal_info', label: 'SSN (last 4 digits)' },
+  { pattern: 'individual.first_name', target: 'personal_info', label: 'First name' },
+  { pattern: 'individual.last_name', target: 'personal_info', label: 'Last name' },
+  { pattern: 'individual.address', target: 'address', label: 'Address' },
+  { pattern: 'individual.verification.document', target: 'document', label: 'Identity document' },
+  { pattern: 'external_account', target: 'bank_account', label: 'Bank account or debit card' },
+  { pattern: 'documents.bank_account_ownership_verification', target: 'document', label: 'Bank account verification document' },
+];
+
+export function getRequiredRemediationFields(requirements?: StripeRequirements): RemediationItem[] {
+  if (!requirements) return [];
+
+  const allDue = [...(requirements.currentlyDue ?? []), ...(requirements.pastDue ?? [])];
+  if (allDue.length === 0) return [];
+
+  const seen = new Set<string>();
+  const items: RemediationItem[] = [];
+
+  for (const req of allDue) {
+    const mapping = REQUIREMENT_MAP.find(m => req.includes(m.pattern));
+    const key = mapping ? mapping.target : req;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    if (mapping) {
+      items.push({ requirement: req, target: mapping.target, label: mapping.label });
+    } else {
+      items.push({ requirement: req, target: 'unknown', label: req });
+    }
+  }
+
+  return items;
 }
 
 export interface CreateAccountResponse {
@@ -124,7 +208,8 @@ export interface OnboardingBankAccount {
 export interface CreateCustomAccountRequest {
   personalInfo: OnboardingPersonalInfo;
   address: OnboardingAddress;
-  bankAccount: OnboardingBankAccount;
+  bankAccount?: OnboardingBankAccount;
+  cardToken?: string;
 }
 
 export interface CreateCustomAccountResponse {
@@ -143,6 +228,7 @@ export interface UpdateCustomAccountRequest {
   personalInfo?: OnboardingPersonalInfo;
   address?: OnboardingAddress;
   bankAccount?: OnboardingBankAccount;
+  cardToken?: string;
   fullSsn?: string;
 }
 

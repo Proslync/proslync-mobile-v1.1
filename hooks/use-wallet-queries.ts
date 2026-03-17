@@ -38,35 +38,39 @@ export function useStripeAccountStatus() {
   });
 }
 
-export function useStripeBalance() {
+export function useStripeBalance(enabled = true) {
   return useQuery<BalanceResponse>({
     queryKey: [STRIPE_BALANCE_KEY],
     queryFn: () => stripeConnectApi.getBalance(),
     staleTime: 30 * 1000,
+    enabled,
   });
 }
 
-export function useExternalAccounts() {
+export function useExternalAccounts(enabled = true) {
   return useQuery<ExternalAccountsResponse>({
     queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY],
     queryFn: () => stripeConnectApi.getExternalAccounts(),
     staleTime: 5 * 60 * 1000,
+    enabled,
   });
 }
 
-export function useEarnings(params?: GetEarningsParams) {
+export function useEarnings(params?: GetEarningsParams, enabled = true) {
   return useQuery<EarningsListResponse>({
     queryKey: [STRIPE_EARNINGS_KEY, params],
     queryFn: () => stripeConnectApi.getEarnings(params),
     staleTime: 60 * 1000,
+    enabled,
   });
 }
 
-export function usePayouts(params?: GetPayoutsParams) {
+export function usePayouts(params?: GetPayoutsParams, enabled = true) {
   return useQuery<PayoutsListResponse>({
     queryKey: [STRIPE_PAYOUTS_KEY, params],
     queryFn: () => stripeConnectApi.getPayouts(params),
     staleTime: 60 * 1000,
+    enabled,
   });
 }
 
@@ -152,6 +156,18 @@ export function useSetDefaultExternalAccount() {
   return useMutation<ExternalAccount, Error, string>({
     mutationFn: (externalAccountId) => stripeConnectApi.setDefaultExternalAccount(externalAccountId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY] });
+    },
+  });
+}
+
+export function useDeleteStripeAccount() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error>({
+    mutationFn: () => stripeConnectApi.deleteAccount(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [STRIPE_ACCOUNT_STATUS_KEY] });
+      queryClient.invalidateQueries({ queryKey: [STRIPE_BALANCE_KEY] });
       queryClient.invalidateQueries({ queryKey: [STRIPE_EXTERNAL_ACCOUNTS_KEY] });
     },
   });

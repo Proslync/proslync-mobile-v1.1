@@ -24,13 +24,17 @@ import {
   usePayouts,
   useStripeAccountStatus,
   useStripeBalance,
+  useDeleteStripeAccount,
 } from "@/hooks/use-wallet-queries";
+import { useAccountStatusSocket } from "@/hooks/use-account-status-socket";
 import {
   stripeConnectApi,
   needsDocumentUpload,
+  getRequiredRemediationFields,
   type EarningsItem,
   type PayoutItem,
   type StripeAccountStatus,
+  type RemediationItem,
 } from "@/lib/api/wallet";
 import type { PayoutMethod, WalletBalances } from "@/lib/types/wallet.types";
 import { Ionicons } from "@expo/vector-icons";
@@ -78,7 +82,7 @@ function toPayoutMethod(account: any): PayoutMethod {
 }
 
 export default function PaymentsScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
@@ -94,13 +98,19 @@ export default function PaymentsScreen() {
   );
   const setupHandledRef = React.useRef(false);
 
+  // Real-time account status updates via WebSocket
+  useAccountStatusSocket({ enabled: true });
+
+  const deleteAccount = useDeleteStripeAccount();
+
   // React Query hooks — all fetch independently (matching web app pattern)
   const { data: accountStatus, isLoading: statusLoading } =
     useStripeAccountStatus();
-  const { data: balance } = useStripeBalance();
-  const { data: externalAccounts } = useExternalAccounts();
-  const { data: earningsData } = useEarnings();
-  const { data: payoutsData } = usePayouts();
+  const hasAccount = !!accountStatus?.hasAccount;
+  const { data: balance } = useStripeBalance(hasAccount);
+  const { data: externalAccounts } = useExternalAccounts(hasAccount);
+  const { data: earningsData } = useEarnings(undefined, hasAccount);
+  const { data: payoutsData } = usePayouts(undefined, hasAccount);
   // Handle return from Stripe onboarding deep link
   React.useEffect(() => {
     if (!setup || setupHandledRef.current) return;
@@ -150,6 +160,34 @@ export default function PaymentsScreen() {
     minimumCashOutCents: 100,
   };
 
+  const handleRemediationPress = useCallback((item: RemediationItem) => {
+    switch (item.target) {
+      case 'personal_info':
+        router.push('/stripe-onboarding?mode=update&step=0');
+        break;
+      case 'address':
+        router.push('/stripe-onboarding?mode=update&step=1');
+        break;
+      case 'bank_account':
+        router.push('/stripe-onboarding?mode=update&step=2');
+        break;
+      case 'document':
+        router.push('/stripe-document-upload');
+        break;
+      default:
+        toast.showError(`Unknown requirement: ${item.requirement}. Please contact support.`);
+    }
+  }, [router, toast]);
+
+  const handleDeleteAccount = useCallback(async () => {
+    try {
+      await deleteAccount.mutateAsync();
+      toast.showSuccess('Account deleted. You can set up a new one.');
+    } catch (error: any) {
+      toast.showError(error?.message || 'Failed to delete account');
+    }
+  }, [deleteAccount, toast]);
+
   const handleSetup = async () => {
     if (accountStatus?.hasAccount && needsDocumentUpload(accountStatus?.requirements, accountStatus?.futureRequirements)) {
       router.push("/stripe-document-upload");
@@ -198,30 +236,30 @@ export default function PaymentsScreen() {
           { backgroundColor: colors.background },
         ]}
       >
-        <DarkGradientBg />
-        <ActivityIndicator size="large" color="#fff" />
-        <Text style={styles.loadingText}>Loading payments...</Text>
+        {isDark && <DarkGradientBg />}
+        <ActivityIndicator size="large" color={colors.text} />
+        <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Loading payments...</Text>
       </View>
     );
   }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+      {isDark && <DarkGradientBg />}
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
       >
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Payments</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Payments</Text>
         <View style={styles.headerButton} />
       </Animated.View>
 
@@ -274,7 +312,10 @@ export default function PaymentsScreen() {
           <OnboardingCard
             onSetup={handleSetup}
             onCheckStatus={handleRefresh}
+            onDeleteAccount={handleDeleteAccount}
+            onRemediationPress={handleRemediationPress}
             isSettingUp={false}
+            isDeletingAccount={deleteAccount.isPending}
             accountStatus={accountStatus}
           />
         </ScrollView>
@@ -316,6 +357,38 @@ export default function PaymentsScreen() {
               </TouchableOpacity>
             </Animated.View>
           )}
+          {/* Future requirements info card */}
+          {accountStatus?.futureRequirements &&
+            ((accountStatus.futureRequirements.currentlyDue?.length ?? 0) > 0 ||
+              (accountStatus.futureRequirements.eventuallyDue?.length ?? 0) > 0) && (
+              <Animated.View entering={FadeInDown.duration(300)}>
+                <GlassSurface
+                  fill="subtle"
+                  cornerRadius="md"
+                  style={styles.futureReqCard}
+                >
+                  <View style={styles.futureReqHeader}>
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={20}
+                      color="#3b82f6"
+                    />
+                    <Text style={styles.futureReqTitle}>
+                      Upcoming Requirements
+                    </Text>
+                  </View>
+                  {getRequiredRemediationFields(accountStatus.futureRequirements).map(
+                    (item) => (
+                      <View key={item.requirement} style={styles.futureReqItem}>
+                        <Text style={styles.futureReqDot}>•</Text>
+                        <Text style={styles.futureReqText}>{item.label}</Text>
+                      </View>
+                    ),
+                  )}
+                </GlassSurface>
+              </Animated.View>
+            )}
+
           <BalanceCard
             availableCents={availableCents}
             pendingCents={balancesForSheet.pendingCents}
@@ -519,7 +592,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255, 255, 255, 0.5)",
   },
   docBanner: {
     flexDirection: "row",
@@ -546,7 +618,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
   },
   headerButton: {
     width: 40,
@@ -557,7 +628,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
   },
   scrollView: {
     flex: 1,
@@ -641,5 +711,36 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.3)",
     marginTop: 4,
     textAlign: "center",
+  },
+  futureReqCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    padding: 14,
+  },
+  futureReqHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
+  futureReqTitle: {
+    fontSize: 14,
+    fontFamily: "Lato_600SemiBold",
+    color: "#fff",
+  },
+  futureReqItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 3,
+  },
+  futureReqDot: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.5)",
+  },
+  futureReqText: {
+    fontSize: 13,
+    fontFamily: "Lato_400Regular",
+    color: "rgba(255, 255, 255, 0.7)",
   },
 });

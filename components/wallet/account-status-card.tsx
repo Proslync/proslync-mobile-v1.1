@@ -12,7 +12,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
-import type { StripeAccountStatus } from '@/lib/api/wallet';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { getDisabledReasonMessage, type StripeAccountStatus } from '@/lib/api/wallet';
 
 interface AccountStatusCardProps {
   accountStatus: StripeAccountStatus;
@@ -21,6 +22,14 @@ interface AccountStatusCardProps {
 }
 
 function getStatusInfo(status: StripeAccountStatus) {
+  if (status.onboardingStatus === 'rejected') {
+    return {
+      icon: 'close-circle' as const,
+      iconColor: '#ef4444',
+      text: 'Declined',
+      textColor: '#ef4444',
+    };
+  }
   if (status.chargesEnabled && status.payoutsEnabled) {
     return {
       icon: 'checkmark-circle' as const,
@@ -58,6 +67,7 @@ export function AccountStatusCard({
   onContinueSetup,
   isSettingUp,
 }: AccountStatusCardProps) {
+  const { colors } = useAppTheme();
   const [isOpen, setIsOpen] = useState(false);
   const chevronRotation = useSharedValue(0);
   const contentHeight = useSharedValue(0);
@@ -96,57 +106,56 @@ export function AccountStatusCard({
           <View style={styles.triggerLeft}>
             <Ionicons name={statusInfo.icon} size={20} color={statusInfo.iconColor} />
             <View>
-              <Text style={styles.title}>Account Status</Text>
+              <Text style={[styles.title, { color: colors.text }]}>Account Status</Text>
               <Text style={[styles.statusText, { color: statusInfo.textColor }]}>
                 {statusInfo.text}
               </Text>
             </View>
           </View>
           <Animated.View style={chevronStyle}>
-            <Ionicons name="chevron-down" size={18} color="rgba(255,255,255,0.5)" />
+            <Ionicons name="chevron-down" size={18} color={colors.textTertiary} />
           </Animated.View>
         </TouchableOpacity>
 
         {/* Expandable Content */}
         <Animated.View style={contentStyle}>
-          <View style={styles.details}>
-            {/* Charges Enabled */}
+          <View style={[styles.details, { borderTopColor: colors.border }]}>
+            {/* Payments capability */}
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Charges Enabled</Text>
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Payments</Text>
               <Text
                 style={[
                   styles.detailValue,
                   { color: accountStatus.chargesEnabled ? '#22c55e' : '#ef4444' },
                 ]}
               >
-                {accountStatus.chargesEnabled ? 'Yes' : 'No'}
+                {accountStatus.chargesEnabled ? 'Active' : 'Inactive'}
               </Text>
             </View>
 
-            {/* Payouts Enabled */}
+            {/* Payouts capability */}
             <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Payouts Enabled</Text>
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>Payouts</Text>
               <Text
                 style={[
                   styles.detailValue,
                   { color: accountStatus.payoutsEnabled ? '#22c55e' : '#ef4444' },
                 ]}
               >
-                {accountStatus.payoutsEnabled ? 'Yes' : 'No'}
+                {accountStatus.payoutsEnabled
+                  ? 'Active'
+                  : accountStatus.detailsSubmitted
+                    ? 'Pending verification'
+                    : 'Inactive'}
               </Text>
             </View>
 
-            {/* Details Submitted */}
-            {accountStatus.hasAccount && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Details Submitted</Text>
-                <Text
-                  style={[
-                    styles.detailValue,
-                    { color: accountStatus.detailsSubmitted ? '#22c55e' : '#f59e0b' },
-                  ]}
-                >
-                  {accountStatus.detailsSubmitted ? 'Yes' : 'No'}
+            {/* Disabled reason message */}
+            {accountStatus.disabledReason && (
+              <View style={[styles.reasonRow, { backgroundColor: colors.cardElevated }]}>
+                <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
+                <Text style={[styles.reasonText, { color: colors.textSecondary }]}>
+                  {getDisabledReasonMessage(accountStatus.disabledReason).description}
                 </Text>
               </View>
             )}
@@ -191,7 +200,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
   },
   statusText: {
     fontSize: 12,
@@ -202,7 +210,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 14,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
     paddingTop: 12,
     gap: 10,
   },
@@ -214,7 +221,6 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
   },
   detailValue: {
     fontSize: 13,
@@ -223,5 +229,18 @@ const styles = StyleSheet.create({
   setupButton: {
     flexDirection: 'row',
     marginTop: 4,
+  },
+  reasonRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    padding: 10,
+    borderRadius: 8,
+  },
+  reasonText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    lineHeight: 17,
   },
 });

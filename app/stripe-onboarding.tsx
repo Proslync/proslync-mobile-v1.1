@@ -11,10 +11,7 @@ import {
   useUpdateCustomAccount,
 } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import type {
-  CreateCustomAccountRequest,
-  UpdateCustomAccountRequest,
-} from "@/lib/api/wallet";
+import type { UpdateCustomAccountRequest } from "@/lib/api/wallet";
 import { useAuth } from "@/lib/providers/auth-provider";
 import {
   stripeOnboardingSchema,
@@ -42,19 +39,23 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const TOTAL_STEPS = 3;
 
 export default function StripeOnboardingScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { from, mode } = useLocalSearchParams<{
+  const { from, mode, step } = useLocalSearchParams<{
     from?: string;
     mode?: string;
+    step?: string;
   }>();
   const isUpdateMode = mode === "update";
 
-  const [stepIndex, setStepIndex] = useState(0);
+  const [stepIndex, setStepIndex] = useState(() => {
+    const parsed = step ? parseInt(step, 10) : NaN;
+    return !isNaN(parsed) && parsed >= 0 && parsed < TOTAL_STEPS ? parsed : 0;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -75,12 +76,14 @@ export default function StripeOnboardingScreen() {
       city: "",
       state: "",
       postalCode: "",
+      payoutMethodType: "bank" as const,
       routingNumber: "",
       accountNumber: "",
       accountHolderName:
         user?.firstName && user?.lastName
           ? `${user.firstName} ${user.lastName}`
           : "",
+      cardToken: "",
       tosAccepted: false as unknown as true,
     },
     mode: "onBlur",
@@ -104,54 +107,45 @@ export default function StripeOnboardingScreen() {
     try {
       const data = methods.getValues();
 
+      const personalInfo = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        dobDay: data.dobDay,
+        dobMonth: data.dobMonth,
+        dobYear: data.dobYear,
+        ssnLast4: data.ssnLast4,
+      };
+      const address = {
+        line1: data.line1,
+        line2: data.line2 || undefined,
+        city: data.city,
+        state: data.state,
+        postalCode: data.postalCode,
+      };
+
+      const payoutMethod =
+        data.payoutMethodType === "card"
+          ? { cardToken: data.cardToken }
+          : {
+              bankAccount: {
+                routingNumber: data.routingNumber,
+                accountNumber: data.accountNumber,
+                accountHolderName: data.accountHolderName,
+              },
+            };
+
       if (isUpdateMode) {
-        const updateRequest: UpdateCustomAccountRequest = {
-          personalInfo: {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            dobDay: data.dobDay,
-            dobMonth: data.dobMonth,
-            dobYear: data.dobYear,
-            ssnLast4: data.ssnLast4,
-          },
-          address: {
-            line1: data.line1,
-            line2: data.line2 || undefined,
-            city: data.city,
-            state: data.state,
-            postalCode: data.postalCode,
-          },
-          bankAccount: {
-            routingNumber: data.routingNumber,
-            accountNumber: data.accountNumber,
-            accountHolderName: data.accountHolderName,
-          },
-        };
-        await updateAccount.mutateAsync(updateRequest);
+        await updateAccount.mutateAsync({
+          personalInfo,
+          address,
+          ...payoutMethod,
+        } as UpdateCustomAccountRequest);
       } else {
-        const request: CreateCustomAccountRequest = {
-          personalInfo: {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            dobDay: data.dobDay,
-            dobMonth: data.dobMonth,
-            dobYear: data.dobYear,
-            ssnLast4: data.ssnLast4,
-          },
-          address: {
-            line1: data.line1,
-            line2: data.line2 || undefined,
-            city: data.city,
-            state: data.state,
-            postalCode: data.postalCode,
-          },
-          bankAccount: {
-            routingNumber: data.routingNumber,
-            accountNumber: data.accountNumber,
-            accountHolderName: data.accountHolderName,
-          },
-        };
-        await createAccount.mutateAsync(request);
+        await createAccount.mutateAsync({
+          personalInfo,
+          address,
+          ...payoutMethod,
+        });
       }
       await queryClient.invalidateQueries({
         queryKey: [STRIPE_ACCOUNT_STATUS_KEY],
@@ -179,25 +173,25 @@ export default function StripeOnboardingScreen() {
   if (isComplete) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DarkGradientBg />
+        {isDark && <DarkGradientBg />}
         <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
           <Animated.View
             entering={FadeIn.duration(400)}
             style={styles.successIcon}
           >
             <View style={styles.successCircle}>
-              <Ionicons name="checkmark" size={40} color="#fff" />
+              <Ionicons name="checkmark" size={40} color={colors.text} />
             </View>
           </Animated.View>
           <Animated.Text
             entering={FadeInDown.duration(400).delay(200)}
-            style={styles.successTitle}
+            style={[styles.successTitle, { color: colors.text }]}
           >
             Account Created
           </Animated.Text>
           <Animated.Text
             entering={FadeInDown.duration(400).delay(300)}
-            style={styles.successDescription}
+            style={[styles.successDescription, { color: colors.textSecondary }]}
           >
             Your payout account is being verified by Stripe. This usually takes
             a few minutes. You'll be able to receive payments once verified.
@@ -221,21 +215,21 @@ export default function StripeOnboardingScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+      {isDark && <DarkGradientBg />}
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
+        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
       >
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Set Up Payouts</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Set Up Payouts</Text>
         <View style={styles.headerButton} />
       </Animated.View>
 
@@ -285,7 +279,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.08)",
   },
   headerButton: {
     width: 40,
@@ -296,7 +289,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
   },
   keyboardAvoid: {
     flex: 1,
@@ -333,14 +325,12 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 24,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
     marginBottom: 12,
     textAlign: "center",
   },
   successDescription: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.6)",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,

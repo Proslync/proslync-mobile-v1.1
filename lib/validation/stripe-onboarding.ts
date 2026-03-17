@@ -59,11 +59,55 @@ export const addBankAccountSchema = z.object({
 
 export type AddBankAccountFormData = z.infer<typeof addBankAccountSchema>;
 
-export const stripeOnboardingSchema = z.object({
-  ...personalInfoSchema.shape,
-  ...addressSchema.shape,
-  ...bankAccountSchema.shape,
-});
+export const stripeOnboardingSchema = z
+  .object({
+    ...personalInfoSchema.shape,
+    ...addressSchema.shape,
+    payoutMethodType: z.enum(['bank', 'card']),
+    // Bank account fields — validated only when payoutMethodType === 'bank'
+    routingNumber: z.string(),
+    accountNumber: z.string(),
+    accountHolderName: z.string(),
+    // Card token — set programmatically when payoutMethodType === 'card'
+    cardToken: z.string(),
+    tosAccepted: z.literal(true, {
+      message: 'You must accept the Terms of Service',
+    }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.payoutMethodType === 'bank') {
+      if (!data.routingNumber || !/^\d{9}$/.test(data.routingNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Must be 9-digit routing number',
+          path: ['routingNumber'],
+        });
+      }
+      if (!data.accountNumber || !/^\d{4,17}$/.test(data.accountNumber)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Must be 4-17 digits',
+          path: ['accountNumber'],
+        });
+      }
+      if (!data.accountHolderName) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Account holder name is required',
+          path: ['accountHolderName'],
+        });
+      }
+    }
+    if (data.payoutMethodType === 'card') {
+      if (!data.cardToken) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Please enter your debit card details',
+          path: ['cardToken'],
+        });
+      }
+    }
+  });
 
 export type StripeOnboardingFormData = z.infer<typeof stripeOnboardingSchema>;
 
