@@ -12,6 +12,8 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { CreatePricingRuleRequest, PricingRule } from '@/lib/types/pricing.types';
@@ -69,41 +71,67 @@ export function CreatePricingRuleModal({
         <View style={styles.header}>
           <Text style={styles.title}>{isEditing ? 'Edit Pricing' : 'Add Pricing'}</Text>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>Name *</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Early Bird, Regular, Last Minute"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            maxLength={100}
-            autoFocus
-          />
+          <View style={styles.inputWrapper}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="e.g. Early Bird, Regular, Last Minute"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              maxLength={100}
+              autoFocus
+            />
+          </View>
 
           <Text style={styles.label}>Price (USD) *</Text>
-          <TextInput
-            style={styles.input}
-            value={price}
-            onChangeText={setPrice}
-            placeholder="0.00"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            keyboardType="decimal-pad"
-          />
+          <View style={styles.inputWrapper}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={styles.input}
+              value={price}
+              onChangeText={setPrice}
+              placeholder="0.00"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              keyboardType="decimal-pad"
+            />
+          </View>
 
           <Text style={styles.label}>Capacity</Text>
-          <TextInput
-            style={styles.input}
-            value={capacity}
-            onChangeText={setCapacity}
-            placeholder="Unlimited (leave empty)"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            keyboardType="number-pad"
-          />
+          <View style={styles.inputWrapper}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={styles.input}
+              value={capacity}
+              onChangeText={setCapacity}
+              placeholder="Unlimited (leave empty)"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              keyboardType="number-pad"
+            />
+          </View>
         </ScrollView>
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -113,6 +141,11 @@ export function CreatePricingRuleModal({
             disabled={!isValid || loading}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.submitText}>
               {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Pricing'}
             </Text>
@@ -139,7 +172,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -152,11 +185,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  inputWrapper: {
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 12,
+    overflow: 'hidden',
+  },
+  input: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -165,7 +200,7 @@ const styles = StyleSheet.create({
   },
   footer: { padding: 20 },
   submitButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     borderRadius: 12,

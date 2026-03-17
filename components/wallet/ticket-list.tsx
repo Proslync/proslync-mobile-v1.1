@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useMyTickets } from '@/hooks/use-my-tickets';
 import { TicketActionSheet } from './ticket-action-sheet';
 import type { WalletEventCard } from '../../lib/types/wallet.types';
 import type { UserTicket } from '@/lib/api/tickets';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 
 // Filter tab definitions
 const TICKET_FILTERS: { key: string; label: string; ticketStatus: string }[] = [
@@ -74,12 +76,16 @@ function TicketCard({ event, onView, onActions, colors, isDark, dimmed }: Ticket
     <TouchableOpacity
       style={[
         styles.ticketCard,
-        { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' },
         dimmed && { opacity: 0.6 },
       ]}
       onPress={onView}
       activeOpacity={0.8}
     >
+      <GlassView
+        {...liquidGlass.surface}
+        borderRadius={16}
+        style={StyleSheet.absoluteFillObject}
+      />
       <Image source={{ uri: event.flyerUrl }} style={[styles.ticketImage, { backgroundColor: colors.backgroundSecondary }]} />
       <View style={styles.ticketInfo}>
         <View style={styles.titleRow}>
@@ -102,8 +108,7 @@ function TicketCard({ event, onView, onActions, colors, isDark, dimmed }: Ticket
         <TouchableOpacity
           style={[
             styles.viewBtn,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
-              borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)' }
+            { borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)' }
           ]}
           onPress={(e) => {
             e.stopPropagation();
@@ -112,6 +117,11 @@ function TicketCard({ event, onView, onActions, colors, isDark, dimmed }: Ticket
           }}
           activeOpacity={0.7}
         >
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={20}
+            style={StyleSheet.absoluteFillObject}
+          />
           <Text style={[styles.viewBtnText, { color: isDark ? '#fff' : '#000' }]}>
             View
           </Text>
@@ -161,6 +171,12 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
             onPress={() => setActiveFilter(f.key)}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.surface}
+              tintColor={activeFilter === f.key ? glassTint.fill : glassTint.surface}
+              borderRadius={16}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Text style={[styles.filterText, activeFilter === f.key && styles.filterTextActive]}>
               {f.label}
             </Text>
@@ -229,10 +245,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    overflow: 'hidden' as const,
   },
   filterChipActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   filterText: {
     fontSize: 13,
@@ -312,6 +327,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    overflow: 'hidden' as const,
     borderWidth: 1,
     alignSelf: 'center',
     marginRight: 12,

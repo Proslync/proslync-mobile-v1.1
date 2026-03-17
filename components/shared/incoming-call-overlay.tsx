@@ -10,7 +10,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { BlurView } from 'expo-blur';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useCall } from '@/lib/providers/call-provider';
 
 export function IncomingCallOverlay() {
@@ -38,7 +39,10 @@ export function IncomingCallOverlay() {
       statusBarTranslucent
     >
       <View style={styles.overlay}>
-        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+        <GlassView
+          {...liquidGlass.surface}
+          style={StyleSheet.absoluteFill}
+        />
 
         <View style={[styles.content, { paddingTop: insets.top + 60 }]}>
           {/* Caller Avatar */}
@@ -72,7 +76,12 @@ export function IncomingCallOverlay() {
               style={styles.actionWrapper}
               onPress={handleDecline}
             >
-              <View style={[styles.actionButton, styles.declineButton]}>
+              <View style={styles.actionButton}>
+                <GlassView
+                  {...liquidGlass.danger}
+                  borderRadius={36}
+                  style={StyleSheet.absoluteFill}
+                />
                 <Ionicons name="close" size={32} color="#fff" />
               </View>
               <Text style={styles.actionLabel}>Decline</Text>
@@ -83,7 +92,12 @@ export function IncomingCallOverlay() {
               style={styles.actionWrapper}
               onPress={handleAccept}
             >
-              <View style={[styles.actionButton, styles.acceptButton]}>
+              <View style={styles.actionButton}>
+                <GlassView
+                  {...liquidGlass.success}
+                  borderRadius={36}
+                  style={StyleSheet.absoluteFill}
+                />
                 <Ionicons
                   name={incomingCall.isVideo ? 'videocam' : 'call'}
                   size={32}
@@ -150,12 +164,7 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  declineButton: {
-    backgroundColor: '#FF3B30',
-  },
-  acceptButton: {
-    backgroundColor: '#34C759',
+    overflow: 'hidden',
   },
   actionLabel: {
     fontSize: 13,

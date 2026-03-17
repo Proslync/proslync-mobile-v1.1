@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -50,7 +52,12 @@ export function ChangeRoleModal({
         <View style={styles.header}>
           <Text style={styles.title}>Change Role</Text>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>✕</Text>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={styles.closeText}>{'\u2715'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -66,6 +73,12 @@ export function ChangeRoleModal({
                 activeOpacity={0.7}
               >
                 <View style={[styles.roleRow, isSelected && styles.roleRowSelected]}>
+                  <GlassView
+                    {...liquidGlass.fill}
+                    tintColor={isSelected ? glassTint.fillMedium : glassTint.fill}
+                    borderRadius={12}
+                    style={StyleSheet.absoluteFill}
+                  />
                   <View style={styles.roleInfo}>
                     <Text style={styles.roleName}>{role.name}</Text>
                     {role.description ? (
@@ -90,6 +103,11 @@ export function ChangeRoleModal({
             disabled={!hasChanged || loading}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.submitText}>
               {loading ? 'Saving...' : 'Save'}
             </Text>
@@ -116,7 +134,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -138,11 +156,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
     marginBottom: 8,
   },
   roleRowSelected: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderColor: 'rgba(255,255,255,0.25)',
   },
   roleInfo: { flex: 1 },
@@ -159,12 +176,12 @@ const styles = StyleSheet.create({
   },
   footer: { padding: 20 },
   submitButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    overflow: 'hidden',
   },
   submitDisabled: { opacity: 0.4 },
   submitText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },

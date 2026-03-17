@@ -31,6 +31,8 @@ import { LinkifiedText } from '@/components/shared/linkified-text';
 import { FollowersSheet } from '@/components/feed/followers-sheet';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
@@ -381,22 +383,21 @@ export default function UserProfileScreen() {
           <TouchableOpacity
             style={[
               styles.actionButton,
-              isFollowing ? [styles.actionButtonSecondary, { backgroundColor: colors.buttonSecondary }] : styles.actionButtonPrimary,
               (isFollowInProgress || isUnfollowInProgress) && styles.actionButtonDisabled,
             ]}
             onPress={handleFollow}
             activeOpacity={0.8}
             disabled={isFollowInProgress || isUnfollowInProgress}
           >
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={8}
+              style={styles.actionButtonGlass}
+            />
             {isFollowInProgress || isUnfollowInProgress ? (
-              <ActivityIndicator size="small" color={colors.text} />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text
-                style={[
-                  styles.actionButtonText,
-                  isFollowing ? { color: colors.text } : styles.actionButtonTextPrimary,
-                ]}
-              >
+              <Text style={styles.actionButtonText}>
                 {isFollowing ? 'Following' : 'Follow'}
               </Text>
             )}
@@ -404,18 +405,21 @@ export default function UserProfileScreen() {
           <TouchableOpacity
             style={[
               styles.actionButton,
-              styles.actionButtonSecondary,
-              { backgroundColor: colors.buttonSecondary },
               isCreatingChat && styles.actionButtonDisabled,
             ]}
             onPress={handleMessage}
             activeOpacity={0.8}
             disabled={isCreatingChat}
           >
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={8}
+              style={styles.actionButtonGlass}
+            />
             {isCreatingChat ? (
-              <ActivityIndicator size="small" color={colors.text} />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={[styles.actionButtonText, { color: colors.text }]}>Message</Text>
+              <Text style={styles.actionButtonText}>Message</Text>
             )}
           </TouchableOpacity>
         </Animated.View>
@@ -635,12 +639,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 36,
+    overflow: 'hidden',
   },
-  actionButtonPrimary: {
-    backgroundColor: '#0095f6',
-  },
-  actionButtonSecondary: {
-    // backgroundColor set dynamically
+  actionButtonGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
   },
   actionButtonDisabled: {
     opacity: 0.7,
@@ -648,6 +651,7 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
+    color: '#fff',
   },
   actionButtonTextPrimary: {
     color: '#fff',

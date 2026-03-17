@@ -1,16 +1,20 @@
 import * as React from 'react';
 import {
   View,
-  Text,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { SegmentedControl } from '@/components/shared/segmented-control';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useUnreadNotificationCount } from '@/hooks';
 import type { FeedTab } from '@/lib/types/feed.types';
+
+const TABS: FeedTab[] = ['foryou', 'following'];
+const TAB_LABELS = ['For You', 'Following'];
 
 interface FeedHeaderProps {
   activeTab: FeedTab;
@@ -26,56 +30,64 @@ export function FeedHeader({
   const router = useRouter();
   const { data: unreadCount } = useUnreadNotificationCount();
 
+  const selectedIndex = TABS.indexOf(activeTab);
+
   return (
-    <Animated.View
-      entering={FadeInDown.duration(500)}
-      style={[styles.container, { paddingTop: insets.top }]}
-    >
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.headerRow}>
+        {/* Notification button */}
         <TouchableOpacity
-          style={styles.iconButton}
           activeOpacity={0.7}
           onPress={() => router.push('/notifications')}
+          style={styles.iconTouchable}
         >
-          <Ionicons name="notifications-outline" size={22} color="#fff" />
+          <View style={styles.iconWrapper}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={20}
+              style={styles.iconGlassBg}
+            />
+            <View style={styles.iconContent}>
+              <Ionicons name="notifications-outline" size={20} color="#fff" />
+            </View>
+          </View>
           {!!unreadCount && unreadCount > 0 && (
             <View style={styles.unreadBadge} />
           )}
         </TouchableOpacity>
 
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            onPress={() => onTabChange('foryou')}
-            activeOpacity={0.7}
-            style={styles.tab}
-          >
-            <Text style={[styles.tabText, { color: "rgba(255,255,255,0.5)" }, activeTab === 'foryou' && { color: "#fff" }]}>
-              For You
-            </Text>
-            {activeTab === 'foryou' && <View style={[styles.tabIndicator, { backgroundColor: "#fff" }]} />}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => onTabChange('following')}
-            activeOpacity={0.7}
-            style={styles.tab}
-          >
-            <Text style={[styles.tabText, { color: "rgba(255,255,255,0.5)" }, activeTab === 'following' && { color: "#fff" }]}>
-              Following
-            </Text>
-            {activeTab === 'following' && <View style={[styles.tabIndicator, { backgroundColor: "#fff" }]} />}
-          </TouchableOpacity>
+        {/* Glass segmented control */}
+        <View style={styles.segmentedControl}>
+          <SegmentedControl
+            segments={TAB_LABELS}
+            selectedIndex={selectedIndex}
+            onSelect={(index) => {
+              if (index >= 0 && index < TABS.length) {
+                onTabChange(TABS[index]);
+              }
+            }}
+          />
         </View>
 
+        {/* Search button */}
         <TouchableOpacity
-          style={styles.iconButton}
           onPress={() => router.push('/search-screen')}
           activeOpacity={0.7}
+          style={styles.iconTouchable}
         >
-<Ionicons name="search-outline" size={22} color="#fff" />
+          <View style={styles.iconWrapper}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={20}
+              style={styles.iconGlassBg}
+            />
+            <View style={styles.iconContent}>
+              <Ionicons name="search-outline" size={20} color="#fff" />
+            </View>
+          </View>
         </TouchableOpacity>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
@@ -87,44 +99,38 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 50,
     paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
   },
-  iconButton: {
-    width: 36,
-    height: 36,
+  iconTouchable: {
+    // Wraps the icon for touch handling
+  },
+  iconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  iconGlassBg: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 20,
+  },
+  iconContent: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tabRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 24,
-  },
-  tab: {
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  tabText: {
-    fontSize: 16,
-    fontFamily: 'Lato_600SemiBold',
-  },
-  tabIndicator: {
-    marginTop: 4,
-    width: 28,
-    height: 3,
-    borderRadius: 1.5,
+  segmentedControl: {
+    flex: 1,
   },
   unreadBadge: {
     position: 'absolute',
-    top: 6,
-    right: 6,
+    top: 4,
+    right: 4,
     width: 8,
     height: 8,
     borderRadius: 4,

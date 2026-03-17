@@ -26,7 +26,8 @@ import Animated, {
   FadeInUp,
   FadeOutDown,
 } from 'react-native-reanimated';
-import { BlurView } from 'expo-blur';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -733,7 +734,12 @@ export default function ScannerScreen() {
           exiting={FadeOutDown.duration(200)}
           style={styles.resultOverlay}
         >
-          <BlurView intensity={60} tint="dark" style={styles.membershipResultBlur}>
+          <View style={styles.membershipResultBlur}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={32}
+              style={StyleSheet.absoluteFill}
+            />
             <View style={[styles.membershipResultCard, { paddingBottom: insets.bottom + 28 }]}>
               {/* Profile Card */}
               <View style={mcStyles.card}>
@@ -824,7 +830,7 @@ export default function ScannerScreen() {
                 <Text style={styles.rescanLinkText}>Scan Different Card</Text>
               </TouchableOpacity>
             </View>
-          </BlurView>
+          </View>
         </Animated.View>
       )}
 
@@ -835,7 +841,13 @@ export default function ScannerScreen() {
           exiting={FadeOutDown.duration(200)}
           style={styles.resultOverlay}
         >
-          <BlurView intensity={80} tint="light" style={styles.resultBlur}>
+          <View style={styles.resultBlur}>
+            <GlassView
+              {...liquidGlass.fillStrong}
+              colorScheme={'light' as const}
+              borderRadius={32}
+              style={StyleSheet.absoluteFill}
+            />
             <View style={[styles.resultCard, { paddingBottom: insets.bottom + 28 }]}>
               {/* Status indicator */}
               <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(idResult.status) }]}>
@@ -941,7 +953,7 @@ export default function ScannerScreen() {
                 )}
               </View>
             </View>
-          </BlurView>
+          </View>
         </Animated.View>
       )}
 

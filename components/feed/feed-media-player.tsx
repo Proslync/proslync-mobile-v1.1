@@ -5,10 +5,11 @@ import {
   StyleSheet,
   Dimensions,
   TouchableWithoutFeedback,
-  Image,
+  Image as RNImage,
   ActivityIndicator,
   AppState,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
@@ -34,6 +35,8 @@ interface FeedMediaPlayerProps {
   mediaOrientation?: MediaOrientation;
   containerWidth?: number;
   maxHeight?: number;
+  /** Full-screen cover mode — ignores aspect ratio, fills entire parent */
+  fullScreen?: boolean;
 }
 
 function calculateMediaDimensions(
@@ -60,15 +63,16 @@ export function FeedMediaPlayer({
   mediaHeight,
   containerWidth = SCREEN_WIDTH * 0.85,
   maxHeight: propMaxHeight,
+  fullScreen = false,
 }: FeedMediaPlayerProps) {
   const { colors, isDark } = useAppTheme();
   const [detectedAspectRatio, setDetectedAspectRatio] = React.useState<number | null>(null);
   const [videoAspectRatio, setVideoAspectRatio] = React.useState<number | null>(null);
   const [isLoadingImageRatio, setIsLoadingImageRatio] = React.useState(
-    mediaType === 'image' && !propAspectRatio && !mediaWidth
+    !fullScreen && mediaType === 'image' && !propAspectRatio && !mediaWidth
   );
   const [isLoadingVideoRatio, setIsLoadingVideoRatio] = React.useState(
-    mediaType === 'video' && !propAspectRatio && !mediaWidth
+    !fullScreen && mediaType === 'video' && !propAspectRatio && !mediaWidth
   );
 
   const isVideo = mediaType === 'video' && !!videoUrl;
@@ -84,7 +88,7 @@ export function FeedMediaPlayer({
 
   // Detect video dimensions from player metadata when video loads
   React.useEffect(() => {
-    if (!player || !isVideo || propAspectRatio || (mediaWidth && mediaHeight)) {
+    if (fullScreen || !player || !isVideo || propAspectRatio || (mediaWidth && mediaHeight)) {
       setIsLoadingVideoRatio(false);
       return;
     }
@@ -118,29 +122,34 @@ export function FeedMediaPlayer({
     return () => {
       subscription.remove();
     };
-  }, [player, isVideo, propAspectRatio, mediaWidth, mediaHeight]);
+  }, [player, isVideo, propAspectRatio, mediaWidth, mediaHeight, fullScreen]);
 
   // Determine aspect ratio priority: prop > calculated from dimensions > video detected > image detected > default
   const effectiveAspectRatio = React.useMemo(() => {
+    if (fullScreen) return DEFAULT_ASPECT_RATIO; // unused in full-screen mode
     if (propAspectRatio && propAspectRatio > 0) return propAspectRatio;
     if (mediaWidth && mediaHeight && mediaHeight > 0) return mediaWidth / mediaHeight;
     if (isVideo && videoAspectRatio) return videoAspectRatio;
     if (mediaType === 'image' && detectedAspectRatio) return detectedAspectRatio;
     return DEFAULT_ASPECT_RATIO;
-  }, [propAspectRatio, mediaWidth, mediaHeight, videoAspectRatio, detectedAspectRatio, mediaType, isVideo]);
+  }, [propAspectRatio, mediaWidth, mediaHeight, videoAspectRatio, detectedAspectRatio, mediaType, isVideo, fullScreen]);
 
   const maxHeight = propMaxHeight || SCREEN_HEIGHT * 0.58;
   const mediaDimensions = React.useMemo(
-    () => calculateMediaDimensions(effectiveAspectRatio, containerWidth, maxHeight),
-    [effectiveAspectRatio, containerWidth, maxHeight]
+    () => fullScreen ? { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } : calculateMediaDimensions(effectiveAspectRatio, containerWidth, maxHeight),
+    [effectiveAspectRatio, containerWidth, maxHeight, fullScreen]
   );
 
   // Detect aspect ratio from image if not provided
   React.useEffect(() => {
+    if (fullScreen) {
+      setIsLoadingImageRatio(false);
+      return;
+    }
     const url = mediaType === 'image' ? imageUrl : poster;
     if (url && !propAspectRatio && !mediaWidth) {
       setIsLoadingImageRatio(mediaType === 'image');
-      Image.getSize(
+      RNImage.getSize(
         url,
         (width, height) => {
           if (height > 0) setDetectedAspectRatio(width / height);
@@ -151,7 +160,7 @@ export function FeedMediaPlayer({
     } else {
       setIsLoadingImageRatio(false);
     }
-  }, [mediaType, imageUrl, poster, propAspectRatio, mediaWidth]);
+  }, [mediaType, imageUrl, poster, propAspectRatio, mediaWidth, fullScreen]);
 
   // Safe wrappers
   const safePlay = React.useCallback(() => {
@@ -196,13 +205,15 @@ export function FeedMediaPlayer({
     }
   };
 
-  const mediaWrapperStyle = {
-    width: mediaDimensions.width,
-    height: mediaDimensions.height,
-    borderRadius: 0,
-    overflow: 'hidden' as const,
-    backgroundColor: colors.backgroundSecondary,
-  };
+  const mediaWrapperStyle = fullScreen
+    ? StyleSheet.absoluteFill
+    : {
+        width: mediaDimensions.width,
+        height: mediaDimensions.height,
+        borderRadius: 0,
+        overflow: 'hidden' as const,
+        backgroundColor: colors.backgroundSecondary,
+      };
 
   const loadingOverlayColor = isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)';
   const loadingIndicatorColor = isDark ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.7)';
@@ -214,14 +225,16 @@ export function FeedMediaPlayer({
   if (mediaType === 'image' && imageUrl) {
     return (
       <TouchableWithoutFeedback onPress={handleTap}>
-        <View style={styles.container}>
+        <View style={fullScreen ? styles.fullScreenContainer : styles.container}>
           <View style={mediaWrapperStyle}>
             <Image
               source={{ uri: imageUrl }}
               style={styles.media}
-              resizeMode="cover"
+              contentFit="cover"
+              allowDownscaling={false}
+              cachePolicy="memory-disk"
             />
-            {isLoadingImageRatio && (
+            {!fullScreen && isLoadingImageRatio && (
               <View style={[styles.loadingOverlay, { backgroundColor: loadingOverlayColor }]}>
                 <ActivityIndicator size="small" color={loadingIndicatorColor} />
               </View>
@@ -237,14 +250,16 @@ export function FeedMediaPlayer({
   if (isVideo && player) {
     return (
       <TouchableWithoutFeedback onPress={handleTap}>
-        <View style={styles.container}>
+        <View style={fullScreen ? styles.fullScreenContainer : styles.container}>
           <View style={mediaWrapperStyle}>
             {/* Show poster image behind video while loading */}
             {posterUrl && (
               <Image
                 source={{ uri: posterUrl }}
                 style={styles.posterImage}
-                resizeMode="cover"
+                contentFit="cover"
+                allowDownscaling={false}
+                cachePolicy="memory-disk"
               />
             )}
             <VideoView
@@ -253,7 +268,7 @@ export function FeedMediaPlayer({
               contentFit="cover"
               nativeControls={false}
             />
-            {isLoadingVideoRatio && (
+            {!fullScreen && isLoadingVideoRatio && (
               <View style={[styles.loadingOverlay, { backgroundColor: loadingOverlayColor }]}>
                 <ActivityIndicator size="small" color={loadingIndicatorColor} />
               </View>
@@ -269,12 +284,14 @@ export function FeedMediaPlayer({
   if (imageUrl || poster) {
     return (
       <TouchableWithoutFeedback onPress={handleTap}>
-        <View style={styles.container}>
+        <View style={fullScreen ? styles.fullScreenContainer : styles.container}>
           <View style={mediaWrapperStyle}>
             <Image
               source={{ uri: (imageUrl || poster)! }}
               style={styles.media}
-              resizeMode="cover"
+              contentFit="cover"
+              allowDownscaling={false}
+              cachePolicy="memory-disk"
             />
             {overlay}
           </View>
@@ -284,8 +301,8 @@ export function FeedMediaPlayer({
   }
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.fallback, { width: containerWidth, height: 200, backgroundColor: colors.backgroundSecondary }]}>
+    <View style={fullScreen ? styles.fullScreenContainer : styles.container}>
+      <View style={[styles.fallback, fullScreen ? StyleSheet.absoluteFill : { width: containerWidth, height: 200 }, { backgroundColor: colors.backgroundSecondary }]}>
         <Text style={[styles.fallbackText, { color: colors.textTertiary }]}>Media not available</Text>
       </View>
     </View>
@@ -295,6 +312,9 @@ export function FeedMediaPlayer({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+  },
+  fullScreenContainer: {
+    flex: 1,
   },
   media: {
     width: '100%',

@@ -32,6 +32,7 @@ interface FeedContainerProps {
   refreshControl?: React.ReactElement<RefreshControlProps>;
   onEndReached?: () => void;
   isFetchingNextPage?: boolean;
+  listKey?: string;
 }
 
 export function FeedContainer({
@@ -52,6 +53,7 @@ export function FeedContainer({
   refreshControl,
   onEndReached,
   isFetchingNextPage,
+  listKey,
 }: FeedContainerProps) {
   const flatListRef = React.useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
@@ -172,6 +174,7 @@ export function FeedContainer({
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout}>
       <FlatList
+        key={listKey}
         ref={flatListRef}
         data={items}
         renderItem={renderItem}

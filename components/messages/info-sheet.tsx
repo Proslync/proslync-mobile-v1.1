@@ -6,18 +6,23 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  Pressable,
   Image,
-  ScrollView,
   Switch,
 } from "react-native";
+import BottomSheet, {
+  BottomSheetView,
+  BottomSheetScrollView,
+} from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GlassView } from "expo-glass-effect";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
-import { Conversation, User } from "../../lib/types/messages.types";
+import { Conversation } from "../../lib/types/messages.types";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+const TAB_BAR_HEIGHT = 49;
+const TAB_BAR_RADIUS = 24;
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
 interface InfoSheetProps {
@@ -31,18 +36,6 @@ interface InfoSheetProps {
   onViewEvent?: (eventId: string) => void;
 }
 
-// Only show mock shared media in development
-const MOCK_SHARED_MEDIA: string[] = __DEV__
-  ? [
-      "https://picsum.photos/seed/media1/200/200",
-      "https://picsum.photos/seed/media2/200/200",
-      "https://picsum.photos/seed/media3/200/200",
-      "https://picsum.photos/seed/media4/200/200",
-      "https://picsum.photos/seed/media5/200/200",
-      "https://picsum.photos/seed/media6/200/200",
-    ]
-  : [];
-
 export function InfoSheet({
   visible,
   onClose,
@@ -53,384 +46,331 @@ export function InfoSheet({
   onReport,
   onViewEvent,
 }: InfoSheetProps) {
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useAppTheme();
-
+  const { colors } = useAppTheme();
   const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
   const [showReportConfirm, setShowReportConfirm] = React.useState(false);
 
-  if (!conversation) return null;
+  React.useEffect(() => {
+    if (visible && conversation) {
+      bottomSheetRef.current?.expand();
+    } else {
+      bottomSheetRef.current?.close();
+    }
+  }, [visible, conversation?.id]);
 
-  const participant = conversation.participants[0];
+  const handleViewEvent = React.useCallback(
+    (eventId: string) => {
+      bottomSheetRef.current?.close();
+      setTimeout(() => onViewEvent?.(eventId), 150);
+    },
+    [onViewEvent],
+  );
+
+  const participant = conversation?.participants[0];
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <View style={styles.overlay}>
-        <Pressable style={styles.overlayTap} onPress={onClose} />
-        <View
-          style={[
-            styles.container,
-            {
-              paddingBottom: insets.bottom + 16,
-              backgroundColor: colors.background,
-            },
-          ]}
-        >
-          {/* Header */}
-          <View style={[styles.header, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>
-              Details
-            </Text>
-            <View style={styles.closeButton} />
-          </View>
+    <>
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        enableDynamicSizing
+        enablePanDownToClose
+        onClose={onClose}
+        backgroundStyle={{
+          backgroundColor: "transparent",
+          borderRadius: TAB_BAR_RADIUS,
+        }}
+        handleIndicatorStyle={{
+          width: 36,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: "rgba(255,255,255,0.3)",
+        }}
+        style={{ marginHorizontal: 12 }}
+        bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
+        detached
+      >
+        <BottomSheetView style={styles.sheetContent}>
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={TAB_BAR_RADIUS}
+            style={StyleSheet.absoluteFill}
+          />
 
-          <ScrollView
-            style={styles.scrollView}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Profile Section */}
-            <View
-              style={[
-                styles.profileSection,
-                { borderBottomColor: colors.border },
-              ]}
+          {conversation && (
+            <BottomSheetScrollView
+              style={{ maxHeight: 400 }}
+              showsVerticalScrollIndicator={false}
             >
-              <Image
-                source={
-                  participant?.avatarUrl
-                    ? { uri: participant.avatarUrl }
-                    : DefaultAvatarImage
-                }
-                style={styles.avatar}
-              />
-              <View style={styles.nameRow}>
-                <Text style={[styles.name, { color: colors.text }]}>
-                  {conversation.title}
-                </Text>
-                {participant?.isVerified && (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={18}
-                    color="#3b82f6"
-                    style={styles.verifiedIcon}
-                  />
-                )}
-              </View>
-              <Text style={[styles.roleText, { color: colors.textSecondary }]}>
-                {participant?.role === "venue"
-                  ? "Venue"
-                  : participant?.role === "promoter"
-                    ? "Promoter"
-                    : participant?.role === "support"
-                      ? "Support"
-                      : "Guest"}
-              </Text>
-              {participant?.isOnline ? (
-                <Text
-                  style={[styles.statusText, { color: colors.textTertiary }]}
-                >
-                  Active now
-                </Text>
-              ) : (
-                <Text
-                  style={[styles.statusText, { color: colors.textTertiary }]}
-                >
-                  Last seen {participant?.lastSeen ? "recently" : "a while ago"}
-                </Text>
-              )}
-            </View>
-
-            {/* Event Context Card */}
-            {conversation.context && (
-              <View
-                style={[styles.section, { borderBottomColor: colors.border }]}
-              >
-                <Text
-                  style={[styles.sectionTitle, { color: colors.textTertiary }]}
-                >
-                  Event
-                </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.eventCard,
-                    {
-                      backgroundColor: isDark
-                        ? "rgba(255, 255, 255, 0.08)"
-                        : "rgba(0, 0, 0, 0.04)",
-                    },
-                  ]}
-                  onPress={() => onViewEvent?.(conversation.context!.eventId)}
-                  activeOpacity={0.8}
-                >
-                  <Image
-                    source={{ uri: conversation.context.flyerUrl }}
-                    style={styles.eventFlyer}
-                  />
-                  <View style={styles.eventInfo}>
-                    <Text
-                      style={[styles.eventTitle, { color: colors.text }]}
-                      numberOfLines={2}
-                    >
-                      {conversation.context.eventTitle}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.eventVenue,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {conversation.context.venueName}
-                    </Text>
-                    {conversation.context.dateTimeLabel && (
-                      <Text
-                        style={[
-                          styles.eventDate,
-                          { color: colors.textTertiary },
-                        ]}
-                      >
-                        {conversation.context.dateTimeLabel}
-                      </Text>
-                    )}
-                  </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color={colors.textTertiary}
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Settings */}
-            <View
-              style={[styles.section, { borderBottomColor: colors.border }]}
-            >
-              <Text
-                style={[styles.sectionTitle, { color: colors.textTertiary }]}
-              >
-                Settings
-              </Text>
-
-              <View style={styles.settingRow}>
-                <View style={styles.settingLeft}>
-                  <Ionicons name="pin" size={20} color={colors.textSecondary} />
-                  <Text style={[styles.settingText, { color: colors.text }]}>
-                    Pin Conversation
-                  </Text>
-                </View>
-                <Switch
-                  value={conversation.isPinned}
-                  onValueChange={onPinToggle}
-                  trackColor={{
-                    false: isDark
-                      ? "rgba(255, 255, 255, 0.2)"
-                      : "rgba(0, 0, 0, 0.1)",
-                    true: "#0095f6",
-                  }}
-                  thumbColor="#fff"
+              {/* Profile Section */}
+              <View style={styles.profileSection}>
+                <Image
+                  source={
+                    participant?.avatarUrl
+                      ? { uri: participant.avatarUrl }
+                      : DefaultAvatarImage
+                  }
+                  style={styles.avatar}
                 />
-              </View>
-
-              <View style={styles.settingRow}>
-                <View style={styles.settingLeft}>
-                  <Ionicons
-                    name="notifications-off"
-                    size={20}
-                    color={colors.textSecondary}
-                  />
-                  <Text style={[styles.settingText, { color: colors.text }]}>
-                    Mute Notifications
+                <View style={styles.nameRow}>
+                  <Text style={[styles.name, { color: colors.text }]}>
+                    {conversation.title}
                   </Text>
+                  {participant?.isVerified && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color="#3b82f6"
+                      style={styles.verifiedIcon}
+                    />
+                  )}
                 </View>
-                <Switch
-                  value={conversation.isMuted}
-                  onValueChange={onMuteToggle}
-                  trackColor={{
-                    false: isDark
-                      ? "rgba(255, 255, 255, 0.2)"
-                      : "rgba(0, 0, 0, 0.1)",
-                    true: "#0095f6",
-                  }}
-                  thumbColor="#fff"
-                />
-              </View>
-            </View>
-
-            {/* Shared Media */}
-            <View
-              style={[styles.section, { borderBottomColor: colors.border }]}
-            >
-              <View style={styles.sectionHeader}>
-                <Text
-                  style={[styles.sectionTitle, { color: colors.textTertiary }]}
-                >
-                  Shared Media
+                <Text style={[styles.roleText, { color: colors.textSecondary }]}>
+                  {participant?.role === "venue"
+                    ? "Venue"
+                    : participant?.role === "promoter"
+                      ? "Promoter"
+                      : participant?.role === "support"
+                        ? "Support"
+                        : "Guest"}
                 </Text>
-                <TouchableOpacity>
-                  <Text style={styles.seeAllText}>See All</Text>
-                </TouchableOpacity>
               </View>
-              <View style={styles.mediaGrid}>
-                {MOCK_SHARED_MEDIA.map((uri, index) => (
+
+              {/* Event Context Card */}
+              {conversation.context && (
+                <View style={styles.section}>
                   <TouchableOpacity
-                    key={index}
-                    style={styles.mediaItem}
+                    style={[styles.eventCard, { overflow: "hidden" }]}
+                    onPress={() =>
+                      handleViewEvent(conversation.context!.eventId)
+                    }
                     activeOpacity={0.8}
                   >
-                    <Image source={{ uri }} style={styles.mediaImage} />
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={12}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <Image
+                      source={{ uri: conversation.context.flyerUrl }}
+                      style={styles.eventFlyer}
+                    />
+                    <View style={styles.eventInfo}>
+                      <Text
+                        style={[styles.eventTitle, { color: colors.text }]}
+                        numberOfLines={2}
+                      >
+                        {conversation.context.eventTitle}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.eventVenue,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {conversation.context.venueName}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
-                ))}
+                </View>
+              )}
+
+              {/* Settings */}
+              <View style={styles.section}>
+                <View style={styles.settingsGroup}>
+                  <View style={styles.settingRow}>
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={12}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <View style={styles.settingLeft}>
+                      <View style={styles.settingIconCircle}>
+                        <GlassView
+                          {...liquidGlass.fillMedium}
+                          borderRadius={14}
+                          style={StyleSheet.absoluteFill}
+                        />
+                        <Ionicons
+                          name="pin"
+                          size={16}
+                          color={colors.textSecondary}
+                        />
+                      </View>
+                      <Text
+                        style={[styles.settingText, { color: colors.text }]}
+                      >
+                        Pin
+                      </Text>
+                    </View>
+                    <Switch
+                      value={conversation.isPinned}
+                      onValueChange={onPinToggle}
+                      trackColor={{
+                        false: "rgba(255, 255, 255, 0.2)",
+                        true: "#0095f6",
+                      }}
+                      thumbColor="#fff"
+                    />
+                  </View>
+
+                  <View style={styles.settingRow}>
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={12}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <View style={styles.settingLeft}>
+                      <View style={styles.settingIconCircle}>
+                        <GlassView
+                          {...liquidGlass.fillMedium}
+                          borderRadius={14}
+                          style={StyleSheet.absoluteFill}
+                        />
+                        <Ionicons
+                          name="notifications-off"
+                          size={16}
+                          color={colors.textSecondary}
+                        />
+                      </View>
+                      <Text
+                        style={[styles.settingText, { color: colors.text }]}
+                      >
+                        Mute
+                      </Text>
+                    </View>
+                    <Switch
+                      value={conversation.isMuted}
+                      onValueChange={onMuteToggle}
+                      trackColor={{
+                        false: "rgba(255, 255, 255, 0.2)",
+                        true: "#0095f6",
+                      }}
+                      thumbColor="#fff"
+                    />
+                  </View>
+                </View>
               </View>
-            </View>
 
-            {/* Danger Zone */}
-            <View
-              style={[styles.section, { borderBottomColor: colors.border }]}
-            >
-              <TouchableOpacity
-                style={styles.dangerButton}
-                onPress={() => setShowBlockConfirm(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="ban" size={20} color="#ff3b30" />
-                <Text style={styles.dangerText}>Block</Text>
-              </TouchableOpacity>
+              {/* Danger Zone */}
+              <View style={styles.section}>
+                <View style={styles.dangerGroup}>
+                  <TouchableOpacity
+                    style={styles.dangerButton}
+                    onPress={() => setShowBlockConfirm(true)}
+                    activeOpacity={0.7}
+                  >
+                    <GlassView
+                      {...liquidGlass.danger}
+                      borderRadius={12}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <View style={styles.settingIconCircle}>
+                      <GlassView
+                        {...liquidGlass.fillMedium}
+                        borderRadius={14}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <Ionicons name="ban" size={16} color="#ff3b30" />
+                    </View>
+                    <Text style={styles.dangerText}>Block</Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.dangerButton}
-                onPress={() => setShowReportConfirm(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="flag" size={20} color="#ff3b30" />
-                <Text style={styles.dangerText}>Report</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </View>
+                  <TouchableOpacity
+                    style={styles.dangerButton}
+                    onPress={() => setShowReportConfirm(true)}
+                    activeOpacity={0.7}
+                  >
+                    <GlassView
+                      {...liquidGlass.danger}
+                      borderRadius={12}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <View style={styles.settingIconCircle}>
+                      <GlassView
+                        {...liquidGlass.fillMedium}
+                        borderRadius={14}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <Ionicons name="flag" size={16} color="#ff3b30" />
+                    </View>
+                    <Text style={styles.dangerText}>Report</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </BottomSheetScrollView>
+          )}
+        </BottomSheetView>
+      </BottomSheet>
 
-        <ConfirmModal
-          visible={showBlockConfirm}
-          onClose={() => setShowBlockConfirm(false)}
-          onConfirm={() => { setShowBlockConfirm(false); onBlock?.(); }}
-          title="Block User"
-          message={`Are you sure you want to block ${conversation.title}?`}
-          confirmLabel="Block"
-          destructive
-          icon="ban"
-        />
+      <ConfirmModal
+        visible={showBlockConfirm}
+        onClose={() => setShowBlockConfirm(false)}
+        onConfirm={() => {
+          setShowBlockConfirm(false);
+          onBlock?.();
+        }}
+        title="Block User"
+        message={`Are you sure you want to block ${conversation?.title ?? "this user"}?`}
+        confirmLabel="Block"
+        destructive
+        icon="ban"
+      />
 
-        <ConfirmModal
-          visible={showReportConfirm}
-          onClose={() => setShowReportConfirm(false)}
-          onConfirm={() => { setShowReportConfirm(false); onReport?.(); }}
-          title="Report"
-          message="Report this conversation for review?"
-          confirmLabel="Report"
-          destructive
-          icon="flag-outline"
-        />
-      </View>
-    </Modal>
+      <ConfirmModal
+        visible={showReportConfirm}
+        onClose={() => setShowReportConfirm(false)}
+        onConfirm={() => {
+          setShowReportConfirm(false);
+          onReport?.();
+        }}
+        title="Report"
+        message="Report this conversation for review?"
+        confirmLabel="Report"
+        destructive
+        icon="flag-outline"
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  overlayTap: {
-    flex: 1,
-  },
-  container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "90%",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  sheetContent: {
     paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: "Lato_700Bold",
-  },
-  scrollView: {
-    flex: 1,
+    paddingBottom: 12,
   },
   profileSection: {
     alignItems: "center",
-    paddingVertical: 24,
-    borderBottomWidth: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: 12,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: 8,
   },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
   },
   name: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: "Lato_700Bold",
   },
   verifiedIcon: {
     marginLeft: 6,
   },
   roleText: {
-    fontSize: 14,
-    fontFamily: "Lato_400Regular",
-    marginTop: 4,
-  },
-  statusText: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    marginTop: 4,
+    marginTop: 2,
   },
   section: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontFamily: "Lato_700Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  seeAllText: {
-    fontSize: 13,
-    fontFamily: "Lato_400Regular",
-    color: "#0095f6",
+    paddingVertical: 4,
+    paddingHorizontal: 0,
   },
   eventCard: {
     flexDirection: "row",
@@ -439,8 +379,8 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   eventFlyer: {
-    width: 60,
-    height: 80,
+    width: 50,
+    height: 66,
     borderRadius: 8,
   },
   eventInfo: {
@@ -456,45 +396,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Lato_400Regular",
   },
-  eventDate: {
-    fontSize: 12,
-    fontFamily: "Lato_400Regular",
-    marginTop: 2,
+  settingsGroup: {
+    gap: 4,
   },
   settingRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    overflow: "hidden",
   },
   settingLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
+  settingIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
   settingText: {
     fontSize: 16,
     fontFamily: "Lato_400Regular",
   },
-  mediaGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  dangerGroup: {
     gap: 4,
-  },
-  mediaItem: {
-    width: "32%",
-    aspectRatio: 1,
-  },
-  mediaImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 4,
   },
   dangerButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    overflow: "hidden",
   },
   dangerText: {
     fontSize: 16,

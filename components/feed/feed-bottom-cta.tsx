@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 interface FeedBottomCTAProps {
   onRsvp: () => void;
@@ -31,36 +33,38 @@ export function FeedBottomCTA({
   }
 
   return (
-    <View style={styles.wrapper}>
-      <TouchableOpacity
-        style={[styles.button, isDone && styles.buttonDone]}
-        onPress={onRsvp}
-        activeOpacity={0.85}
-        disabled={isDone}
-      >
-        <Text style={[styles.buttonText, isDone && styles.buttonTextDone]}>{label}</Text>
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity
+      onPress={onRsvp}
+      activeOpacity={0.85}
+      disabled={isDone}
+    >
+      <View style={styles.button}>
+        <GlassView
+          {...liquidGlass.fillFaint}
+          borderRadius={12}
+          style={styles.glassBg}
+        />
+        <View style={styles.content}>
+          <Text style={[styles.buttonText, isDone && styles.buttonTextDone]}>{label}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    paddingHorizontal: 14,
-    paddingTop: 8,
-    paddingBottom: 14,
-  },
   button: {
-    backgroundColor: '#0095F6',
-    borderRadius: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  glassBg: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 12,
+  },
+  content: {
     paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  buttonDone: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   buttonText: {
     fontSize: 15,
@@ -69,6 +73,6 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   buttonTextDone: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(255,255,255,0.5)',
   },
 });

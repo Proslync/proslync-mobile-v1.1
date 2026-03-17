@@ -20,6 +20,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import Constants from 'expo-constants';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -361,10 +363,17 @@ function MapPreview() {
 
       {/* Development build notice */}
       <View style={[styles.devNotice, { top: insets.top + 12 }]}>
-        <Ionicons name="information-circle" size={16} color="#8b5cf6" />
-        <Text style={styles.devNoticeText}>
-          Full map requires dev build
-        </Text>
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={16}
+          style={styles.devNoticeGlass}
+        />
+        <View style={styles.devNoticeContent}>
+          <Ionicons name="information-circle" size={16} color="#fff" />
+          <Text style={styles.devNoticeText}>
+            Full map requires dev build
+          </Text>
+        </View>
       </View>
 
       {/* Bottom Sheet with friends + events together */}
@@ -415,8 +424,9 @@ function MapPreview() {
               <View style={styles.emptyState}>
                 <Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} />
                 <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text>
-                <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.buttonSecondary }]} onPress={() => fetchEvents()}>
-                  <Text style={[styles.retryButtonText, { color: colors.text }]}>Retry</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()} activeOpacity={0.7}>
+                  <GlassView {...liquidGlass.surface} borderRadius={8} style={styles.inlineButtonGlass} />
+                  <Text style={styles.retryButtonText}>Retry</Text>
                 </TouchableOpacity>
               </View>
             ) : filteredEvents.length === 0 ? (
@@ -648,10 +658,9 @@ function FullMapScreen() {
       {/* Share location button - only show when feature is enabled */}
       {config.websocket.enabled && (
         <TouchableOpacity
-          style={[styles.shareLocationButton, { bottom: 240, backgroundColor: colors.mapOverlay, borderColor: colors.border }]}
+          style={[styles.shareLocationButton, { bottom: 240 }]}
           onPress={async () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            // Request location permission before opening the sheet
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted' && !userLocation) {
               const location = await Location.getCurrentPositionAsync({});
@@ -659,18 +668,33 @@ function FullMapScreen() {
             }
             setShowShareSheet(true);
           }}
+          activeOpacity={0.7}
         >
-          <Ionicons
-            name={sharingState.isSharing ? 'location' : 'location-outline'}
-            size={22}
-            color={sharingState.isSharing ? '#34c759' : colors.text}
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={23}
+            style={styles.mapButtonGlass}
           />
+          <View style={styles.mapButtonContent}>
+            <Ionicons
+              name={sharingState.isSharing ? 'location' : 'location-outline'}
+              size={22}
+              color={sharingState.isSharing ? '#34c759' : '#fff'}
+            />
+          </View>
           {sharingState.isSharing && <View style={styles.sharingIndicator} />}
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity style={[styles.recenterButton, { bottom: 180, backgroundColor: colors.mapOverlay, borderColor: colors.border }]} onPress={handleRecenter}>
-        <Ionicons name="locate" size={22} color={colors.text} />
+      <TouchableOpacity style={[styles.recenterButton, { bottom: 180 }]} onPress={handleRecenter} activeOpacity={0.7}>
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={23}
+          style={styles.mapButtonGlass}
+        />
+        <View style={styles.mapButtonContent}>
+          <Ionicons name="locate" size={22} color="#fff" />
+        </View>
       </TouchableOpacity>
 
       <BottomSheet ref={bottomSheetRef} index={0} snapPoints={snapPoints} backgroundStyle={[styles.bottomSheetBackground, { backgroundColor: colors.background }]} handleIndicatorStyle={[styles.bottomSheetIndicator, { backgroundColor: colors.textTertiary }]} enablePanDownToClose={false} animateOnMount={true}>
@@ -711,15 +735,23 @@ function FullMapScreen() {
                 </Text>
                 {!sharingState.isSharing && (
                   <TouchableOpacity
-                    style={[styles.shareLocationInline, { backgroundColor: colors.buttonSecondary }]}
+                    style={styles.shareLocationInline}
                     onPress={async () => {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       await Location.requestForegroundPermissionsAsync();
                       setShowShareSheet(true);
                     }}
+                    activeOpacity={0.7}
                   >
-                    <Ionicons name="location-outline" size={14} color={colors.text} />
-                    <Text style={[styles.shareLocationInlineText, { color: colors.text }]}>Share</Text>
+                    <GlassView
+                      {...liquidGlass.surface}
+                      borderRadius={8}
+                      style={styles.inlineButtonGlass}
+                    />
+                    <View style={styles.inlineButtonContent}>
+                      <Ionicons name="location-outline" size={14} color="#fff" />
+                      <Text style={styles.shareLocationInlineText}>Share</Text>
+                    </View>
                   </TouchableOpacity>
                 )}
               </View>
@@ -732,7 +764,7 @@ function FullMapScreen() {
             {isLoading && events.length === 0 ? (
               <View style={styles.loadingState}><ActivityIndicator size="large" color={colors.text} /><Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text></View>
             ) : error && events.length === 0 ? (
-              <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text><TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.buttonSecondary }]} onPress={() => fetchEvents()}><Text style={[styles.retryButtonText, { color: colors.text }]}>Retry</Text></TouchableOpacity></View>
+              <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text><TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()} activeOpacity={0.7}><GlassView {...liquidGlass.surface} borderRadius={8} style={styles.inlineButtonGlass} /><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity></View>
             ) : filteredEvents.length === 0 ? (
               <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No events available</Text></View>
             ) : (
@@ -810,7 +842,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 3,
-    borderColor: '#8b5cf6',
+    borderColor: '#fff',
     overflow: 'hidden',
     backgroundColor: '#f5f5f5',
   },
@@ -833,18 +865,24 @@ const styles = StyleSheet.create({
   devNotice: {
     position: 'absolute',
     alignSelf: 'center',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  devNoticeGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 16,
+  },
+  devNoticeContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(139, 92, 246, 0.15)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
     gap: 6,
   },
   devNoticeText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: '#8b5cf6',
+    color: '#fff',
   },
   // Bottom sheet
   bottomSheetBackground: {
@@ -930,16 +968,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
   },
   shareLocationInline: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  inlineButtonGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
+  },
+  inlineButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
   },
   shareLocationInlineText: {
     fontSize: 12,
     fontFamily: 'Lato_600SemiBold',
+    color: '#fff',
   },
   // Event card - horizontal scrollable
   horizontalEventsContent: {
@@ -1036,10 +1082,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
+    overflow: 'hidden',
   },
   retryButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
+    color: '#fff',
   },
   // Event flyer card markers
   eventMarkerContainer: {
@@ -1134,6 +1182,16 @@ const styles = StyleSheet.create({
     borderTopColor: '#34c759',
     marginTop: -1,
   },
+  // Map overlay glass buttons
+  mapButtonGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 23,
+  },
+  mapButtonContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   // Recenter button
   recenterButton: {
     position: 'absolute',
@@ -1141,9 +1199,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
+    overflow: 'hidden',
   },
   // Share location button
   shareLocationButton: {
@@ -1152,9 +1208,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
+    overflow: 'hidden',
   },
   sharingIndicator: {
     position: 'absolute',

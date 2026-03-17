@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { CreateRoleRequest } from '@/lib/types/team.types';
@@ -57,33 +59,52 @@ export function CreateRoleModal({
         <View style={styles.header}>
           <Text style={styles.title}>Create Role</Text>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>✕</Text>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={styles.closeText}>{'\u2715'}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.form}>
           <Text style={styles.label}>Name *</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Coordinator, Photographer"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            maxLength={100}
-            autoFocus
-          />
+          <View style={styles.inputWrapper}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="e.g. Coordinator, Photographer"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              maxLength={100}
+              autoFocus
+            />
+          </View>
 
           <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Optional role description"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            maxLength={500}
-            multiline
-            numberOfLines={3}
-          />
+          <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Optional role description"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              maxLength={500}
+              multiline
+              numberOfLines={3}
+            />
+          </View>
         </View>
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -93,6 +114,11 @@ export function CreateRoleModal({
             disabled={!isValid || loading}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.submitText}>
               {loading ? 'Creating...' : 'Create Role'}
             </Text>
@@ -119,7 +145,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -132,11 +158,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  inputWrapper: {
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 12,
+    overflow: 'hidden',
+  },
+  textAreaWrapper: {
+    minHeight: 80,
+  },
+  input: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -149,12 +180,12 @@ const styles = StyleSheet.create({
   },
   footer: { padding: 20 },
   submitButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    overflow: 'hidden',
   },
   submitDisabled: { opacity: 0.4 },
   submitText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },

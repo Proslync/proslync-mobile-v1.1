@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import Animated, {
   FadeInDown,
@@ -21,32 +20,33 @@ import { CountryPicker } from './country-picker';
 import { authApi } from '@/lib/api/auth';
 import { handleApiError } from '@/lib/api/errors';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { GlassCard } from '@/components/glass/glass-card';
+import { GlassButton } from '@/components/glass/glass-button';
+import { fontFamily, spacing, radius as radiusTokens } from '@/constants/glass/tokens';
 
 interface PhoneStepProps {
   onSuccess: (phoneNumber: string) => void;
   onBack?: () => void;
 }
 
-// Minimum digits required per country code (without leading zero)
 const PHONE_LENGTH_BY_COUNTRY: Record<string, number> = {
-  '+1': 10,    // US, Canada
-  '+44': 10,   // UK
-  '+380': 9,   // Ukraine
-  '+49': 10,   // Germany
-  '+33': 9,    // France
-  '+39': 10,   // Italy
-  '+34': 9,    // Spain
-  '+81': 10,   // Japan
-  '+82': 9,    // South Korea
-  '+86': 11,   // China
-  '+91': 10,   // India
-  '+7': 10,    // Russia
-  '+972': 9,   // Israel
-  '+61': 9,    // Australia
-  '+55': 11,   // Brazil
+  '+1': 10,
+  '+44': 10,
+  '+380': 9,
+  '+49': 10,
+  '+33': 9,
+  '+39': 10,
+  '+34': 9,
+  '+81': 10,
+  '+82': 9,
+  '+86': 11,
+  '+91': 10,
+  '+7': 10,
+  '+972': 9,
+  '+61': 9,
+  '+55': 11,
 };
 
-// Countries where local numbers typically start with 0 (should be stripped)
 const STRIP_LEADING_ZERO = ['+380', '+44', '+49', '+33', '+39', '+34', '+81', '+82', '+61', '+55', '+972'];
 
 export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
@@ -57,7 +57,6 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
-  // Get minimum digits required for current country
   const minDigits = PHONE_LENGTH_BY_COUNTRY[countryCode] || 7;
 
   const isPhoneComplete = React.useMemo(() => {
@@ -73,8 +72,6 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
       return;
     }
 
-    // Strip leading zero for countries where national format starts with 0
-    // e.g., Ukraine: 093 -> 93 (user pastes 0930566527, we send +380930566527)
     if (STRIP_LEADING_ZERO.includes(countryCode) && digits.startsWith('0')) {
       digits = digits.substring(1);
     }
@@ -113,7 +110,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
@@ -136,7 +133,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
           entering={FadeInUp.duration(500).delay(400)}
           style={[styles.title, { color: colors.text }]}
         >
-          Login/Signup
+          Welcome Back
         </Animated.Text>
 
         {/* Subtitle */}
@@ -144,35 +141,48 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
           entering={FadeInUp.duration(500).delay(450)}
           style={[styles.subtitle, { color: colors.textSecondary }]}
         >
-          We'll send you a verification code.
+          Enter your phone number to continue
         </Animated.Text>
 
-        {/* Phone Input */}
+        {/* Phone Input — Glass Card */}
         <Animated.View
           entering={FadeInDown.duration(600).delay(500)}
-          style={[styles.inputContainer, { backgroundColor: colors.input }]}
         >
-          <CountryPicker
-            selectedCode={countryCode}
-            onSelect={setCountryCode}
-          />
-          <Text style={[styles.dialCode, { color: colors.text }]}>{countryCode}</Text>
-          <TextInput
-            style={[styles.phoneInput, { color: colors.text }]}
-            placeholder="(555) 555-5555"
-            placeholderTextColor={colors.placeholder}
-            keyboardType="phone-pad"
-            keyboardAppearance={isDark ? 'dark' : 'light'}
-            value={phoneNumber}
-            onChangeText={handlePhoneChange}
-            maxLength={14}
-            autoFocus
-            selectionColor={colors.textTertiary}
-            cursorColor={colors.textSecondary}
-            textContentType="telephoneNumber"
-            autoComplete="tel"
-            importantForAutofill="yes"
-          />
+          <GlassCard
+            fill="light"
+            border="subtle"
+            cornerRadius="lg"
+            shadowLevel="lg"
+            blurIntensity="medium"
+            style={styles.glassInputCard}
+          >
+            <View style={styles.inputRow}>
+              <CountryPicker
+                selectedCode={countryCode}
+                onSelect={setCountryCode}
+              />
+              <View style={[styles.inputDivider, {
+                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+              }]} />
+              <Text style={[styles.dialCode, { color: colors.text }]}>{countryCode}</Text>
+              <TextInput
+                style={[styles.phoneInput, { color: colors.text }]}
+                placeholder="(555) 555-5555"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="phone-pad"
+                keyboardAppearance={isDark ? 'dark' : 'light'}
+                value={phoneNumber}
+                onChangeText={handlePhoneChange}
+                maxLength={14}
+                autoFocus
+                selectionColor={colors.textTertiary}
+                cursorColor={colors.textSecondary}
+                textContentType="telephoneNumber"
+                autoComplete="tel"
+                importantForAutofill="yes"
+              />
+            </View>
+          </GlassCard>
         </Animated.View>
 
         {/* Error Message */}
@@ -193,18 +203,15 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
           entering={FadeInUp.duration(600).delay(600)}
           style={styles.buttonContainer}
         >
-          <TouchableOpacity
-            style={[styles.button, (!isPhoneComplete || isLoading) && styles.buttonDisabled]}
+          <GlassButton
+            label={isLoading ? '' : 'Continue'}
+            variant={isPhoneComplete ? 'accent' : 'glass'}
+            size="lg"
             onPress={handleSendOTP}
             disabled={!isPhoneComplete || isLoading}
-            activeOpacity={0.7}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.buttonText}>Continue</Text>
-            )}
-          </TouchableOpacity>
+            loading={isLoading}
+            fullWidth
+          />
         </Animated.View>
 
         {/* Terms Text */}
@@ -243,36 +250,47 @@ const styles = StyleSheet.create({
     height: 48,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 28,
+    fontFamily: 'Lato_700Bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     marginBottom: 40,
   },
-  inputContainer: {
+  glassInputCard: {
+    width: '100%',
+    paddingVertical: 0,
+  },
+  inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    borderRadius: 12,
+    height: 58,
+  },
+  inputDivider: {
+    width: 1,
+    height: 28,
+    marginHorizontal: 4,
   },
   dialCode: {
     fontSize: 17,
-    fontWeight: '500',
+    fontFamily: 'Lato_700Bold',
     paddingHorizontal: 8,
   },
   phoneInput: {
     flex: 1,
-    height: 56,
+    height: 58,
     fontSize: 17,
+    fontFamily: 'Lato_400Regular',
     paddingRight: 16,
   },
   errorText: {
     color: '#ff6b6b',
     fontSize: 14,
+    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     marginTop: 16,
   },
@@ -283,27 +301,12 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 16,
   },
-  button: {
-    width: '100%',
-    height: 56,
-    backgroundColor: '#3897F0',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
   termsContainer: {
     marginBottom: 20,
   },
   termsText: {
     fontSize: 13,
+    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 20,
   },

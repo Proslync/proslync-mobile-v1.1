@@ -6,14 +6,16 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  Pressable,
 } from "react-native";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+const TAB_BAR_HEIGHT = 49;
+const TAB_BAR_RADIUS = 24;
 const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "😡"];
 
 interface ReactionSheetProps {
@@ -39,157 +41,193 @@ export function ReactionSheet({
   canDelete = false,
   messageText,
 }: ReactionSheetProps) {
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
+
+  React.useEffect(() => {
+    if (visible) {
+      bottomSheetRef.current?.expand();
+    } else {
+      bottomSheetRef.current?.close();
+    }
+  }, [visible]);
+
+  const handleReaction = React.useCallback(
+    (emoji: string) => {
+      bottomSheetRef.current?.close();
+      setTimeout(() => onReaction(emoji), 100);
+    },
+    [onReaction],
+  );
+
+  const handleAction = React.useCallback((action: () => void) => {
+    bottomSheetRef.current?.close();
+    setTimeout(action, 100);
+  }, []);
+
+  const showReply = !!onReply;
+  const showCopy = !!(onCopy && messageText);
+  const showDelete = !!(canDelete && onDelete);
+  const showReport = !!(onReport && !canDelete);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={-1}
+      enableDynamicSizing
+      enablePanDownToClose
+      onClose={onClose}
+      backgroundStyle={{
+        backgroundColor: "transparent",
+        borderRadius: TAB_BAR_RADIUS,
+      }}
+      handleIndicatorStyle={{
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: "rgba(255,255,255,0.3)",
+      }}
+      style={{ marginHorizontal: 12 }}
+      bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
+      detached
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View
-          style={[
-            styles.container,
-            {
-              paddingBottom: insets.bottom + 16,
-              backgroundColor: colors.background,
-            },
-          ]}
-        >
-          {/* Reactions Row */}
-          <View
-            style={[styles.reactionsRow, { borderBottomColor: colors.border }]}
-          >
-            {REACTIONS.map((emoji) => (
-              <TouchableOpacity
-                key={emoji}
-                style={[
-                  styles.reactionButton,
-                  {
-                    backgroundColor: isDark
-                      ? "rgba(255, 255, 255, 0.1)"
-                      : "rgba(0, 0, 0, 0.05)",
-                  },
-                ]}
-                onPress={() => {
-                  onReaction(emoji);
-                  onClose();
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.reactionEmoji}>{emoji}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+      <BottomSheetView style={styles.sheetContent}>
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={TAB_BAR_RADIUS}
+          style={StyleSheet.absoluteFill}
+        />
 
-          {/* Actions */}
-          <View style={styles.actionsContainer}>
-            {onReply && (
-              <TouchableOpacity
-                style={styles.actionRow}
-                onPress={() => {
-                  onReply();
-                  onClose();
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="arrow-undo" size={20} color={colors.text} />
-                <Text style={[styles.actionText, { color: colors.text }]}>
-                  Reply
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {onCopy && messageText && (
-              <TouchableOpacity
-                style={styles.actionRow}
-                onPress={() => {
-                  onCopy();
-                  onClose();
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="copy-outline" size={20} color={colors.text} />
-                <Text style={[styles.actionText, { color: colors.text }]}>
-                  Copy
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {canDelete && onDelete && (
-              <TouchableOpacity
-                style={styles.actionRow}
-                onPress={() => {
-                  onDelete();
-                  onClose();
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="trash-outline" size={20} color="#ff3b30" />
-                <Text style={[styles.actionText, styles.deleteText]}>
-                  Delete
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {onReport && !canDelete && (
-              <TouchableOpacity
-                style={styles.actionRow}
-                onPress={() => {
-                  onReport();
-                  onClose();
-                }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="flag-outline" size={20} color="#ff3b30" />
-                <Text style={[styles.actionText, styles.deleteText]}>
-                  Report
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          {/* Cancel Button */}
-          <TouchableOpacity
-            style={[
-              styles.cancelButton,
-              {
-                backgroundColor: isDark
-                  ? "rgba(255, 255, 255, 0.1)"
-                  : "rgba(0, 0, 0, 0.05)",
-              },
-            ]}
-            onPress={onClose}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
+        {/* Reactions Row */}
+        <View style={styles.reactionsRow}>
+          {REACTIONS.map((emoji) => (
+            <TouchableOpacity
+              key={emoji}
+              style={styles.reactionButton}
+              onPress={() => handleReaction(emoji)}
+              activeOpacity={0.7}
+            >
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={24}
+                style={StyleSheet.absoluteFill}
+              />
+              <Text style={styles.reactionEmoji}>{emoji}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
-      </Pressable>
-    </Modal>
+
+        {/* Actions */}
+        <View style={styles.actionsList}>
+          {showReply && (
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => handleAction(onReply!)}
+              activeOpacity={0.7}
+            >
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.actionIconCircle}>
+                <GlassView
+                  {...liquidGlass.fillMedium}
+                  borderRadius={14}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Ionicons name="arrow-undo" size={16} color={colors.text} />
+              </View>
+              <Text style={[styles.actionText, { color: colors.text }]}>Reply</Text>
+            </TouchableOpacity>
+          )}
+
+          {showCopy && (
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => handleAction(onCopy!)}
+              activeOpacity={0.7}
+            >
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.actionIconCircle}>
+                <GlassView
+                  {...liquidGlass.fillMedium}
+                  borderRadius={14}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Ionicons name="copy-outline" size={16} color={colors.text} />
+              </View>
+              <Text style={[styles.actionText, { color: colors.text }]}>Copy</Text>
+            </TouchableOpacity>
+          )}
+
+          {showDelete && (
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => handleAction(onDelete!)}
+              activeOpacity={0.7}
+            >
+              <GlassView
+                {...liquidGlass.danger}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.actionIconCircle}>
+                <GlassView
+                  {...liquidGlass.fillMedium}
+                  borderRadius={14}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Ionicons name="trash-outline" size={16} color="#ff3b30" />
+              </View>
+              <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
+            </TouchableOpacity>
+          )}
+
+          {showReport && (
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => handleAction(onReport!)}
+              activeOpacity={0.7}
+            >
+              <GlassView
+                {...liquidGlass.danger}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.actionIconCircle}>
+                <GlassView
+                  {...liquidGlass.fillMedium}
+                  borderRadius={14}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Ionicons name="flag-outline" size={16} color="#ff3b30" />
+              </View>
+              <Text style={[styles.actionText, styles.deleteText]}>Report</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </BottomSheetView>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "flex-end",
-  },
-  container: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 16,
+  sheetContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
   reactionsRow: {
     flexDirection: "row",
     justifyContent: "space-evenly",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingHorizontal: 4,
+    paddingVertical: 12,
+    marginBottom: 4,
   },
   reactionButton: {
     width: 48,
@@ -197,37 +235,36 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   reactionEmoji: {
     fontSize: 24,
   },
-  actionsContainer: {
-    paddingVertical: 8,
+  actionsList: {
+    gap: 4,
   },
   actionRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    gap: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    overflow: "hidden",
+    gap: 12,
+  },
+  actionIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
   actionText: {
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: "Lato_400Regular",
   },
   deleteText: {
     color: "#ff3b30",
-  },
-  cancelButton: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: "center",
-  },
-  cancelText: {
-    fontSize: 17,
-    fontFamily: "Lato_700Bold",
-    color: "#0095f6",
   },
 });

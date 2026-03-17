@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -198,7 +200,12 @@ export function ArtistFormModal({
           <Text style={[styles.title, { color: colors.text }]}>
             {isEdit ? 'Edit Artist' : 'Add Artist'}
           </Text>
-          <TouchableOpacity style={[styles.closeButton, { backgroundColor: colors.backgroundSecondary }]} onPress={onClose}>
+          <TouchableOpacity style={[styles.closeButton, { overflow: 'hidden' }]} onPress={onClose}>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
             <Ionicons name="close" size={18} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -213,7 +220,12 @@ export function ArtistFormModal({
           {!isEdit && (
             <View style={styles.field}>
               <Text style={[styles.label, { color: colors.text }]}>Phone Number *</Text>
-              <View style={[styles.phoneRow, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
+              <View style={[styles.phoneRow, { borderColor: colors.inputBorder, overflow: 'hidden' }]}>
+                <GlassView
+                  {...liquidGlass.fill}
+                  borderRadius={12}
+                  style={StyleSheet.absoluteFill}
+                />
                 <CountryPicker selectedCode={countryCode} onSelect={setCountryCode} />
                 <Text style={[styles.dialCode, { color: colors.text }]}>{countryCode}</Text>
                 <TextInput
@@ -233,37 +245,56 @@ export function ArtistFormModal({
           {/* Artist Name */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Artist Name</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              placeholder="Enter artist / stage name"
-              placeholderTextColor={colors.placeholder}
-              value={userName}
-              onChangeText={setUserName}
-            />
+            <View style={[styles.input, { borderColor: colors.inputBorder, overflow: 'hidden' }]}>
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              <TextInput
+                style={[styles.inputInner, { color: colors.text }]}
+                placeholder="Enter artist / stage name"
+                placeholderTextColor={colors.placeholder}
+                value={userName}
+                onChangeText={setUserName}
+              />
+            </View>
           </View>
 
           {/* Description */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Description</Text>
-            <TextInput
-              style={[styles.input, styles.textArea, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              placeholder="Artist bio or set description (optional)"
-              placeholderTextColor={colors.placeholder}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
+            <View style={[styles.input, styles.textArea, { borderColor: colors.inputBorder, overflow: 'hidden' }]}>
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              <TextInput
+                style={[styles.inputInner, { color: colors.text, minHeight: 52, paddingTop: 0 }]}
+                placeholder="Artist bio or set description (optional)"
+                placeholderTextColor={colors.placeholder}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </View>
           </View>
 
           {/* Start Time */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Start Time *</Text>
             <TouchableOpacity
-              style={[styles.dateButton, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}
+              style={[styles.dateButton, { borderColor: colors.inputBorder, overflow: 'hidden' }]}
               onPress={() => setShowStartPicker(true)}
             >
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
               <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
               <Text style={[styles.dateText, { color: colors.text }]}>
                 {formatDateTime(startTime)}
@@ -293,9 +324,14 @@ export function ArtistFormModal({
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>End Time *</Text>
             <TouchableOpacity
-              style={[styles.dateButton, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}
+              style={[styles.dateButton, { borderColor: colors.inputBorder, overflow: 'hidden' }]}
               onPress={() => setShowEndPicker(true)}
             >
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
               <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
               <Text style={[styles.dateText, { color: colors.text }]}>
                 {formatDateTime(endTime)}
@@ -320,19 +356,26 @@ export function ArtistFormModal({
           {/* Spotify Playlist URL */}
           <View style={styles.field}>
             <Text style={[styles.label, { color: colors.text }]}>Spotify Playlist URL</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              placeholder="https://open.spotify.com/playlist/..."
-              placeholderTextColor={colors.placeholder}
-              value={playlistUrl}
-              onChangeText={(text) => {
-                setPlaylistUrl(text);
-                setEmbedLoading(true);
-              }}
-              keyboardType="url"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={[styles.input, { borderColor: colors.inputBorder, overflow: 'hidden' }]}>
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              <TextInput
+                style={[styles.inputInner, { color: colors.text }]}
+                placeholder="https://open.spotify.com/playlist/..."
+                placeholderTextColor={colors.placeholder}
+                value={playlistUrl}
+                onChangeText={(text) => {
+                  setPlaylistUrl(text);
+                  setEmbedLoading(true);
+                }}
+                keyboardType="url"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
             {embedHtml && (
               <View style={styles.embedPreview}>
                 <Text style={[styles.embedLabel, { color: colors.textTertiary }]}>Preview</Text>
@@ -364,11 +407,16 @@ export function ArtistFormModal({
 
           {/* Submit Button */}
           <TouchableOpacity
-            style={[styles.submitButton, loading && styles.submitDisabled]}
+            style={[styles.submitButton, { overflow: 'hidden' }, loading && styles.submitDisabled]}
             onPress={handleSubmit}
             disabled={loading}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             {loading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
@@ -428,6 +476,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     borderWidth: 1,
   },
+  inputInner: {
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+  },
   textArea: {
     minHeight: 80,
     paddingTop: 14,
@@ -472,7 +524,6 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     borderRadius: 12,

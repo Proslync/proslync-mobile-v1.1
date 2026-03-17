@@ -26,6 +26,9 @@ import { authApi } from '@/lib/api/auth';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { handleApiError } from '@/lib/api/errors';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { GlassCard } from '@/components/glass/glass-card';
+import { GlassSurface } from '@/components/glass/glass-surface';
+import { fontFamily } from '@/constants/glass/tokens';
 
 interface OtpStepProps {
   phoneNumber: string;
@@ -40,6 +43,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
   const [isResending, setIsResending] = React.useState(false);
   const [isSuccess, setIsSuccess] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [resendCountdown, setResendCountdown] = React.useState(30);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
@@ -61,6 +65,15 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
       withTiming(0, { duration: 50 })
     );
   };
+
+  // Resend countdown timer
+  React.useEffect(() => {
+    if (resendCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCountdown]);
 
   const handleOtpChange = (value: string) => {
     setOtpValue(value);
@@ -85,18 +98,13 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
         code,
       });
 
-      // Login with the response data (verify-otp returns partial user, login will fetch full profile)
       await login(response.user, response.accessToken, response.refreshToken);
-
       setIsSuccess(true);
 
-      // New user without profile → show profile setup
       if (!response.user.isProfileComplete && onProfileSetupNeeded) {
         onProfileSetupNeeded();
         return;
       }
-
-      // Navigation is handled by AuthProvider
     } catch (err) {
       const message = err instanceof Error ? handleApiError(err) : 'Invalid verification code';
       setError(message);
@@ -114,6 +122,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
     try {
       await authApi.requestOtp({ phoneNumber });
       setOtpValue('');
+      setResendCountdown(30);
     } catch (err) {
       const message = err instanceof Error ? handleApiError(err) : 'Failed to resend code';
       setError(message);
@@ -122,9 +131,18 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
     }
   };
 
+  // Format phone for display (mask middle digits)
+  const maskedPhone = React.useMemo(() => {
+    if (phoneNumber.length <= 6) return phoneNumber;
+    const last4 = phoneNumber.slice(-4);
+    const prefix = phoneNumber.slice(0, phoneNumber.length - 4);
+    const masked = prefix.slice(0, Math.min(prefix.length, 4)) + '****';
+    return `${masked}${last4}`;
+  }, [phoneNumber]);
+
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.content, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
@@ -134,13 +152,20 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
             entering={FadeIn.duration(300).delay(200)}
             style={styles.backButtonContainer}
           >
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: colors.input }]}
-              onPress={onBack}
-              activeOpacity={0.7}
+            <GlassSurface
+              fill="light"
+              border="subtle"
+              cornerRadius="3xl"
+              style={styles.backButtonSurface}
             >
-              <Text style={[styles.backIcon, { color: colors.text }]}>←</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={onBack}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.backIcon, { color: colors.text }]}>←</Text>
+              </TouchableOpacity>
+            </GlassSurface>
           </Animated.View>
         )}
 
@@ -163,15 +188,16 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
           entering={FadeInUp.duration(500).delay(400)}
           style={[styles.title, { color: colors.text }]}
         >
-          Enter Verification Code
+          Verification Code
         </Animated.Text>
 
-        {/* Subtitle */}
+        {/* Subtitle with phone */}
         <Animated.Text
           entering={FadeInUp.duration(500).delay(450)}
           style={[styles.subtitle, { color: colors.textSecondary }]}
         >
-          We sent a 6-digit code to {phoneNumber}
+          We sent a 6-digit code to{'\n'}
+          <Text style={{ color: colors.text, fontFamily: 'Lato_700Bold' }}>{maskedPhone}</Text>
         </Animated.Text>
 
         {/* OTP Input */}
@@ -193,12 +219,13 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
         {/* Status Messages */}
         <View style={styles.statusContainer}>
           {isSuccess && (
-            <Animated.Text
+            <Animated.View
               entering={FadeInDown.duration(200)}
-              style={styles.successText}
+              style={styles.successBadge}
             >
-              Verified successfully!
-            </Animated.Text>
+              <Text style={styles.successIcon}>✓</Text>
+              <Text style={styles.successText}>Verified successfully</Text>
+            </Animated.View>
           )}
 
           {isVerifying && !isSuccess && (
@@ -229,18 +256,26 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
           entering={FadeInUp.duration(600).delay(850)}
           style={styles.resendContainer}
         >
-          <Text style={[styles.resendText, { color: colors.textSecondary }]}>Didn't receive a code? </Text>
-          <TouchableOpacity
-            onPress={handleResendOTP}
-            disabled={isResending}
-            activeOpacity={0.7}
-          >
-            {isResending ? (
-              <ActivityIndicator color={colors.textSecondary} size="small" />
-            ) : (
-              <Text style={[styles.resendLink, { color: colors.text }]}>Resend</Text>
-            )}
-          </TouchableOpacity>
+          {resendCountdown > 0 ? (
+            <Text style={[styles.resendText, { color: colors.textTertiary }]}>
+              Resend code in {resendCountdown}s
+            </Text>
+          ) : (
+            <View style={styles.resendRow}>
+              <Text style={[styles.resendText, { color: colors.textSecondary }]}>Didn't receive a code? </Text>
+              <TouchableOpacity
+                onPress={handleResendOTP}
+                disabled={isResending}
+                activeOpacity={0.7}
+              >
+                {isResending ? (
+                  <ActivityIndicator color={colors.textSecondary} size="small" />
+                ) : (
+                  <Text style={[styles.resendLink, { color: colors.text }]}>Resend</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </Animated.View>
       </View>
     </KeyboardAvoidingView>
@@ -258,10 +293,13 @@ const styles = StyleSheet.create({
   backButtonContainer: {
     alignSelf: 'flex-start',
   },
+  backButtonSurface: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -280,15 +318,17 @@ const styles = StyleSheet.create({
     height: 48,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 28,
+    fontFamily: 'Lato_700Bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     marginBottom: 40,
+    lineHeight: 24,
   },
   otpContainer: {
     width: '100%',
@@ -300,10 +340,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
-  successText: {
-    color: '#4ade80',
+  successBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(52, 199, 89, 0.12)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 8,
+  },
+  successIcon: {
+    color: '#34C759',
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Lato_700Bold',
+  },
+  successText: {
+    color: '#34C759',
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -312,26 +366,32 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
+    fontFamily: 'Lato_400Regular',
   },
   errorText: {
     color: '#ff6b6b',
     fontSize: 14,
+    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   spacer: {
     flex: 1,
   },
   resendContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 20,
   },
+  resendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   resendText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
   },
   resendLink: {
-    fontSize: 16,
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
     textDecorationLine: 'underline',
   },
 });

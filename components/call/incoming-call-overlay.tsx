@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { TouchableOpacity } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +25,10 @@ export function IncomingCallOverlay({
 
   return (
     <Animated.View entering={FadeIn.duration(300)} style={styles.overlay}>
-      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+      <GlassView
+        {...liquidGlass.surface}
+        style={StyleSheet.absoluteFill}
+      />
 
       <View style={[styles.content, { paddingTop: insets.top + 60 }]}>
         {callerAvatar ? (
@@ -43,18 +47,28 @@ export function IncomingCallOverlay({
 
       <View style={[styles.controls, { paddingBottom: insets.bottom + 40 }]}>
         <TouchableOpacity
-          style={[styles.controlButton, styles.declineButton]}
+          style={styles.controlButton}
           onPress={onDecline}
           activeOpacity={0.8}
         >
+          <GlassView
+            {...liquidGlass.danger}
+            borderRadius={35}
+            style={StyleSheet.absoluteFill}
+          />
           <Ionicons name="call" size={32} color="#fff" style={{ transform: [{ rotate: '135deg' }] }} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.controlButton, styles.acceptButton]}
+          style={styles.controlButton}
           onPress={onAccept}
           activeOpacity={0.8}
         >
+          <GlassView
+            {...liquidGlass.success}
+            borderRadius={35}
+            style={StyleSheet.absoluteFill}
+          />
           <Ionicons name={isVideo ? 'videocam' : 'call'} size={32} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -116,11 +130,6 @@ const styles = StyleSheet.create({
     borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  declineButton: {
-    backgroundColor: '#EF4444',
-  },
-  acceptButton: {
-    backgroundColor: '#22C55E',
+    overflow: 'hidden',
   },
 });

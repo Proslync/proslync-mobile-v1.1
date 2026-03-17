@@ -63,7 +63,7 @@ export function FeedItem({
   onEventPress,
   onBlock,
 }: FeedItemProps) {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
   const currentUserId = authUser ? String(authUser.id) : null;
@@ -85,14 +85,27 @@ export function FeedItem({
   const [showMenu, setShowMenu] = React.useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
 
+  // For the card media — use first non-empty URL
+  const flyerImage = (item.imageUrl && item.imageUrl.length > 0 ? item.imageUrl : null)
+    || (item.thumbnail && item.thumbnail.length > 0 ? item.thumbnail : null);
+  // For the blurred background — try every possible image source
+  const bgImage = (item.thumbnail && item.thumbnail.length > 0 ? item.thumbnail : null)
+    || (item.imageUrl && item.imageUrl.length > 0 ? item.imageUrl : null)
+    || (item.userAvatar && item.userAvatar.length > 0 ? item.userAvatar : null);
+
+  const isDone = !item.isPaid && (isPurchased || isRsvp || item.isUserRegistered);
+  let rsvpLabel = 'RSVP';
+  if (item.isPaid) {
+    rsvpLabel = item.price != null ? `From $${item.price.toFixed(2)}` : 'Tickets';
+  } else if (isDone) {
+    rsvpLabel = "RSVP'd";
+  }
+
   const handleFollowPress = async () => {
     if (isFollowActionInProgress || followLoading) return;
     try {
-      if (isFollowing) {
-        await unfollow();
-      } else {
-        await follow();
-      }
+      if (isFollowing) await unfollow();
+      else await follow();
     } catch (error) {
       console.error("[FeedItem] Follow error:", error);
     }
@@ -223,9 +236,16 @@ export function FeedItem({
           style={StyleSheet.absoluteFill}
         />
         <LinearGradient
-          colors={gradientColors}
-          locations={[0, 0.3, 0.6, 0.85, 1]}
-          style={StyleSheet.absoluteFill}
+          colors={[
+            'transparent',
+            'rgba(0,0,0,0.08)',
+            'rgba(0,0,0,0.3)',
+            'rgba(0,0,0,0.65)',
+            '#000',
+          ]}
+          locations={[0, 0.3, 0.55, 0.8, 1]}
+          style={styles.bgGradient}
+          pointerEvents="none"
         />
       </View>
 
@@ -276,12 +296,12 @@ export function FeedItem({
           {!isSelf && (
             <TouchableOpacity
               onPress={handleFollowPress}
-              activeOpacity={0.8}
-              disabled={followLoading || isFollowActionInProgress}
+              activeOpacity={0.7}
               style={[
                 styles.followButton,
                 isFollowing && styles.followButtonFollowing,
               ]}
+              disabled={isFollowActionInProgress || followLoading}
             >
               {isFollowActionInProgress ? (
                 <ActivityIndicator
@@ -312,10 +332,6 @@ export function FeedItem({
               poster={item.thumbnail}
               isActive={isActive}
               onSingleTap={onEventPress}
-              aspectRatio={item.aspectRatio}
-              mediaWidth={item.mediaWidth}
-              mediaHeight={item.mediaHeight}
-              mediaOrientation={item.mediaOrientation}
               containerWidth={SCREEN_WIDTH}
               maxHeight={MAX_MEDIA_HEIGHT}
             />
@@ -396,6 +412,7 @@ const styles = StyleSheet.create({
   },
   glowMedia: {
     ...StyleSheet.absoluteFillObject,
+    transform: [{ scale: 1.3 }],
   },
   card: {
     width: SCREEN_WIDTH,
@@ -415,12 +432,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 14,
     paddingVertical: 12,
+    gap: 8,
   },
   organizerSection: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    marginRight: 12,
     gap: 8,
   },
   organizerAvatar: {
@@ -428,6 +445,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   organizerNameRow: {
     flexDirection: "row",
@@ -464,11 +483,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  // Footer
   cardFooter: {
     paddingHorizontal: 14,
-    paddingTop: 12,
-    paddingBottom: 4,
-    gap: 4,
+    paddingTop: 14,
+    paddingBottom: 14,
+    gap: 8,
   },
   eventTitle: {
     fontSize: 20,

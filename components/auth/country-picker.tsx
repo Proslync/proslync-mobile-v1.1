@@ -8,8 +8,15 @@ import {
   FlatList,
   TextInput,
 } from 'react-native';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
+import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { GlassSurface } from '@/components/glass/glass-surface';
+import { fontFamily } from '@/constants/glass/tokens';
+
+const useNativeGlass = isGlassEffectAPIAvailable();
 
 interface Country {
   code: string;
@@ -19,43 +26,43 @@ interface Country {
 }
 
 const COUNTRIES: Country[] = [
-  { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸' },
-  { code: 'CA', name: 'Canada', dialCode: '+1', flag: '🇨🇦' },
-  { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧' },
-  { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺' },
-  { code: 'DE', name: 'Germany', dialCode: '+49', flag: '🇩🇪' },
-  { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷' },
-  { code: 'IT', name: 'Italy', dialCode: '+39', flag: '🇮🇹' },
-  { code: 'ES', name: 'Spain', dialCode: '+34', flag: '🇪🇸' },
-  { code: 'JP', name: 'Japan', dialCode: '+81', flag: '🇯🇵' },
-  { code: 'KR', name: 'South Korea', dialCode: '+82', flag: '🇰🇷' },
-  { code: 'CN', name: 'China', dialCode: '+86', flag: '🇨🇳' },
-  { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' },
-  { code: 'BR', name: 'Brazil', dialCode: '+55', flag: '🇧🇷' },
-  { code: 'MX', name: 'Mexico', dialCode: '+52', flag: '🇲🇽' },
-  { code: 'NL', name: 'Netherlands', dialCode: '+31', flag: '🇳🇱' },
-  { code: 'SE', name: 'Sweden', dialCode: '+46', flag: '🇸🇪' },
-  { code: 'NO', name: 'Norway', dialCode: '+47', flag: '🇳🇴' },
-  { code: 'DK', name: 'Denmark', dialCode: '+45', flag: '🇩🇰' },
-  { code: 'FI', name: 'Finland', dialCode: '+358', flag: '🇫🇮' },
-  { code: 'PL', name: 'Poland', dialCode: '+48', flag: '🇵🇱' },
-  { code: 'RU', name: 'Russia', dialCode: '+7', flag: '🇷🇺' },
-  { code: 'UA', name: 'Ukraine', dialCode: '+380', flag: '🇺🇦' },
-  { code: 'IL', name: 'Israel', dialCode: '+972', flag: '🇮🇱' },
-  { code: 'AE', name: 'UAE', dialCode: '+971', flag: '🇦🇪' },
-  { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '🇸🇬' },
-  { code: 'NZ', name: 'New Zealand', dialCode: '+64', flag: '🇳🇿' },
-  { code: 'IE', name: 'Ireland', dialCode: '+353', flag: '🇮🇪' },
-  { code: 'PT', name: 'Portugal', dialCode: '+351', flag: '🇵🇹' },
-  { code: 'AT', name: 'Austria', dialCode: '+43', flag: '🇦🇹' },
-  { code: 'CH', name: 'Switzerland', dialCode: '+41', flag: '🇨🇭' },
-  { code: 'BE', name: 'Belgium', dialCode: '+32', flag: '🇧🇪' },
-  { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' },
-  { code: 'PH', name: 'Philippines', dialCode: '+63', flag: '🇵🇭' },
-  { code: 'TH', name: 'Thailand', dialCode: '+66', flag: '🇹🇭' },
-  { code: 'VN', name: 'Vietnam', dialCode: '+84', flag: '🇻🇳' },
-  { code: 'ID', name: 'Indonesia', dialCode: '+62', flag: '🇮🇩' },
-  { code: 'MY', name: 'Malaysia', dialCode: '+60', flag: '🇲🇾' },
+  { code: 'US', name: 'United States', dialCode: '+1', flag: '\u{1F1FA}\u{1F1F8}' },
+  { code: 'CA', name: 'Canada', dialCode: '+1', flag: '\u{1F1E8}\u{1F1E6}' },
+  { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '\u{1F1EC}\u{1F1E7}' },
+  { code: 'AU', name: 'Australia', dialCode: '+61', flag: '\u{1F1E6}\u{1F1FA}' },
+  { code: 'DE', name: 'Germany', dialCode: '+49', flag: '\u{1F1E9}\u{1F1EA}' },
+  { code: 'FR', name: 'France', dialCode: '+33', flag: '\u{1F1EB}\u{1F1F7}' },
+  { code: 'IT', name: 'Italy', dialCode: '+39', flag: '\u{1F1EE}\u{1F1F9}' },
+  { code: 'ES', name: 'Spain', dialCode: '+34', flag: '\u{1F1EA}\u{1F1F8}' },
+  { code: 'JP', name: 'Japan', dialCode: '+81', flag: '\u{1F1EF}\u{1F1F5}' },
+  { code: 'KR', name: 'South Korea', dialCode: '+82', flag: '\u{1F1F0}\u{1F1F7}' },
+  { code: 'CN', name: 'China', dialCode: '+86', flag: '\u{1F1E8}\u{1F1F3}' },
+  { code: 'IN', name: 'India', dialCode: '+91', flag: '\u{1F1EE}\u{1F1F3}' },
+  { code: 'BR', name: 'Brazil', dialCode: '+55', flag: '\u{1F1E7}\u{1F1F7}' },
+  { code: 'MX', name: 'Mexico', dialCode: '+52', flag: '\u{1F1F2}\u{1F1FD}' },
+  { code: 'NL', name: 'Netherlands', dialCode: '+31', flag: '\u{1F1F3}\u{1F1F1}' },
+  { code: 'SE', name: 'Sweden', dialCode: '+46', flag: '\u{1F1F8}\u{1F1EA}' },
+  { code: 'NO', name: 'Norway', dialCode: '+47', flag: '\u{1F1F3}\u{1F1F4}' },
+  { code: 'DK', name: 'Denmark', dialCode: '+45', flag: '\u{1F1E9}\u{1F1F0}' },
+  { code: 'FI', name: 'Finland', dialCode: '+358', flag: '\u{1F1EB}\u{1F1EE}' },
+  { code: 'PL', name: 'Poland', dialCode: '+48', flag: '\u{1F1F5}\u{1F1F1}' },
+  { code: 'RU', name: 'Russia', dialCode: '+7', flag: '\u{1F1F7}\u{1F1FA}' },
+  { code: 'UA', name: 'Ukraine', dialCode: '+380', flag: '\u{1F1FA}\u{1F1E6}' },
+  { code: 'IL', name: 'Israel', dialCode: '+972', flag: '\u{1F1EE}\u{1F1F1}' },
+  { code: 'AE', name: 'UAE', dialCode: '+971', flag: '\u{1F1E6}\u{1F1EA}' },
+  { code: 'SG', name: 'Singapore', dialCode: '+65', flag: '\u{1F1F8}\u{1F1EC}' },
+  { code: 'NZ', name: 'New Zealand', dialCode: '+64', flag: '\u{1F1F3}\u{1F1FF}' },
+  { code: 'IE', name: 'Ireland', dialCode: '+353', flag: '\u{1F1EE}\u{1F1EA}' },
+  { code: 'PT', name: 'Portugal', dialCode: '+351', flag: '\u{1F1F5}\u{1F1F9}' },
+  { code: 'AT', name: 'Austria', dialCode: '+43', flag: '\u{1F1E6}\u{1F1F9}' },
+  { code: 'CH', name: 'Switzerland', dialCode: '+41', flag: '\u{1F1E8}\u{1F1ED}' },
+  { code: 'BE', name: 'Belgium', dialCode: '+32', flag: '\u{1F1E7}\u{1F1EA}' },
+  { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '\u{1F1FF}\u{1F1E6}' },
+  { code: 'PH', name: 'Philippines', dialCode: '+63', flag: '\u{1F1F5}\u{1F1ED}' },
+  { code: 'TH', name: 'Thailand', dialCode: '+66', flag: '\u{1F1F9}\u{1F1ED}' },
+  { code: 'VN', name: 'Vietnam', dialCode: '+84', flag: '\u{1F1FB}\u{1F1F3}' },
+  { code: 'ID', name: 'Indonesia', dialCode: '+62', flag: '\u{1F1EE}\u{1F1E9}' },
+  { code: 'MY', name: 'Malaysia', dialCode: '+60', flag: '\u{1F1F2}\u{1F1FE}' },
 ];
 
 interface CountryPickerProps {
@@ -88,25 +95,40 @@ export function CountryPicker({ selectedCode, onSelect }: CountryPickerProps) {
     setSearchQuery('');
   };
 
-  const renderCountryItem = ({ item }: { item: Country }) => (
-    <TouchableOpacity
-      style={[
-        styles.countryItem,
-        item.dialCode === selectedCode && { backgroundColor: colors.backgroundSecondary },
-      ]}
-      onPress={() => handleSelect(item)}
-      activeOpacity={0.7}
-    >
-      <Text style={styles.countryFlag}>{item.flag}</Text>
-      <View style={styles.countryInfo}>
-        <Text style={[styles.countryName, { color: colors.text }]}>{item.name}</Text>
-        <Text style={[styles.countryDialCode, { color: colors.textTertiary }]}>{item.dialCode}</Text>
-      </View>
-      {item.dialCode === selectedCode && (
-        <Text style={styles.checkmark}>✓</Text>
-      )}
-    </TouchableOpacity>
-  );
+  const renderCountryItem = ({ item }: { item: Country }) => {
+    const isSelected = item.dialCode === selectedCode;
+    return (
+      <TouchableOpacity
+        style={[
+          styles.countryItem,
+          isSelected && { overflow: 'hidden' },
+        ]}
+        onPress={() => handleSelect(item)}
+        activeOpacity={0.7}
+      >
+        {isSelected && useNativeGlass && (
+          <GlassView
+            {...liquidGlass.surface}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
+        {isSelected && !useNativeGlass && (
+          <View style={[StyleSheet.absoluteFill, {
+            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+            borderRadius: 12,
+          }]} />
+        )}
+        <Text style={styles.countryFlag}>{item.flag}</Text>
+        <View style={styles.countryInfo}>
+          <Text style={[styles.countryName, { color: colors.text }]}>{item.name}</Text>
+          <Text style={[styles.countryDialCode, { color: colors.textTertiary }]}>{item.dialCode}</Text>
+        </View>
+        {isSelected && (
+          <Text style={styles.checkmark}>✓</Text>
+        )}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <>
@@ -129,24 +151,50 @@ export function CountryPicker({ selectedCode, onSelect }: CountryPickerProps) {
           {/* Header */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Select Country</Text>
-            <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: colors.backgroundSecondary }]}
-              onPress={() => setIsOpen(false)}
+            <GlassSurface
+              fill="light"
+              border="subtle"
+              cornerRadius="3xl"
+              style={styles.closeButtonWrapper}
             >
-              <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setIsOpen(false)}
+              >
+                <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
+              </TouchableOpacity>
+            </GlassSurface>
           </View>
 
           {/* Search */}
           <View style={styles.searchContainer}>
-            <TextInput
-              style={[styles.searchInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-              placeholder="Search country..."
-              placeholderTextColor={colors.placeholder}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCorrect={false}
-            />
+            <View style={[styles.searchInputWrapper, { overflow: 'hidden', borderRadius: 12 }]}>
+              {useNativeGlass ? (
+                <GlassView
+                  {...liquidGlass.surface}
+                  style={StyleSheet.absoluteFill}
+                />
+              ) : (
+                <>
+                  <BlurView
+                    intensity={isDark ? 20 : 15}
+                    tint={isDark ? 'dark' : 'light'}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={[StyleSheet.absoluteFill, {
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                  }]} />
+                </>
+              )}
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder="Search country..."
+                placeholderTextColor={colors.placeholder}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCorrect={false}
+              />
+            </View>
           </View>
 
           {/* Country List */}
@@ -172,7 +220,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    height: 56,
+    height: 58,
     gap: 8,
   },
   selectorFlag: {
@@ -194,12 +242,15 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'Lato_700Bold',
+  },
+  closeButtonWrapper: {
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   closeButton: {
     width: 32,
     height: 32,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -210,12 +261,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  searchInput: {
+  searchInputWrapper: {
     height: 48,
     borderRadius: 12,
+  },
+  searchInput: {
+    flex: 1,
     paddingHorizontal: 16,
     fontSize: 16,
-    borderWidth: 1,
+    fontFamily: 'Lato_400Regular',
   },
   listContent: {
     paddingHorizontal: 20,
@@ -237,15 +291,16 @@ const styles = StyleSheet.create({
   },
   countryName: {
     fontSize: 17,
-    fontWeight: '500',
+    fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   countryDialCode: {
     fontSize: 14,
+    fontFamily: 'Lato_400Regular',
   },
   checkmark: {
     fontSize: 18,
-    color: '#22c55e',
-    fontWeight: '600',
+    color: '#34C759',
+    fontFamily: 'Lato_700Bold',
   },
 });

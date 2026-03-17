@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { GlassSurface } from "@/components/glass/glass-surface";
 
 import { useEvent, useEventPermissions } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -17,7 +18,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import { FeedMediaPlayer } from "@/components/feed/feed-media-player";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -164,18 +164,57 @@ function getStatusLabel(status: EventStatus): string {
 }
 
 const STATE_ABBREV: Record<string, string> = {
-  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
-  colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
-  hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
-  kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
-  massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS",
-  missouri: "MO", montana: "MT", nebraska: "NE", nevada: "NV",
-  "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
-  "north carolina": "NC", "north dakota": "ND", ohio: "OH", oklahoma: "OK",
-  oregon: "OR", pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
-  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT", vermont: "VT",
-  virginia: "VA", washington: "WA", "west virginia": "WV", wisconsin: "WI",
-  wyoming: "WY", "district of columbia": "DC",
+  alabama: "AL",
+  alaska: "AK",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  florida: "FL",
+  georgia: "GA",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  tennessee: "TN",
+  texas: "TX",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  washington: "WA",
+  "west virginia": "WV",
+  wisconsin: "WI",
+  wyoming: "WY",
+  "district of columbia": "DC",
 };
 
 function abbreviateState(state: string): string {
@@ -198,7 +237,6 @@ function formatShortLocation(event: {
   const venue = event.venue;
   const loc = event.locationDetails;
 
-  // Build short address: street, city, ST (no zip, no country)
   const street = loc?.addressLine1 || venue?.address;
   const city = loc?.city || venue?.city;
   const state = loc?.state || venue?.state;
@@ -210,11 +248,10 @@ function formatShortLocation(event: {
 
   if (parts.length > 0) return parts.join(", ");
 
-  // Fall back to location string but strip zip and country
   if (event.location) {
     return event.location
-      .replace(/,?\s*\d{5}(-\d{4})?\s*/g, "") // remove zip
-      .replace(/,?\s*(United States|USA|US)\s*$/i, "") // remove country
+      .replace(/,?\s*\d{5}(-\d{4})?\s*/g, "")
+      .replace(/,?\s*(United States|USA|US)\s*$/i, "")
       .replace(/,\s*$/, "")
       .trim();
   }
@@ -258,7 +295,6 @@ export default function ManageEventScreen() {
   } = useEventPermissions(eventId);
 
   const visibleSections = useMemo(() => {
-    // Show all sections while permissions are loading to avoid flash
     if (permissionsLoading) return SECTIONS;
     return SECTIONS.filter((section) =>
       hasPermission(section.permission.resource, section.permission.action),
@@ -279,22 +315,20 @@ export default function ManageEventScreen() {
 
   if (isLoading || !event) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {isDark && <DarkGradientBg />}
+      <View style={styles.container}>
+        <DarkGradientBg />
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity
             style={styles.headerButton}
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+            <Ionicons name="arrow-back" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Manage Event
-          </Text>
+          <Text style={styles.headerTitle}>Manage Event</Text>
           <View style={styles.headerButton} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text} />
+          <ActivityIndicator size="large" color="#fff" />
         </View>
       </View>
     );
@@ -308,32 +342,27 @@ export default function ManageEventScreen() {
   const flyerMediaType: "video" | "image" = flyerIsVideo ? "video" : "image";
   const flyerVideoUrl = flyerIsVideo ? event.flyer?.url : undefined;
   const flyerThumbnail = flyerIsVideo ? event.imageUrl || "" : "";
-  const cardWidth = Dimensions.get("window").width - 32 - 2; // padding - border
+  const cardWidth = Dimensions.get("window").width - 32 - 2;
   const isPastEvent =
     event.status === EventStatus.FINISHED ||
     event.status === EventStatus.CANCELLED;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={styles.container}>
+      <DarkGradientBg />
 
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
-        ]}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Manage Event
-        </Text>
+        <Text style={styles.headerTitle}>Manage Event</Text>
         {!isPastEvent && canEditEvents() ? (
           <TouchableOpacity
             style={styles.headerButton}
@@ -341,7 +370,7 @@ export default function ManageEventScreen() {
               router.push({ pathname: "/edit-event", params: { id: id! } })
             }
           >
-            <Ionicons name="create-outline" size={22} color={colors.text} />
+            <Ionicons name="create-outline" size={22} color="#fff" />
           </TouchableOpacity>
         ) : (
           <View style={styles.headerButton} />
@@ -358,24 +387,12 @@ export default function ManageEventScreen() {
       >
         {/* Event Flyer Card */}
         <Animated.View entering={FadeInDown.duration(300)}>
-          <View
-            style={[
-              styles.eventCard,
-              {
-                borderColor: isDark
-                  ? "rgba(255,255,255,0.12)"
-                  : "rgba(0,0,0,0.08)",
-              },
-            ]}
+          <GlassSurface
+            fill="subtle"
+            border="subtle"
+            cornerRadius="xl"
+            style={styles.eventCard}
           >
-            {/* Glass background */}
-            <BlurView
-              intensity={isDark ? 25 : 40}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-
-            {/* Flyer media — video or image */}
             {flyerUrl ? (
               <FeedMediaPlayer
                 mediaType={flyerMediaType}
@@ -388,38 +405,27 @@ export default function ManageEventScreen() {
                 maxHeight={cardWidth * (4 / 3)}
               />
             ) : (
-              <View
-                style={[
-                  styles.flyerPlaceholder,
-                  { backgroundColor: colors.backgroundSecondary },
-                ]}
-              >
+              <View style={styles.flyerPlaceholder}>
                 <Ionicons
                   name="calendar"
                   size={48}
-                  color={colors.textTertiary}
+                  color="rgba(255,255,255,0.2)"
                 />
               </View>
             )}
 
-            {/* Card footer — event info below the image */}
+            {/* Card footer */}
             <View style={styles.cardFooter}>
-              <Text
-                style={[styles.eventName, { color: colors.text }]}
-                numberOfLines={2}
-              >
+              <Text style={styles.eventName} numberOfLines={2}>
                 {event.name}
               </Text>
               <View style={styles.eventDateRow}>
                 <Ionicons
                   name="calendar-outline"
                   size={14}
-                  color={colors.textSecondary}
+                  color="rgba(255,255,255,0.5)"
                 />
-                <Text
-                  style={[styles.eventDate, { color: colors.textSecondary }]}
-                  numberOfLines={1}
-                >
+                <Text style={styles.eventDate} numberOfLines={1}>
                   {formatDateRange(event.startDate, event.endDate)}
                 </Text>
               </View>
@@ -427,15 +433,9 @@ export default function ManageEventScreen() {
                 <Ionicons
                   name="location-outline"
                   size={14}
-                  color={colors.textSecondary}
+                  color="rgba(255,255,255,0.5)"
                 />
-                <Text
-                  style={[
-                    styles.eventLocation,
-                    { color: colors.textSecondary },
-                  ]}
-                  numberOfLines={1}
-                >
+                <Text style={styles.eventLocation} numberOfLines={1}>
                   {formatShortLocation(event)}
                 </Text>
               </View>
@@ -457,21 +457,16 @@ export default function ManageEventScreen() {
                     <Ionicons
                       name="people-outline"
                       size={13}
-                      color={colors.textTertiary}
+                      color="rgba(255,255,255,0.4)"
                     />
-                    <Text
-                      style={[
-                        styles.attendeeText,
-                        { color: colors.textTertiary },
-                      ]}
-                    >
+                    <Text style={styles.attendeeText}>
                       {event.attendeeCount} RSVPs
                     </Text>
                   </View>
                 )}
               </View>
             </View>
-          </View>
+          </GlassSurface>
         </Animated.View>
 
         {/* Menu Items */}
@@ -479,45 +474,43 @@ export default function ManageEventScreen() {
           entering={FadeInDown.delay(150).duration(500).springify()}
           style={styles.menuSection}
         >
-          <View
-            style={[styles.menuList, { backgroundColor: colors.cardElevated }]}
+          <GlassSurface
+            fill="subtle"
+            border="subtle"
+            cornerRadius="lg"
+            style={styles.menuList}
           >
-            {visibleSections.map((section) => (
+            {visibleSections.map((section, index) => (
               <TouchableOpacity
                 key={section.key}
-                style={[styles.menuItem, { borderBottomColor: colors.border }]}
+                style={[
+                  styles.menuItem,
+                  index < visibleSections.length - 1 && styles.menuItemBorder,
+                ]}
                 onPress={() => handleSectionPress(section.key)}
                 activeOpacity={0.7}
               >
-                <View
-                  style={[
-                    styles.menuItemIcon,
-                    { backgroundColor: colors.cardElevated },
-                  ]}
-                >
-                  <Ionicons name={section.icon} size={22} color={colors.text} />
+                <View style={styles.menuItemIcon}>
+                  <Ionicons
+                    name={section.icon}
+                    size={20}
+                    color="rgba(255,255,255,0.9)"
+                  />
                 </View>
                 <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>
-                    {section.label}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.menuItemSubtitle,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
+                  <Text style={styles.menuItemTitle}>{section.label}</Text>
+                  <Text style={styles.menuItemSubtitle}>
                     {section.subtitle}
                   </Text>
                 </View>
                 <Ionicons
                   name="chevron-forward"
-                  size={20}
-                  color={colors.iconSecondary}
+                  size={18}
+                  color="rgba(255,255,255,0.3)"
                 />
               </TouchableOpacity>
             ))}
-          </View>
+          </GlassSurface>
         </Animated.View>
       </ScrollView>
     </View>
@@ -527,6 +520,7 @@ export default function ManageEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#000",
   },
   header: {
     flexDirection: "row",
@@ -534,7 +528,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 16,
-    borderBottomWidth: 1,
   },
   headerButton: {
     width: 40,
@@ -545,6 +538,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   loadingContainer: {
     flex: 1,
@@ -558,15 +552,14 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   eventCard: {
-    borderRadius: 20,
     overflow: "hidden",
-    borderWidth: 1,
   },
   flyerPlaceholder: {
     width: "100%",
     aspectRatio: 3 / 4,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
   cardFooter: {
     paddingHorizontal: 14,
@@ -578,6 +571,7 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_700Bold",
     lineHeight: 26,
     marginBottom: 2,
+    color: "#fff",
   },
   eventDateRow: {
     flexDirection: "row",
@@ -587,10 +581,12 @@ const styles = StyleSheet.create({
   eventDate: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
+    color: "rgba(255,255,255,0.5)",
   },
   eventLocation: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
+    color: "rgba(255,255,255,0.5)",
   },
   eventMeta: {
     flexDirection: "row",
@@ -617,27 +613,31 @@ const styles = StyleSheet.create({
   attendeeText: {
     fontSize: 12,
     fontFamily: "Lato_400Regular",
+    color: "rgba(255,255,255,0.4)",
   },
   menuSection: {
     marginTop: 20,
   },
   menuList: {
-    borderRadius: 12,
     overflow: "hidden",
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
+  },
+  menuItemBorder: {
     borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
   },
   menuItemIcon: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   menuItemContent: {
     flex: 1,
@@ -645,10 +645,12 @@ const styles = StyleSheet.create({
   menuItemTitle: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   menuItemSubtitle: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
     marginTop: 2,
+    color: "rgba(255,255,255,0.45)",
   },
 });

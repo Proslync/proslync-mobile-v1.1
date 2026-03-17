@@ -12,7 +12,9 @@ import {
   StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -44,7 +46,12 @@ export function ImageViewer({ visible, imageUrl, onClose }: ImageViewerProps) {
           onPress={onClose}
           activeOpacity={0.7}
         >
-          <View style={styles.closeButtonInner}>
+          <View style={[styles.closeButtonInner, { overflow: 'hidden' }]}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={18}
+              style={StyleSheet.absoluteFill}
+            />
             <Ionicons name="close" size={24} color="#fff" />
           </View>
         </TouchableOpacity>
@@ -76,7 +83,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },

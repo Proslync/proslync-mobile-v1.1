@@ -25,7 +25,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
-import { BlurView } from "expo-blur";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass, glassTint } from "@/constants/glass/liquid-glass";
 import { Audio } from "expo-av";
 import Animated, {
   useSharedValue,
@@ -2097,9 +2098,9 @@ export default function ChatThreadScreen() {
           style={styles.contextMenuOverlay}
           onPress={() => setSelectedMessage(null)}
         >
-          <BlurView
-            intensity={40}
-            tint={isDark ? "dark" : "light"}
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={0}
             style={StyleSheet.absoluteFill}
           />
 

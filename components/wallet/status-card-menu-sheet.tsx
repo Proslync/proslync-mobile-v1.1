@@ -1,4 +1,4 @@
-// Status Card Menu Sheet — QR code + tier perks
+// Status Card Menu Sheet — QR code + tier perks (gorhom BottomSheet, detached)
 import React, { useState } from "react";
 import {
   View,
@@ -8,14 +8,10 @@ import {
   ActivityIndicator,
   Text,
 } from "react-native";
+import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
-import BottomSheet, {
-  BottomSheetView,
-  BottomSheetBackdrop,
-} from "@gorhom/bottom-sheet";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GlassView } from "expo-glass-effect";
 import QRCode from "react-native-qrcode-svg";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { generateAppleWalletToken } from "../../lib/api/wallet";
@@ -23,7 +19,12 @@ import { WalletUser, TIER_PERKS } from "../../lib/types/wallet.types";
 import { ConfirmModal } from "../shared/confirm-modal";
 import { GlassCard } from "../glass/glass-card";
 import { GlassText } from "../glass/glass-text";
-import { radius, spacing, glassBorder } from "../../constants/glass/tokens";
+import { radius, spacing } from "../../constants/glass/tokens";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const TAB_BAR_HEIGHT = 49;
+const TAB_BAR_RADIUS = 24;
 
 interface StatusCardMenuSheetProps {
   visible: boolean;
@@ -46,27 +47,101 @@ export function StatusCardMenuSheet({
 }: StatusCardMenuSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
+  const [walletError, setWalletError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (visible) {
+      bottomSheetRef.current?.expand();
+    } else {
+      bottomSheetRef.current?.close();
+    }
+  }, [visible, user?.statusTier, pdf417Payload, isLoadingCard]);
+
+  const handleDismiss = React.useCallback(() => {
+    bottomSheetRef.current?.close();
+  }, []);
+
+  const handleExpandQR = React.useCallback(() => {
+    bottomSheetRef.current?.close();
+    setTimeout(() => onExpandQR(), 150);
+  }, [onExpandQR]);
+
+  return (
+    <>
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        enableDynamicSizing
+        enablePanDownToClose
+        onClose={onClose}
+        backgroundStyle={{
+          backgroundColor: "transparent",
+          borderRadius: TAB_BAR_RADIUS,
+        }}
+        handleIndicatorStyle={{
+          width: 36,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: "rgba(255,255,255,0.3)",
+        }}
+        style={{ marginHorizontal: 12 }}
+        bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
+        detached
+      >
+        <BottomSheetView style={styles.sheetContent}>
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={TAB_BAR_RADIUS}
+            style={StyleSheet.absoluteFill}
+          />
+
+          <StatusCardMenuContent
+            user={user}
+            pdf417Payload={pdf417Payload}
+            isLoadingCard={isLoadingCard}
+            onExpandQR={handleExpandQR}
+            onDismiss={handleDismiss}
+            onWalletError={setWalletError}
+          />
+        </BottomSheetView>
+      </BottomSheet>
+
+      <ConfirmModal
+        visible={!!walletError}
+        onClose={() => setWalletError(null)}
+        title="Error"
+        message={walletError || ""}
+        alertOnly
+        icon="alert-circle-outline"
+      />
+    </>
+  );
+}
+
+function StatusCardMenuContent({
+  user,
+  pdf417Payload,
+  isLoadingCard,
+  onExpandQR,
+  onDismiss,
+  onWalletError,
+}: {
+  user: WalletUser;
+  pdf417Payload?: string;
+  isLoadingCard?: boolean;
+  onExpandQR: () => void;
+  onDismiss: () => void;
+  onWalletError: (error: string) => void;
+}) {
   const { isDark } = useAppTheme();
   const [isAddingToWallet, setIsAddingToWallet] = useState(false);
-  const [walletError, setWalletError] = useState<string | null>(null);
   const perks = TIER_PERKS[user.statusTier] || [];
   const displayPerks = perks.slice(0, 3);
 
-  const sheetBackgroundColor = isDark ? "#000000" : "rgba(255, 255, 255, 0.97)";
-  const sheetBorderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : `rgba(0, 0, 0, ${glassBorder.medium.opacity * 0.3})`;
-  const indicatorColor = isDark
-    ? "rgba(255, 255, 255, 0.3)"
-    : "rgba(0, 0, 0, 0.3)";
   const iconColor = isDark ? "#ffffff" : "#1a1a1a";
-  const buttonBgColor = isDark ? "rgba(255, 255, 255, 0.15)" : "#D3D3D3";
   const buttonBorderColor = isDark
     ? "rgba(255, 255, 255, 0.1)"
     : "rgba(0, 0, 0, 0.08)";
-  const qrContainerBg = isDark
-    ? "rgba(255, 255, 255, 0.06)"
-    : "rgba(0, 0, 0, 0.03)";
   const qrContainerBorder = isDark
     ? "rgba(255, 255, 255, 0.10)"
     : "rgba(0, 0, 0, 0.06)";
@@ -84,16 +159,9 @@ export function StatusCardMenuSheet({
     ? (["rgba(255, 255, 255, 0.02)", "transparent"] as const)
     : (["rgba(0, 0, 0, 0.02)", "transparent"] as const);
 
-  React.useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.expand();
-    } else {
-      bottomSheetRef.current?.close();
-    }
-  }, [visible]);
-
   const handleViewOnWallet = () => {
-    Linking.openURL("shoebox://");
+    onDismiss();
+    setTimeout(() => Linking.openURL("shoebox://"), 100);
   };
 
   const handleAddToWallet = async () => {
@@ -101,220 +169,176 @@ export function StatusCardMenuSheet({
     try {
       const response = await generateAppleWalletToken();
       if (response.success && response.data?.downloadUrl) {
-        Linking.openURL(response.data.downloadUrl);
+        onDismiss();
+        setTimeout(() => Linking.openURL(response.data!.downloadUrl!), 100);
       } else {
-        setWalletError(response.error || "Failed to add to Apple Wallet");
+        onWalletError(response.error || "Failed to add to Apple Wallet");
       }
     } catch (error: any) {
-      setWalletError(error.message || "Failed to add to Apple Wallet");
+      onWalletError(error.message || "Failed to add to Apple Wallet");
     } finally {
       setIsAddingToWallet(false);
     }
   };
 
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={-1}
-      enablePanDownToClose
-      enableDynamicSizing
-      onClose={onClose}
-      backdropComponent={(props) => (
-        <BottomSheetBackdrop
-          {...props}
-          appearsOnIndex={0}
-          disappearsOnIndex={-1}
-          pressBehavior="close"
-          opacity={0.5}
-        />
-      )}
-      backgroundStyle={[
-        styles.sheetBackground,
-        {
-          backgroundColor: sheetBackgroundColor,
-          borderColor: sheetBorderColor,
-        },
-      ]}
-      handleIndicatorStyle={[
-        styles.sheetIndicator,
-        { backgroundColor: indicatorColor },
-      ]}
-    >
-      <ConfirmModal
-        visible={!!walletError}
-        onClose={() => setWalletError(null)}
-        title="Error"
-        message={walletError || ''}
-        alertOnly
-        icon="alert-circle-outline"
-      />
-      <BottomSheetView
-        style={[styles.container, { paddingBottom: insets.bottom || 8 }]}
-      >
-        {/* QR Code Section */}
-        <View style={styles.qrSection}>
-          {isLoadingCard ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={iconColor} />
-            </View>
-          ) : pdf417Payload ? (
+    <View style={styles.container}>
+      {/* QR Code Section */}
+      <View style={styles.qrSection}>
+        {isLoadingCard ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={iconColor} />
+          </View>
+        ) : pdf417Payload ? (
+          <View
+            style={[
+              styles.qrContainer,
+              { borderColor: qrContainerBorder },
+            ]}
+          >
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={20}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <QRCode
+              value={pdf417Payload}
+              size={140}
+              color={qrColor}
+              backgroundColor="transparent"
+            />
+          </View>
+        ) : null}
+      </View>
+
+      {/* Tier Perks */}
+      {displayPerks.length > 0 && (
+        <GlassCard
+          fill="light"
+          border="subtle"
+          cornerRadius="2xl"
+          shadowLevel="md"
+          blurIntensity="medium"
+          style={styles.perksCard}
+        >
+          <LinearGradient
+            colors={highlightGradientColors}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 0.5 }}
+            style={styles.innerHighlight}
+          />
+
+          <View style={styles.perksTitleRow}>
             <View
               style={[
-                styles.qrContainer,
-                {
-                  borderColor: qrContainerBorder,
-                  backgroundColor: qrContainerBg,
-                },
+                styles.perksIcon,
+                { backgroundColor: perksIconBg, borderColor: perksIconBorder },
               ]}
             >
-              <QRCode
-                value={pdf417Payload}
-                size={180}
-                color={qrColor}
-                backgroundColor="transparent"
-              />
+              <Ionicons name="star-outline" size={14} color="#FFD700" />
             </View>
-          ) : null}
-        </View>
+            <GlassText weight="bold" size={15}>
+              {user.statusTier} Perks
+            </GlassText>
+          </View>
 
-        {/* Tier Perks */}
-        {displayPerks.length > 0 && (
-          <GlassCard
-            fill="light"
-            border="subtle"
-            cornerRadius="2xl"
-            shadowLevel="md"
-            blurIntensity="medium"
-            style={styles.perksCard}
-          >
-            <LinearGradient
-              colors={highlightGradientColors}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 0.5 }}
-              style={styles.innerHighlight}
-            />
-
-            <View style={styles.perksTitleRow}>
-              <View
-                style={[
-                  styles.perksIcon,
-                  { backgroundColor: perksIconBg, borderColor: perksIconBorder },
-                ]}
-              >
-                <Ionicons name="star-outline" size={14} color="#FFD700" />
-              </View>
-              <GlassText weight="bold" size={15}>
-                {user.statusTier} Perks
-              </GlassText>
-            </View>
-
-            {displayPerks.map((perk, index) => (
-              <React.Fragment key={index}>
-                {index > 0 && (
-                  <View
-                    style={[
-                      styles.perkSeparator,
-                      { backgroundColor: separatorColor },
-                    ]}
-                  />
-                )}
-                <View style={styles.perkRow}>
-                  <View style={styles.checkCircle}>
-                    <Ionicons name="checkmark" size={12} color="#fff" />
-                  </View>
-                  <GlassText
-                    hierarchy="secondary"
-                    size={14}
-                    style={styles.perkText}
-                  >
-                    {perk}
-                  </GlassText>
+          {displayPerks.map((perk, index) => (
+            <React.Fragment key={index}>
+              {index > 0 && (
+                <View
+                  style={[
+                    styles.perkSeparator,
+                    { backgroundColor: separatorColor },
+                  ]}
+                />
+              )}
+              <View style={styles.perkRow}>
+                <View style={styles.checkCircle}>
+                  <Ionicons name="checkmark" size={12} color="#fff" />
                 </View>
-              </React.Fragment>
-            ))}
-          </GlassCard>
-        )}
+                <GlassText
+                  hierarchy="secondary"
+                  size={14}
+                  style={styles.perkText}
+                >
+                  {perk}
+                </GlassText>
+              </View>
+            </React.Fragment>
+          ))}
+        </GlassCard>
+      )}
 
-        {/* Action Buttons */}
-        <View style={styles.actionsSection}>
-          {pdf417Payload ? (
-            <TouchableOpacity
-              style={[styles.actionButton, { borderColor: buttonBorderColor }]}
-              onPress={onExpandQR}
-              activeOpacity={0.7}
-            >
-              <View
-                style={[
-                  styles.actionButtonFill,
-                  { backgroundColor: buttonBgColor },
-                ]}
-              />
-              <Ionicons name="expand-outline" size={18} color={iconColor} />
-              <Text style={[styles.actionButtonText, { color: iconColor }]}>
-                Full Screen
-              </Text>
-            </TouchableOpacity>
-          ) : null}
-
+      {/* Action Buttons */}
+      <View style={styles.actionsSection}>
+        {pdf417Payload ? (
           <TouchableOpacity
             style={[styles.actionButton, { borderColor: buttonBorderColor }]}
-            onPress={handleViewOnWallet}
+            onPress={onExpandQR}
             activeOpacity={0.7}
           >
-            <View
-              style={[
-                styles.actionButtonFill,
-                { backgroundColor: buttonBgColor },
-              ]}
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={radius.md}
+              style={StyleSheet.absoluteFillObject}
             />
-            <Ionicons name="wallet-outline" size={18} color={iconColor} />
+            <Ionicons name="expand-outline" size={18} color={iconColor} />
             <Text style={[styles.actionButtonText, { color: iconColor }]}>
-              View on Apple Wallet
+              Full Screen
             </Text>
           </TouchableOpacity>
+        ) : null}
 
-          <TouchableOpacity
-            style={[styles.actionButton, { borderColor: buttonBorderColor }]}
-            onPress={handleAddToWallet}
-            activeOpacity={0.7}
-            disabled={isAddingToWallet}
-          >
-            <View
-              style={[
-                styles.actionButtonFill,
-                { backgroundColor: buttonBgColor },
-              ]}
-            />
-            {isAddingToWallet ? (
-              <ActivityIndicator size="small" color={iconColor} />
-            ) : (
-              <>
-                <Ionicons name="logo-apple" size={18} color={iconColor} />
-                <Text style={[styles.actionButtonText, { color: iconColor }]}>
-                  Add to Apple Wallet
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      </BottomSheetView>
-    </BottomSheet>
+        <TouchableOpacity
+          style={[styles.actionButton, { borderColor: buttonBorderColor }]}
+          onPress={handleViewOnWallet}
+          activeOpacity={0.7}
+        >
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={radius.md}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <Ionicons name="wallet-outline" size={18} color={iconColor} />
+          <Text style={[styles.actionButtonText, { color: iconColor }]}>
+            View on Apple Wallet
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionButton, { borderColor: buttonBorderColor }]}
+          onPress={handleAddToWallet}
+          activeOpacity={0.7}
+          disabled={isAddingToWallet}
+        >
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={radius.md}
+            style={StyleSheet.absoluteFillObject}
+          />
+          {isAddingToWallet ? (
+            <ActivityIndicator size="small" color={iconColor} />
+          ) : (
+            <>
+              <Ionicons name="logo-apple" size={18} color={iconColor} />
+              <Text style={[styles.actionButtonText, { color: iconColor }]}>
+                Add to Apple Wallet
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    borderTopLeftRadius: radius["2xl"],
-    borderTopRightRadius: radius["2xl"],
-    borderWidth: 1,
-  },
-  sheetIndicator: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
+  sheetContent: {
+    paddingBottom: 8,
   },
   container: {
     paddingHorizontal: spacing.lg,
+    paddingBottom: 8,
   },
 
   // QR Section
@@ -330,6 +354,7 @@ const styles = StyleSheet.create({
   qrContainer: {
     padding: 18,
     borderRadius: 20,
+    overflow: "hidden",
     borderWidth: 1,
   },
 
@@ -386,7 +411,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Actions — all buttons in one group with uniform gap
+  // Actions
   actionsSection: {
     gap: 10,
   },
@@ -399,9 +424,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     borderWidth: 1,
-  },
-  actionButtonFill: {
-    ...StyleSheet.absoluteFillObject,
   },
   actionButtonText: {
     fontSize: 16,

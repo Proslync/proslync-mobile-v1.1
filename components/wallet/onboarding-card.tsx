@@ -3,6 +3,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
@@ -14,6 +15,7 @@ import {
   type StripeAccountStatus,
   type RemediationItem,
 } from '@/lib/api/wallet';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 interface OnboardingCardProps {
   onSetup: () => Promise<void>;
@@ -78,6 +80,11 @@ export function OnboardingCard({ onSetup, onCheckStatus, onDeleteAccount, onReme
     <Animated.View entering={FadeInDown.duration(400)} style={styles.wrapper}>
       <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.container}>
         <View style={[styles.iconContainer, { backgroundColor: colors.cardElevated }]}>
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={50}
+            style={StyleSheet.absoluteFillObject}
+          />
           <Ionicons
             name={isPendingReview ? 'time-outline' : needsDocUpload ? 'document-text-outline' : isRestricted ? 'alert-circle-outline' : 'wallet-outline'}
             size={56}
@@ -178,6 +185,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,

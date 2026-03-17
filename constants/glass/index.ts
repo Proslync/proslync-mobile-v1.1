@@ -1,3 +1,6 @@
+// Liquid glass presets — single source of truth for all GlassView props
+export { liquidGlass, glassTint } from './liquid-glass';
+
 // Token layer
 export {
   blur,

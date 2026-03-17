@@ -10,12 +10,14 @@ import {
   Modal,
   FlatList,
 } from "react-native";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass, glassTint } from "@/constants/glass/liquid-glass";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useFollowUser } from "@/hooks/use-follow-user";
 import { useUserFollowers, useUserFollowing } from "@/hooks/use-user-follows";
-import type { FollowUser } from "@/hooks/use-user-follows";
+import type { FollowUser, FollowVenue } from "@/hooks/use-user-follows";
 
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
@@ -93,21 +95,26 @@ function UserRow({
         <TouchableOpacity
           style={[
             styles.followBtn,
-            isFollowing
-              ? { backgroundColor: "transparent", borderWidth: 1, borderColor: colors.border }
-              : { backgroundColor: "#0095F6" },
+            { overflow: "hidden" },
+            isFollowing && { borderWidth: 1, borderColor: colors.border },
           ]}
           activeOpacity={0.8}
           onPress={handleFollowPress}
           disabled={followLoading || isActionInProgress}
         >
+          <GlassView
+            {...liquidGlass.fill}
+            tintColor={isFollowing ? glassTint.fill : glassTint.fillMedium}
+            borderRadius={8}
+            style={StyleSheet.absoluteFill}
+          />
           {isActionInProgress ? (
-            <ActivityIndicator size="small" color={isFollowing ? colors.text : "#fff"} />
+            <ActivityIndicator size="small" color="#fff" />
           ) : (
             <Text
               style={[
                 styles.followBtnText,
-                { color: isFollowing ? colors.textTertiary : "#fff" },
+                { color: "#fff" },
               ]}
             >
               {isFollowing ? "Following" : "Follow"}
@@ -115,6 +122,46 @@ function UserRow({
           )}
         </TouchableOpacity>
       )}
+    </TouchableOpacity>
+  );
+}
+
+function VenueRow({
+  venue,
+  onNavigate,
+}: {
+  venue: FollowVenue;
+  onNavigate: () => void;
+}) {
+  const router = useStableRouter();
+  const { colors } = useAppTheme();
+
+  const handlePress = () => {
+    onNavigate();
+    router.push({
+      pathname: "/venue/[id]",
+      params: { id: venue.id },
+    });
+  };
+
+  return (
+    <TouchableOpacity
+      style={styles.userRow}
+      activeOpacity={0.7}
+      onPress={handlePress}
+    >
+      <Image
+        source={venue.logo ? { uri: venue.logo } : DefaultAvatarImage}
+        style={styles.userAvatar}
+      />
+      <View style={styles.userInfo}>
+        <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
+          {venue.name}
+        </Text>
+        <Text style={[styles.userFullName, { color: colors.textTertiary }]} numberOfLines={1}>
+          Venue
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -143,16 +190,34 @@ export function FollowersSheet({
 
   const {
     following,
+    followingVenues,
     isLoading: followingLoading,
   } = useUserFollowing(userId, visible);
 
-  const data = activeTab === "followers" ? followers : following;
+  // Combine users and venues into a single list for the "following" tab
+  const followingData = React.useMemo(() => {
+    const items: Array<{ type: 'user'; data: FollowUser } | { type: 'venue'; data: FollowVenue }> = [];
+    for (const u of following) items.push({ type: 'user', data: u });
+    for (const v of followingVenues) items.push({ type: 'venue', data: v });
+    return items;
+  }, [following, followingVenues]);
+
   const isLoading = activeTab === "followers" ? followersLoading : followingLoading;
 
-  const renderItem = React.useCallback(
+  const renderFollowerItem = React.useCallback(
     ({ item }: { item: FollowUser }) => (
       <UserRow user={item} currentUserId={currentUserId} onNavigate={onClose} />
     ),
+    [currentUserId, onClose],
+  );
+
+  const renderFollowingItem = React.useCallback(
+    ({ item }: { item: { type: 'user'; data: FollowUser } | { type: 'venue'; data: FollowVenue } }) => {
+      if (item.type === 'venue') {
+        return <VenueRow venue={item.data} onNavigate={onClose} />;
+      }
+      return <UserRow user={item.data} currentUserId={currentUserId} onNavigate={onClose} />;
+    },
     [currentUserId, onClose],
   );
 
@@ -166,7 +231,12 @@ export function FollowersSheet({
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+          <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { overflow: "hidden" }]}>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={22}
+              style={StyleSheet.absoluteFill}
+            />
             <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
@@ -234,11 +304,19 @@ export function FollowersSheet({
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.textTertiary} />
           </View>
-        ) : data.length > 0 ? (
+        ) : activeTab === "followers" && followers.length > 0 ? (
           <FlatList
-            data={data}
+            data={followers}
             keyExtractor={(item) => item.id}
-            renderItem={renderItem}
+            renderItem={renderFollowerItem}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : activeTab === "following" && followingData.length > 0 ? (
+          <FlatList
+            data={followingData}
+            keyExtractor={(item) => `${item.type}-${item.data.id}`}
+            renderItem={renderFollowingItem}
             contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
             showsVerticalScrollIndicator={false}
           />
@@ -273,6 +351,7 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 44,
     height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },

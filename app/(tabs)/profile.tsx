@@ -25,7 +25,8 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
-import { BlurView } from 'expo-blur';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useUserFeed } from '@/hooks';
 import { useUserFollowers, useUserFollowing } from '@/hooks/use-user-follows';
@@ -157,12 +158,17 @@ function AccountSwitcherModal({
       onRequestClose={dismiss}
     >
       <View style={styles.modalOverlay}>
-        <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={dismiss} />
 
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.modalSheet, sheetAnimStyle]}>
             <View style={styles.modalContent}>
+              <GlassView
+                {...liquidGlass.surface}
+                borderTopLeftRadius={20}
+                borderTopRightRadius={20}
+                style={styles.modalGlassBg}
+              />
 
               {/* Handle bar */}
               <View style={styles.modalHandle} />
@@ -255,6 +261,7 @@ function AccountSwitcherModal({
                   activeOpacity={0.7}
                 >
                   <View style={styles.addAccountIcon}>
+                    <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={styles.glassCircleBg} />
                     <Ionicons name="add" size={22} color="#fff" />
                   </View>
                   <Text style={styles.addAccountText}>Add Account</Text>
@@ -580,12 +587,16 @@ export default function ProfileScreen() {
           style={styles.dashboardButtonContainer}
         >
           <TouchableOpacity
-            style={[styles.dashboardButton, { backgroundColor: colors.buttonSecondary }]}
             activeOpacity={0.8}
             onPress={() => router.push('/dashboard')}
           >
-            <Ionicons name="grid-outline" size={18} color={colors.text} />
-            <Text style={[styles.dashboardButtonText, { color: colors.text }]}>Dashboard</Text>
+            <View style={styles.dashboardButton}>
+              <GlassView {...liquidGlass.surface} borderRadius={10} style={styles.glassButtonBg} />
+              <View style={styles.dashboardButtonContent}>
+                <Ionicons name="grid-outline" size={18} color={colors.text} />
+                <Text style={[styles.dashboardButtonText, { color: colors.text }]}>Dashboard</Text>
+              </View>
+            </View>
           </TouchableOpacity>
         </Animated.View>
 
@@ -595,18 +606,28 @@ export default function ProfileScreen() {
           style={styles.actionButtons}
         >
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.buttonSecondary }]}
             activeOpacity={0.8}
             onPress={() => router.push('/edit-profile')}
+            style={{ flex: 1 }}
           >
-            <Text style={[styles.actionButtonText, { color: colors.text }]}>Edit Profile</Text>
+            <View style={styles.actionButton}>
+              <GlassView {...liquidGlass.surface} borderRadius={10} style={styles.glassButtonBg} />
+              <View style={styles.actionButtonContent}>
+                <Text style={[styles.actionButtonText, { color: colors.text }]}>Edit Profile</Text>
+              </View>
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.shareButton]}
             activeOpacity={0.8}
             onPress={handleShareProfile}
+            style={{ flex: 1 }}
           >
-            <Text style={[styles.actionButtonText, styles.shareButtonText]}>Share Profile</Text>
+            <View style={styles.actionButton}>
+              <GlassView {...liquidGlass.surface} borderRadius={10} style={styles.glassButtonBg} />
+              <View style={styles.actionButtonContent}>
+                <Text style={[styles.actionButtonText, { color: colors.text }]}>Share Profile</Text>
+              </View>
+            </View>
           </TouchableOpacity>
         </Animated.View>
 
@@ -796,16 +817,26 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dashboardButton: {
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  dashboardButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
     paddingVertical: 10,
     gap: 8,
   },
   dashboardButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
+  },
+  glassButtonBg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  glassCircleBg: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 22,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -814,20 +845,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    flex: 1,
-    borderRadius: 8,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  actionButtonContent: {
     paddingVertical: 8,
     alignItems: 'center',
   },
   actionButtonText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-  },
-  shareButton: {
-    backgroundColor: '#3897F0',
-  },
-  shareButtonText: {
-    color: '#fff',
   },
   gridHeader: {
     flexDirection: 'row',
@@ -903,15 +930,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   modalContent: {
-    backgroundColor: 'rgba(30,30,30,0.95)',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  modalGlassBg: {
+    ...StyleSheet.absoluteFillObject,
   },
   modalHandle: {
     width: 36,
@@ -991,9 +1015,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   addAccountText: {
     fontSize: 15,

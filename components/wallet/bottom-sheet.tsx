@@ -1,4 +1,4 @@
-// Bottom Sheet - Reusable modal with tap-outside and swipe-down to close
+// Bottom Sheet - Slides up from the floating tab bar with matching glass styling
 import React, { useEffect, useCallback } from 'react';
 import {
   View,
@@ -9,17 +9,25 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  withSpring,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+const TAB_BAR_HEIGHT = 49;
+const TAB_BAR_HORIZONTAL_PADDING = 12;
+const TAB_BAR_RADIUS = 24;
+
+const SPRING_CONFIG = { damping: 28, stiffness: 280, mass: 0.8 };
 
 interface BottomSheetProps {
   visible: boolean;
@@ -32,12 +40,16 @@ export function BottomSheet({
   visible,
   onClose,
   children,
-  maxHeight = '90%',
+  maxHeight = '85%',
 }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useAppTheme();
+  const { isDark } = useAppTheme();
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const overlayOpacity = useSharedValue(0);
+
+  // Sheet sits above the tab bar: tab bar height + safe area + small gap
+  const tabBarTotalHeight = TAB_BAR_HEIGHT + insets.bottom;
+  const sheetBottomMargin = tabBarTotalHeight + 6;
 
   const maxHeightValue = typeof maxHeight === 'string'
     ? SCREEN_HEIGHT * (parseInt(maxHeight) / 100)
@@ -45,7 +57,7 @@ export function BottomSheet({
 
   useEffect(() => {
     if (visible) {
-      translateY.value = withTiming(0, { duration: 300 });
+      translateY.value = withSpring(0, SPRING_CONFIG);
       overlayOpacity.value = withTiming(1, { duration: 200 });
     } else {
       translateY.value = withTiming(SCREEN_HEIGHT, { duration: 250 });
@@ -69,7 +81,7 @@ export function BottomSheet({
       if (event.translationY > 100 || event.velocityY > 500) {
         runOnJS(closeSheet)();
       } else {
-        translateY.value = withTiming(0, { duration: 200 });
+        translateY.value = withSpring(0, SPRING_CONFIG);
       }
     });
 
@@ -105,12 +117,17 @@ export function BottomSheet({
               styles.sheet,
               {
                 maxHeight: maxHeightValue,
-                paddingBottom: insets.bottom + 16,
-                backgroundColor: isDark ? '#1c1c1e' : colors.card,
+                marginBottom: sheetBottomMargin,
+                marginHorizontal: TAB_BAR_HORIZONTAL_PADDING,
               },
               sheetStyle,
             ]}
           >
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={TAB_BAR_RADIUS}
+              style={StyleSheet.absoluteFill}
+            />
             <View style={[
               styles.handle,
               { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)' }
@@ -130,18 +147,18 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: TAB_BAR_RADIUS,
     padding: 16,
+    overflow: 'hidden',
   },
   handle: {
     width: 36,
-    height: 5,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
 });

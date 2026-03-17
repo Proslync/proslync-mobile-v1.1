@@ -3,7 +3,9 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { GlassView } from 'expo-glass-effect';
 import { WalletUser } from '../../lib/types/wallet.types';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
@@ -35,6 +37,11 @@ export function MembershipCard({ user, onPress, enlarged = false }: MembershipCa
         disabled={!onPress}
       >
         <View style={[styles.card, { width: cardWidth }, enlarged && styles.cardEnlarged]}>
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={20}
+            style={StyleSheet.absoluteFillObject}
+          />
           <View style={styles.content}>
             <Image
               source={StatusLogo}
@@ -81,6 +88,11 @@ export function IncompleteMembershipCard({ onPress }: IncompleteMembershipCardPr
   return (
     <View style={[styles.cardWrapper, { width: CARD_WIDTH }]}>
       <View style={[styles.card, { width: CARD_WIDTH }]}>
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={20}
+          style={StyleSheet.absoluteFillObject}
+        />
         <View style={styles.content}>
           <Image
             source={StatusLogo}
@@ -89,6 +101,11 @@ export function IncompleteMembershipCard({ onPress }: IncompleteMembershipCardPr
           />
 
           <View style={incompleteStyles.iconContainer}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={28}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Ionicons name="shield-checkmark-outline" size={48} color="#fff" />
           </View>
 
@@ -103,6 +120,11 @@ export function IncompleteMembershipCard({ onPress }: IncompleteMembershipCardPr
             activeOpacity={0.85}
             style={incompleteStyles.button}
           >
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={12}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Text style={incompleteStyles.buttonText}>Complete Profile</Text>
           </TouchableOpacity>
         </View>
@@ -117,7 +139,7 @@ const incompleteStyles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -132,7 +154,7 @@ const incompleteStyles = StyleSheet.create({
     lineHeight: 20,
   },
   button: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.25)',
     borderRadius: 12,
@@ -157,7 +179,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.15)',
-    backgroundColor: '#0c0c0c',
   },
   cardEnlarged: {
     marginHorizontal: 0,

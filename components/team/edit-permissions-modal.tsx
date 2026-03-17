@@ -8,6 +8,8 @@ import {
   ScrollView,
   Switch,
 } from "react-native";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass, glassTint } from "@/constants/glass/liquid-glass";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import type { RolePermissions, RoleResponseDto } from "@/lib/types/team.types";
@@ -254,7 +256,12 @@ export function EditPermissionsModal({
             <Text style={styles.roleName}>{role.name}</Text>
           </View>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>✕</Text>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={styles.closeText}>{'\u2715'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -296,6 +303,11 @@ export function EditPermissionsModal({
                 </View>
                 {cat.permissions.map((perm) => (
                   <View key={perm.key} style={styles.permRow}>
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={8}
+                      style={StyleSheet.absoluteFill}
+                    />
                     <View style={styles.permInfo}>
                       <Text style={styles.permLabel}>{perm.label}</Text>
                       <Text style={styles.permDescription}>
@@ -333,6 +345,11 @@ export function EditPermissionsModal({
             disabled={loading}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.submitText}>
               {loading ? "Saving..." : "Save Permissions"}
             </Text>
@@ -366,7 +383,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -413,7 +430,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    overflow: "hidden",
     marginBottom: 4,
   },
   permInfo: {
@@ -441,12 +458,12 @@ const styles = StyleSheet.create({
     borderTopColor: "rgba(255,255,255,0.06)",
   },
   submitButton: {
-    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
+    overflow: "hidden",
   },
   submitText: { fontSize: 16, fontFamily: "Lato_700Bold", color: "#fff" },
 });

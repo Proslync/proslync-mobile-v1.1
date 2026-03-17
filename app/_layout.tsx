@@ -26,6 +26,7 @@ import { QueryProvider } from "@/lib/providers/query-provider";
 import { WalletProvider } from "@/lib/providers/wallet-provider";
 import { ToastProvider } from "@/components/shared/toast";
 import { TabNavigationProvider } from "@/lib/providers/tab-navigation-provider";
+import { TabBarSheetProvider } from "@/lib/providers/tab-bar-sheet-provider";
 import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
 import { TerminalProvider } from "@/lib/providers/terminal-provider";
@@ -216,11 +217,13 @@ export default function RootLayout() {
                     <TerminalProvider>
                       <LiveLocationProvider>
                         <TabNavigationProvider>
-                          <WalletProvider>
-                            <BottomSheetModalProvider>
-                              <RootLayoutNav />
-                            </BottomSheetModalProvider>
-                          </WalletProvider>
+                          <TabBarSheetProvider>
+                            <WalletProvider>
+                              <BottomSheetModalProvider>
+                                <RootLayoutNav />
+                              </BottomSheetModalProvider>
+                            </WalletProvider>
+                          </TabBarSheetProvider>
                         </TabNavigationProvider>
                       </LiveLocationProvider>
                     </TerminalProvider>

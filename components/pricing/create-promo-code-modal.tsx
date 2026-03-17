@@ -13,6 +13,8 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { CreatePromoCodeRequest, PromoCode } from '@/lib/types/pricing.types';
@@ -83,23 +85,35 @@ export function CreatePromoCodeModal({
         <View style={styles.header}>
           <Text style={styles.title}>{isEditing ? 'Edit Promo Code' : 'Add Promo Code'}</Text>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.form} keyboardShouldPersistTaps="handled">
           <Text style={styles.label}>Code *</Text>
-          <TextInput
-            style={[styles.input, styles.codeInput]}
-            value={code}
-            onChangeText={(t) => setCode(t.toUpperCase())}
-            placeholder="e.g. EARLYBIRD2025"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            maxLength={50}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            autoFocus
-          />
+          <View style={styles.inputWrapper}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={[styles.input, styles.codeInput]}
+              value={code}
+              onChangeText={(t) => setCode(t.toUpperCase())}
+              placeholder="e.g. EARLYBIRD2025"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              maxLength={50}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              autoFocus
+            />
+          </View>
 
           <Text style={styles.label}>Discount Type *</Text>
           <View style={styles.typeToggle}>
@@ -108,6 +122,12 @@ export function CreatePromoCodeModal({
               onPress={() => setDiscountType('percentage')}
               activeOpacity={0.7}
             >
+              <GlassView
+                {...liquidGlass.fill}
+                tintColor={discountType === 'percentage' ? glassTint.fillStrong : glassTint.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
               <Text style={[styles.typeText, discountType === 'percentage' && styles.typeTextActive]}>
                 Percentage (%)
               </Text>
@@ -117,6 +137,12 @@ export function CreatePromoCodeModal({
               onPress={() => setDiscountType('fixed')}
               activeOpacity={0.7}
             >
+              <GlassView
+                {...liquidGlass.fill}
+                tintColor={discountType === 'fixed' ? glassTint.fillStrong : glassTint.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
               <Text style={[styles.typeText, discountType === 'fixed' && styles.typeTextActive]}>
                 Fixed ($)
               </Text>
@@ -126,24 +152,38 @@ export function CreatePromoCodeModal({
           <Text style={styles.label}>
             Discount Value * {discountType === 'percentage' ? '(0-100)' : '(USD)'}
           </Text>
-          <TextInput
-            style={styles.input}
-            value={discountValue}
-            onChangeText={setDiscountValue}
-            placeholder={discountType === 'percentage' ? 'e.g. 20' : 'e.g. 10.00'}
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            keyboardType="decimal-pad"
-          />
+          <View style={styles.inputWrapper}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={styles.input}
+              value={discountValue}
+              onChangeText={setDiscountValue}
+              placeholder={discountType === 'percentage' ? 'e.g. 20' : 'e.g. 10.00'}
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              keyboardType="decimal-pad"
+            />
+          </View>
 
           <Text style={styles.label}>Max Uses</Text>
-          <TextInput
-            style={styles.input}
-            value={maxUses}
-            onChangeText={setMaxUses}
-            placeholder="Unlimited (leave empty)"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            keyboardType="number-pad"
-          />
+          <View style={styles.inputWrapper}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={styles.input}
+              value={maxUses}
+              onChangeText={setMaxUses}
+              placeholder="Unlimited (leave empty)"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              keyboardType="number-pad"
+            />
+          </View>
 
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>Active</Text>
@@ -176,6 +216,11 @@ export function CreatePromoCodeModal({
             disabled={!isValid || loading}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.submitText}>
               {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Promo Code'}
             </Text>
@@ -202,7 +247,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -215,11 +260,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  inputWrapper: {
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 12,
+    overflow: 'hidden',
+  },
+  input: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -240,11 +287,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
     alignItems: 'center',
   },
   typeOptionActive: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderColor: 'rgba(255,255,255,0.3)',
   },
   typeText: {
@@ -275,7 +321,7 @@ const styles = StyleSheet.create({
   },
   footer: { padding: 20 },
   submitButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     borderRadius: 12,

@@ -10,6 +10,7 @@ import {
 } from '@/constants/glass/tokens';
 import { absoluteFill } from '@/constants/glass/helpers';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import type { BlurIntensity, GlassFill, GlassBorder } from '@/constants/glass/types';
 
 const useNativeGlass = isGlassEffectAPIAvailable();
@@ -59,8 +60,7 @@ export function GlassOverlay({
   if (useNativeGlass) {
     return (
       <GlassView
-        glassEffectStyle="regular"
-        colorScheme={isDark ? 'dark' : 'light'}
+        {...liquidGlass.surface}
         style={[styles.container, { borderRadius }, borderStyle, style]}
       >
         {children}

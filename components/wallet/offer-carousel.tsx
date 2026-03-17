@@ -8,8 +8,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { Offer } from '../../lib/types/wallet.types';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 interface OfferCarouselProps {
   offers: Offer[];
@@ -25,10 +27,12 @@ interface OfferCardProps {
 
 function OfferCard({ offer, onClaim, colors, isDark }: OfferCardProps) {
   return (
-    <View style={[
-      styles.offerCard,
-      { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.03)' }
-    ]}>
+    <View style={styles.offerCard}>
+      <GlassView
+        {...liquidGlass.surface}
+        borderRadius={16}
+        style={StyleSheet.absoluteFillObject}
+      />
       {/* Top: Title (max 2 lines) */}
       <Text style={[styles.offerTitle, { color: colors.text }]} numberOfLines={2}>
         {offer.title}
@@ -127,6 +131,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 150,
     borderRadius: 16,
+    overflow: 'hidden',
     padding: 16,
     justifyContent: 'space-between',
   },

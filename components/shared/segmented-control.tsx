@@ -1,20 +1,22 @@
-// SegmentedControl - Generic animated tab control with glass styling
+// SegmentedControl - Glass bubble indicator matching the bottom nav bar style
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { View, Pressable, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  withSpring,
+  withSequence,
   withTiming,
   interpolateColor,
   interpolate,
-  Easing,
 } from 'react-native-reanimated';
 
-const ANIMATION_CONFIG = {
-  duration: 300,
-  easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-};
+// Same spring config as the bottom nav bar bubble
+const SPRING_CONFIG = { damping: 14, stiffness: 160, mass: 0.8 };
+const SETTLE_SPRING = { damping: 10, stiffness: 200 };
 
 interface SegmentedControlProps {
   segments: string[];
@@ -22,16 +24,15 @@ interface SegmentedControlProps {
   onSelect: (index: number) => void;
 }
 
-function SegmentLabel({ label, index, selectedIndex, segmentCount }: {
+function SegmentLabel({ label, index, selectedIndex }: {
   label: string;
   index: number;
   selectedIndex: number;
-  segmentCount: number;
 }) {
   const progress = useSharedValue(index === selectedIndex ? 1 : 0);
 
   useEffect(() => {
-    progress.value = withTiming(index === selectedIndex ? 1 : 0, ANIMATION_CONFIG);
+    progress.value = withSpring(index === selectedIndex ? 1 : 0, { damping: 20, stiffness: 200 });
   }, [selectedIndex, index]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -55,7 +56,9 @@ export function SegmentedControl({
   selectedIndex,
   onSelect,
 }: SegmentedControlProps) {
-  const indicatorPosition = useSharedValue(selectedIndex);
+  const bubbleProgress = useSharedValue(selectedIndex);
+  const bubbleScaleX = useSharedValue(1);
+  const bubbleScaleY = useSharedValue(1);
   const [segmentWidth, setSegmentWidth] = useState(0);
 
   const handleLayout = (e: LayoutChangeEvent) => {
@@ -64,18 +67,44 @@ export function SegmentedControl({
   };
 
   useEffect(() => {
-    indicatorPosition.value = withTiming(selectedIndex, ANIMATION_CONFIG);
+    // Liquid stretch: elongate horizontally, squish vertically, then spring back
+    bubbleProgress.value = withSpring(selectedIndex, SPRING_CONFIG);
+    bubbleScaleX.value = withSequence(
+      withTiming(1.4, { duration: 100 }),
+      withSpring(1, SETTLE_SPRING),
+    );
+    bubbleScaleY.value = withSequence(
+      withTiming(0.88, { duration: 100 }),
+      withSpring(1, SETTLE_SPRING),
+    );
   }, [selectedIndex]);
 
-  const indicatorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: indicatorPosition.value * segmentWidth }],
+  const bubbleStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: bubbleProgress.value * segmentWidth },
+      { scaleX: bubbleScaleX.value },
+      { scaleY: bubbleScaleY.value },
+    ],
     width: segmentWidth,
   }));
 
   return (
     <View style={styles.container} onLayout={handleLayout}>
+      <GlassView
+        {...liquidGlass.surface}
+        borderRadius={10}
+        style={styles.containerGlass}
+        pointerEvents="none"
+      />
       {segmentWidth > 0 && (
-        <Animated.View style={[styles.indicator, indicatorStyle]} />
+        <Animated.View style={[styles.bubbleWrapper, bubbleStyle]} pointerEvents="none">
+          <GlassView
+            {...liquidGlass.interactive}
+            tintColor={glassTint.fillStrong}
+            borderRadius={8}
+            style={styles.bubbleGlass}
+          />
+        </Animated.View>
       )}
       {segments.map((label, index) => (
         <Pressable
@@ -87,7 +116,6 @@ export function SegmentedControl({
             label={label}
             index={index}
             selectedIndex={selectedIndex}
-            segmentCount={segments.length}
           />
         </Pressable>
       ))}
@@ -98,19 +126,28 @@ export function SegmentedControl({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 10,
     padding: 3,
     marginHorizontal: 16,
     marginVertical: 8,
     position: 'relative',
+    overflow: 'hidden',
   },
-  indicator: {
+  containerGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 10,
+  },
+  bubbleWrapper: {
     position: 'absolute',
     top: 3,
     left: 3,
     height: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    overflow: 'hidden',
+    borderRadius: 8,
+  },
+  bubbleGlass: {
+    width: '100%',
+    height: '100%',
     borderRadius: 8,
   },
   segment: {

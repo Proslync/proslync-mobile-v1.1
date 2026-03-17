@@ -11,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { CreateTierRequest, TicketTier } from '@/lib/types/pricing.types';
@@ -62,33 +64,52 @@ export function CreateTierModal({
         <View style={styles.header}>
           <Text style={styles.title}>{isEditing ? 'Edit Tier' : 'Add Tier'}</Text>
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.closeText}>✕</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.form}>
           <Text style={styles.label}>Name *</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. General Admission, VIP"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            maxLength={100}
-            autoFocus
-          />
+          <View style={styles.inputWrapper}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="e.g. General Admission, VIP"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              maxLength={100}
+              autoFocus
+            />
+          </View>
 
           <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Optional tier benefits or details"
-            placeholderTextColor="rgba(255,255,255,0.3)"
-            maxLength={500}
-            multiline
-            numberOfLines={3}
-          />
+          <View style={[styles.inputWrapper, styles.textArea]}>
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
+            <TextInput
+              style={styles.input}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Optional tier benefits or details"
+              placeholderTextColor="rgba(255,255,255,0.3)"
+              maxLength={500}
+              multiline
+              numberOfLines={3}
+            />
+          </View>
         </View>
 
         <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
@@ -98,6 +119,11 @@ export function CreateTierModal({
             disabled={!isValid || loading}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.submitText}>
               {loading ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Tier'}
             </Text>
@@ -124,7 +150,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -137,11 +163,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 6,
   },
-  input: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+  inputWrapper: {
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
     borderRadius: 12,
+    overflow: 'hidden',
+  },
+  input: {
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
@@ -150,11 +178,10 @@ const styles = StyleSheet.create({
   },
   textArea: {
     minHeight: 80,
-    textAlignVertical: 'top',
   },
   footer: { padding: 20 },
   submitButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     borderRadius: 12,

@@ -34,8 +34,11 @@ export function useCreateEvent() {
         flyerUrl = await filesApi.uploadEventFlyer(event.id, flyerUri);
       }
 
-      // Step 3: Publish event
+      // Step 3: Publish event (requires flyer/media)
       if (shouldPublish) {
+        if (!flyerUri) {
+          throw new Error('Event must have a flyer or image before publishing');
+        }
         await eventsApi.publishEvent(event.id);
       }
 

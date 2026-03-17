@@ -12,6 +12,7 @@ import {
 } from '@/constants/glass/tokens';
 import { absoluteFill } from '@/constants/glass/helpers';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import type {
   GlassFill,
   GlassBorder,
@@ -65,8 +66,7 @@ export function GlassCard({
   if (useNativeGlass) {
     return (
       <GlassView
-        glassEffectStyle="regular"
-        colorScheme={isDark ? 'dark' : 'light'}
+        {...liquidGlass.surface}
         style={[
           {
             borderRadius: r,

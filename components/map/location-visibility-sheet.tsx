@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GlassView } from 'expo-glass-effect';
 
 import { GlassOverlay } from "@/components/glass/glass-overlay";
 import { GlassCard } from "@/components/glass/glass-card";
@@ -28,8 +29,8 @@ import {
   radius,
   textColor,
   glassFill,
-  glassBorder,
 } from "@/constants/glass/tokens";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useLocationVisibility } from "@/hooks/use-location-visibility";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { followsApi } from "@/lib/api/follows";
@@ -39,6 +40,9 @@ import {
   VISIBILITY_MODE_LABELS,
   VISIBILITY_MODE_ICONS,
 } from "@/lib/types/location-visibility.types";
+
+const TAB_BAR_HEIGHT = 49;
+const TAB_BAR_RADIUS = 24;
 
 interface LocationVisibilitySheetProps {
   isVisible: boolean;
@@ -84,13 +88,6 @@ export function LocationVisibilitySheet({
 
   // Theme-aware colors
   const MODE_ACCENT = isDark ? MODE_ACCENT_DARK : MODE_ACCENT_LIGHT;
-  const sheetBackgroundColor = isDark ? "#000000" : "rgba(255, 255, 255, 0.97)";
-  const sheetBorderColor = isDark
-    ? `rgba(255, 255, 255, ${glassBorder.medium.opacity})`
-    : "rgba(0, 0, 0, 0.08)";
-  const indicatorColor = isDark
-    ? "rgba(255, 255, 255, 0.3)"
-    : "rgba(0, 0, 0, 0.2)";
   const iconColor = isDark ? "#ffffff" : "#1a1a1a";
   const checkmarkColor = isDark ? "#ffffff" : "#1a1a1a";
   const checkCircleBgActive = isDark ? "#ffffff" : "#1a1a1a";
@@ -218,25 +215,29 @@ export function LocationVisibilitySheet({
       snapPoints={["85%"]}
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={[
-        styles.sheetBackground,
-        {
-          backgroundColor: sheetBackgroundColor,
-          borderColor: sheetBorderColor,
-        },
-      ]}
-      handleIndicatorStyle={[
-        styles.sheetIndicator,
-        { backgroundColor: indicatorColor },
-      ]}
+      backgroundStyle={{
+        backgroundColor: "transparent",
+        borderRadius: TAB_BAR_RADIUS,
+      }}
+      handleIndicatorStyle={{
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255,255,255,0.3)',
+      }}
+      style={{ marginHorizontal: 12 }}
+      bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
+      detached
       enableDynamicSizing={false}
     >
       <BottomSheetView
-        style={[
-          styles.container,
-          { paddingBottom: Math.max(insets.bottom, spacing.lg) },
-        ]}
+        style={styles.container}
       >
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={TAB_BAR_RADIUS}
+          style={StyleSheet.absoluteFill}
+        />
         {screen === "modes" ? (
           /* ─── Screen 1: Mode Picker ─── */
           <View style={styles.modesContainer}>
@@ -586,19 +587,10 @@ export function LocationVisibilitySheet({
 }
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    borderTopLeftRadius: radius["2xl"],
-    borderTopRightRadius: radius["2xl"],
-    borderWidth: 1,
-  },
-  sheetIndicator: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-  },
   container: {
     flex: 1,
     paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
   },
 
   modesContainer: {

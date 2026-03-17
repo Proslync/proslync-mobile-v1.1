@@ -1,3 +1,4 @@
+// Friend Profile Sheet — gorhom BottomSheet (detached, like ShareLocationSheet)
 import React from "react";
 import {
   View,
@@ -9,12 +10,16 @@ import {
   TouchableOpacity,
 } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAppTheme } from "@/hooks/use-app-theme";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { useLiveLocation } from "@/lib/providers/live-location-provider";
+
+const TAB_BAR_HEIGHT = 49;
+const TAB_BAR_RADIUS = 24;
 
 interface FriendProfileSheetProps {
   visible: boolean;
@@ -54,169 +59,214 @@ export function FriendProfileSheet({
 }: FriendProfileSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
   const router = useStableRouter();
   const { sharingState } = useLiveLocation();
 
-  const handleGetDirections = () => {
+  React.useEffect(() => {
+    if (visible && friend) {
+      bottomSheetRef.current?.expand();
+    } else {
+      bottomSheetRef.current?.close();
+    }
+  }, [visible, friend?.id]);
+
+  const handleGetDirections = React.useCallback(() => {
     if (!friend) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const { latitude, longitude, name } = friend;
-
+    bottomSheetRef.current?.close();
+    const { latitude, longitude } = friend;
     if (Platform.OS === "ios") {
       Linking.openURL(`maps:?daddr=${latitude},${longitude}&dirflg=d&t=m`);
     } else {
       Linking.openURL(
-        `geo:${latitude},${longitude}?q=${latitude},${longitude}(${encodeURIComponent(name)})`,
+        `geo:${latitude},${longitude}?q=${latitude},${longitude}(${encodeURIComponent(friend.name)})`,
       );
     }
-  };
+  }, [friend]);
 
-  const handleShareBack = () => {
+  const handleShareBack = React.useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onClose();
+    bottomSheetRef.current?.close();
     onShareBack?.();
-  };
+  }, [onShareBack]);
 
-  const handleViewProfile = () => {
+  const handleViewProfile = React.useCallback(() => {
     if (!friend) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onClose();
+    bottomSheetRef.current?.close();
     router.push({
       pathname: "/user/[username]",
       params: { username: friend.name || "_", userId: String(friend.id) },
     });
-  };
+  }, [friend, router]);
 
-  if (!friend || !visible) return null;
-
-  const lastActiveText = getTimeAgo(friend.updatedAt);
-  const hasCoordinates = friend.latitude !== 0 && friend.longitude !== 0;
+  const lastActiveText = friend ? getTimeAgo(friend.updatedAt) : "";
+  const hasCoordinates = friend
+    ? friend.latitude !== 0 && friend.longitude !== 0
+    : false;
 
   return (
     <BottomSheet
       ref={bottomSheetRef}
-      index={0}
+      index={-1}
       enableDynamicSizing
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={styles.sheetBackground}
-      handleIndicatorStyle={styles.handleIndicator}
+      backgroundStyle={{
+        backgroundColor: "transparent",
+        borderRadius: TAB_BAR_RADIUS,
+      }}
+      handleIndicatorStyle={{
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: "rgba(255,255,255,0.3)",
+      }}
+      style={{ marginHorizontal: 12 }}
+      bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
+      detached
     >
-      <BottomSheetView style={[styles.content, { paddingBottom: insets.bottom || 16 }]}>
-        {/* Profile row with photo */}
-        <View style={styles.profileRow}>
-          <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: friend.imageUrl }}
-              style={styles.avatar}
-            />
-            <View style={styles.liveBadge}>
-              <View style={styles.liveDot} />
-            </View>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.profileName} numberOfLines={1}>
-              {friend.name}
-            </Text>
-            <View style={styles.statusRow}>
-              <Ionicons
-                name="time-outline"
-                size={13}
-                color="rgba(255,255,255,0.5)"
-              />
-              <Text style={styles.statusText}>
-                Last active {lastActiveText}
-              </Text>
-            </View>
-          </View>
-        </View>
+      <BottomSheetView style={styles.sheetContent}>
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={TAB_BAR_RADIUS}
+          style={StyleSheet.absoluteFill}
+        />
 
-        {/* Actions */}
-        <TouchableOpacity
-          style={[
-            styles.actionItem,
-            styles.actionItemBorder,
-            !hasCoordinates && styles.actionItemDisabled,
-          ]}
-          onPress={handleGetDirections}
-          activeOpacity={0.7}
-          disabled={!hasCoordinates}
-        >
-          <View style={styles.actionIcon}>
-            <Ionicons name="navigate-outline" size={18} color="#fff" />
-          </View>
-          <Text style={styles.actionText}>Get Directions</Text>
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color="rgba(255,255,255,0.2)"
-          />
-        </TouchableOpacity>
-
-        {!sharingState.isSharing && (
-          <TouchableOpacity
-            style={[styles.actionItem, styles.actionItemBorder]}
-            onPress={handleShareBack}
-            activeOpacity={0.7}
-          >
-            <View style={styles.actionIcon}>
-              <Ionicons name="location-outline" size={18} color="#fff" />
+        {friend && (
+          <>
+            {/* Profile row */}
+            <View style={styles.profileRow}>
+              <View style={styles.avatarContainer}>
+                <Image
+                  source={{ uri: friend.imageUrl }}
+                  style={styles.avatar}
+                />
+                <View style={styles.liveBadge}>
+                  <View style={styles.liveDot} />
+                </View>
+              </View>
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName} numberOfLines={1}>
+                  {friend.name}
+                </Text>
+                <View style={styles.statusRow}>
+                  <Ionicons
+                    name="time-outline"
+                    size={13}
+                    color="rgba(255,255,255,0.5)"
+                  />
+                  <Text style={styles.statusText}>
+                    Last active {lastActiveText}
+                  </Text>
+                </View>
+              </View>
             </View>
-            <Text style={styles.actionText}>Share Your Location Back</Text>
-            <Ionicons
-              name="chevron-forward"
-              size={16}
-              color="rgba(255,255,255,0.2)"
-            />
-          </TouchableOpacity>
+
+            {/* Actions */}
+            <View style={styles.actionsList}>
+              <TouchableOpacity
+                style={[
+                  styles.actionItem,
+                  !hasCoordinates && styles.actionItemDisabled,
+                ]}
+                onPress={handleGetDirections}
+                activeOpacity={0.7}
+                disabled={!hasCoordinates}
+              >
+                <GlassView
+                  {...liquidGlass.fill}
+                  borderRadius={12}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.actionIconCircle}>
+                  <GlassView
+                    {...liquidGlass.fillMedium}
+                    borderRadius={14}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Ionicons name="navigate-outline" size={16} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>Get Directions</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color="rgba(255,255,255,0.2)"
+                />
+              </TouchableOpacity>
+
+              {!sharingState.isSharing && (
+                <TouchableOpacity
+                  style={styles.actionItem}
+                  onPress={handleShareBack}
+                  activeOpacity={0.7}
+                >
+                  <GlassView
+                    {...liquidGlass.fill}
+                    borderRadius={12}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <View style={styles.actionIconCircle}>
+                    <GlassView
+                      {...liquidGlass.fillMedium}
+                      borderRadius={14}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <Ionicons name="location-outline" size={16} color="#fff" />
+                  </View>
+                  <Text style={styles.actionText}>
+                    Share Your Location Back
+                  </Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color="rgba(255,255,255,0.2)"
+                  />
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                style={styles.actionItem}
+                onPress={handleViewProfile}
+                activeOpacity={0.7}
+              >
+                <GlassView
+                  {...liquidGlass.fill}
+                  borderRadius={12}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.actionIconCircle}>
+                  <GlassView
+                    {...liquidGlass.fillMedium}
+                    borderRadius={14}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Ionicons name="person-outline" size={16} color="#fff" />
+                </View>
+                <Text style={styles.actionText}>View Profile</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={16}
+                  color="rgba(255,255,255,0.2)"
+                />
+              </TouchableOpacity>
+            </View>
+          </>
         )}
-
-        <TouchableOpacity
-          style={[styles.actionItem, styles.actionItemBorder]}
-          onPress={handleViewProfile}
-          activeOpacity={0.7}
-        >
-          <View style={styles.actionIcon}>
-            <Ionicons name="person-outline" size={18} color="#fff" />
-          </View>
-          <Text style={styles.actionText}>View Profile</Text>
-          <Ionicons
-            name="chevron-forward"
-            size={16}
-            color="rgba(255,255,255,0.2)"
-          />
-        </TouchableOpacity>
       </BottomSheetView>
     </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  sheetBackground: {
-    backgroundColor: "#000",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: "rgba(255,255,255,0.08)",
+  sheetContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
-  handleIndicator: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.3)",
-  },
-  content: {
-    paddingHorizontal: 0,
-  },
-
-  // Profile row
   profileRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 10,
     gap: 14,
   },
   avatarContainer: {
@@ -265,29 +315,28 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_400Regular",
     color: "rgba(255,255,255,0.5)",
   },
-
-  // Action items
+  actionsList: {
+    gap: 4,
+  },
   actionItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    overflow: "hidden",
     gap: 12,
   },
-  actionItemBorder: {
-    borderTopWidth: 0.5,
-    borderTopColor: "rgba(255,255,255,0.08)",
+  actionIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
   actionItemDisabled: {
     opacity: 0.35,
-  },
-  actionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    justifyContent: "center",
-    alignItems: "center",
   },
   actionText: {
     flex: 1,

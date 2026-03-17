@@ -14,6 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Contacts from 'expo-contacts';
 import { followsApi, type ContactMatch } from '@/lib/api/follows';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { GlassCard } from '@/components/glass/glass-card';
+import { GlassSurface } from '@/components/glass/glass-surface';
+import { GlassButton } from '@/components/glass/glass-button';
+import { fontFamily } from '@/constants/glass/tokens';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
 
@@ -23,7 +27,7 @@ interface ContactsStepProps {
 
 export function ContactsStep({ onSuccess }: ContactsStepProps) {
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const [status, setStatus] = React.useState<'requesting' | 'loading' | 'results' | 'denied'>('requesting');
   const [matches, setMatches] = React.useState<ContactMatch[]>([]);
   const [followedIds, setFollowedIds] = React.useState<Set<number>>(new Set());
@@ -46,13 +50,11 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
         fields: [Contacts.Fields.PhoneNumbers],
       });
 
-      // Extract all phone numbers, normalize
       const phoneNumbers: string[] = [];
       for (const contact of data) {
         if (contact.phoneNumbers) {
           for (const pn of contact.phoneNumbers) {
             if (pn.number) {
-              // Basic normalization: strip non-digits, keep + prefix
               const cleaned = pn.number.replace(/[^\d+]/g, '');
               if (cleaned.length >= 10) {
                 phoneNumbers.push(cleaned);
@@ -62,7 +64,6 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
         }
       }
 
-      // Deduplicate
       const unique = [...new Set(phoneNumbers)];
 
       if (unique.length === 0) {
@@ -71,7 +72,6 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
         return;
       }
 
-      // Send in batches of 500
       const allMatches: ContactMatch[] = [];
       for (let i = 0; i < unique.length; i += 500) {
         const batch = unique.slice(i, i + 500);
@@ -92,7 +92,7 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
       await followsApi.followUser(userId);
       setFollowedIds((prev) => new Set([...prev, userId]));
     } catch (err) {
-      // Ignore 409 (already following)
+      // Ignore 409
     }
   };
 
@@ -109,41 +109,40 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
     setFollowingAll(false);
   };
 
-  const renderContact = ({ item }: { item: ContactMatch }) => {
+  const renderContact = ({ item, index }: { item: ContactMatch; index: number }) => {
     const isFollowed = followedIds.has(item.id);
     const displayName = [item.firstName, item.lastName].filter(Boolean).join(' ') || item.userName || 'User';
 
     return (
-      <Animated.View entering={FadeInDown.duration(200)} style={styles.contactRow}>
-        <Image
-          source={item.avatarUrl ? { uri: item.avatarUrl } : DEFAULT_AVATAR}
-          style={styles.contactAvatar}
-        />
-        <View style={styles.contactInfo}>
-          <Text style={[styles.contactName, { color: colors.text }]} numberOfLines={1}>
-            {displayName}
-          </Text>
-          {item.userName && (
-            <Text style={[styles.contactUsername, { color: colors.textSecondary }]} numberOfLines={1}>
-              @{item.userName}
-            </Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.followButton,
-            isFollowed
-              ? { backgroundColor: colors.buttonSecondary }
-              : { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
-          ]}
-          onPress={() => !isFollowed && handleFollowUser(item.id)}
-          activeOpacity={0.7}
-          disabled={isFollowed}
+      <Animated.View entering={FadeInDown.duration(200).delay(index * 30)}>
+        <GlassSurface
+          fill="subtle"
+          border="subtle"
+          cornerRadius="lg"
+          style={styles.contactCard}
         >
-          <Text style={[styles.followButtonText, { color: colors.text }]}>
-            {isFollowed ? 'Following' : 'Follow'}
-          </Text>
-        </TouchableOpacity>
+          <Image
+            source={item.avatarUrl ? { uri: item.avatarUrl } : DEFAULT_AVATAR}
+            style={styles.contactAvatar}
+          />
+          <View style={styles.contactInfo}>
+            <Text style={[styles.contactName, { color: colors.text }]} numberOfLines={1}>
+              {displayName}
+            </Text>
+            {item.userName && (
+              <Text style={[styles.contactUsername, { color: colors.textSecondary }]} numberOfLines={1}>
+                @{item.userName}
+              </Text>
+            )}
+          </View>
+          <GlassButton
+            label={isFollowed ? 'Following' : 'Follow'}
+            variant={isFollowed ? 'glass' : 'frosted'}
+            size="sm"
+            onPress={() => !isFollowed && handleFollowUser(item.id)}
+            disabled={isFollowed}
+          />
+        </GlassSurface>
       </Animated.View>
     );
   };
@@ -151,7 +150,7 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
   // Requesting / Loading state
   if (status === 'requesting' || status === 'loading') {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={colors.text} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
@@ -165,14 +164,21 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
   // Denied or no matches
   if (status === 'denied' || matches.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
+      <View style={[styles.container, { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.centerContent}>
           <Animated.View entering={FadeIn.duration(400)}>
-            <Ionicons
-              name={status === 'denied' ? 'people-outline' : 'search-outline'}
-              size={56}
-              color={colors.textTertiary}
-            />
+            <GlassSurface
+              fill="light"
+              border="subtle"
+              cornerRadius="3xl"
+              style={styles.emptyIconContainer}
+            >
+              <Ionicons
+                name={status === 'denied' ? 'people-outline' : 'search-outline'}
+                size={40}
+                color={colors.textTertiary}
+              />
+            </GlassSurface>
           </Animated.View>
           <Text style={[styles.emptyTitle, { color: colors.text }]}>
             {status === 'denied' ? 'Contacts Access' : 'No Friends Found'}
@@ -184,9 +190,13 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
           </Text>
         </View>
         <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 20 }]}>
-          <TouchableOpacity style={styles.skipButton} onPress={onSuccess} activeOpacity={0.7}>
-            <Text style={[styles.skipButtonText, { color: colors.text }]}>Continue</Text>
-          </TouchableOpacity>
+          <GlassButton
+            label="Continue"
+            variant="glass"
+            size="lg"
+            onPress={onSuccess}
+            fullWidth
+          />
         </View>
       </View>
     );
@@ -194,7 +204,7 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
 
   // Results
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top + 20 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
       <Animated.View entering={FadeIn.duration(300)} style={styles.header}>
         <Image
           source={require('@/assets/images/status_logo.png')}
@@ -209,20 +219,15 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
 
       {/* Follow All Button */}
       <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.followAllContainer}>
-        <TouchableOpacity
-          style={[styles.followAllButton, { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' }]}
+        <GlassButton
+          label={followedIds.size === matches.length ? 'Following All' : followingAll ? '' : 'Follow All'}
+          variant="frosted"
+          size="md"
           onPress={handleFollowAll}
-          activeOpacity={0.7}
+          loading={followingAll}
           disabled={followingAll || followedIds.size === matches.length}
-        >
-          {followingAll ? (
-            <ActivityIndicator size="small" color={colors.text} />
-          ) : (
-            <Text style={[styles.followAllText, { color: colors.text }]}>
-              {followedIds.size === matches.length ? 'Following All' : 'Follow All'}
-            </Text>
-          )}
-        </TouchableOpacity>
+          fullWidth
+        />
       </Animated.View>
 
       <FlatList
@@ -231,16 +236,17 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 80 }]}
         showsVerticalScrollIndicator={false}
+        ItemSeparatorComponent={() => <View style={styles.listSeparator} />}
       />
 
       <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 20 }]}>
-        <TouchableOpacity
-          style={[styles.continueButton, { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' }]}
+        <GlassButton
+          label="Continue"
+          variant="accent"
+          size="lg"
           onPress={onSuccess}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.continueButtonText, { color: colors.text }]}>Continue</Text>
-        </TouchableOpacity>
+          fullWidth
+        />
       </View>
     </View>
   );
@@ -273,7 +279,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontFamily: 'Lato_700Bold',
     marginBottom: 6,
   },
@@ -286,23 +292,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     marginBottom: 12,
   },
-  followAllButton: {
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  followAllText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-  },
   listContent: {
     paddingHorizontal: 24,
   },
-  contactRow: {
+  listSeparator: {
+    height: 8,
+  },
+  contactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    padding: 12,
     gap: 12,
   },
   contactAvatar: {
@@ -322,15 +321,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
-  followButton: {
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 7,
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  followButtonText: {
-    fontSize: 13,
-    fontFamily: 'Lato_700Bold',
   },
   emptyTitle: {
     fontSize: 20,
@@ -350,26 +346,5 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 24,
     paddingTop: 12,
-  },
-  skipButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-  },
-  skipButtonText: {
-    fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-  },
-  continueButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  continueButtonText: {
-    fontSize: 17,
-    fontFamily: 'Lato_700Bold',
   },
 });

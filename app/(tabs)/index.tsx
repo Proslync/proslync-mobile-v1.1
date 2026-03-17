@@ -30,6 +30,7 @@ export default function FeedScreen() {
   const [pendingRsvpItems, setPendingRsvpItems] = useState<Map<string, boolean>>(new Map());
   const [purchasedItems, setPurchasedItems] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<FeedTab>('foryou');
+  const feedListRef = React.useRef<any>(null);
   const [purchaseItem, setPurchaseItem] = useState<FeedItem | null>(null);
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
   const likedItems = new Set<string>();
@@ -46,6 +47,11 @@ export default function FeedScreen() {
     feedType: activeTab,
     enabled: isAuthenticated,
   });
+
+  // Reset scroll position when switching feed tabs
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [activeTab]);
 
   // Filter out blocked users
   const visibleItems = feedItems.filter(item => !blockedUserIds.has(String(item.userId)));
@@ -276,6 +282,7 @@ export default function FeedScreen() {
         refreshControl={refreshControl}
         onEndReached={loadMore}
         isFetchingNextPage={isFetchingNextPage}
+        listKey={activeTab}
       />
       <FeedHeader
         activeTab={activeTab}

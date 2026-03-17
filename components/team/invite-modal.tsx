@@ -11,6 +11,8 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -130,6 +132,14 @@ export function InviteModal({
         onPress={() => handleSelectPerson(item)}
         activeOpacity={0.7}
       >
+        {isSelected && (
+          <GlassView
+            {...liquidGlass.fill}
+            tintColor={glassTint.fillMedium}
+            borderRadius={0}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         {item.avatar?.url ? (
           <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
         ) : (
@@ -170,6 +180,14 @@ export function InviteModal({
         onPress={() => handleSelectSuggestion(item)}
         activeOpacity={0.7}
       >
+        {isSelected && (
+          <GlassView
+            {...liquidGlass.fill}
+            tintColor={glassTint.fillMedium}
+            borderRadius={0}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         {item.avatar?.url ? (
           <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
         ) : (
@@ -213,6 +231,11 @@ export function InviteModal({
         <View style={styles.header}>
           <Text style={styles.title}>Invite Team Member</Text>
           <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.closeText}>{'\u2715'}</Text>
           </TouchableOpacity>
         </View>
@@ -233,6 +256,11 @@ export function InviteModal({
               onPress={handleClose}
               activeOpacity={0.7}
             >
+              <GlassView
+                {...liquidGlass.fillMedium}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           </View>
@@ -240,6 +268,11 @@ export function InviteModal({
           <>
             {/* Search Input */}
             <View style={styles.searchContainer}>
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
               <Ionicons name="search" size={18} color="rgba(255,255,255,0.4)" />
               <TextInput
                 style={styles.searchInput}
@@ -335,6 +368,12 @@ export function InviteModal({
                             isSelected && styles.roleChipSelected,
                           ]}
                         >
+                          <GlassView
+                            {...liquidGlass.fill}
+                            tintColor={isSelected ? glassTint.fillStrong : glassTint.fill}
+                            borderRadius={16}
+                            style={StyleSheet.absoluteFill}
+                          />
                           <Text style={[styles.roleChipText, isSelected && styles.roleChipTextSelected]}>
                             {role.name}
                           </Text>
@@ -353,6 +392,11 @@ export function InviteModal({
                   disabled={!selectedRoleId || inviteMutation.isPending}
                   activeOpacity={0.7}
                 >
+                  <GlassView
+                    {...liquidGlass.fillMedium}
+                    borderRadius={12}
+                    style={StyleSheet.absoluteFill}
+                  />
                   {inviteMutation.isPending ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
@@ -384,7 +428,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -395,10 +439,10 @@ const styles = StyleSheet.create({
     margin: 16,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
     gap: 10,
   },
   searchInput: {
@@ -440,10 +484,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     gap: 12,
+    overflow: 'hidden',
   },
-  userRowSelected: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
+  userRowSelected: {},
   avatar: {
     width: 44,
     height: 44,
@@ -495,11 +538,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.07)',
     borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
   },
   roleChipSelected: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
     borderColor: 'rgba(255,255,255,0.3)',
   },
   roleChipText: {
@@ -512,13 +554,13 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     marginTop: 16,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   sendDisabled: { opacity: 0.4 },
   sendText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
@@ -543,12 +585,12 @@ const styles = StyleSheet.create({
   },
   doneButton: {
     marginTop: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 48,
+    overflow: 'hidden',
   },
   doneButtonText: {
     fontSize: 16,

@@ -116,6 +116,7 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
       lastPage.hasMore ? lastPage.nextCursor ?? undefined : undefined,
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const items = useMemo(

@@ -24,6 +24,7 @@ import {
 } from '@/constants/glass/tokens';
 import { absoluteFill } from '@/constants/glass/helpers';
 import { buttonPress } from '@/constants/glass/animations';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { GlassButtonVariant, GlassButtonSize } from '@/constants/glass/types';
 
@@ -184,9 +185,7 @@ export function GlassButton({
         {/* Glass background layer */}
         {isGlassVariant && useNativeGlass ? (
           <GlassView
-            glassEffectStyle="regular"
-            isInteractive
-            colorScheme={isDark ? 'dark' : 'light'}
+            {...liquidGlass.interactive}
             style={styles.absolute}
           />
         ) : (

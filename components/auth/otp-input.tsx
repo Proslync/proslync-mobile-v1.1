@@ -10,8 +10,17 @@ import Animated, {
   useSharedValue,
   withTiming,
   interpolateColor,
+  withSpring,
+  FadeIn,
 } from 'react-native-reanimated';
+import * as ExpoClipboard from 'expo-clipboard';
+import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
+import { BlurView } from 'expo-blur';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { fontFamily } from '@/constants/glass/tokens';
+
+const useNativeGlass = isGlassEffectAPIAvailable();
 
 interface OTPInputProps {
   value: string;
@@ -48,13 +57,27 @@ export function OTPInput({
     }
   };
 
+  const handleFocus = React.useCallback(async () => {
+    try {
+      const hasString = await ExpoClipboard.hasStringAsync();
+      if (!hasString) return;
+      const clipboardContent = await ExpoClipboard.getStringAsync();
+      const digits = clipboardContent.replace(/\D/g, '').slice(0, maxLength);
+      if (digits.length === maxLength && value.length === 0) {
+        onChange(digits);
+        onComplete(digits);
+      }
+    } catch {}
+  }, [maxLength, onChange, onComplete, value.length]);
+
   return (
     <Pressable onPress={handlePress} style={styles.container}>
-      {/* Visual boxes behind the input */}
+      {/* Visual boxes */}
       <View style={styles.boxesContainer} pointerEvents="none">
         {Array.from({ length: maxLength }).map((_, index) => (
           <OTPBox
             key={index}
+            index={index}
             digit={value[index] || ''}
             isFocused={value.length === index && !disabled}
             isFilled={index < value.length}
@@ -70,6 +93,7 @@ export function OTPInput({
         style={styles.realInput}
         value={value}
         onChangeText={handleChange}
+        onFocus={handleFocus}
         keyboardType="number-pad"
         keyboardAppearance={isDark ? 'dark' : 'light'}
         maxLength={maxLength}
@@ -79,12 +103,15 @@ export function OTPInput({
         caretHidden
         autoFocus
         selectionColor="transparent"
+        contextMenuHidden={false}
+        selectTextOnFocus
       />
     </Pressable>
   );
 }
 
 interface OTPBoxProps {
+  index: number;
   digit: string;
   isFocused: boolean;
   isFilled: boolean;
@@ -92,9 +119,10 @@ interface OTPBoxProps {
   success: boolean;
 }
 
-function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
+function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxProps) {
   const animatedValue = useSharedValue(0);
   const cursorOpacity = useSharedValue(0);
+  const fillScale = useSharedValue(0);
   const { colors, isDark } = useAppTheme();
 
   React.useEffect(() => {
@@ -106,6 +134,15 @@ function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
       animatedValue.value = withTiming(0, { duration: 200 });
     }
   }, [error, success, animatedValue]);
+
+  // Animate digit entry
+  React.useEffect(() => {
+    if (isFilled) {
+      fillScale.value = withSpring(1, { damping: 12, stiffness: 300 });
+    } else {
+      fillScale.value = withTiming(0, { duration: 150 });
+    }
+  }, [isFilled, fillScale]);
 
   React.useEffect(() => {
     if (isFocused) {
@@ -120,32 +157,80 @@ function OTPBox({ digit, isFocused, isFilled, error, success }: OTPBoxProps) {
     }
   }, [isFocused, cursorOpacity]);
 
-  const defaultBorder = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+  const defaultBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)';
+  const focusBorder = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)';
 
   const boxStyle = useAnimatedStyle(() => {
     const borderColor = interpolateColor(
       animatedValue.value,
       [0, 1, 2],
-      [defaultBorder, '#ff6b6b', '#4ade80']
+      [isFocused ? focusBorder : defaultBorder, '#ff6b6b', '#4ade80']
     );
 
     return {
       borderColor,
-      borderWidth: isFocused || isFilled ? 2 : 1,
+      borderWidth: isFocused || isFilled ? 1.5 : 1,
     };
   });
+
+  const digitStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: fillScale.value }],
+    opacity: fillScale.value,
+  }));
 
   const cursorStyle = useAnimatedStyle(() => ({
     opacity: cursorOpacity.value,
   }));
 
-  return (
-    <Animated.View style={[styles.box, { backgroundColor: colors.input }, boxStyle]}>
+  const glassContent = (
+    <>
       {digit ? (
-        <Animated.Text style={[styles.digit, { color: colors.text }]}>{digit}</Animated.Text>
+        <Animated.Text style={[styles.digit, { color: colors.text }, digitStyle]}>{digit}</Animated.Text>
       ) : isFocused ? (
-        <Animated.View style={[styles.cursor, { backgroundColor: colors.text }, cursorStyle]} />
+        <Animated.View style={[styles.cursor, { backgroundColor: '#3897F0' }, cursorStyle]} />
       ) : null}
+    </>
+  );
+
+  if (useNativeGlass) {
+    return (
+      <Animated.View
+        entering={FadeIn.duration(300).delay(index * 50)}
+        style={[styles.boxWrapper, boxStyle]}
+      >
+        <GlassView
+          {...liquidGlass.surface}
+          style={styles.glassBox}
+        >
+          {glassContent}
+        </GlassView>
+      </Animated.View>
+    );
+  }
+
+  return (
+    <Animated.View
+      entering={FadeIn.duration(300).delay(index * 50)}
+      style={[styles.boxWrapper, boxStyle]}
+    >
+      <View style={styles.glassBox}>
+        <BlurView
+          intensity={isDark ? 20 : 15}
+          tint={isDark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: isDark
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(0, 0, 0, 0.03)',
+            },
+          ]}
+        />
+        {glassContent}
+      </View>
     </Animated.View>
   );
 }
@@ -157,22 +242,27 @@ const styles = StyleSheet.create({
   boxesContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
   },
-  box: {
-    width: 48,
-    height: 56,
-    borderRadius: 12,
+  boxWrapper: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  glassBox: {
+    width: 50,
+    height: 60,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   digit: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 26,
+    fontFamily: 'Lato_700Bold',
   },
   cursor: {
     width: 2,
-    height: 24,
+    height: 26,
     borderRadius: 1,
   },
   realInput: {

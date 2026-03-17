@@ -26,7 +26,8 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedStyle, withTiming, runOnJS } from "react-native-reanimated";
 import { Gesture, GestureDetector, TouchableOpacity as GHTouchableOpacity } from "react-native-gesture-handler";
-import { BlurView } from "expo-blur";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass, glassTint } from "@/constants/glass/liquid-glass";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import {
   useConversations,
@@ -193,12 +194,17 @@ function ConversationRow({
       entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}
     >
       <TouchableOpacity
-        style={styles.conversationRow}
+        style={[styles.conversationRow, { overflow: "hidden" }]}
         onPress={onPress}
         onLongPress={onLongPress}
         delayLongPress={500}
         activeOpacity={0.6}
       >
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={16}
+          style={StyleSheet.absoluteFillObject}
+        />
         {channel.isConcierge ? (
           <ConciergeAvatar />
         ) : (
@@ -283,26 +289,38 @@ function EmptyMessages({
   colors: ReturnType<typeof useAppTheme>["colors"];
 }) {
   return (
-    <View style={styles.emptyContainer}>
-      <View style={styles.emptyIconContainer}>
-        <Ionicons
-          name="chatbubbles-outline"
-          size={64}
-          color={colors.textTertiary}
+    <View style={styles.emptyContainerTop}>
+      <View style={[styles.emptyGlassCard, { overflow: "hidden" }]}>
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={20}
+          style={StyleSheet.absoluteFillObject}
         />
+        <View style={styles.emptyIconContainer}>
+          <Ionicons
+            name="chatbubbles-outline"
+            size={56}
+            color={colors.textTertiary}
+          />
+        </View>
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>
+          Your Messages
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          Send private photos and messages to a friend
+        </Text>
+        <TouchableOpacity
+          style={[styles.sendMessageButton, { overflow: "hidden" }]}
+          onPress={onSendMessage}
+        >
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={8}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <Text style={styles.sendMessageButtonText}>Send Message</Text>
+        </TouchableOpacity>
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>
-        Your Messages
-      </Text>
-      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        Send private photos and messages to a friend
-      </Text>
-      <TouchableOpacity
-        style={styles.sendMessageButton}
-        onPress={onSendMessage}
-      >
-        <Text style={styles.sendMessageButtonText}>Send Message</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -315,14 +333,21 @@ function SearchEmptyState({
   colors: ReturnType<typeof useAppTheme>["colors"];
 }) {
   return (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="search-outline" size={64} color={colors.textTertiary} />
-      <Text style={[styles.emptyTitle, { color: colors.text }]}>
-        No results
-      </Text>
-      <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-        No messages or conversations found for &quot;{query}&quot;
-      </Text>
+    <View style={styles.emptyContainerTop}>
+      <View style={[styles.emptyGlassCard, { overflow: "hidden" }]}>
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={20}
+          style={StyleSheet.absoluteFillObject}
+        />
+        <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
+        <Text style={[styles.emptyTitle, { color: colors.text }]}>
+          No results
+        </Text>
+        <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+          No messages or conversations found for &quot;{query}&quot;
+        </Text>
+      </View>
     </View>
   );
 }
@@ -345,10 +370,15 @@ function PersonSearchRow({
 
   return (
     <TouchableOpacity
-      style={styles.personRow}
+      style={[styles.personRow, { overflow: "hidden" }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
+      <GlassView
+        {...liquidGlass.surface}
+        borderRadius={14}
+        style={StyleSheet.absoluteFillObject}
+      />
       <Image
         source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage}
         style={styles.personAvatar}
@@ -759,7 +789,12 @@ export default function MessagesScreen() {
       {/* Search Bar */}
       {isSearchActive ? (
         <View style={styles.searchBarContainer}>
-          <View style={[styles.searchBar, { backgroundColor: colors.input }]}>
+          <View style={[styles.searchBar, { overflow: "hidden" }]}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={10}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Ionicons name="search" size={18} color={colors.textTertiary} />
             <TextInput
               ref={searchInputRef}
@@ -789,7 +824,12 @@ export default function MessagesScreen() {
           onPress={handleSearchPress}
           activeOpacity={0.7}
         >
-          <View style={[styles.searchBar, { backgroundColor: colors.input }]}>
+          <View style={[styles.searchBar, { overflow: "hidden" }]}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={10}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Ionicons name="search" size={18} color={colors.textTertiary} />
             <Text style={[styles.searchBarPlaceholder, { color: colors.textTertiary }]}>
               Search
@@ -859,10 +899,15 @@ export default function MessagesScreen() {
                 contentContainerStyle={styles.chipsRow}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    style={[styles.chip, { backgroundColor: "rgba(255,255,255,0.08)" }]}
+                    style={[styles.chip, { overflow: "hidden" }]}
                     onPress={() => togglePersonSelection(item)}
                     activeOpacity={0.7}
                   >
+                    <GlassView
+                      {...liquidGlass.surface}
+                      borderRadius={20}
+                      style={StyleSheet.absoluteFillObject}
+                    />
                     <Image
                       source={
                         item.avatar?.url
@@ -896,12 +941,18 @@ export default function MessagesScreen() {
                   <TouchableOpacity
                     style={[
                       styles.createGroupBtn,
+                      { overflow: "hidden" },
                       selectedPeople.length < 2 && { opacity: 0.4 },
                     ]}
                     onPress={handleCreateGroup}
                     disabled={selectedPeople.length < 2}
                     activeOpacity={0.7}
                   >
+                    <GlassView
+                      {...liquidGlass.surface}
+                      borderRadius={8}
+                      style={StyleSheet.absoluteFillObject}
+                    />
                     <Text style={styles.createGroupText}>Create</Text>
                   </TouchableOpacity>
                 </View>
@@ -1050,12 +1101,21 @@ export default function MessagesScreen() {
         onRequestClose={dismissActionSheet}
       >
         <View style={styles.actionOverlay}>
-          <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={0}
+            style={StyleSheet.absoluteFillObject}
+          />
           <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={dismissActionSheet} />
 
           <GestureDetector gesture={actionSheetPanGesture}>
             <Animated.View style={[styles.actionSheet, actionSheetAnimStyle]}>
               <View style={styles.actionSheetContent}>
+                <GlassView
+                  {...liquidGlass.surface}
+                  borderRadius={20}
+                  style={StyleSheet.absoluteFillObject}
+                />
                 {/* Handle bar */}
                 <View style={styles.actionSheetHandle} />
 
@@ -1072,7 +1132,12 @@ export default function MessagesScreen() {
                 {/* Actions */}
                 <View style={[styles.actionList, { paddingBottom: insets.bottom + 14 }]}>
                   <GHTouchableOpacity style={styles.actionItem} onPress={handleTogglePin}>
-                    <View style={styles.actionItemIcon}>
+                    <View style={[styles.actionItemIcon, { overflow: "hidden" }]}>
+                      <GlassView
+                        {...liquidGlass.surface}
+                        borderRadius={18}
+                        style={StyleSheet.absoluteFillObject}
+                      />
                       <Ionicons
                         name={actionTarget?.isPinned ? "pin-outline" : "pin"}
                         size={20}
@@ -1087,7 +1152,12 @@ export default function MessagesScreen() {
                   {actionTarget && !actionTarget.isConcierge && (
                     <>
                       <GHTouchableOpacity style={styles.actionItem} onPress={handleDeleteFromAction}>
-                        <View style={styles.actionItemIcon}>
+                        <View style={[styles.actionItemIcon, { overflow: "hidden" }]}>
+                          <GlassView
+                            {...liquidGlass.surface}
+                            borderRadius={18}
+                            style={StyleSheet.absoluteFillObject}
+                          />
                           <Ionicons name="trash-outline" size={20} color="#FF3B30" />
                         </View>
                         <Text style={[styles.actionText, { color: "#FF3B30" }]}>
@@ -1097,7 +1167,12 @@ export default function MessagesScreen() {
 
                       {actionTarget.otherUserId && (
                         <GHTouchableOpacity style={styles.actionItem} onPress={handleBlockFromAction}>
-                          <View style={styles.actionItemIcon}>
+                          <View style={[styles.actionItemIcon, { overflow: "hidden" }]}>
+                            <GlassView
+                              {...liquidGlass.surface}
+                              borderRadius={18}
+                              style={StyleSheet.absoluteFillObject}
+                            />
                             <Ionicons name="ban-outline" size={20} color="#FF3B30" />
                           </View>
                           <Text style={[styles.actionText, { color: "#FF3B30" }]}>
@@ -1233,8 +1308,13 @@ const styles = StyleSheet.create({
   conversationRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginHorizontal: 10,
+    marginVertical: 3,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
   },
   avatarContainer: {
     position: "relative",
@@ -1325,19 +1405,29 @@ const styles = StyleSheet.create({
   emptyListContainer: {
     flex: 1,
   },
-  emptyContainer: {
+  emptyContainerTop: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: 24,
+    paddingTop: 60,
+  },
+  emptyGlassCard: {
+    alignItems: "center",
+    paddingVertical: 32,
+    paddingHorizontal: 28,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    width: "100%",
   },
   emptyIconContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontFamily: "Lato_700Bold",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 14,
@@ -1349,7 +1439,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",
     borderRadius: 8,
@@ -1379,7 +1468,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   actionSheetContent: {
-    backgroundColor: "rgba(30,30,30,0.95)",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: "hidden",
@@ -1431,7 +1519,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
@@ -1518,7 +1605,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   createGroupBtn: {
-    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.25)",
     paddingHorizontal: 16,
@@ -1561,8 +1647,13 @@ const styles = StyleSheet.create({
   personRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 10,
+    marginHorizontal: 10,
+    marginVertical: 2,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.04)",
   },
   personAvatar: {
     width: 50,
@@ -1585,6 +1676,7 @@ const styles = StyleSheet.create({
   composeEmpty: {
     alignItems: "center",
     gap: 12,
+    paddingTop: 40,
   },
   composeEmptyText: {
     fontSize: 14,

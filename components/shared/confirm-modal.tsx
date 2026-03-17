@@ -3,12 +3,17 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const TAB_BAR_HEIGHT = 49;
+const TAB_BAR_RADIUS = 24;
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -38,96 +43,135 @@ export function ConfirmModal({
   icon,
   alertOnly = false,
 }: ConfirmModalProps) {
-  const iconColor = destructive ? '#ff3b30' : '#0095f6';
+  const bottomSheetRef = React.useRef<BottomSheet>(null);
+  const insets = useSafeAreaInsets();
+
+  React.useEffect(() => {
+    if (visible) {
+      bottomSheetRef.current?.expand();
+    } else {
+      bottomSheetRef.current?.close();
+    }
+  }, [visible]);
+
+  const handleCancel = React.useCallback(() => {
+    bottomSheetRef.current?.close();
+  }, []);
+
+  const handleConfirm = React.useCallback(() => {
+    bottomSheetRef.current?.close();
+    onConfirm?.();
+  }, [onConfirm]);
+
+  const iconColor = destructive ? '#ff3b30' : '#fff';
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={-1}
+      enableDynamicSizing
+      enablePanDownToClose
+      onClose={onClose}
+      backgroundStyle={{
+        backgroundColor: 'transparent',
+        borderRadius: TAB_BAR_RADIUS,
+      }}
+      handleIndicatorStyle={{
+        width: 36,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: 'rgba(255,255,255,0.3)',
+      }}
+      style={{ marginHorizontal: 12 }}
+      bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
+      detached
     >
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <BlurView intensity={80} tint="dark" style={styles.content}>
-            <View style={styles.header}>
-              {icon && (
-                <View style={[styles.iconCircle, { backgroundColor: destructive ? 'rgba(255, 59, 48, 0.15)' : 'rgba(0, 149, 246, 0.15)' }]}>
-                  <Ionicons name={icon} size={28} color={iconColor} />
-                </View>
-              )}
-              <Text style={styles.title}>{title}</Text>
-              <Text style={styles.message}>{message}</Text>
-            </View>
+      <BottomSheetView style={styles.sheetContent}>
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={TAB_BAR_RADIUS}
+          style={StyleSheet.absoluteFill}
+        />
 
-            <View style={styles.actions}>
-              {alertOnly ? (
-                <TouchableOpacity
-                  style={[styles.confirmBtn, styles.confirmBtnPrimary]}
-                  onPress={onClose}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.confirmText}>OK</Text>
-                </TouchableOpacity>
-              ) : (
-                <>
-                  <TouchableOpacity
-                    style={styles.cancelBtn}
-                    onPress={onClose}
-                    disabled={isLoading}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.cancelText}>{cancelLabel}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.confirmBtn,
-                      destructive ? styles.confirmBtnDestructive : styles.confirmBtnPrimary,
-                      isLoading && { opacity: 0.5 },
-                    ]}
-                    onPress={onConfirm}
-                    disabled={isLoading}
-                    activeOpacity={0.7}
-                  >
-                    {isLoading ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <Text style={[styles.confirmText, destructive && styles.confirmTextDestructive]}>
-                        {confirmLabel}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                </>
-              )}
+        <View style={styles.header}>
+          {icon && (
+            <View style={styles.iconCircle}>
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={28}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name={icon} size={28} color={iconColor} />
             </View>
-          </BlurView>
+          )}
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.message}>{message}</Text>
         </View>
-      </View>
-    </Modal>
+
+        <View style={styles.actions}>
+          {alertOnly ? (
+            <TouchableOpacity
+              style={styles.confirmBtn}
+              onPress={handleCancel}
+              activeOpacity={0.7}
+            >
+              <GlassView
+                {...liquidGlass.fillMedium}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              <Text style={styles.confirmText}>OK</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[styles.cancelBtn, isLoading && { opacity: 0.5 }]}
+                onPress={handleCancel}
+                disabled={isLoading}
+                activeOpacity={0.7}
+              >
+                <GlassView
+                  {...liquidGlass.fill}
+                  borderRadius={12}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Text style={styles.cancelText}>{cancelLabel}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.confirmBtn, isLoading && { opacity: 0.5 }]}
+                onPress={handleConfirm}
+                disabled={isLoading}
+                activeOpacity={0.7}
+              >
+                <GlassView
+                  {...(destructive ? liquidGlass.danger : liquidGlass.fillMedium)}
+                  borderRadius={12}
+                  style={StyleSheet.absoluteFill}
+                />
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.confirmText}>{confirmLabel}</Text>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </BottomSheetView>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    paddingHorizontal: 40,
-    width: '100%',
-  },
-  content: {
-    borderRadius: 20,
-    overflow: 'hidden',
+  sheetContent: {
+    paddingBottom: 8,
   },
   header: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   iconCircle: {
     width: 56,
@@ -135,7 +179,8 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
+    overflow: 'hidden',
   },
   title: {
     fontSize: 18,
@@ -152,15 +197,16 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 10,
   },
   cancelBtn: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-    borderRightWidth: 0.5,
-    borderRightColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   cancelText: {
     fontSize: 16,
@@ -169,21 +215,14 @@ const styles = StyleSheet.create({
   },
   confirmBtn: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 14,
     alignItems: 'center',
-  },
-  confirmBtnDestructive: {
-    backgroundColor: 'rgba(255, 59, 48, 0.2)',
-  },
-  confirmBtnPrimary: {
-    backgroundColor: 'rgba(0, 149, 246, 0.2)',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   confirmText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
-  },
-  confirmTextDestructive: {
-    color: '#ff3b30',
+    color: '#fff',
   },
 });

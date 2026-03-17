@@ -31,7 +31,8 @@ import {
   useDeletePost,
   type CommentData,
 } from '@/hooks';
-import { BlurView } from 'expo-blur';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 
@@ -518,7 +519,12 @@ export default function PostDetailScreen() {
           onPress={() => setShowMenu(false)}
         >
           <View style={styles.menuContainer}>
-            <BlurView intensity={80} tint="dark" style={styles.menuBlur}>
+            <View style={styles.menuBlur}>
+              <GlassView
+                {...liquidGlass.surface}
+                borderRadius={14}
+                style={StyleSheet.absoluteFill}
+              />
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={handleShare}
@@ -544,16 +550,21 @@ export default function PostDetailScreen() {
                   </TouchableOpacity>
                 </>
               )}
-            </BlurView>
+            </View>
 
             <TouchableOpacity
               style={styles.menuCancelButton}
               onPress={() => setShowMenu(false)}
               activeOpacity={0.7}
             >
-              <BlurView intensity={80} tint="dark" style={styles.menuCancelBlur}>
+              <View style={styles.menuCancelBlur}>
+                <GlassView
+                  {...liquidGlass.surface}
+                  borderRadius={14}
+                  style={StyleSheet.absoluteFill}
+                />
                 <Text style={styles.menuCancelText}>Cancel</Text>
-              </BlurView>
+              </View>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -568,7 +579,12 @@ export default function PostDetailScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.deleteConfirmContainer}>
-            <BlurView intensity={80} tint="dark" style={styles.deleteConfirmContent}>
+            <View style={styles.deleteConfirmContent}>
+              <GlassView
+                {...liquidGlass.surface}
+                borderRadius={20}
+                style={StyleSheet.absoluteFill}
+              />
               <View style={styles.deleteConfirmHeader}>
                 <View style={styles.deleteIconCircle}>
                   <Ionicons name="trash" size={28} color="#ff3b30" />
@@ -602,7 +618,7 @@ export default function PostDetailScreen() {
                   )}
                 </TouchableOpacity>
               </View>
-            </BlurView>
+            </View>
           </View>
         </View>
       </Modal>

@@ -8,6 +8,7 @@ import {
   radius as radiusTokens,
 } from '@/constants/glass/tokens';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import type { GlassFill, GlassBorder, RadiusScale } from '@/constants/glass/types';
 
 const useNativeGlass = isGlassEffectAPIAvailable();
@@ -45,8 +46,8 @@ export function GlassSurface({
   if (useNativeGlass) {
     return (
       <GlassView
+        {...liquidGlass.surface}
         glassEffectStyle="clear"
-        colorScheme={isDark ? 'dark' : 'light'}
         style={[
           {
             borderRadius: radiusTokens[cornerRadius],

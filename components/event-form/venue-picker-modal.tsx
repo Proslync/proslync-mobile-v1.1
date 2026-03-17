@@ -10,6 +10,8 @@ import {
   FlatList,
   ActivityIndicator,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { Venue } from '@/lib/types/events.types';
@@ -43,10 +45,17 @@ export function VenuePickerModal({
     const isSelected = item.id === selectedVenueId;
     return (
       <TouchableOpacity
-        style={[styles.venueItem, isSelected && styles.venueItemSelected]}
+        style={[styles.venueItem, isSelected && { overflow: 'hidden' }]}
         onPress={() => handleSelect(item)}
         activeOpacity={0.7}
       >
+        {isSelected && (
+          <GlassView
+            {...liquidGlass.fill}
+            borderRadius={12}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
         <View style={styles.venueInfo}>
           <Text style={styles.venueName} numberOfLines={1}>
             {item.name}
@@ -74,9 +83,14 @@ export function VenuePickerModal({
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Select Venue</Text>
           <TouchableOpacity
-            style={styles.closeButton}
+            style={[styles.closeButton, { overflow: 'hidden' }]}
             onPress={onClose}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={16}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.closeButtonText}>✕</Text>
           </TouchableOpacity>
         </View>
@@ -98,11 +112,18 @@ export function VenuePickerModal({
               <TouchableOpacity
                 style={[
                   styles.venueItem,
-                  !selectedVenueId && styles.venueItemSelected,
+                  !selectedVenueId && { overflow: 'hidden' },
                 ]}
                 onPress={() => handleSelect(null)}
                 activeOpacity={0.7}
               >
+                {!selectedVenueId && (
+                  <GlassView
+                    {...liquidGlass.fill}
+                    borderRadius={12}
+                    style={StyleSheet.absoluteFill}
+                  />
+                )}
                 <View style={styles.venueInfo}>
                   <Text style={styles.venueName}>None</Text>
                   <Text style={styles.venueAddress}>
@@ -149,7 +170,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -169,9 +189,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 4,
   },
-  venueItemSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
+  venueItemSelected: {},
   venueInfo: {
     flex: 1,
   },

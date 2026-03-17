@@ -22,6 +22,10 @@ import { authApi } from "@/lib/api/auth";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { handleApiError } from "@/lib/api/errors";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { GlassCard } from "@/components/glass/glass-card";
+import { GlassSurface } from "@/components/glass/glass-surface";
+import { GlassButton } from "@/components/glass/glass-button";
+import { fontFamily } from "@/constants/glass/tokens";
 
 interface ProfileSetupStepProps {
   onSuccess: () => void;
@@ -35,7 +39,6 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Username availability
   const [isCheckingUsername, setIsCheckingUsername] = React.useState(false);
   const [usernameAvailable, setUsernameAvailable] = React.useState<
     boolean | null
@@ -64,7 +67,6 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setAvatarUri(asset.uri);
-        // Upload in background
         setIsUploadingAvatar(true);
         try {
           const fileName = asset.uri.split("/").pop() || "avatar.jpg";
@@ -83,7 +85,6 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
           await authApi.confirmUpload(presigned.fileId);
         } catch (err) {
           console.error("Avatar upload error:", err);
-          // Don't block signup — avatar is optional
         } finally {
           setIsUploadingAvatar(false);
         }
@@ -93,10 +94,8 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
     }
   };
 
-  // Validate username format
   const isValidUsername = (value: string) => /^[a-zA-Z0-9_]+$/.test(value);
 
-  // Debounced username availability check
   React.useEffect(() => {
     setUsernameAvailable(null);
     setUsernameError(null);
@@ -120,7 +119,6 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
           setUsernameError(`@${userName} is already taken`);
         }
       } catch {
-        // Network error — don't block
         setUsernameAvailable(true);
       } finally {
         setIsCheckingUsername(false);
@@ -131,7 +129,6 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
   }, [userName]);
 
   const handleUsernameChange = (text: string) => {
-    // Strip spaces and special chars except underscores
     const cleaned = text.replace(/[^a-zA-Z0-9_]/g, "");
     setUserName(cleaned);
     if (error) setError(null);
@@ -168,9 +165,11 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
     }
   };
 
+  const inputBorderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View
@@ -185,13 +184,20 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
             entering={FadeIn.duration(300).delay(200)}
             style={styles.backButtonContainer}
           >
-            <TouchableOpacity
-              style={[styles.backButton, { backgroundColor: colors.input }]}
-              onPress={onBack}
-              activeOpacity={0.7}
+            <GlassSurface
+              fill="light"
+              border="subtle"
+              cornerRadius="3xl"
+              style={styles.backButtonSurface}
             >
-              <Text style={[styles.backIcon, { color: colors.text }]}>←</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={onBack}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.backIcon, { color: colors.text }]}>←</Text>
+              </TouchableOpacity>
+            </GlassSurface>
           </Animated.View>
         )}
 
@@ -222,7 +228,7 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
           entering={FadeInUp.duration(500).delay(450)}
           style={[styles.subtitle, { color: colors.textSecondary }]}
         >
-          Add a photo, choose a username, and enter your name.
+          Add a photo and choose your username
         </Animated.Text>
 
         {/* Avatar Picker */}
@@ -231,126 +237,132 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
           style={styles.avatarSection}
         >
           <TouchableOpacity
-            style={[styles.avatarPicker, { backgroundColor: colors.input }]}
             onPress={handlePickAvatar}
             activeOpacity={0.7}
             disabled={isUploadingAvatar}
           >
-            {avatarUri ? (
-              <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Ionicons name="camera" size={28} color={colors.textTertiary} />
-              </View>
-            )}
-            {isUploadingAvatar && (
-              <View style={styles.avatarOverlay}>
-                <ActivityIndicator color="#fff" size="small" />
-              </View>
-            )}
+            <GlassSurface
+              fill="medium"
+              border="medium"
+              cornerRadius="3xl"
+              style={styles.avatarSurface}
+            >
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Ionicons name="camera" size={28} color={colors.textTertiary} />
+                </View>
+              )}
+              {isUploadingAvatar && (
+                <View style={styles.avatarOverlay}>
+                  <ActivityIndicator color="#fff" size="small" />
+                </View>
+              )}
+            </GlassSurface>
           </TouchableOpacity>
           <Text style={[styles.avatarLabel, { color: colors.textSecondary }]}>
             Add Photo
           </Text>
         </Animated.View>
 
-        {/* First Name */}
-        <Animated.View
-          entering={FadeInDown.duration(600).delay(500)}
-          style={[styles.inputContainer, { backgroundColor: colors.input }]}
-        >
-          <TextInput
-            style={[styles.textInput, { color: colors.text }]}
-            placeholder="First Name"
-            placeholderTextColor={colors.placeholder}
-            keyboardAppearance={isDark ? "dark" : "light"}
-            value={firstName}
-            onChangeText={(t) => {
-              setFirstName(t);
-              if (error) setError(null);
-            }}
-            autoFocus
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="next"
-            onSubmitEditing={() => lastNameRef.current?.focus()}
-            selectionColor={colors.textTertiary}
-            cursorColor={colors.textSecondary}
-            textContentType="givenName"
-            autoComplete="given-name"
-          />
-        </Animated.View>
-
-        {/* Last Name */}
-        <Animated.View
-          entering={FadeInDown.duration(600).delay(550)}
-          style={[
-            styles.inputContainer,
-            { backgroundColor: colors.input, marginTop: 14 },
-          ]}
-        >
-          <TextInput
-            ref={lastNameRef}
-            style={[styles.textInput, { color: colors.text }]}
-            placeholder="Last Name"
-            placeholderTextColor={colors.placeholder}
-            keyboardAppearance={isDark ? "dark" : "light"}
-            value={lastName}
-            onChangeText={(t) => {
-              setLastName(t);
-              if (error) setError(null);
-            }}
-            autoCapitalize="words"
-            autoCorrect={false}
-            returnKeyType="next"
-            onSubmitEditing={() => userNameRef.current?.focus()}
-            selectionColor={colors.textTertiary}
-            cursorColor={colors.textSecondary}
-            textContentType="familyName"
-            autoComplete="family-name"
-          />
-        </Animated.View>
-
-        {/* Username */}
-        <Animated.View
-          entering={FadeInDown.duration(600).delay(600)}
-          style={[
-            styles.inputContainer,
-            { backgroundColor: colors.input, marginTop: 14 },
-          ]}
-        >
-          <Text style={[styles.atPrefix, { color: colors.textSecondary }]}>
-            @
-          </Text>
-          <TextInput
-            ref={userNameRef}
-            style={[styles.textInput, { color: colors.text, paddingLeft: 0 }]}
-            placeholder="username"
-            placeholderTextColor={colors.placeholder}
-            keyboardAppearance={isDark ? "dark" : "light"}
-            value={userName}
-            onChangeText={handleUsernameChange}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="done"
-            onSubmitEditing={handleSubmit}
-            selectionColor={colors.textTertiary}
-            cursorColor={colors.textSecondary}
-            textContentType="username"
-            autoComplete="username"
-          />
-          {/* Availability indicator */}
-          {userName.length >= 3 && (
-            <View style={styles.availabilityIndicator}>
-              {isCheckingUsername ? (
-                <ActivityIndicator size="small" color={colors.textSecondary} />
-              ) : usernameAvailable === true ? (
-                <Text style={styles.availableIcon}>✓</Text>
-              ) : usernameAvailable === false ? (
-                <Text style={styles.takenIcon}>✗</Text>
-              ) : null}
+        {/* Input Fields — Glass Card */}
+        <Animated.View entering={FadeInDown.duration(600).delay(500)}>
+          <GlassCard
+            fill="light"
+            border="subtle"
+            cornerRadius="lg"
+            shadowLevel="md"
+            blurIntensity="medium"
+            style={styles.glassFormCard}
+          >
+            {/* First Name */}
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="First Name"
+                placeholderTextColor={colors.placeholder}
+                keyboardAppearance={isDark ? "dark" : "light"}
+                value={firstName}
+                onChangeText={(t) => {
+                  setFirstName(t);
+                  if (error) setError(null);
+                }}
+                autoFocus
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="next"
+                onSubmitEditing={() => lastNameRef.current?.focus()}
+                selectionColor={colors.textTertiary}
+                cursorColor={colors.textSecondary}
+                textContentType="givenName"
+                autoComplete="given-name"
+              />
             </View>
-          )}
+
+            <View style={[styles.inputSeparator, { backgroundColor: inputBorderColor }]} />
+
+            {/* Last Name */}
+            <View style={styles.inputWrapper}>
+              <TextInput
+                ref={lastNameRef}
+                style={[styles.textInput, { color: colors.text }]}
+                placeholder="Last Name"
+                placeholderTextColor={colors.placeholder}
+                keyboardAppearance={isDark ? "dark" : "light"}
+                value={lastName}
+                onChangeText={(t) => {
+                  setLastName(t);
+                  if (error) setError(null);
+                }}
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="next"
+                onSubmitEditing={() => userNameRef.current?.focus()}
+                selectionColor={colors.textTertiary}
+                cursorColor={colors.textSecondary}
+                textContentType="familyName"
+                autoComplete="family-name"
+              />
+            </View>
+
+            <View style={[styles.inputSeparator, { backgroundColor: inputBorderColor }]} />
+
+            {/* Username */}
+            <View style={styles.inputWrapper}>
+              <Text style={[styles.atPrefix, { color: colors.textSecondary }]}>
+                @
+              </Text>
+              <TextInput
+                ref={userNameRef}
+                style={[styles.textInput, { color: colors.text, paddingLeft: 0 }]}
+                placeholder="username"
+                placeholderTextColor={colors.placeholder}
+                keyboardAppearance={isDark ? "dark" : "light"}
+                value={userName}
+                onChangeText={handleUsernameChange}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={handleSubmit}
+                selectionColor={colors.textTertiary}
+                cursorColor={colors.textSecondary}
+                textContentType="username"
+                autoComplete="username"
+              />
+              {userName.length >= 3 && (
+                <View style={styles.availabilityIndicator}>
+                  {isCheckingUsername ? (
+                    <ActivityIndicator size="small" color={colors.textSecondary} />
+                  ) : usernameAvailable === true ? (
+                    <Text style={styles.availableIcon}>✓</Text>
+                  ) : usernameAvailable === false ? (
+                    <Text style={styles.takenIcon}>✗</Text>
+                  ) : null}
+                </View>
+              )}
+            </View>
+          </GlassCard>
         </Animated.View>
 
         {/* Username status message */}
@@ -389,21 +401,15 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
           entering={FadeInUp.duration(600).delay(700)}
           style={styles.buttonContainer}
         >
-          <TouchableOpacity
-            style={[
-              styles.button,
-              (!isFormValid || isSubmitting) && styles.buttonDisabled,
-            ]}
+          <GlassButton
+            label={isSubmitting ? '' : 'Continue'}
+            variant={isFormValid ? 'accent' : 'glass'}
+            size="lg"
             onPress={handleSubmit}
             disabled={!isFormValid || isSubmitting}
-            activeOpacity={0.7}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.buttonText}>Continue</Text>
-            )}
-          </TouchableOpacity>
+            loading={isSubmitting}
+            fullWidth
+          />
         </Animated.View>
       </View>
     </KeyboardAvoidingView>
@@ -421,10 +427,13 @@ const styles = StyleSheet.create({
   backButtonContainer: {
     alignSelf: "flex-start",
   },
+  backButtonSurface: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -443,13 +452,14 @@ const styles = StyleSheet.create({
     height: 48,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 28,
+    fontFamily: "Lato_700Bold",
     textAlign: "center",
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,
+    fontFamily: "Lato_400Regular",
     textAlign: "center",
     marginBottom: 20,
   },
@@ -457,7 +467,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  avatarPicker: {
+  avatarSurface: {
     width: 90,
     height: 90,
     borderRadius: 45,
@@ -483,24 +493,32 @@ const styles = StyleSheet.create({
   },
   avatarLabel: {
     fontSize: 13,
-    fontWeight: "500",
+    fontFamily: "Lato_700Bold",
     marginTop: 8,
   },
-  inputContainer: {
+  glassFormCard: {
+    width: '100%',
+    paddingVertical: 0,
+  },
+  inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    width: "100%",
-    borderRadius: 12,
+    height: 54,
+  },
+  inputSeparator: {
+    height: 1,
+    marginHorizontal: 16,
   },
   textInput: {
     flex: 1,
-    height: 56,
+    height: 54,
     fontSize: 17,
+    fontFamily: "Lato_400Regular",
     paddingHorizontal: 16,
   },
   atPrefix: {
     fontSize: 17,
-    fontWeight: "500",
+    fontFamily: "Lato_700Bold",
     paddingLeft: 16,
     marginRight: 4,
   },
@@ -508,30 +526,33 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   availableIcon: {
-    color: "#4ade80",
+    color: "#34C759",
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: "Lato_700Bold",
   },
   takenIcon: {
     color: "#ff6b6b",
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: "Lato_700Bold",
   },
   usernameError: {
     color: "#ff6b6b",
     fontSize: 13,
+    fontFamily: "Lato_400Regular",
     marginTop: 8,
     paddingLeft: 4,
   },
   usernameAvailable: {
-    color: "#4ade80",
+    color: "#34C759",
     fontSize: 13,
+    fontFamily: "Lato_400Regular",
     marginTop: 8,
     paddingLeft: 4,
   },
   errorText: {
     color: "#ff6b6b",
     fontSize: 14,
+    fontFamily: "Lato_400Regular",
     textAlign: "center",
     marginTop: 16,
   },
@@ -542,21 +563,5 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: "100%",
     marginBottom: 20,
-  },
-  button: {
-    width: "100%",
-    height: 56,
-    backgroundColor: "#3897F0",
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "600",
   },
 });
