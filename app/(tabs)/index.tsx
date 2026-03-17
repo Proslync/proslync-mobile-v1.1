@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
+  ScrollView,
   StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -242,12 +243,15 @@ export default function FeedScreen() {
     return (
       <View style={[styles.container, { backgroundColor: feedBg }]}>
         <FeedHeader activeTab={activeTab} onTabChange={setActiveTab} />
-        <View style={styles.emptyContainer}>
+        <ScrollView
+          contentContainerStyle={styles.emptyContainer}
+          refreshControl={refreshControl}
+        >
           <Text style={[styles.emptyTitle, { color: '#fff' }]}>No content yet</Text>
           <Text style={[styles.emptySubtitle, { color: 'rgba(255,255,255,0.6)' }]}>
             Check back later for new content!
           </Text>
-        </View>
+        </ScrollView>
       </View>
     );
   }

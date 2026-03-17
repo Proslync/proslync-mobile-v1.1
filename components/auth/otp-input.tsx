@@ -64,7 +64,7 @@ export function OTPInput({
         ))}
       </View>
 
-      {/* Hidden TextInput on top — receives keyboard/paste/autofill, digits show through boxes */}
+      {/* Transparent TextInput on top — receives keyboard/paste/autofill, digits show through boxes */}
       <TextInput
         ref={inputRef}
         style={styles.realInput}
@@ -78,6 +78,7 @@ export function OTPInput({
         editable={!disabled}
         caretHidden
         autoFocus
+        selectionColor="transparent"
       />
     </Pressable>
   );
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     fontSize: 24,
     letterSpacing: 20,
-    opacity: 0.01,
+    color: 'transparent',
+    tintColor: 'transparent',
   },
 });
