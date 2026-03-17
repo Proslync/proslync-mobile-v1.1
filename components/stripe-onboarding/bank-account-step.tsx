@@ -30,19 +30,15 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
     setCardError(null);
   };
 
-  // CardField is a native Stripe component — needs explicit color values per theme
+  // CardField is a native Stripe component — border/radius props are unreliable on iOS,
+  // so we use a wrapper View for the border and keep cardStyle for colors only
   const cardStyle = useMemo(() => ({
-    backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F5F5F5',
+    backgroundColor: isDark ? '#1c1c1e' : '#F5F5F5',
     textColor: isDark ? '#ffffff' : '#1A1A1A',
-    placeholderColor: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)',
-    borderWidth: 1,
-    borderColor: cardError
-      ? '#ef4444'
-      : isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
-    borderRadius: 12,
+    placeholderColor: isDark ? '#999999' : 'rgba(0,0,0,0.35)',
     fontSize: 16,
     cursorColor: isDark ? '#ffffff' : '#1A1A1A',
-  }), [isDark, cardError]);
+  }), [isDark]);
 
   const handleSubmit = async () => {
     if (payoutMethodType === 'card') {
@@ -202,7 +198,15 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
           <Text style={[styles.cardNote, { color: colors.textSecondary }]}>
             Only debit cards are accepted for payouts. Credit cards will be declined.
           </Text>
-          <View style={styles.cardFieldWrapper}>
+          <View style={[
+            styles.cardFieldWrapper,
+            {
+              backgroundColor: isDark ? '#1c1c1e' : '#F5F5F5',
+              borderColor: cardError
+                ? '#ef4444'
+                : isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)',
+            },
+          ]}>
             <CardField
               postalCodeEnabled={false}
               placeholders={{ number: '4242 4242 4242 4242' }}
@@ -318,6 +322,7 @@ const styles = StyleSheet.create({
   },
   cardFieldWrapper: {
     borderRadius: 12,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   cardField: {

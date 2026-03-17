@@ -589,22 +589,27 @@ export function WithdrawalSheet({
       >
         <View style={styles.formContainer}>
           <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Card Details</Text>
-          <CardField
-            postalCodeEnabled={false}
-            cardStyle={{
-              backgroundColor: isDark ? '#1a1a1a' : '#f5f5f5',
-              textColor: isDark ? '#ffffff' : '#000000',
-              placeholderColor: isDark ? '#666666' : '#999999',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-              borderWidth: 1,
-              borderRadius: 12,
-              fontSize: 16,
-            }}
-            style={styles.cardField}
-            onCardChange={(details: CardFieldInput.Details) => {
-              setCardComplete(details.complete);
-            }}
-          />
+          <View style={{
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)',
+            backgroundColor: isDark ? '#1c1c1e' : '#f5f5f5',
+            overflow: 'hidden',
+          }}>
+            <CardField
+              postalCodeEnabled={false}
+              cardStyle={{
+                backgroundColor: isDark ? '#1c1c1e' : '#f5f5f5',
+                textColor: isDark ? '#ffffff' : '#000000',
+                placeholderColor: isDark ? '#999999' : 'rgba(0,0,0,0.35)',
+                fontSize: 16,
+              }}
+              style={styles.cardField}
+              onCardChange={(details: CardFieldInput.Details) => {
+                setCardComplete(details.complete);
+              }}
+            />
+          </View>
 
           <Text style={[styles.cardNote, { color: colors.textTertiary }]}>
             Only debit cards are accepted for instant payouts. Credit cards cannot receive payouts.
