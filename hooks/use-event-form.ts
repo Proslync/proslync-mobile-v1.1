@@ -30,6 +30,7 @@ export const DEFAULT_EVENT_FORM_VALUES: EventFormData = {
 
 interface UseEventFormOptions {
   defaultValues?: Partial<EventFormData>;
+  requireFlyer?: boolean;
 }
 
 export function useEventForm(options: UseEventFormOptions = {}) {
@@ -47,21 +48,24 @@ export function useEventForm(options: UseEventFormOptions = {}) {
 
   // Watch fields for canSubmit
   const name = form.watch('name');
+  const flyerUri = form.watch('flyerUri');
   const startDate = form.watch('startDate');
   const endDate = form.watch('endDate');
   const location = form.watch('location');
   const isPaid = form.watch('isPaid');
   const tiers = form.watch('tiers');
+  const requireFlyer = options.requireFlyer !== false;
 
   const canSubmit = useMemo(() => {
     if (!name?.trim()) return false;
+    if (requireFlyer && !flyerUri) return false;
     if (!startDate || !endDate || startDate >= endDate) return false;
     if (!location?.trim()) return false;
     if (isPaid && (!Array.isArray(tiers) || tiers.length === 0 || !tiers.every((t) => t.pricing?.length > 0))) {
       return false;
     }
     return true;
-  }, [name, startDate, endDate, location, isPaid, tiers]);
+  }, [name, flyerUri, requireFlyer, startDate, endDate, location, isPaid, tiers]);
 
   return {
     form,
@@ -74,7 +78,7 @@ export function useEventForm(options: UseEventFormOptions = {}) {
 export type UseEventFormReturn = ReturnType<typeof useEventForm>;
 
 export function useEditEventForm(options: UseEventFormOptions = {}) {
-  const eventForm = useEventForm(options);
+  const eventForm = useEventForm({ ...options, requireFlyer: false });
 
   // Reset form with event data
   const resetWithEvent = useCallback(

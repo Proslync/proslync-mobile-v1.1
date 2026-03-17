@@ -3,21 +3,13 @@ import {
   View,
   Text,
   FlatList,
-  Image,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Modal,
-  ScrollView,
   Dimensions,
 } from "react-native";
-import { BlurView } from "expo-blur";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
 import Animated, {
   FadeIn,
-  FadeInDown,
-  FadeOut,
-  Layout,
   useSharedValue,
   withTiming,
   Easing,
@@ -28,358 +20,36 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   TerminalProvider,
   useTerminalPayment,
 } from "@/lib/providers/terminal-provider";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { eventsApi } from "@/lib/api/events";
-import { paymentsApi } from "@/lib/api/payments";
+import { useEvent } from "@/hooks/use-events-query";
+import { useEventAttendees } from "@/hooks/use-event-attendees";
 import { useEventSocket } from "@/hooks/use-event-socket";
-import type { Event, EventAttendee } from "@/lib/types/events.types";
+import { paymentsApi } from "@/lib/api/payments";
 import { EventUserStatus } from "@/lib/types/events.types";
+import type { EventAttendeesResponse } from "@/lib/types/events.types";
+import { ContactDetailModal } from "@/components/check-ins/contact-detail-modal";
+import { ContactRow } from "@/components/check-ins/contact-row";
+import { type CheckInContact, mapAttendee } from "@/components/check-ins/utils";
 
-interface ListContact {
-  id: number;
-  name: string;
-  userName?: string;
-  avatarUrl?: string;
-  isGuest: boolean;
-  source: string;
-  eventCount: number;
-  lastSeenAt?: string;
-  paid: boolean;
-  userId?: number;
-  phoneNumber?: string;
-  email?: string;
-  birthDate?: string;
-  documentNumber?: string;
-  tags?: string[];
-  checkInStatus: "approved" | "denied";
-}
-
-function formatDate(dateStr?: string): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function sourceLabel(source: string, isGuest: boolean): string {
-  if (isGuest) return "Guest";
-  if (source === "rsvp") return "RSVP";
-  if (source === "ticket_purchase") return "Ticket";
-  return "";
-}
-
-function mapAttendee(a: EventAttendee): ListContact {
-  const name =
-    [a.firstName, a.lastName].filter(Boolean).join(" ") ||
-    a.guestName ||
-    "Unknown";
-  const isGuest = a.isGuest ?? !a.userId;
-  const isCheckedIn =
-    a.checkedIn ||
-    a.status === EventUserStatus.CHECKED_IN ||
-    a.status === EventUserStatus.VERIFIED ||
-    a.status === EventUserStatus.CONFIRMED;
-  let source = "check_in";
-  if (a.status === EventUserStatus.SIGNED_UP) source = "rsvp";
-  else if (a.isRegistered && !isCheckedIn) source = "rsvp";
-  const checkInStatus =
-    a.status === EventUserStatus.REJECTED ||
-    a.status === EventUserStatus.CANCELLED
-      ? "denied"
-      : "approved";
-  return {
-    id: a.id,
-    name,
-    userName: a.userName,
-    avatarUrl: a.avatarUrl || a.avatar,
-    isGuest,
-    source,
-    eventCount: 1,
-    lastSeenAt: a.checkedInAt || a.verifiedAt || a.createdAt,
-    paid: false,
-    userId: a.userId,
-    phoneNumber: a.phoneNumber,
-    email: a.email,
-    birthDate: a.birthDate,
-    tags: a.tags,
-    checkInStatus,
-  };
-}
-
-// ── Contact Detail Modal ──
-
-function ContactDetailModal({
-  contact,
-  onClose,
-}: {
-  contact: ListContact | null;
-  onClose: () => void;
-}) {
-  const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
-  if (!contact) return null;
-
-  const initials = contact.name
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-
-  const rows: {
-    icon: keyof typeof Ionicons.glyphMap;
-    label: string;
-    value: string;
-  }[] = [];
-
-  if (contact.email) {
-    rows.push({ icon: "mail-outline", label: "Email", value: contact.email });
-  }
-  if (contact.birthDate) {
-    rows.push({
-      icon: "calendar-outline",
-      label: "Date of Birth",
-      value: formatDate(contact.birthDate),
-    });
-  }
-  if (contact.documentNumber) {
-    rows.push({
-      icon: "id-card-outline",
-      label: "ID Number",
-      value: contact.documentNumber,
-    });
-  }
-  rows.push({
-    icon: "enter-outline",
-    label: "Source",
-    value: sourceLabel(contact.source, contact.isGuest),
-  });
-  rows.push({
-    icon: "ticket-outline",
-    label: "Events",
-    value: String(contact.eventCount),
-  });
-  if (contact.lastSeenAt) {
-    rows.push({
-      icon: "time-outline",
-      label: "Last Seen",
-      value: formatDate(contact.lastSeenAt),
-    });
-  }
-
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={detailStyles.overlay}>
-        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-        <TouchableOpacity
-          style={StyleSheet.absoluteFill}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-
-        <View
-          style={[detailStyles.sheet, { paddingBottom: insets.bottom + 24 }]}
-        >
-          <View
-            style={[
-              detailStyles.card,
-              {
-                backgroundColor: colors.cardElevated,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            {/* Handle */}
-            <View
-              style={[
-                detailStyles.handle,
-                { backgroundColor: colors.textTertiary },
-              ]}
-            />
-
-            {/* Profile header */}
-            <View style={detailStyles.profileHeader}>
-              {contact.avatarUrl ? (
-                <Image
-                  source={{ uri: contact.avatarUrl }}
-                  style={detailStyles.profileAvatar}
-                />
-              ) : (
-                <View
-                  style={[
-                    detailStyles.profileAvatarPlaceholder,
-                    { backgroundColor: colors.backgroundSecondary },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      detailStyles.profileInitials,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {initials}
-                  </Text>
-                </View>
-              )}
-              <Text style={[detailStyles.profileName, { color: colors.text }]}>
-                {contact.userName ? `@${contact.userName}` : contact.name}
-              </Text>
-              {contact.userName && (
-                <Text
-                  style={[
-                    detailStyles.profileSubname,
-                    { color: colors.textTertiary },
-                  ]}
-                >
-                  {contact.name}
-                </Text>
-              )}
-              <View style={detailStyles.badgeRow}>
-                <View
-                  style={[
-                    detailStyles.badge,
-                    {
-                      backgroundColor: contact.isGuest
-                        ? "rgba(251,191,36,0.15)"
-                        : "rgba(52,211,153,0.15)",
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      detailStyles.badgeText,
-                      { color: contact.isGuest ? "#fbbf24" : "#34d399" },
-                    ]}
-                  >
-                    {contact.isGuest ? "Guest" : "Member"}
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    detailStyles.badge,
-                    {
-                      backgroundColor:
-                        contact.checkInStatus === "approved"
-                          ? "rgba(16,185,129,0.15)"
-                          : "rgba(239,68,68,0.15)",
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      detailStyles.badgeText,
-                      {
-                        color:
-                          contact.checkInStatus === "approved"
-                            ? "#10b981"
-                            : "#ef4444",
-                      },
-                    ]}
-                  >
-                    {contact.checkInStatus === "approved"
-                      ? "Approved"
-                      : "Denied"}
-                  </Text>
-                </View>
-              </View>
-              {contact.tags && contact.tags.length > 0 && (
-                <View style={detailStyles.tagsRow}>
-                  {contact.tags.map((tag) => {
-                    const tagColors: Record<string, string> = {
-                      vip: "#f59e0b",
-                      line_skip: "#22c55e",
-                      backstage: "#a855f7",
-                      comp: "#3b82f6",
-                      plus_one: "#ec4899",
-                    };
-                    const color = tagColors[tag] || "#6b7280";
-                    return (
-                      <View
-                        key={tag}
-                        style={[
-                          detailStyles.tagChip,
-                          { backgroundColor: `${color}20` },
-                        ]}
-                      >
-                        <Text style={[detailStyles.tagChipText, { color }]}>
-                          {tag.replace("_", " ").toUpperCase()}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-
-            {/* Info rows */}
-            <ScrollView style={detailStyles.infoList} bounces={false}>
-              {rows.map((row, i) => (
-                <View
-                  key={row.label}
-                  style={[
-                    detailStyles.infoRow,
-                    i < rows.length - 1 && {
-                      borderBottomWidth: 1,
-                      borderBottomColor: colors.border,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={row.icon}
-                    size={18}
-                    color={colors.textTertiary}
-                    style={detailStyles.infoIcon}
-                  />
-                  <View style={detailStyles.infoContent}>
-                    <Text
-                      style={[
-                        detailStyles.infoLabel,
-                        { color: colors.textTertiary },
-                      ]}
-                    >
-                      {row.label}
-                    </Text>
-                    <Text
-                      style={[detailStyles.infoValue, { color: colors.text }]}
-                      selectable
-                    >
-                      {row.value}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-
-            {/* Close */}
-            <TouchableOpacity
-              style={[detailStyles.closeButton, { borderColor: colors.border }]}
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
-              <Text style={[detailStyles.closeText, { color: colors.text }]}>
-                Close
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-// ── Main Component ──
+const CHECK_IN_STATUSES = [
+  EventUserStatus.VERIFIED,
+  EventUserStatus.CHECKED_IN,
+  EventUserStatus.CONFIRMED,
+  EventUserStatus.REJECTED,
+  EventUserStatus.CANCELLED,
+];
 
 function CheckInsContent() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors, isDark } = useAppTheme();
   const eventId = id ? Number(id) : null;
@@ -393,24 +63,161 @@ function CheckInsContent() {
   } = useTerminalPayment();
   const connectAttemptedRef = React.useRef(false);
 
-  const [contacts, setContacts] = React.useState<ListContact[]>([]);
-  const [loading, setLoading] = React.useState(true);
   const [collectingGuestId, setCollectingGuestId] = React.useState<
     number | null
   >(null);
-  const [event, setEvent] = React.useState<Event | null>(null);
   const [paymentFailedAlert, setPaymentFailedAlert] = React.useState<
     string | null
   >(null);
   const [selectedContact, setSelectedContact] =
-    React.useState<ListContact | null>(null);
+    React.useState<CheckInContact | null>(null);
   const [activeTab, setActiveTab] = React.useState<"approved" | "denied">(
     "approved",
   );
 
+  // Local paid tracking — survives React Query refetches for free events
+  const locallyPaidRef = React.useRef<Set<number>>(new Set());
+
   const scrollPosition = useSharedValue(0);
   const screenWidth = Dimensions.get("window").width;
   const tabWidth = screenWidth / 2;
+
+  // ── Data fetching via React Query ──
+
+  const { data: event } = useEvent(eventId ?? undefined);
+
+  const {
+    attendees: rawAttendees,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useEventAttendees({
+    eventId: eventId ?? undefined,
+    status: CHECK_IN_STATUSES,
+  });
+
+  // Refetch when screen focuses
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch();
+    }, [refetch]),
+  );
+
+  // Polling every 30s as fallback
+  React.useEffect(() => {
+    const interval = setInterval(() => refetch(), 30000);
+    return () => clearInterval(interval);
+  }, [refetch]);
+
+  // Map raw attendees to UI model, preserving local paid state
+  const contacts = React.useMemo(() => {
+    const mapped = rawAttendees.map((a) => {
+      const contact = mapAttendee(a);
+      if (locallyPaidRef.current.has(contact.id)) {
+        contact.paid = true;
+      }
+      return contact;
+    });
+    mapped.sort(
+      (a, b) =>
+        new Date(b.lastSeenAt || 0).getTime() -
+        new Date(a.lastSeenAt || 0).getTime(),
+    );
+    return mapped;
+  }, [rawAttendees]);
+
+  // ── WebSocket — optimistic cache updates ──
+
+  const attendeeQueryKey = ["eventAttendees", eventId, undefined, CHECK_IN_STATUSES];
+
+  useEventSocket({
+    eventId,
+    onGuestCheckedIn: React.useCallback(
+      (data: { guestId: number; userId?: number; firstName: string; lastName: string; userName?: string; avatarUrl?: string; status: string; isGuest?: boolean; checkedInAt?: string }) => {
+        // Optimistically add/update guest in React Query cache
+        queryClient.setQueriesData<{ pages: EventAttendeesResponse[]; pageParams: number[] }>(
+          { queryKey: attendeeQueryKey },
+          (old) => {
+            if (!old) return old;
+            const newAttendee = {
+              id: data.guestId,
+              userId: data.userId,
+              firstName: data.firstName,
+              lastName: data.lastName,
+              userName: data.userName,
+              avatarUrl: data.avatarUrl,
+              status: data.status as EventUserStatus,
+              isGuest: data.isGuest ?? !data.userId,
+              checkedInAt: data.checkedInAt || new Date().toISOString(),
+              checkedIn: true,
+            };
+            // Check if guest already exists in any page
+            const exists = old.pages.some((page) =>
+              page.attendees.some((a) => a.id === data.guestId),
+            );
+            if (exists) {
+              return {
+                ...old,
+                pages: old.pages.map((page) => ({
+                  ...page,
+                  attendees: page.attendees.map((a) =>
+                    a.id === data.guestId ? { ...a, ...newAttendee } : a,
+                  ),
+                })),
+              };
+            }
+            // Add to first page
+            return {
+              ...old,
+              pages: old.pages.map((page, i) =>
+                i === 0
+                  ? {
+                      ...page,
+                      attendees: [newAttendee, ...page.attendees],
+                      total: page.total + 1,
+                    }
+                  : page,
+              ),
+            };
+          },
+        );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      },
+      [queryClient, attendeeQueryKey],
+    ),
+    onPaymentReceived: React.useCallback(
+      (data: { userId?: number | null; guestId?: number | null }) => {
+        // Mark guest as paid in local ref + trigger re-render via cache update
+        queryClient.setQueriesData<{ pages: EventAttendeesResponse[]; pageParams: number[] }>(
+          { queryKey: attendeeQueryKey },
+          (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page) => ({
+                ...page,
+                attendees: page.attendees.map((a) => {
+                  if (
+                    (data.guestId && a.id === data.guestId) ||
+                    (data.userId && a.userId && a.userId === data.userId)
+                  ) {
+                    locallyPaidRef.current.add(a.id);
+                  }
+                  return a;
+                }),
+              })),
+            };
+          },
+        );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      },
+      [queryClient, attendeeQueryKey],
+    ),
+  });
+
+  // ── Tab animation ──
 
   const handleTabPress = React.useCallback(
     (tab: "approved" | "denied") => {
@@ -439,122 +246,8 @@ function CheckInsContent() {
     opacity: interpolate(scrollPosition.value, [0, 1], [0.5, 1]),
   }));
 
-  // Fetch event data (for doorCoverPriceCents)
-  React.useEffect(() => {
-    if (!eventId) return;
-    eventsApi
-      .getEvent(eventId)
-      .then(setEvent)
-      .catch(() => {});
-  }, [eventId]);
+  // ── Terminal auto-connect ──
 
-  // Fetch this event's attendees
-  const fetchContacts = React.useCallback(async () => {
-    if (!eventId) return;
-    try {
-      const response = await eventsApi.getEventAttendees(eventId, {
-        limit: 5000,
-        status: [
-          EventUserStatus.VERIFIED,
-          EventUserStatus.CHECKED_IN,
-          EventUserStatus.CONFIRMED,
-          EventUserStatus.REJECTED,
-          EventUserStatus.CANCELLED,
-        ],
-      });
-      const mapped = response.attendees.map(mapAttendee);
-      mapped.sort(
-        (a, b) =>
-          new Date(b.lastSeenAt || 0).getTime() -
-          new Date(a.lastSeenAt || 0).getTime(),
-      );
-      setContacts(mapped);
-    } catch (err) {
-      console.error("Fetch error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [eventId]);
-
-  // Refetch every time the screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchContacts();
-    }, [fetchContacts]),
-  );
-
-  // Polling fallback every 30s
-  React.useEffect(() => {
-    const interval = setInterval(fetchContacts, 30000);
-    return () => clearInterval(interval);
-  }, [fetchContacts]);
-
-  // WebSocket live updates — push new check-ins directly into list
-  useEventSocket({
-    eventId,
-    onGuestCheckedIn: React.useCallback(
-      (data: {
-        guestId: number;
-        userId?: number;
-        firstName: string;
-        lastName: string;
-        userName?: string;
-        avatarUrl?: string;
-        status: string;
-        isGuest?: boolean;
-        checkedInAt?: string;
-      }) => {
-        const name =
-          [data.firstName, data.lastName].filter(Boolean).join(" ") ||
-          "Unknown";
-        const newEntry: ListContact = {
-          id: data.guestId,
-          name,
-          userName: data.userName,
-          avatarUrl: data.avatarUrl,
-          isGuest: data.isGuest ?? !data.userId,
-          source: "check_in",
-          eventCount: 1,
-          lastSeenAt: data.checkedInAt || new Date().toISOString(),
-          paid: false,
-          userId: data.userId,
-          checkInStatus:
-            data.status === "rejected" || data.status === "cancelled"
-              ? "denied"
-              : "approved",
-        };
-        setContacts((prev) => {
-          // Replace if already exists (e.g. membership scan updates a guest entry)
-          const exists = prev.some((g) => g.id === data.guestId);
-          if (exists) {
-            return prev.map((g) =>
-              g.id === data.guestId ? { ...g, ...newEntry } : g,
-            );
-          }
-          return [newEntry, ...prev];
-        });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      },
-      [],
-    ),
-    onPaymentReceived: React.useCallback(
-      (data: { userId?: number | null; guestId?: number | null }) => {
-        setContacts((prev) =>
-          prev.map((g) => {
-            if (data.guestId && g.id === data.guestId)
-              return { ...g, paid: true };
-            if (data.userId && g.userId && g.userId === data.userId)
-              return { ...g, paid: true };
-            return g;
-          }),
-        );
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      },
-      [],
-    ),
-  });
-
-  // Auto-connect Terminal reader
   React.useEffect(() => {
     if (isInitialized && !isReaderConnected && !connectAttemptedRef.current) {
       connectAttemptedRef.current = true;
@@ -562,18 +255,19 @@ function CheckInsContent() {
     }
   }, [isInitialized, isReaderConnected, connectReader]);
 
-  // Auto-charge door cover price
+  // ── Charge handler ──
+
   const handleCharge = React.useCallback(
-    async (guest: ListContact) => {
+    async (guest: CheckInContact) => {
       if (!eventId) return;
 
       const doorCoverCents = event?.doorCoverPriceCents;
 
-      // Free event or no door cover — mark as paid instantly
+      // Free event — mark paid locally
       if (!doorCoverCents || doorCoverCents <= 0) {
-        setContacts((prev) =>
-          prev.map((g) => (g.id === guest.id ? { ...g, paid: true } : g)),
-        );
+        locallyPaidRef.current.add(guest.id);
+        // Force re-render by invalidating cache
+        queryClient.invalidateQueries({ queryKey: attendeeQueryKey });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         return;
       }
@@ -581,25 +275,20 @@ function CheckInsContent() {
       setCollectingGuestId(guest.id);
 
       try {
-        // Connect reader if not connected
         if (!isReaderConnected) {
           await connectReader(eventId ?? undefined);
         }
 
-        // Create payment intent with door cover price
         const result = await paymentsApi.collectAtDoor(eventId, {
           guestId: guest.id,
           customAmountCents: doorCoverCents,
           useTerminal: true,
         });
 
-        // Collect payment via NFC tap-to-pay
         await collectPayment(result.clientSecret);
 
-        // Success
-        setContacts((prev) =>
-          prev.map((g) => (g.id === guest.id ? { ...g, paid: true } : g)),
-        );
+        locallyPaidRef.current.add(guest.id);
+        queryClient.invalidateQueries({ queryKey: attendeeQueryKey });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch (err: any) {
         if (err?.message?.includes("canceled")) {
@@ -612,8 +301,10 @@ function CheckInsContent() {
         setCollectingGuestId(null);
       }
     },
-    [eventId, event, isReaderConnected, connectReader, collectPayment],
+    [eventId, event, isReaderConnected, connectReader, collectPayment, queryClient, attendeeQueryKey],
   );
+
+  // ── Derived data ──
 
   const doorCoverDisplay = event?.doorCoverPriceCents
     ? `$${(event.doorCoverPriceCents / 100).toFixed(2)}`
@@ -630,176 +321,37 @@ function CheckInsContent() {
   const displayedContacts =
     activeTab === "approved" ? approvedContacts : deniedContacts;
 
+  // ── Render ──
+
+  const handleContactPress = React.useCallback(
+    (item: CheckInContact) => setSelectedContact(item),
+    [],
+  );
+
   const renderContact = React.useCallback(
-    ({ item }: { item: ListContact }) => {
-      const isCollecting = collectingGuestId === item.id;
-      const label = sourceLabel(item.source, item.isGuest);
-
-      return (
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setSelectedContact(item)}
-        >
-          <Animated.View
-            entering={FadeInDown.duration(300)}
-            exiting={FadeOut.duration(200)}
-            layout={Layout.springify()}
-            style={[
-              styles.guestRow,
-              {
-                backgroundColor: colors.cardElevated,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            {/* Avatar */}
-            {item.avatarUrl ? (
-              <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
-            ) : (
-              <View
-                style={[
-                  styles.avatarPlaceholder,
-                  { backgroundColor: colors.backgroundSecondary },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.avatarInitials,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  {item.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()
-                    .slice(0, 2)}
-                </Text>
-              </View>
-            )}
-
-            {/* Info */}
-            <View style={styles.guestInfo}>
-              <Text
-                style={[styles.guestName, { color: colors.text }]}
-                numberOfLines={1}
-              >
-                {item.userName ? `@${item.userName}` : item.name}
-              </Text>
-              <View style={styles.guestMeta}>
-                {item.userName && (
-                  <Text
-                    style={[
-                      styles.guestMetaText,
-                      { color: colors.textTertiary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {item.name}
-                  </Text>
-                )}
-                {!!label && (
-                  <Text
-                    style={[
-                      styles.guestMetaText,
-                      { color: item.isGuest ? "#fbbf24" : "#34d399" },
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                )}
-                {item.eventCount > 1 && (
-                  <Text
-                    style={[
-                      styles.guestMetaText,
-                      { color: colors.textTertiary },
-                    ]}
-                  >
-                    {item.eventCount} events
-                  </Text>
-                )}
-              </View>
-              {item.tags && item.tags.length > 0 && (
-                <View style={styles.tagsRow}>
-                  {item.tags.map((tag) => {
-                    const tc: Record<string, string> = {
-                      vip: "#f59e0b",
-                      line_skip: "#22c55e",
-                      backstage: "#a855f7",
-                      comp: "#3b82f6",
-                      plus_one: "#ec4899",
-                    };
-                    return (
-                      <View
-                        key={tag}
-                        style={[
-                          styles.tagBadge,
-                          { backgroundColor: `${tc[tag] || "#6b7280"}20` },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.tagBadgeText,
-                            { color: tc[tag] || "#6b7280" },
-                          ]}
-                        >
-                          {tag.replace("_", " ").toUpperCase()}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-
-            {/* Charge / Paid */}
-            {item.paid ? (
-              <View style={styles.paidBadge}>
-                <Ionicons name="checkmark-circle" size={14} color="#10b981" />
-                <Text style={styles.paidBadgeText}>Paid</Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[
-                  styles.chargeButton,
-                  {
-                    backgroundColor: colors.cardElevated,
-                    borderColor: colors.border,
-                  },
-                ]}
-                onPress={() => handleCharge(item)}
-                activeOpacity={0.8}
-                disabled={isCollecting || collectingGuestId !== null}
-              >
-                {isCollecting ? (
-                  <ActivityIndicator size="small" color={colors.text} />
-                ) : (
-                  <>
-                    <Ionicons
-                      name="phone-portrait-outline"
-                      size={14}
-                      color={colors.text}
-                    />
-                    <Text
-                      style={[styles.chargeButtonText, { color: colors.text }]}
-                    >
-                      Charge {doorCoverDisplay}
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
-          </Animated.View>
-        </TouchableOpacity>
-      );
-    },
-    [collectingGuestId, handleCharge, doorCoverDisplay, colors],
+    ({ item }: { item: CheckInContact }) => (
+      <ContactRow
+        item={item}
+        isCollecting={collectingGuestId === item.id}
+        isAnyCollecting={collectingGuestId !== null}
+        doorCoverDisplay={doorCoverDisplay}
+        onPress={handleContactPress}
+        onCharge={handleCharge}
+      />
+    ),
+    [collectingGuestId, handleCharge, doorCoverDisplay, handleContactPress],
   );
 
   const keyExtractor = React.useCallback(
-    (item: ListContact) => String(item.id),
+    (item: CheckInContact) => String(item.id),
     [],
   );
+
+  const handleEndReached = React.useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (!eventId) {
     return (
@@ -871,7 +423,7 @@ function CheckInsContent() {
         </View>
         <TouchableOpacity
           style={styles.backButton}
-          onPress={fetchContacts}
+          onPress={() => refetch()}
           activeOpacity={0.7}
         >
           <Ionicons name="refresh" size={20} color={colors.text} />
@@ -946,7 +498,7 @@ function CheckInsContent() {
       </View>
 
       {/* Content */}
-      {loading ? (
+      {isLoading ? (
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={colors.text} />
           <Text style={[styles.loadingText, { color: colors.textTertiary }]}>
@@ -986,6 +538,17 @@ function CheckInsContent() {
             { paddingBottom: insets.bottom + 20 },
           ]}
           showsVerticalScrollIndicator={false}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.3}
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.textTertiary}
+                style={styles.loadingFooter}
+              />
+            ) : null
+          }
         />
       )}
     </View>
@@ -1071,89 +634,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
-  guestRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  avatar: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-  },
-  avatarPlaceholder: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarInitials: {
-    fontSize: 15,
-    fontFamily: "Lato_700Bold",
-  },
-  guestInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  guestName: {
-    fontSize: 15,
-    fontFamily: "Lato_700Bold",
-  },
-  guestMeta: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 3,
-  },
-  guestMetaText: {
-    fontSize: 12,
-    fontFamily: "Lato_400Regular",
-  },
-  tagsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-    marginTop: 3,
-  },
-  tagBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-  },
-  tagBadgeText: {
-    fontSize: 9,
-    fontFamily: "Lato_700Bold",
-  },
-  chargeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  chargeButtonText: {
-    fontSize: 13,
-    fontFamily: "Lato_700Bold",
-  },
-  paidBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: "rgba(16,185,129,0.15)",
-  },
-  paidBadgeText: {
-    fontSize: 13,
-    fontFamily: "Lato_700Bold",
-    color: "#10b981",
+  loadingFooter: {
+    paddingVertical: 16,
   },
   tabBar: {
     flexDirection: "row",
@@ -1186,131 +668,5 @@ const styles = StyleSheet.create({
   tabBadgeText: {
     fontSize: 12,
     fontFamily: "Lato_700Bold",
-  },
-});
-
-const detailStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  sheet: {
-    paddingHorizontal: 20,
-  },
-  card: {
-    borderRadius: 24,
-    borderWidth: 1,
-    paddingTop: 12,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    maxHeight: "80%",
-  },
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    alignSelf: "center",
-    marginBottom: 20,
-    opacity: 0.4,
-  },
-  profileHeader: {
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  profileAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    marginBottom: 12,
-  },
-  profileAvatarPlaceholder: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  profileInitials: {
-    fontSize: 26,
-    fontFamily: "Lato_700Bold",
-  },
-  profileName: {
-    fontSize: 20,
-    fontFamily: "Lato_700Bold",
-  },
-  profileSubname: {
-    fontSize: 14,
-    fontFamily: "Lato_400Regular",
-    marginTop: 2,
-  },
-  badgeRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 10,
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontFamily: "Lato_700Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  infoList: {
-    marginBottom: 16,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-  },
-  infoIcon: {
-    width: 28,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 11,
-    fontFamily: "Lato_400Regular",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 2,
-  },
-  infoValue: {
-    fontSize: 15,
-    fontFamily: "Lato_400Regular",
-  },
-  closeButton: {
-    alignItems: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
-  },
-  closeText: {
-    fontSize: 15,
-    fontFamily: "Lato_700Bold",
-  },
-  tagsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 8,
-  },
-  tagChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  tagChipText: {
-    fontSize: 11,
-    fontFamily: "Lato_700Bold",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
   },
 });

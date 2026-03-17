@@ -24,52 +24,57 @@ const locationDetailsSchema = z.object({
   coordinates: z.object({ lat: z.number(), lng: z.number() }).optional(),
 }).optional();
 
-// Base event form schema with all validations
-// Keep values as strings for form inputs, convert in submit handler
-export const eventFormSchema = z
-  .object({
-    // Basic Info (Step 1)
-    name: z
-      .string()
-      .min(1, 'Event name is required')
-      .max(100, 'Event name must not exceed 100 characters'),
-    description: z
-      .string()
-      .max(2000, 'Description must not exceed 2000 characters')
-      .optional()
-      .or(z.literal('')),
-    flyerUri: z.string().min(1, 'A flyer image or video is required'),
-    flyerMediaType: z.enum(['image', 'video']),
+// Base event form fields — shared between create and edit schemas
+const eventFormFields = {
+  // Basic Info (Step 1)
+  name: z
+    .string()
+    .min(1, 'Event name is required')
+    .max(100, 'Event name must not exceed 100 characters'),
+  description: z
+    .string()
+    .max(2000, 'Description must not exceed 2000 characters')
+    .optional()
+    .or(z.literal('')),
+  flyerUri: z.string().min(1, 'A flyer image or video is required').nullable(),
+  flyerMediaType: z.enum(['image', 'video']).nullable(),
 
-    // Date & Time (Step 2)
-    startDate: z.date(),
-    endDate: z.date(),
+  // Date & Time (Step 2)
+  startDate: z.date(),
+  endDate: z.date(),
 
-    // Location (Step 3)
-    venueId: z.number().optional(),
-    location: z
-      .string()
-      .min(1, 'Location is required')
-      .max(500, 'Location must not exceed 500 characters'),
-    locationDetails: locationDetailsSchema,
+  // Location (Step 3)
+  venueId: z.number().optional(),
+  location: z
+    .string()
+    .min(1, 'Location is required')
+    .max(500, 'Location must not exceed 500 characters'),
+  locationDetails: locationDetailsSchema,
 
-    // Details (Step 4) - keep as strings for form state
-    maxCapacity: z.string().optional().or(z.literal('')),
-    minimumAge: z.string().optional().or(z.literal('')),
-    dressCode: z.string().optional(),
-    isPublic: z.boolean(),
-    isPaid: z.boolean(),
+  // Details (Step 4) - keep as strings for form state
+  maxCapacity: z.string().optional().or(z.literal('')),
+  minimumAge: z.string().optional().or(z.literal('')),
+  dressCode: z.string().optional(),
+  isPublic: z.boolean(),
+  isPaid: z.boolean(),
 
-    // Pricing (Step 5 - only when isPaid is true)
-    tiers: z.array(tierFormSchema).optional(),
+  // Pricing (Step 5 - only when isPaid is true)
+  tiers: z.array(tierFormSchema).optional(),
 
-    // Door cover price (dollars as string for form input)
-    doorCoverPrice: z.string().optional().or(z.literal('')),
-  })
-  .refine((data) => data.endDate > data.startDate, {
-    message: 'End date must be after start date',
-    path: ['endDate'],
-  });
+  // Door cover price (dollars as string for form input)
+  doorCoverPrice: z.string().optional().or(z.literal('')),
+};
+
+const dateRefinement = {
+  refine: (data: { startDate: Date; endDate: Date }) => data.endDate > data.startDate,
+  message: 'End date must be after start date',
+  path: ['endDate'] as string[],
+};
+
+// Create event schema — flyerUri required
+export const eventFormSchema = z.object(eventFormFields).refine(
+  dateRefinement.refine, { message: dateRefinement.message, path: dateRefinement.path },
+);
 
 // Per-step validation schemas for multi-step form
 export const basicInfoSchema = z.object({
@@ -116,6 +121,7 @@ export const detailsSchema = z.object({
 export const pricingSchema = z.object({
   tiers: z.array(tierFormSchema).optional(),
 });
+
 
 // Type export - form values (all as input types)
 export type EventFormData = z.infer<typeof eventFormSchema>;
