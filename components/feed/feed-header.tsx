@@ -114,6 +114,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   iconGlassBg: {
     ...StyleSheet.absoluteFillObject,

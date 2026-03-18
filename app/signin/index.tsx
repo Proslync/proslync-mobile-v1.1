@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { activeGradient } from '@/constants/glass/liquid-glass';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -49,7 +50,7 @@ export default function SignInScreen() {
   };
 
   const gradientColors = isDark
-    ? ['#0a0a0f', '#0d1117', '#111827', '#0a0a0f'] as const
+    ? activeGradient.colors
     : ['#f0f4ff', '#e8edf5', '#f5f0ff', '#f0f4ff'] as const;
 
   return (

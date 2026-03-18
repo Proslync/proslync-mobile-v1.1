@@ -63,7 +63,7 @@ export function FeedItem({
   onEventPress,
   onBlock,
 }: FeedItemProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
   const currentUserId = authUser ? String(authUser.id) : null;
@@ -86,17 +86,21 @@ export function FeedItem({
   const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
 
   // For the card media — use first non-empty URL
-  const flyerImage = (item.imageUrl && item.imageUrl.length > 0 ? item.imageUrl : null)
-    || (item.thumbnail && item.thumbnail.length > 0 ? item.thumbnail : null);
+  const flyerImage =
+    (item.imageUrl && item.imageUrl.length > 0 ? item.imageUrl : null) ||
+    (item.thumbnail && item.thumbnail.length > 0 ? item.thumbnail : null);
   // For the blurred background — try every possible image source
-  const bgImage = (item.thumbnail && item.thumbnail.length > 0 ? item.thumbnail : null)
-    || (item.imageUrl && item.imageUrl.length > 0 ? item.imageUrl : null)
-    || (item.userAvatar && item.userAvatar.length > 0 ? item.userAvatar : null);
+  const bgImage =
+    (item.thumbnail && item.thumbnail.length > 0 ? item.thumbnail : null) ||
+    (item.imageUrl && item.imageUrl.length > 0 ? item.imageUrl : null) ||
+    (item.userAvatar && item.userAvatar.length > 0 ? item.userAvatar : null);
 
-  const isDone = !item.isPaid && (isPurchased || isRsvp || item.isUserRegistered);
-  let rsvpLabel = 'RSVP';
+  const isDone =
+    !item.isPaid && (isPurchased || isRsvp || item.isUserRegistered);
+  let rsvpLabel = "RSVP";
   if (item.isPaid) {
-    rsvpLabel = item.price != null ? `From $${item.price.toFixed(2)}` : 'Tickets';
+    rsvpLabel =
+      item.price != null ? `From $${item.price.toFixed(2)}` : "Tickets";
   } else if (isDone) {
     rsvpLabel = "RSVP'd";
   }
@@ -211,7 +215,10 @@ export function FeedItem({
     <View
       style={[
         styles.container,
-        { height: itemHeight, paddingBottom: 50 + insets.bottom },
+        {
+          height: itemHeight,
+          paddingBottom: 66 + insets.bottom,
+        },
       ]}
     >
       {/* Background glow — blurred image/video behind card */}
@@ -237,11 +244,11 @@ export function FeedItem({
         />
         <LinearGradient
           colors={[
-            'transparent',
-            'rgba(0,0,0,0.08)',
-            'rgba(0,0,0,0.3)',
-            'rgba(0,0,0,0.65)',
-            '#000',
+            "transparent",
+            "rgba(0,0,0,0.08)",
+            "rgba(0,0,0,0.3)",
+            "rgba(0,0,0,0.65)",
+            "#000",
           ]}
           locations={[0, 0.3, 0.55, 0.8, 1]}
           style={styles.bgGradient}
@@ -347,7 +354,9 @@ export function FeedItem({
             {item.eventTitle || item.description || "Untitled Event"}
           </Text>
           {item.eventDate && (
-            <Text style={[styles.eventDate, { color: "rgba(255,255,255,0.7)" }]}>
+            <Text
+              style={[styles.eventDate, { color: "rgba(255,255,255,0.7)" }]}
+            >
               {formatEventDate(item.eventDate)}
             </Text>
           )}
@@ -414,6 +423,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     transform: [{ scale: 1.3 }],
   },
+  bgGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
   card: {
     width: SCREEN_WIDTH,
     borderRadius: 0,
@@ -424,7 +436,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 16,
     elevation: 10,
-    minHeight: SCREEN_HEIGHT * 0.77,
+    minHeight: SCREEN_HEIGHT * 0.73,
   },
   cardHeader: {
     flexDirection: "row",
@@ -445,8 +457,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
   organizerNameRow: {
     flexDirection: "row",

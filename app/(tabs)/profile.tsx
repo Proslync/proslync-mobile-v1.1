@@ -1,57 +1,62 @@
-import * as React from 'react';
-import { useStableRouter } from '@/hooks/use-stable-router';
+import { FollowersSheet } from "@/components/feed/followers-sheet";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { LinkifiedText } from "@/components/shared/linkified-text";
+import { SwipeableTabView } from "@/components/shared/swipeable-tab-view";
+import { useToast } from "@/components/shared/toast";
+import { VideoThumbnailImage } from "@/components/shared/video-thumbnail";
+import { liquidGlass, activeGradient } from "@/constants/glass/liquid-glass";
+import { useUserFeed } from "@/hooks";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { useUnreadNotificationCount } from "@/hooks/use-notifications";
+import { useRefreshControl } from "@/hooks/use-refresh-control";
+import { useStableRouter } from "@/hooks/use-stable-router";
+import { useUserFollowers, useUserFollowing } from "@/hooks/use-user-follows";
+import { useMyVenues } from "@/hooks/use-venues-query";
+import { useAuth } from "@/lib/providers/auth-provider";
+import { useTabNavigation } from "@/lib/providers/tab-navigation-provider";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { GlassView } from "expo-glass-effect";
+import { LinearGradient } from "expo-linear-gradient";
+import * as SecureStore from "expo-secure-store";
+import * as React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
+  Dimensions,
+  Image,
   Modal,
+  ScrollView,
   Share,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import {
+  Gesture,
+  GestureDetector,
+  TouchableOpacity as GHTouchableOpacity,
+} from "react-native-gesture-handler";
 import Animated, {
   FadeIn,
   FadeInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
   runOnJS,
-} from 'react-native-reanimated';
-import { Gesture, GestureDetector, TouchableOpacity as GHTouchableOpacity } from 'react-native-gesture-handler';
-import { GlassView } from 'expo-glass-effect';
-import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
-import { useAuth } from '@/lib/providers/auth-provider';
-import { useUserFeed } from '@/hooks';
-import { useUserFollowers, useUserFollowing } from '@/hooks/use-user-follows';
-import { useMyVenues } from '@/hooks/use-venues-query';
-import { useToast } from '@/components/shared/toast';
-import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
-import { SwipeableTabView } from '@/components/shared/swipeable-tab-view';
-import { LinkifiedText } from '@/components/shared/linkified-text';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { FollowersSheet } from '@/components/feed/followers-sheet';
-import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
-import { useRefreshControl } from '@/hooks/use-refresh-control';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { useUnreadNotificationCount } from '@/hooks/use-notifications';
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // 3 columns with 2px gaps between them (2 gaps × 2px = 4px total)
 const POST_GAP = 2;
 const POST_SIZE = (SCREEN_WIDTH - POST_GAP * 2) / 3;
 
 // Default avatar placeholder
-const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
 // Storage key for saved accounts
-const SAVED_ACCOUNTS_KEY = 'saved_accounts';
+const SAVED_ACCOUNTS_KEY = "saved_accounts";
 
 interface SavedAccount {
   id: number;
@@ -84,7 +89,6 @@ function StatButton({
     </TouchableOpacity>
   );
 }
-
 
 interface VenueItem {
   id: number;
@@ -158,7 +162,11 @@ function AccountSwitcherModal({
       onRequestClose={dismiss}
     >
       <View style={styles.modalOverlay}>
-        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={dismiss} />
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={dismiss}
+        />
 
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.modalSheet, sheetAnimStyle]}>
@@ -176,8 +184,15 @@ function AccountSwitcherModal({
               {/* Header */}
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Switch Account</Text>
-                <GHTouchableOpacity onPress={dismiss} style={styles.modalCloseButton}>
-                  <Ionicons name="close-circle" size={24} color="rgba(255,255,255,0.4)" />
+                <GHTouchableOpacity
+                  onPress={dismiss}
+                  style={styles.modalCloseButton}
+                >
+                  <Ionicons
+                    name="close-circle"
+                    size={24}
+                    color="rgba(255,255,255,0.4)"
+                  />
                 </GHTouchableOpacity>
               </View>
 
@@ -186,38 +201,52 @@ function AccountSwitcherModal({
                 {savedAccounts.map((account, index) => {
                   const isCurrentAccount = account.id === currentUserId;
                   const displayName = account.firstName
-                    ? `${account.firstName}${account.lastName ? ' ' + account.lastName : ''}`
-                    : account.userName || 'User';
+                    ? `${account.firstName}${account.lastName ? " " + account.lastName : ""}`
+                    : account.userName || "User";
 
                   return (
                     <GHTouchableOpacity
                       key={account.id}
                       style={[
                         styles.accountItem,
-                        index < savedAccounts.length - 1 && styles.accountItemBorder,
+                        index < savedAccounts.length - 1 &&
+                          styles.accountItemBorder,
                       ]}
-                      onPress={() => !isCurrentAccount && onSelectAccount(account)}
+                      onPress={() =>
+                        !isCurrentAccount && onSelectAccount(account)
+                      }
                       activeOpacity={isCurrentAccount ? 1 : 0.7}
                     >
                       <Image
-                        source={account.avatarUrl ? { uri: account.avatarUrl } : DefaultAvatarImage}
-                        style={[styles.accountAvatar, isCurrentAccount && styles.accountAvatarActive]}
+                        source={
+                          account.avatarUrl
+                            ? { uri: account.avatarUrl }
+                            : DefaultAvatarImage
+                        }
+                        style={[
+                          styles.accountAvatar,
+                          isCurrentAccount && styles.accountAvatarActive,
+                        ]}
                       />
                       <View style={styles.accountInfo}>
                         <Text style={styles.accountUsername}>
-                          {account.userName || 'username'}
+                          {account.userName || "username"}
                         </Text>
                         <Text style={styles.accountName}>{displayName}</Text>
                       </View>
                       {isCurrentAccount && unreadCount > 0 && (
                         <View style={styles.unreadBadge}>
                           <Text style={styles.unreadBadgeText}>
-                            {unreadCount > 99 ? '99+' : unreadCount}
+                            {unreadCount > 99 ? "99+" : unreadCount}
                           </Text>
                         </View>
                       )}
                       {isCurrentAccount && (
-                        <Ionicons name="checkmark-circle" size={22} color="#fff" />
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={22}
+                          color="#fff"
+                        />
                       )}
                     </GHTouchableOpacity>
                   );
@@ -227,7 +256,11 @@ function AccountSwitcherModal({
                 {venues.length > 0 && (
                   <>
                     <View style={styles.venuesSectionHeader}>
-                      <Ionicons name="business-outline" size={14} color="rgba(255,255,255,0.4)" />
+                      <Ionicons
+                        name="business-outline"
+                        size={14}
+                        color="rgba(255,255,255,0.4)"
+                      />
                       <Text style={styles.venuesSectionTitle}>Your Venues</Text>
                     </View>
                     {venues.map((venue, vIndex) => (
@@ -235,20 +268,31 @@ function AccountSwitcherModal({
                         key={`venue-${venue.id}`}
                         style={[
                           styles.accountItem,
-                          vIndex < venues.length - 1 && styles.accountItemBorder,
+                          vIndex < venues.length - 1 &&
+                            styles.accountItemBorder,
                         ]}
                         onPress={() => onSelectVenue(venue)}
                         activeOpacity={0.7}
                       >
                         <Image
-                          source={venue.imageUrl ? { uri: venue.imageUrl } : DefaultAvatarImage}
+                          source={
+                            venue.imageUrl
+                              ? { uri: venue.imageUrl }
+                              : DefaultAvatarImage
+                          }
                           style={styles.accountAvatar}
                         />
                         <View style={styles.accountInfo}>
-                          <Text style={styles.accountUsername}>{venue.name}</Text>
+                          <Text style={styles.accountUsername}>
+                            {venue.name}
+                          </Text>
                           <Text style={styles.accountName}>Venue</Text>
                         </View>
-                        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
+                        <Ionicons
+                          name="chevron-forward"
+                          size={18}
+                          color="rgba(255,255,255,0.3)"
+                        />
                       </GHTouchableOpacity>
                     ))}
                   </>
@@ -256,12 +300,19 @@ function AccountSwitcherModal({
 
                 {/* Add Account Button */}
                 <GHTouchableOpacity
-                  style={[styles.addAccountButton, { paddingBottom: insets.bottom + 14 }]}
+                  style={[
+                    styles.addAccountButton,
+                    { paddingBottom: insets.bottom + 14 },
+                  ]}
                   onPress={onAddAccount}
                   activeOpacity={0.7}
                 >
                   <View style={styles.addAccountIcon}>
-                    <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={styles.glassCircleBg} />
+                    <GlassView
+                      {...liquidGlass.fillFaint}
+                      borderRadius={22}
+                      style={styles.glassCircleBg}
+                    />
                     <Ionicons name="add" size={22} color="#fff" />
                   </View>
                   <Text style={styles.addAccountText}>Add Account</Text>
@@ -280,17 +331,25 @@ export default function ProfileScreen() {
   const router = useStableRouter();
   const { user, isLoading, logout, switchAccount } = useAuth();
   const { showSuccess, showError } = useToast();
-  const { isAccountSwitcherOpen, closeAccountSwitcher, openAccountSwitcher } = useTabNavigation();
+  const { isAccountSwitcherOpen, closeAccountSwitcher, openAccountSwitcher } =
+    useTabNavigation();
   const { colors, isDark } = useAppTheme();
   const { data: myVenues = [] } = useMyVenues();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
-  const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
-  const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
+  const [followersSheetVisible, setFollowersSheetVisible] =
+    React.useState(false);
+  const [followersSheetTab, setFollowersSheetTab] = React.useState<
+    "followers" | "following"
+  >("followers");
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
   const lastTapRef = React.useRef<number>(0);
 
   // Fetch posts/activities - uses React Query for proper cache invalidation
-  const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserFeed(user?.id);
+  const {
+    activities: userPosts,
+    isLoading: postsLoading,
+    refetch: refetchPosts,
+  } = useUserFeed(user?.id);
 
   // Fetch followers/following from backend API
   // Fetches on mount to get counts, data is cached for modal
@@ -311,17 +370,21 @@ export default function ProfileScreen() {
   // Pull-to-refresh
   const { refreshControl } = useRefreshControl({
     onRefresh: async () => {
-      await Promise.all([refetchPosts(), refetchFollowers(), refetchFollowing()]);
+      await Promise.all([
+        refetchPosts(),
+        refetchFollowers(),
+        refetchFollowing(),
+      ]);
     },
-    tintColor: '#1a1a1a',
+    tintColor: "#1a1a1a",
   });
 
   // Derive display values from user data
   const displayName = user?.firstName
-    ? `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`
-    : 'User';
-  const username = user?.userName || 'username';
-  const bio = user?.bio || '';
+    ? `${user.firstName}${user.lastName ? " " + user.lastName : ""}`
+    : "User";
+  const username = user?.userName || "username";
+  const bio = user?.bio || "";
   const avatarUrl = user?.avatar?.url;
 
   // Use real counts from activities
@@ -337,7 +400,7 @@ export default function ProfileScreen() {
           setSavedAccounts(accounts);
         }
       } catch (error) {
-        console.error('Error loading saved accounts:', error);
+        console.error("Error loading saved accounts:", error);
       }
     }
     loadSavedAccounts();
@@ -349,8 +412,8 @@ export default function ProfileScreen() {
       if (!user) return;
 
       // Get current tokens from SecureStore (where apiClient stores them)
-      const accessToken = await SecureStore.getItemAsync('accessToken');
-      const refreshToken = await SecureStore.getItemAsync('refreshToken');
+      const accessToken = await SecureStore.getItemAsync("accessToken");
+      const refreshToken = await SecureStore.getItemAsync("refreshToken");
 
       setSavedAccounts((prev) => {
         const exists = prev.some((a) => a.id === user.id);
@@ -367,7 +430,10 @@ export default function ProfileScreen() {
           };
           const updated = [...prev, newAccount];
           // Save to storage
-          AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated)).catch(() => {});
+          AsyncStorage.setItem(
+            SAVED_ACCOUNTS_KEY,
+            JSON.stringify(updated),
+          ).catch(() => {});
           return updated;
         } else {
           // Update existing account info (in case user updated their profile or got new tokens)
@@ -382,11 +448,13 @@ export default function ProfileScreen() {
                   accessToken: accessToken || a.accessToken,
                   refreshToken: refreshToken || a.refreshToken,
                 }
-              : a
+              : a,
           );
           // Save updated info to storage
-          AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated))
-            .catch((err) => console.error('Error updating account:', err));
+          AsyncStorage.setItem(
+            SAVED_ACCOUNTS_KEY,
+            JSON.stringify(updated),
+          ).catch((err) => console.error("Error updating account:", err));
           return updated;
         }
       });
@@ -409,14 +477,18 @@ export default function ProfileScreen() {
   const removeSavedAccount = React.useCallback(async (accountId: number) => {
     setSavedAccounts((prev) => {
       const updated = prev.filter((a) => a.id !== accountId);
-      AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated)).catch(() => {});
+      AsyncStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated)).catch(
+        () => {},
+      );
       return updated;
     });
   }, []);
 
   const handleSelectAccount = async (account: SavedAccount) => {
     if (!account.accessToken) {
-      showError(`Session expired for @${account.userName || 'user'}. Please log in again.`);
+      showError(
+        `Session expired for @${account.userName || "user"}. Please log in again.`,
+      );
       removeSavedAccount(account.id);
       closeAccountSwitcher();
       return;
@@ -425,12 +497,17 @@ export default function ProfileScreen() {
     closeAccountSwitcher();
 
     // Try to switch to the account using saved tokens
-    const success = await switchAccount(account.accessToken, account.refreshToken);
+    const success = await switchAccount(
+      account.accessToken,
+      account.refreshToken,
+    );
 
     if (success) {
-      showSuccess(`Switched to @${account.userName || 'user'}`);
+      showSuccess(`Switched to @${account.userName || "user"}`);
     } else {
-      showError(`Session expired for @${account.userName || 'user'}. Please log in again.`);
+      showError(
+        `Session expired for @${account.userName || "user"}. Please log in again.`,
+      );
       removeSavedAccount(account.id);
     }
   };
@@ -443,40 +520,55 @@ export default function ProfileScreen() {
     logout();
   };
 
-  const handleSelectVenue = React.useCallback(async (venue: VenueItem) => {
-    if (!venue.ownerId) {
-      closeAccountSwitcher();
-      router.push({
-        pathname: '/venue-profile/[venueId]',
-        params: { venueId: String(venue.id) },
-      });
-      return;
-    }
+  const handleSelectVenue = React.useCallback(
+    async (venue: VenueItem) => {
+      if (!venue.ownerId) {
+        closeAccountSwitcher();
+        router.push({
+          pathname: "/venue-profile/[venueId]",
+          params: { venueId: String(venue.id) },
+        });
+        return;
+      }
 
-    // If the current user IS the owner, just go to manage venue
-    if (user && venue.ownerId === user.id) {
-      closeAccountSwitcher();
-      router.push(`/manage-venue/${venue.id}`);
-      return;
-    }
+      // If the current user IS the owner, just go to manage venue
+      if (user && venue.ownerId === user.id) {
+        closeAccountSwitcher();
+        router.push(`/manage-venue/${venue.id}`);
+        return;
+      }
 
-    // Try to switch to the venue owner's account
-    const ownerAccount = savedAccounts.find((a) => a.id === venue.ownerId);
-    if (!ownerAccount || !ownerAccount.accessToken) {
-      showError('Venue owner account not saved on this device.');
-      closeAccountSwitcher();
-      return;
-    }
+      // Try to switch to the venue owner's account
+      const ownerAccount = savedAccounts.find((a) => a.id === venue.ownerId);
+      if (!ownerAccount || !ownerAccount.accessToken) {
+        showError("Venue owner account not saved on this device.");
+        closeAccountSwitcher();
+        return;
+      }
 
-    closeAccountSwitcher();
-    const success = await switchAccount(ownerAccount.accessToken, ownerAccount.refreshToken);
-    if (success) {
-      showSuccess(`Switched to ${venue.name}'s account`);
-    } else {
-      showError('Session expired for venue owner. Please log in again.');
-      removeSavedAccount(ownerAccount.id);
-    }
-  }, [closeAccountSwitcher, router, user, savedAccounts, switchAccount, showSuccess, showError, removeSavedAccount]);
+      closeAccountSwitcher();
+      const success = await switchAccount(
+        ownerAccount.accessToken,
+        ownerAccount.refreshToken,
+      );
+      if (success) {
+        showSuccess(`Switched to ${venue.name}'s account`);
+      } else {
+        showError("Session expired for venue owner. Please log in again.");
+        removeSavedAccount(ownerAccount.id);
+      }
+    },
+    [
+      closeAccountSwitcher,
+      router,
+      user,
+      savedAccounts,
+      switchAccount,
+      showSuccess,
+      showError,
+      removeSavedAccount,
+    ],
+  );
 
   const handleShareProfile = async () => {
     try {
@@ -485,14 +577,20 @@ export default function ProfileScreen() {
         url: `status://user/${username}`,
       });
     } catch (error) {
-      console.log('Share error:', error);
+      console.log("Share error:", error);
     }
   };
 
   if (isLoading) {
     return (
       <SwipeableTabView>
-        <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <View
+          style={[
+            styles.container,
+            styles.loadingContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
           <DarkGradientBg />
           <ActivityIndicator size="large" color={colors.text} />
         </View>
@@ -502,233 +600,355 @@ export default function ProfileScreen() {
 
   return (
     <SwipeableTabView>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + 8 },
-        ]}
-        showsVerticalScrollIndicator={false}
-        refreshControl={refreshControl}
-      >
-        {/* Header - Centered Username */}
-        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-          <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
-            <Ionicons name="add" size={24} color={colors.text} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.usernameButton}
-            onPress={openAccountSwitcher}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.headerUsername, { color: colors.text }]}>{username}</Text>
-            {user?.isVerified && (
-              <MaterialCommunityIcons name="check-decagram" size={20} color="#3897F0" />
-            )}
-            <Ionicons name="chevron-down" size={20} color={colors.text} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.headerIcon}
-            activeOpacity={0.7}
-            onPress={() => router.push('/settings')}
-          >
-            <Ionicons name="settings-outline" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Profile Info Row */}
-        <Animated.View
-          entering={FadeInDown.delay(100).duration(500).springify()}
-          style={styles.profileRow}
-        >
-          <TouchableOpacity onPress={handleAvatarDoubleTap} activeOpacity={0.9}>
-            <Image source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage} style={[styles.avatar, { borderColor: colors.border }]} />
-          </TouchableOpacity>
-          <View style={styles.statsRow}>
-            <TouchableOpacity style={styles.statButton} activeOpacity={1}>
-              <Text style={[styles.statValue, { color: colors.text }]}>{postsCount}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Posts</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.statButton}
-              activeOpacity={0.7}
-              onPress={() => { setFollowersSheetTab('followers'); setFollowersSheetVisible(true); }}
-            >
-              <Text style={[styles.statValue, { color: colors.text }]}>{followerCount}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Followers</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.statButton}
-              activeOpacity={0.7}
-              onPress={() => { setFollowersSheetTab('following'); setFollowersSheetVisible(true); }}
-            >
-              <Text style={[styles.statValue, { color: colors.text }]}>{followingCount}</Text>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Following</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
-
-        {/* Name and Bio */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(500).springify()}
-          style={styles.bioSection}
-        >
-          <Text style={[styles.displayName, { color: colors.text }]}>{displayName}</Text>
-          {bio ? <LinkifiedText style={{ ...styles.bio, color: colors.textSecondary }}>{bio}</LinkifiedText> : null}
-        </Animated.View>
-
-        {/* Dashboard Button */}
-        <Animated.View
-          entering={FadeInDown.delay(250).duration(500).springify()}
-          style={styles.dashboardButtonContainer}
-        >
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => router.push('/dashboard')}
-          >
-            <View style={styles.dashboardButton}>
-              <GlassView {...liquidGlass.surface} borderRadius={10} style={styles.glassButtonBg} />
-              <View style={styles.dashboardButtonContent}>
-                <Ionicons name="grid-outline" size={18} color={colors.text} />
-                <Text style={[styles.dashboardButtonText, { color: colors.text }]}>Dashboard</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Action Buttons - Edit Profile and Share Profile */}
-        <Animated.View
-          entering={FadeInDown.delay(300).duration(500).springify()}
-          style={styles.actionButtons}
-        >
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => router.push('/edit-profile')}
-            style={{ flex: 1 }}
-          >
-            <View style={styles.actionButton}>
-              <GlassView {...liquidGlass.surface} borderRadius={10} style={styles.glassButtonBg} />
-              <View style={styles.actionButtonContent}>
-                <Text style={[styles.actionButtonText, { color: colors.text }]}>Edit Profile</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleShareProfile}
-            style={{ flex: 1 }}
-          >
-            <View style={styles.actionButton}>
-              <GlassView {...liquidGlass.surface} borderRadius={10} style={styles.glassButtonBg} />
-              <View style={styles.actionButtonContent}>
-                <Text style={[styles.actionButtonText, { color: colors.text }]}>Share Profile</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Posts Grid Header */}
-        <Animated.View
-          entering={FadeInDown.delay(400).duration(500).springify()}
-          style={[styles.gridHeader, { borderTopColor: colors.border }]}
-        >
-          <View style={[styles.gridTab, styles.gridTabActive, { borderBottomColor: colors.text }]}>
-            <Ionicons name="grid-outline" size={24} color={colors.text} />
-          </View>
-        </Animated.View>
-
-        {/* Posts Grid */}
-        <Animated.View
-          entering={FadeInDown.delay(500).duration(500).springify()}
-          style={styles.postsGrid}
-        >
-          {postsLoading ? (
-            <View style={styles.postsLoadingContainer}>
-              <ActivityIndicator color={colors.text} size="small" />
-            </View>
-          ) : userPosts.length > 0 ? (
-            userPosts.map((post) => (
-              <TouchableOpacity
-                key={post.id}
-                activeOpacity={0.9}
-                style={styles.postContainer}
-                onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
-              >
-                {post.mediaType === 'video' && post.videoUrl ? (
-                  <VideoThumbnailImage
-                    videoUrl={post.videoUrl}
-                    fallbackUri={post.thumbUrl || post.imageUrl}
-                    style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
-                  />
-                ) : (
-                  <Image
-                    source={{ uri: post.imageUrl }}
-                    style={[styles.postImage, { backgroundColor: colors.backgroundSecondary }]}
-                  />
-                )}
-                {post.mediaType === 'video' && (
-                  <View style={styles.videoIndicator}>
-                    <Ionicons name="play" size={32} color="#fff" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.noPostsContainer}>
-              <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
-              <Text style={[styles.noPostsText, { color: colors.textTertiary }]}>No posts yet</Text>
-            </View>
-          )}
-        </Animated.View>
-
-        {/* Logout Button */}
-        <Animated.View
-          entering={FadeInDown.delay(600).duration(500).springify()}
-        >
-          <TouchableOpacity
-            style={styles.logoutButton}
-            activeOpacity={0.8}
-            onPress={logout}
-          >
-            <Ionicons name="log-out-outline" size={20} color="#ff4444" />
-            <Text style={styles.logoutButtonText}>Log Out</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Bottom spacing */}
-        <View style={{ height: insets.bottom + 100 }} />
-      </ScrollView>
-
-      {/* Followers / Following Sheet */}
-      {user?.id && (
-        <FollowersSheet
-          visible={followersSheetVisible}
-          onClose={() => setFollowersSheetVisible(false)}
-          initialTab={followersSheetTab}
-          userId={user.id}
-          followersCount={followerCount}
-          followingCount={followingCount}
-          currentUserId={user.id}
+      <View style={[styles.container, { backgroundColor: "#000" }]}>
+        <LinearGradient
+          colors={[...activeGradient.colors]}
+          locations={[...activeGradient.locations]}
+          start={activeGradient.start}
+          end={activeGradient.end}
+          style={StyleSheet.absoluteFill}
         />
-      )}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 8 },
+          ]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        >
+          {/* Header - Centered Username */}
+          <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
+            <TouchableOpacity
+              style={styles.headerIconWrapper}
+              activeOpacity={0.7}
+            >
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView
+                {...liquidGlass.surface}
+                tintColor="rgba(10, 10, 10, 0.25)"
+                borderRadius={20}
+                style={styles.headerIconGlass}
+              />
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
 
-      {/* Account Switcher Modal - only show accounts with active sessions */}
-      <AccountSwitcherModal
-        visible={isAccountSwitcherOpen}
-        currentUserId={user?.id}
-        savedAccounts={savedAccounts.filter((a) => a.id === user?.id || !!a.accessToken)}
-        venues={myVenues}
-        unreadCount={unreadCount}
-        onClose={closeAccountSwitcher}
-        onSelectAccount={handleSelectAccount}
-        onAddAccount={handleAddAccount}
-        onSelectVenue={handleSelectVenue}
-      />
-    </View>
+            <TouchableOpacity
+              style={styles.usernameButton}
+              onPress={openAccountSwitcher}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.headerUsername, { color: colors.text }]}>
+                {username}
+              </Text>
+              {user?.isVerified && (
+                <MaterialCommunityIcons
+                  name="check-decagram"
+                  size={20}
+                  color="#3897F0"
+                />
+              )}
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color="rgba(255,255,255,0.5)"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.headerIconWrapper}
+              activeOpacity={0.7}
+              onPress={() => router.push("/settings")}
+            >
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView
+                {...liquidGlass.surface}
+                tintColor="rgba(10, 10, 10, 0.25)"
+                borderRadius={20}
+                style={styles.headerIconGlass}
+              />
+              <Ionicons name="settings-outline" size={20} color="#fff" />
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Profile Info Row */}
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(500).springify()}
+            style={styles.profileRow}
+          >
+            <TouchableOpacity
+              onPress={handleAvatarDoubleTap}
+              activeOpacity={0.9}
+            >
+              <Image
+                source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage}
+                style={[
+                  styles.avatar,
+                  { borderColor: "rgba(255,255,255,0.15)" },
+                ]}
+              />
+            </TouchableOpacity>
+            <View style={styles.statsCard}>
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView
+                {...liquidGlass.surface}
+                tintColor="rgba(10, 10, 10, 0.25)"
+                borderRadius={16}
+                style={styles.statsCardGlass}
+              />
+              <View style={styles.statsRow}>
+                <TouchableOpacity style={styles.statButton} activeOpacity={1}>
+                  <Text style={styles.statValue}>{postsCount}</Text>
+                  <Text style={styles.statLabel}>Posts</Text>
+                </TouchableOpacity>
+                <View style={styles.statDivider} />
+                <TouchableOpacity
+                  style={styles.statButton}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setFollowersSheetTab("followers");
+                    setFollowersSheetVisible(true);
+                  }}
+                >
+                  <Text style={styles.statValue}>{followerCount}</Text>
+                  <Text style={styles.statLabel}>Followers</Text>
+                </TouchableOpacity>
+                <View style={styles.statDivider} />
+                <TouchableOpacity
+                  style={styles.statButton}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setFollowersSheetTab("following");
+                    setFollowersSheetVisible(true);
+                  }}
+                >
+                  <Text style={styles.statValue}>{followingCount}</Text>
+                  <Text style={styles.statLabel}>Following</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* Name and Bio */}
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(500).springify()}
+            style={styles.bioSection}
+          >
+            <Text style={[styles.displayName, { color: colors.text }]}>
+              {displayName}
+            </Text>
+            {bio ? (
+              <LinkifiedText
+                style={{ ...styles.bio, color: colors.textSecondary }}
+              >
+                {bio}
+              </LinkifiedText>
+            ) : null}
+          </Animated.View>
+
+          {/* Dashboard Button */}
+          <Animated.View
+            entering={FadeInDown.delay(250).duration(500).springify()}
+            style={styles.dashboardButtonContainer}
+          >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/dashboard")}
+            >
+              <View style={styles.glassButton}>
+                {/* @ts-expect-error — augmented GlassViewProps */}
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor="rgba(10, 10, 10, 0.25)"
+                  borderRadius={14}
+                  style={styles.glassButtonBg}
+                />
+                <View style={styles.glassButtonContent}>
+                  <Ionicons name="grid-outline" size={18} color="#fff" />
+                  <Text style={styles.glassButtonText}>Dashboard</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Action Buttons - Edit Profile and Share Profile */}
+          <Animated.View
+            entering={FadeInDown.delay(300).duration(500).springify()}
+            style={styles.actionButtons}
+          >
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => router.push("/edit-profile")}
+              style={{ flex: 1 }}
+            >
+              <View style={styles.glassButton}>
+                {/* @ts-expect-error — augmented GlassViewProps */}
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor="rgba(10, 10, 10, 0.25)"
+                  borderRadius={14}
+                  style={styles.glassButtonBg}
+                />
+                <View style={styles.glassButtonContent}>
+                  <Text style={styles.glassButtonText}>Edit Profile</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={handleShareProfile}
+              style={{ flex: 1 }}
+            >
+              <View style={styles.glassButton}>
+                {/* @ts-expect-error — augmented GlassViewProps */}
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor="rgba(10, 10, 10, 0.25)"
+                  borderRadius={14}
+                  style={styles.glassButtonBg}
+                />
+                <View style={styles.glassButtonContent}>
+                  <Text style={styles.glassButtonText}>Share Profile</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Posts Grid Header */}
+          <Animated.View
+            entering={FadeInDown.delay(400).duration(500).springify()}
+            style={[styles.gridHeader, { borderTopColor: colors.border }]}
+          >
+            <View
+              style={[
+                styles.gridTab,
+                styles.gridTabActive,
+                { borderBottomColor: colors.text },
+              ]}
+            >
+              <Ionicons name="grid-outline" size={24} color={colors.text} />
+            </View>
+          </Animated.View>
+
+          {/* Posts Grid */}
+          <Animated.View
+            entering={FadeInDown.delay(500).duration(500).springify()}
+            style={styles.postsGrid}
+          >
+            {postsLoading ? (
+              <View style={styles.postsLoadingContainer}>
+                <ActivityIndicator color={colors.text} size="small" />
+              </View>
+            ) : userPosts.length > 0 ? (
+              userPosts.map((post) => (
+                <TouchableOpacity
+                  key={post.id}
+                  activeOpacity={0.9}
+                  style={styles.postContainer}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/post/[id]",
+                      params: { id: post.id },
+                    })
+                  }
+                >
+                  {post.mediaType === "video" && post.videoUrl ? (
+                    <VideoThumbnailImage
+                      videoUrl={post.videoUrl}
+                      fallbackUri={post.thumbUrl || post.imageUrl}
+                      style={[
+                        styles.postImage,
+                        { backgroundColor: colors.backgroundSecondary },
+                      ]}
+                    />
+                  ) : (
+                    <Image
+                      source={{ uri: post.imageUrl }}
+                      style={[
+                        styles.postImage,
+                        { backgroundColor: colors.backgroundSecondary },
+                      ]}
+                    />
+                  )}
+                  {post.mediaType === "video" && (
+                    <View style={styles.videoIndicator}>
+                      <Ionicons name="play" size={32} color="#fff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.noPostsContainer}>
+                <Ionicons
+                  name="images-outline"
+                  size={48}
+                  color={colors.textTertiary}
+                />
+                <Text
+                  style={[styles.noPostsText, { color: colors.textTertiary }]}
+                >
+                  No posts yet
+                </Text>
+              </View>
+            )}
+          </Animated.View>
+
+          {/* Logout Button */}
+          <Animated.View
+            entering={FadeInDown.delay(600).duration(500).springify()}
+            style={styles.logoutButtonContainer}
+          >
+            <TouchableOpacity activeOpacity={0.8} onPress={logout}>
+              <View style={styles.glassButton}>
+                {/* @ts-expect-error — augmented GlassViewProps */}
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor="rgba(255, 59, 48, 0.15)"
+                  borderRadius={14}
+                  style={styles.glassButtonBg}
+                />
+                <View style={styles.glassButtonContent}>
+                  <Ionicons name="log-out-outline" size={18} color="#ff4444" />
+                  <Text style={[styles.glassButtonText, { color: "#ff4444" }]}>
+                    Log Out
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Bottom spacing */}
+          <View style={{ height: insets.bottom + 100 }} />
+        </ScrollView>
+
+        {/* Followers / Following Sheet */}
+        {user?.id && (
+          <FollowersSheet
+            visible={followersSheetVisible}
+            onClose={() => setFollowersSheetVisible(false)}
+            initialTab={followersSheetTab}
+            userId={user.id}
+            followersCount={followerCount}
+            followingCount={followingCount}
+            currentUserId={user.id}
+          />
+        )}
+
+        {/* Account Switcher Modal - only show accounts with active sessions */}
+        <AccountSwitcherModal
+          visible={isAccountSwitcherOpen}
+          currentUserId={user?.id}
+          savedAccounts={savedAccounts.filter(
+            (a) => a.id === user?.id || !!a.accessToken,
+          )}
+          venues={myVenues}
+          unreadCount={unreadCount}
+          onClose={closeAccountSwitcher}
+          onSelectAccount={handleSelectAccount}
+          onAddAccount={handleAddAccount}
+          onSelectVenue={handleSelectVenue}
+        />
+      </View>
     </SwipeableTabView>
   );
 }
@@ -737,9 +957,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  contextBg: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.5,
+    transform: [{ scale: 1.5 }],
+  },
   loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scrollView: {
     flex: 1,
@@ -748,29 +973,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   usernameButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   headerUsername: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
-  headerIcon: {
-    padding: 4,
+  headerIconWrapper: {
     width: 40,
-    alignItems: 'center',
+    height: 40,
+    borderRadius: 20,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  headerIconGlass: {
+    ...StyleSheet.absoluteFillObject,
   },
   profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 16,
   },
@@ -780,22 +1013,40 @@ const styles = StyleSheet.create({
     borderRadius: 43,
     borderWidth: 2,
   },
-  statsRow: {
+  statsCard: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginLeft: 24,
+    marginLeft: 16,
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  statsCardGlass: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
   },
   statButton: {
-    alignItems: 'center',
+    flex: 1,
+    alignItems: "center",
+  },
+  statDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   statValue: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   statLabel: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontSize: 12,
+    fontFamily: "Lato_400Regular",
+    color: "rgba(255,255,255,0.5)",
     marginTop: 2,
   },
   bioSection: {
@@ -804,127 +1055,109 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     lineHeight: 20,
   },
   dashboardButtonContainer: {
     paddingHorizontal: 16,
     marginBottom: 8,
   },
-  dashboardButton: {
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  dashboardButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 8,
-  },
-  dashboardButtonText: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
+  glassButton: {
+    borderRadius: 14,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   glassButtonBg: {
     ...StyleSheet.absoluteFillObject,
+  },
+  glassButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 11,
+    gap: 8,
+  },
+  glassButtonText: {
+    fontSize: 14,
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   glassCircleBg: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 22,
   },
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 16,
     marginBottom: 16,
     gap: 8,
   },
-  actionButton: {
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  actionButtonContent: {
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-  },
   gridHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderTopWidth: 1,
   },
   gridTab: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 12,
   },
   gridTabActive: {
     borderBottomWidth: 1,
   },
   postsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: POST_GAP,
   },
   postContainer: {
-    position: 'relative',
+    position: "relative",
     width: POST_SIZE,
     height: POST_SIZE,
   },
   postImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   videoIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.2)",
   },
   postsLoadingContainer: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   noPostsContainer: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 60,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 12,
   },
   noPostsText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
+  logoutButtonContainer: {
+    paddingHorizontal: 16,
     marginTop: 20,
-    gap: 8,
-  },
-  logoutButtonText: {
-    fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#ff4444',
   },
   // Account switcher modal styles
   modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
   modalSheet: {
     paddingHorizontal: 0,
@@ -932,7 +1165,7 @@ const styles = StyleSheet.create({
   modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   modalGlassBg: {
     ...StyleSheet.absoluteFillObject,
@@ -941,52 +1174,51 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'center',
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignSelf: "center",
     marginTop: 10,
     marginBottom: 4,
   },
   modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: "rgba(255,255,255,0.08)",
   },
   modalTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   modalCloseButton: {
     width: 32,
     height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  accountList: {
-  },
+  accountList: {},
   accountItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
   accountItemBorder: {
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: "rgba(255,255,255,0.08)",
   },
   accountAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: "rgba(255,255,255,0.1)",
   },
   accountAvatarActive: {
-    borderColor: '#fff',
+    borderColor: "#fff",
   },
   accountInfo: {
     flex: 1,
@@ -994,55 +1226,55 @@ const styles = StyleSheet.create({
   },
   accountUsername: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   accountName: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    fontFamily: "Lato_400Regular",
+    color: "rgba(255,255,255,0.5)",
     marginTop: 2,
   },
   addAccountButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: "rgba(255,255,255,0.08)",
   },
   addAccountIcon: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
   addAccountText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
     marginLeft: 12,
   },
   unreadBadge: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: "#ff3b30",
     borderRadius: 10,
     minWidth: 20,
     height: 20,
     paddingHorizontal: 6,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 6,
   },
   unreadBadgeText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   venuesSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
     paddingHorizontal: 16,
     paddingTop: 16,
@@ -1050,9 +1282,9 @@ const styles = StyleSheet.create({
   },
   venuesSectionTitle: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.4)',
-    textTransform: 'uppercase',
+    fontFamily: "Lato_700Bold",
+    color: "rgba(255,255,255,0.4)",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
 });

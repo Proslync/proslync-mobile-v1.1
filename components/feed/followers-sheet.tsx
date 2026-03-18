@@ -11,7 +11,9 @@ import {
   FlatList,
 } from "react-native";
 import { GlassView } from "expo-glass-effect";
-import { liquidGlass, glassTint } from "@/constants/glass/liquid-glass";
+import { LinearGradient } from "expo-linear-gradient";
+import { liquidGlass, glassTint, activeGradient } from "@/constants/glass/liquid-glass";
+import { SegmentedControl } from "@/components/shared/segmented-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -84,10 +86,10 @@ function UserRow({
         style={styles.userAvatar}
       />
       <View style={styles.userInfo}>
-        <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
+        <Text style={styles.userName} numberOfLines={1}>
           {user.userName}
         </Text>
-        <Text style={[styles.userFullName, { color: colors.textTertiary }]} numberOfLines={1}>
+        <Text style={styles.userFullName} numberOfLines={1}>
           {[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"}
         </Text>
       </View>
@@ -96,7 +98,6 @@ function UserRow({
           style={[
             styles.followBtn,
             { overflow: "hidden" },
-            isFollowing && { borderWidth: 1, borderColor: colors.border },
           ]}
           activeOpacity={0.8}
           onPress={handleFollowPress}
@@ -155,10 +156,10 @@ function VenueRow({
         style={styles.userAvatar}
       />
       <View style={styles.userInfo}>
-        <Text style={[styles.userName, { color: colors.text }]} numberOfLines={1}>
+        <Text style={styles.userName} numberOfLines={1}>
           {venue.name}
         </Text>
-        <Text style={[styles.userFullName, { color: colors.textTertiary }]} numberOfLines={1}>
+        <Text style={styles.userFullName} numberOfLines={1}>
           Venue
         </Text>
       </View>
@@ -228,75 +229,40 @@ export function FollowersSheet({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: "#000" }]}>
+        <LinearGradient
+          colors={[...activeGradient.colors]}
+          locations={[...activeGradient.locations]}
+          start={activeGradient.start}
+          end={activeGradient.end}
+          style={StyleSheet.absoluteFill}
+        />
+
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { overflow: "hidden" }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView
-              {...liquidGlass.fillMedium}
-              borderRadius={22}
+              {...liquidGlass.surface}
+              tintColor="rgba(10, 10, 10, 0.25)"
+              borderRadius={18}
               style={StyleSheet.absoluteFill}
             />
-            <Ionicons name="close" size={28} color={colors.text} />
+            <Ionicons name="close" size={22} color="#fff" />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
+          <Text style={styles.headerTitle}>
             {activeTab === "followers" ? "Followers" : "Following"}
           </Text>
           <View style={styles.closeBtn} />
         </View>
 
-        {/* Tabs */}
-        <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === "followers" && { borderBottomColor: colors.text, borderBottomWidth: 2 },
-            ]}
-            onPress={() => setActiveTab("followers")}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.tabCount,
-                { color: activeTab === "followers" ? colors.text : colors.textTertiary },
-              ]}
-            >
-              {followersCount}
-            </Text>
-            <Text
-              style={[
-                styles.tabLabel,
-                { color: activeTab === "followers" ? colors.text : colors.textTertiary },
-              ]}
-            >
-              Followers
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === "following" && { borderBottomColor: colors.text, borderBottomWidth: 2 },
-            ]}
-            onPress={() => setActiveTab("following")}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[
-                styles.tabCount,
-                { color: activeTab === "following" ? colors.text : colors.textTertiary },
-              ]}
-            >
-              {followingCount}
-            </Text>
-            <Text
-              style={[
-                styles.tabLabel,
-                { color: activeTab === "following" ? colors.text : colors.textTertiary },
-              ]}
-            >
-              Following
-            </Text>
-          </TouchableOpacity>
+        {/* Glass Segmented Tabs */}
+        <View style={styles.tabBar}>
+          <SegmentedControl
+            segments={[`${followersCount} Followers`, `${followingCount} Following`]}
+            selectedIndex={activeTab === "followers" ? 0 : 1}
+            onSelect={(index) => setActiveTab(index === 0 ? "followers" : "following")}
+          />
         </View>
 
         {/* List */}
@@ -344,42 +310,29 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     paddingVertical: 12,
-    borderBottomWidth: 1,
   },
   closeBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
 
   // Tabs
   tabBar: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-  },
-  tab: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
-  },
-  tabCount: {
-    fontSize: 16,
-    fontFamily: "Lato_700Bold",
-  },
-  tabLabel: {
-    fontSize: 13,
-    fontFamily: "Lato_400Regular",
-    marginTop: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
   },
 
   // User row
@@ -393,6 +346,8 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   userInfo: {
     flex: 1,
@@ -401,19 +356,23 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   userFullName: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
+    color: "rgba(255,255,255,0.5)",
     marginTop: 2,
   },
   followBtn: {
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 20,
     paddingVertical: 8,
     minWidth: 90,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   followBtnText: {
     fontSize: 13,
@@ -434,5 +393,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
+    color: "rgba(255,255,255,0.5)",
   },
 });

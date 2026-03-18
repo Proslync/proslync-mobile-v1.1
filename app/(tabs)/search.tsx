@@ -474,17 +474,20 @@ function FullMapScreen() {
 
   useEffect(() => {
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const location = await Location.getCurrentPositionAsync({});
-        const coords: [number, number] = [location.coords.longitude, location.coords.latitude];
-        setUserLocation(coords);
-        // Animate camera to user's location once obtained
-        cameraRef.current?.setCamera({
-          centerCoordinate: coords,
-          zoomLevel: 13,
-          animationDuration: 800,
-        });
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const location = await Location.getCurrentPositionAsync({});
+          const coords: [number, number] = [location.coords.longitude, location.coords.latitude];
+          setUserLocation(coords);
+          cameraRef.current?.setCamera({
+            centerCoordinate: coords,
+            zoomLevel: 13,
+            animationDuration: 800,
+          });
+        }
+      } catch {
+        // Location unavailable (e.g. simulator)
       }
     })();
   }, []);
@@ -661,11 +664,13 @@ function FullMapScreen() {
           style={[styles.shareLocationButton, { bottom: 240 }]}
           onPress={async () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status === 'granted' && !userLocation) {
-              const location = await Location.getCurrentPositionAsync({});
-              setUserLocation([location.coords.longitude, location.coords.latitude]);
-            }
+            try {
+              const { status } = await Location.requestForegroundPermissionsAsync();
+              if (status === 'granted' && !userLocation) {
+                const location = await Location.getCurrentPositionAsync({});
+                setUserLocation([location.coords.longitude, location.coords.latitude]);
+              }
+            } catch {}
             setShowShareSheet(true);
           }}
           activeOpacity={0.7}
@@ -788,11 +793,13 @@ function FullMapScreen() {
         visible={!!selectedFriend}
         onClose={() => setSelectedFriend(null)}
         onShareBack={async () => {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status === 'granted' && !userLocation) {
-            const location = await Location.getCurrentPositionAsync({});
-            setUserLocation([location.coords.longitude, location.coords.latitude]);
-          }
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted' && !userLocation) {
+              const location = await Location.getCurrentPositionAsync({});
+              setUserLocation([location.coords.longitude, location.coords.latitude]);
+            }
+          } catch {}
           setShowShareSheet(true);
         }}
         friend={selectedFriend}

@@ -491,18 +491,18 @@ export default function EventPage() {
         <TouchableOpacity onPress={handleRsvp} activeOpacity={0.85} disabled={isLoading}>
           <Animated.View style={[styles.rsvpButton, buttonAnimatedStyle]}>
             {useNativeGlass ? (
+              // @ts-expect-error — augmented GlassViewProps not resolving for style
               <GlassView
                 glassEffectStyle="regular"
-                isInteractive
-                tintColor={isDone ? undefined : 'rgba(255, 255, 255, 0.45)'}
-                colorScheme={isDark ? 'dark' : 'light'}
+                colorScheme="dark"
+                tintColor={isDone ? 'rgba(10, 10, 10, 0.55)' : 'rgba(10, 10, 10, 0.25)'}
                 style={styles.absoluteFill}
               />
             ) : (
               <>
                 {!isDone && (
                   <>
-                    <BlurView intensity={30} tint="light" style={styles.absoluteFill} />
+                    <BlurView intensity={30} tint="dark" style={styles.absoluteFill} />
                     <View style={styles.rsvpFill} />
                   </>
                 )}
@@ -513,7 +513,6 @@ export default function EventPage() {
               style={[
                 styles.rsvpButtonText,
                 isDone && styles.rsvpButtonTextDone,
-                useNativeGlass && { color: isDark ? '#fff' : '#000' },
               ]}
             >
               {rsvpLabel}
@@ -671,16 +670,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   rsvpButton: {
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: 16,
+    paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
   },
   rsvpFill: {
     position: 'absolute',
@@ -688,7 +682,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(10, 10, 10, 0.4)',
   },
   rsvpBorder: {
     position: 'absolute',
@@ -697,19 +691,19 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderWidth: 1,
-    borderRadius: 12,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
+    borderRadius: 16,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   rsvpBorderDone: {
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   rsvpButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     letterSpacing: 0.5,
-    color: '#000',
+    color: '#fff',
   },
   rsvpButtonTextDone: {
-    color: '#fff',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
 });

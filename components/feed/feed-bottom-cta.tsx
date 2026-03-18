@@ -1,7 +1,7 @@
-import * as React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { GlassView } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { GlassView } from "expo-glass-effect";
+import * as React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 interface FeedBottomCTAProps {
   onRsvp: () => void;
@@ -25,9 +25,9 @@ export function FeedBottomCTA({
   }
 
   const isDone = !isPaid && (isPurchased || isRsvpd);
-  let label = 'RSVP';
+  let label = "RSVP";
   if (isPaid) {
-    label = price != null ? `From $${price.toFixed(2)}` : 'Tickets';
+    label = price != null ? `From $${price.toFixed(2)}` : "Tickets";
   } else if (isDone) {
     label = "RSVP'd";
   }
@@ -37,15 +37,20 @@ export function FeedBottomCTA({
       onPress={onRsvp}
       activeOpacity={0.85}
       disabled={isDone}
+      style={styles.wrapper}
     >
       <View style={styles.button}>
+        {/* @ts-expect-error — augmented GlassViewProps not resolving for spread + style */}
         <GlassView
-          {...liquidGlass.fillFaint}
-          borderRadius={12}
+          {...liquidGlass.surface}
+          tintColor="rgba(10, 10, 10, 0.25)"
+          borderRadius={16}
           style={styles.glassBg}
         />
         <View style={styles.content}>
-          <Text style={[styles.buttonText, isDone && styles.buttonTextDone]}>{label}</Text>
+          <Text style={[styles.buttonText, isDone && styles.buttonTextDone]}>
+            {label}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -53,26 +58,32 @@ export function FeedBottomCTA({
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    marginHorizontal: 14,
+    marginBottom: 14,
+  },
   button: {
-    borderRadius: 12,
-    overflow: 'hidden',
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
   },
   glassBg: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   content: {
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
-    fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontSize: 16,
+    fontFamily: "Lato_700Bold",
     letterSpacing: 0.5,
-    color: '#fff',
+    color: "#fff",
   },
   buttonTextDone: {
-    color: 'rgba(255,255,255,0.5)',
+    color: "rgba(255,255,255,0.5)",
   },
 });

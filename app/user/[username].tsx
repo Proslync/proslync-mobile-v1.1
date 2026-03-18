@@ -1,42 +1,46 @@
-import * as React from 'react';
-import { useStableRouter } from '@/hooks/use-stable-router';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
+  ActionSheet,
+  type ActionSheetOption,
+} from "@/components/shared/action-sheet";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { useToast } from "@/components/shared/toast";
+import { useStableRouter } from "@/hooks/use-stable-router";
+import { chatApi } from "@/lib/api/chat";
+import { usersApi } from "@/lib/api/users";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import * as React from "react";
+import {
   ActivityIndicator,
   Dimensions,
+  Image,
+  ScrollView,
   Share,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { useToast } from '@/components/shared/toast';
-import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
-import { chatApi } from '@/lib/api/chat';
-import { usersApi } from '@/lib/api/users';
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useUserFeed } from '@/hooks/use-user-feed';
-import { useUserProfile } from '@/hooks/use-user-profile';
-import { useFollowUser } from '@/hooks/use-follow-user';
-import { useMutualFollowers } from '@/hooks/use-mutual-followers';
-import { useRefreshControl } from '@/hooks/use-refresh-control';
-import { useAuth } from '@/lib/providers/auth-provider';
-import { LinkifiedText } from '@/components/shared/linkified-text';
-import { FollowersSheet } from '@/components/feed/followers-sheet';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { VideoThumbnailImage } from '@/components/shared/video-thumbnail';
-import { GlassView } from 'expo-glass-effect';
-import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
-import { useAppTheme } from '@/hooks/use-app-theme';
+import { FollowersSheet } from "@/components/feed/followers-sheet";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { LinkifiedText } from "@/components/shared/linkified-text";
+import { VideoThumbnailImage } from "@/components/shared/video-thumbnail";
+import { liquidGlass, activeGradient } from "@/constants/glass/liquid-glass";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { useFollowUser } from "@/hooks/use-follow-user";
+import { useMutualFollowers } from "@/hooks/use-mutual-followers";
+import { useRefreshControl } from "@/hooks/use-refresh-control";
+import { useUserFeed } from "@/hooks/use-user-feed";
+import { useUserProfile } from "@/hooks/use-user-profile";
+import { useAuth } from "@/lib/providers/auth-provider";
+import { GlassView } from "expo-glass-effect";
+import { LinearGradient } from "expo-linear-gradient";
 
-const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const DEFAULT_AVATAR = require("@/assets/images/default-avatar.png");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const POST_GAP = 2;
 const POST_SIZE = (SCREEN_WIDTH - POST_GAP * 2) / 3;
 
@@ -59,7 +63,9 @@ function StatButton({
       disabled={!onPress}
     >
       <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
-      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{label}</Text>
+      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -67,25 +73,42 @@ function StatButton({
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { username, userId } = useLocalSearchParams<{ username: string; userId?: string }>();
+  const { username, userId } = useLocalSearchParams<{
+    username: string;
+    userId?: string;
+  }>();
   const { showError, showSuccess } = useToast();
   const { colors, isDark } = useAppTheme();
-  const { data: user, isLoading, error: queryError, refetch: refetchUser } = useUserProfile({ username, userId });
+  const {
+    data: user,
+    isLoading,
+    error: queryError,
+    refetch: refetchUser,
+  } = useUserProfile({ username, userId });
   const [isCreatingChat, setIsCreatingChat] = React.useState(false);
-  const [followersSheetVisible, setFollowersSheetVisible] = React.useState(false);
-  const [followersSheetTab, setFollowersSheetTab] = React.useState<'followers' | 'following'>('followers');
+  const [followersSheetVisible, setFollowersSheetVisible] =
+    React.useState(false);
+  const [followersSheetTab, setFollowersSheetTab] = React.useState<
+    "followers" | "following"
+  >("followers");
   const [showMenu, setShowMenu] = React.useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
   const [showReportConfirm, setShowReportConfirm] = React.useState(false);
 
   // Fetch user posts from our backend
-  const { activities: userPosts, isLoading: postsLoading, refetch: refetchPosts } = useUserFeed(user?.id);
+  const {
+    activities: userPosts,
+    isLoading: postsLoading,
+    refetch: refetchPosts,
+  } = useUserFeed(user?.id);
   const followerCount = user?.followStats?.followers ?? 0;
   const followingCount = user?.followStats?.following ?? 0;
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
-    onRefresh: async () => { await Promise.all([refetchUser(), refetchPosts()]); },
+    onRefresh: async () => {
+      await Promise.all([refetchUser(), refetchPosts()]);
+    },
   });
 
   // Follow/unfollow via backend
@@ -99,14 +122,15 @@ export default function UserProfileScreen() {
 
   const { user: currentUser } = useAuth();
   const { mutuals, totalCount: mutualCount } = useMutualFollowers(
-    currentUser?.id !== user?.id ? user?.id : undefined
+    currentUser?.id !== user?.id ? user?.id : undefined,
   );
 
-  const error = queryError?.message || (!user && !isLoading ? 'User not found' : null);
+  const error =
+    queryError?.message || (!user && !isLoading ? "User not found" : null);
 
   const displayName = user?.firstName
-    ? `${user.firstName}${user.lastName ? ' ' + user.lastName : ''}`
-    : username || 'User';
+    ? `${user.firstName}${user.lastName ? " " + user.lastName : ""}`
+    : username || "User";
 
   const avatarUrl = user?.avatar?.url;
 
@@ -120,14 +144,14 @@ export default function UserProfileScreen() {
       }
       await refetchPosts();
     } catch (err: any) {
-      console.error('Follow error:', err);
-      showError(err?.message || 'Failed to update follow status');
+      console.error("Follow error:", err);
+      showError(err?.message || "Failed to update follow status");
     }
   };
 
   const handleMessage = async () => {
     if (!user?.id) {
-      showError('Unable to start chat. Please try again.');
+      showError("Unable to start chat. Please try again.");
       return;
     }
 
@@ -139,23 +163,24 @@ export default function UserProfileScreen() {
       const conversation = await chatApi.createConversation([user.id]);
 
       router.push({
-        pathname: '/chat/[conversationId]',
+        pathname: "/chat/[conversationId]",
         params: { conversationId: conversation.id },
       });
     } catch (err: any) {
-      console.error('Error creating chat:', err);
-      showError(err?.message || 'Failed to start conversation');
+      console.error("Error creating chat:", err);
+      showError(err?.message || "Failed to start conversation");
     } finally {
       setIsCreatingChat(false);
     }
   };
 
-  const isSelf = currentUser && user?.id && String(currentUser.id) === String(user.id);
+  const isSelf =
+    currentUser && user?.id && String(currentUser.id) === String(user.id);
 
   const menuOptions: ActionSheetOption[] = [
     {
-      label: 'Share this profile',
-      icon: 'share-outline',
+      label: "Share this profile",
+      icon: "share-outline",
       onPress: async () => {
         try {
           await Share.share({
@@ -166,14 +191,14 @@ export default function UserProfileScreen() {
       },
     },
     {
-      label: 'Block',
-      icon: 'ban',
+      label: "Block",
+      icon: "ban",
       destructive: true,
       onPress: () => setShowBlockConfirm(true),
     },
     {
-      label: 'Report',
-      icon: 'flag-outline',
+      label: "Report",
+      icon: "flag-outline",
       destructive: true,
       onPress: () => setShowReportConfirm(true),
     },
@@ -221,7 +246,13 @@ export default function UserProfileScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer, dynamicStyles.container]}>
+      <View
+        style={[
+          styles.container,
+          styles.loadingContainer,
+          dynamicStyles.container,
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.text} />
       </View>
     );
@@ -229,7 +260,13 @@ export default function UserProfileScreen() {
 
   if (error || !user) {
     return (
-      <View style={[styles.container, dynamicStyles.container, { paddingTop: insets.top + 8 }]}>
+      <View
+        style={[
+          styles.container,
+          dynamicStyles.container,
+          { paddingTop: insets.top + 8 },
+        ]}
+      >
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.headerIcon}
@@ -237,14 +274,27 @@ export default function UserProfileScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerUsername, dynamicStyles.headerUsername]}>Profile</Text>
+          <Text style={[styles.headerUsername, dynamicStyles.headerUsername]}>
+            Profile
+          </Text>
           <View style={styles.headerIcon} />
         </View>
         <View style={styles.errorContainer}>
-          <View style={[styles.errorIconContainer, dynamicStyles.errorIconContainer]}>
-            <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
+          <View
+            style={[
+              styles.errorIconContainer,
+              dynamicStyles.errorIconContainer,
+            ]}
+          >
+            <Ionicons
+              name="person-outline"
+              size={48}
+              color={colors.textTertiary}
+            />
           </View>
-          <Text style={[styles.errorTitle, dynamicStyles.errorTitle]}>User Not Found</Text>
+          <Text style={[styles.errorTitle, dynamicStyles.errorTitle]}>
+            User Not Found
+          </Text>
           <Text style={[styles.errorSubtitle, dynamicStyles.errorSubtitle]}>
             @{username} doesn't exist or has been removed
           </Text>
@@ -260,8 +310,14 @@ export default function UserProfileScreen() {
   }
 
   return (
-    <View style={[styles.container, dynamicStyles.container]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: "#000" }]}>
+      <LinearGradient
+        colors={[...activeGradient.colors]}
+        locations={[...activeGradient.locations]}
+        start={activeGradient.start}
+        end={activeGradient.end}
+        style={StyleSheet.absoluteFill}
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -282,11 +338,18 @@ export default function UserProfileScreen() {
           </TouchableOpacity>
 
           <View style={styles.headerNameRow}>
-            <Text style={[styles.headerUsername, dynamicStyles.headerUsername]} numberOfLines={1}>
+            <Text
+              style={[styles.headerUsername, dynamicStyles.headerUsername]}
+              numberOfLines={1}
+            >
               {user.userName ? `@${user.userName}` : displayName}
             </Text>
             {user.isVerified && (
-              <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />
+              <MaterialCommunityIcons
+                name="check-decagram"
+                size={16}
+                color={colors.verified}
+              />
             )}
           </View>
 
@@ -296,7 +359,11 @@ export default function UserProfileScreen() {
               activeOpacity={0.7}
               onPress={() => setShowMenu(true)}
             >
-              <Ionicons name="ellipsis-horizontal" size={24} color={colors.text} />
+              <Ionicons
+                name="ellipsis-horizontal"
+                size={24}
+                color={colors.text}
+              />
             </TouchableOpacity>
           ) : (
             <View style={styles.headerIcon} />
@@ -309,23 +376,39 @@ export default function UserProfileScreen() {
           style={styles.profileRow}
         >
           {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={[styles.avatar, dynamicStyles.avatar]} />
+            <Image
+              source={{ uri: avatarUrl }}
+              style={[styles.avatar, dynamicStyles.avatar]}
+            />
           ) : (
-            <Image source={DEFAULT_AVATAR} style={[styles.avatar, dynamicStyles.avatar]} />
+            <Image
+              source={DEFAULT_AVATAR}
+              style={[styles.avatar, dynamicStyles.avatar]}
+            />
           )}
           <View style={styles.statsRow}>
-            <StatButton value={userPosts.length} label="Posts" colors={colors} />
+            <StatButton
+              value={userPosts.length}
+              label="Posts"
+              colors={colors}
+            />
             <StatButton
               value={followerCount}
               label="Followers"
               colors={colors}
-              onPress={() => { setFollowersSheetTab('followers'); setFollowersSheetVisible(true); }}
+              onPress={() => {
+                setFollowersSheetTab("followers");
+                setFollowersSheetVisible(true);
+              }}
             />
             <StatButton
               value={followingCount}
               label="Following"
               colors={colors}
-              onPress={() => { setFollowersSheetTab('following'); setFollowersSheetVisible(true); }}
+              onPress={() => {
+                setFollowersSheetTab("following");
+                setFollowersSheetVisible(true);
+              }}
             />
           </View>
         </Animated.View>
@@ -335,8 +418,14 @@ export default function UserProfileScreen() {
           entering={FadeInDown.delay(200).duration(500).springify()}
           style={styles.bioSection}
         >
-          <Text style={[styles.displayName, dynamicStyles.displayName]}>{displayName}</Text>
-          {user.bio ? <LinkifiedText style={[styles.bio, dynamicStyles.bio] as any}>{user.bio}</LinkifiedText> : null}
+          <Text style={[styles.displayName, dynamicStyles.displayName]}>
+            {displayName}
+          </Text>
+          {user.bio ? (
+            <LinkifiedText style={[styles.bio, dynamicStyles.bio] as any}>
+              {user.bio}
+            </LinkifiedText>
+          ) : null}
         </Animated.View>
 
         {/* Mutual Followers */}
@@ -348,7 +437,10 @@ export default function UserProfileScreen() {
             <TouchableOpacity
               style={styles.mutualsRow}
               activeOpacity={0.7}
-              onPress={() => { setFollowersSheetTab('followers'); setFollowersSheetVisible(true); }}
+              onPress={() => {
+                setFollowersSheetTab("followers");
+                setFollowersSheetVisible(true);
+              }}
             >
               <View style={styles.mutualsAvatars}>
                 {mutuals.slice(0, 3).map((m, i) => (
@@ -357,18 +449,31 @@ export default function UserProfileScreen() {
                     source={m.avatarUrl ? { uri: m.avatarUrl } : DEFAULT_AVATAR}
                     style={[
                       styles.mutualAvatar,
-                      { marginLeft: i > 0 ? -8 : 0, zIndex: 3 - i, borderColor: colors.background },
+                      {
+                        marginLeft: i > 0 ? -8 : 0,
+                        zIndex: 3 - i,
+                        borderColor: colors.background,
+                      },
                     ]}
                   />
                 ))}
               </View>
-              <Text style={[styles.mutualsText, { color: colors.textSecondary }]} numberOfLines={2}>
-                Followed by{' '}
-                <Text style={{ fontFamily: 'Lato_700Bold' }}>
-                  {mutuals.slice(0, 2).map(m => m.userName || m.firstName || 'User').join(', ')}
+              <Text
+                style={[styles.mutualsText, { color: colors.textSecondary }]}
+                numberOfLines={2}
+              >
+                Followed by{" "}
+                <Text style={{ fontFamily: "Lato_700Bold" }}>
+                  {mutuals
+                    .slice(0, 2)
+                    .map((m) => m.userName || m.firstName || "User")
+                    .join(", ")}
                 </Text>
                 {mutualCount > 2 && (
-                  <Text>, and {mutualCount - 2} {mutualCount - 2 === 1 ? 'other' : 'others'}</Text>
+                  <Text>
+                    , and {mutualCount - 2}{" "}
+                    {mutualCount - 2 === 1 ? "other" : "others"}
+                  </Text>
                 )}
               </Text>
             </TouchableOpacity>
@@ -383,7 +488,8 @@ export default function UserProfileScreen() {
           <TouchableOpacity
             style={[
               styles.actionButton,
-              (isFollowInProgress || isUnfollowInProgress) && styles.actionButtonDisabled,
+              (isFollowInProgress || isUnfollowInProgress) &&
+                styles.actionButtonDisabled,
             ]}
             onPress={handleFollow}
             activeOpacity={0.8}
@@ -398,7 +504,7 @@ export default function UserProfileScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Text style={styles.actionButtonText}>
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? "Following" : "Follow"}
               </Text>
             )}
           </TouchableOpacity>
@@ -429,7 +535,13 @@ export default function UserProfileScreen() {
           entering={FadeInDown.delay(400).duration(500).springify()}
           style={[styles.gridHeader, dynamicStyles.gridHeader]}
         >
-          <View style={[styles.gridTab, styles.gridTabActive, dynamicStyles.gridTabActive]}>
+          <View
+            style={[
+              styles.gridTab,
+              styles.gridTabActive,
+              dynamicStyles.gridTabActive,
+            ]}
+          >
             <Ionicons name="grid-outline" size={24} color={colors.text} />
           </View>
         </Animated.View>
@@ -449,9 +561,14 @@ export default function UserProfileScreen() {
                 key={post.id}
                 activeOpacity={0.9}
                 style={styles.postContainer}
-                onPress={() => router.push({ pathname: '/post/[id]', params: { id: post.id } })}
+                onPress={() =>
+                  router.push({
+                    pathname: "/post/[id]",
+                    params: { id: post.id },
+                  })
+                }
               >
-                {post.mediaType === 'video' && post.videoUrl ? (
+                {post.mediaType === "video" && post.videoUrl ? (
                   <VideoThumbnailImage
                     videoUrl={post.videoUrl}
                     fallbackUri={post.thumbUrl || post.imageUrl}
@@ -463,7 +580,7 @@ export default function UserProfileScreen() {
                     style={[styles.postImage, dynamicStyles.postImage]}
                   />
                 )}
-                {post.mediaType === 'video' && (
+                {post.mediaType === "video" && (
                   <View style={styles.videoIndicator}>
                     <Ionicons name="play" size={16} color="#fff" />
                   </View>
@@ -472,8 +589,14 @@ export default function UserProfileScreen() {
             ))
           ) : (
             <View style={styles.noPostsContainer}>
-              <Ionicons name="images-outline" size={48} color={colors.textTertiary} />
-              <Text style={[styles.noPostsText, dynamicStyles.noPostsText]}>No posts yet</Text>
+              <Ionicons
+                name="images-outline"
+                size={48}
+                color={colors.textTertiary}
+              />
+              <Text style={[styles.noPostsText, dynamicStyles.noPostsText]}>
+                No posts yet
+              </Text>
             </View>
           )}
         </Animated.View>
@@ -499,7 +622,7 @@ export default function UserProfileScreen() {
             showSuccess(`Blocked ${displayName}`);
             router.back();
           } catch {
-            showError('Failed to block user');
+            showError("Failed to block user");
           }
         }}
         title="Block User"
@@ -516,10 +639,10 @@ export default function UserProfileScreen() {
           setShowReportConfirm(false);
           if (!user?.id) return;
           try {
-            await usersApi.reportUser(user.id, 'inappropriate');
-            showSuccess('Report submitted');
+            await usersApi.reportUser(user.id, "inappropriate");
+            showSuccess("Report submitted");
           } catch {
-            showError('Failed to submit report');
+            showError("Failed to submit report");
           }
         }}
         title="Report User"
@@ -547,9 +670,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  contextBg: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.5,
+    transform: [{ scale: 1.5 }],
+  },
   loadingContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scrollView: {
     flex: 1,
@@ -558,33 +686,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 16,
   },
   headerNameRow: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 4,
   },
   headerUsername: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
-    textAlign: 'center',
+    fontFamily: "Lato_700Bold",
+    textAlign: "center",
     marginHorizontal: 8,
   },
   headerIcon: {
     padding: 4,
     width: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 16,
   },
@@ -596,20 +724,20 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginLeft: 24,
   },
   statButton: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   statValue: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   statLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   bioSection: {
@@ -618,16 +746,16 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     lineHeight: 20,
   },
   actionButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 16,
     marginBottom: 16,
     gap: 8,
@@ -636,10 +764,10 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 8,
     paddingVertical: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minHeight: 36,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   actionButtonGlass: {
     ...StyleSheet.absoluteFillObject,
@@ -650,73 +778,73 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
   actionButtonTextPrimary: {
-    color: '#fff',
+    color: "#fff",
   },
   gridHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderTopWidth: 1,
   },
   gridTab: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 12,
   },
   gridTabActive: {
     borderBottomWidth: 1,
   },
   postsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: POST_GAP,
   },
   postContainer: {
-    position: 'relative',
+    position: "relative",
     width: POST_SIZE,
     height: POST_SIZE,
   },
   postImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   videoIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: "rgba(0,0,0,0.6)",
     borderRadius: 4,
     padding: 4,
   },
   postsLoadingContainer: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
   noPostsContainer: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 60,
-    alignItems: 'center',
+    alignItems: "center",
     gap: 12,
   },
   noPostsText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   mutualsSection: {
     paddingHorizontal: 16,
     marginBottom: 12,
   },
   mutualsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   mutualsAvatars: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   mutualAvatar: {
     width: 24,
@@ -727,13 +855,13 @@ const styles = StyleSheet.create({
   mutualsText: {
     flex: 1,
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     lineHeight: 16,
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 32,
   },
   errorIconContainer: {
@@ -741,30 +869,30 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
   },
   errorTitle: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginBottom: 8,
   },
   errorSubtitle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
     marginBottom: 24,
   },
   goBackButton: {
-    backgroundColor: '#0095f6',
+    backgroundColor: "#0095f6",
     borderRadius: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
   goBackButtonText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontFamily: "Lato_700Bold",
+    color: "#fff",
   },
 });

@@ -21,6 +21,8 @@ import { useFollowUser } from '@/hooks/use-follow-user';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import type {
   UnifiedSearchItem,
   SearchSuggestion,
@@ -573,25 +575,30 @@ export default function SearchScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          {/* @ts-expect-error — augmented GlassViewProps */}
+          <GlassView {...liquidGlass.surface} tintColor="rgba(10, 10, 10, 0.25)" borderRadius={18} style={styles.backButtonGlass} />
+          <Ionicons name="arrow-back" size={20} color="#fff" />
         </TouchableOpacity>
 
-        <View style={[styles.searchBar, { backgroundColor: colors.input }]}>
-          <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
+        <View style={styles.searchBar}>
+          {/* @ts-expect-error — augmented GlassViewProps */}
+          <GlassView {...liquidGlass.surface} tintColor="rgba(10, 10, 10, 0.25)" borderRadius={14} style={styles.searchBarGlass} />
+          <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.5)" />
           <TextInput
             ref={inputRef}
-            style={[styles.searchInput, { color: colors.text }]}
+            style={styles.searchInput}
             placeholder="Search people, events, venues..."
-            placeholderTextColor={colors.textTertiary}
+            placeholderTextColor="rgba(255,255,255,0.35)"
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
             autoCorrect={false}
             autoFocus
+            keyboardAppearance="dark"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
+              <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
             </TouchableOpacity>
           )}
         </View>
@@ -724,22 +731,36 @@ const styles = StyleSheet.create({
   backButton: {
     width: 36,
     height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  backButtonGlass: {
+    ...StyleSheet.absoluteFillObject,
   },
   searchBar: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 40,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 44,
     gap: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  searchBarGlass: {
+    ...StyleSheet.absoluteFillObject,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
+    color: '#fff',
   },
   listContent: {
     paddingHorizontal: 16,
