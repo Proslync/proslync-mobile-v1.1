@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Switch,
 } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -16,6 +15,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { GlassView } from 'expo-glass-effect';
+import { LinearGradient } from 'expo-linear-gradient';
+import { liquidGlass, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { useAppTheme, type ThemeMode } from '@/hooks/use-app-theme';
 import { AnimatedCollapsible } from '@/components/ui/animated-collapsible';
 
@@ -41,87 +43,71 @@ function AnimatedChevron({ expanded, color }: { expanded: boolean; color: string
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, isDark, themeMode, setThemeMode } = useAppTheme();
+  const { isDark, themeMode, setThemeMode } = useAppTheme();
   const [appearanceExpanded, setAppearanceExpanded] = React.useState(false);
 
-  const themeOptions: { mode: ThemeMode; label: string; description: string }[] = [
-    { mode: 'light', label: 'Light', description: 'Always use light theme' },
-    { mode: 'dark', label: 'Dark', description: 'Always use dark theme' },
-    { mode: 'system', label: 'System', description: 'Follow system settings' },
+  const theme = isDark ? 'dark' : 'light';
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
+  const gradient = isDark ? activeGradient : activeGradientLight;
+
+  const themeOptions: { mode: ThemeMode; label: string; description: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { mode: 'light', label: 'Light', description: 'Always use light theme', icon: 'sunny-outline' },
+    { mode: 'dark', label: 'Dark', description: 'Always use dark theme', icon: 'moon-outline' },
+    { mode: 'system', label: 'System', description: 'Follow system settings', icon: 'phone-portrait-outline' },
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+      <LinearGradient
+        colors={[...gradient.colors]}
+        locations={[...gradient.locations]}
+        start={gradient.start}
+        end={gradient.end}
+        style={StyleSheet.absoluteFill}
+      />
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top + 8,
-            borderBottomColor: colors.border,
-          },
-        ]}
-      >
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: border }]}>
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.backButton, { borderColor: border }]}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
+          {/* @ts-expect-error — augmented GlassViewProps */}
+          <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
+          <Ionicons name="chevron-back" size={20} color={t.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: t.primary }]}>Settings</Text>
         <View style={styles.headerRight} />
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + 24 },
-        ]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Preferences Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
-            PREFERENCES
-          </Text>
+          <Text style={[styles.sectionTitle, { color: t.muted }]}>PREFERENCES</Text>
 
-          <View
-            style={[
-              styles.sectionContent,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            {/* Theme Options */}
+          <View style={[styles.sectionCard, { borderColor: border }]}>
+            {/* @ts-expect-error — augmented GlassViewProps */}
+            <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
+
             <TouchableOpacity
-              style={styles.themeHeader}
+              style={styles.row}
               activeOpacity={0.7}
               onPress={() => setAppearanceExpanded((prev) => !prev)}
             >
-              <View style={styles.themeHeaderLeft}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-                  ]}
-                >
-                  <Ionicons
-                    name={isDark ? 'moon' : 'sunny'}
-                    size={20}
-                    color={colors.text}
-                  />
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                  <Ionicons name={isDark ? 'moon' : 'sunny'} size={18} color={t.primary} />
                 </View>
                 <View>
-                  <Text style={[styles.themeTitle, { color: colors.text }]}>
-                    Appearance
-                  </Text>
-                  <Text style={[styles.themeSubtitle, { color: colors.textSecondary }]}>
+                  <Text style={[styles.rowLabel, { color: t.primary }]}>Appearance</Text>
+                  <Text style={[styles.rowSub, { color: t.tertiary }]}>
                     {themeMode === 'system'
                       ? `System (${isDark ? 'Dark' : 'Light'})`
                       : themeMode === 'dark'
@@ -130,12 +116,11 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <AnimatedChevron expanded={appearanceExpanded} color={colors.textTertiary} />
+              <AnimatedChevron expanded={appearanceExpanded} color={t.muted} />
             </TouchableOpacity>
 
-            {/* Theme Selection */}
             <AnimatedCollapsible expanded={appearanceExpanded}>
-              <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+              <View style={[styles.divider, { backgroundColor: border }]} />
               {themeOptions.map((option, index) => (
                 <React.Fragment key={option.mode}>
                   <TouchableOpacity
@@ -144,54 +129,20 @@ export default function SettingsScreen() {
                     activeOpacity={0.7}
                   >
                     <View style={styles.themeOptionLeft}>
-                      <Ionicons
-                        name={
-                          option.mode === 'light'
-                            ? 'sunny-outline'
-                            : option.mode === 'dark'
-                            ? 'moon-outline'
-                            : 'phone-portrait-outline'
-                        }
-                        size={22}
-                        color={colors.textSecondary}
-                      />
-                      <View style={styles.themeOptionText}>
-                        <Text style={[styles.optionLabel, { color: colors.text }]}>
-                          {option.label}
-                        </Text>
-                        <Text style={[styles.optionDescription, { color: colors.textTertiary }]}>
-                          {option.description}
-                        </Text>
+                      <Ionicons name={option.icon} size={20} color={t.tertiary} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.rowLabel, { color: t.primary }]}>{option.label}</Text>
+                        <Text style={[styles.rowSub, { color: t.muted }]}>{option.description}</Text>
                       </View>
                     </View>
-                    <View
-                      style={[
-                        styles.radioOuter,
-                        {
-                          borderColor:
-                            themeMode === option.mode
-                              ? colors.buttonPrimary
-                              : colors.border,
-                        },
-                      ]}
-                    >
+                    <View style={[styles.radioOuter, { borderColor: themeMode === option.mode ? '#fff' : border }]}>
                       {themeMode === option.mode && (
-                        <View
-                          style={[
-                            styles.radioInner,
-                            { backgroundColor: colors.buttonPrimary },
-                          ]}
-                        />
+                        <View style={[styles.radioInner, { backgroundColor: '#fff' }]} />
                       )}
                     </View>
                   </TouchableOpacity>
                   {index < themeOptions.length - 1 && (
-                    <View
-                      style={[
-                        styles.optionSeparator,
-                        { backgroundColor: colors.separator },
-                      ]}
-                    />
+                    <View style={[styles.optionDivider, { backgroundColor: border }]} />
                   )}
                 </React.Fragment>
               ))}
@@ -201,60 +152,39 @@ export default function SettingsScreen() {
 
         {/* Account Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
-            ACCOUNT
-          </Text>
-          <View
-            style={[
-              styles.sectionContent,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
-            ]}
-          >
+          <Text style={[styles.sectionTitle, { color: t.muted }]}>ACCOUNT</Text>
+          <View style={[styles.sectionCard, { borderColor: border }]}>
+            {/* @ts-expect-error — augmented GlassViewProps */}
+            <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
+
             <TouchableOpacity
-              style={styles.navItem}
+              style={styles.row}
               activeOpacity={0.7}
               onPress={() => router.push('/notification-settings')}
             >
-              <View style={styles.navItemLeft}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-                  ]}
-                >
-                  <Ionicons name="notifications-outline" size={20} color={colors.text} />
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                  <Ionicons name="notifications-outline" size={18} color={t.primary} />
                 </View>
-                <Text style={[styles.navItemLabel, { color: colors.text }]}>
-                  Notifications
-                </Text>
+                <Text style={[styles.rowLabel, { color: t.primary }]}>Notifications</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              <Ionicons name="chevron-forward" size={18} color={t.muted} />
             </TouchableOpacity>
 
-            <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+            <View style={[styles.divider, { backgroundColor: border }]} />
 
             <TouchableOpacity
-              style={styles.navItem}
+              style={styles.row}
               activeOpacity={0.7}
               onPress={() => router.push('/privacy-settings')}
             >
-              <View style={styles.navItemLeft}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-                  ]}
-                >
-                  <Ionicons name="lock-closed-outline" size={20} color={colors.text} />
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                  <Ionicons name="lock-closed-outline" size={18} color={t.primary} />
                 </View>
-                <Text style={[styles.navItemLabel, { color: colors.text }]}>
-                  Privacy
-                </Text>
+                <Text style={[styles.rowLabel, { color: t.primary }]}>Privacy</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              <Ionicons name="chevron-forward" size={18} color={t.muted} />
             </TouchableOpacity>
           </View>
         </View>
@@ -276,17 +206,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
   },
   headerTitle: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
   },
   headerRight: {
-    width: 40,
+    width: 36,
   },
   scrollView: {
     flex: 1,
@@ -296,57 +229,61 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_600SemiBold',
+    fontFamily: 'Lato_700Bold',
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 4,
   },
-  sectionContent: {
-    borderRadius: 12,
+  sectionCard: {
+    borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
   },
-  themeHeader: {
+  cardGlass: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 14,
   },
-  themeHeaderLeft: {
+  rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
   },
-  iconContainer: {
-    width: 36,
-    height: 36,
+  iconBox: {
+    width: 34,
+    height: 34,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  themeTitle: {
-    fontSize: 16,
+  rowLabel: {
+    fontSize: 15,
     fontFamily: 'Lato_600SemiBold',
   },
-  themeSubtitle: {
-    fontSize: 13,
+  rowSub: {
+    fontSize: 12,
     fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
-  separator: {
+  divider: {
     height: 1,
-    marginHorizontal: 16,
+    marginHorizontal: 14,
   },
   themeOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
   },
   themeOptionLeft: {
     flexDirection: 'row',
@@ -354,21 +291,9 @@ const styles = StyleSheet.create({
     gap: 12,
     flex: 1,
   },
-  themeOptionText: {
-    flex: 1,
-  },
-  optionLabel: {
-    fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
-  },
-  optionDescription: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 2,
-  },
-  optionSeparator: {
+  optionDivider: {
     height: 1,
-    marginLeft: 50,
+    marginLeft: 48,
   },
   radioOuter: {
     width: 22,
@@ -382,21 +307,5 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-  },
-  navItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  navItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  navItemLabel: {
-    fontSize: 16,
-    fontFamily: 'Lato_600SemiBold',
   },
 });

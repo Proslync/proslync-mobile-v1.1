@@ -13,6 +13,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { GlassView } from 'expo-glass-effect';
+import { LinearGradient } from 'expo-linear-gradient';
+import { liquidGlass, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useUserPreferences, useUpdatePreference } from '@/hooks';
 import type { UserPreferences } from '@/lib/types/preferences.types';
@@ -28,24 +31,19 @@ const PRIVACY_TOGGLES: ToggleItem[] = [
   { key: 'privateAccount', label: 'Private Account', description: 'Only followers can see your posts', icon: 'lock-closed-outline' },
 ];
 
-interface ConnectionItem {
+interface NavItem {
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
+  action?: string;
 }
 
-const CONNECTIONS_ITEMS: ConnectionItem[] = [
+const CONNECTIONS_ITEMS: NavItem[] = [
   { label: 'Blocked Accounts', icon: 'ban-outline' },
   { label: 'Muted Accounts', icon: 'volume-mute-outline' },
   { label: 'Restricted Accounts', icon: 'shield-outline' },
 ];
 
-interface DataActionItem {
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  action: 'download' | 'clear-search';
-}
-
-const DATA_ITEMS: DataActionItem[] = [
+const DATA_ITEMS: NavItem[] = [
   { label: 'Download Your Data', icon: 'download-outline', action: 'download' },
   { label: 'Clear Search History', icon: 'trash-outline', action: 'clear-search' },
 ];
@@ -53,9 +51,15 @@ const DATA_ITEMS: DataActionItem[] = [
 export default function PrivacySettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useAppTheme();
+  const { isDark } = useAppTheme();
   const { data: preferences, isLoading } = useUserPreferences();
   const updatePreference = useUpdatePreference();
+
+  const theme = isDark ? 'dark' : 'light';
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
+  const gradient = isDark ? activeGradient : activeGradientLight;
 
   const handleToggle = React.useCallback(
     (key: keyof UserPreferences, value: boolean) => {
@@ -64,7 +68,7 @@ export default function PrivacySettingsScreen() {
     [updatePreference],
   );
 
-  const handleDataAction = React.useCallback((action: string) => {
+  const handleDataAction = React.useCallback((action?: string) => {
     if (action === 'clear-search') {
       Alert.alert(
         'Clear Search History',
@@ -78,122 +82,89 @@ export default function PrivacySettingsScreen() {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+      <LinearGradient
+        colors={[...gradient.colors]}
+        locations={[...gradient.locations]}
+        start={gradient.start}
+        end={gradient.end}
+        style={StyleSheet.absoluteFill}
+      />
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      <View
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
-        ]}
-      >
+      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: border }]}>
         <TouchableOpacity
           onPress={() => router.back()}
-          style={styles.backButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.backButton, { borderColor: border }]}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
+          {/* @ts-expect-error — augmented GlassViewProps */}
+          <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
+          <Ionicons name="chevron-back" size={20} color={t.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Privacy
-        </Text>
+        <Text style={[styles.headerTitle, { color: t.primary }]}>Privacy</Text>
         <View style={styles.headerRight} />
       </View>
 
       {isLoading || !preferences ? (
         <View style={styles.loading}>
-          <ActivityIndicator color={colors.text} />
+          <ActivityIndicator color={t.muted} />
         </View>
       ) : (
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: insets.bottom + 24 },
-          ]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
           showsVerticalScrollIndicator={false}
         >
           {/* Account Privacy */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
-              ACCOUNT PRIVACY
-            </Text>
-            <View
-              style={[
-                styles.sectionContent,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
-              {PRIVACY_TOGGLES.map((item, index) => (
-                <React.Fragment key={item.key}>
-                  <View style={styles.toggleRow}>
-                    <View style={styles.toggleLeft}>
-                      <View
-                        style={[
-                          styles.iconContainer,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-                        ]}
-                      >
-                        <Ionicons name={item.icon} size={18} color={colors.text} />
-                      </View>
-                      <View style={styles.toggleText}>
-                        <Text style={[styles.toggleLabel, { color: colors.text }]}>
-                          {item.label}
-                        </Text>
-                        <Text style={[styles.toggleDescription, { color: colors.textTertiary }]}>
-                          {item.description}
-                        </Text>
-                      </View>
+            <Text style={[styles.sectionTitle, { color: t.muted }]}>ACCOUNT PRIVACY</Text>
+            <View style={[styles.sectionCard, { borderColor: border }]}>
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
+              {PRIVACY_TOGGLES.map((item) => (
+                <View key={item.key} style={styles.toggleRow}>
+                  <View style={styles.toggleLeft}>
+                    <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                      <Ionicons name={item.icon} size={18} color={t.primary} />
                     </View>
-                    <Switch
-                      value={preferences[item.key] as boolean}
-                      onValueChange={(val) => handleToggle(item.key, val)}
-                      trackColor={{
-                        false: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
-                        true: colors.buttonPrimary,
-                      }}
-                      thumbColor="#FFFFFF"
-                    />
+                    <View style={styles.toggleText}>
+                      <Text style={[styles.toggleLabel, { color: t.primary }]}>{item.label}</Text>
+                      <Text style={[styles.toggleDesc, { color: t.muted }]}>{item.description}</Text>
+                    </View>
                   </View>
-                  {index < PRIVACY_TOGGLES.length - 1 && (
-                    <View style={[styles.separator, { backgroundColor: colors.separator }]} />
-                  )}
-                </React.Fragment>
+                  <Switch
+                    value={preferences[item.key] as boolean}
+                    onValueChange={(val) => handleToggle(item.key, val)}
+                    trackColor={{
+                      false: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
+                      true: '#34c759',
+                    }}
+                    thumbColor="#FFFFFF"
+                  />
+                </View>
               ))}
             </View>
           </View>
 
           {/* Connections */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
-              CONNECTIONS
-            </Text>
-            <View
-              style={[
-                styles.sectionContent,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
+            <Text style={[styles.sectionTitle, { color: t.muted }]}>CONNECTIONS</Text>
+            <View style={[styles.sectionCard, { borderColor: border }]}>
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
               {CONNECTIONS_ITEMS.map((item, index) => (
                 <React.Fragment key={item.label}>
                   <TouchableOpacity style={styles.navRow} activeOpacity={0.7}>
                     <View style={styles.navLeft}>
-                      <View
-                        style={[
-                          styles.iconContainer,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-                        ]}
-                      >
-                        <Ionicons name={item.icon} size={18} color={colors.text} />
+                      <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                        <Ionicons name={item.icon} size={18} color={t.primary} />
                       </View>
-                      <Text style={[styles.navLabel, { color: colors.text }]}>
-                        {item.label}
-                      </Text>
+                      <Text style={[styles.navLabel, { color: t.primary }]}>{item.label}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                    <Ionicons name="chevron-forward" size={18} color={t.muted} />
                   </TouchableOpacity>
                   {index < CONNECTIONS_ITEMS.length - 1 && (
-                    <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+                    <View style={[styles.divider, { backgroundColor: border }]} />
                   )}
                 </React.Fragment>
               ))}
@@ -202,15 +173,10 @@ export default function PrivacySettingsScreen() {
 
           {/* Your Data */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>
-              YOUR DATA
-            </Text>
-            <View
-              style={[
-                styles.sectionContent,
-                { backgroundColor: colors.card, borderColor: colors.border },
-              ]}
-            >
+            <Text style={[styles.sectionTitle, { color: t.muted }]}>YOUR DATA</Text>
+            <View style={[styles.sectionCard, { borderColor: border }]}>
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
               {DATA_ITEMS.map((item, index) => (
                 <React.Fragment key={item.label}>
                   <TouchableOpacity
@@ -219,22 +185,15 @@ export default function PrivacySettingsScreen() {
                     onPress={() => handleDataAction(item.action)}
                   >
                     <View style={styles.navLeft}>
-                      <View
-                        style={[
-                          styles.iconContainer,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
-                        ]}
-                      >
-                        <Ionicons name={item.icon} size={18} color={colors.text} />
+                      <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                        <Ionicons name={item.icon} size={18} color={t.primary} />
                       </View>
-                      <Text style={[styles.navLabel, { color: colors.text }]}>
-                        {item.label}
-                      </Text>
+                      <Text style={[styles.navLabel, { color: t.primary }]}>{item.label}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+                    <Ionicons name="chevron-forward" size={18} color={t.muted} />
                   </TouchableOpacity>
                   {index < DATA_ITEMS.length - 1 && (
-                    <View style={[styles.separator, { backgroundColor: colors.separator }]} />
+                    <View style={[styles.divider, { backgroundColor: border }]} />
                   )}
                 </React.Fragment>
               ))}
@@ -247,9 +206,7 @@ export default function PrivacySettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -259,51 +216,39 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-  },
-  headerRight: {
-    width: 40,
-  },
-  loading: {
-    flex: 1,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-  },
-  section: {
-    marginBottom: 32,
-  },
+  headerTitle: { fontSize: 17, fontFamily: 'Lato_700Bold' },
+  headerRight: { width: 36 },
+  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 24 },
+  section: { marginBottom: 28 },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_600SemiBold',
+    fontFamily: 'Lato_700Bold',
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 4,
   },
-  sectionContent: {
-    borderRadius: 12,
+  sectionCard: {
+    borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
   },
+  cardGlass: { ...StyleSheet.absoluteFillObject },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
   },
   toggleLeft: {
     flexDirection: 'row',
@@ -312,43 +257,28 @@ const styles = StyleSheet.create({
     marginRight: 12,
     gap: 12,
   },
-  iconContainer: {
+  iconBox: {
     width: 32,
     height: 32,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  toggleText: {
-    flex: 1,
-  },
-  toggleLabel: {
-    fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
-  },
-  toggleDescription: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 2,
-  },
+  toggleText: { flex: 1 },
+  toggleLabel: { fontSize: 15, fontFamily: 'Lato_600SemiBold' },
+  toggleDesc: { fontSize: 12, fontFamily: 'Lato_400Regular', marginTop: 2 },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
   },
   navLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  navLabel: {
-    fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
-  },
-  separator: {
-    height: 1,
-    marginLeft: 60,
-  },
+  navLabel: { fontSize: 15, fontFamily: 'Lato_600SemiBold' },
+  divider: { height: 1, marginLeft: 58 },
 });

@@ -15,6 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { GlassView } from 'expo-glass-effect';
+import { LinearGradient } from 'expo-linear-gradient';
+import { liquidGlass, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
@@ -39,6 +42,11 @@ export default function EditProfileScreen() {
   const { user, refreshUser } = useAuth();
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
+  const theme = isDark ? 'dark' : 'light';
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
+  const gradient = isDark ? activeGradient : activeGradientLight;
   const [isSaving, setIsSaving] = React.useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = React.useState(false);
   const [hasChanges, setHasChanges] = React.useState(false);
@@ -52,7 +60,6 @@ export default function EditProfileScreen() {
     bio: '',
   });
 
-  // Initialize form with user data
   React.useEffect(() => {
     if (user) {
       setFormData({
@@ -119,42 +126,24 @@ export default function EditProfileScreen() {
   const uploadAvatar = async (uri: string, fileSize?: number) => {
     setIsUploadingPhoto(true);
     try {
-      // Get file name from URI
       const fileName = uri.split('/').pop() || 'avatar.jpg';
-      // Determine mime type from file extension
       const extension = fileName.split('.').pop()?.toLowerCase();
       let mimeType = 'image/jpeg';
-      if (extension === 'png') {
-        mimeType = 'image/png';
-      } else if (extension === 'gif') {
-        mimeType = 'image/gif';
-      } else if (extension === 'webp') {
-        mimeType = 'image/webp';
-      }
+      if (extension === 'png') mimeType = 'image/png';
+      else if (extension === 'gif') mimeType = 'image/gif';
+      else if (extension === 'webp') mimeType = 'image/webp';
 
-      // Use provided file size or estimate
-      const uploadFileSize = fileSize || 1024 * 1024; // Default to 1MB if not provided
+      const uploadFileSize = fileSize || 1024 * 1024;
 
-
-      // Step 1: Get presigned URL
-      const presignedResponse = await authApi.getAvatarPresignedUrl(
-        fileName,
-        mimeType,
-        uploadFileSize
-      );
-
-      // Upload to presigned URL
+      const presignedResponse = await authApi.getAvatarPresignedUrl(fileName, mimeType, uploadFileSize);
       await authApi.uploadToPresignedUrl(presignedResponse.uploadUrl, uri, mimeType);
-
-      // Confirm upload
       await authApi.confirmUpload(presignedResponse.fileId);
 
       showSuccess('Photo updated');
       await refreshUser();
     } catch (error: any) {
       console.error('Upload avatar error:', error);
-      const errorMessage = error?.message || error?.toString() || 'Failed to upload photo';
-      showError(errorMessage);
+      showError(error?.message || 'Failed to upload photo');
       setSelectedImage(null);
     } finally {
       setIsUploadingPhoto(false);
@@ -174,13 +163,11 @@ export default function EditProfileScreen() {
       return;
     }
 
-    // Validate username
     if (formData.userName && !/^[a-zA-Z0-9_]+$/.test(formData.userName)) {
       showError('Username can only contain letters, numbers, and underscores');
       return;
     }
 
-    // Validate email if provided
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       showError('Please enter a valid email address');
       return;
@@ -200,7 +187,6 @@ export default function EditProfileScreen() {
       const response = await authApi.updateProfile(updateData);
 
       if (response.success) {
-        // Refresh user data
         await refreshUser();
         showSuccess('Profile updated successfully');
         router.back();
@@ -226,23 +212,31 @@ export default function EditProfileScreen() {
   const avatarUrl = selectedImage || user?.avatar?.url;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+      <LinearGradient
+        colors={[...gradient.colors]}
+        locations={[...gradient.locations]}
+        start={gradient.start}
+        end={gradient.end}
+        style={StyleSheet.absoluteFill}
+      />
+
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
         {/* Header */}
-        <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: border }]}>
           <TouchableOpacity
             style={styles.headerButton}
             onPress={handleCancel}
             disabled={isSaving || isUploadingPhoto}
           >
-            <Text style={[styles.cancelText, { color: colors.text }]}>Cancel</Text>
+            <Text style={[styles.cancelText, { color: t.secondary }]}>Cancel</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Profile</Text>
+          <Text style={[styles.headerTitle, { color: t.primary }]}>Edit Profile</Text>
 
           <TouchableOpacity
             style={[styles.headerButton, styles.saveButton]}
@@ -250,9 +244,9 @@ export default function EditProfileScreen() {
             disabled={isSaving || isUploadingPhoto}
           >
             {isSaving ? (
-              <ActivityIndicator color={colors.text} size="small" />
+              <ActivityIndicator color={t.primary} size="small" />
             ) : (
-              <Text style={[styles.saveText, { color: colors.buttonPrimary }, !hasChanges && { opacity: 0.5 }]}>
+              <Text style={[styles.saveText, { color: t.primary }, !hasChanges && { opacity: 0.4 }]}>
                 Done
               </Text>
             )}
@@ -273,20 +267,22 @@ export default function EditProfileScreen() {
               disabled={isUploadingPhoto}
             >
               {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: colors.borderStrong }]} />
+                <Image source={{ uri: avatarUrl }} style={[styles.avatar, { borderColor: border }]} />
               ) : (
-                <Image source={DEFAULT_AVATAR} style={[styles.avatar, { borderColor: colors.borderStrong }]} />
+                <Image source={DEFAULT_AVATAR} style={[styles.avatar, { borderColor: border }]} />
               )}
-              <View style={[styles.editPhotoOverlay, { borderColor: colors.background }]}>
+              <View style={[styles.editPhotoOverlay, { borderColor: isDark ? '#000' : '#fff' }]}>
+                {/* @ts-expect-error — augmented GlassViewProps */}
+                <GlassView {...liquidGlass.surface} tintColor="rgba(10, 10, 10, 0.5)" borderRadius={16} style={StyleSheet.absoluteFill} />
                 {isUploadingPhoto ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Ionicons name="camera" size={20} color="#fff" />
+                  <Ionicons name="camera" size={18} color="#fff" />
                 )}
               </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleChangePhoto} disabled={isUploadingPhoto}>
-              <Text style={[styles.changePhotoText, { color: colors.buttonPrimary }]}>
+              <Text style={[styles.changePhotoText, { color: t.primary }]}>
                 {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
               </Text>
             </TouchableOpacity>
@@ -294,80 +290,101 @@ export default function EditProfileScreen() {
 
           {/* Form Fields */}
           <View style={styles.formSection}>
-            <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>About You</Text>
+            <Text style={[styles.sectionTitle, { color: t.muted }]}>About You</Text>
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>First Name</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-                value={formData.firstName}
-                onChangeText={(text) => updateField('firstName', text)}
-                placeholder="Enter your first name"
-                placeholderTextColor={colors.placeholder}
-                autoCapitalize="words"
-              />
-            </View>
+            <View style={[styles.fieldsCard, { borderColor: border }]}>
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={16} style={styles.fieldsCardGlass} />
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Last Name</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-                value={formData.lastName}
-                onChangeText={(text) => updateField('lastName', text)}
-                placeholder="Enter your last name"
-                placeholderTextColor={colors.placeholder}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Username</Text>
-              <View style={[styles.usernameInputContainer, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
-                <Text style={[styles.usernamePrefix, { color: colors.textSecondary }]}>@</Text>
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: t.tertiary }]}>First Name</Text>
                 <TextInput
-                  style={[styles.input, styles.usernameInput, { color: colors.text }]}
-                  value={formData.userName}
-                  onChangeText={(text) => updateField('userName', text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                  placeholder="username"
-                  placeholderTextColor={colors.placeholder}
+                  style={[styles.fieldInput, { color: t.primary }]}
+                  value={formData.firstName}
+                  onChangeText={(text) => updateField('firstName', text)}
+                  placeholder="First name"
+                  placeholderTextColor={t.faint}
+                  autoCapitalize="words"
+                  keyboardAppearance={isDark ? 'dark' : 'light'}
+                />
+              </View>
+
+              <View style={[styles.fieldDivider, { backgroundColor: border }]} />
+
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: t.tertiary }]}>Last Name</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: t.primary }]}
+                  value={formData.lastName}
+                  onChangeText={(text) => updateField('lastName', text)}
+                  placeholder="Last name"
+                  placeholderTextColor={t.faint}
+                  autoCapitalize="words"
+                  keyboardAppearance={isDark ? 'dark' : 'light'}
+                />
+              </View>
+
+              <View style={[styles.fieldDivider, { backgroundColor: border }]} />
+
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: t.tertiary }]}>Username</Text>
+                <View style={styles.usernameRow}>
+                  <Text style={[styles.usernamePrefix, { color: t.tertiary }]}>@</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { flex: 1, color: t.primary }]}
+                    value={formData.userName}
+                    onChangeText={(text) => updateField('userName', text.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    placeholder="username"
+                    placeholderTextColor={t.faint}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardAppearance={isDark ? 'dark' : 'light'}
+                  />
+                </View>
+              </View>
+
+              <View style={[styles.fieldDivider, { backgroundColor: border }]} />
+
+              <View style={styles.fieldRow}>
+                <Text style={[styles.fieldLabel, { color: t.tertiary }]}>Email</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: t.primary }]}
+                  value={formData.email}
+                  onChangeText={(text) => updateField('email', text)}
+                  placeholder="your@email.com"
+                  placeholderTextColor={t.faint}
+                  keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
+                  keyboardAppearance={isDark ? 'dark' : 'light'}
                 />
               </View>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Email</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-                value={formData.email}
-                onChangeText={(text) => updateField('email', text)}
-                placeholder="your@email.com"
-                placeholderTextColor={colors.placeholder}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
+            <View style={[styles.fieldsCard, { marginTop: 16, borderColor: border }]}>
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={16} style={styles.fieldsCardGlass} />
 
-            <View style={styles.inputGroup}>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Bio</Text>
-              <TextInput
-                style={[styles.input, styles.bioInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-                value={formData.bio}
-                onChangeText={(text) => updateField('bio', text)}
-                placeholder="Tell us about yourself"
-                placeholderTextColor={colors.placeholder}
-                multiline
-                numberOfLines={4}
-                maxLength={150}
-                textAlignVertical="top"
-              />
-              <Text style={[styles.charCount, { color: colors.textTertiary }]}>{formData.bio.length}/150</Text>
+              <View style={[styles.fieldRow, { alignItems: 'flex-start' }]}>
+                <Text style={[styles.fieldLabel, { marginTop: 4, color: t.tertiary }]}>Bio</Text>
+                <View style={{ flex: 1 }}>
+                  <TextInput
+                    style={[styles.fieldInput, { minHeight: 80, textAlignVertical: 'top', color: t.primary }]}
+                    value={formData.bio}
+                    onChangeText={(text) => updateField('bio', text)}
+                    placeholder="Tell us about yourself"
+                    placeholderTextColor={t.faint}
+                    multiline
+                    numberOfLines={4}
+                    maxLength={150}
+                    keyboardAppearance={isDark ? 'dark' : 'light'}
+                  />
+                  <Text style={[styles.charCount, { color: t.muted }]}>{formData.bio.length}/150</Text>
+                </View>
+              </View>
             </View>
           </View>
 
-          {/* Bottom spacing */}
           <View style={{ height: insets.bottom + 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -460,9 +477,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3897F0',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
     borderWidth: 2,
   },
   changePhotoText: {
@@ -479,49 +496,51 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_700Bold',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 16,
+    marginBottom: 12,
   },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    marginBottom: 8,
-  },
-  input: {
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-    fontFamily: 'Lato_400Regular',
+  fieldsCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
     borderWidth: 1,
   },
-  bioInput: {
-    minHeight: 100,
-    paddingTop: 14,
+  fieldsCardGlass: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    width: 90,
+  },
+  fieldInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
+    padding: 0,
+  },
+  fieldDivider: {
+    height: 1,
+    marginLeft: 16,
+  },
+  usernameRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  usernamePrefix: {
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
+    marginRight: 2,
   },
   charCount: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
     textAlign: 'right',
     marginTop: 4,
-  },
-  usernameInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  usernamePrefix: {
-    fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-    paddingLeft: 16,
-  },
-  usernameInput: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-    paddingLeft: 4,
   },
 });

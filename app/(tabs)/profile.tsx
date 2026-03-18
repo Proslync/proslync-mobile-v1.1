@@ -4,7 +4,7 @@ import { LinkifiedText } from "@/components/shared/linkified-text";
 import { SwipeableTabView } from "@/components/shared/swipeable-tab-view";
 import { useToast } from "@/components/shared/toast";
 import { VideoThumbnailImage } from "@/components/shared/video-thumbnail";
-import { liquidGlass, activeGradient } from "@/constants/glass/liquid-glass";
+import { liquidGlass, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from "@/constants/glass/liquid-glass";
 import { useUserFeed } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
@@ -334,6 +334,11 @@ export default function ProfileScreen() {
   const { isAccountSwitcherOpen, closeAccountSwitcher, openAccountSwitcher } =
     useTabNavigation();
   const { colors, isDark } = useAppTheme();
+  const theme = isDark ? 'dark' : 'light';
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
+  const gradient = isDark ? activeGradient : activeGradientLight;
   const { data: myVenues = [] } = useMyVenues();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const [followersSheetVisible, setFollowersSheetVisible] =
@@ -600,12 +605,12 @@ export default function ProfileScreen() {
 
   return (
     <SwipeableTabView>
-      <View style={[styles.container, { backgroundColor: "#000" }]}>
+      <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
         <LinearGradient
-          colors={[...activeGradient.colors]}
-          locations={[...activeGradient.locations]}
-          start={activeGradient.start}
-          end={activeGradient.end}
+          colors={[...gradient.colors]}
+          locations={[...gradient.locations]}
+          start={gradient.start}
+          end={gradient.end}
           style={StyleSheet.absoluteFill}
         />
         <ScrollView
@@ -620,17 +625,17 @@ export default function ProfileScreen() {
           {/* Header - Centered Username */}
           <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
             <TouchableOpacity
-              style={styles.headerIconWrapper}
+              style={[styles.headerIconWrapper, { borderColor: border }]}
               activeOpacity={0.7}
             >
               {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
-                tintColor="rgba(10, 10, 10, 0.25)"
+                tintColor={surfaceTint}
                 borderRadius={20}
                 style={styles.headerIconGlass}
               />
-              <Ionicons name="add" size={20} color="#fff" />
+              <Ionicons name="add" size={20} color={t.primary} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -638,7 +643,7 @@ export default function ProfileScreen() {
               onPress={openAccountSwitcher}
               activeOpacity={0.7}
             >
-              <Text style={[styles.headerUsername, { color: colors.text }]}>
+              <Text style={[styles.headerUsername, { color: t.primary }]}>
                 {username}
               </Text>
               {user?.isVerified && (
@@ -651,23 +656,23 @@ export default function ProfileScreen() {
               <Ionicons
                 name="chevron-down"
                 size={16}
-                color="rgba(255,255,255,0.5)"
+                color={t.tertiary}
               />
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.headerIconWrapper}
+              style={[styles.headerIconWrapper, { borderColor: border }]}
               activeOpacity={0.7}
               onPress={() => router.push("/settings")}
             >
               {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
-                tintColor="rgba(10, 10, 10, 0.25)"
+                tintColor={surfaceTint}
                 borderRadius={20}
                 style={styles.headerIconGlass}
               />
-              <Ionicons name="settings-outline" size={20} color="#fff" />
+              <Ionicons name="settings-outline" size={20} color={t.primary} />
             </TouchableOpacity>
           </Animated.View>
 
@@ -684,24 +689,24 @@ export default function ProfileScreen() {
                 source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage}
                 style={[
                   styles.avatar,
-                  { borderColor: "rgba(255,255,255,0.15)" },
+                  { borderColor: border },
                 ]}
               />
             </TouchableOpacity>
-            <View style={styles.statsCard}>
+            <View style={[styles.statsCard, { borderColor: border }]}>
               {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
-                tintColor="rgba(10, 10, 10, 0.25)"
+                tintColor={surfaceTint}
                 borderRadius={16}
                 style={styles.statsCardGlass}
               />
               <View style={styles.statsRow}>
                 <TouchableOpacity style={styles.statButton} activeOpacity={1}>
-                  <Text style={styles.statValue}>{postsCount}</Text>
-                  <Text style={styles.statLabel}>Posts</Text>
+                  <Text style={[styles.statValue, { color: t.primary }]}>{postsCount}</Text>
+                  <Text style={[styles.statLabel, { color: t.tertiary }]}>Posts</Text>
                 </TouchableOpacity>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: border }]} />
                 <TouchableOpacity
                   style={styles.statButton}
                   activeOpacity={0.7}
@@ -710,10 +715,10 @@ export default function ProfileScreen() {
                     setFollowersSheetVisible(true);
                   }}
                 >
-                  <Text style={styles.statValue}>{followerCount}</Text>
-                  <Text style={styles.statLabel}>Followers</Text>
+                  <Text style={[styles.statValue, { color: t.primary }]}>{followerCount}</Text>
+                  <Text style={[styles.statLabel, { color: t.tertiary }]}>Followers</Text>
                 </TouchableOpacity>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: border }]} />
                 <TouchableOpacity
                   style={styles.statButton}
                   activeOpacity={0.7}
@@ -722,8 +727,8 @@ export default function ProfileScreen() {
                     setFollowersSheetVisible(true);
                   }}
                 >
-                  <Text style={styles.statValue}>{followingCount}</Text>
-                  <Text style={styles.statLabel}>Following</Text>
+                  <Text style={[styles.statValue, { color: t.primary }]}>{followingCount}</Text>
+                  <Text style={[styles.statLabel, { color: t.tertiary }]}>Following</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -734,12 +739,12 @@ export default function ProfileScreen() {
             entering={FadeInDown.delay(200).duration(500).springify()}
             style={styles.bioSection}
           >
-            <Text style={[styles.displayName, { color: colors.text }]}>
+            <Text style={[styles.displayName, { color: t.primary }]}>
               {displayName}
             </Text>
             {bio ? (
               <LinkifiedText
-                style={{ ...styles.bio, color: colors.textSecondary }}
+                style={{ ...styles.bio, color: t.secondary }}
               >
                 {bio}
               </LinkifiedText>
@@ -755,17 +760,17 @@ export default function ProfileScreen() {
               activeOpacity={0.8}
               onPress={() => router.push("/dashboard")}
             >
-              <View style={styles.glassButton}>
+              <View style={[styles.glassButton, { borderColor: border }]}>
                 {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView
                   {...liquidGlass.surface}
-                  tintColor="rgba(10, 10, 10, 0.25)"
+                  tintColor={surfaceTint}
                   borderRadius={14}
                   style={styles.glassButtonBg}
                 />
                 <View style={styles.glassButtonContent}>
-                  <Ionicons name="grid-outline" size={18} color="#fff" />
-                  <Text style={styles.glassButtonText}>Dashboard</Text>
+                  <Ionicons name="grid-outline" size={18} color={t.primary} />
+                  <Text style={[styles.glassButtonText, { color: t.primary }]}>Dashboard</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -781,16 +786,16 @@ export default function ProfileScreen() {
               onPress={() => router.push("/edit-profile")}
               style={{ flex: 1 }}
             >
-              <View style={styles.glassButton}>
+              <View style={[styles.glassButton, { borderColor: border }]}>
                 {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView
                   {...liquidGlass.surface}
-                  tintColor="rgba(10, 10, 10, 0.25)"
+                  tintColor={surfaceTint}
                   borderRadius={14}
                   style={styles.glassButtonBg}
                 />
                 <View style={styles.glassButtonContent}>
-                  <Text style={styles.glassButtonText}>Edit Profile</Text>
+                  <Text style={[styles.glassButtonText, { color: t.primary }]}>Edit Profile</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -799,16 +804,16 @@ export default function ProfileScreen() {
               onPress={handleShareProfile}
               style={{ flex: 1 }}
             >
-              <View style={styles.glassButton}>
+              <View style={[styles.glassButton, { borderColor: border }]}>
                 {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView
                   {...liquidGlass.surface}
-                  tintColor="rgba(10, 10, 10, 0.25)"
+                  tintColor={surfaceTint}
                   borderRadius={14}
                   style={styles.glassButtonBg}
                 />
                 <View style={styles.glassButtonContent}>
-                  <Text style={styles.glassButtonText}>Share Profile</Text>
+                  <Text style={[styles.glassButtonText, { color: t.primary }]}>Share Profile</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -817,16 +822,16 @@ export default function ProfileScreen() {
           {/* Posts Grid Header */}
           <Animated.View
             entering={FadeInDown.delay(400).duration(500).springify()}
-            style={[styles.gridHeader, { borderTopColor: colors.border }]}
+            style={[styles.gridHeader, { borderTopColor: border }]}
           >
             <View
               style={[
                 styles.gridTab,
                 styles.gridTabActive,
-                { borderBottomColor: colors.text },
+                { borderBottomColor: t.primary },
               ]}
             >
-              <Ionicons name="grid-outline" size={24} color={colors.text} />
+              <Ionicons name="grid-outline" size={24} color={t.primary} />
             </View>
           </Animated.View>
 
@@ -837,7 +842,7 @@ export default function ProfileScreen() {
           >
             {postsLoading ? (
               <View style={styles.postsLoadingContainer}>
-                <ActivityIndicator color={colors.text} size="small" />
+                <ActivityIndicator color={t.primary} size="small" />
               </View>
             ) : userPosts.length > 0 ? (
               userPosts.map((post) => (
@@ -858,7 +863,7 @@ export default function ProfileScreen() {
                       fallbackUri={post.thumbUrl || post.imageUrl}
                       style={[
                         styles.postImage,
-                        { backgroundColor: colors.backgroundSecondary },
+                        { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
                       ]}
                     />
                   ) : (
@@ -866,7 +871,7 @@ export default function ProfileScreen() {
                       source={{ uri: post.imageUrl }}
                       style={[
                         styles.postImage,
-                        { backgroundColor: colors.backgroundSecondary },
+                        { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
                       ]}
                     />
                   )}
@@ -882,10 +887,10 @@ export default function ProfileScreen() {
                 <Ionicons
                   name="images-outline"
                   size={48}
-                  color={colors.textTertiary}
+                  color={t.muted}
                 />
                 <Text
-                  style={[styles.noPostsText, { color: colors.textTertiary }]}
+                  style={[styles.noPostsText, { color: t.muted }]}
                 >
                   No posts yet
                 </Text>
@@ -899,7 +904,7 @@ export default function ProfileScreen() {
             style={styles.logoutButtonContainer}
           >
             <TouchableOpacity activeOpacity={0.8} onPress={logout}>
-              <View style={styles.glassButton}>
+              <View style={[styles.glassButton, { borderColor: border }]}>
                 {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView
                   {...liquidGlass.surface}
@@ -908,7 +913,7 @@ export default function ProfileScreen() {
                   style={styles.glassButtonBg}
                 />
                 <View style={styles.glassButtonContent}>
-                  <Ionicons name="log-out-outline" size={18} color="#ff4444" />
+                  <Ionicons name="log-out-outline" size={18} color="#ff3b30" />
                   <Text style={[styles.glassButtonText, { color: "#ff4444" }]}>
                     Log Out
                   </Text>
@@ -996,7 +1001,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
   },
   headerIconGlass: {
     ...StyleSheet.absoluteFillObject,
@@ -1019,7 +1023,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
   },
   statsCardGlass: {
     ...StyleSheet.absoluteFillObject,
@@ -1036,17 +1039,14 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: "rgba(255,255,255,0.1)",
   },
   statValue: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
   },
   statLabel: {
     fontSize: 12,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
     marginTop: 2,
   },
   bioSection: {
@@ -1071,7 +1071,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
   },
   glassButtonBg: {
     ...StyleSheet.absoluteFillObject,
@@ -1086,7 +1085,6 @@ const styles = StyleSheet.create({
   glassButtonText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
   },
   glassCircleBg: {
     ...StyleSheet.absoluteFillObject,

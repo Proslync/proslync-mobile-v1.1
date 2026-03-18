@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { GlassView } from "expo-glass-effect";
 import { LinearGradient } from "expo-linear-gradient";
-import { liquidGlass, glassTint, activeGradient } from "@/constants/glass/liquid-glass";
+import { liquidGlass, glassTint, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from "@/constants/glass/liquid-glass";
 import { SegmentedControl } from "@/components/shared/segmented-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -39,13 +39,16 @@ function UserRow({
   user,
   currentUserId,
   onNavigate,
+  themeKey,
 }: {
   user: FollowUser;
   currentUserId?: number;
   onNavigate: () => void;
+  themeKey: 'dark' | 'light';
 }) {
   const router = useStableRouter();
-  const { colors } = useAppTheme();
+  const ut = glassText[themeKey];
+  const uBorder = glassBorder[themeKey];
   const {
     isFollowing,
     isLoading: followLoading,
@@ -86,10 +89,10 @@ function UserRow({
         style={styles.userAvatar}
       />
       <View style={styles.userInfo}>
-        <Text style={styles.userName} numberOfLines={1}>
+        <Text style={[styles.userName, { color: ut.primary }]} numberOfLines={1}>
           {user.userName}
         </Text>
-        <Text style={styles.userFullName} numberOfLines={1}>
+        <Text style={[styles.userFullName, { color: ut.tertiary }]} numberOfLines={1}>
           {[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"}
         </Text>
       </View>
@@ -97,25 +100,26 @@ function UserRow({
         <TouchableOpacity
           style={[
             styles.followBtn,
-            { overflow: "hidden" },
+            { overflow: "hidden", borderColor: uBorder },
           ]}
           activeOpacity={0.8}
           onPress={handleFollowPress}
           disabled={followLoading || isActionInProgress}
         >
+          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView
-            {...liquidGlass.fill}
-            tintColor={isFollowing ? glassTint.fill : glassTint.fillMedium}
-            borderRadius={8}
+            {...liquidGlass.surface}
+            tintColor={glassSurfaceTint[themeKey]}
+            borderRadius={10}
             style={StyleSheet.absoluteFill}
           />
           {isActionInProgress ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={ut.primary} />
           ) : (
             <Text
               style={[
                 styles.followBtnText,
-                { color: "#fff" },
+                { color: ut.primary },
               ]}
             >
               {isFollowing ? "Following" : "Follow"}
@@ -130,12 +134,14 @@ function UserRow({
 function VenueRow({
   venue,
   onNavigate,
+  themeKey,
 }: {
   venue: FollowVenue;
   onNavigate: () => void;
+  themeKey: 'dark' | 'light';
 }) {
   const router = useStableRouter();
-  const { colors } = useAppTheme();
+  const vt = glassText[themeKey];
 
   const handlePress = () => {
     onNavigate();
@@ -156,10 +162,10 @@ function VenueRow({
         style={styles.userAvatar}
       />
       <View style={styles.userInfo}>
-        <Text style={styles.userName} numberOfLines={1}>
+        <Text style={[styles.userName, { color: vt.primary }]} numberOfLines={1}>
           {venue.name}
         </Text>
-        <Text style={styles.userFullName} numberOfLines={1}>
+        <Text style={[styles.userFullName, { color: vt.tertiary }]} numberOfLines={1}>
           Venue
         </Text>
       </View>
@@ -177,7 +183,12 @@ export function FollowersSheet({
   currentUserId,
 }: FollowersSheetProps) {
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
+  const theme = isDark ? 'dark' : 'light';
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
+  const gradient = isDark ? activeGradient : activeGradientLight;
   const [activeTab, setActiveTab] = React.useState<SheetTab>(initialTab);
 
   React.useEffect(() => {
@@ -207,19 +218,19 @@ export function FollowersSheet({
 
   const renderFollowerItem = React.useCallback(
     ({ item }: { item: FollowUser }) => (
-      <UserRow user={item} currentUserId={currentUserId} onNavigate={onClose} />
+      <UserRow user={item} currentUserId={currentUserId} onNavigate={onClose} themeKey={theme} />
     ),
-    [currentUserId, onClose],
+    [currentUserId, onClose, theme],
   );
 
   const renderFollowingItem = React.useCallback(
     ({ item }: { item: { type: 'user'; data: FollowUser } | { type: 'venue'; data: FollowVenue } }) => {
       if (item.type === 'venue') {
-        return <VenueRow venue={item.data} onNavigate={onClose} />;
+        return <VenueRow venue={item.data} onNavigate={onClose} themeKey={theme} />;
       }
-      return <UserRow user={item.data} currentUserId={currentUserId} onNavigate={onClose} />;
+      return <UserRow user={item.data} currentUserId={currentUserId} onNavigate={onClose} themeKey={theme} />;
     },
-    [currentUserId, onClose],
+    [currentUserId, onClose, theme],
   );
 
   return (
@@ -229,31 +240,31 @@ export function FollowersSheet({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { backgroundColor: "#000" }]}>
+      <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
         <LinearGradient
-          colors={[...activeGradient.colors]}
-          locations={[...activeGradient.locations]}
-          start={activeGradient.start}
-          end={activeGradient.end}
+          colors={[...gradient.colors]}
+          locations={[...gradient.locations]}
+          start={gradient.start}
+          end={gradient.end}
           style={StyleSheet.absoluteFill}
         />
 
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+          <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { borderColor: border }]}>
             {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView
               {...liquidGlass.surface}
-              tintColor="rgba(10, 10, 10, 0.25)"
+              tintColor={surfaceTint}
               borderRadius={18}
               style={StyleSheet.absoluteFill}
             />
-            <Ionicons name="close" size={22} color="#fff" />
+            <Ionicons name="close" size={22} color={t.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerTitle, { color: t.primary }]}>
             {activeTab === "followers" ? "Followers" : "Following"}
           </Text>
-          <View style={styles.closeBtn} />
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* Glass Segmented Tabs */}
@@ -268,7 +279,7 @@ export function FollowersSheet({
         {/* List */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.textTertiary} />
+            <ActivityIndicator size="large" color={t.muted} />
           </View>
         ) : activeTab === "followers" && followers.length > 0 ? (
           <FlatList
@@ -288,7 +299,7 @@ export function FollowersSheet({
           />
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+            <Text style={[styles.emptyText, { color: t.muted }]}>
               {activeTab === "followers"
                 ? "No followers yet"
                 : "Not following anyone yet"}
@@ -321,12 +332,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+  },
+
+  headerSpacer: {
+    width: 36,
   },
 
   // Tabs
@@ -347,7 +360,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.1)", // always dark in pageSheet
   },
   userInfo: {
     flex: 1,
@@ -356,12 +369,10 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
   },
   userFullName: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
     marginTop: 2,
   },
   followBtn: {
@@ -372,7 +383,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
   },
   followBtnText: {
     fontSize: 13,
@@ -393,6 +403,5 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
   },
 });

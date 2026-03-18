@@ -59,8 +59,57 @@ export const glassGradients = {
   },
 } as const;
 
-/** Active gradient — change this one value to switch the whole app */
+/** Light mode gradients */
+export const glassGradientsLight = {
+  /** Soft blue-lavender — matches sign-in light palette */
+  frost: {
+    colors: ["#f0f4ff", "#e8edf5", "#f5f0ff", "#f0f4ff"] as const,
+    locations: [0, 0.3, 0.7, 1] as const,
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+  /** Clean white — minimal */
+  cloud: {
+    colors: ["#ffffff", "#f8f9fa", "#f0f1f3", "#ffffff"] as const,
+    locations: [0, 0.3, 0.7, 1] as const,
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+} as const;
+
+/** Active gradients — change these to switch the whole app */
 export const activeGradient = glassGradients.midnight;
+export const activeGradientLight = glassGradientsLight.frost;
+
+/** Glass border colors per theme */
+export const glassBorder = {
+  dark: "rgba(255,255,255,0.08)",
+  light: "rgba(0,0,0,0.08)",
+} as const;
+
+/** Glass text colors per theme */
+export const glassText = {
+  dark: {
+    primary: "#fff",
+    secondary: "rgba(255,255,255,0.7)",
+    tertiary: "rgba(255,255,255,0.5)",
+    muted: "rgba(255,255,255,0.35)",
+    faint: "rgba(255,255,255,0.25)",
+  },
+  light: {
+    primary: "#1a1a1a",
+    secondary: "rgba(0,0,0,0.6)",
+    tertiary: "rgba(0,0,0,0.45)",
+    muted: "rgba(0,0,0,0.3)",
+    faint: "rgba(0,0,0,0.2)",
+  },
+} as const;
+
+/** Glass surface tint per theme (for buttons, cards) */
+export const glassSurfaceTint = {
+  dark: "rgba(10, 10, 10, 0.25)",
+  light: "rgba(255, 255, 255, 0.6)",
+} as const;
 
 // ─── Presets ─────────────────────────────────────────────────────
 // Spread onto <GlassView>: <GlassView {...liquidGlass.surface} borderRadius={28} />
