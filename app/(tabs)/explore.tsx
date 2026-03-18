@@ -27,7 +27,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedStyle, withTiming, runOnJS } from "react-native-reanimated";
 import { Gesture, GestureDetector, TouchableOpacity as GHTouchableOpacity } from "react-native-gesture-handler";
 import { GlassView } from "expo-glass-effect";
-import { liquidGlass, glassTint } from "@/constants/glass/liquid-glass";
+import { liquidGlass, glassTint, glassText, glassBorder, glassSurfaceTint } from "@/constants/glass/liquid-glass";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import {
   useConversations,
@@ -131,6 +131,7 @@ function ConversationRow({
   index,
   searchMatch,
   colors,
+  surfaceTint,
 }: {
   channel: ChannelData;
   onPress: () => void;
@@ -139,6 +140,7 @@ function ConversationRow({
   index: number;
   searchMatch?: string;
   colors: ReturnType<typeof useAppTheme>["colors"];
+  surfaceTint: string;
 }) {
   const hasUnread = channel.unreadCount > 0;
   const isOwnMessage = channel.lastMessage?.userId === currentUserId;
@@ -200,8 +202,10 @@ function ConversationRow({
         delayLongPress={500}
         activeOpacity={0.6}
       >
+        {/* @ts-expect-error — augmented GlassViewProps */}
         <GlassView
           {...liquidGlass.surface}
+          tintColor={surfaceTint}
           borderRadius={16}
           style={StyleSheet.absoluteFillObject}
         />
@@ -318,7 +322,7 @@ function EmptyMessages({
             borderRadius={8}
             style={StyleSheet.absoluteFillObject}
           />
-          <Text style={styles.sendMessageButtonText}>Send Message</Text>
+          <Text style={[styles.sendMessageButtonText, { color: colors.text }]}>Send Message</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -404,6 +408,9 @@ export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { colors, isDark } = useAppTheme();
+  const themeKey = isDark ? 'dark' : 'light';
+  const t = glassText[themeKey];
+  const border = glassBorder[themeKey];
   const { user } = useAuth();
   const { openAccountSwitcher, tabBarTopOffset } = useTabNavigation();
   const { channelData, isLoading, refetch, deleteChannel } = useConversations(
@@ -720,6 +727,7 @@ export default function MessagesScreen() {
         index={index}
         searchMatch={searchResults.get(item.id)}
         colors={colors}
+        surfaceTint={glassSurfaceTint[themeKey]}
       />
     ),
     [
@@ -1314,7 +1322,7 @@ const styles = StyleSheet.create({
     marginVertical: 3,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    borderColor: "rgba(128,128,128,0.12)",
   },
   avatarContainer: {
     position: "relative",
@@ -1322,7 +1330,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   avatarWrapper: {
-    backgroundColor: "#fff",
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
@@ -1348,7 +1355,7 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(128,128,128,0.2)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1399,7 +1406,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#fff",
+    backgroundColor: "#3897F0",
     marginLeft: 8,
   },
   emptyListContainer: {
@@ -1418,7 +1425,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(128,128,128,0.12)",
     width: "100%",
   },
   emptyIconContainer: {
@@ -1440,13 +1447,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
+    borderColor: "rgba(128,128,128,0.2)",
     borderRadius: 8,
   },
   sendMessageButtonText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
   },
   loadingContainer: {
     flex: 1,
@@ -1473,13 +1479,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(128,128,128,0.12)",
   },
   actionSheetHandle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(128,128,128,0.3)",
     alignSelf: "center",
     marginTop: 10,
     marginBottom: 4,
@@ -1491,7 +1497,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(255,255,255,0.08)",
+    borderBottomColor: "rgba(128,128,128,0.12)",
   },
   actionSheetClose: {
     width: 32,
@@ -1502,7 +1508,6 @@ const styles = StyleSheet.create({
   actionTitle: {
     fontSize: 17,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
     flex: 1,
   },
   actionList: {
@@ -1513,7 +1518,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(255,255,255,0.06)",
+    borderBottomColor: "rgba(128,128,128,0.1)",
   },
   actionItemIcon: {
     width: 36,
