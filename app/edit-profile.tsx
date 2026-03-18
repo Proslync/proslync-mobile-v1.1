@@ -16,8 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { GlassView } from 'expo-glass-effect';
-import { LinearGradient } from 'expo-linear-gradient';
-import { liquidGlass, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { liquidGlass, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
@@ -46,7 +46,6 @@ export default function EditProfileScreen() {
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
-  const gradient = isDark ? activeGradient : activeGradientLight;
   const [isSaving, setIsSaving] = React.useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = React.useState(false);
   const [hasChanges, setHasChanges] = React.useState(false);
@@ -213,13 +212,7 @@ export default function EditProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <LinearGradient
-        colors={[...gradient.colors]}
-        locations={[...gradient.locations]}
-        start={gradient.start}
-        end={gradient.end}
-        style={StyleSheet.absoluteFill}
-      />
+      <DarkGradientBg />
 
       <KeyboardAvoidingView
         style={styles.keyboardView}

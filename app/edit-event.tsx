@@ -27,11 +27,9 @@ import {
   View,
 } from 'react-native';
 import { GlassView } from 'expo-glass-effect';
-import { LinearGradient } from 'expo-linear-gradient';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import {
   liquidGlass,
-  activeGradient,
-  activeGradientLight,
   glassBorder,
   glassText,
   glassSurfaceTint,
@@ -89,7 +87,6 @@ export default function EditEventScreen() {
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
-  const gradient = isDark ? activeGradient : activeGradientLight;
 
   const eventId = id ? Number(id) : undefined;
   const { data: event, isLoading } = useEvent(isNaN(eventId as number) ? undefined : eventId);
@@ -164,7 +161,7 @@ export default function EditEventScreen() {
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-        <LinearGradient colors={[...gradient.colors]} locations={[...gradient.locations]} start={gradient.start} end={gradient.end} style={StyleSheet.absoluteFill} />
+        <DarkGradientBg />
         <ActivityIndicator size="large" color={t.primary} />
         <Text style={[styles.loadingText, { color: t.muted }]}>Loading event...</Text>
       </View>
@@ -174,13 +171,7 @@ export default function EditEventScreen() {
   return (
     <FormProvider {...form}>
       <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-        <LinearGradient
-          colors={[...gradient.colors]}
-          locations={[...gradient.locations]}
-          start={gradient.start}
-          end={gradient.end}
-          style={StyleSheet.absoluteFill}
-        />
+        <DarkGradientBg />
 
         {/* Header */}
         <Animated.View

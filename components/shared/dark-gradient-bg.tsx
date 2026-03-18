@@ -1,17 +1,35 @@
-// Glass gradient background — uses activeGradient from liquid glass design system.
+// Glass background — renders either a gradient or wallpaper image based on
+// backgroundMode in the liquid glass design system.
 // Place as first child inside any flex:1 container.
 // Automatically adapts to light/dark theme.
 
 import * as React from 'react';
-import { StyleSheet } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { activeGradient, activeGradientLight } from '@/constants/glass/liquid-glass';
+import {
+  activeGradient,
+  activeGradientLight,
+  activeImageDark,
+  activeImageLight,
+  backgroundMode,
+} from '@/constants/glass/liquid-glass';
 
 export function DarkGradientBg() {
   const { isDark } = useAppTheme();
-  const gradient = isDark ? activeGradient : activeGradientLight;
 
+  if (backgroundMode === 'image') {
+    const source = isDark ? activeImageDark : activeImageLight;
+    return (
+      <Image
+        source={source}
+        style={styles.image}
+        resizeMode="cover"
+      />
+    );
+  }
+
+  const gradient = isDark ? activeGradient : activeGradientLight;
   return (
     <LinearGradient
       colors={[...gradient.colors]}
@@ -23,3 +41,10 @@ export function DarkGradientBg() {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  image: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.6,
+  },
+});

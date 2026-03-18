@@ -6,11 +6,9 @@ import { useWallet } from "@/lib/providers/wallet-provider";
 import { UserRole } from "@/lib/types/auth.types";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
-import { LinearGradient } from "expo-linear-gradient";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import {
   liquidGlass,
-  activeGradient,
-  activeGradientLight,
   glassBorder,
   glassText,
   glassSurfaceTint,
@@ -136,7 +134,6 @@ export default function DashboardScreen() {
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
-  const gradient = isDark ? activeGradient : activeGradientLight;
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -176,7 +173,7 @@ export default function DashboardScreen() {
   if (isLoading && !refreshing) {
     return (
       <View style={[styles.container, { backgroundColor: isDark ? "#000" : "#fff" }]}>
-        <LinearGradient colors={[...gradient.colors]} locations={[...gradient.locations]} start={gradient.start} end={gradient.end} style={StyleSheet.absoluteFill} />
+        <DarkGradientBg />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={t.primary} />
           <Text style={[styles.loadingText, { color: t.muted }]}>Loading dashboard...</Text>
@@ -187,13 +184,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? "#000" : "#fff" }]}>
-      <LinearGradient
-        colors={[...gradient.colors]}
-        locations={[...gradient.locations]}
-        start={gradient.start}
-        end={gradient.end}
-        style={StyleSheet.absoluteFill}
-      />
+      <DarkGradientBg />
 
       {/* Header */}
       <Animated.View

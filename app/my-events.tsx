@@ -4,11 +4,9 @@ import { useMyEvents } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { GlassView } from "expo-glass-effect";
-import { LinearGradient } from "expo-linear-gradient";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import {
   liquidGlass,
-  activeGradient,
-  activeGradientLight,
   glassBorder,
   glassText,
   glassSurfaceTint,
@@ -254,7 +252,6 @@ export default function MyEventsScreen() {
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
-  const gradient = isDark ? activeGradient : activeGradientLight;
   const [activeTab, setActiveTab] = React.useState<EventTab>("current");
 
   // Fetch events using React Query - auto-invalidated when events are created/updated
@@ -317,13 +314,7 @@ export default function MyEventsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <LinearGradient
-        colors={[...gradient.colors]}
-        locations={[...gradient.locations]}
-        start={gradient.start}
-        end={gradient.end}
-        style={StyleSheet.absoluteFill}
-      />
+      <DarkGradientBg />
 
       {/* Header */}
       <Animated.View

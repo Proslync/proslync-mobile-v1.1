@@ -11,8 +11,8 @@ import {
   FlatList,
 } from "react-native";
 import { GlassView } from "expo-glass-effect";
-import { LinearGradient } from "expo-linear-gradient";
-import { liquidGlass, glassTint, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from "@/constants/glass/liquid-glass";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { liquidGlass, glassBorder, glassText, glassSurfaceTint } from "@/constants/glass/liquid-glass";
 import { SegmentedControl } from "@/components/shared/segmented-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -188,7 +188,6 @@ export function FollowersSheet({
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
-  const gradient = isDark ? activeGradient : activeGradientLight;
   const [activeTab, setActiveTab] = React.useState<SheetTab>(initialTab);
 
   React.useEffect(() => {
@@ -241,13 +240,7 @@ export function FollowersSheet({
       onRequestClose={onClose}
     >
       <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-        <LinearGradient
-          colors={[...gradient.colors]}
-          locations={[...gradient.locations]}
-          start={gradient.start}
-          end={gradient.end}
-          style={StyleSheet.absoluteFill}
-        />
+        <DarkGradientBg />
 
         {/* Header */}
         <View style={styles.header}>

@@ -30,11 +30,9 @@ import {
   View,
 } from 'react-native';
 import { GlassView } from 'expo-glass-effect';
-import { LinearGradient } from 'expo-linear-gradient';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import {
   liquidGlass,
-  activeGradient,
-  activeGradientLight,
   glassBorder,
   glassText,
   glassSurfaceTint,
@@ -91,7 +89,6 @@ export default function CreateEventScreen() {
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
-  const gradient = isDark ? activeGradient : activeGradientLight;
 
   const { form, canSubmit, isPaid } = useEventForm();
   const createEvent = useCreateEvent();
@@ -155,13 +152,7 @@ export default function CreateEventScreen() {
   return (
     <FormProvider {...form}>
       <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-        <LinearGradient
-          colors={[...gradient.colors]}
-          locations={[...gradient.locations]}
-          start={gradient.start}
-          end={gradient.end}
-          style={StyleSheet.absoluteFill}
-        />
+        <DarkGradientBg />
 
         {/* Header */}
         <Animated.View

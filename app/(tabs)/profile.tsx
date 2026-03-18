@@ -4,7 +4,7 @@ import { LinkifiedText } from "@/components/shared/linkified-text";
 import { SwipeableTabView } from "@/components/shared/swipeable-tab-view";
 import { useToast } from "@/components/shared/toast";
 import { VideoThumbnailImage } from "@/components/shared/video-thumbnail";
-import { liquidGlass, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from "@/constants/glass/liquid-glass";
+import { liquidGlass, glassBorder, glassText, glassSurfaceTint } from "@/constants/glass/liquid-glass";
 import { useUserFeed } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
@@ -17,7 +17,6 @@ import { useTabNavigation } from "@/lib/providers/tab-navigation-provider";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GlassView } from "expo-glass-effect";
-import { LinearGradient } from "expo-linear-gradient";
 import * as SecureStore from "expo-secure-store";
 import * as React from "react";
 import {
@@ -337,7 +336,6 @@ export default function ProfileScreen() {
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
-  const gradient = isDark ? activeGradient : activeGradientLight;
   const { data: myVenues = [] } = useMyVenues();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const [followersSheetVisible, setFollowersSheetVisible] =
@@ -605,13 +603,7 @@ export default function ProfileScreen() {
   return (
     <SwipeableTabView>
       <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-        <LinearGradient
-          colors={[...gradient.colors]}
-          locations={[...gradient.locations]}
-          start={gradient.start}
-          end={gradient.end}
-          style={StyleSheet.absoluteFill}
-        />
+        <DarkGradientBg />
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={[

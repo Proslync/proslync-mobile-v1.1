@@ -13,8 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { GlassView } from 'expo-glass-effect';
-import { LinearGradient } from 'expo-linear-gradient';
-import { liquidGlass, activeGradient, activeGradientLight, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { liquidGlass, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useUserPreferences, useUpdatePreference } from '@/hooks';
 import type { UserPreferences } from '@/lib/types/preferences.types';
@@ -138,7 +138,6 @@ export default function NotificationSettingsScreen() {
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
-  const gradient = isDark ? activeGradient : activeGradientLight;
 
   const handleToggle = React.useCallback(
     (key: keyof UserPreferences, value: boolean) => {
@@ -149,13 +148,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <LinearGradient
-        colors={[...gradient.colors]}
-        locations={[...gradient.locations]}
-        start={gradient.start}
-        end={gradient.end}
-        style={StyleSheet.absoluteFill}
-      />
+      <DarkGradientBg />
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: border }]}>

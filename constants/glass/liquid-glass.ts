@@ -77,9 +77,30 @@ export const glassGradientsLight = {
   },
 } as const;
 
+// ─── Image backgrounds ──────────────────────────────────────────
+// Wallpaper-style backgrounds that give glass maximum depth and refraction.
+
+export const glassBackgroundImages = {
+  /** iOS 26 dark wallpaper — deep blue/purple swirls */
+  ios26Dark: require("@/assets/backgrounds/theme-dark.jpg"),
+  /** iOS 26 light wallpaper — soft pink/blue gradient */
+  ios26Light: require("@/assets/backgrounds/theme-light.jpg"),
+} as const;
+
+// ─── Background mode ────────────────────────────────────────────
+// Set to 'gradient' for solid gradients, 'image' for wallpaper backgrounds.
+// DarkGradientBg reads this to decide what to render.
+
+export type BackgroundMode = "gradient" | "image";
+export const backgroundMode: BackgroundMode = "image";
+
 /** Active gradients — change these to switch the whole app */
 export const activeGradient = glassGradients.midnight;
 export const activeGradientLight = glassGradientsLight.frost;
+
+/** Active images — used when backgroundMode is 'image' */
+export const activeImageDark = glassBackgroundImages.ios26Dark;
+export const activeImageLight = glassBackgroundImages.ios26Light;
 
 /** Glass border colors per theme */
 export const glassBorder = {
