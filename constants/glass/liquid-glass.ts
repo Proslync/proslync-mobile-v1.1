@@ -92,7 +92,7 @@ export const glassBackgroundImages = {
 // DarkGradientBg reads this to decide what to render.
 
 export type BackgroundMode = "gradient" | "image";
-export const backgroundMode: BackgroundMode = "image";
+export const backgroundMode: BackgroundMode = "gradient";
 
 /** Active gradients — change these to switch the whole app */
 export const activeGradient = glassGradients.midnight;
