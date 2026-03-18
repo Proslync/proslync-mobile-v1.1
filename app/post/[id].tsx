@@ -32,7 +32,7 @@ import {
   type CommentData,
 } from '@/hooks';
 import { GlassView } from 'expo-glass-effect';
-import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
+import { liquidGlass, glassTint, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 
@@ -64,9 +64,11 @@ function CommentItem({
   onReply: (commentId: string, username: string) => void;
   currentUserId?: string;
 }) {
-  const { colors } = useAppTheme();
+  const { isDark } = useAppTheme();
+  const ct = glassText[isDark ? 'dark' : 'light'];
+  const cBorder = glassBorder[isDark ? 'dark' : 'light'];
+  const cSurface = glassSurfaceTint[isDark ? 'dark' : 'light'];
 
-  // Get comment user info
   const userCustom = comment.user?.custom;
   const commentUsername =
     userCustom?.userName ||
@@ -76,9 +78,7 @@ function CommentItem({
       : comment.user?.id) ||
     'user';
   const commentAvatar = comment.user?.image;
-  const isReply = false; // Threading not yet supported in our backend
 
-  // Format time
   const formatTime = (createdAt: string | number) => {
     try {
       const date = new Date(createdAt);
@@ -89,32 +89,34 @@ function CommentItem({
   };
 
   return (
-    <View style={[styles.commentItem, isReply && styles.commentReply]}>
-      <Image
-        source={commentAvatar ? { uri: commentAvatar } : DefaultAvatarImage}
-        style={styles.commentAvatar}
-      />
-      <View style={styles.commentContent}>
-        <View style={styles.commentHeader}>
-          <Text style={[styles.commentUsername, { color: colors.text }]}>
-            @{commentUsername}
+    <View style={[styles.commentCard, { borderColor: cBorder }]}>
+      {/* @ts-expect-error — augmented GlassViewProps */}
+      <GlassView {...liquidGlass.surface} tintColor={cSurface} borderRadius={14} style={StyleSheet.absoluteFillObject} />
+      <View style={styles.commentInner}>
+        <Image
+          source={commentAvatar ? { uri: commentAvatar } : DefaultAvatarImage}
+          style={[styles.commentAvatar, { borderColor: cBorder }]}
+        />
+        <View style={styles.commentContent}>
+          <View style={styles.commentHeader}>
+            <View style={styles.commentHeaderLeft}>
+              <Text style={[styles.commentUsername, { color: ct.primary }]}>
+                @{commentUsername}
+              </Text>
+              <Text style={[styles.commentTime, { color: ct.muted }]}>
+                · {formatTime(comment.created_at)}
+              </Text>
+            </View>
+            <TouchableOpacity
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              onPress={() => onReply(comment.id, commentUsername)}
+            >
+              <Ionicons name="arrow-undo-outline" size={16} color={ct.muted} />
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.commentText, { color: ct.primary }]}>
+            {comment.text}
           </Text>
-          <Text style={[styles.commentTime, { color: colors.textTertiary }]}>
-            {formatTime(comment.created_at)}
-          </Text>
-        </View>
-        <Text style={[styles.commentText, { color: colors.text }]}>
-          {comment.text}
-        </Text>
-        <View style={styles.commentActions}>
-          <TouchableOpacity
-            style={styles.commentAction}
-            onPress={() => onReply(comment.id, commentUsername)}
-          >
-            <Text style={[styles.commentActionText, { color: colors.textTertiary }]}>
-              Reply
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -127,9 +129,13 @@ export default function PostDetailScreen() {
   const { id: activityId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { colors, isDark } = useAppTheme();
+  const theme = isDark ? 'dark' : 'light';
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
 
   const [commentText, setCommentText] = React.useState('');
-  const [showComments, setShowComments] = React.useState(false);
+  const [showComments, setShowComments] = React.useState(true);
   const [replyingToCommentId, setReplyingToCommentId] = React.useState<string | null>(null);
   const [replyingToUsername, setReplyingToUsername] = React.useState<string | null>(null);
   const [showMenu, setShowMenu] = React.useState(false);
@@ -258,28 +264,32 @@ export default function PostDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.text} />
+      <View style={[styles.container, styles.loadingContainer, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+        <DarkGradientBg />
+        <ActivityIndicator size="large" color={t.primary} />
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={0}
     >
+      <DarkGradientBg />
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { borderColor: border }]}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
+          {/* @ts-expect-error — augmented GlassViewProps */}
+          <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
+          <Ionicons name="chevron-back" size={20} color={t.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Post</Text>
-        <View style={{ width: 44 }} />
+        <Text style={[styles.headerTitle, { color: t.primary }]}>Post</Text>
+        <View style={{ width: 36 }} />
       </View>
 
       {/* Scrollable Content */}
@@ -402,15 +412,16 @@ export default function PostDetailScreen() {
           </Animated.View>
         )}
 
-        {/* View comments button */}
+        {/* Comments toggle */}
         <TouchableOpacity
-          style={[styles.viewCommentsButton, { borderBottomColor: colors.border }]}
+          style={[styles.viewCommentsButton, { borderBottomColor: border }]}
           onPress={() => setShowComments(!showComments)}
         >
-          <Ionicons name="chatbubble-outline" size={18} color={colors.textTertiary} />
-          <Text style={[styles.viewCommentsText, { color: colors.textTertiary }]}>
+          <Ionicons name="chatbubble-outline" size={18} color={t.muted} />
+          <Text style={[styles.viewCommentsText, { color: t.muted }]}>
             {showComments ? 'Hide comments' : `View all ${topLevelComments.length} comments`}
           </Text>
+          <Ionicons name={showComments ? 'chevron-up' : 'chevron-down'} size={16} color={t.muted} />
         </TouchableOpacity>
 
         {/* Comments Section */}
@@ -419,11 +430,10 @@ export default function PostDetailScreen() {
             entering={FadeInDown.duration(300)}
             style={styles.commentsSection}
           >
-            <Text style={[styles.commentsTitle, { color: colors.text }]}>Comments</Text>
             {commentsLoading ? (
-              <ActivityIndicator size="small" color={colors.text} style={styles.commentsLoading} />
+              <ActivityIndicator size="small" color={t.muted} style={styles.commentsLoading} />
             ) : topLevelComments.length === 0 ? (
-              <Text style={[styles.noCommentsText, { color: colors.textTertiary }]}>
+              <Text style={[styles.noCommentsText, { color: t.muted }]}>
                 No comments yet. Be the first to comment!
               </Text>
             ) : (
@@ -450,58 +460,61 @@ export default function PostDetailScreen() {
         entering={FadeInDown.delay(400).duration(400)}
         style={[
           styles.commentInputContainer,
-          { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: insets.bottom + 16 },
+          { borderTopColor: border, paddingBottom: insets.bottom + 16 },
         ]}
       >
         {/* Reply indicator */}
         {replyingToUsername && (
-          <View style={[styles.replyIndicator, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
-            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
-            <Text style={[styles.replyIndicatorText, { color: colors.textTertiary }]}>
+          <View style={[styles.replyIndicator, { borderColor: border, overflow: 'hidden' as const }]}>
+            {/* @ts-expect-error — augmented GlassViewProps */}
+            <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
+            <Text style={[styles.replyIndicatorText, { color: t.tertiary }]}>
               Replying to <Text style={styles.replyIndicatorUsername}>@{replyingToUsername}</Text>
             </Text>
             <TouchableOpacity onPress={handleCancelReply}>
-              <Text style={[styles.cancelReplyText, { color: colors.textTertiary }]}>Cancel</Text>
+              <Text style={[styles.cancelReplyText, { color: t.tertiary }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         )}
         <View style={styles.commentInputRow}>
           <Image
             source={user?.avatar?.url ? { uri: user.avatar.url } : DefaultAvatarImage}
-            style={styles.commentInputAvatar}
+            style={[styles.commentInputAvatar, { borderColor: border }]}
           />
-          <View style={[styles.commentInput, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
-            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
+          <View style={[styles.commentInput, { borderColor: border, overflow: 'hidden' as const }]}>
+            {/* @ts-expect-error — augmented GlassViewProps */}
+            <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
             <TextInput
-              style={{ flex: 1, height: '100%', paddingHorizontal: 16, fontSize: 14, fontFamily: 'Lato_400Regular', color: colors.text }}
+              style={{ flex: 1, height: '100%', paddingHorizontal: 16, fontSize: 14, fontFamily: 'Lato_400Regular', color: t.primary }}
               placeholder={
                 replyingToUsername
                   ? `Reply to @${replyingToUsername}...`
                 : 'Add a comment...'
             }
-            placeholderTextColor={colors.textTertiary}
+            placeholderTextColor={t.faint}
             value={commentText}
             onChangeText={setCommentText}
               multiline={false}
               editable={!isAddingComment}
+              keyboardAppearance={isDark ? 'dark' : 'light'}
             />
           </View>
           <TouchableOpacity
-            style={[
-              styles.sendButton,
-              {
-                backgroundColor: commentText.trim() && !isAddingComment
-                  ? '#fff'
-                  : colors.backgroundSecondary,
-              },
-            ]}
+            style={[styles.sendButton, { overflow: 'hidden' as const }]}
             onPress={handleCommentSubmit}
             disabled={!commentText.trim() || isAddingComment}
           >
+            {/* @ts-expect-error — augmented GlassViewProps */}
+            <GlassView
+              {...liquidGlass.surface}
+              tintColor={commentText.trim() && !isAddingComment ? 'rgba(255,255,255,0.2)' : surfaceTint}
+              borderRadius={18}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Ionicons
               name="send"
-              size={18}
-              color={commentText.trim() && !isAddingComment ? '#000' : colors.textTertiary}
+              size={16}
+              color={commentText.trim() && !isAddingComment ? t.primary : t.muted}
             />
           </TouchableOpacity>
         </View>
@@ -643,8 +656,13 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   backButton: {
-    padding: 8,
-    width: 44,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
   },
   headerTitle: {
     fontSize: 18,
@@ -768,18 +786,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
   },
-  commentItem: {
-    flexDirection: 'row',
-    marginBottom: 16,
+  commentCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 10,
   },
-  commentReply: {
-    marginLeft: 0,
-    marginTop: 12,
+  commentInner: {
+    flexDirection: 'row',
+    padding: 12,
   },
   commentAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderWidth: 1,
   },
   commentContent: {
     flex: 1,
@@ -788,8 +809,13 @@ const styles = StyleSheet.create({
   commentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  commentHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
-    flexWrap: 'wrap',
+    flex: 1,
   },
   commentUsername: {
     fontSize: 13,
@@ -804,21 +830,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
     lineHeight: 18,
     marginTop: 2,
-  },
-  commentActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 6,
-    gap: 16,
-  },
-  commentAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  commentActionText: {
-    fontSize: 12,
-    fontFamily: 'Lato_600SemiBold',
   },
   repliesContainer: {
     marginTop: 12,
@@ -842,6 +853,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
     marginBottom: 8,
   },
   replyIndicatorText: {
@@ -864,14 +876,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
+    borderWidth: 1,
   },
   commentInput: {
     flex: 1,
     height: 40,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
+    borderWidth: 1,
   },
   sendButton: {
     width: 36,
