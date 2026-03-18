@@ -18,7 +18,7 @@ import { useMyTickets } from '@/hooks/use-my-tickets';
 import { TicketActionSheet } from './ticket-action-sheet';
 import type { WalletEventCard } from '../../lib/types/wallet.types';
 import type { UserTicket } from '@/lib/api/tickets';
-import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
+import { liquidGlass, glassTint, glassText, glassBorder, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 
 // Filter tab definitions
 const TICKET_FILTERS: { key: string; label: string; ticketStatus: string }[] = [
@@ -38,7 +38,9 @@ interface TicketCardProps {
   event: WalletEventCard;
   onView: () => void;
   onActions: () => void;
-  colors: ReturnType<typeof useAppTheme>['colors'];
+  t: (typeof glassText)['dark'] | (typeof glassText)['light'];
+  border: string;
+  surfaceTint: string;
   isDark: boolean;
   dimmed?: boolean;
 }
@@ -68,48 +70,43 @@ function ticketToCard(t: UserTicket): WalletEventCard {
   };
 }
 
-function TicketCard({ event, onView, onActions, colors, isDark, dimmed }: TicketCardProps) {
-  // Only show actions for active tickets and RSVP events (no ticketStatus)
+function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, dimmed }: TicketCardProps) {
   const hasActions = !event.ticketStatus || event.ticketStatus === 'active';
 
   return (
     <TouchableOpacity
-      style={[
-        styles.ticketCard,
-        dimmed && { opacity: 0.6 },
-      ]}
+      style={[styles.ticketCard, { borderColor: border }, dimmed && { opacity: 0.6 }]}
       onPress={onView}
       activeOpacity={0.8}
     >
+      {/* @ts-expect-error — augmented GlassViewProps */}
       <GlassView
         {...liquidGlass.surface}
+        tintColor={surfaceTint}
         borderRadius={16}
         style={StyleSheet.absoluteFillObject}
       />
-      <Image source={{ uri: event.flyerUrl }} style={[styles.ticketImage, { backgroundColor: colors.backgroundSecondary }]} />
+      <Image source={{ uri: event.flyerUrl }} style={[styles.ticketImage, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} />
       <View style={styles.ticketInfo}>
         <View style={styles.titleRow}>
-          <Text style={[styles.ticketTitle, { color: colors.text }]} numberOfLines={2}>
+          <Text style={[styles.ticketTitle, { color: t.primary }]} numberOfLines={2}>
             {event.title}
           </Text>
           {event.ticketStatus === 'transferred' && (
-            <View style={styles.transferredBadge}>
-              <Ionicons name="arrow-redo" size={10} color="rgba(255,255,255,0.7)" />
-              <Text style={styles.transferredText}>Transferred</Text>
+            <View style={[styles.transferredBadge, { borderColor: border }]}>
+              <Ionicons name="arrow-redo" size={10} color={t.tertiary} />
+              <Text style={[styles.transferredText, { color: t.tertiary }]}>Transferred</Text>
             </View>
           )}
         </View>
-        <Text style={[styles.ticketDate, { color: colors.textSecondary }]}>{event.dateTimeLabel}</Text>
+        <Text style={[styles.ticketDate, { color: t.secondary }]}>{event.dateTimeLabel}</Text>
         <View style={styles.ticketMeta}>
-          <Text style={[styles.ticketVenue, { color: colors.textTertiary }]}>{event.venueName}</Text>
+          <Text style={[styles.ticketVenue, { color: t.muted }]}>{event.venueName}</Text>
         </View>
       </View>
       {hasActions && (
         <TouchableOpacity
-          style={[
-            styles.viewBtn,
-            { borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)' }
-          ]}
+          style={[styles.viewBtn, { borderColor: border }]}
           onPress={(e) => {
             e.stopPropagation();
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -117,14 +114,14 @@ function TicketCard({ event, onView, onActions, colors, isDark, dimmed }: Ticket
           }}
           activeOpacity={0.7}
         >
+          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView
             {...liquidGlass.surface}
+            tintColor={surfaceTint}
             borderRadius={20}
             style={StyleSheet.absoluteFillObject}
           />
-          <Text style={[styles.viewBtnText, { color: isDark ? '#fff' : '#000' }]}>
-            View
-          </Text>
+          <Text style={[styles.viewBtnText, { color: t.primary }]}>View</Text>
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -133,6 +130,10 @@ function TicketCard({ event, onView, onActions, colors, isDark, dimmed }: Ticket
 
 export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: TicketListProps) {
   const { colors, isDark } = useAppTheme();
+  const theme = isDark ? 'dark' : 'light';
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
   const [selectedEvent, setSelectedEvent] = useState<WalletEventCard | null>(null);
   const [activeFilter, setActiveFilter] = useState('active');
 
@@ -167,17 +168,18 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
         {TICKET_FILTERS.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterChip, activeFilter === f.key && styles.filterChipActive]}
+            style={[styles.filterChip, { borderColor: border }, activeFilter === f.key && styles.filterChipActive]}
             onPress={() => setActiveFilter(f.key)}
             activeOpacity={0.7}
           >
+            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView
               {...liquidGlass.surface}
-              tintColor={activeFilter === f.key ? glassTint.fill : glassTint.surface}
+              tintColor={activeFilter === f.key ? surfaceTint : 'transparent'}
               borderRadius={16}
               style={StyleSheet.absoluteFillObject}
             />
-            <Text style={[styles.filterText, activeFilter === f.key && styles.filterTextActive]}>
+            <Text style={[styles.filterText, { color: t.muted }, activeFilter === f.key && { color: t.primary, fontFamily: 'Lato_700Bold' }]}>
               {f.label}
             </Text>
           </TouchableOpacity>
@@ -186,7 +188,7 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={t.muted} />
         </View>
       ) : displayEvents.length === 0 ? (
         <View style={styles.emptyState}>
@@ -204,7 +206,9 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
                 event={event}
                 onView={() => onViewEvent(event.id)}
                 onActions={() => setSelectedEvent(event)}
-                colors={colors}
+                t={t}
+                border={border}
+                surfaceTint={surfaceTint}
                 isDark={isDark}
                 dimmed={isDimmed(event)}
               />
@@ -246,17 +250,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     overflow: 'hidden' as const,
+    borderWidth: 1,
   },
   filterChipActive: {
   },
   filterText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
-  },
-  filterTextActive: {
-    color: '#fff',
-    fontFamily: 'Lato_700Bold',
   },
   loadingContainer: {
     alignItems: 'center',
@@ -270,6 +270,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 16,
     overflow: 'hidden',
+    borderWidth: 1,
   },
   ticketImage: {
     width: 80,
@@ -297,9 +298,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -307,7 +306,6 @@ const styles = StyleSheet.create({
   transferredText: {
     fontSize: 10,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.7)',
   },
   ticketDate: {
     fontSize: 12,
