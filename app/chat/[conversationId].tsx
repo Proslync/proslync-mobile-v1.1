@@ -1,63 +1,63 @@
 // Chat Thread Screen - Instagram/Snapchat-style messaging
-import React, { useState, useCallback, useRef, useEffect } from "react";
-import { useStableRouter } from "@/hooks/use-stable-router";
+import { MiniEventCard } from "@/components/chat/mini-event-card";
+import { MiniUserCard } from "@/components/chat/mini-user-card";
+import { MiniVenueCard } from "@/components/chat/mini-venue-card";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { useAppTheme, type ThemeColors } from "@/hooks/use-app-theme";
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  StatusBar,
-  Image,
-  TextInput,
-  ActivityIndicator,
-  Dimensions,
-  Pressable,
-  Modal,
-  ScrollView,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+  useConversation,
+  type ChannelMember,
+  type ChatMessage,
+} from "@/hooks/use-conversation";
+import {
+  useLeaveConversation,
+  useRemoveMember,
+  useUpdateConversation,
+} from "@/hooks/use-conversations";
+import { useStableRouter } from "@/hooks/use-stable-router";
+import { useAuth } from "@/lib/providers/auth-provider";
+import { useCall } from "@/lib/providers/call-provider";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import * as ImagePicker from "expo-image-picker";
-import * as Haptics from "expo-haptics";
+import { Audio } from "expo-av";
 import * as Clipboard from "expo-clipboard";
 import { GlassView } from "expo-glass-effect";
-import { liquidGlass, glassTint } from "@/constants/glass/liquid-glass";
-import { Audio } from "expo-av";
+import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
+import { useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Animated, {
-  useSharedValue,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
   useAnimatedStyle,
-  withTiming,
+  useSharedValue,
   withDelay,
   withRepeat,
   withSequence,
   withSpring,
-  FadeIn,
-  FadeInDown,
-  FadeOut,
+  withTiming,
 } from "react-native-reanimated";
-import {
-  useConversation,
-  type ChatMessage,
-  type ChannelMember,
-} from "@/hooks/use-conversation";
-import { useCall } from "@/lib/providers/call-provider";
-import {
-  useRemoveMember,
-  useLeaveConversation,
-  useUpdateConversation,
-} from "@/hooks/use-conversations";
-import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
-import { MiniEventCard } from "@/components/chat/mini-event-card";
-import { MiniVenueCard } from "@/components/chat/mini-venue-card";
-import { MiniUserCard } from "@/components/chat/mini-user-card";
-import { useAppTheme, type ThemeColors } from "@/hooks/use-app-theme";
-import { useAuth } from "@/lib/providers/auth-provider";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 const MAX_BUBBLE_WIDTH = SCREEN_WIDTH * 0.75;
@@ -1099,8 +1099,9 @@ function Composer({
         styles.composerContainer,
         {
           paddingBottom: Math.max(insets.bottom, 8),
-          backgroundColor: colors.background,
-          borderTopColor: colors.border,
+          borderTopColor: isDark
+            ? "rgba(255,255,255,0.08)"
+            : "rgba(0,0,0,0.08)",
         },
       ]}
     >
@@ -1131,8 +1132,22 @@ function Composer({
 
       {/* Audio review bar */}
       {reviewAudio && !isRecording && (
-        <View style={[styles.reviewBar, { borderColor: colors.border, backgroundColor: isDark ? undefined : 'rgba(255,255,255,0.08)' }]}>
-          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
+        <View
+          style={[
+            styles.reviewBar,
+            {
+              borderColor: colors.border,
+              backgroundColor: isDark ? undefined : "rgba(255,255,255,0.08)",
+            },
+          ]}
+        >
+          {isDark && (
+            <GlassView
+              {...liquidGlass.fillFaint}
+              borderRadius={22}
+              style={StyleSheet.absoluteFillObject}
+            />
+          )}
           <TouchableOpacity
             onPress={discardReviewAudio}
             style={styles.reviewDeleteButton}
@@ -1143,10 +1158,21 @@ function Composer({
 
           <TouchableOpacity
             onPress={toggleReviewPlayback}
-            style={[styles.reviewPlayButton, { backgroundColor: isDark ? undefined : 'rgba(255,255,255,0.15)' }]}
+            style={[
+              styles.reviewPlayButton,
+              {
+                backgroundColor: isDark ? undefined : "rgba(255,255,255,0.15)",
+              },
+            ]}
             activeOpacity={0.7}
           >
-            {isDark && <GlassView {...liquidGlass.fill} borderRadius={16} style={StyleSheet.absoluteFillObject} />}
+            {isDark && (
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={16}
+                style={StyleSheet.absoluteFillObject}
+              />
+            )}
             <Ionicons
               name={isReviewPlaying ? "pause" : "play"}
               size={18}
@@ -1216,16 +1242,24 @@ function Composer({
           {/* Camera button */}
           {!isRecording && (
             <TouchableOpacity
-              style={styles.composerButton}
+              style={[styles.composerButton, { overflow: "hidden" as const }]}
               onPress={onOpenCamera}
               activeOpacity={0.7}
             >
-              <LinearGradient
-                colors={["rgba(255,255,255,0.15)", "rgba(255,255,255,0.08)"]}
-                style={styles.cameraButtonGradient}
-              >
-                <Ionicons name="camera" size={20} color="#fff" />
-              </LinearGradient>
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView
+                {...liquidGlass.surface}
+                tintColor={
+                  isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)"
+                }
+                borderRadius={18}
+                style={StyleSheet.absoluteFillObject}
+              />
+              <Ionicons
+                name="camera"
+                size={20}
+                color={isDark ? "#fff" : "#1a1a1a"}
+              />
             </TouchableOpacity>
           )}
 
@@ -1235,22 +1269,34 @@ function Composer({
               style={[
                 styles.inputWrapper,
                 {
-                  backgroundColor: isDark ? undefined : colors.input,
-                  borderColor: colors.inputBorder,
-                  overflow: 'hidden' as const,
+                  borderColor: isDark
+                    ? "rgba(255,255,255,0.1)"
+                    : "rgba(0,0,0,0.08)",
+                  overflow: "hidden" as const,
                 },
               ]}
             >
-              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView
+                {...liquidGlass.surface}
+                tintColor={
+                  isDark ? "rgba(10,10,10,0.25)" : "rgba(255,255,255,0.6)"
+                }
+                borderRadius={22}
+                style={StyleSheet.absoluteFillObject}
+              />
               <TextInput
                 ref={inputRef}
                 style={[styles.composerInput, { color: colors.text }]}
                 value={text}
                 onChangeText={handleChangeText}
                 placeholder={placeholder || "Message..."}
-                placeholderTextColor={colors.placeholder}
+                placeholderTextColor={
+                  isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)"
+                }
                 multiline
                 maxLength={1000}
+                keyboardAppearance={isDark ? "dark" : "light"}
               />
 
               {/* Gallery button inside input */}
@@ -1282,30 +1328,57 @@ function Composer({
           {/* Send or Mic button */}
           {canSend && !isRecording ? (
             <TouchableOpacity
-              style={styles.sendButton}
+              style={[styles.sendButton, { overflow: "hidden" as const }]}
               onPress={handleSend}
               disabled={isSending}
               activeOpacity={0.7}
             >
+              {/* @ts-expect-error — augmented GlassViewProps */}
+              <GlassView
+                {...liquidGlass.surface}
+                tintColor={
+                  isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.08)"
+                }
+                borderRadius={22}
+                style={StyleSheet.absoluteFillObject}
+              />
               {isSending ? (
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color={colors.text} />
               ) : (
-                <Ionicons name="send" size={22} color="#fff" />
+                <Ionicons name="send" size={20} color={colors.text} />
               )}
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               style={[
                 styles.micButton,
+                { overflow: "hidden" as const },
                 isRecording && styles.micButtonRecording,
               ]}
               onPress={handleMicPress}
               activeOpacity={0.7}
             >
+              {!isRecording && (
+                // @ts-expect-error — augmented GlassViewProps
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor={
+                    isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)"
+                  }
+                  borderRadius={18}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               <Ionicons
                 name={isRecording ? "stop" : "mic"}
-                size={24}
-                color={isRecording ? "#fff" : colors.iconSecondary}
+                size={20}
+                color={
+                  isRecording
+                    ? "#fff"
+                    : isDark
+                      ? "rgba(255,255,255,0.6)"
+                      : "rgba(0,0,0,0.4)"
+                }
               />
             </TouchableOpacity>
           )}
@@ -2057,14 +2130,18 @@ export default function ChatThreadScreen() {
             style={[
               styles.scrollToBottomButton,
               {
-                overflow: 'hidden',
+                overflow: "hidden",
                 borderColor: colors.border,
               },
             ]}
             onPress={() => flatListRef.current?.scrollToEnd({ animated: true })}
             activeOpacity={0.8}
           >
-            <GlassView {...liquidGlass.fill} borderRadius={20} style={StyleSheet.absoluteFillObject} />
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={20}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Ionicons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
         </Animated.View>
@@ -2941,9 +3018,7 @@ const styles = StyleSheet.create({
   },
   // Composer
   composerContainer: {
-    backgroundColor: "#fff",
     borderTopWidth: 0.5,
-    borderTopColor: "rgba(0, 0, 0, 0.08)",
     paddingTop: 8,
     paddingHorizontal: 8,
   },
@@ -2965,17 +3040,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -6,
     right: -6,
-    backgroundColor: "#fff",
     borderRadius: 10,
   },
   composerInner: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: 8,
   },
   composerButton: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -2990,10 +3065,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.04)",
     borderRadius: 22,
-    borderWidth: 0.5,
-    borderColor: "rgba(0, 0, 0, 0.1)",
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 8,
     minHeight: 44,
@@ -3002,7 +3075,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontFamily: "Lato_400Regular",
-    color: "#1a1a1a",
     maxHeight: 100,
     paddingVertical: 4,
   },
@@ -3014,20 +3086,21 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   sendButton: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
   },
   micButton: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
   },
   micButtonRecording: {
     backgroundColor: "#ff3b30",
-    borderRadius: 22,
   },
   // Recording indicator
   recordingIndicator: {
