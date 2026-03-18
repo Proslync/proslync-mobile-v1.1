@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { GlassView } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { liquidGlass, glassText, glassBorder } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { User } from '../../lib/types/messages.types';
 
@@ -36,27 +36,31 @@ function getRoleLabel(role: User['role']): string {
 }
 
 export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
-  const { colors, isDark } = useAppTheme();
+  const { isDark } = useAppTheme();
+  const theme = isDark ? 'dark' : 'light';
+  const t = glassText[theme];
+  const border = glassBorder[theme];
   const roleLabel = getRoleLabel(user.role);
 
   return (
     <TouchableOpacity
-      style={[styles.container, { backgroundColor: colors.background }, isSelected && (isDark ? { overflow: 'hidden' as const } : styles.containerSelected)]}
+      style={[styles.container, isSelected && { overflow: 'hidden' as const }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {isSelected && isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={0} style={StyleSheet.absoluteFillObject} />}
+      {/* @ts-expect-error — augmented GlassViewProps */}
+      {isSelected && <GlassView {...liquidGlass.fillFaint} borderRadius={0} style={StyleSheet.absoluteFillObject} />}
       <View style={styles.avatarContainer}>
         <Image
           source={user.avatarUrl ? { uri: user.avatarUrl } : DefaultAvatarImage}
-          style={styles.avatar}
+          style={[styles.avatar, { borderColor: border }]}
         />
-        {user.isOnline && <View style={styles.onlineIndicator} />}
+        {user.isOnline && <View style={[styles.onlineIndicator, { borderColor: isDark ? '#000' : '#fff' }]} />}
       </View>
 
       <View style={styles.content}>
         <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={[styles.name, { color: t.primary }]} numberOfLines={1}>
             {user.name}
           </Text>
           {user.isVerified && (
@@ -68,12 +72,12 @@ export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
             />
           )}
         </View>
-        {roleLabel && <Text style={styles.role}>{roleLabel}</Text>}
+        {roleLabel && <Text style={[styles.role, { color: t.muted }]}>{roleLabel}</Text>}
       </View>
 
       {isSelected && (
         <View style={styles.checkmark}>
-          <Ionicons name="checkmark-circle" size={24} color="#fff" />
+          <Ionicons name="checkmark-circle" size={24} color={t.primary} />
         </View>
       )}
     </TouchableOpacity>
@@ -86,9 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-  },
-  containerSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'transparent',
   },
   avatarContainer: {
     position: 'relative',
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
   },
   onlineIndicator: {
     position: 'absolute',
@@ -109,7 +111,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     backgroundColor: '#34c759',
     borderWidth: 2,
-    borderColor: '#000',
   },
   content: {
     flex: 1,
@@ -122,7 +123,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
     flexShrink: 1,
   },
   verifiedIcon: {
@@ -131,7 +131,6 @@ const styles = StyleSheet.create({
   role: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
   },
   checkmark: {

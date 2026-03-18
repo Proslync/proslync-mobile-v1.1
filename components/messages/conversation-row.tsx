@@ -3,6 +3,8 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { glassText, glassBorder } from "@/constants/glass/liquid-glass";
 import { Conversation } from "../../lib/types/messages.types";
 import { formatTimestamp } from "@/lib/utils/date";
 
@@ -45,6 +47,11 @@ export function ConversationRow({
   onPress,
   onLongPress,
 }: ConversationRowProps) {
+  const { isDark } = useAppTheme();
+  const theme = isDark ? "dark" : "light";
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+
   const participant = conversation.participants[0];
   const isVerified = participant?.isVerified;
   const hasUnread = conversation.unreadCount > 0;
@@ -64,7 +71,7 @@ export function ConversationRow({
               ? { uri: participant.avatarUrl }
               : DefaultAvatarImage
           }
-          style={styles.avatar}
+          style={[styles.avatar, { borderColor: border }]}
         />
       </View>
 
@@ -72,7 +79,7 @@ export function ConversationRow({
         <View style={styles.topRow}>
           <View style={styles.nameContainer}>
             <Text
-              style={[styles.name, hasUnread && styles.nameUnread]}
+              style={[styles.name, { color: t.primary }, hasUnread && styles.nameUnread]}
               numberOfLines={1}
             >
               {conversation.title}
@@ -89,7 +96,7 @@ export function ConversationRow({
               <Ionicons
                 name="pin"
                 size={12}
-                color="rgba(255, 255, 255, 0.4)"
+                color={t.muted}
                 style={styles.statusIcon}
               />
             )}
@@ -97,12 +104,12 @@ export function ConversationRow({
               <Ionicons
                 name="notifications-off"
                 size={12}
-                color="rgba(255, 255, 255, 0.4)"
+                color={t.muted}
                 style={styles.statusIcon}
               />
             )}
           </View>
-          <Text style={styles.timestamp}>
+          <Text style={[styles.timestamp, { color: t.muted }]}>
             {conversation.lastMessage
               ? formatTimestamp(conversation.lastMessage.createdAt)
               : ""}
@@ -111,14 +118,14 @@ export function ConversationRow({
 
         <View style={styles.bottomRow}>
           <Text
-            style={[styles.preview, hasUnread && styles.previewUnread]}
+            style={[styles.preview, { color: t.tertiary }, hasUnread && { color: t.secondary }]}
             numberOfLines={1}
           >
             {getMessagePreview(conversation, "current-user")}
           </Text>
           {hasUnread && (
-            <View style={styles.unreadBadge}>
-              <Text style={styles.unreadText}>
+            <View style={[styles.unreadBadge, { backgroundColor: t.primary }]}>
+              <Text style={[styles.unreadText, { color: isDark ? '#000' : '#fff' }]}>
                 {conversation.unreadCount > 99
                   ? "99+"
                   : conversation.unreadCount}
@@ -131,7 +138,7 @@ export function ConversationRow({
       <Ionicons
         name="chevron-forward"
         size={16}
-        color="rgba(255, 255, 255, 0.25)"
+        color={t.faint}
         style={styles.chevron}
       />
     </TouchableOpacity>
@@ -154,7 +161,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "rgba(0, 0, 0, 0.05)",
+    borderWidth: 1,
   },
   content: {
     flex: 1,
@@ -175,7 +182,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontFamily: "Lato_400Regular",
-    color: "#ffffff",
     flexShrink: 1,
   },
   nameUnread: {
@@ -190,7 +196,6 @@ const styles = StyleSheet.create({
   timestamp: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255, 255, 255, 0.4)",
   },
   bottomRow: {
     flexDirection: "row",
@@ -200,15 +205,10 @@ const styles = StyleSheet.create({
   preview: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "#ffffff",
     flex: 1,
     marginRight: 8,
   },
-  previewUnread: {
-    color: "rgba(255, 255, 255, 0.8)",
-  },
   unreadBadge: {
-    backgroundColor: "#fff",
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -217,7 +217,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   unreadText: {
-    color: "#000",
     fontSize: 11,
     fontFamily: "Lato_700Bold",
   },
