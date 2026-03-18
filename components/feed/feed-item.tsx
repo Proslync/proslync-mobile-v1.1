@@ -12,6 +12,7 @@ import { formatEventDate } from "@/lib/utils/date";
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from "@/lib/utils/layout";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { BlurView } from "expo-blur";
+import { GlassBubbleButton } from "@/components/glass";
 import { LinearGradient } from "expo-linear-gradient";
 import { useVideoPlayer, VideoView } from "expo-video";
 import * as React from "react";
@@ -301,31 +302,13 @@ export function FeedItem({
           </TouchableOpacity>
 
           {!isSelf && (
-            <TouchableOpacity
+            <GlassBubbleButton
+              isActive={isFollowing}
+              label="Follow"
+              activeLabel="Following"
+              isLoading={isFollowActionInProgress || followLoading}
               onPress={handleFollowPress}
-              activeOpacity={0.7}
-              style={[
-                styles.followButton,
-                isFollowing && styles.followButtonFollowing,
-              ]}
-              disabled={isFollowActionInProgress || followLoading}
-            >
-              {isFollowActionInProgress ? (
-                <ActivityIndicator
-                  size="small"
-                  color={isFollowing ? "rgba(255,255,255,0.7)" : "#fff"}
-                />
-              ) : (
-                <Text
-                  style={[
-                    styles.followButtonText,
-                    isFollowing && { color: "rgba(255, 255, 255, 0.7)" },
-                  ]}
-                >
-                  {isFollowing ? "Following" : "Follow"}
-                </Text>
-              )}
-            </TouchableOpacity>
+            />
           )}
         </View>
 
@@ -470,19 +453,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Lato_700Bold",
     flexShrink: 1,
-  },
-  followButton: {
-    backgroundColor: "#0095F6",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: "center",
-  },
-  followButtonFollowing: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   followButtonText: {
     fontSize: 14,
