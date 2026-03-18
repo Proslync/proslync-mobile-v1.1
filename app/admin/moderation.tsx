@@ -11,6 +11,8 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -34,6 +36,11 @@ function LogRow({ item }: { item: ModerationLogEntry }) {
 
   return (
     <Animated.View entering={FadeInDown.duration(300)} style={styles.logRow}>
+      <GlassView
+        {...liquidGlass.fillFaint}
+        borderRadius={12}
+        style={StyleSheet.absoluteFillObject}
+      />
       <View style={[styles.actionBadge, isRemoved ? styles.removedBadge : styles.approvedBadge]}>
         <Ionicons
           name={isRemoved ? 'close-circle' : 'checkmark-circle'}
@@ -112,10 +119,20 @@ export default function ModerationScreen() {
       {/* Stats */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
         <View style={styles.statCard}>
+          <GlassView
+            {...liquidGlass.fillFaint}
+            borderRadius={12}
+            style={StyleSheet.absoluteFillObject}
+          />
           <Text style={styles.statValue}>{allLogs?.total ?? 0}</Text>
           <Text style={styles.statLabel}>Total Reviewed</Text>
         </View>
         <View style={styles.statCard}>
+          <GlassView
+            {...liquidGlass.fillFaint}
+            borderRadius={12}
+            style={StyleSheet.absoluteFillObject}
+          />
           <Text style={[styles.statValue, { color: '#f87171' }]}>{removedLogs?.total ?? 0}</Text>
           <Text style={styles.statLabel}>Removed</Text>
         </View>
@@ -132,6 +149,11 @@ export default function ModerationScreen() {
               onPress={() => setActiveFilter(tab)}
               activeOpacity={0.7}
             >
+              <GlassView
+                {...(isActive ? liquidGlass.fillStrong : liquidGlass.fillFaint)}
+                borderRadius={8}
+                style={StyleSheet.absoluteFillObject}
+              />
               <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </Text>
@@ -194,7 +216,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
@@ -222,12 +244,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
   },
   filterTabActive: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
     borderColor: 'rgba(255,255,255,0.25)',
   },
   filterText: {
@@ -256,7 +277,7 @@ const styles = StyleSheet.create({
   logRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',

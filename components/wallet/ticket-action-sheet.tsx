@@ -10,6 +10,8 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import * as Haptics from 'expo-haptics';
 import { BottomSheet } from './bottom-sheet';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -139,14 +141,8 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
     }
   };
 
-  const glassBtn = {
-    backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.06)',
-    borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)',
-  };
-  const redBtn = {
-    backgroundColor: isDark ? 'rgba(255,59,48,0.12)' : 'rgba(255,59,48,0.08)',
-    borderColor: isDark ? 'rgba(255,59,48,0.25)' : 'rgba(255,59,48,0.15)',
-  };
+  const glassBtn = {};
+  const redBtn = {};
   const iconBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
   const redIconBg = isDark ? 'rgba(255,59,48,0.15)' : 'rgba(255,59,48,0.1)';
 
@@ -158,11 +154,16 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
     opts: { icon: string; title: string; desc: string; onPress: () => void; red?: boolean },
   ) => (
     <TouchableOpacity
-      style={[styles.optionRow, opts.red ? redBtn : glassBtn, isLoading && { opacity: 0.6 }]}
+      style={[styles.optionRow, isLoading && { opacity: 0.6 }]}
       onPress={opts.onPress}
       activeOpacity={0.7}
       disabled={isLoading}
     >
+      <GlassView
+        {...(opts.red ? liquidGlass.danger : liquidGlass.fill)}
+        borderRadius={14}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={[styles.optionIcon, { backgroundColor: opts.red ? redIconBg : iconBg }]}>
         {isLoading && opts.red ? (
           <ActivityIndicator size="small" color="#ff3b30" />
@@ -187,7 +188,8 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
           </View>
           <Text style={[styles.successTitle, { color: colors.text }]}>Done!</Text>
           <Text style={[styles.successSub, { color: colors.textSecondary }]}>{successMessage}</Text>
-          <TouchableOpacity style={[styles.actionBtn, styles.successCloseBtn, glassBtn]} onPress={handleClose} activeOpacity={0.8}>
+          <TouchableOpacity style={[styles.actionBtn, styles.successCloseBtn]} onPress={handleClose} activeOpacity={0.8}>
+            <GlassView {...liquidGlass.fillMedium} borderRadius={12} style={StyleSheet.absoluteFill} />
             <Text style={[styles.actionBtnText, { color: colors.text }]}>Close</Text>
           </TouchableOpacity>
         </View>
@@ -200,11 +202,13 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
           <Text style={[styles.formTitle, { color: colors.text }]}>Confirm Transfer</Text>
 
           {/* Selected user card */}
-          <View style={[styles.confirmUserCard, glassBtn]}>
+          <View style={styles.confirmUserCard}>
+            <GlassView {...liquidGlass.fill} borderRadius={14} style={StyleSheet.absoluteFill} />
             {selectedUser.avatar?.url ? (
               <Image source={{ uri: selectedUser.avatar.url }} style={styles.confirmAvatar} />
             ) : (
-              <View style={[styles.confirmAvatar, styles.avatarPlaceholder]}>
+              <View style={[styles.confirmAvatar, styles.avatarPlaceholder, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={28} style={StyleSheet.absoluteFillObject} />}
                 <Ionicons name="person" size={24} color="rgba(255,255,255,0.4)" />
               </View>
             )}
@@ -239,11 +243,12 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
 
           {/* Buttons */}
           <TouchableOpacity
-            style={[styles.actionBtn, glassBtn, isLoading && { opacity: 0.6 }]}
+            style={[styles.actionBtn, isLoading && { opacity: 0.6 }]}
             onPress={handleConfirmTransfer}
             activeOpacity={0.8}
             disabled={isLoading}
           >
+            <GlassView {...liquidGlass.fillMedium} borderRadius={12} style={StyleSheet.absoluteFill} />
             {isLoading ? (
               <ActivityIndicator size="small" color={colors.text} />
             ) : (
@@ -269,7 +274,8 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
           <Text style={[styles.formDesc, { color: colors.textSecondary }]}>
             Search for the person you'd like to transfer this ticket to.
           </Text>
-          <View style={[styles.inputWrap, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
+          <View style={[styles.inputWrap, { backgroundColor: isDark ? undefined : colors.input, borderColor: colors.inputBorder, overflow: 'hidden' as const }]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
             <Ionicons name="person-outline" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
             <TextInput
               style={[styles.input, { color: colors.text }]}
@@ -310,7 +316,8 @@ export function TicketActionSheet({ visible, onClose, event, onActionComplete }:
                       {item.avatar?.url ? (
                         <Image source={{ uri: item.avatar.url }} style={styles.userAvatar} />
                       ) : (
-                        <View style={[styles.userAvatar, styles.avatarPlaceholder]}>
+                        <View style={[styles.userAvatar, styles.avatarPlaceholder, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+                          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
                           <Ionicons name="person" size={18} color="rgba(255,255,255,0.4)" />
                         </View>
                       )}
@@ -414,7 +421,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderRadius: 14,
-    borderWidth: 1,
+    overflow: 'hidden',
     marginBottom: 10,
   },
   optionIcon: {
@@ -480,7 +487,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    overflow: 'hidden',
   },
   actionBtnText: {
     fontSize: 16,
@@ -533,9 +540,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   avatarPlaceholder: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   userInfo: {
     flex: 1,
@@ -563,7 +570,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderRadius: 14,
-    borderWidth: 1,
+    overflow: 'hidden',
     marginBottom: 16,
   },
   confirmAvatar: {

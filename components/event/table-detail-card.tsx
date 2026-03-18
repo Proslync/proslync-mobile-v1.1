@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassSurface } from '@/components/glass';
 import { GlassButton } from '@/components/glass';
@@ -13,7 +15,6 @@ interface TableDetailCardProps {
 
 export function TableDetailCard({ table, onClose }: TableDetailCardProps) {
   const { colors, isDark } = useAppTheme();
-  const glassColor = isDark ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
   const [guestCount, setGuestCount] = React.useState(table.seats);
   const pricePerPerson = Math.ceil(table.price / guestCount);
 
@@ -38,7 +39,7 @@ export function TableDetailCard({ table, onClose }: TableDetailCardProps) {
       )}
 
       {/* Price */}
-      <View style={[styles.priceRow, { borderColor: `${glassColor}0.1)` }]}>
+      <View style={[styles.priceRow, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
         <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>Table Price</Text>
         <Text style={[styles.price, { color: colors.text }]}>${table.price.toLocaleString()}</Text>
       </View>
@@ -61,8 +62,9 @@ export function TableDetailCard({ table, onClose }: TableDetailCardProps) {
         <View style={styles.splitRow}>
           <TouchableOpacity
             onPress={() => setGuestCount(Math.max(1, guestCount - 1))}
-            style={[styles.splitButton, { backgroundColor: `${glassColor}0.1)` }]}
+            style={[styles.splitButton, { overflow: 'hidden' }]}
           >
+            <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
             <Ionicons name="remove" size={18} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.guestCount, { color: colors.text }]}>
@@ -70,8 +72,9 @@ export function TableDetailCard({ table, onClose }: TableDetailCardProps) {
           </Text>
           <TouchableOpacity
             onPress={() => setGuestCount(Math.min(table.seats, guestCount + 1))}
-            style={[styles.splitButton, { backgroundColor: `${glassColor}0.1)` }]}
+            style={[styles.splitButton, { overflow: 'hidden' }]}
           >
+            <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
             <Ionicons name="add" size={18} color={colors.text} />
           </TouchableOpacity>
         </View>

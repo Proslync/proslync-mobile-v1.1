@@ -2,6 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { WalletTransaction, ActivityFilter } from '../../lib/types/wallet.types';
 
 interface ActivityListProps {
@@ -131,10 +133,15 @@ export function ActivityList({
         {FILTERS.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterButton, filter === f.key && styles.filterButtonActive]}
+            style={[styles.filterButton, { overflow: 'hidden' }]}
             onPress={() => onFilterChange(f.key)}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...(filter === f.key ? liquidGlass.fillMedium : liquidGlass.fillFaint)}
+              borderRadius={16}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Text
               style={[styles.filterText, filter === f.key && styles.filterTextActive]}
             >
@@ -186,7 +193,7 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: '#0095f6',
+    color: '#fff',
   },
   filterRow: {
     flexDirection: 'row',
@@ -198,13 +205,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     minHeight: 36,
     justifyContent: 'center',
   },
-  filterButtonActive: {
-    backgroundColor: '#0095f6',
-  },
+  filterButtonActive: {},
   filterText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',

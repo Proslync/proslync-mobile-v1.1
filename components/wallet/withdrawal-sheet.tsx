@@ -11,6 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { CardField, StripeProvider, createToken } from '@stripe/stripe-react-native';
 import type { CardFieldInput } from '@stripe/stripe-react-native';
 import { useForm, Controller } from 'react-hook-form';
@@ -200,8 +202,6 @@ export function WithdrawalSheet({
     }
   }, [setDefaultMutation, toast]);
 
-  const inputBg = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
-
   // Render different views
   const renderWithdrawView = () => (
     <>
@@ -216,7 +216,8 @@ export function WithdrawalSheet({
       {/* Amount Input */}
       <View style={styles.inputSection}>
         <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Amount</Text>
-        <View style={[styles.inputContainer, { backgroundColor: inputBg }]}>
+        <View style={[styles.inputContainer, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.05)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           <Text style={[styles.currencySymbol, { color: colors.textTertiary }]}>$</Text>
           <TextInput
             style={[styles.amountInput, { color: colors.text }]}
@@ -236,10 +237,11 @@ export function WithdrawalSheet({
               key={qa.label}
               style={[
                 styles.quickAmountButton,
-                { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)' }
+                { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.04)' }
               ]}
               onPress={() => handleQuickAmount(qa.multiplier)}
             >
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
               <Text style={styles.quickAmountText}>{qa.label}</Text>
             </TouchableOpacity>
           ))}
@@ -250,9 +252,10 @@ export function WithdrawalSheet({
       <View style={styles.methodSection}>
         <Text style={[styles.inputLabel, { color: colors.textTertiary }]}>Payout method</Text>
         <TouchableOpacity
-          style={[styles.methodSelector, { backgroundColor: inputBg }]}
+          style={[styles.methodSelector, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.05)' }]}
           onPress={() => setView('select-method')}
         >
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           {selectedMethod ? (
             <View style={styles.selectedMethodContent}>
               <Ionicons
@@ -286,14 +289,16 @@ export function WithdrawalSheet({
       <TouchableOpacity
         style={[
           styles.withdrawButton,
-          (!canWithdraw || isProcessing) && [
-            styles.withdrawButtonDisabled,
-            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)' }
-          ]
+          (!canWithdraw || isProcessing) && { opacity: 0.5 },
         ]}
         onPress={handleWithdraw}
         disabled={!canWithdraw || isProcessing}
       >
+        <GlassView
+          {...liquidGlass.fillMedium}
+          borderRadius={12}
+          style={StyleSheet.absoluteFill}
+        />
         {isProcessing ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -311,7 +316,7 @@ export function WithdrawalSheet({
     <>
       <View style={styles.viewHeader}>
         <TouchableOpacity onPress={() => setView('withdraw')} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#0095f6" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.viewTitle, { color: colors.text }]}>Payout Methods</Text>
         <View style={styles.backButton} />
@@ -323,10 +328,11 @@ export function WithdrawalSheet({
             key={method.id}
             style={[
               styles.methodOption,
-              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)' },
+              { backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.04)' },
               selectedMethodId === method.id && styles.methodOptionSelected,
             ]}
           >
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
             <TouchableOpacity
               style={styles.methodOptionTap}
               onPress={() => handleSelectMethod(method.id)}
@@ -334,7 +340,7 @@ export function WithdrawalSheet({
               <Ionicons
                 name={method.type === 'bank' ? 'business-outline' : 'card-outline'}
                 size={22}
-                color={selectedMethodId === method.id ? '#0095f6' : colors.textSecondary}
+                color={selectedMethodId === method.id ? '#fff' : colors.textSecondary}
               />
               <View style={styles.methodOptionInfo}>
                 <View style={styles.methodLabelRow}>
@@ -348,7 +354,7 @@ export function WithdrawalSheet({
                 <Text style={[styles.methodOptionLast4, { color: colors.textTertiary }]}>••••{method.last4}</Text>
               </View>
               {selectedMethodId === method.id && (
-                <Ionicons name="checkmark-circle" size={22} color="#0095f6" />
+                <Ionicons name="checkmark-circle" size={22} color="#fff" />
               )}
             </TouchableOpacity>
 
@@ -381,7 +387,7 @@ export function WithdrawalSheet({
           style={styles.addMethodOption}
           onPress={() => setView('add-method-choice')}
         >
-          <Ionicons name="add-circle-outline" size={22} color="#0095f6" />
+          <Ionicons name="add-circle-outline" size={22} color="#fff" />
           <Text style={styles.addMethodOptionText}>Add payout method</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -415,13 +421,11 @@ export function WithdrawalSheet({
 
       <View style={styles.confirmButtons}>
         <TouchableOpacity
-          style={[
-            styles.confirmCancelButton,
-            { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' },
-          ]}
+          style={styles.confirmCancelButton}
           onPress={() => setView('withdraw')}
           disabled={isProcessing}
         >
+          <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFill} />
           <Text style={[styles.confirmCancelText, { color: colors.text }]}>Cancel</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -429,6 +433,7 @@ export function WithdrawalSheet({
           onPress={handleConfirmWithdraw}
           disabled={isProcessing}
         >
+          <GlassView {...liquidGlass.fillMedium} borderRadius={12} style={StyleSheet.absoluteFill} />
           {isProcessing ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
@@ -443,7 +448,7 @@ export function WithdrawalSheet({
     <>
       <View style={styles.viewHeader}>
         <TouchableOpacity onPress={() => setView('select-method')} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#0095f6" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.viewTitle, { color: colors.text }]}>Add Payout Method</Text>
         <View style={styles.backButton} />
@@ -451,10 +456,12 @@ export function WithdrawalSheet({
 
       <View style={styles.methodChoices}>
         <TouchableOpacity
-          style={[styles.choiceOption, { backgroundColor: inputBg }]}
+          style={[styles.choiceOption, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.05)' }]}
           onPress={() => setView('add-bank')}
         >
-          <View style={[styles.choiceIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+          <View style={[styles.choiceIconWrap, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)', overflow: 'hidden' }]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
             <Ionicons name="business-outline" size={24} color={colors.text} />
           </View>
           <View style={styles.choiceInfo}>
@@ -465,10 +472,12 @@ export function WithdrawalSheet({
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.choiceOption, { backgroundColor: inputBg }]}
+          style={[styles.choiceOption, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.05)' }]}
           onPress={() => setView('add-card')}
         >
-          <View style={[styles.choiceIconWrap, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+          <View style={[styles.choiceIconWrap, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)', overflow: 'hidden' }]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
             <Ionicons name="card-outline" size={24} color={colors.text} />
           </View>
           <View style={styles.choiceInfo}>
@@ -485,7 +494,7 @@ export function WithdrawalSheet({
     <>
       <View style={styles.viewHeader}>
         <TouchableOpacity onPress={() => { bankForm.reset(); setView('add-method-choice'); }} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#0095f6" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.viewTitle, { color: colors.text }]}>Add Bank Account</Text>
         <View style={styles.backButton} />
@@ -498,15 +507,18 @@ export function WithdrawalSheet({
           name="routingNumber"
           render={({ field: { onChange, value }, fieldState: { error } }) => (
             <>
-              <TextInput
-                style={[styles.formInput, { backgroundColor: inputBg, color: colors.text }]}
-                value={value}
-                onChangeText={onChange}
-                placeholder="9-digit routing number"
-                placeholderTextColor={colors.placeholder}
-                keyboardType="number-pad"
-                maxLength={9}
-              />
+              <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.05)' }}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[styles.formInput, { color: colors.text }]}
+                  value={value}
+                  onChangeText={onChange}
+                  placeholder="9-digit routing number"
+                  placeholderTextColor={colors.placeholder}
+                  keyboardType="number-pad"
+                  maxLength={9}
+                />
+              </View>
               {error && <Text style={styles.errorText}>{error.message}</Text>}
             </>
           )}
@@ -518,16 +530,19 @@ export function WithdrawalSheet({
           name="accountNumber"
           render={({ field: { onChange, value }, fieldState: { error } }) => (
             <>
-              <TextInput
-                style={[styles.formInput, { backgroundColor: inputBg, color: colors.text }]}
-                value={value}
-                onChangeText={onChange}
-                placeholder="Account number"
-                placeholderTextColor={colors.placeholder}
-                keyboardType="number-pad"
-                maxLength={17}
-                secureTextEntry
-              />
+              <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.05)' }}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[styles.formInput, { color: colors.text }]}
+                  value={value}
+                  onChangeText={onChange}
+                  placeholder="Account number"
+                  placeholderTextColor={colors.placeholder}
+                  keyboardType="number-pad"
+                  maxLength={17}
+                  secureTextEntry
+                />
+              </View>
               {error && <Text style={styles.errorText}>{error.message}</Text>}
             </>
           )}
@@ -539,14 +554,17 @@ export function WithdrawalSheet({
           name="accountHolderName"
           render={({ field: { onChange, value }, fieldState: { error } }) => (
             <>
-              <TextInput
-                style={[styles.formInput, { backgroundColor: inputBg, color: colors.text }]}
-                value={value}
-                onChangeText={onChange}
-                placeholder="Full name on account"
-                placeholderTextColor={colors.placeholder}
-                autoCapitalize="words"
-              />
+              <View style={{ borderRadius: 12, overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0, 0, 0, 0.05)' }}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[styles.formInput, { color: colors.text }]}
+                  value={value}
+                  onChangeText={onChange}
+                  placeholder="Full name on account"
+                  placeholderTextColor={colors.placeholder}
+                  autoCapitalize="words"
+                />
+              </View>
               {error && <Text style={styles.errorText}>{error.message}</Text>}
             </>
           )}
@@ -555,12 +573,12 @@ export function WithdrawalSheet({
         <TouchableOpacity
           style={[
             styles.submitButton,
-            { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)' },
             addBankMutation.isPending && { opacity: 0.6 },
           ]}
           onPress={bankForm.handleSubmit(handleAddBank)}
           disabled={addBankMutation.isPending}
         >
+          <GlassView {...liquidGlass.fillMedium} borderRadius={12} style={StyleSheet.absoluteFill} />
           {addBankMutation.isPending ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
@@ -575,7 +593,7 @@ export function WithdrawalSheet({
     <>
       <View style={styles.viewHeader}>
         <TouchableOpacity onPress={() => { setCardComplete(false); setView('add-method-choice'); }} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color="#0095f6" />
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.viewTitle, { color: colors.text }]}>Add Debit Card</Text>
         <View style={styles.backButton} />
@@ -593,9 +611,10 @@ export function WithdrawalSheet({
             borderRadius: 12,
             borderWidth: 1,
             borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)',
-            backgroundColor: isDark ? '#1c1c1e' : '#f5f5f5',
+            backgroundColor: isDark ? undefined : '#f5f5f5',
             overflow: 'hidden',
           }}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
             <CardField
               postalCodeEnabled={false}
               cardStyle={{
@@ -618,12 +637,12 @@ export function WithdrawalSheet({
           <TouchableOpacity
             style={[
               styles.submitButton,
-              { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)', borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)' },
               (!cardComplete || isProcessing) && { opacity: 0.6 },
             ]}
             onPress={handleAddCard}
             disabled={!cardComplete || isProcessing}
           >
+            <GlassView {...liquidGlass.fillMedium} borderRadius={12} style={StyleSheet.absoluteFill} />
             {isProcessing || addCardMutation.isPending ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
@@ -710,7 +729,7 @@ const styles = StyleSheet.create({
   quickAmountText: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
+    color: '#fff',
   },
   methodSection: {
     marginBottom: 16,
@@ -755,14 +774,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
   },
   withdrawButton: {
-    backgroundColor: '#34c759',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     minHeight: 52,
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  withdrawButtonDisabled: {},
   withdrawButtonText: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
@@ -797,8 +815,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   methodOptionSelected: {
-    borderColor: '#0095f6',
-    backgroundColor: 'rgba(0, 149, 246, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   methodOptionTap: {
     flexDirection: 'row',
@@ -819,7 +837,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_700Bold',
   },
   defaultBadge: {
-    backgroundColor: 'rgba(0, 149, 246, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
@@ -827,7 +845,7 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 11,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
+    color: '#fff',
   },
   methodOptionLast4: {
     fontSize: 12,
@@ -845,7 +863,7 @@ const styles = StyleSheet.create({
   methodActionText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
+    color: '#fff',
   },
   addMethodOption: {
     flexDirection: 'row',
@@ -853,14 +871,14 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#0095f6',
+    borderColor: 'rgba(255, 255, 255, 0.2)',
     borderStyle: 'dashed',
     gap: 10,
   },
   addMethodOptionText: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
+    color: '#fff',
   },
   // Method choices
   methodChoices: {
@@ -910,12 +928,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   submitButton: {
-    borderWidth: 1,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 24,
+    overflow: 'hidden',
   },
   submitButtonText: {
     fontSize: 16,
@@ -976,6 +994,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   confirmCancelText: {
     fontSize: 16,
@@ -983,11 +1002,11 @@ const styles = StyleSheet.create({
   },
   confirmWithdrawButton: {
     flex: 1,
-    backgroundColor: '#22c55e',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   confirmWithdrawText: {
     fontSize: 16,

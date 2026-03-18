@@ -3,6 +3,8 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { GlassSurface } from '@/components/glass/glass-surface';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useEvent, useEventMarketingStats, usePublishEvent, useDeleteEvent, useEventPermissions } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -253,7 +255,8 @@ export default function OverviewScreen() {
                     }}
                   />
                   <MarkerView coordinate={[Number(event.venue.longitude), Number(event.venue.latitude)]}>
-                    <View style={styles.marker}>
+                    <View style={[styles.marker, { backgroundColor: isDark ? undefined : 'rgba(255,255,255,0.2)' }]}>
+                      {isDark && <GlassView {...liquidGlass.fillMedium} borderRadius={18} style={StyleSheet.absoluteFillObject} />}
                       <Ionicons name="location" size={28} color="#fff" />
                     </View>
                   </MarkerView>
@@ -403,7 +406,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.3)',
     justifyContent: 'center',

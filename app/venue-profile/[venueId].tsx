@@ -25,6 +25,8 @@ import { useFollowVenue } from "@/hooks/use-follow-venue";
 import { useVenueFollowers } from "@/hooks/use-venue-followers";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const DefaultVenueImage = require("@/assets/images/default-avatar.png");
@@ -237,11 +239,16 @@ export default function VenueProfileScreen() {
           style={[
             styles.statsRow,
             {
-              backgroundColor: colors.cardElevated,
               borderColor: colors.border,
+              overflow: "hidden",
             },
           ]}
         >
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={16}
+            style={StyleSheet.absoluteFillObject}
+          />
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.text }]}>
               {formatStat(followersCount)}
@@ -262,13 +269,18 @@ export default function VenueProfileScreen() {
               style={[
                 styles.actionBtn,
                 {
-                  backgroundColor: colors.cardElevated,
                   borderColor: colors.border,
+                  overflow: "hidden",
                 },
               ]}
               onPress={handleManagePress}
               activeOpacity={0.8}
             >
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={10}
+                style={StyleSheet.absoluteFillObject}
+              />
               <Ionicons name="settings-outline" size={16} color={colors.text} />
               <Text style={[styles.actionBtnText, { color: colors.text }]}>
                 Manage
@@ -279,15 +291,19 @@ export default function VenueProfileScreen() {
               style={[
                 styles.actionBtn,
                 {
-                  backgroundColor: colors.cardElevated,
                   borderColor: colors.border,
+                  overflow: "hidden",
                 },
-                isFollowing && { backgroundColor: colors.cardElevated },
               ]}
               onPress={handleFollowPress}
               activeOpacity={0.8}
               disabled={isFollowActionInProgress}
             >
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={10}
+                style={StyleSheet.absoluteFillObject}
+              />
               {isFollowActionInProgress ? (
                 <ActivityIndicator size="small" color={colors.text} />
               ) : (
@@ -320,13 +336,18 @@ export default function VenueProfileScreen() {
             style={[
               styles.actionBtn,
               {
-                backgroundColor: colors.cardElevated,
                 borderColor: colors.border,
+                overflow: "hidden",
               },
             ]}
             onPress={handleSharePress}
             activeOpacity={0.8}
           >
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={10}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Ionicons
               name="share-outline"
               size={16}

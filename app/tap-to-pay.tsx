@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -288,11 +290,12 @@ function TapToChargeContent() {
           disabled={!canCharge}
           activeOpacity={0.7}
         >
+          <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
           {isProcessing ? (
-            <ActivityIndicator size="small" color="#000" />
+            <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <Ionicons name="flash" size={20} color="#000" />
+              <Ionicons name="flash" size={20} color="#fff" />
               <Text style={styles.chargeButtonText}>
                 Charge {displayAmount}
               </Text>
@@ -357,7 +360,7 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "#0095f6",
+    color: "#fff",
   },
   amountSection: {
     flex: 1,
@@ -410,10 +413,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#fff",
     borderRadius: 14,
     paddingVertical: 18,
     marginTop: 12,
+    overflow: "hidden" as const,
   },
   chargeButtonDisabled: {
     opacity: 0.3,
@@ -421,6 +424,6 @@ const styles = StyleSheet.create({
   chargeButtonText: {
     fontSize: 17,
     fontFamily: "Lato_700Bold",
-    color: "#000",
+    color: "#fff",
   },
 });

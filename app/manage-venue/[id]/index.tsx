@@ -1,6 +1,8 @@
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { GlassSurface } from "@/components/glass/glass-surface";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useVenue } from "@/hooks/use-venue-query";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
@@ -251,9 +253,10 @@ export default function ManageVenueScreen() {
               <View
                 style={[
                   styles.venueLogoPlaceholder,
-                  { backgroundColor: colors.backgroundSecondary },
+                  { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const },
                 ]}
               >
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
                 <Ionicons
                   name="business"
                   size={28}
@@ -308,9 +311,12 @@ export default function ManageVenueScreen() {
           entering={FadeInDown.delay(150).duration(500).springify()}
           style={styles.menuSection}
         >
-          <View
-            style={[styles.menuList, { backgroundColor: colors.cardElevated }]}
-          >
+          <View style={styles.menuList}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             {SECTIONS.map((section) => (
               <TouchableOpacity
                 key={section.key}
@@ -321,9 +327,16 @@ export default function ManageVenueScreen() {
                 <View
                   style={[
                     styles.menuItemIcon,
-                    { backgroundColor: colors.cardElevated },
+                    { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.05)' },
                   ]}
                 >
+                  {isDark && (
+                    <GlassView
+                      {...liquidGlass.fillFaint}
+                      borderRadius={10}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                  )}
                   <Ionicons name={section.icon} size={22} color={colors.text} />
                 </View>
                 <View style={styles.menuItemContent}>
@@ -358,12 +371,13 @@ export default function ManageVenueScreen() {
             <TouchableOpacity
               style={[
                 styles.loginButton,
-                { backgroundColor: colors.cardElevated },
+                { overflow: 'hidden' },
               ]}
               onPress={handleLoginAsVenue}
               activeOpacity={0.7}
               disabled={isSwitching}
             >
+              <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFillObject} />
               {isSwitching ? (
                 <ActivityIndicator size="small" color={colors.text} />
               ) : (

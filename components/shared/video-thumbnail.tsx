@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { Image, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import * as VideoThumbnails from 'expo-video-thumbnails';
 
 interface VideoThumbnailImageProps {
@@ -42,6 +44,7 @@ export function VideoThumbnailImage({ videoUrl, style, fallbackUri }: VideoThumb
   if (!uri || failed) {
     return (
       <View style={[style, styles.placeholder]}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
         <Ionicons name="videocam" size={28} color="rgba(255,255,255,0.4)" />
       </View>
     );
@@ -58,7 +61,7 @@ export function VideoThumbnailImage({ videoUrl, style, fallbackUri }: VideoThumb
 
 const styles = StyleSheet.create({
   placeholder: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
   },

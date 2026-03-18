@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, {
   FadeInDown,
   FadeOut,
@@ -38,7 +40,7 @@ export const ContactRow = React.memo(function ContactRow({
   onPress,
   onCharge,
 }: ContactRowProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const label = sourceLabel(item.source, item.isGuest);
   const initials = getInitials(item.name);
 
@@ -51,20 +53,25 @@ export const ContactRow = React.memo(function ContactRow({
         style={[
           styles.guestRow,
           {
-            backgroundColor: colors.cardElevated,
             borderColor: colors.border,
           },
         ]}
       >
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={14}
+          style={StyleSheet.absoluteFillObject}
+        />
         {item.avatarUrl ? (
           <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
         ) : (
           <View
             style={[
               styles.avatarPlaceholder,
-              { backgroundColor: colors.backgroundSecondary },
+              { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const },
             ]}
           >
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={21} style={StyleSheet.absoluteFillObject} />}
             <Text
               style={[
                 styles.avatarInitials,
@@ -138,7 +145,7 @@ export const ContactRow = React.memo(function ContactRow({
             style={[
               styles.chargeButton,
               {
-                backgroundColor: colors.cardElevated,
+                overflow: 'hidden',
                 borderColor: colors.border,
               },
             ]}
@@ -146,6 +153,7 @@ export const ContactRow = React.memo(function ContactRow({
             activeOpacity={0.8}
             disabled={isCollecting || isAnyCollecting}
           >
+            <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
             {isCollecting ? (
               <ActivityIndicator size="small" color={colors.text} />
             ) : (
@@ -178,6 +186,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderRadius: 14,
     borderWidth: 1,
+    overflow: "hidden",
   },
   avatar: {
     width: 42,

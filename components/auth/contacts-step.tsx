@@ -137,7 +137,7 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
           </View>
           <GlassButton
             label={isFollowed ? 'Following' : 'Follow'}
-            variant={isFollowed ? 'glass' : 'frosted'}
+            variant="glass"
             size="sm"
             onPress={() => !isFollowed && handleFollowUser(item.id)}
             disabled={isFollowed}
@@ -221,7 +221,7 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
       <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.followAllContainer}>
         <GlassButton
           label={followedIds.size === matches.length ? 'Following All' : followingAll ? '' : 'Follow All'}
-          variant="frosted"
+          variant="glass"
           size="md"
           onPress={handleFollowAll}
           loading={followingAll}
@@ -242,7 +242,7 @@ export function ContactsStep({ onSuccess }: ContactsStepProps) {
       <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 20 }]}>
         <GlassButton
           label="Continue"
-          variant="accent"
+          variant="glass"
           size="lg"
           onPress={onSuccess}
           fullWidth

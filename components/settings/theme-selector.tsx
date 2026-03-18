@@ -15,6 +15,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme, type ThemeMode } from '@/hooks/use-app-theme';
 
 interface ThemeOptionProps {
@@ -113,9 +115,10 @@ export function DarkModeToggle() {
   return (
     <TouchableOpacity
       onPress={toggleTheme}
-      style={[styles.toggle, { backgroundColor: colors.backgroundSecondary }]}
+      style={[styles.toggle, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}
       activeOpacity={0.7}
     >
+      {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
       <Ionicons
         name={isDark ? 'sunny-outline' : 'moon-outline'}
         size={22}

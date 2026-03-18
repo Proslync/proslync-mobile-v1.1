@@ -13,9 +13,8 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
-import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Animated, {
@@ -50,7 +49,6 @@ import type { LineupArtist } from '@/lib/types/event-detail.types';
 import { formatEventDate } from '@/lib/utils/date';
 import { SCREEN_WIDTH } from '@/lib/utils/layout';
 
-const useNativeGlass = isGlassEffectAPIAvailable();
 const CARD_MARGIN = 16;
 const CARD_WIDTH = SCREEN_WIDTH - CARD_MARGIN * 2;
 const CARD_BORDER_RADIUS = 20;
@@ -352,9 +350,8 @@ export default function EventPage() {
         {flyerImage && (
           <Image source={{ uri: flyerImage }} style={styles.absoluteFill} resizeMode="cover" />
         )}
-        <BlurView
-          intensity={60}
-          tint={isDark ? 'dark' : 'light'}
+        <GlassView
+          {...liquidGlass.surface}
           style={styles.absoluteFill}
         />
         <LinearGradient
@@ -391,11 +388,11 @@ export default function EventPage() {
         {/* Event Card */}
         <Animated.View entering={FadeInDown.duration(500).springify()} style={styles.cardContainer}>
           <View
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[styles.card, { borderColor: 'rgba(255,255,255,0.1)' }]}
           >
-            <BlurView
-              intensity={25}
-              tint={isDark ? 'dark' : 'light'}
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={CARD_BORDER_RADIUS}
               style={styles.absoluteFill}
             />
 
@@ -490,30 +487,16 @@ export default function EventPage() {
       <View style={[styles.rsvpWrapper, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity onPress={handleRsvp} activeOpacity={0.85} disabled={isLoading}>
           <Animated.View style={[styles.rsvpButton, buttonAnimatedStyle]}>
-            {useNativeGlass ? (
-              <GlassView
-                glassEffectStyle="regular"
-                isInteractive
-                tintColor={isDone ? undefined : 'rgba(255, 255, 255, 0.45)'}
-                colorScheme={isDark ? 'dark' : 'light'}
-                style={styles.absoluteFill}
-              />
-            ) : (
-              <>
-                {!isDone && (
-                  <>
-                    <BlurView intensity={30} tint="light" style={styles.absoluteFill} />
-                    <View style={styles.rsvpFill} />
-                  </>
-                )}
-                <View style={[styles.rsvpBorder, isDone && styles.rsvpBorderDone]} />
-              </>
-            )}
+            <GlassView
+              {...(isDone ? liquidGlass.fill : liquidGlass.fillMedium)}
+              isInteractive
+              borderRadius={12}
+              style={styles.absoluteFill}
+            />
             <Text
               style={[
                 styles.rsvpButtonText,
-                isDone && styles.rsvpButtonTextDone,
-                useNativeGlass && { color: isDark ? '#fff' : '#000' },
+                { color: '#fff' },
               ]}
             >
               {rsvpLabel}
@@ -682,34 +665,9 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  rsvpFill: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  rsvpBorder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderWidth: 1,
-    borderRadius: 12,
-    borderColor: 'rgba(255, 255, 255, 0.35)',
-  },
-  rsvpBorderDone: {
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
   rsvpButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     letterSpacing: 0.5,
-    color: '#000',
-  },
-  rsvpButtonTextDone: {
-    color: '#fff',
   },
 });

@@ -8,6 +8,8 @@ import {
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useRouter } from "expo-router";
 import { useAppTheme } from "@/hooks/use-app-theme";
 
@@ -40,9 +42,10 @@ export function WalletSetupStep({ onSuccess }: WalletSetupStepProps) {
           <View
             style={[
               styles.iconCircle,
-              { backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.25)" },
+              { overflow: 'hidden', borderColor: "rgba(255,255,255,0.25)" },
             ]}
           >
+            <GlassView {...liquidGlass.fill} borderRadius={36} style={StyleSheet.absoluteFillObject} />
             <Ionicons name="card-outline" size={28} color={colors.text} />
           </View>
         </Animated.View>
@@ -94,13 +97,14 @@ export function WalletSetupStep({ onSuccess }: WalletSetupStepProps) {
           style={[
             styles.button,
             {
-              backgroundColor: "rgba(255,255,255,0.15)",
+              overflow: 'hidden',
               borderColor: "rgba(255,255,255,0.25)",
             },
           ]}
           activeOpacity={0.7}
           onPress={handleContinue}
         >
+          <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Text style={[styles.buttonText, { color: colors.text }]}>
             Continue
           </Text>

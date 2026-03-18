@@ -403,7 +403,7 @@ export function ProfileSetupStep({ onSuccess, onBack }: ProfileSetupStepProps) {
         >
           <GlassButton
             label={isSubmitting ? '' : 'Continue'}
-            variant={isFormValid ? 'accent' : 'glass'}
+            variant="glass"
             size="lg"
             onPress={handleSubmit}
             disabled={!isFormValid || isSubmitting}

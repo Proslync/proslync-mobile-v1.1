@@ -3,6 +3,9 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import QRCode from 'react-native-qrcode-svg';
 import * as Brightness from 'expo-brightness';
 
@@ -35,12 +38,19 @@ export default function QRCardScreen() {
       activeOpacity={1}
       onPress={() => router.back()}
     >
+      <DarkGradientBg />
+
       {/* Close button */}
       <TouchableOpacity
         style={[styles.closeButton, { top: insets.top + 12 }]}
         onPress={() => router.back()}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
       >
+        <GlassView
+          {...liquidGlass.fillMedium}
+          borderRadius={18}
+          style={StyleSheet.absoluteFill}
+        />
         <Ionicons name="close" size={28} color="rgba(255, 255, 255, 0.7)" />
       </TouchableOpacity>
 
@@ -74,7 +84,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
   },

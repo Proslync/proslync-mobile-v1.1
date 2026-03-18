@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontFamily: 'Lato_700Bold',
     marginBottom: 8,
   },
   emptySubtitle: {

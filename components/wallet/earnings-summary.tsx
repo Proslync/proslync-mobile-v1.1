@@ -2,6 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { WalletBalances } from '../../lib/types/wallet.types';
 
@@ -24,17 +26,20 @@ export function EarningsSummary({ balances, onWithdraw }: EarningsSummaryProps) 
 
       {/* Balance Cards */}
       <View style={styles.balanceRow}>
-        <View style={[styles.balanceCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}>
+        <View style={[styles.balanceCard, { overflow: 'hidden' }]}>
+          <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Available</Text>
           <Text style={styles.balanceAmount}>{formatCents(balances.availableCents)}</Text>
         </View>
-        <View style={[styles.balanceCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}>
+        <View style={[styles.balanceCard, { overflow: 'hidden' }]}>
+          <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Pending</Text>
           <Text style={[styles.balanceAmount, styles.pendingAmount]}>
             {formatCents(balances.pendingCents)}
           </Text>
         </View>
-        <View style={[styles.balanceCard, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)' }]}>
+        <View style={[styles.balanceCard, { overflow: 'hidden' }]}>
+          <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>Lifetime</Text>
           <Text style={[styles.balanceAmount, { color: colors.text }]}>
             {formatCents(balances.lifetimeCents)}
@@ -44,11 +49,12 @@ export function EarningsSummary({ balances, onWithdraw }: EarningsSummaryProps) 
 
       {/* Withdraw Button - Directly below balances */}
       <TouchableOpacity
-        style={[styles.withdrawButton, !canWithdraw && [styles.withdrawButtonDisabled, { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }]]}
+        style={[styles.withdrawButton, !canWithdraw && [styles.withdrawButtonDisabled, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.1)', overflow: 'hidden' as const }]]}
         onPress={onWithdraw}
         disabled={!canWithdraw}
         activeOpacity={0.8}
       >
+        {!canWithdraw && isDark && <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
         <Ionicons name="arrow-down-circle" size={20} color={colors.text} />
         <Text style={styles.withdrawButtonText}>Withdraw</Text>
       </TouchableOpacity>

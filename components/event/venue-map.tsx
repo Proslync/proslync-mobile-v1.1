@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -58,7 +60,8 @@ export function VenueMap({ latitude, longitude, venueName, address }: VenueMapPr
 
   if (isExpoGo || !MapView) {
     return (
-      <View style={[styles.fallback, { backgroundColor: `${glassColor}0.06)`, borderColor: `${glassColor}0.1)` }]}>
+      <View style={[styles.fallback, { overflow: 'hidden', borderColor: `${glassColor}0.1)` }]}>
+        <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
         <Ionicons name="map-outline" size={32} color={colors.textTertiary} />
         <Text style={[styles.fallbackText, { color: colors.textTertiary }]}>
           Map not available in Expo Go

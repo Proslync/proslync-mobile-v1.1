@@ -27,6 +27,8 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import type { VenueStaffMember } from "@/lib/api/venue-schedule";
 
 const ROLE_OPTIONS = [
@@ -59,7 +61,7 @@ export default function VenueStaffScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
 
   const venueId = id ? Number(id) : 0;
   const { data: staff = [], isLoading, refetch } = useVenueStaff(venueId);
@@ -196,6 +198,11 @@ export default function VenueStaffScreen() {
                     />
                   ) : (
                     <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                      <GlassView
+                        {...liquidGlass.fill}
+                        borderRadius={22}
+                        style={StyleSheet.absoluteFillObject}
+                      />
                       <Ionicons
                         name="person"
                         size={20}
@@ -274,46 +281,57 @@ export default function VenueStaffScreen() {
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
             User ID
           </Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                borderColor: colors.border,
-                backgroundColor: colors.backgroundSecondary,
-              },
-            ]}
-            value={newUserId}
-            onChangeText={setNewUserId}
-            placeholder="Enter user ID"
-            placeholderTextColor={colors.placeholder}
-            keyboardType="number-pad"
-          />
+          <View style={styles.inputWrapper}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: colors.text,
+                  borderColor: colors.border,
+                  backgroundColor: isDark ? undefined : colors.backgroundSecondary,
+                },
+              ]}
+              value={newUserId}
+              onChangeText={setNewUserId}
+              placeholder="Enter user ID"
+              placeholderTextColor={colors.placeholder}
+              keyboardType="number-pad"
+            />
+          </View>
 
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
             Role
           </Text>
           <View style={styles.roleGrid}>
-            {ROLE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[
-                  styles.roleOption,
-                  newRole === opt.value && styles.roleOptionSelected,
-                ]}
-                onPress={() => setNewRole(opt.value)}
-              >
-                <Text
+            {ROLE_OPTIONS.map((opt) => {
+              const isActive = newRole === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
                   style={[
-                    styles.roleOptionLabel,
-                    newRole === opt.value && styles.roleOptionLabelSelected,
+                    styles.roleOption,
+                    isActive && styles.roleOptionSelected,
                   ]}
+                  onPress={() => setNewRole(opt.value)}
                 >
-                  {opt.label}
-                </Text>
-                <Text style={styles.roleOptionDesc}>{opt.desc}</Text>
-              </TouchableOpacity>
-            ))}
+                  <GlassView
+                    {...(isActive ? liquidGlass.fill : liquidGlass.fillFaint)}
+                    borderRadius={10}
+                    style={StyleSheet.absoluteFillObject}
+                  />
+                  <Text
+                    style={[
+                      styles.roleOptionLabel,
+                      isActive && styles.roleOptionLabelSelected,
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                  <Text style={styles.roleOptionDesc}>{opt.desc}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <GlassButton
@@ -339,26 +357,34 @@ export default function VenueStaffScreen() {
             Role
           </Text>
           <View style={styles.roleGrid}>
-            {ROLE_OPTIONS.map((opt) => (
-              <TouchableOpacity
-                key={opt.value}
-                style={[
-                  styles.roleOption,
-                  editRole === opt.value && styles.roleOptionSelected,
-                ]}
-                onPress={() => setEditRole(opt.value)}
-              >
-                <Text
+            {ROLE_OPTIONS.map((opt) => {
+              const isActive = editRole === opt.value;
+              return (
+                <TouchableOpacity
+                  key={opt.value}
                   style={[
-                    styles.roleOptionLabel,
-                    editRole === opt.value && styles.roleOptionLabelSelected,
+                    styles.roleOption,
+                    isActive && styles.roleOptionSelected,
                   ]}
+                  onPress={() => setEditRole(opt.value)}
                 >
-                  {opt.label}
-                </Text>
-                <Text style={styles.roleOptionDesc}>{opt.desc}</Text>
-              </TouchableOpacity>
-            ))}
+                  <GlassView
+                    {...(isActive ? liquidGlass.fill : liquidGlass.fillFaint)}
+                    borderRadius={10}
+                    style={StyleSheet.absoluteFillObject}
+                  />
+                  <Text
+                    style={[
+                      styles.roleOptionLabel,
+                      isActive && styles.roleOptionLabelSelected,
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                  <Text style={styles.roleOptionDesc}>{opt.desc}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
 
           <GlassButton
@@ -420,7 +446,7 @@ const styles = StyleSheet.create({
   },
   avatar: { width: 44, height: 44, borderRadius: 22 },
   avatarPlaceholder: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -440,6 +466,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   inputLabel: { fontSize: 13, fontFamily: "Lato_700Bold" },
+  inputWrapper: {
+    overflow: "hidden" as const,
+    borderRadius: 10,
+  },
   input: {
     borderWidth: 1,
     borderRadius: 10,
@@ -454,11 +484,10 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.15)",
     borderRadius: 10,
     padding: 12,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    overflow: "hidden",
   },
   roleOptionSelected: {
     borderColor: "rgba(255,255,255,0.4)",
-    backgroundColor: "rgba(255,255,255,0.1)",
   },
   roleOptionLabel: {
     fontSize: 14,

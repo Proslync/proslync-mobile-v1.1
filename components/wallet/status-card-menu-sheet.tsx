@@ -278,7 +278,7 @@ function StatusCardMenuContent({
             activeOpacity={0.7}
           >
             <GlassView
-              {...liquidGlass.surface}
+              {...liquidGlass.fill}
               borderRadius={radius.md}
               style={StyleSheet.absoluteFillObject}
             />

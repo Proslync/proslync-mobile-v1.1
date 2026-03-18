@@ -1,4 +1,6 @@
 import { GlassSurface } from '@/components/glass/glass-surface';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { InvitationResponseDto } from '@/lib/types/team.types';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +23,7 @@ export function PendingInvitationRow({
   return (
     <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.row}>
       <View style={styles.iconContainer}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
         <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
       </View>
       <View style={styles.info}>
@@ -54,7 +57,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
   },

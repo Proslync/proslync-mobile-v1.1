@@ -11,7 +11,8 @@ import type { FeedItem as FeedItemType } from "@/lib/types/feed.types";
 import { formatEventDate } from "@/lib/utils/date";
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from "@/lib/utils/layout";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { BlurView } from "expo-blur";
+import { GlassView, isGlassEffectAPIAvailable } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { LinearGradient } from "expo-linear-gradient";
 import { useVideoPlayer, VideoView } from "expo-video";
 import * as React from "react";
@@ -29,6 +30,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FeedBottomCTA } from "./feed-bottom-cta";
 import { FeedMediaPlayer } from "./feed-media-player";
 
+const useNativeGlass = isGlassEffectAPIAvailable();
 const MAX_MEDIA_HEIGHT = SCREEN_WIDTH * 1.25;
 
 interface FeedItemProps {
@@ -63,7 +65,7 @@ export function FeedItem({
   onEventPress,
   onBlock,
 }: FeedItemProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { user: authUser } = useAuth();
   const currentUserId = authUser ? String(authUser.id) : null;
@@ -230,9 +232,8 @@ export function FeedItem({
             resizeMode="cover"
           />
         ) : null}
-        <BlurView
-          intensity={isDark ? 40 : 25}
-          tint="dark"
+        <GlassView
+          {...liquidGlass.surface}
           style={StyleSheet.absoluteFill}
         />
         <LinearGradient
@@ -244,16 +245,16 @@ export function FeedItem({
             '#000',
           ]}
           locations={[0, 0.3, 0.55, 0.8, 1]}
-          style={styles.bgGradient}
+          style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
       </View>
 
       {/* Glassy card */}
       <View style={[styles.card, { borderColor: "rgba(255,255,255,0.1)" }]}>
-        <BlurView
-          intensity={isDark ? 25 : 15}
-          tint="dark"
+        <GlassView
+          {...liquidGlass.surface}
+          borderRadius={0}
           style={StyleSheet.absoluteFill}
         />
 
@@ -265,16 +266,13 @@ export function FeedItem({
             style={styles.organizerSection}
           >
             {item.userAvatar && (
-              <Image
-                source={{ uri: item.userAvatar }}
-                style={[
-                  styles.organizerAvatar,
-                  {
-                    borderColor: "rgba(255,255,255,0.2)",
-                    backgroundColor: "rgba(255,255,255,0.1)",
-                  },
-                ]}
-              />
+              <View style={[styles.organizerAvatar, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)', borderColor: "rgba(255,255,255,0.2)" }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />}
+                <Image
+                  source={{ uri: item.userAvatar }}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              </View>
             )}
             <View style={styles.organizerNameRow}>
               <Text
@@ -303,6 +301,11 @@ export function FeedItem({
               ]}
               disabled={isFollowActionInProgress || followLoading}
             >
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={8}
+                style={StyleSheet.absoluteFill}
+              />
               {isFollowActionInProgress ? (
                 <ActivityIndicator
                   size="small"
@@ -446,7 +449,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
   },
   organizerNameRow: {
     flexDirection: "row",
@@ -460,17 +462,17 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   followButton: {
-    backgroundColor: "#0095F6",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
     minWidth: 80,
     alignItems: "center",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.25)",
   },
   followButtonFollowing: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.15)",
   },
   followButtonText: {
     fontSize: 14,

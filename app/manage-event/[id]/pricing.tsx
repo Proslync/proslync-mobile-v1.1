@@ -34,6 +34,8 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 export default function PricingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -156,10 +158,11 @@ export default function PricingScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Ticket Pricing</Text>
               {!readOnly && (
                 <TouchableOpacity
-                  style={styles.addButton}
+                  style={[styles.addButton, { overflow: 'hidden' }]}
                   onPress={handleAddTier}
                   activeOpacity={0.7}
                 >
+                  <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
                   <Ionicons name="add" size={18} color={colors.text} />
                   <Text style={[styles.addButtonText, { color: colors.text }]}>Add Tier</Text>
                 </TouchableOpacity>
@@ -200,10 +203,11 @@ export default function PricingScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Promo Codes</Text>
               {!readOnly && (
                 <TouchableOpacity
-                  style={styles.addButton}
+                  style={[styles.addButton, { overflow: 'hidden' }]}
                   onPress={handleAddPromo}
                   activeOpacity={0.7}
                 >
+                  <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
                   <Ionicons name="add" size={18} color={colors.text} />
                   <Text style={[styles.addButtonText, { color: colors.text }]}>Add Code</Text>
                 </TouchableOpacity>
@@ -317,7 +321,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },

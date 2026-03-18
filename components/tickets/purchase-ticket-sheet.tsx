@@ -10,6 +10,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import * as Haptics from 'expo-haptics';
 import { useStripe } from '@stripe/stripe-react-native';
 import { BottomSheet } from '@/components/wallet/bottom-sheet';
@@ -307,21 +309,18 @@ export function PurchaseTicketSheet({
               disabled={!isAvailable}
               style={[
                 styles.tierCard,
-                {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                  borderColor: isSelected
-                    ? baseColors.primary
-                    : isDark
-                    ? 'rgba(255,255,255,0.1)'
-                    : 'rgba(0,0,0,0.08)',
-                },
                 !isAvailable && { opacity: 0.5 },
               ]}
               activeOpacity={0.7}
             >
+              <GlassView
+                {...(isSelected ? liquidGlass.fillMedium : liquidGlass.fill)}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
               <View style={styles.tierHeader}>
                 <Text style={[styles.tierName, { color: colors.text }]}>{tier.name}</Text>
-                {isSelected && <Ionicons name="checkmark-circle" size={20} color={baseColors.primary} />}
+                {isSelected && <Ionicons name="checkmark-circle" size={20} color="#fff" />}
               </View>
               {tier.description && (
                 <Text style={[styles.tierDescription, { color: colors.textSecondary }]} numberOfLines={2}>
@@ -361,26 +360,21 @@ export function PurchaseTicketSheet({
                 <TouchableOpacity
                   key={pricing.id}
                   onPress={() => handleSelectPricing(pricing.id)}
-                  style={[
-                    styles.pricingCard,
-                    {
-                      backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                      borderColor: isSelected
-                        ? baseColors.primary
-                        : isDark
-                        ? 'rgba(255,255,255,0.1)'
-                        : 'rgba(0,0,0,0.08)',
-                    },
-                  ]}
+                  style={styles.pricingCard}
                   activeOpacity={0.7}
                 >
+                  <GlassView
+                    {...(isSelected ? liquidGlass.fillMedium : liquidGlass.fill)}
+                    borderRadius={10}
+                    style={StyleSheet.absoluteFill}
+                  />
                   <View style={styles.pricingContent}>
                     <Text style={[styles.pricingName, { color: colors.text }]}>{pricing.name}</Text>
                     <Text style={[styles.pricingPrice, { color: colors.text }]}>
                       {formatPrice(pricing.price, pricing.currency)}
                     </Text>
                   </View>
-                  {isSelected && <Ionicons name="checkmark-circle" size={20} color={baseColors.primary} />}
+                  {isSelected && <Ionicons name="checkmark-circle" size={20} color="#fff" />}
                 </TouchableOpacity>
               );
             })}
@@ -393,31 +387,28 @@ export function PurchaseTicketSheet({
     <View style={styles.section}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Promo Code (optional)</Text>
       <View style={styles.promoRow}>
-        <TextInput
-          value={promoCode}
-          onChangeText={(text) => {
-            setPromoCode(text.toUpperCase().replace(/[^A-Z0-9]/g, ''));
-            if (appliedPromoCode) setAppliedPromoCode(null);
-          }}
-          placeholder="Enter code"
-          placeholderTextColor={colors.textTertiary}
-          style={[
-            styles.promoInput,
-            {
-              backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-              borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-              color: colors.text,
-            },
-          ]}
-          editable={!appliedPromoCode}
-          autoCapitalize="characters"
-          maxLength={50}
-        />
+        <View style={[styles.promoInput, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+          <TextInput
+            value={promoCode}
+            onChangeText={(text) => {
+              setPromoCode(text.toUpperCase().replace(/[^A-Z0-9]/g, ''));
+              if (appliedPromoCode) setAppliedPromoCode(null);
+            }}
+            placeholder="Enter code"
+            placeholderTextColor={colors.textTertiary}
+            style={{ flex: 1, height: '100%', paddingHorizontal: 14, fontSize: 14, fontFamily: 'Lato_400Regular', color: colors.text }}
+            editable={!appliedPromoCode}
+            autoCapitalize="characters"
+            maxLength={50}
+          />
+        </View>
         {appliedPromoCode ? (
           <TouchableOpacity
             onPress={handleRemovePromoCode}
-            style={[styles.promoButton, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}
+            style={[styles.promoButton, { overflow: 'hidden' }]}
           >
+            <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />
             <Text style={[styles.promoButtonText, { color: '#ef4444' }]}>Remove</Text>
           </TouchableOpacity>
         ) : (
@@ -427,11 +418,12 @@ export function PurchaseTicketSheet({
             style={[
               styles.promoButton,
               {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
+                overflow: 'hidden',
                 opacity: !promoCode.trim() || !selectedTierId ? 0.5 : 1,
               },
             ]}
           >
+            <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
             {validatePromoMutation.isPending ? (
               <ActivityIndicator size="small" color={colors.text} />
             ) : (
@@ -463,14 +455,15 @@ export function PurchaseTicketSheet({
             disabled={quantity <= 1}
             style={[
               styles.quantityButton,
-              {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
-                borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
-              },
               quantity <= 1 && { opacity: 0.4 },
             ]}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={20}
+              style={StyleSheet.absoluteFill}
+            />
             <Ionicons name="remove" size={20} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.quantityDisplay}>
@@ -486,14 +479,15 @@ export function PurchaseTicketSheet({
             disabled={quantity >= availableQuantity}
             style={[
               styles.quantityButton,
-              {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)',
-                borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
-              },
               quantity >= availableQuantity && { opacity: 0.4 },
             ]}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...liquidGlass.fill}
+              borderRadius={20}
+              style={StyleSheet.absoluteFill}
+            />
             <Ionicons name="add" size={20} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -505,15 +499,12 @@ export function PurchaseTicketSheet({
     if (!selectedPricing) return null;
 
     return (
-      <View
-        style={[
-          styles.summary,
-          {
-            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-            borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
-          },
-        ]}
-      >
+      <View style={styles.summary}>
+        <GlassView
+          {...liquidGlass.fill}
+          borderRadius={12}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.summaryRow}>
           <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>
             Subtotal {quantity > 1 && `(${quantity} tickets)`}
@@ -603,10 +594,6 @@ export function PurchaseTicketSheet({
           <TouchableOpacity
             style={[
               styles.buyButton,
-              {
-                backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)',
-                borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.12)',
-              },
               (!selectedTierId || !selectedPricingId || createPaymentMutation.isPending) && {
                 opacity: 0.5,
               },
@@ -615,6 +602,11 @@ export function PurchaseTicketSheet({
             activeOpacity={0.8}
             disabled={!selectedTierId || !selectedPricingId || createPaymentMutation.isPending}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             {createPaymentMutation.isPending ? (
               <ActivityIndicator size="small" color={colors.text} />
             ) : (
@@ -633,8 +625,9 @@ export function PurchaseTicketSheet({
 
   const renderProcessingContent = () => (
     <View style={styles.statusContainer}>
-      <View style={[styles.statusIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-        <ActivityIndicator size="large" color="#3b82f6" />
+      <View style={[styles.statusIcon, { overflow: 'hidden' }]}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={44} style={StyleSheet.absoluteFillObject} />
+        <ActivityIndicator size="large" color="#fff" />
       </View>
       <Text style={[styles.statusTitle, { color: colors.text }]}>Processing Payment</Text>
       <Text style={[styles.statusSubtitle, { color: colors.textSecondary }]}>
@@ -645,7 +638,8 @@ export function PurchaseTicketSheet({
 
   const renderSuccessContent = () => (
     <View style={styles.statusContainer}>
-      <View style={[styles.statusIcon, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
+      <View style={[styles.statusIcon, { overflow: 'hidden' }]}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={44} style={StyleSheet.absoluteFillObject} />
         <Ionicons name="checkmark-circle" size={48} color="#22c55e" />
       </View>
       <Text style={[styles.statusTitle, { color: colors.text }]}>Purchase Complete!</Text>
@@ -656,16 +650,15 @@ export function PurchaseTicketSheet({
         Your tickets are in your wallet
       </Text>
       <TouchableOpacity
-        style={[
-          styles.doneButton,
-          {
-            backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)',
-            borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.12)',
-          },
-        ]}
+        style={styles.doneButton}
         onPress={handleClose}
         activeOpacity={0.8}
       >
+        <GlassView
+          {...liquidGlass.fillMedium}
+          borderRadius={12}
+          style={StyleSheet.absoluteFill}
+        />
         <Text style={[styles.doneButtonText, { color: colors.text }]}>Done</Text>
       </TouchableOpacity>
     </View>
@@ -673,7 +666,8 @@ export function PurchaseTicketSheet({
 
   const renderErrorContent = () => (
     <View style={styles.statusContainer}>
-      <View style={[styles.statusIcon, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+      <View style={[styles.statusIcon, { overflow: 'hidden' }]}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={44} style={StyleSheet.absoluteFillObject} />
         <Ionicons name="close-circle" size={48} color="#ef4444" />
       </View>
       <Text style={[styles.statusTitle, { color: colors.text }]}>Payment Failed</Text>
@@ -681,16 +675,15 @@ export function PurchaseTicketSheet({
         {errorMessage || 'Something went wrong. Please try again.'}
       </Text>
       <TouchableOpacity
-        style={[
-          styles.retryButton,
-          {
-            backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)',
-            borderColor: isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.12)',
-          },
-        ]}
+        style={styles.retryButton}
         onPress={handleRetry}
         activeOpacity={0.8}
       >
+        <GlassView
+          {...liquidGlass.fillMedium}
+          borderRadius={12}
+          style={StyleSheet.absoluteFill}
+        />
         <Text style={[styles.retryButtonText, { color: colors.text }]}>Try Again</Text>
       </TouchableOpacity>
     </View>
@@ -792,7 +785,7 @@ const styles = StyleSheet.create({
   tierCard: {
     padding: 14,
     borderRadius: 12,
-    borderWidth: 1.5,
+    overflow: 'hidden',
   },
   tierHeader: {
     flexDirection: 'row',
@@ -828,7 +821,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 12,
     borderRadius: 10,
-    borderWidth: 1.5,
+    overflow: 'hidden',
   },
   pricingContent: {
     flex: 1,
@@ -895,7 +888,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    overflow: 'hidden',
   },
   quantityDisplay: {
     alignItems: 'center',
@@ -914,7 +907,7 @@ const styles = StyleSheet.create({
   summary: {
     padding: 14,
     borderRadius: 12,
-    borderWidth: 1,
+    overflow: 'hidden',
     marginBottom: 16,
   },
   summaryRow: {
@@ -952,7 +945,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 12,
     borderRadius: 10,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
   },
   errorText: {
     color: '#ef4444',
@@ -967,7 +960,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    overflow: 'hidden',
     marginBottom: 16,
   },
   buyButtonText: {
@@ -1013,7 +1006,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    overflow: 'hidden',
   },
   doneButtonText: {
     fontSize: 16,
@@ -1025,7 +1018,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    overflow: 'hidden',
     marginTop: 24,
   },
   retryButtonText: {

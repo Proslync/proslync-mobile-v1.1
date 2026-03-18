@@ -53,6 +53,7 @@ export function IncomingCallOverlay() {
             />
           ) : (
             <View style={styles.avatarPlaceholder}>
+              <GlassView {...liquidGlass.fill} borderRadius={60} style={StyleSheet.absoluteFillObject} />
               <Ionicons
                 name="person"
                 size={48}
@@ -131,14 +132,14 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
   },
   callerName: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'Lato_700Bold',
     color: '#fff',
     marginBottom: 8,
   },

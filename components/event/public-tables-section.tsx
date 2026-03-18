@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { GlassSurface } from '@/components/glass';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { GlassButton } from '@/components/glass';
 import type { PublicTableItem } from '@/lib/types/event-detail.types';
 
@@ -26,7 +27,12 @@ export function PublicTablesSection({ tables }: PublicTablesSectionProps) {
         const spotsLeft = table.totalSeats - table.filledSeats;
         const fillPct = (table.filledSeats / table.totalSeats) * 100;
         return (
-          <GlassSurface key={table.id} fill="subtle" border="subtle" cornerRadius="md" style={styles.card}>
+          <View key={table.id} style={styles.card}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={12}
+              style={StyleSheet.absoluteFillObject}
+            />
             <View style={styles.cardHeader}>
               {table.hostAvatar ? (
                 <Image source={{ uri: table.hostAvatar }} style={styles.hostAvatar} />
@@ -62,7 +68,7 @@ export function PublicTablesSection({ tables }: PublicTablesSectionProps) {
               size="sm"
               fullWidth
             />
-          </GlassSurface>
+          </View>
         );
       })}
     </View>
@@ -85,6 +91,8 @@ const styles = StyleSheet.create({
   card: {
     padding: 14,
     gap: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',

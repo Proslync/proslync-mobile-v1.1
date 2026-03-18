@@ -15,6 +15,8 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
 import { artistsApi } from '@/lib/api/artists';
 import type { CreateEventArtistRequest } from '@/lib/types/artists.types';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
@@ -47,7 +49,8 @@ function DoorCoverInput() {
         control={control}
         name="doorCoverPrice"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={[sectionStyles.inputRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+          <View style={[sectionStyles.inputRow, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
             <Text style={[sectionStyles.dollarSign, { color: colors.textSecondary }]}>$</Text>
             <TextInput
               style={[sectionStyles.amountInput, { color: colors.text }]}
@@ -173,7 +176,7 @@ export default function CreateEventScreen() {
     showError(errorMessages || 'Please fix errors in the form');
   };
 
-  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
+  const accentColor = '#FFFFFF';
 
   return (
     <FormProvider {...form}>
@@ -227,8 +230,9 @@ export default function CreateEventScreen() {
               {pendingArtists.map((artist, index) => (
                 <View
                   key={index}
-                  style={[styles.artistRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}
+                  style={[styles.artistRow, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}
                 >
+                  {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
                   <Ionicons name="musical-notes-outline" size={18} color={colors.textSecondary} />
                   <View style={styles.artistInfo}>
                     <Text style={[styles.artistName, { color: colors.text }]} numberOfLines={1}>

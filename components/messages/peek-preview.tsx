@@ -16,9 +16,12 @@ import Animated, {
   SharedValue,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { Conversation, Message } from '../../lib/types/messages.types';
 import { formatMessageTime } from '@/lib/utils/date';
 import { SCREEN_WIDTH, SCREEN_HEIGHT } from '@/lib/utils/layout';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
@@ -31,32 +34,36 @@ interface PeekPreviewProps {
   currentUserId: string;
 }
 
-function PreviewMessage({ message, isOwn }: { message: Message; isOwn: boolean }) {
+function PreviewMessage({ message, isOwn, isDark }: { message: Message; isOwn: boolean; isDark: boolean }) {
+  const textColor = isDark ? '#fff' : '#1a1a1a';
+  const secondaryColor = isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)';
+  const tertiaryColor = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)';
+
   const renderContent = () => {
     switch (message.type) {
       case 'text':
         return (
-          <Text style={[styles.messageText, isOwn && styles.messageTextOwn]} numberOfLines={3}>
+          <Text style={[styles.messageText, { color: textColor }]} numberOfLines={3}>
             {message.text}
           </Text>
         );
       case 'image':
         return (
           <View style={styles.imagePreview}>
-            <Ionicons name="image" size={14} color="rgba(0, 0, 0, 0.6)" />
-            <Text style={styles.imagePreviewText}>Photo</Text>
+            <Ionicons name="image" size={14} color={secondaryColor} />
+            <Text style={[styles.imagePreviewText, { color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)' }]}>Photo</Text>
           </View>
         );
       case 'eventCard':
         return (
           <View style={styles.imagePreview}>
-            <Ionicons name="calendar" size={14} color="rgba(0, 0, 0, 0.6)" />
-            <Text style={styles.imagePreviewText}>{message.eventCard?.eventTitle || 'Event'}</Text>
+            <Ionicons name="calendar" size={14} color={secondaryColor} />
+            <Text style={[styles.imagePreviewText, { color: isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)' }]}>{message.eventCard?.eventTitle || 'Event'}</Text>
           </View>
         );
       case 'system':
         return (
-          <Text style={styles.systemText}>{message.text}</Text>
+          <Text style={[styles.systemText, { color: tertiaryColor }]}>{message.text}</Text>
         );
       default:
         return null;
@@ -72,9 +79,14 @@ function PreviewMessage({ message, isOwn }: { message: Message; isOwn: boolean }
   }
 
   return (
-    <View style={[styles.messageBubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
+    <View style={[
+      styles.messageBubble,
+      isOwn
+        ? [styles.bubbleOwn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : '#D3D3D3' }]
+        : [styles.bubbleOther, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#f0f0f0' }],
+    ]}>
       {renderContent()}
-      <Text style={styles.messageTime}>{formatMessageTime(message.createdAt)}</Text>
+      <Text style={[styles.messageTime, { color: tertiaryColor }]}>{formatMessageTime(message.createdAt)}</Text>
     </View>
   );
 }
@@ -85,6 +97,8 @@ export function PeekPreview({
   translateX,
   currentUserId,
 }: PeekPreviewProps) {
+  const { isDark, colors } = useAppTheme();
+
   const animatedOverlayStyle = useAnimatedStyle(() => {
     const opacity = interpolate(
       translateX.value,
@@ -118,6 +132,7 @@ export function PeekPreview({
 
   const participant = conversation.participants[0];
   const lastMessages = messages.slice(-6).reverse();
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)';
 
   return (
     <>
@@ -125,22 +140,31 @@ export function PeekPreview({
       <Animated.View style={[styles.overlay, animatedOverlayStyle]} pointerEvents="none" />
 
       {/* Preview panel */}
-      <Animated.View style={[styles.container, animatedContainerStyle]}>
+      <Animated.View style={[styles.container, { backgroundColor: isDark ? '#1a1a1a' : '#fff' }, animatedContainerStyle]}>
+        {/* Glass background for dark mode */}
+        {isDark && (
+          <GlassView
+            {...liquidGlass.surface}
+            borderRadius={20}
+            style={StyleSheet.absoluteFillObject}
+          />
+        )}
+
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: borderColor }]}>
           <View style={styles.headerLeft}>
             <Image
               source={participant?.avatarUrl ? { uri: participant.avatarUrl } : DefaultAvatarImage}
               style={styles.avatar}
             />
             <View>
-              <Text style={styles.name} numberOfLines={1}>{conversation.title}</Text>
-              <Text style={styles.peekLabel}>Peek</Text>
+              <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{conversation.title}</Text>
+              <Text style={[styles.peekLabel, { color: isDark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.4)' }]}>Peek</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
-            <Ionicons name="chevron-back" size={16} color="rgba(0, 0, 0, 0.3)" />
-            <Text style={styles.releaseText}>Release</Text>
+            <Ionicons name="chevron-back" size={16} color={isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)'} />
+            <Text style={[styles.releaseText, { color: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)' }]}>Release</Text>
           </View>
         </View>
 
@@ -151,21 +175,22 @@ export function PeekPreview({
           showsVerticalScrollIndicator={false}
         >
           {lastMessages.length === 0 ? (
-            <Text style={styles.emptyText}>No messages yet</Text>
+            <Text style={[styles.emptyText, { color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)' }]}>No messages yet</Text>
           ) : (
             lastMessages.map((msg) => (
               <PreviewMessage
                 key={msg.id}
                 message={msg}
                 isOwn={msg.senderId === currentUserId}
+                isDark={isDark}
               />
             ))
           )}
         </ScrollView>
 
         {/* Footer hint */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Swipe more to open</Text>
+        <View style={[styles.footer, { borderTopColor: borderColor }]}>
+          <Text style={[styles.footerText, { color: isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.35)' }]}>Swipe more to open</Text>
         </View>
       </Animated.View>
     </>
@@ -184,7 +209,6 @@ const styles = StyleSheet.create({
     right: 0,
     width: PREVIEW_WIDTH,
     maxHeight: SCREEN_HEIGHT * 0.6,
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
     zIndex: 999,
@@ -202,7 +226,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.08)',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -218,13 +241,11 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#1a1a1a',
     maxWidth: 150,
   },
   peekLabel: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: '#0095f6',
     marginTop: 2,
   },
   headerRight: {
@@ -235,7 +256,6 @@ const styles = StyleSheet.create({
   releaseText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.35)',
   },
   messagesContainer: {
     flex: 1,
@@ -248,7 +268,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
     textAlign: 'center',
     paddingVertical: 40,
   },
@@ -259,28 +278,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   bubbleOwn: {
-    backgroundColor: '#D3D3D3',
     alignSelf: 'flex-end',
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
-    backgroundColor: '#f0f0f0',
     alignSelf: 'flex-start',
     borderBottomLeftRadius: 4,
   },
   messageText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: '#1a1a1a',
     lineHeight: 18,
-  },
-  messageTextOwn: {
-    color: '#1a1a1a',
   },
   messageTime: {
     fontSize: 10,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
     marginTop: 4,
     alignSelf: 'flex-end',
   },
@@ -292,7 +304,6 @@ const styles = StyleSheet.create({
   imagePreviewText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.7)',
   },
   systemMessage: {
     alignSelf: 'center',
@@ -301,19 +312,16 @@ const styles = StyleSheet.create({
   systemText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.4)',
     textAlign: 'center',
   },
   footer: {
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.08)',
     alignItems: 'center',
   },
   footerText: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0, 0, 0, 0.35)',
   },
 });

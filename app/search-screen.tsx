@@ -15,6 +15,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useUnifiedSearch } from '@/hooks/use-unified-search';
 import { useFollowUser } from '@/hooks/use-follow-user';
@@ -35,10 +37,12 @@ function PersonRow({
   item,
   onPress,
   colors,
+  isDark,
 }: {
   item: UnifiedSearchItem;
   onPress: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
 }) {
   const { user } = useAuth();
   const isSelf = user?.id === item.id;
@@ -57,11 +61,14 @@ function PersonRow({
 
   return (
     <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
-      {item.avatar?.url ? (
-        <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
-      ) : (
-        <Image source={DefaultAvatarImage} style={styles.avatar} />
-      )}
+      <View style={[styles.avatar, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+        {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={24} style={StyleSheet.absoluteFillObject} />}
+        {item.avatar?.url ? (
+          <Image source={{ uri: item.avatar.url }} style={StyleSheet.absoluteFillObject} />
+        ) : (
+          <Image source={DefaultAvatarImage} style={StyleSheet.absoluteFillObject} />
+        )}
+      </View>
       <View style={styles.resultInfo}>
         <View style={styles.nameRow}>
           <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
@@ -89,6 +96,11 @@ function PersonRow({
           disabled={isFollowInProgress || isUnfollowInProgress}
           activeOpacity={0.7}
         >
+          <GlassView
+            {...liquidGlass.fill}
+            borderRadius={10}
+            style={StyleSheet.absoluteFill}
+          />
           <Text style={[styles.followButtonText, isFollowing && styles.followButtonTextFollowing]}>
             {isFollowInProgress || isUnfollowInProgress
               ? '...'
@@ -232,11 +244,13 @@ function RecentSearchRow({
   onPress,
   onDelete,
   colors,
+  isDark,
 }: {
   item: SearchSuggestion;
   onPress: () => void;
   onDelete: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
 }) {
   const imageUrl = item.displayImage || item.avatar?.url;
   const isPerson = item.selectedType === 'person';
@@ -248,14 +262,22 @@ function RecentSearchRow({
   return (
     <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
       {imageUrl ? (
-        <Image
-          source={{ uri: imageUrl }}
-          style={isPerson || !item.selectedType ? styles.avatar : styles.venueThumb}
-        />
+        isPerson || !item.selectedType ? (
+          <View style={[styles.avatar, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={24} style={StyleSheet.absoluteFillObject} />}
+            <Image source={{ uri: imageUrl }} style={StyleSheet.absoluteFillObject} />
+          </View>
+        ) : (
+          <Image source={{ uri: imageUrl }} style={styles.venueThumb} />
+        )
       ) : isPerson ? (
-        <Image source={DefaultAvatarImage} style={styles.avatar} />
+        <View style={[styles.avatar, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={24} style={StyleSheet.absoluteFillObject} />}
+          <Image source={DefaultAvatarImage} style={StyleSheet.absoluteFillObject} />
+        </View>
       ) : (
-        <View style={[styles.recentIcon, { backgroundColor: colors.input }]}>
+        <View style={[styles.recentIcon, { backgroundColor: isDark ? undefined : colors.input, overflow: 'hidden' as const }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
           <Ionicons
             name={item.selectedType ? getTypeIcon(item.selectedType) : 'time-outline'}
             size={18}
@@ -302,21 +324,26 @@ function SuggestionPersonRow({
   item,
   onPress,
   colors,
+  isDark,
   subtitle,
 }: {
   item: SearchSuggestion;
   onPress: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
   subtitle?: string;
 }) {
   const name = `${item.firstName || ''} ${item.lastName || ''}`.trim();
   return (
     <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
-      {item.avatar?.url ? (
-        <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
-      ) : (
-        <Image source={DefaultAvatarImage} style={styles.avatar} />
-      )}
+      <View style={[styles.avatar, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+        {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={24} style={StyleSheet.absoluteFillObject} />}
+        {item.avatar?.url ? (
+          <Image source={{ uri: item.avatar.url }} style={StyleSheet.absoluteFillObject} />
+        ) : (
+          <Image source={DefaultAvatarImage} style={StyleSheet.absoluteFillObject} />
+        )}
+      </View>
       <View style={styles.resultInfo}>
         <View style={styles.nameRow}>
           <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
@@ -343,10 +370,12 @@ function FrequentAvatarRow({
   items,
   onPress,
   colors,
+  isDark,
 }: {
   items: SearchSuggestion[];
   onPress: (item: SearchSuggestion) => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
 }) {
   if (items.length === 0) return null;
   return (
@@ -364,11 +393,14 @@ function FrequentAvatarRow({
             onPress={() => onPress(item)}
             activeOpacity={0.7}
           >
-            {item.avatar?.url ? (
-              <Image source={{ uri: item.avatar.url }} style={styles.frequentAvatar} />
-            ) : (
-              <Image source={DefaultAvatarImage} style={styles.frequentAvatar} />
-            )}
+            <View style={[styles.frequentAvatar, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={26} style={StyleSheet.absoluteFillObject} />}
+              {item.avatar?.url ? (
+                <Image source={{ uri: item.avatar.url }} style={StyleSheet.absoluteFillObject} />
+              ) : (
+                <Image source={DefaultAvatarImage} style={StyleSheet.absoluteFillObject} />
+              )}
+            </View>
             <Text style={[styles.frequentName, { color: colors.textSecondary }]} numberOfLines={1}>
               {name || item.userName || 'User'}
             </Text>
@@ -394,7 +426,7 @@ function getTypeIcon(type: string): keyof typeof Ionicons.glyphMap {
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const inputRef = useRef<TextInput>(null);
   const [ready, setReady] = useState(false);
 
@@ -542,7 +574,7 @@ export default function SearchScreen() {
       const onPress = () => handleResultPress(item);
       switch (item.type) {
         case 'person':
-          return <PersonRow key={`person-${item.id}`} item={item} onPress={onPress} colors={colors} />;
+          return <PersonRow key={`person-${item.id}`} item={item} onPress={onPress} colors={colors} isDark={isDark} />;
         case 'event':
           return <EventRow key={`event-${item.id}`} item={item} onPress={onPress} colors={colors} />;
         case 'venue':
@@ -553,7 +585,7 @@ export default function SearchScreen() {
           return null;
       }
     },
-    [handleResultPress, colors],
+    [handleResultPress, colors, isDark],
   );
 
   const recentSearches = suggestions?.recentSearches ?? [];
@@ -576,7 +608,8 @@ export default function SearchScreen() {
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
 
-        <View style={[styles.searchBar, { backgroundColor: colors.input }]}>
+        <View style={[styles.searchBar, { backgroundColor: isDark ? undefined : colors.input, overflow: 'hidden' as const }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
           <TextInput
             ref={inputRef}
@@ -654,6 +687,7 @@ export default function SearchScreen() {
                   onPress={() => handleRecentPress(item)}
                   onDelete={() => deleteSearchEntry(item.id)}
                   colors={colors}
+                  isDark={isDark}
                 />
               ))}
             </Animated.View>
@@ -669,6 +703,7 @@ export default function SearchScreen() {
                 items={frequentFriends}
                 onPress={handleSuggestionPersonPress}
                 colors={colors}
+                isDark={isDark}
               />
             </Animated.View>
           )}
@@ -685,6 +720,7 @@ export default function SearchScreen() {
                   item={item}
                   onPress={() => handleSuggestionPersonPress(item)}
                   colors={colors}
+                  isDark={isDark}
                   subtitle={
                     (item.mutualCount ?? 0) > 0
                       ? `${item.mutualCount} mutual ${item.mutualCount === 1 ? 'friend' : 'friends'}`
@@ -760,7 +796,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   resultInfo: {
     flex: 1,
@@ -792,14 +827,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   followButton: {
-    backgroundColor: '#0095F6',
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 7,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   followButtonFollowing: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
   followButtonText: {
@@ -869,7 +904,6 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     marginBottom: 6,
   },
   frequentName: {

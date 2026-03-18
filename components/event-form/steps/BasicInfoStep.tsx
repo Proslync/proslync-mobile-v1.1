@@ -2,6 +2,8 @@
 
 import { useFormContext, useWatch } from 'react-hook-form';
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -38,7 +40,7 @@ export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlye
   const { colors, isDark } = useAppTheme();
   const { showError } = useToast();
   const { setValue, control, formState: { errors } } = useFormContext<EventFormData>();
-  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
+  const accentColor = '#FFFFFF';
 
   // Watch flyerUri and mediaType for preview - use existing values as fallback
   const flyerUri = useWatch({ control, name: 'flyerUri' });
@@ -133,22 +135,24 @@ export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlye
             </TouchableOpacity>
           </View>
         ) : (
-          <TouchableOpacity
-            style={[
-              styles.flyerPickerButton,
-              {
-                backgroundColor: colors.input,
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(56, 151, 240, 0.3)',
-              },
-            ]}
-            onPress={pickFlyer}
-          >
-            <Ionicons name="image-outline" size={32} color={accentColor} />
-            <Text style={[styles.flyerPickerText, { color: accentColor }]}>Add Event Flyer</Text>
-            <Text style={[styles.flyerPickerHint, { color: colors.textTertiary }]}>
-              Tap to upload an image or video
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.flyerPickerWrapper}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+            <TouchableOpacity
+              style={[
+                styles.flyerPickerButton,
+                {
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(56, 151, 240, 0.3)',
+                },
+              ]}
+              onPress={pickFlyer}
+            >
+              <Ionicons name="image-outline" size={32} color={accentColor} />
+              <Text style={[styles.flyerPickerText, { color: accentColor }]}>Add Event Flyer</Text>
+              <Text style={[styles.flyerPickerHint, { color: colors.textTertiary }]}>
+                Tap to upload an image or video
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
         {errors.flyerUri && (
           <Text style={styles.errorText}>{errors.flyerUri.message as string}</Text>
@@ -169,6 +173,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     marginBottom: 12,
+  },
+  flyerPickerWrapper: {
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   flyerPickerButton: {
     borderRadius: 12,

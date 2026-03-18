@@ -210,7 +210,7 @@ export function InfoSheet({
                       onValueChange={onPinToggle}
                       trackColor={{
                         false: "rgba(255, 255, 255, 0.2)",
-                        true: "#0095f6",
+                        true: "rgba(255,255,255,0.4)",
                       }}
                       thumbColor="#fff"
                     />
@@ -246,7 +246,7 @@ export function InfoSheet({
                       onValueChange={onMuteToggle}
                       trackColor={{
                         false: "rgba(255, 255, 255, 0.2)",
-                        true: "#0095f6",
+                        true: "rgba(255,255,255,0.4)",
                       }}
                       thumbColor="#fff"
                     />

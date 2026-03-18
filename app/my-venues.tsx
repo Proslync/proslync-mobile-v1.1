@@ -1,4 +1,6 @@
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useMyVenues } from '@/hooks/use-venues-query';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -31,10 +33,11 @@ function VenueCard({ venue, onPress, colors }: VenueCardProps) {
 
   return (
     <TouchableOpacity
-      style={[styles.venueCard, { backgroundColor: colors.cardElevated }]}
+      style={styles.venueCard}
       onPress={onPress}
       activeOpacity={0.8}
     >
+      <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
       {venue.imageUrl ? (
         <Image
           source={{ uri: venue.imageUrl }}

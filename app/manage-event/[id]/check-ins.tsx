@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Dimensions,
 } from "react-native";
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, {
   FadeIn,
   useSharedValue,
@@ -457,12 +459,10 @@ function CheckInsContent() {
             <View
               style={[
                 styles.tabBadge,
-                { backgroundColor: "rgba(255,255,255,0.2)" },
-                activeTab === "approved" && {
-                  backgroundColor: "rgba(255,255,255,0.3)",
-                },
+                { overflow: 'hidden' },
               ]}
             >
+              <GlassView {...(activeTab === "approved" ? liquidGlass.fillStrong : liquidGlass.fill)} borderRadius={10} style={StyleSheet.absoluteFillObject} />
               <Text style={[styles.tabBadgeText, { color: colors.text }]}>
                 {approvedContacts.length}
               </Text>
@@ -483,12 +483,10 @@ function CheckInsContent() {
             <View
               style={[
                 styles.tabBadge,
-                { backgroundColor: "rgba(255,255,255,0.2)" },
-                activeTab === "denied" && {
-                  backgroundColor: "rgba(255,255,255,0.3)",
-                },
+                { overflow: 'hidden' },
               ]}
             >
+              <GlassView {...(activeTab === "denied" ? liquidGlass.fillStrong : liquidGlass.fill)} borderRadius={10} style={StyleSheet.absoluteFillObject} />
               <Text style={[styles.tabBadgeText, { color: colors.text }]}>
                 {deniedContacts.length}
               </Text>

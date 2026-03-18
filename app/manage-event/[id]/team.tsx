@@ -42,6 +42,8 @@ import {
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 export default function TeamScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -169,7 +171,8 @@ export default function TeamScreen() {
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Team</Text>
           {stats && (
-            <View style={styles.countBadge}>
+            <View style={[styles.countBadge, { overflow: 'hidden' }]}>
+              <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
               <Text style={[styles.countText, { color: colors.text }]}>
                 {stats.totalMembers}
               </Text>
@@ -268,10 +271,11 @@ export default function TeamScreen() {
                 </Text>
                 {canInviteTeam() && (
                   <TouchableOpacity
-                    style={styles.emptyCta}
+                    style={[styles.emptyCta, { overflow: 'hidden' }]}
                     onPress={() => setInviteModalVisible(true)}
                     activeOpacity={0.7}
                   >
+                    <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
                     <Ionicons
                       name="person-add-outline"
                       size={18}
@@ -306,10 +310,11 @@ export default function TeamScreen() {
             )}
             {canInviteTeam() && (
               <TouchableOpacity
-                style={styles.addMemberButton}
+                style={[styles.addMemberButton, { overflow: 'hidden' }]}
                 onPress={() => setInviteModalVisible(true)}
                 activeOpacity={0.7}
               >
+                <GlassView {...liquidGlass.fillFaint} borderRadius={14} style={StyleSheet.absoluteFillObject} />
                 <Ionicons name="person-add-outline" size={18} color="#fff" />
                 <Text style={styles.addMemberButtonText}>Add Team Member</Text>
               </TouchableOpacity>
@@ -351,10 +356,11 @@ export default function TeamScreen() {
               </Text>
               {canManageTeam() && (
                 <TouchableOpacity
-                  style={styles.addButton}
+                  style={[styles.addButton, { overflow: 'hidden' }]}
                   onPress={() => setCreateRoleModalVisible(true)}
                   activeOpacity={0.7}
                 >
+                  <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
                   <Ionicons name="add" size={18} color={colors.text} />
                   <Text style={[styles.addButtonText, { color: colors.text }]}>
                     Add Role
@@ -535,7 +541,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    backgroundColor: "rgba(255,255,255,0.15)",
   },
   countText: {
     fontSize: 12,
@@ -596,7 +601,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.15)",
   },
@@ -632,7 +636,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.15)",
   },
@@ -648,7 +651,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.15)",
   },

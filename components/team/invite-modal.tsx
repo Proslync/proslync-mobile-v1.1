@@ -46,7 +46,7 @@ export function InviteModal({
   eventId,
 }: InviteModalProps) {
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const inviteMutation = useInviteByUserId(eventId);
 
   const {
@@ -140,11 +140,14 @@ export function InviteModal({
             style={StyleSheet.absoluteFill}
           />
         )}
-        {item.avatar?.url ? (
-          <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
-        ) : (
-          <Image source={DefaultAvatarImage} style={styles.avatar} />
-        )}
+        <View style={[styles.avatar, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
+          {item.avatar?.url ? (
+            <Image source={{ uri: item.avatar.url }} style={StyleSheet.absoluteFillObject} />
+          ) : (
+            <Image source={DefaultAvatarImage} style={StyleSheet.absoluteFillObject} />
+          )}
+        </View>
         <View style={styles.userInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.userName} numberOfLines={1}>{fullName || 'User'}</Text>
@@ -188,11 +191,14 @@ export function InviteModal({
             style={StyleSheet.absoluteFill}
           />
         )}
-        {item.avatar?.url ? (
-          <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
-        ) : (
-          <Image source={DefaultAvatarImage} style={styles.avatar} />
-        )}
+        <View style={[styles.avatar, { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
+          {item.avatar?.url ? (
+            <Image source={{ uri: item.avatar.url }} style={StyleSheet.absoluteFillObject} />
+          ) : (
+            <Image source={DefaultAvatarImage} style={StyleSheet.absoluteFillObject} />
+          )}
+        </View>
         <View style={styles.userInfo}>
           <View style={styles.nameRow}>
             <Text style={styles.userName} numberOfLines={1}>{fullName || item.displayName || 'User'}</Text>
@@ -491,7 +497,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   userInfo: {
     flex: 1,

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFormContext } from 'react-hook-form';
 import { MapView, Camera, MarkerView } from '@rnmapbox/maps';
@@ -58,29 +60,32 @@ export function LocationStep() {
       {hasVenues && (
         <View style={styles.venueSection}>
           <Text style={[styles.label, { color: colors.text }]}>Venue</Text>
-          <TouchableOpacity
-            style={[
-              styles.venueSelector,
-              { backgroundColor: colors.input, borderColor: colors.inputBorder },
-            ]}
-            onPress={() => setPickerVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Text
+          <View style={styles.inputWrapper}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+            <TouchableOpacity
               style={[
-                styles.venueSelectorText,
-                {
-                  color: selectedVenue ? colors.text : colors.placeholder,
-                },
+                styles.venueSelector,
+                { borderColor: colors.inputBorder },
               ]}
-              numberOfLines={1}
+              onPress={() => setPickerVisible(true)}
+              activeOpacity={0.7}
             >
-              {selectedVenue ? selectedVenue.name : 'Select a venue (optional)'}
-            </Text>
-            <Text style={[styles.chevron, { color: colors.placeholder }]}>
-              ▼
-            </Text>
-          </TouchableOpacity>
+              <Text
+                style={[
+                  styles.venueSelectorText,
+                  {
+                    color: selectedVenue ? colors.text : colors.placeholder,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {selectedVenue ? selectedVenue.name : 'Select a venue (optional)'}
+              </Text>
+              <Text style={[styles.chevron, { color: colors.placeholder }]}>
+                ▼
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           <VenuePickerModal
             visible={pickerVisible}
@@ -165,6 +170,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     marginBottom: 12,
+  },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   venueSelector: {
     flexDirection: 'row',

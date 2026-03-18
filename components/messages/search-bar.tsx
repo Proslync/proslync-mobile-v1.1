@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 interface SearchBarProps {
   value: string;
@@ -23,6 +25,7 @@ export function SearchBar({
   return (
     <View style={styles.container}>
       <View style={styles.inputContainer}>
+        <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
         <Ionicons
           name="search"
           size={16}
@@ -64,7 +67,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
     borderRadius: 10,
     paddingHorizontal: 10,
     height: 36,

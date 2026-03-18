@@ -43,6 +43,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: '600',
+    fontFamily: 'Lato_700Bold',
   },
 });

@@ -21,6 +21,8 @@ import {
 import { FeedMediaPlayer } from "@/components/feed/feed-media-player";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 const SECTIONS = [
   {
@@ -405,7 +407,8 @@ export default function ManageEventScreen() {
                 maxHeight={cardWidth * (4 / 3)}
               />
             ) : (
-              <View style={styles.flyerPlaceholder}>
+              <View style={[styles.flyerPlaceholder, { overflow: 'hidden' }]}>
+                <GlassView {...liquidGlass.fillFaint} borderRadius={0} style={StyleSheet.absoluteFillObject} />
                 <Ionicons
                   name="calendar"
                   size={48}
@@ -490,7 +493,8 @@ export default function ManageEventScreen() {
                 onPress={() => handleSectionPress(section.key)}
                 activeOpacity={0.7}
               >
-                <View style={styles.menuItemIcon}>
+                <View style={[styles.menuItemIcon, { overflow: 'hidden' }]}>
+                  <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />
                   <Ionicons
                     name={section.icon}
                     size={20}
@@ -559,7 +563,6 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
   },
   cardFooter: {
     paddingHorizontal: 14,
@@ -637,7 +640,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
   },
   menuItemContent: {
     flex: 1,

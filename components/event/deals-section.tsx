@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { EventDeal } from '@/lib/types/deals.types';
 
@@ -9,7 +11,6 @@ interface DealsSectionProps {
 
 export function DealsSection({ deals }: DealsSectionProps) {
   const { colors, isDark } = useAppTheme();
-  const glassColor = isDark ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
 
   if (deals.length === 0) return null;
 
@@ -17,8 +18,9 @@ export function DealsSection({ deals }: DealsSectionProps) {
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.text }]}>Specials & Deals</Text>
       {deals.map((deal) => (
-        <View key={deal.id} style={[styles.dealRow, { borderColor: `${glassColor}0.1)` }]}>
-          <View style={[styles.badge, { backgroundColor: `${glassColor}0.12)` }]}>
+        <View key={deal.id} style={[styles.dealRow, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+          <View style={[styles.badge, { overflow: 'hidden' }]}>
+            <GlassView {...liquidGlass.fillFaint} borderRadius={6} style={StyleSheet.absoluteFillObject} />
             <Text style={[styles.badgeText, { color: colors.text }]}>{deal.badge}</Text>
           </View>
           <View style={styles.dealInfo}>

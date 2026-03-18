@@ -3,6 +3,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 interface EmptyStateProps {
   type: 'inbox' | 'requests' | 'events' | 'search' | 'chat';
@@ -43,6 +45,7 @@ export function EmptyState({ type, searchQuery }: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={60} style={StyleSheet.absoluteFillObject} />
         <Ionicons
           name={state.icon as any}
           size={64}
@@ -71,7 +74,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,

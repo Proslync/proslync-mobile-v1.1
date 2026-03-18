@@ -3,6 +3,8 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import type { TeamMemberResponseDto } from '@/lib/types/team.types';
 import { Ionicons } from '@expo/vector-icons';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 interface TeamMemberRowProps {
   member: TeamMemberResponseDto;
@@ -36,6 +38,7 @@ export function TeamMemberRow({ member, isOwner, onChangeRole, onRemove }: TeamM
         <Image source={{ uri: avatarUri }} style={styles.avatar} />
       ) : (
         <View style={styles.avatarFallback}>
+          <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
           <Text style={styles.avatarInitials}>{getInitials(member)}</Text>
         </View>
       )}
@@ -81,7 +84,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
   },

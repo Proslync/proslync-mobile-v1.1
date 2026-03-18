@@ -12,6 +12,8 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { ConversationFilter } from '../../lib/types/messages.types';
 
 interface SegmentedControlProps {
@@ -52,6 +54,7 @@ export function SegmentedControl({
 
   return (
     <View style={styles.container}>
+      <GlassView {...liquidGlass.surface} borderRadius={10} style={StyleSheet.absoluteFillObject} />
       <Animated.View style={[styles.indicator, indicatorStyle]} />
       {SEGMENTS.map((segment, index) => (
         <TouchableOpacity
@@ -86,7 +89,7 @@ const SEGMENT_WIDTH = 100;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
     borderRadius: 10,
     padding: 3,
     marginHorizontal: 16,

@@ -15,10 +15,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ActionSheet } from '@/components/shared/action-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import type { UpdateProfileRequest } from '@/lib/types/auth.types';
@@ -227,6 +230,7 @@ export default function EditProfileScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {isDark && <DarkGradientBg />}
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -278,6 +282,7 @@ export default function EditProfileScreen() {
                 <Image source={DEFAULT_AVATAR} style={[styles.avatar, { borderColor: colors.borderStrong }]} />
               )}
               <View style={[styles.editPhotoOverlay, { borderColor: colors.background }]}>
+                <GlassView {...liquidGlass.fill} borderRadius={16} style={StyleSheet.absoluteFillObject} />
                 {isUploadingPhoto ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
@@ -298,31 +303,38 @@ export default function EditProfileScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>First Name</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-                value={formData.firstName}
-                onChangeText={(text) => updateField('firstName', text)}
-                placeholder="Enter your first name"
-                placeholderTextColor={colors.placeholder}
-                autoCapitalize="words"
-              />
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[styles.input, { borderColor: colors.inputBorder, color: colors.text }]}
+                  value={formData.firstName}
+                  onChangeText={(text) => updateField('firstName', text)}
+                  placeholder="Enter your first name"
+                  placeholderTextColor={colors.placeholder}
+                  autoCapitalize="words"
+                />
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Last Name</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-                value={formData.lastName}
-                onChangeText={(text) => updateField('lastName', text)}
-                placeholder="Enter your last name"
-                placeholderTextColor={colors.placeholder}
-                autoCapitalize="words"
-              />
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[styles.input, { borderColor: colors.inputBorder, color: colors.text }]}
+                  value={formData.lastName}
+                  onChangeText={(text) => updateField('lastName', text)}
+                  placeholder="Enter your last name"
+                  placeholderTextColor={colors.placeholder}
+                  autoCapitalize="words"
+                />
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Username</Text>
-              <View style={[styles.usernameInputContainer, { backgroundColor: colors.input, borderColor: colors.inputBorder }]}>
+              <View style={[styles.usernameInputContainer, { borderColor: colors.inputBorder }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
                 <Text style={[styles.usernamePrefix, { color: colors.textSecondary }]}>@</Text>
                 <TextInput
                   style={[styles.input, styles.usernameInput, { color: colors.text }]}
@@ -338,31 +350,37 @@ export default function EditProfileScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Email</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-                value={formData.email}
-                onChangeText={(text) => updateField('email', text)}
-                placeholder="your@email.com"
-                placeholderTextColor={colors.placeholder}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[styles.input, { borderColor: colors.inputBorder, color: colors.text }]}
+                  value={formData.email}
+                  onChangeText={(text) => updateField('email', text)}
+                  placeholder="your@email.com"
+                  placeholderTextColor={colors.placeholder}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Bio</Text>
-              <TextInput
-                style={[styles.input, styles.bioInput, { backgroundColor: colors.input, borderColor: colors.inputBorder, color: colors.text }]}
-                value={formData.bio}
-                onChangeText={(text) => updateField('bio', text)}
-                placeholder="Tell us about yourself"
-                placeholderTextColor={colors.placeholder}
-                multiline
-                numberOfLines={4}
-                maxLength={150}
-                textAlignVertical="top"
-              />
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[styles.input, styles.bioInput, { borderColor: colors.inputBorder, color: colors.text }]}
+                  value={formData.bio}
+                  onChangeText={(text) => updateField('bio', text)}
+                  placeholder="Tell us about yourself"
+                  placeholderTextColor={colors.placeholder}
+                  multiline
+                  numberOfLines={4}
+                  maxLength={150}
+                  textAlignVertical="top"
+                />
+              </View>
               <Text style={[styles.charCount, { color: colors.textTertiary }]}>{formData.bio.length}/150</Text>
             </View>
           </View>
@@ -460,10 +478,10 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#3897F0',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
+    overflow: 'hidden',
   },
   changePhotoText: {
     fontSize: 14,
@@ -507,11 +525,16 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: 4,
   },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 10,
+  },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 10,
     borderWidth: 1,
+    overflow: 'hidden',
   },
   usernamePrefix: {
     fontSize: 16,

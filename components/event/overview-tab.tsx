@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassSurface } from '@/components/glass';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { QuickDetailsGrid } from './quick-details-grid';
 import { DealsSection } from './deals-section';
 import type { EventDetailExtended } from '@/lib/types/event-detail.types';
@@ -69,8 +71,9 @@ export function OverviewTab({
                 });
               }
             }}
-            style={[styles.organizerCard, { backgroundColor: `${glassColor}0.06)`, borderColor: `${glassColor}0.1)` }]}
+            style={[styles.organizerCard, { overflow: 'hidden' }]}
           >
+            <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />
             {organizerAvatar ? (
               <Image source={{ uri: organizerAvatar }} style={styles.organizerAvatar} />
             ) : (
@@ -122,7 +125,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 12,
-    borderWidth: 1,
     padding: 12,
     gap: 10,
   },

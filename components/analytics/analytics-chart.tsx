@@ -16,6 +16,8 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Path, Defs, LinearGradient as SvgGradient, Stop, Circle, Line, Text as SvgText, G } from 'react-native-svg';
@@ -653,10 +655,11 @@ export function RangeSelector({
         return (
           <TouchableOpacity
             key={r}
-            style={[styles.rangeChip, isActive && styles.rangeChipActive]}
+            style={[styles.rangeChip, isActive && { overflow: 'hidden' as const }]}
             onPress={() => onSelect(r)}
             activeOpacity={0.7}
           >
+            {isActive && <GlassView {...liquidGlass.fill} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
             <Text style={[styles.rangeText, { color: colors.textTertiary }, isActive && styles.rangeTextActive]}>
               {rangeDisplayLabel(r)}
             </Text>
@@ -755,7 +758,7 @@ export function AnalyticsScreenShell({
   const heroData = heroMetric?.seriesByRange[selectedRange] ?? [];
   const heroDates = heroMetric?.datesByRange?.[selectedRange] ?? [];
 
-  const navBtnBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  // Nav button uses GlassView in dark mode
 
   if (isLoading && !refreshing) {
     return (
@@ -763,10 +766,11 @@ export function AnalyticsScreenShell({
         <DarkGradientBg />
         <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
           <TouchableOpacity
-            style={[styles.navBackBtn, { backgroundColor: navBtnBg }]}
+            style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.navRight} />
@@ -784,10 +788,11 @@ export function AnalyticsScreenShell({
         <DarkGradientBg />
         <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
           <TouchableOpacity
-            style={[styles.navBackBtn, { backgroundColor: navBtnBg }]}
+            style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
             <Ionicons name="chevron-back" size={22} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.navRight} />
@@ -806,10 +811,11 @@ export function AnalyticsScreenShell({
       <DarkGradientBg />
       <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
         <TouchableOpacity
-          style={[styles.navBackBtn, { backgroundColor: navBtnBg }]}
+          style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           <Ionicons name="chevron-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.navRight} />
@@ -949,15 +955,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 8,
   },
-  rangeChipActive: {
-    backgroundColor: 'rgba(0, 214, 50, 0.12)',
-  },
   rangeText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
   },
   rangeTextActive: {
-    color: '#00D632',
+    color: '#FFFFFF',
   },
   sectionDivider: {
     height: 1,

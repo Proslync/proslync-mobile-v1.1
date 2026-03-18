@@ -10,6 +10,8 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useFormContext } from 'react-hook-form';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { CreateTierModal } from '@/components/pricing/create-tier-modal';
@@ -174,12 +176,14 @@ export function PricingStep() {
                 style={styles.actionButton}
                 onPress={() => handleEditTier(tierIndex)}
               >
+                <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
                 <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => handleDeleteTier(tierIndex)}
               >
+                <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
                 <Ionicons name="trash-outline" size={18} color="#ef4444" />
               </TouchableOpacity>
             </View>
@@ -347,7 +351,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },

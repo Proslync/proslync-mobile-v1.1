@@ -186,6 +186,7 @@ export function GlassButton({
         {isGlassVariant && useNativeGlass ? (
           <GlassView
             {...liquidGlass.interactive}
+            borderRadius={radiusTokens.md}
             style={styles.absolute}
           />
         ) : (

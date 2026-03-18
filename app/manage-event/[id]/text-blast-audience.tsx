@@ -10,6 +10,8 @@ import {
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useRecipientCount, useSendTextBlast } from '@/hooks';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -89,7 +91,8 @@ export default function TextBlastAudienceScreen() {
         {/* Message Preview */}
         <Animated.View entering={FadeInDown.duration(300)} style={styles.previewSection}>
           <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>Your message</Text>
-          <View style={styles.previewBubble}>
+          <View style={[styles.previewBubble, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+            {isDark && <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />}
             <Text style={styles.previewText} numberOfLines={4}>
               {messageText}
             </Text>
@@ -111,8 +114,18 @@ export default function TextBlastAudienceScreen() {
           <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>
             Sending to
           </Text>
-          <View style={styles.audienceCard}>
-            <View style={styles.audienceIcon}>
+          <View style={[styles.audienceCard, { overflow: 'hidden' }]}>
+            <GlassView
+              {...liquidGlass.fillFaint}
+              borderRadius={12}
+              style={StyleSheet.absoluteFillObject}
+            />
+            <View style={[styles.audienceIcon, { overflow: 'hidden' }]}>
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={20}
+                style={StyleSheet.absoluteFillObject}
+              />
               <Ionicons name="people" size={20} color="#fff" />
             </View>
             <View style={styles.audienceInfo}>
@@ -149,11 +162,12 @@ export default function TextBlastAudienceScreen() {
         ]}
       >
         <TouchableOpacity
-          style={[styles.sendButton, !canSend && styles.sendButtonDisabled]}
+          style={[styles.sendButton, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }, !canSend && styles.sendButtonDisabled]}
           onPress={handleSend}
           disabled={!canSend}
           activeOpacity={0.8}
         >
+          {isDark && <GlassView {...liquidGlass.fillMedium} borderRadius={24} style={StyleSheet.absoluteFill} />}
           {sendMutation.isPending ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
@@ -207,13 +221,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   previewBubble: {
-    backgroundColor: '#007AFF',
     borderRadius: 20,
     borderBottomRightRadius: 4,
     paddingHorizontal: 16,
     paddingVertical: 12,
     alignSelf: 'flex-end',
     maxWidth: '85%',
+    overflow: 'hidden',
   },
   previewText: {
     fontSize: 15,
@@ -229,7 +243,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   mockBubble: {
-    backgroundColor: 'rgba(0,122,255,0.5)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   audienceCard: {
     flexDirection: 'row',
@@ -237,7 +251,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
@@ -245,7 +258,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,122,255,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -283,7 +295,7 @@ const styles = StyleSheet.create({
     gap: 8,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#007AFF',
+    overflow: 'hidden',
   },
   sendButtonDisabled: {
     opacity: 0.4,

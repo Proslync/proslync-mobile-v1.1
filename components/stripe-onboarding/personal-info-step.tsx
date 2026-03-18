@@ -1,7 +1,9 @@
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useFormContext, Controller } from 'react-hook-form';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { GlassView } from 'expo-glass-effect';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { GlassButton } from '@/components/glass/glass-button';
 import type { StripeOnboardingFormData } from '@/lib/validation/stripe-onboarding';
 import { personalInfoFields } from '@/lib/validation/stripe-onboarding';
@@ -11,7 +13,7 @@ interface PersonalInfoStepProps {
 }
 
 export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { control, trigger, formState: { errors } } = useFormContext<StripeOnboardingFormData>();
 
   const handleNext = async () => {
@@ -21,7 +23,6 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
 
   const inputStyle = [styles.input, {
     color: colors.text,
-    backgroundColor: colors.input,
     borderColor: colors.borderStrong,
   }];
   const errorBorder = { borderColor: '#ef4444' };
@@ -48,16 +49,19 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
             name="firstName"
             control={control}
             render={({ field: { onChange, value, onBlur } }) => (
-              <TextInput
-                style={[inputStyle, errors.firstName && errorBorder]}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="John"
-                placeholderTextColor={colors.placeholder}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[inputStyle, errors.firstName && errorBorder]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="John"
+                  placeholderTextColor={colors.placeholder}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              </View>
             )}
           />
           {errors.firstName && <Text style={styles.error}>{errors.firstName.message}</Text>}
@@ -68,16 +72,19 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
             name="lastName"
             control={control}
             render={({ field: { onChange, value, onBlur } }) => (
-              <TextInput
-                style={[inputStyle, errors.lastName && errorBorder]}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                placeholder="Doe"
-                placeholderTextColor={colors.placeholder}
-                autoCapitalize="words"
-                autoCorrect={false}
-              />
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[inputStyle, errors.lastName && errorBorder]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="Doe"
+                  placeholderTextColor={colors.placeholder}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              </View>
             )}
           />
           {errors.lastName && <Text style={styles.error}>{errors.lastName.message}</Text>}
@@ -92,19 +99,22 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
               name="dobMonth"
               control={control}
               render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[inputStyle, errors.dobMonth && errorBorder]}
-                  value={value ? String(value) : ''}
-                  onChangeText={(t) => {
-                    const n = parseInt(t, 10);
-                    onChange(isNaN(n) ? '' : n);
-                  }}
-                  onBlur={onBlur}
-                  placeholder="MM"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                />
+                <View style={styles.inputWrapper}>
+                  {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                  <TextInput
+                    style={[inputStyle, errors.dobMonth && errorBorder]}
+                    value={value ? String(value) : ''}
+                    onChangeText={(t) => {
+                      const n = parseInt(t, 10);
+                      onChange(isNaN(n) ? '' : n);
+                    }}
+                    onBlur={onBlur}
+                    placeholder="MM"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                </View>
               )}
             />
           </View>
@@ -113,19 +123,22 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
               name="dobDay"
               control={control}
               render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[inputStyle, errors.dobDay && errorBorder]}
-                  value={value ? String(value) : ''}
-                  onChangeText={(t) => {
-                    const n = parseInt(t, 10);
-                    onChange(isNaN(n) ? '' : n);
-                  }}
-                  onBlur={onBlur}
-                  placeholder="DD"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                />
+                <View style={styles.inputWrapper}>
+                  {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                  <TextInput
+                    style={[inputStyle, errors.dobDay && errorBorder]}
+                    value={value ? String(value) : ''}
+                    onChangeText={(t) => {
+                      const n = parseInt(t, 10);
+                      onChange(isNaN(n) ? '' : n);
+                    }}
+                    onBlur={onBlur}
+                    placeholder="DD"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                </View>
               )}
             />
           </View>
@@ -134,19 +147,22 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
               name="dobYear"
               control={control}
               render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[inputStyle, errors.dobYear && errorBorder]}
-                  value={value ? String(value) : ''}
-                  onChangeText={(t) => {
-                    const n = parseInt(t, 10);
-                    onChange(isNaN(n) ? '' : n);
-                  }}
-                  onBlur={onBlur}
-                  placeholder="YYYY"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="number-pad"
-                  maxLength={4}
-                />
+                <View style={styles.inputWrapper}>
+                  {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                  <TextInput
+                    style={[inputStyle, errors.dobYear && errorBorder]}
+                    value={value ? String(value) : ''}
+                    onChangeText={(t) => {
+                      const n = parseInt(t, 10);
+                      onChange(isNaN(n) ? '' : n);
+                    }}
+                    onBlur={onBlur}
+                    placeholder="YYYY"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                </View>
               )}
             />
           </View>
@@ -164,17 +180,20 @@ export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
           name="ssnLast4"
           control={control}
           render={({ field: { onChange, value, onBlur } }) => (
-            <TextInput
-              style={[inputStyle, errors.ssnLast4 && errorBorder]}
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              placeholder="1234"
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-              maxLength={4}
-              secureTextEntry
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+              <TextInput
+                style={[inputStyle, errors.ssnLast4 && errorBorder]}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="1234"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+                maxLength={4}
+                secureTextEntry
+              />
+            </View>
           )}
         />
         {errors.ssnLast4 && <Text style={styles.error}>{errors.ssnLast4.message}</Text>}
@@ -205,6 +224,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
     marginBottom: 6,
+  },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   input: {
     borderRadius: 12,

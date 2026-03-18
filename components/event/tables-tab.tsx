@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { TableFloorMap } from './table-floor-map';
 import { TableDetailCard } from './table-detail-card';
@@ -89,8 +91,9 @@ export function TablesTab({
                 onPress={() => !unavailable && onSelectApiTable?.(table)}
                 disabled={unavailable}
                 activeOpacity={0.7}
-                style={[styles.apiTableCard, { backgroundColor: `${glassColor}0.06)`, borderColor: `${glassColor}0.1)`, opacity: unavailable ? 0.5 : 1 }]}
+                style={[styles.apiTableCard, { overflow: 'hidden', borderColor: `${glassColor}0.1)`, opacity: unavailable ? 0.5 : 1 }]}
               >
+                <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
                 <View style={styles.apiTableInfo}>
                   <Text style={[styles.apiTableLabel, { color: colors.text }]}>{table.label}</Text>
                   <Text style={[styles.apiTableSeats, { color: colors.textTertiary }]}>{table.seatCount} seats - {table.sectionName}</Text>

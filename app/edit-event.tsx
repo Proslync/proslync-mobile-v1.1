@@ -1,5 +1,7 @@
 // Edit Event Screen - Single-page form matching create event layout
 
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useToast } from '@/components/shared/toast';
 import {
@@ -44,7 +46,8 @@ function DoorCoverInput() {
         control={control}
         name="doorCoverPrice"
         render={({ field: { onChange, onBlur, value } }) => (
-          <View style={[sectionStyles.inputRow, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+          <View style={[sectionStyles.inputRow, { overflow: 'hidden', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+            <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />
             <Text style={[sectionStyles.dollarSign, { color: colors.textSecondary }]}>$</Text>
             <TextInput
               style={[sectionStyles.amountInput, { color: colors.text }]}
@@ -189,7 +192,7 @@ export default function EditEventScreen() {
     showError(errorMessages || 'Please fix errors in the form');
   };
 
-  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
+  const accentColor = '#FFFFFF';
 
   // Loading state
   if (isLoading) {

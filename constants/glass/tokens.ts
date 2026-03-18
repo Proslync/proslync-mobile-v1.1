@@ -83,8 +83,8 @@ export const textColor: Record<TextHierarchy, string> = {
 };
 
 export const accent: Record<AccentColor, string> = {
-  blue: '#0095f6',
-  purple: '#8b5cf6',
+  blue: '#ffffff',
+  purple: '#ffffff',
   green: '#34c759',
   red: '#ff3b30',
   yellow: '#fbbf24',

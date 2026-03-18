@@ -20,6 +20,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MembershipCard, StatusCardMenuSheet } from "@/components/wallet";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassSurface } from "@/components/glass/glass-surface";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 
 interface MenuItemProps {
   title: string;
@@ -37,6 +39,11 @@ function MenuItem({ title, subtitle, icon, onPress, isLast }: MenuItemProps) {
       activeOpacity={0.7}
     >
       <View style={styles.menuItemIcon}>
+        <GlassView
+          {...liquidGlass.fill}
+          borderRadius={10}
+          style={StyleSheet.absoluteFillObject}
+        />
         <Ionicons name={icon} size={20} color="rgba(255,255,255,0.9)" />
       </View>
       <View style={styles.menuItemContent}>
@@ -328,7 +335,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    overflow: "hidden",
   },
   menuItemContent: {
     flex: 1,

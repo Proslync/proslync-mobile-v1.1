@@ -16,7 +16,10 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme, type ThemeMode } from '@/hooks/use-app-theme';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { AnimatedCollapsible } from '@/components/ui/animated-collapsible';
 
 function AnimatedChevron({ expanded, color }: { expanded: boolean; color: string }) {
@@ -52,6 +55,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DarkGradientBg />
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       {/* Header */}
@@ -93,11 +97,15 @@ export default function SettingsScreen() {
             style={[
               styles.sectionContent,
               {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
               },
             ]}
           >
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             {/* Theme Options */}
             <TouchableOpacity
               style={styles.themeHeader}
@@ -108,9 +116,16 @@ export default function SettingsScreen() {
                 <View
                   style={[
                     styles.iconContainer,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                    isDark ? { overflow: 'hidden' } : { backgroundColor: 'rgba(0,0,0,0.05)' },
                   ]}
                 >
+                  {isDark && (
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={8}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                  )}
                   <Ionicons
                     name={isDark ? 'moon' : 'sunny'}
                     size={20}
@@ -208,11 +223,15 @@ export default function SettingsScreen() {
             style={[
               styles.sectionContent,
               {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
+                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
               },
             ]}
           >
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={12}
+              style={StyleSheet.absoluteFill}
+            />
             <TouchableOpacity
               style={styles.navItem}
               activeOpacity={0.7}
@@ -222,9 +241,16 @@ export default function SettingsScreen() {
                 <View
                   style={[
                     styles.iconContainer,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                    isDark ? { overflow: 'hidden' } : { backgroundColor: 'rgba(0,0,0,0.05)' },
                   ]}
                 >
+                  {isDark && (
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={8}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                  )}
                   <Ionicons name="notifications-outline" size={20} color={colors.text} />
                 </View>
                 <Text style={[styles.navItemLabel, { color: colors.text }]}>
@@ -245,9 +271,16 @@ export default function SettingsScreen() {
                 <View
                   style={[
                     styles.iconContainer,
-                    { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                    isDark ? { overflow: 'hidden' } : { backgroundColor: 'rgba(0,0,0,0.05)' },
                   ]}
                 >
+                  {isDark && (
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={8}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                  )}
                   <Ionicons name="lock-closed-outline" size={20} color={colors.text} />
                 </View>
                 <Text style={[styles.navItemLabel, { color: colors.text }]}>

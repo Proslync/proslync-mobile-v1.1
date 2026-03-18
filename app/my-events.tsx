@@ -1,5 +1,7 @@
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassButton } from "@/components/glass";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { useMyEvents } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -181,10 +183,11 @@ function EventCard({
 
   return (
     <TouchableOpacity
-      style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
+      style={styles.eventCard}
       onPress={onPress}
       activeOpacity={0.8}
     >
+      <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
       <View>
         {thumbUri ? (
           <Image
@@ -198,9 +201,10 @@ function EventCard({
           <View
             style={[
               styles.eventImage,
-              { backgroundColor: colors.backgroundSecondary, justifyContent: "center", alignItems: "center" },
+              { backgroundColor: isDark ? undefined : colors.backgroundSecondary, justifyContent: "center", alignItems: "center", overflow: 'hidden' as const },
             ]}
           >
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={0} style={StyleSheet.absoluteFillObject} />}
             <Ionicons name="calendar" size={28} color={colors.textTertiary} />
           </View>
         )}
@@ -245,7 +249,10 @@ function EventCard({
             </Text>
           </View>
           <TouchableOpacity
-            style={styles.dashboardButton}
+            style={[
+              styles.dashboardButton,
+              { backgroundColor: isDark ? undefined : "rgba(0,0,0,0.06)" },
+            ]}
             onPress={(e) => {
               e.stopPropagation();
               onDashboard();
@@ -253,6 +260,7 @@ function EventCard({
             activeOpacity={0.7}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
             <Ionicons
               name="grid-outline"
               size={13}
@@ -709,10 +717,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(255,255,255,0.1)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    overflow: "hidden",
   },
   dashboardButtonText: {
     fontSize: 11,

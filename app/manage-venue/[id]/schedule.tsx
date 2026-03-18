@@ -25,6 +25,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { VenueShift, VenueStaffMember } from "@/lib/api/venue-schedule";
@@ -67,7 +69,7 @@ export default function VenueScheduleScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
 
   const venueId = id ? Number(id) : 0;
   const [weekOffset, setWeekOffset] = useState(0);
@@ -229,6 +231,13 @@ export default function VenueScheduleScreen() {
               style={[styles.dayButton, isSelected && styles.dayButtonSelected]}
               onPress={() => setSelectedDay(dateStr)}
             >
+              {isSelected && (
+                <GlassView
+                  {...liquidGlass.fillStrong}
+                  borderRadius={12}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               <Text
                 style={[
                   styles.dayName,
@@ -387,20 +396,23 @@ export default function VenueScheduleScreen() {
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
             Label
           </Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                color: colors.text,
-                borderColor: colors.border,
-                backgroundColor: colors.backgroundSecondary,
-              },
-            ]}
-            value={shiftLabel}
-            onChangeText={setShiftLabel}
-            placeholder="e.g. Happy Hour, Closing"
-            placeholderTextColor={colors.placeholder}
-          />
+          <View style={styles.inputWrapper}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  color: colors.text,
+                  borderColor: colors.border,
+                  backgroundColor: isDark ? undefined : colors.backgroundSecondary,
+                },
+              ]}
+              value={shiftLabel}
+              onChangeText={setShiftLabel}
+              placeholder="e.g. Happy Hour, Closing"
+              placeholderTextColor={colors.placeholder}
+            />
+          </View>
 
           <View style={styles.timeRow}>
             <View style={styles.timeField}>
@@ -409,20 +421,23 @@ export default function VenueScheduleScreen() {
               >
                 Start
               </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    color: colors.text,
-                    borderColor: colors.border,
-                    backgroundColor: colors.backgroundSecondary,
-                  },
-                ]}
-                value={shiftStart}
-                onChangeText={setShiftStart}
-                placeholder="09:00"
-                placeholderTextColor={colors.placeholder}
-              />
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      color: colors.text,
+                      borderColor: colors.border,
+                      backgroundColor: isDark ? undefined : colors.backgroundSecondary,
+                    },
+                  ]}
+                  value={shiftStart}
+                  onChangeText={setShiftStart}
+                  placeholder="09:00"
+                  placeholderTextColor={colors.placeholder}
+                />
+              </View>
             </View>
             <View style={styles.timeField}>
               <Text
@@ -430,20 +445,23 @@ export default function VenueScheduleScreen() {
               >
                 End
               </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    color: colors.text,
-                    borderColor: colors.border,
-                    backgroundColor: colors.backgroundSecondary,
-                  },
-                ]}
-                value={shiftEnd}
-                onChangeText={setShiftEnd}
-                placeholder="17:00"
-                placeholderTextColor={colors.placeholder}
-              />
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      color: colors.text,
+                      borderColor: colors.border,
+                      backgroundColor: isDark ? undefined : colors.backgroundSecondary,
+                    },
+                  ]}
+                  value={shiftEnd}
+                  onChangeText={setShiftEnd}
+                  placeholder="17:00"
+                  placeholderTextColor={colors.placeholder}
+                />
+              </View>
             </View>
           </View>
 
@@ -594,7 +612,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dayButtonSelected: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    overflow: "hidden",
   },
   dayName: { fontSize: 11, fontFamily: "Lato_400Regular" },
   dayNumber: { fontSize: 16, fontFamily: "Lato_700Bold" },
@@ -602,7 +620,8 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#0095f6",
+    backgroundColor: "rgba(255,255,255,0.15)",
+    overflow: "hidden",
     marginTop: 2,
   },
   scrollContent: { paddingHorizontal: 16, gap: 8 },
@@ -634,6 +653,10 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   inputLabel: { fontSize: 13, fontFamily: "Lato_700Bold" },
+  inputWrapper: {
+    overflow: "hidden" as const,
+    borderRadius: 10,
+  },
   input: {
     borderWidth: 1,
     borderRadius: 10,

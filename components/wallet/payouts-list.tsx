@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { GlassButton } from '@/components/glass/glass-button';
 import { usePayouts } from '@/hooks/use-wallet-queries';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -37,7 +39,8 @@ function PayoutRow({ item }: { item: PayoutItem }) {
 
   return (
     <View style={[styles.row, { borderBottomColor: colors.border }]}>
-      <View style={[styles.rowIcon, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' }]}>
+      <View style={[styles.rowIcon, { overflow: 'hidden' }]}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />
         <Ionicons
           name={item.destination.type === 'bank_account' ? 'business-outline' : 'card-outline'}
           size={18}

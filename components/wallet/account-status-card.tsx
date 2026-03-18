@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
   useAnimatedStyle,
@@ -152,7 +154,12 @@ export function AccountStatusCard({
 
             {/* Disabled reason message */}
             {accountStatus.disabledReason && (
-              <View style={[styles.reasonRow, { backgroundColor: colors.cardElevated }]}>
+              <View style={styles.reasonRow}>
+                <GlassView
+                  {...liquidGlass.surface}
+                  borderRadius={8}
+                  style={StyleSheet.absoluteFillObject}
+                />
                 <Ionicons name="information-circle-outline" size={16} color={colors.textTertiary} />
                 <Text style={[styles.reasonText, { color: colors.textSecondary }]}>
                   {getDisabledReasonMessage(accountStatus.disabledReason).description}
@@ -236,6 +243,7 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 10,
     borderRadius: 8,
+    overflow: 'hidden',
   },
   reasonText: {
     flex: 1,

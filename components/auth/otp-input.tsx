@@ -187,7 +187,7 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
       {digit ? (
         <Animated.Text style={[styles.digit, { color: colors.text }, digitStyle]}>{digit}</Animated.Text>
       ) : isFocused ? (
-        <Animated.View style={[styles.cursor, { backgroundColor: '#3897F0' }, cursorStyle]} />
+        <Animated.View style={[styles.cursor, { backgroundColor: '#fff' }, cursorStyle]} />
       ) : null}
     </>
   );

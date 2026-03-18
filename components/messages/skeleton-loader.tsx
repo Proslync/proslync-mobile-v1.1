@@ -9,6 +9,8 @@ import Animated, {
   withTiming,
   interpolate,
 } from 'react-native-reanimated';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 function SkeletonRow() {
   const shimmer = useSharedValue(0);
@@ -27,12 +29,20 @@ function SkeletonRow() {
 
   return (
     <View style={styles.row}>
-      <Animated.View style={[styles.avatar, animatedStyle]} />
+      <Animated.View style={[styles.avatar, animatedStyle]}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={28} style={StyleSheet.absoluteFillObject} />
+      </Animated.View>
       <View style={styles.content}>
-        <Animated.View style={[styles.name, animatedStyle]} />
-        <Animated.View style={[styles.message, animatedStyle]} />
+        <Animated.View style={[styles.name, animatedStyle]}>
+          <GlassView {...liquidGlass.fillFaint} borderRadius={4} style={StyleSheet.absoluteFillObject} />
+        </Animated.View>
+        <Animated.View style={[styles.message, animatedStyle]}>
+          <GlassView {...liquidGlass.fillFaint} borderRadius={4} style={StyleSheet.absoluteFillObject} />
+        </Animated.View>
       </View>
-      <Animated.View style={[styles.time, animatedStyle]} />
+      <Animated.View style={[styles.time, animatedStyle]}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={4} style={StyleSheet.absoluteFillObject} />
+      </Animated.View>
     </View>
   );
 }
@@ -66,7 +76,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
     marginRight: 12,
   },
   content: {
@@ -76,20 +86,20 @@ const styles = StyleSheet.create({
     width: '60%',
     height: 16,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
     marginBottom: 8,
   },
   message: {
     width: '80%',
     height: 14,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
   },
   time: {
     width: 40,
     height: 12,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    overflow: 'hidden',
     marginLeft: 8,
   },
 });

@@ -5,6 +5,8 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { TabType } from '@/lib/types/event-detail.types';
 
@@ -48,11 +50,10 @@ export function EventTabBar({ activeTab, onTabChange }: EventTabBarProps) {
     width: indicatorWidth.value,
   }));
 
-  const glassColor = isDark ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
-
   return (
-    <View style={[styles.container, { backgroundColor: `${glassColor}0.06)`, borderColor: `${glassColor}0.1)` }]}>
-      <Animated.View style={[styles.indicator, { backgroundColor: `${glassColor}0.15)` }, indicatorStyle]} />
+    <View style={[styles.container, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+      <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
+      <Animated.View style={[styles.indicator, { backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }, indicatorStyle]} />
       {TABS.map((tab) => {
         const isActive = activeTab === tab.key;
         return (

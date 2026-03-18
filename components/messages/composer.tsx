@@ -10,6 +10,8 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -80,10 +82,11 @@ export function Composer({
           onPress={handleAttachment}
           activeOpacity={0.7}
         >
-          <Ionicons name="add-circle" size={28} color="#0095f6" />
+          <Ionicons name="add-circle" size={28} color="#fff" />
         </TouchableOpacity>
 
-        <View style={[styles.inputContainer, { minHeight: inputHeight + 8 }]}>
+        <View style={[styles.inputContainer, { minHeight: inputHeight + 8, overflow: 'hidden' }]}>
+          <GlassView {...liquidGlass.fill} borderRadius={20} style={StyleSheet.absoluteFillObject} />
           <TextInput
             ref={inputRef}
             style={[styles.input, { height: inputHeight }]}
@@ -105,7 +108,7 @@ export function Composer({
             onPress={handleSend}
             activeOpacity={0.7}
           >
-            <Ionicons name="send" size={24} color="#0095f6" />
+            <Ionicons name="send" size={24} color="#fff" />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -141,7 +144,6 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 4,

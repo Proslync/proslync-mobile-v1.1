@@ -35,6 +35,7 @@ export function IncomingCallOverlay({
           <Image source={{ uri: callerAvatar }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
+            <GlassView {...liquidGlass.fill} borderRadius={60} style={StyleSheet.absoluteFillObject} />
             <Ionicons name="person" size={48} color="rgba(255,255,255,0.6)" />
           </View>
         )}
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     marginBottom: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',

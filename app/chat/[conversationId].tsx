@@ -442,7 +442,7 @@ function MessageBubble({
           <View
             style={[styles.readReceiptRow, isOwn && styles.readReceiptRowOwn]}
           >
-            <Ionicons name="checkmark-done" size={12} color="#0095f6" />
+            <Ionicons name="checkmark-done" size={12} color="#fff" />
             <Text style={styles.readReceiptText}>
               Seen {formatMessageTime(readAt)}
             </Text>
@@ -748,12 +748,12 @@ function VoiceMessagePlayer({
         activeOpacity={0.7}
       >
         {isLoading ? (
-          <ActivityIndicator size="small" color={isOwn ? "#fff" : "#0095f6"} />
+          <ActivityIndicator size="small" color={isOwn ? "#fff" : "#fff"} />
         ) : (
           <Ionicons
             name={isPlaying ? "pause" : "play"}
             size={20}
-            color={isOwn ? "#fff" : "#0095f6"}
+            color={isOwn ? "#fff" : "#fff"}
           />
         )}
       </TouchableOpacity>
@@ -770,7 +770,7 @@ function VoiceMessagePlayer({
                   height: h,
                   backgroundColor: isOwn
                     ? "rgba(255,255,255,0.35)"
-                    : "rgba(0,149,246,0.4)",
+                    : "rgba(255,255,255,0.35)",
                 },
               ]}
             />
@@ -784,7 +784,7 @@ function VoiceMessagePlayer({
                   styles.voiceWaveformBar,
                   {
                     height: h,
-                    backgroundColor: isOwn ? "#fff" : "#0095f6",
+                    backgroundColor: isOwn ? "#fff" : "#fff",
                   },
                 ]}
               />
@@ -1131,7 +1131,8 @@ function Composer({
 
       {/* Audio review bar */}
       {reviewAudio && !isRecording && (
-        <View style={[styles.reviewBar, { borderColor: colors.border }]}>
+        <View style={[styles.reviewBar, { borderColor: colors.border, backgroundColor: isDark ? undefined : 'rgba(255,255,255,0.08)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
           <TouchableOpacity
             onPress={discardReviewAudio}
             style={styles.reviewDeleteButton}
@@ -1142,9 +1143,10 @@ function Composer({
 
           <TouchableOpacity
             onPress={toggleReviewPlayback}
-            style={styles.reviewPlayButton}
+            style={[styles.reviewPlayButton, { backgroundColor: isDark ? undefined : 'rgba(255,255,255,0.15)' }]}
             activeOpacity={0.7}
           >
+            {isDark && <GlassView {...liquidGlass.fill} borderRadius={16} style={StyleSheet.absoluteFillObject} />}
             <Ionicons
               name={isReviewPlaying ? "pause" : "play"}
               size={18}
@@ -1181,7 +1183,7 @@ function Composer({
             style={styles.reviewSendButton}
             activeOpacity={0.7}
           >
-            <Ionicons name="send" size={20} color="#0095f6" />
+            <Ionicons name="send" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
       )}
@@ -1219,7 +1221,7 @@ function Composer({
               activeOpacity={0.7}
             >
               <LinearGradient
-                colors={["#007AFF", "#0095f6"]}
+                colors={["rgba(255,255,255,0.15)", "rgba(255,255,255,0.08)"]}
                 style={styles.cameraButtonGradient}
               >
                 <Ionicons name="camera" size={20} color="#fff" />
@@ -1233,11 +1235,13 @@ function Composer({
               style={[
                 styles.inputWrapper,
                 {
-                  backgroundColor: colors.input,
+                  backgroundColor: isDark ? undefined : colors.input,
                   borderColor: colors.inputBorder,
+                  overflow: 'hidden' as const,
                 },
               ]}
             >
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
               <TextInput
                 ref={inputRef}
                 style={[styles.composerInput, { color: colors.text }]}
@@ -1284,9 +1288,9 @@ function Composer({
               activeOpacity={0.7}
             >
               {isSending ? (
-                <ActivityIndicator size="small" color="#0095f6" />
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Ionicons name="send" size={22} color="#0095f6" />
+                <Ionicons name="send" size={22} color="#fff" />
               )}
             </TouchableOpacity>
           ) : (
@@ -1323,7 +1327,7 @@ function EmptyChat({
     <View style={styles.emptyContainer}>
       <View style={styles.emptyAvatarContainer}>
         <LinearGradient
-          colors={["#007AFF", "#0095f6"]}
+          colors={["rgba(255,255,255,0.15)", "rgba(255,255,255,0.08)"]}
           style={styles.emptyAvatarGradient}
         >
           <Ionicons name="chatbubbles" size={40} color="#fff" />
@@ -2053,13 +2057,14 @@ export default function ChatThreadScreen() {
             style={[
               styles.scrollToBottomButton,
               {
-                backgroundColor: isDark ? colors.cardElevated : "#f0f0f0",
+                overflow: 'hidden',
                 borderColor: colors.border,
               },
             ]}
             onPress={() => flatListRef.current?.scrollToEnd({ animated: true })}
             activeOpacity={0.8}
           >
+            <GlassView {...liquidGlass.fill} borderRadius={20} style={StyleSheet.absoluteFillObject} />
             <Ionicons name="chevron-down" size={20} color={colors.text} />
           </TouchableOpacity>
         </Animated.View>
@@ -2760,7 +2765,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   messageBubbleOwn: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderBottomRightRadius: 4,
   },
   messageBubbleGroupOther: {
@@ -2810,7 +2815,7 @@ const styles = StyleSheet.create({
   readReceiptText: {
     fontSize: 11,
     fontFamily: "Lato_400Regular",
-    color: "#0095f6",
+    color: "#fff",
   },
   // Attachments
   attachmentWrapper: {
@@ -2849,7 +2854,7 @@ const styles = StyleSheet.create({
     maxWidth: MAX_BUBBLE_WIDTH,
   },
   voiceMessageOwn: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   voiceMessageOther: {
     backgroundColor: "#f0f0f0",
@@ -2866,7 +2871,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.2)",
   },
   voicePlayButtonOther: {
-    backgroundColor: "rgba(0, 149, 246, 0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   voiceWaveformContainer: {
     flex: 1,
@@ -3065,11 +3070,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginHorizontal: 8,
     marginBottom: 8,
-    backgroundColor: "rgba(0, 149, 246, 0.08)",
     borderRadius: 22,
     borderWidth: 0.5,
-    borderColor: "rgba(0, 149, 246, 0.2)",
+    borderColor: "rgba(255,255,255,0.2)",
     gap: 10,
+    overflow: "hidden",
   },
   reviewDeleteButton: {
     width: 32,
@@ -3081,9 +3086,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#0095f6",
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   reviewWaveformArea: {
     flex: 1,
@@ -3092,13 +3097,13 @@ const styles = StyleSheet.create({
   reviewWaveformTrack: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(0, 149, 246, 0.2)",
+    backgroundColor: "rgba(255,255,255,0.2)",
     overflow: "hidden",
   },
   reviewWaveformProgress: {
     height: "100%",
     borderRadius: 2,
-    backgroundColor: "#0095f6",
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   reviewDuration: {
     fontSize: 12,

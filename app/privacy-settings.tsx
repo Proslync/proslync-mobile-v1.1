@@ -13,6 +13,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useUserPreferences, useUpdatePreference } from '@/hooks';
 import type { UserPreferences } from '@/lib/types/preferences.types';
@@ -79,6 +82,7 @@ export default function PrivacySettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DarkGradientBg />
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View
@@ -121,9 +125,10 @@ export default function PrivacySettingsScreen() {
             <View
               style={[
                 styles.sectionContent,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
               ]}
             >
+              <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFill} />
               {PRIVACY_TOGGLES.map((item, index) => (
                 <React.Fragment key={item.key}>
                   <View style={styles.toggleRow}>
@@ -131,9 +136,16 @@ export default function PrivacySettingsScreen() {
                       <View
                         style={[
                           styles.iconContainer,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                          isDark ? { overflow: 'hidden' } : { backgroundColor: 'rgba(0,0,0,0.05)' },
                         ]}
                       >
+                        {isDark && (
+                          <GlassView
+                            {...liquidGlass.fill}
+                            borderRadius={8}
+                            style={StyleSheet.absoluteFillObject}
+                          />
+                        )}
                         <Ionicons name={item.icon} size={18} color={colors.text} />
                       </View>
                       <View style={styles.toggleText}>
@@ -171,9 +183,10 @@ export default function PrivacySettingsScreen() {
             <View
               style={[
                 styles.sectionContent,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
               ]}
             >
+              <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFill} />
               {CONNECTIONS_ITEMS.map((item, index) => (
                 <React.Fragment key={item.label}>
                   <TouchableOpacity style={styles.navRow} activeOpacity={0.7}>
@@ -181,9 +194,16 @@ export default function PrivacySettingsScreen() {
                       <View
                         style={[
                           styles.iconContainer,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                          isDark ? { overflow: 'hidden' } : { backgroundColor: 'rgba(0,0,0,0.05)' },
                         ]}
                       >
+                        {isDark && (
+                          <GlassView
+                            {...liquidGlass.fill}
+                            borderRadius={8}
+                            style={StyleSheet.absoluteFillObject}
+                          />
+                        )}
                         <Ionicons name={item.icon} size={18} color={colors.text} />
                       </View>
                       <Text style={[styles.navLabel, { color: colors.text }]}>
@@ -208,9 +228,10 @@ export default function PrivacySettingsScreen() {
             <View
               style={[
                 styles.sectionContent,
-                { backgroundColor: colors.card, borderColor: colors.border },
+                { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
               ]}
             >
+              <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFill} />
               {DATA_ITEMS.map((item, index) => (
                 <React.Fragment key={item.label}>
                   <TouchableOpacity
@@ -222,9 +243,16 @@ export default function PrivacySettingsScreen() {
                       <View
                         style={[
                           styles.iconContainer,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+                          isDark ? { overflow: 'hidden' } : { backgroundColor: 'rgba(0,0,0,0.05)' },
                         ]}
                       >
+                        {isDark && (
+                          <GlassView
+                            {...liquidGlass.fill}
+                            borderRadius={8}
+                            style={StyleSheet.absoluteFillObject}
+                          />
+                        )}
                         <Ionicons name={item.icon} size={18} color={colors.text} />
                       </View>
                       <Text style={[styles.navLabel, { color: colors.text }]}>

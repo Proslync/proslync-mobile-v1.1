@@ -29,6 +29,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 function formatDiscount(code: PromoCode): string {
   if (code.discountType === 'percentage') return `${code.discountValue}% off`;
@@ -123,10 +125,11 @@ export default function MarketingScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Promo Codes</Text>
               {!readOnly && (
                 <TouchableOpacity
-                  style={styles.addButton}
+                  style={[styles.addButton, { overflow: 'hidden' }]}
                   onPress={() => setPromoModalVisible(true)}
                   activeOpacity={0.7}
                 >
+                  <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
                   <Ionicons name="add" size={18} color={colors.text} />
                   <Text style={[styles.addButtonText, { color: colors.text }]}>Create</Text>
                 </TouchableOpacity>
@@ -148,10 +151,11 @@ export default function MarketingScreen() {
                 </Text>
                 {!readOnly && (
                   <TouchableOpacity
-                    style={styles.emptyCreateButton}
+                    style={[styles.emptyCreateButton, { overflow: 'hidden' }]}
                     onPress={() => setPromoModalVisible(true)}
                     activeOpacity={0.7}
                   >
+                    <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
                     <Ionicons name="add-circle-outline" size={20} color={colors.text} />
                     <Text style={[styles.emptyCreateText, { color: colors.text }]}>Create Promo Code</Text>
                   </TouchableOpacity>
@@ -370,7 +374,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
@@ -386,7 +389,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
@@ -402,8 +404,8 @@ const styles = StyleSheet.create({
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   activeBadge: { backgroundColor: 'rgba(34,197,94,0.15)' },
   inactiveBadge: { backgroundColor: 'rgba(255,255,255,0.08)' },
-  publicBadge: { backgroundColor: 'rgba(59,130,246,0.15)' },
-  publicText: { color: '#3b82f6' },
+  publicBadge: { backgroundColor: 'rgba(255,255,255,0.08)' },
+  publicText: { color: '#fff' },
   statusText: { fontSize: 11, fontFamily: 'Lato_700Bold' },
   activeText: { color: '#22c55e' },
   inactiveText: { color: 'rgba(255,255,255,0.4)' },

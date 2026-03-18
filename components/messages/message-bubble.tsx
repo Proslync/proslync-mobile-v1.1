@@ -138,7 +138,7 @@ export function MessageBubble({
       sending: { icon: 'time-outline', color: 'rgba(255, 255, 255, 0.5)' },
       sent: { icon: 'checkmark', color: 'rgba(255, 255, 255, 0.5)' },
       delivered: { icon: 'checkmark-done', color: 'rgba(255, 255, 255, 0.5)' },
-      seen: { icon: 'checkmark-done', color: '#0095f6' },
+      seen: { icon: 'checkmark-done', color: '#fff' },
     };
 
     const status = statusIcons[message.status];
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   bubbleOwn: {
-    backgroundColor: '#0095f6',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     borderBottomRightRadius: 6,
   },
   bubbleOther: {
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   eventButton: {
-    backgroundColor: '#0095f6',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',

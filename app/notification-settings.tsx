@@ -12,6 +12,9 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useUserPreferences, useUpdatePreference } from '@/hooks';
 import type { UserPreferences } from '@/lib/types/preferences.types';
@@ -60,9 +63,10 @@ function ToggleRow({
           <View
             style={[
               styles.iconContainer,
-              { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' },
+              { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)', overflow: 'hidden' },
             ]}
           >
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
             <Ionicons name={item.icon} size={18} color={colors.text} />
           </View>
           <View style={styles.toggleText}>
@@ -114,9 +118,10 @@ function Section({
       <View
         style={[
           styles.sectionContent,
-          { backgroundColor: colors.card, borderColor: colors.border },
+          { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' },
         ]}
       >
+        <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFill} />
         {items.map((item, index) => (
           <ToggleRow
             key={item.key}
@@ -149,6 +154,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <DarkGradientBg />
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View

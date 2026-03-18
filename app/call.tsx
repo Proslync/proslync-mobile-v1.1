@@ -6,6 +6,8 @@ import {
   Image,
   TouchableOpacity,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useRouter, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -277,6 +279,7 @@ function RoomContent({
             />
           ) : (
             <View style={styles.avatarPlaceholder}>
+              <GlassView {...liquidGlass.fill} borderRadius={60} style={StyleSheet.absoluteFillObject} />
               <Ionicons name="person" size={48} color="rgba(255,255,255,0.6)" />
             </View>
           )}
@@ -303,6 +306,7 @@ function RoomContent({
           onPress={handleToggleMute}
           activeOpacity={0.7}
         >
+          <GlassView {...liquidGlass.fill} borderRadius={28} style={StyleSheet.absoluteFillObject} />
           <Ionicons
             name={isMicrophoneEnabled ? 'mic' : 'mic-off'}
             size={24}
@@ -319,6 +323,7 @@ function RoomContent({
             onPress={handleToggleCamera}
             activeOpacity={0.7}
           >
+            <GlassView {...liquidGlass.fill} borderRadius={28} style={StyleSheet.absoluteFillObject} />
             <Ionicons
               name={isCameraEnabled ? 'videocam' : 'videocam-off'}
               size={24}
@@ -334,6 +339,7 @@ function RoomContent({
             onPress={handleFlipCamera}
             activeOpacity={0.7}
           >
+            <GlassView {...liquidGlass.fill} borderRadius={28} style={StyleSheet.absoluteFillObject} />
             <Ionicons name="camera-reverse" size={24} color="#fff" />
             <Text style={styles.controlLabel}>Flip</Text>
           </TouchableOpacity>
@@ -344,6 +350,7 @@ function RoomContent({
           onPress={handleToggleSpeaker}
           activeOpacity={0.7}
         >
+          <GlassView {...liquidGlass.fill} borderRadius={28} style={StyleSheet.absoluteFillObject} />
           <Ionicons
             name={isSpeaker ? 'volume-high' : 'volume-low'}
             size={24}
@@ -412,7 +419,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     marginBottom: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
     borderWidth: 3,
     borderColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
@@ -457,14 +464,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
   },
   controlActive: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
   },
   controlLabel: {
     fontSize: 10,

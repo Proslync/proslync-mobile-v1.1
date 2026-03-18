@@ -143,7 +143,7 @@ export function SwipeableConversationRow({
                 <Ionicons
                   name="checkmark-circle"
                   size={14}
-                  color="#3b82f6"
+                  color="#fff"
                   style={styles.verifiedIcon}
                 />
               )}
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.8)",
   },
   unreadBadge: {
-    backgroundColor: "#0095f6",
+    backgroundColor: "#fff",
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   unreadText: {
-    color: "#fff",
+    color: "#000",
     fontSize: 11,
     fontFamily: "Lato_700Bold",
   },

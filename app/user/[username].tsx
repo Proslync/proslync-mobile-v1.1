@@ -252,6 +252,11 @@ export default function UserProfileScreen() {
             style={styles.goBackButton}
             onPress={() => router.back()}
           >
+            <GlassView
+              {...liquidGlass.fillMedium}
+              borderRadius={8}
+              style={StyleSheet.absoluteFill}
+            />
             <Text style={styles.goBackButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -757,10 +762,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   goBackButton: {
-    backgroundColor: '#0095f6',
     borderRadius: 8,
     paddingHorizontal: 24,
     paddingVertical: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   goBackButtonText: {
     fontSize: 15,

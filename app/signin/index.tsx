@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -48,33 +48,9 @@ export default function SignInScreen() {
     router.replace(redirectUrl as any);
   };
 
-  const gradientColors = isDark
-    ? ['#0a0a0f', '#0d1117', '#111827', '#0a0a0f'] as const
-    : ['#f0f4ff', '#e8edf5', '#f5f0ff', '#f0f4ff'] as const;
-
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <LinearGradient
-        colors={gradientColors}
-        locations={[0, 0.3, 0.7, 1]}
-        style={StyleSheet.absoluteFill}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      />
-
-      {/* Ambient glow accent */}
-      {isDark && (
-        <LinearGradient
-          colors={[
-            'rgba(56, 151, 240, 0.08)',
-            'rgba(139, 92, 246, 0.04)',
-            'transparent',
-          ]}
-          style={styles.ambientGlow}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 0.6 }}
-        />
-      )}
+    <View style={[styles.container, { backgroundColor: '#000' }]}>
+      {isDark && <DarkGradientBg />}
 
       {step === 'phone' && (
         <Animated.View
@@ -127,10 +103,6 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  ambientGlow: {
-    ...StyleSheet.absoluteFillObject,
-    height: '60%',
   },
   stepContainer: {
     width: '100%',
