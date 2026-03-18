@@ -5,6 +5,16 @@ import { useAuth } from "@/lib/providers/auth-provider";
 import { useWallet } from "@/lib/providers/wallet-provider";
 import { UserRole } from "@/lib/types/auth.types";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "expo-glass-effect";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  liquidGlass,
+  activeGradient,
+  activeGradientLight,
+  glassBorder,
+  glassText,
+  glassSurfaceTint,
+} from "@/constants/glass/liquid-glass";
 import * as React from "react";
 import {
   ActivityIndicator,
@@ -18,37 +28,97 @@ import {
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MembershipCard, StatusCardMenuSheet } from "@/components/wallet";
-import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
-import { GlassSurface } from "@/components/glass/glass-surface";
 
-interface MenuItemProps {
+interface MenuItemData {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
-  onPress: () => void;
-  isLast?: boolean;
+  route: string;
 }
 
-function MenuItem({ title, subtitle, icon, onPress, isLast }: MenuItemProps) {
+function MenuItem({
+  item,
+  isLast,
+  t,
+  border,
+  isDark,
+  onPress,
+}: {
+  item: MenuItemData;
+  isLast: boolean;
+  t: (typeof glassText)["dark"];
+  border: string;
+  isDark: boolean;
+  onPress: () => void;
+}) {
   return (
-    <TouchableOpacity
-      style={[styles.menuItem, !isLast && styles.menuItemBorder]}
-      onPress={onPress}
-      activeOpacity={0.7}
+    <>
+      <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
+        <View
+          style={[
+            styles.menuItemIcon,
+            { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)" },
+          ]}
+        >
+          <Ionicons name={item.icon} size={18} color={t.primary} />
+        </View>
+        <View style={styles.menuItemContent}>
+          <Text style={[styles.menuItemTitle, { color: t.primary }]}>{item.title}</Text>
+          <Text style={[styles.menuItemSubtitle, { color: t.muted }]}>{item.subtitle}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={t.muted} />
+      </TouchableOpacity>
+      {!isLast && <View style={[styles.divider, { backgroundColor: border }]} />}
+    </>
+  );
+}
+
+function MenuGroup({
+  title,
+  items,
+  delay,
+  t,
+  border,
+  surfaceTint,
+  isDark,
+  onItemPress,
+}: {
+  title: string;
+  items: MenuItemData[];
+  delay: number;
+  t: (typeof glassText)["dark"];
+  border: string;
+  surfaceTint: string;
+  isDark: boolean;
+  onItemPress: (route: string) => void;
+}) {
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(500).springify()}
+      style={styles.section}
     >
-      <View style={styles.menuItemIcon}>
-        <Ionicons name={icon} size={20} color="rgba(255,255,255,0.9)" />
+      <Text style={[styles.sectionTitle, { color: t.muted }]}>{title}</Text>
+      <View style={[styles.sectionCard, { borderColor: border }]}>
+        {/* @ts-expect-error — augmented GlassViewProps */}
+        <GlassView
+          {...liquidGlass.surface}
+          tintColor={surfaceTint}
+          borderRadius={14}
+          style={styles.cardGlass}
+        />
+        {items.map((item, index) => (
+          <MenuItem
+            key={item.route}
+            item={item}
+            isLast={index === items.length - 1}
+            t={t}
+            border={border}
+            isDark={isDark}
+            onPress={() => onItemPress(item.route)}
+          />
+        ))}
       </View>
-      <View style={styles.menuItemContent}>
-        <Text style={styles.menuItemTitle}>{title}</Text>
-        <Text style={styles.menuItemSubtitle}>{subtitle}</Text>
-      </View>
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color="rgba(255,255,255,0.3)"
-      />
-    </TouchableOpacity>
+    </Animated.View>
   );
 }
 
@@ -57,10 +127,17 @@ export default function DashboardScreen() {
   const router = useStableRouter();
   const { user, isLoading: authLoading } = useAuth();
   const { stats, isLoading: statsLoading, error, refetch } = useDashboard();
-  const { colors } = useAppTheme();
+  const { isDark } = useAppTheme();
   const { user: walletUser } = useWallet();
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
+
+  const theme = isDark ? "dark" : "light";
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
+  const gradient = isDark ? activeGradient : activeGradientLight;
+
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
     await refetch();
@@ -69,83 +146,54 @@ export default function DashboardScreen() {
 
   const isLoading = authLoading || statsLoading;
 
-  const menuItems = React.useMemo(() => {
-    const items = [
-      {
-        title: "Create Event",
-        subtitle: "Set up a new event",
-        icon: "add-circle-outline" as const,
-        route: "/create-event",
-      },
-      {
-        title: "My Events",
-        subtitle: "View and edit your events",
-        icon: "calendar-outline" as const,
-        route: "/my-events",
-      },
-      {
-        title: "My Venues",
-        subtitle: "Manage your venues",
-        icon: "business-outline" as const,
-        route: "/my-venues",
-      },
-      {
-        title: "My List",
-        subtitle: "Everyone who RSVP'd to your events",
-        icon: "list-outline" as const,
-        route: "/dashboard/attendees",
-      },
-      {
-        title: "Analytics",
-        subtitle: "View detailed insights",
-        icon: "bar-chart-outline" as const,
-        route: "/dashboard/analytics",
-      },
-      {
-        title: "Revenue",
-        subtitle: "Track earnings and trends",
-        icon: "trending-up-outline" as const,
-        route: "/dashboard/revenue",
-      },
-      {
-        title: "Text Blast",
-        subtitle: "SMS to all your contacts",
-        icon: "chatbubble-outline" as const,
-        route: "/dashboard/text-blast",
-      },
-      {
-        title: "Wallet",
-        subtitle: "View earnings and payouts",
-        icon: "wallet-outline" as const,
-        route: "/dashboard/payments",
-      },
-    ];
-    if (user?.role === UserRole.ADMIN) {
-      items.push({
-        title: "Admin Panel",
-        subtitle: "Manage users, events, and posts",
-        icon: "shield-checkmark-outline" as const,
-        route: "/admin",
-      });
-    }
-    return items;
-  }, [user?.role]);
+  const handleNav = React.useCallback(
+    (route: string) => router.push(route as any),
+    [router],
+  );
+
+  // Grouped menu items
+  const manageItems: MenuItemData[] = [
+    { title: "Create Event", subtitle: "Set up a new event", icon: "add-circle-outline", route: "/create-event" },
+    { title: "My Events", subtitle: "View and edit your events", icon: "calendar-outline", route: "/my-events" },
+    { title: "My Venues", subtitle: "Manage your venues", icon: "business-outline", route: "/my-venues" },
+    { title: "My List", subtitle: "Everyone who RSVP'd", icon: "list-outline", route: "/dashboard/attendees" },
+  ];
+
+  const insightsItems: MenuItemData[] = [
+    { title: "Analytics", subtitle: "View detailed insights", icon: "bar-chart-outline", route: "/dashboard/analytics" },
+    { title: "Revenue", subtitle: "Track earnings and trends", icon: "trending-up-outline", route: "/dashboard/revenue" },
+    { title: "Wallet", subtitle: "View earnings and payouts", icon: "wallet-outline", route: "/dashboard/payments" },
+  ];
+
+  const toolsItems: MenuItemData[] = [
+    { title: "Text Blast", subtitle: "SMS to all your contacts", icon: "chatbubble-outline", route: "/dashboard/text-blast" },
+  ];
+
+  const adminItems: MenuItemData[] = user?.role === UserRole.ADMIN
+    ? [{ title: "Admin Panel", subtitle: "Manage users, events, and posts", icon: "shield-checkmark-outline", route: "/admin" }]
+    : [];
 
   if (isLoading && !refreshing) {
     return (
-      <View style={styles.container}>
-        <DarkGradientBg />
+      <View style={[styles.container, { backgroundColor: isDark ? "#000" : "#fff" }]}>
+        <LinearGradient colors={[...gradient.colors]} locations={[...gradient.locations]} start={gradient.start} end={gradient.end} style={StyleSheet.absoluteFill} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={styles.loadingText}>Loading dashboard...</Text>
+          <ActivityIndicator size="large" color={t.primary} />
+          <Text style={[styles.loadingText, { color: t.muted }]}>Loading dashboard...</Text>
         </View>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: isDark ? "#000" : "#fff" }]}>
+      <LinearGradient
+        colors={[...gradient.colors]}
+        locations={[...gradient.locations]}
+        start={gradient.start}
+        end={gradient.end}
+        style={StyleSheet.absoluteFill}
+      />
 
       {/* Header */}
       <Animated.View
@@ -153,13 +201,15 @@ export default function DashboardScreen() {
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { borderColor: border }]}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          {/* @ts-expect-error — augmented GlassViewProps */}
+          <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
+          <Ionicons name="arrow-back" size={20} color={t.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Dashboard</Text>
+        <Text style={[styles.headerTitle, { color: t.primary }]}>Dashboard</Text>
         <View style={styles.headerSpacer} />
       </Animated.View>
 
@@ -171,66 +221,39 @@ export default function DashboardScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#fff"
-            colors={["#fff"]}
+            tintColor={t.primary}
           />
         }
       >
         {/* Status Card */}
         {walletUser && (
-          <Animated.View
-            entering={FadeInDown.duration(500)}
-            style={styles.cardContainer}
-          >
-            <MembershipCard
-              user={walletUser}
-              onPress={() => setCardMenuVisible(true)}
-            />
+          <Animated.View entering={FadeInDown.duration(500)} style={styles.cardContainer}>
+            <MembershipCard user={walletUser} onPress={() => setCardMenuVisible(true)} />
           </Animated.View>
         )}
 
         {/* Error Banner */}
         {error && (
-          <Animated.View
-            entering={FadeInDown.duration(300)}
-            style={styles.errorBanner}
-          >
+          <Animated.View entering={FadeInDown.duration(300)} style={styles.errorBanner}>
             <Ionicons name="warning-outline" size={20} color="#f87171" />
             <Text style={styles.errorText}>{error}</Text>
             <TouchableOpacity onPress={refetch} activeOpacity={0.7}>
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={[styles.retryText, { color: t.secondary }]}>Retry</Text>
             </TouchableOpacity>
           </Animated.View>
         )}
 
-        {/* Menu Items */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(500).springify()}
-        >
-          <GlassSurface
-            fill="subtle"
-            border="subtle"
-            cornerRadius="lg"
-            style={styles.menuList}
-          >
-            {menuItems.map((item, index) => (
-              <MenuItem
-                key={item.route}
-                title={item.title}
-                subtitle={item.subtitle}
-                icon={item.icon}
-                onPress={() => router.push(item.route as any)}
-                isLast={index === menuItems.length - 1}
-              />
-            ))}
-          </GlassSurface>
-        </Animated.View>
+        {/* Menu Groups */}
+        <MenuGroup title="MANAGE" items={manageItems} delay={100} t={t} border={border} surfaceTint={surfaceTint} isDark={isDark} onItemPress={handleNav} />
+        <MenuGroup title="INSIGHTS" items={insightsItems} delay={200} t={t} border={border} surfaceTint={surfaceTint} isDark={isDark} onItemPress={handleNav} />
+        <MenuGroup title="TOOLS" items={toolsItems} delay={300} t={t} border={border} surfaceTint={surfaceTint} isDark={isDark} onItemPress={handleNav} />
+        {adminItems.length > 0 && (
+          <MenuGroup title="ADMIN" items={adminItems} delay={400} t={t} border={border} surfaceTint={surfaceTint} isDark={isDark} onItemPress={handleNav} />
+        )}
 
-        {/* Bottom spacing */}
         <View style={{ height: insets.bottom + 40 }} />
       </ScrollView>
 
-      {/* Status Card Menu Sheet */}
       {walletUser && (
         <StatusCardMenuSheet
           visible={cardMenuVisible}
@@ -245,7 +268,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
   },
   loadingContainer: {
     flex: 1,
@@ -256,7 +278,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
   },
   errorBanner: {
     flexDirection: "row",
@@ -276,7 +297,6 @@ const styles = StyleSheet.create({
   retryText: {
     fontSize: 13,
     fontFamily: "Lato_700Bold",
-    color: "rgba(255,255,255,0.7)",
   },
   header: {
     flexDirection: "row",
@@ -286,18 +306,20 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+    borderWidth: 1,
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
   },
   headerSpacer: {
-    width: 40,
+    width: 36,
   },
   scrollView: {
     flex: 1,
@@ -307,28 +329,38 @@ const styles = StyleSheet.create({
   },
   cardContainer: {
     marginHorizontal: -16,
-    marginBottom: 8,
+    marginBottom: 16,
   },
-  menuList: {
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontFamily: "Lato_700Bold",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  sectionCard: {
+    borderRadius: 14,
+    borderWidth: 1,
     overflow: "hidden",
+  },
+  cardGlass: {
+    ...StyleSheet.absoluteFillObject,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-  },
-  menuItemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.08)",
+    padding: 14,
   },
   menuItemIcon: {
-    width: 38,
-    height: 38,
+    width: 36,
+    height: 36,
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
-    backgroundColor: "rgba(255,255,255,0.08)",
   },
   menuItemContent: {
     flex: 1,
@@ -336,12 +368,14 @@ const styles = StyleSheet.create({
   menuItemTitle: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
   },
   menuItemSubtitle: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
     marginTop: 2,
-    color: "rgba(255,255,255,0.45)",
+  },
+  divider: {
+    height: 1,
+    marginLeft: 62,
   },
 });
