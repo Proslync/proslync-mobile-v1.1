@@ -1,9 +1,19 @@
-import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassButton } from "@/components/glass";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { useMyEvents } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
+import { GlassView } from "expo-glass-effect";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  liquidGlass,
+  activeGradient,
+  activeGradientLight,
+  glassBorder,
+  glassText,
+  glassSurfaceTint,
+} from "@/constants/glass/liquid-glass";
+import { SegmentedControl } from "@/components/shared/segmented-control";
 import type { Event } from "@/lib/types/events.types";
 import { EventStatus } from "@/lib/types/events.types";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,17 +27,11 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  useWindowDimensions,
   View,
 } from "react-native";
 import Animated, {
-  Easing,
   FadeIn,
   FadeInDown,
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -98,7 +102,9 @@ interface EventCardProps {
   event: Event;
   onPress: () => void;
   onDashboard: () => void;
-  colors: ReturnType<typeof useAppTheme>["colors"];
+  t: (typeof glassText)["dark"] | (typeof glassText)["light"];
+  border: string;
+  surfaceTint: string;
   isDark: boolean;
 }
 
@@ -106,7 +112,9 @@ function EventCard({
   event,
   onPress,
   onDashboard,
-  colors,
+  t,
+  border,
+  surfaceTint,
   isDark,
 }: EventCardProps) {
   const showStatus = event.status !== EventStatus.PUBLISHED;
@@ -181,91 +189,56 @@ function EventCard({
 
   return (
     <TouchableOpacity
-      style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
+      style={[styles.eventCard, { borderColor: border }]}
       onPress={onPress}
       activeOpacity={0.8}
     >
+      {/* @ts-expect-error — augmented GlassViewProps */}
+      <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={StyleSheet.absoluteFill} />
       <View>
         {thumbUri ? (
           <Image
             source={{ uri: thumbUri }}
-            style={[
-              styles.eventImage,
-              { backgroundColor: colors.backgroundSecondary },
-            ]}
+            style={[styles.eventImage, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}
           />
         ) : (
-          <View
-            style={[
-              styles.eventImage,
-              { backgroundColor: colors.backgroundSecondary, justifyContent: "center", alignItems: "center" },
-            ]}
-          >
-            <Ionicons name="calendar" size={28} color={colors.textTertiary} />
+          <View style={[styles.eventImage, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', justifyContent: "center", alignItems: "center" }]}>
+            <Ionicons name="calendar" size={28} color={t.muted} />
           </View>
         )}
       </View>
       <View style={styles.eventContent}>
         <View style={styles.eventHeader}>
-          <Text
-            style={[styles.eventName, { color: colors.text }]}
-            numberOfLines={1}
-          >
+          <Text style={[styles.eventName, { color: t.primary }]} numberOfLines={1}>
             {event.name}
           </Text>
           {showStatus && (
-            <View
-              style={[styles.statusBadge, { backgroundColor: statusColor }]}
-            >
+            <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
               <Text style={styles.statusText}>{statusLabel}</Text>
             </View>
           )}
         </View>
-        <Text style={[styles.eventDate, { color: colors.textSecondary }]}>
-          {formatEventDate(event.startDate)} at{" "}
-          {formatEventTime(event.startDate)}
+        <Text style={[styles.eventDate, { color: t.secondary }]}>
+          {formatEventDate(event.startDate)} at {formatEventTime(event.startDate)}
         </Text>
-        <Text
-          style={[styles.eventLocation, { color: colors.textTertiary }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.eventLocation, { color: t.muted }]} numberOfLines={1}>
           {event.venue?.name || event.location || "Location TBA"}
         </Text>
         <View style={styles.eventBottomRow}>
           <View style={styles.eventStat}>
-            <Ionicons
-              name="people-outline"
-              size={14}
-              color={colors.textTertiary}
-            />
-            <Text
-              style={[styles.eventStatText, { color: colors.textTertiary }]}
-            >
+            <Ionicons name="people-outline" size={14} color={t.muted} />
+            <Text style={[styles.eventStatText, { color: t.muted }]}>
               {event.attendeeCount || 0} RSVPs
             </Text>
           </View>
           <TouchableOpacity
-            style={styles.dashboardButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              onDashboard();
-            }}
+            style={[styles.dashboardChip, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }]}
+            onPress={(e) => { e.stopPropagation(); onDashboard(); }}
             activeOpacity={0.7}
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
-            <Ionicons
-              name="grid-outline"
-              size={13}
-              color={colors.textSecondary}
-            />
-            <Text
-              style={[
-                styles.dashboardButtonText,
-                { color: colors.textSecondary },
-              ]}
-            >
-              Dashboard
-            </Text>
+            <Ionicons name="grid-outline" size={13} color={t.tertiary} />
+            <Text style={[styles.dashboardChipText, { color: t.tertiary }]}>Manage</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -276,15 +249,16 @@ function EventCard({
 export default function MyEventsScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { width: screenWidth } = useWindowDimensions();
-  const { colors, isDark } = useAppTheme();
+  const { isDark } = useAppTheme();
+  const theme = isDark ? "dark" : "light";
+  const t = glassText[theme];
+  const border = glassBorder[theme];
+  const surfaceTint = glassSurfaceTint[theme];
+  const gradient = isDark ? activeGradient : activeGradientLight;
   const [activeTab, setActiveTab] = React.useState<EventTab>("current");
 
   // Fetch events using React Query - auto-invalidated when events are created/updated
   const { data: events = [], isLoading, refetch } = useMyEvents();
-
-  // Shared value for smooth tab indicator animation
-  const scrollPosition = useSharedValue(0);
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
@@ -310,40 +284,15 @@ export default function MyEventsScreen() {
     );
   }, [events]);
 
-  // Handle tab press
   const handleTabPress = React.useCallback(
     (tab: EventTab) => {
-      const pageIndex = tab === "current" ? 0 : 1;
-      scrollPosition.value = withTiming(pageIndex, {
-        duration: 200,
-        easing: Easing.out(Easing.cubic),
-      });
       if (tab !== activeTab) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }
       setActiveTab(tab);
     },
-    [scrollPosition, activeTab],
+    [activeTab],
   );
-
-  // Animated style for tab indicator
-  const tabWidth = screenWidth / 2;
-  const indicatorStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateX: scrollPosition.value * tabWidth }],
-    };
-  });
-
-  // Animated styles for tab text opacity
-  const currentTabTextStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollPosition.value, [0, 1], [1, 0.5]);
-    return { opacity };
-  });
-
-  const pastTabTextStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollPosition.value, [0, 1], [0.5, 1]);
-    return { opacity };
-  });
 
   const handleEventPress = (event: Event) => {
     router.push(`/manage-event/${event.id}`);
@@ -355,7 +304,9 @@ export default function MyEventsScreen() {
         event={item}
         onPress={() => handleEventPress(item)}
         onDashboard={() => router.push(`/manage-event/${item.id}`)}
-        colors={colors}
+        t={t}
+        border={border}
+        surfaceTint={surfaceTint}
         isDark={isDark}
       />
     </Animated.View>
@@ -365,131 +316,61 @@ export default function MyEventsScreen() {
   const pastCount = pastEvents.length;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
+      <LinearGradient
+        colors={[...gradient.colors]}
+        locations={[...gradient.locations]}
+        start={gradient.start}
+        end={gradient.end}
+        style={StyleSheet.absoluteFill}
+      />
+
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(400)}
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
-        ]}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { borderColor: border }]}
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          {/* @ts-expect-error — augmented GlassViewProps */}
+          <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
+          <Ionicons name="arrow-back" size={20} color={t.primary} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          My Events
-        </Text>
+        <Text style={[styles.headerTitle, { color: t.primary }]}>My Events</Text>
         <TouchableOpacity
-          style={styles.addButton}
+          style={[styles.addButton, { borderColor: border }]}
           onPress={() => router.push("/create-event")}
         >
-          <Ionicons name="add" size={24} color={colors.text} />
+          {/* @ts-expect-error — augmented GlassViewProps */}
+          <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
+          <Ionicons name="add" size={20} color={t.primary} />
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Tab Bar */}
-      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
-        <Animated.View
-          style={[
-            styles.tabIndicator,
-            { width: tabWidth, backgroundColor: colors.text },
-            indicatorStyle,
-          ]}
+      {/* Segmented Tabs */}
+      <View style={styles.tabBar}>
+        <SegmentedControl
+          segments={[`Current${currentCount > 0 ? ` (${currentCount})` : ''}`, `Past${pastCount > 0 ? ` (${pastCount})` : ''}`]}
+          selectedIndex={activeTab === "current" ? 0 : 1}
+          onSelect={(index) => handleTabPress(index === 0 ? "current" : "past")}
         />
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => handleTabPress("current")}
-          activeOpacity={0.7}
-        >
-          <Animated.Text
-            style={[
-              styles.tabText,
-              { color: colors.text },
-              currentTabTextStyle,
-            ]}
-          >
-            Current
-          </Animated.Text>
-          {currentCount > 0 && (
-            <View
-              style={[
-                styles.tabBadge,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(255,255,255,0.2)"
-                    : "rgba(0,0,0,0.1)",
-                },
-                activeTab === "current" && {
-                  backgroundColor: isDark
-                    ? "rgba(255,255,255,0.3)"
-                    : "rgba(0,0,0,0.15)",
-                },
-              ]}
-            >
-              <Text style={[styles.tabBadgeText, { color: colors.text }]}>
-                {currentCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => handleTabPress("past")}
-          activeOpacity={0.7}
-        >
-          <Animated.Text
-            style={[styles.tabText, { color: colors.text }, pastTabTextStyle]}
-          >
-            Past
-          </Animated.Text>
-          {pastCount > 0 && (
-            <View
-              style={[
-                styles.tabBadge,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(255,255,255,0.2)"
-                    : "rgba(0,0,0,0.1)",
-                },
-                activeTab === "past" && {
-                  backgroundColor: isDark
-                    ? "rgba(255,255,255,0.3)"
-                    : "rgba(0,0,0,0.15)",
-                },
-              ]}
-            >
-              <Text style={[styles.tabBadgeText, { color: colors.text }]}>
-                {pastCount}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
       </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text} />
+          <ActivityIndicator size="large" color={t.primary} />
         </View>
       ) : activeTab === "current" ? (
         <View style={styles.pageContainer}>
           {currentEvents.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons
-                name="calendar-outline"
-                size={64}
-                color={colors.textTertiary}
-              />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              <Ionicons name="calendar-outline" size={64} color={t.muted} />
+              <Text style={[styles.emptyTitle, { color: t.primary }]}>
                 No current events
               </Text>
-              <Text
-                style={[styles.emptySubtitle, { color: colors.textTertiary }]}
-              >
+              <Text style={[styles.emptySubtitle, { color: t.muted }]}>
                 Create your first event to get started
               </Text>
               <View style={styles.createButtonWrapper}>
@@ -520,17 +401,11 @@ export default function MyEventsScreen() {
         <View style={styles.pageContainer}>
           {pastEvents.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons
-                name="time-outline"
-                size={64}
-                color={colors.textTertiary}
-              />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              <Ionicons name="time-outline" size={64} color={t.muted} />
+              <Text style={[styles.emptyTitle, { color: t.primary }]}>
                 No past events
               </Text>
-              <Text
-                style={[styles.emptySubtitle, { color: colors.textTertiary }]}
-              >
+              <Text style={[styles.emptySubtitle, { color: t.muted }]}>
                 Your completed events will appear here
               </Text>
             </View>
@@ -565,56 +440,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    paddingBottom: 12,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+    borderWidth: 1,
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
   },
   addButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+    borderWidth: 1,
   },
   tabBar: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    position: "relative",
-  },
-  tabIndicator: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    height: 2,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    gap: 8,
-  },
-  tabText: {
-    fontSize: 15,
-    fontFamily: "Lato_600SemiBold",
-  },
-  tabBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  tabBadgeText: {
-    fontSize: 12,
-    fontFamily: "Lato_700Bold",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   loadingContainer: {
     flex: 1,
@@ -646,9 +498,10 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     flexDirection: "row",
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: "hidden",
     marginBottom: 12,
+    borderWidth: 1,
   },
   eventImage: {
     width: 100,
@@ -705,16 +558,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Lato_400Regular",
   },
-  dashboardButton: {
+  dashboardChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(255,255,255,0.1)",
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 10,
   },
-  dashboardButtonText: {
+  dashboardChipText: {
     fontSize: 11,
     fontFamily: "Lato_600SemiBold",
   },
