@@ -1,3 +1,4 @@
+import { GlassBubbleButton } from "@/components/glass";
 import {
   ActionSheet,
   type ActionSheetOption,
@@ -12,12 +13,10 @@ import { formatEventDate } from "@/lib/utils/date";
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from "@/lib/utils/layout";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { BlurView } from "expo-blur";
-import { GlassBubbleButton } from "@/components/glass";
 import { LinearGradient } from "expo-linear-gradient";
 import { useVideoPlayer, VideoView } from "expo-video";
 import * as React from "react";
 import {
-  ActivityIndicator,
   AppState,
   Image,
   Share,
@@ -218,7 +217,7 @@ export function FeedItem({
         styles.container,
         {
           height: itemHeight,
-          paddingBottom: 66 + insets.bottom,
+          paddingBottom: 40 + insets.bottom,
         },
       ]}
     >
@@ -419,7 +418,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 16,
     elevation: 10,
-    minHeight: SCREEN_HEIGHT * 0.73,
+    flex: 1,
+    maxHeight: SCREEN_HEIGHT * 0.78,
   },
   cardHeader: {
     flexDirection: "row",
@@ -464,6 +464,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
 
   // Footer
