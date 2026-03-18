@@ -36,7 +36,8 @@ import { PurchaseTableSheet } from '@/components/tables/purchase-table-sheet';
 import { useTrackEventView } from '@/hooks/use-track-event-view';
 import { useEventTables, EVENT_TABLES_KEY } from '@/hooks/use-venue-tables';
 import { useQueryClient } from '@tanstack/react-query';
-import { EventTabBar, OverviewTab, LineupTab, TablesTab, MapTab } from '@/components/event';
+import { OverviewTab, LineupTab, TablesTab, MapTab } from '@/components/event';
+import { SegmentedControl } from '@/components/shared/segmented-control';
 import {
   MOCK_FLOORS,
   MOCK_TABLE_INVENTORY,
@@ -478,7 +479,16 @@ export default function EventPage() {
         </Animated.View>
 
         {/* Tab Bar */}
-        <EventTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+        <View style={{ marginTop: 16 }}>
+          <SegmentedControl
+            segments={['Overview', 'Lineup', 'Tables', 'Map']}
+            selectedIndex={['overview', 'lineup', 'tables', 'map'].indexOf(activeTab)}
+            onSelect={(index) => {
+              const tabs: TabType[] = ['overview', 'lineup', 'tables', 'map'];
+              setActiveTab(tabs[index]);
+            }}
+          />
+        </View>
 
         {/* Tab Content */}
         <View style={styles.tabContent}>{renderTabContent()}</View>
@@ -491,7 +501,6 @@ export default function EventPage() {
         <TouchableOpacity onPress={handleRsvp} activeOpacity={0.85} disabled={isLoading}>
           <Animated.View style={[styles.rsvpButton, buttonAnimatedStyle]}>
             {useNativeGlass ? (
-              // @ts-expect-error — augmented GlassViewProps not resolving for style
               <GlassView
                 glassEffectStyle="regular"
                 colorScheme="dark"
