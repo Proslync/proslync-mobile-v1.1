@@ -15,6 +15,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { ThemeColors } from '@/hooks/use-app-theme';
@@ -54,16 +56,16 @@ function timeAgo(dateStr: string): string {
 
 const NOTIFICATION_ICONS: Record<
   NotificationType,
-  { name: keyof typeof Ionicons.glyphMap; color: string; bg: string }
+  { name: keyof typeof Ionicons.glyphMap; color: string }
 > = {
-  follow: { name: 'person-add', color: '#0095F6', bg: 'rgba(0,149,246,0.15)' },
-  rsvp: { name: 'calendar', color: '#34C759', bg: 'rgba(52,199,89,0.15)' },
-  event_update: { name: 'refresh-circle', color: '#FF9500', bg: 'rgba(255,149,0,0.15)' },
-  payment: { name: 'card', color: '#34C759', bg: 'rgba(52,199,89,0.15)' },
-  chat: { name: 'chatbubble-ellipses', color: '#0095F6', bg: 'rgba(0,149,246,0.15)' },
-  like: { name: 'heart', color: '#FF3B30', bg: 'rgba(255,59,48,0.15)' },
-  comment: { name: 'chatbubble', color: '#AF52DE', bg: 'rgba(175,82,222,0.15)' },
-  team_invitation: { name: 'people', color: '#FF9500', bg: 'rgba(255,149,0,0.15)' },
+  follow: { name: 'person-add', color: '#fff' },
+  rsvp: { name: 'calendar', color: '#fff' },
+  event_update: { name: 'refresh-circle', color: '#fff' },
+  payment: { name: 'card', color: '#fff' },
+  chat: { name: 'chatbubble-ellipses', color: '#fff' },
+  like: { name: 'heart', color: '#fff' },
+  comment: { name: 'chatbubble', color: '#fff' },
+  team_invitation: { name: 'people', color: '#fff' },
 };
 
 // Types where we show the actor's profile photo instead of an icon
@@ -96,14 +98,10 @@ function TeamInvitationRow({
     }
   };
 
-  const cardContent = isDark ? (
+  const cardContent = (
     <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.invitationCard}>
       {renderContent()}
     </GlassSurface>
-  ) : (
-    <View style={[styles.invitationCard, styles.invitationCardLight, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      {renderContent()}
-    </View>
   );
 
   const card = tappable ? (
@@ -119,7 +117,8 @@ function TeamInvitationRow({
           {invitation.eventFlyer ? (
             <Image source={{ uri: invitation.eventFlyer }} style={styles.eventImage} />
           ) : (
-            <View style={[styles.eventImage, styles.eventImagePlaceholder, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : colors.backgroundSecondary }]}>
+            <View style={[styles.eventImage, styles.eventImagePlaceholder, { overflow: 'hidden', backgroundColor: isDark ? undefined : colors.backgroundSecondary }]}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
               <Ionicons name="calendar" size={20} color={colors.textTertiary} />
             </View>
           )}
@@ -137,13 +136,14 @@ function TeamInvitationRow({
               style={[
                 styles.actionButton,
                 isDark
-                  ? styles.acceptButtonDark
+                  ? { overflow: 'hidden' as const, borderColor: 'rgba(255,255,255,0.25)' }
                   : { backgroundColor: colors.text, borderColor: colors.text },
               ]}
               onPress={() => onAccept(invitation.id)}
               disabled={busy}
               activeOpacity={0.7}
             >
+              {isDark && <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
               {accepting ? (
                 <ActivityIndicator color={isDark ? '#fff' : colors.textInverse} size="small" />
               ) : (
@@ -154,13 +154,14 @@ function TeamInvitationRow({
               style={[
                 styles.actionButton,
                 isDark
-                  ? styles.declineButtonDark
+                  ? { overflow: 'hidden' as const, borderColor: 'rgba(255,255,255,0.12)' }
                   : { backgroundColor: colors.backgroundSecondary, borderColor: colors.border },
               ]}
               onPress={() => onDecline(invitation.id)}
               disabled={busy}
               activeOpacity={0.7}
             >
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
               {declining ? (
                 <ActivityIndicator color={colors.text} size="small" />
               ) : (
@@ -230,7 +231,7 @@ function ActivityRow({
   isDark: boolean;
   onPress: (notification: AppNotification) => void;
 }) {
-  const iconConfig = NOTIFICATION_ICONS[item.type] || { name: 'notifications', color: colors.textTertiary, bg: 'rgba(255,255,255,0.08)' };
+  const iconConfig = NOTIFICATION_ICONS[item.type] || { name: 'notifications', color: colors.textTertiary };
   const actorId = item.metadata?.actorId as number | undefined;
   const showActorPhoto = ACTOR_PHOTO_TYPES.includes(item.type) && actorId;
   const { data: actorUser } = useActorUser(actorId);
@@ -248,7 +249,8 @@ function ActivityRow({
       {showActorPhoto ? (
         <ActorAvatar actorId={actorId} />
       ) : (
-        <View style={[styles.activityIcon, { backgroundColor: iconConfig.bg }]}>
+        <View style={[styles.activityIcon, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)', overflow: 'hidden' as const }]}>
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
           <Ionicons name={iconConfig.name} size={18} color={iconConfig.color} />
         </View>
       )}
@@ -427,6 +429,9 @@ export default function NotificationsScreen() {
           onPress={() => setActiveTab('activity')}
           activeOpacity={0.7}
         >
+          {activeTab === 'activity' && isDark && (
+            <GlassView {...liquidGlass.fill} borderRadius={20} style={StyleSheet.absoluteFillObject} />
+          )}
           <Text style={[styles.tabText, { color: activeTab === 'activity' ? (isDark ? '#fff' : colors.textInverse) : colors.textSecondary }]}>Activity</Text>
           {!!unreadCount && unreadCount > 0 && (
             <View style={styles.tabBadge}>
@@ -444,6 +449,9 @@ export default function NotificationsScreen() {
           onPress={() => setActiveTab('teams')}
           activeOpacity={0.7}
         >
+          {activeTab === 'teams' && isDark && (
+            <GlassView {...liquidGlass.fill} borderRadius={20} style={StyleSheet.absoluteFillObject} />
+          )}
           <Text style={[styles.tabText, { color: activeTab === 'teams' ? (isDark ? '#fff' : colors.textInverse) : colors.textSecondary }]}>Teams</Text>
           {invitations.filter((i) => i.status === 'pending').length > 0 && (
             <View style={styles.tabBadge}>
@@ -595,7 +603,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabActiveDark: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden' as const,
     borderColor: 'rgba(255,255,255,0.25)',
   },
   tabText: {

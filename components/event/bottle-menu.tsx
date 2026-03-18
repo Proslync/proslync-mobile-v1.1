@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassSurface } from '@/components/glass';
 import { GlassButton } from '@/components/glass';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import type { BottleMenuCategory, BottleMenuItem } from '@/lib/types/event-detail.types';
 
 interface BottleMenuProps {
@@ -51,11 +53,14 @@ export function BottleMenu({ categories }: BottleMenuProps) {
               style={[
                 styles.categoryTab,
                 {
-                  backgroundColor: isActive ? `${glassColor}0.15)` : 'transparent',
                   borderColor: `${glassColor}0.15)`,
+                  overflow: 'hidden',
                 },
               ]}
             >
+              {isActive && (
+                <GlassView {...liquidGlass.fill} borderRadius={8} style={StyleSheet.absoluteFillObject} />
+              )}
               <Text style={[styles.categoryText, { color: isActive ? colors.text : colors.textTertiary }]}>
                 {cat.name}
               </Text>

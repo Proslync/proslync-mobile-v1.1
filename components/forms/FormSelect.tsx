@@ -2,6 +2,8 @@
 
 import { useFormContext, Controller, FieldValues, Path } from 'react-hook-form';
 import { Text, StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 export interface SelectOption {
@@ -53,11 +55,16 @@ export function FormSelect<T extends FieldValues>({
                 style={[
                   styles.chip,
                   {
-                    backgroundColor: !value ? `${glassColor}0.15)` : `${glassColor}0.06)`,
+                    overflow: 'hidden',
                     borderColor: !value ? `${glassColor}0.25)` : `${glassColor}0.1)`,
                   },
                 ]}
               >
+                <GlassView
+                  {...(!value ? liquidGlass.fill : liquidGlass.fillFaint)}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
                 <Text
                   style={[
                     styles.chipText,
@@ -78,11 +85,16 @@ export function FormSelect<T extends FieldValues>({
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: isSelected ? `${glassColor}0.15)` : `${glassColor}0.06)`,
+                      overflow: 'hidden',
                       borderColor: isSelected ? `${glassColor}0.25)` : `${glassColor}0.1)`,
                     },
                   ]}
                 >
+                  <GlassView
+                    {...(isSelected ? liquidGlass.fill : liquidGlass.fillFaint)}
+                    borderRadius={10}
+                    style={StyleSheet.absoluteFillObject}
+                  />
                   <Text
                     style={[
                       styles.chipText,

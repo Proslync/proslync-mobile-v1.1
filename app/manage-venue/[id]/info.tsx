@@ -1,3 +1,5 @@
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useVenue } from '@/hooks/use-venue-query';
@@ -22,12 +24,14 @@ interface InfoRowProps {
   value: string;
   onPress?: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
 }
 
-function InfoRow({ icon, label, value, onPress, colors }: InfoRowProps) {
+function InfoRow({ icon, label, value, onPress, colors, isDark }: InfoRowProps) {
   const content = (
     <View style={styles.infoRow}>
-      <View style={[styles.infoIcon, { backgroundColor: colors.backgroundSecondary }]}>
+      <View style={[styles.infoIcon, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+        {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
         <Ionicons name={icon} size={18} color={colors.text} />
       </View>
       <View style={styles.infoContent}>
@@ -101,7 +105,8 @@ export default function VenueInfoScreen() {
         {/* Venue Name Header */}
         <Animated.View entering={FadeInDown.duration(300)}>
           <View style={styles.nameSection}>
-            <View style={[styles.logoPlaceholder, { backgroundColor: colors.backgroundSecondary }]}>
+            <View style={[styles.logoPlaceholder, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
               <Ionicons name="business" size={36} color={colors.textTertiary} />
             </View>
             <Text style={[styles.venueName, { color: colors.text }]}>{venue.name}</Text>
@@ -127,6 +132,7 @@ export default function VenueInfoScreen() {
                     : undefined
                 }
                 colors={colors}
+                isDark={isDark}
               />
             ) : null}
 
@@ -137,6 +143,7 @@ export default function VenueInfoScreen() {
                 value={venue.phoneNumber}
                 onPress={() => Linking.openURL(`tel:${venue.phoneNumber}`)}
                 colors={colors}
+                isDark={isDark}
               />
             ) : null}
 
@@ -147,6 +154,7 @@ export default function VenueInfoScreen() {
                 value={venue.email}
                 onPress={() => Linking.openURL(`mailto:${venue.email}`)}
                 colors={colors}
+                isDark={isDark}
               />
             ) : null}
 
@@ -157,6 +165,7 @@ export default function VenueInfoScreen() {
                 value={venue.website}
                 onPress={() => Linking.openURL(venue.website!)}
                 colors={colors}
+                isDark={isDark}
               />
             ) : null}
 
@@ -166,6 +175,7 @@ export default function VenueInfoScreen() {
                 label="Location"
                 value={location}
                 colors={colors}
+                isDark={isDark}
               />
             ) : null}
           </GlassSurface>
@@ -180,6 +190,7 @@ export default function VenueInfoScreen() {
                 label="Coordinates"
                 value={`${Number(venue.latitude).toFixed(6)}, ${Number(venue.longitude).toFixed(6)}`}
                 colors={colors}
+                isDark={isDark}
               />
             </GlassSurface>
           </Animated.View>

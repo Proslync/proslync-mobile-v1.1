@@ -584,14 +584,16 @@ export default function ScannerScreen() {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
         <DarkGradientBg />
-        <View style={styles.permissionIcon}>
+        <View style={[styles.permissionIcon, { backgroundColor: undefined, overflow: 'hidden' as const }]}>
+          <GlassView {...liquidGlass.fill} borderRadius={48} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="camera" size={48} color="#fff" />
         </View>
         <Text style={styles.permissionTitle}>Camera Access</Text>
         <Text style={styles.permissionText}>
           We need camera access to scan IDs and membership cards
         </Text>
-        <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+        <TouchableOpacity style={[styles.permissionButton, { backgroundColor: undefined, overflow: 'hidden' as const }]} onPress={requestPermission}>
+          <GlassView {...liquidGlass.fill} borderRadius={14} style={StyleSheet.absoluteFillObject} />
           <Text style={styles.permissionButtonText}>Enable Camera</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.settingsLink} onPress={() => Linking.openSettings()}>
@@ -656,7 +658,7 @@ export default function ScannerScreen() {
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + 12 }]}
       >
-        <TouchableOpacity style={styles.headerButton} onPress={() => {
+        <TouchableOpacity style={[styles.headerButton, { backgroundColor: undefined, overflow: 'hidden' as const }]} onPress={() => {
           if (scanStep === 'id' && !idResult) {
             // Go back to membership step
             resetFlow();
@@ -664,6 +666,7 @@ export default function ScannerScreen() {
             router.back();
           }
         }}>
+          <GlassView {...liquidGlass.fill} borderRadius={22} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -677,9 +680,10 @@ export default function ScannerScreen() {
           </View>
         </View>
         <TouchableOpacity
-          style={[styles.headerButton, torch && styles.headerButtonActive]}
+          style={[styles.headerButton, { backgroundColor: undefined, overflow: 'hidden' as const }]}
           onPress={() => setTorch(!torch)}
         >
+          <GlassView {...(torch ? liquidGlass.fillStrong : liquidGlass.fill)} borderRadius={22} style={StyleSheet.absoluteFillObject} />
           <Ionicons
             name={torch ? 'flash' : 'flash-outline'}
             size={22}
@@ -709,11 +713,12 @@ export default function ScannerScreen() {
           {/* NFC tap button for membership step */}
           {scanStep === 'membership' && nfcSupported && (
             <TouchableOpacity
-              style={styles.nfcButton}
+              style={[styles.nfcButton, { backgroundColor: undefined, overflow: 'hidden' as const }]}
               onPress={startNfcScan}
               activeOpacity={0.7}
               disabled={nfcScanning}
             >
+              <GlassView {...liquidGlass.fill} borderRadius={24} style={StyleSheet.absoluteFillObject} />
               <Ionicons
                 name="phone-portrait-outline"
                 size={18}
@@ -746,13 +751,15 @@ export default function ScannerScreen() {
                 {/* Avatar */}
                 <View style={mcStyles.avatarContainer}>
                   {memberProfileLoading ? (
-                    <View style={mcStyles.avatarPlaceholder}>
+                    <View style={[mcStyles.avatarPlaceholder, { backgroundColor: undefined, overflow: 'hidden' as const }]}>
+                      <GlassView {...liquidGlass.fillFaint} borderRadius={32} style={StyleSheet.absoluteFillObject} />
                       <ActivityIndicator size="small" color="#fff" />
                     </View>
                   ) : memberProfile?.avatar?.url ? (
                     <Image source={{ uri: memberProfile.avatar.url }} style={mcStyles.avatar} />
                   ) : (
-                    <View style={mcStyles.avatarPlaceholder}>
+                    <View style={[mcStyles.avatarPlaceholder, { backgroundColor: undefined, overflow: 'hidden' as const }]}>
+                      <GlassView {...liquidGlass.fillFaint} borderRadius={32} style={StyleSheet.absoluteFillObject} />
                       <Ionicons name="person" size={28} color="rgba(255,255,255,0.5)" />
                     </View>
                   )}
@@ -808,10 +815,11 @@ export default function ScannerScreen() {
 
               {/* Continue button */}
               <TouchableOpacity
-                style={styles.continueButton}
+                style={[styles.continueButton, { backgroundColor: undefined, overflow: 'hidden' as const }]}
                 onPress={handleContinueToId}
                 activeOpacity={0.8}
               >
+                <GlassView {...liquidGlass.fill} borderRadius={14} style={StyleSheet.absoluteFillObject} />
                 <Text style={styles.continueButtonText}>Continue to ID Scan</Text>
                 <Ionicons name="arrow-forward" size={20} color="#fff" />
               </TouchableOpacity>
@@ -918,6 +926,7 @@ export default function ScannerScreen() {
                     activeOpacity={0.8}
                     disabled={isSubmitting}
                   >
+                    <GlassView {...liquidGlass.success} borderRadius={14} style={StyleSheet.absoluteFill} />
                     {isSubmitting ? (
                       <ActivityIndicator size="small" color="#fff" />
                     ) : (
@@ -985,10 +994,11 @@ export default function ScannerScreen() {
           {/* Skip button (only on membership step) */}
           {scanStep === 'membership' && (
             <TouchableOpacity
-              style={styles.skipButton}
+              style={[styles.skipButton, { backgroundColor: undefined, overflow: 'hidden' as const }]}
               onPress={handleSkipMembership}
               activeOpacity={0.7}
             >
+              <GlassView {...liquidGlass.fillFaint} borderRadius={14} style={StyleSheet.absoluteFillObject} />
               <Text style={styles.skipButtonText}>No membership card? Skip</Text>
               <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.5)" />
             </TouchableOpacity>
@@ -1018,7 +1028,6 @@ const styles = StyleSheet.create({
 
   header: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
   headerButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
-  headerButtonActive: { backgroundColor: '#fbbf24' },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#fff', letterSpacing: 0.3 },
 
@@ -1096,7 +1105,7 @@ const styles = StyleSheet.create({
   fieldValue: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1a1a1a' },
   resultActions: { flexDirection: 'row', gap: 10, width: '100%' },
 
-  approveButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#10b981', paddingVertical: 16, borderRadius: 14, gap: 8 },
+  approveButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 14, gap: 8, overflow: 'hidden' as const },
   approveButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
 
   denyButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 16, borderRadius: 14, backgroundColor: 'rgba(239,68,68,0.1)', gap: 6 },

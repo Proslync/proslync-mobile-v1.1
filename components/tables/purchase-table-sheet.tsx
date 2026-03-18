@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useStripe } from '@stripe/stripe-react-native';
 import { BottomSheet } from '@/components/wallet/bottom-sheet';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { GlassButton } from '@/components/glass/glass-button';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -159,6 +161,7 @@ export function PurchaseTableSheet({
   const renderSuccessContent = () => (
     <View style={styles.statusContainer}>
       <View style={styles.successIconCircle}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={44} style={StyleSheet.absoluteFillObject} />
         <Ionicons name="checkmark-circle" size={48} color="#22c55e" />
       </View>
       <Text style={[styles.statusTitle, { color: colors.text }]}>Table Reserved!</Text>
@@ -174,6 +177,7 @@ export function PurchaseTableSheet({
   const renderErrorContent = () => (
     <View style={styles.statusContainer}>
       <View style={styles.errorIconCircle}>
+        <GlassView {...liquidGlass.fillFaint} borderRadius={44} style={StyleSheet.absoluteFillObject} />
         <Ionicons name="close-circle" size={48} color="#ef4444" />
       </View>
       <Text style={[styles.statusTitle, { color: colors.text }]}>Something went wrong</Text>
@@ -261,7 +265,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 20,

@@ -26,6 +26,8 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 export default function ArtistsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -142,10 +144,11 @@ export default function ArtistsScreen() {
           </Text>
           {canManage && (
             <TouchableOpacity
-              style={styles.emptyCta}
+              style={[styles.emptyCta, { overflow: 'hidden' }]}
               onPress={handleOpenCreate}
               activeOpacity={0.7}
             >
+              <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
               <Ionicons name="add-circle-outline" size={18} color={colors.text} />
               <Text style={[styles.emptyCtaText, { color: colors.text }]}>Add Artist</Text>
             </TouchableOpacity>
@@ -283,7 +286,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },

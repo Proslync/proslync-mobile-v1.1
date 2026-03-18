@@ -10,10 +10,12 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAdminStats, useAdminActivity } from '@/hooks/use-admin';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 function StatCard({
@@ -28,7 +30,8 @@ function StatCard({
   colors: ReturnType<typeof useAppTheme>['colors'];
 }) {
   return (
-    <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
+    <View style={[styles.statCard, { overflow: 'hidden' as const }]}>
+      <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />
       <Ionicons name={icon} size={20} color="rgba(255,255,255,0.5)" />
       <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{title}</Text>
@@ -42,12 +45,14 @@ function MenuItem({
   icon,
   onPress,
   colors,
+  isDark,
 }: {
   title: string;
   subtitle: string;
   icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
   colors: ReturnType<typeof useAppTheme>['colors'];
+  isDark: boolean;
 }) {
   return (
     <TouchableOpacity
@@ -55,7 +60,8 @@ function MenuItem({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={[styles.menuItemIcon, { backgroundColor: colors.cardElevated }]}>
+      <View style={[styles.menuItemIcon, { backgroundColor: isDark ? undefined : colors.cardElevated, overflow: 'hidden' as const }]}>
+        {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
         <Ionicons name={icon} size={22} color={colors.text} />
       </View>
       <View style={styles.menuItemContent}>
@@ -147,13 +153,15 @@ export default function AdminDashboard() {
           entering={FadeInDown.delay(200).duration(500).springify()}
           style={styles.section}
         >
-          <View style={[styles.menuList, { backgroundColor: colors.cardElevated }]}>
+          <View style={[styles.menuList, { overflow: 'hidden' }]}>
+            <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
             <MenuItem
               title="Users"
               subtitle={`${stats?.users.total ?? 0} total, ${stats?.users.blocked ?? 0} blocked`}
               icon="people-outline"
               onPress={() => router.push('/admin/users')}
               colors={colors}
+              isDark={isDark}
             />
             <MenuItem
               title="Events"
@@ -161,6 +169,7 @@ export default function AdminDashboard() {
               icon="calendar-outline"
               onPress={() => router.push('/admin/events')}
               colors={colors}
+              isDark={isDark}
             />
             <MenuItem
               title="Posts"
@@ -168,6 +177,7 @@ export default function AdminDashboard() {
               icon="document-text-outline"
               onPress={() => router.push('/admin/posts')}
               colors={colors}
+              isDark={isDark}
             />
             <MenuItem
               title="Moderation"
@@ -175,6 +185,7 @@ export default function AdminDashboard() {
               icon="shield-outline"
               onPress={() => router.push('/admin/moderation')}
               colors={colors}
+              isDark={isDark}
             />
             <MenuItem
               title="Moderation Rules"
@@ -182,6 +193,7 @@ export default function AdminDashboard() {
               icon="settings-outline"
               onPress={() => router.push('/admin/rules')}
               colors={colors}
+              isDark={isDark}
             />
           </View>
         </Animated.View>
@@ -192,7 +204,8 @@ export default function AdminDashboard() {
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
               Recent Activity
             </Text>
-            <View style={[styles.activityList, { backgroundColor: colors.cardElevated }]}>
+            <View style={[styles.activityList, { overflow: 'hidden' }]}>
+              <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
               {activity.slice(0, 10).map((item, i) => (
                 <View
                   key={`${item.type}-${item.id}-${i}`}

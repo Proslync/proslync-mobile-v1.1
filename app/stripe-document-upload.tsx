@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
@@ -232,7 +234,8 @@ export default function StripeDocumentUploadScreen() {
         {docInfo && (
           <Animated.View entering={FadeInDown.duration(400).delay(100)}>
             <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.infoCard}>
-              <View style={[styles.infoIconContainer, { backgroundColor: colors.cardElevated }]}>
+              <View style={[styles.infoIconContainer, { backgroundColor: isDark ? undefined : colors.cardElevated, overflow: 'hidden' as const }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={36} style={StyleSheet.absoluteFillObject} />}
                 <Ionicons
                   name={docInfo.icon as any}
                   size={40}

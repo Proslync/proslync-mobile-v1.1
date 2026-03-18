@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -68,9 +70,11 @@ export function TierCard({
         {!readOnly && (
           <View style={styles.tierActions}>
             <TouchableOpacity style={styles.actionButton} onPress={() => onEditTier(tier)}>
+              <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
               <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton} onPress={handleDeleteTier}>
+              <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
               <Ionicons name="trash-outline" size={18} color="#ef4444" />
             </TouchableOpacity>
           </View>
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },

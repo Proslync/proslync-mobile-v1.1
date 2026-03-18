@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useEarnings } from '@/hooks/use-wallet-queries';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { EarningsItem } from '@/lib/api/wallet';
@@ -75,12 +77,16 @@ export function EarningsList() {
             key={f.key}
             style={[
               styles.filterChip,
-              { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
-              filter === f.key && { backgroundColor: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)' },
+              { overflow: 'hidden' },
             ]}
             onPress={() => setFilter(f.key)}
             activeOpacity={0.7}
           >
+            <GlassView
+              {...(filter === f.key ? liquidGlass.fillMedium : liquidGlass.fillFaint)}
+              borderRadius={16}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Text style={[
               styles.filterText,
               { color: colors.textSecondary },

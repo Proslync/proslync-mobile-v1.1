@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAdminPosts, useAdminDeletePost } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -46,7 +48,8 @@ function PostRow({
       {avatarUrl ? (
         <Image source={{ uri: avatarUrl }} style={styles.avatar} />
       ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.cardElevated }]}>
+        <View style={[styles.avatar, styles.avatarPlaceholder, { overflow: 'hidden' as const }]}>
+          <GlassView {...liquidGlass.fillFaint} borderRadius={17} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="person" size={16} color={colors.textTertiary} />
         </View>
       )}
@@ -143,7 +146,8 @@ export default function AdminPostsScreen() {
 
       {/* Search */}
       <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+        <View style={[styles.searchBar, { overflow: 'hidden' }]}>
+          <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="search" size={18} color={colors.textTertiary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}

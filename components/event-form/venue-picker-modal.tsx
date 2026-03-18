@@ -162,7 +162,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
     fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
@@ -207,7 +206,7 @@ const styles = StyleSheet.create({
   checkmark: {
     fontSize: 18,
     color: '#fff',
-    fontWeight: '600',
+    fontFamily: 'Lato_700Bold',
   },
   centered: {
     flex: 1,

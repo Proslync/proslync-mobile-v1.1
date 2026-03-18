@@ -79,7 +79,7 @@ export function OnboardingCard({ onSetup, onCheckStatus, onDeleteAccount, onReme
   return (
     <Animated.View entering={FadeInDown.duration(400)} style={styles.wrapper}>
       <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.container}>
-        <View style={[styles.iconContainer, { backgroundColor: colors.cardElevated }]}>
+        <View style={styles.iconContainer}>
           <GlassView
             {...liquidGlass.surface}
             borderRadius={50}
@@ -106,7 +106,12 @@ export function OnboardingCard({ onSetup, onCheckStatus, onDeleteAccount, onReme
 
         {/* Remediation items for restricted accounts */}
         {isRestricted && remediationItems.length > 0 && onRemediationPress && (
-          <View style={[styles.remediationList, { backgroundColor: colors.cardElevated }]}>
+          <View style={styles.remediationList}>
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={12}
+              style={StyleSheet.absoluteFillObject}
+            />
             {remediationItems.map((item) => (
               <TouchableOpacity
                 key={item.requirement}

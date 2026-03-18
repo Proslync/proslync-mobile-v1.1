@@ -9,6 +9,8 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { User } from '../../lib/types/messages.types';
 
@@ -34,15 +36,16 @@ function getRoleLabel(role: User['role']): string {
 }
 
 export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const roleLabel = getRoleLabel(user.role);
 
   return (
     <TouchableOpacity
-      style={[styles.container, { backgroundColor: colors.background }, isSelected && styles.containerSelected]}
+      style={[styles.container, { backgroundColor: colors.background }, isSelected && (isDark ? { overflow: 'hidden' as const } : styles.containerSelected)]}
       onPress={onPress}
       activeOpacity={0.7}
     >
+      {isSelected && isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={0} style={StyleSheet.absoluteFillObject} />}
       <View style={styles.avatarContainer}>
         <Image
           source={user.avatarUrl ? { uri: user.avatarUrl } : DefaultAvatarImage}
@@ -70,7 +73,7 @@ export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
 
       {isSelected && (
         <View style={styles.checkmark}>
-          <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+          <Ionicons name="checkmark-circle" size={24} color="#fff" />
         </View>
       )}
     </TouchableOpacity>
@@ -85,7 +88,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   containerSelected: {
-    backgroundColor: 'rgba(0, 149, 246, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   avatarContainer: {
     position: 'relative',

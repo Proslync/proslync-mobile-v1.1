@@ -11,17 +11,20 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ShimmerBlockProps {
   width: number | string;
   height: number;
+  borderRadius?: number;
   style?: any;
   isDark: boolean;
 }
 
-function ShimmerBlock({ width, height, style, isDark }: ShimmerBlockProps) {
+function ShimmerBlock({ width, height, borderRadius, style, isDark }: ShimmerBlockProps) {
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
@@ -32,19 +35,19 @@ function ShimmerBlock({ width, height, style, isDark }: ShimmerBlockProps) {
     opacity: interpolate(shimmer.value, [0, 0.5, 1], [0.3, 0.6, 0.3]),
   }));
 
+  const resolvedRadius = borderRadius ?? style?.borderRadius ?? 12;
+
   return (
-    <Animated.View
+    <View
       style={[
         styles.shimmerBlock,
-        {
-          width,
-          height,
-          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-        },
-        animatedStyle,
+        { width, height, overflow: 'hidden' },
         style,
       ]}
-    />
+    >
+      <GlassView {...liquidGlass.fillFaint} borderRadius={resolvedRadius} style={StyleSheet.absoluteFillObject} />
+      <Animated.View style={[StyleSheet.absoluteFillObject, animatedStyle]} />
+    </View>
   );
 }
 

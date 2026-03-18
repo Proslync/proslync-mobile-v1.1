@@ -10,6 +10,8 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -75,11 +77,6 @@ export function FeedItemSkeleton() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
-  // Theme-aware skeleton background colors
-  const skeletonBgLight = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
-  const skeletonBgMedium = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-  const skeletonBgSubtle = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)';
-
   // Theme-aware gradient colors for background
   const backgroundGradientColors = isDark
     ? [colors.backgroundSecondary, colors.backgroundTertiary, colors.background] as const
@@ -105,27 +102,33 @@ export function FeedItemSkeleton() {
       >
         {/* Organizer skeleton */}
         <View style={styles.organizerSkeleton}>
-          <View style={[styles.avatarSkeleton, { backgroundColor: skeletonBgLight }]}>
+          <View style={styles.avatarSkeleton}>
+            <GlassView {...liquidGlass.fillFaint} borderRadius={18} style={StyleSheet.absoluteFillObject} />
             <ShimmerOverlay isDark={isDark} />
           </View>
-          <View style={[styles.nameSkeleton, { backgroundColor: skeletonBgLight }]}>
+          <View style={styles.nameSkeleton}>
+            <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
             <ShimmerOverlay isDark={isDark} />
           </View>
         </View>
 
         {/* Flyer/Media skeleton */}
         <View style={styles.flyerContainer}>
-          <View style={[styles.flyerSkeleton, { backgroundColor: skeletonBgMedium }]}>
+          <View style={styles.flyerSkeleton}>
+            <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
             <ShimmerOverlay isDark={isDark} />
             {/* Decorative elements to make it look like a flyer */}
             <View style={styles.flyerInner}>
-              <View style={[styles.flyerTitleSkeleton, { backgroundColor: skeletonBgLight }]}>
+              <View style={styles.flyerTitleSkeleton}>
+                <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
                 <ShimmerOverlay isDark={isDark} />
               </View>
-              <View style={[styles.flyerSubtitleSkeleton, { backgroundColor: skeletonBgMedium }]}>
+              <View style={styles.flyerSubtitleSkeleton}>
+                <GlassView {...liquidGlass.fillFaint} borderRadius={6} style={StyleSheet.absoluteFillObject} />
                 <ShimmerOverlay isDark={isDark} />
               </View>
-              <View style={[styles.flyerDetailsSkeleton, { backgroundColor: skeletonBgSubtle }]}>
+              <View style={styles.flyerDetailsSkeleton}>
+                <GlassView {...liquidGlass.fillFaint} borderRadius={6} style={StyleSheet.absoluteFillObject} />
                 <ShimmerOverlay isDark={isDark} />
               </View>
             </View>
@@ -134,10 +137,12 @@ export function FeedItemSkeleton() {
 
         {/* Event info skeleton */}
         <View style={styles.eventInfoSkeleton}>
-          <View style={[styles.eventTitleSkeleton, { backgroundColor: skeletonBgLight }]}>
+          <View style={styles.eventTitleSkeleton}>
+            <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
             <ShimmerOverlay isDark={isDark} />
           </View>
-          <View style={[styles.eventDateSkeleton, { backgroundColor: skeletonBgMedium }]}>
+          <View style={styles.eventDateSkeleton}>
+            <GlassView {...liquidGlass.fillFaint} borderRadius={6} style={StyleSheet.absoluteFillObject} />
             <ShimmerOverlay isDark={isDark} />
           </View>
         </View>
@@ -145,7 +150,8 @@ export function FeedItemSkeleton() {
 
       {/* Bottom CTA skeleton */}
       <View style={[styles.ctaSkeleton, { paddingBottom: insets.bottom + 20 }]}>
-        <View style={[styles.ctaButtonSkeleton, { backgroundColor: skeletonBgLight }]}>
+        <View style={styles.ctaButtonSkeleton}>
+          <GlassView {...liquidGlass.fillFaint} borderRadius={26} style={StyleSheet.absoluteFillObject} />
           <ShimmerOverlay isDark={isDark} />
         </View>
       </View>

@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   useTextBlasts,
@@ -113,7 +115,8 @@ export default function TextBlastScreen() {
   const renderBlastBubble = ({ item }: { item: TextBlastResponse }) => (
     <View style={styles.bubbleRow}>
       <View style={styles.bubbleWrapper}>
-        <View style={styles.messageBubble}>
+        <View style={[styles.messageBubble, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}>
+          {isDark && <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />}
           <Text style={styles.messageText}>{item.message}</Text>
         </View>
         <View style={styles.bubbleMeta}>
@@ -203,7 +206,12 @@ export default function TextBlastScreen() {
         {canSendMarketing() && (
           <View style={[styles.composerContainer, { paddingBottom: insets.bottom + 8 }]}>
             {/* Event Contacts Count */}
-            <View style={styles.audiencePill}>
+            <View style={[styles.audiencePill, { overflow: 'hidden' }]}>
+              <GlassView
+                {...liquidGlass.fillFaint}
+                borderRadius={12}
+                style={StyleSheet.absoluteFillObject}
+              />
               <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.6)" />
               <Text style={styles.audiencePillText}>
                 Event Contacts ({recipientCount})
@@ -220,17 +228,27 @@ export default function TextBlastScreen() {
               {templateVariables.map((v) => (
                 <TouchableOpacity
                   key={v.value}
-                  style={styles.variableChip}
+                  style={[styles.variableChip, { overflow: 'hidden' }]}
                   onPress={() => insertVariable(v)}
                   activeOpacity={0.7}
                 >
+                  <GlassView
+                    {...liquidGlass.fill}
+                    borderRadius={14}
+                    style={StyleSheet.absoluteFillObject}
+                  />
                   <Text style={styles.variableChipText}>{v.label}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
             <View style={styles.inputRow}>
-              <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+              <View style={[styles.inputContainer, { borderColor: colors.border, overflow: 'hidden' }]}>
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={22}
+                  style={StyleSheet.absoluteFillObject}
+                />
                 <TextInput
                   ref={inputRef}
                   style={[styles.textInput, { color: colors.text }]}
@@ -252,12 +270,14 @@ export default function TextBlastScreen() {
               <TouchableOpacity
                 style={[
                   styles.sendButton,
+                  { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' },
                   !message.trim() && styles.sendButtonDisabled,
                 ]}
                 onPress={handleSend}
                 disabled={!message.trim()}
                 activeOpacity={0.7}
               >
+                {isDark && <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />}
                 <Ionicons name="send" size={18} color="#fff" />
               </TouchableOpacity>
             </View>
@@ -303,11 +323,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   messageBubble: {
-    backgroundColor: '#007AFF',
     borderRadius: 20,
     borderBottomRightRadius: 4,
     paddingHorizontal: 16,
     paddingVertical: 10,
+    overflow: 'hidden',
   },
   messageText: {
     fontSize: 15,
@@ -358,7 +378,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
     marginBottom: 8,
   },
   audiencePillText: {
@@ -375,7 +394,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
   },
@@ -395,7 +413,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
     borderColor: 'rgba(255,255,255,0.1)',
     maxHeight: 120,
   },
@@ -416,9 +433,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   sendButtonDisabled: {
     opacity: 0.4,

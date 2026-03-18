@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -12,7 +14,7 @@ import type { EventFormData } from '@/lib/schemas/events';
 export function DateTimeStep() {
   const { colors, isDark } = useAppTheme();
   const { control, getValues, setValue } = useFormContext<EventFormData>();
-  const accentColor = isDark ? '#FFFFFF' : '#3897F0';
+  const accentColor = '#FFFFFF';
 
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
@@ -49,18 +51,21 @@ export function DateTimeStep() {
           const dateValue = value instanceof Date ? value : value ? new Date(value) : new Date();
           return (
             <>
-              <TouchableOpacity
-                style={[
-                  styles.dateButton,
-                  { backgroundColor: colors.input, borderColor: colors.inputBorder },
-                ]}
-                onPress={() => setShowStartPicker(true)}
-              >
-                <Ionicons name="calendar-outline" size={20} color={accentColor} />
-                <Text style={[styles.dateButtonText, { color: colors.text }]}>
-                  {formatDate(dateValue)} at {formatTime(dateValue)}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                <TouchableOpacity
+                  style={[
+                    styles.dateButton,
+                    { borderColor: colors.inputBorder },
+                  ]}
+                  onPress={() => setShowStartPicker(true)}
+                >
+                  <Ionicons name="calendar-outline" size={20} color={accentColor} />
+                  <Text style={[styles.dateButtonText, { color: colors.text }]}>
+                    {formatDate(dateValue)} at {formatTime(dateValue)}
+                  </Text>
+                </TouchableOpacity>
+              </View>
 
               {showStartPicker && (
                 <DateTimePicker
@@ -105,21 +110,23 @@ export function DateTimeStep() {
 
             return (
               <>
-                <TouchableOpacity
-                  style={[
-                    styles.dateButton,
-                    {
-                      backgroundColor: colors.input,
-                      borderColor: error ? '#ef4444' : colors.inputBorder,
-                    },
-                  ]}
-                  onPress={() => setShowEndPicker(true)}
-                >
-                  <Ionicons name="calendar-outline" size={20} color={accentColor} />
-                  <Text style={[styles.dateButtonText, { color: colors.text }]}>
-                    {formatDate(dateValue)} at {formatTime(dateValue)}
-                  </Text>
-                </TouchableOpacity>
+                <View style={styles.inputWrapper}>
+                  {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                  <TouchableOpacity
+                    style={[
+                      styles.dateButton,
+                      {
+                        borderColor: error ? '#ef4444' : colors.inputBorder,
+                      },
+                    ]}
+                    onPress={() => setShowEndPicker(true)}
+                  >
+                    <Ionicons name="calendar-outline" size={20} color={accentColor} />
+                    <Text style={[styles.dateButtonText, { color: colors.text }]}>
+                      {formatDate(dateValue)} at {formatTime(dateValue)}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
                 {error && <Text style={styles.errorText}>{error.message}</Text>}
 
                 {showEndPicker && (
@@ -156,6 +163,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     marginBottom: 12,
+  },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   dateButton: {
     flexDirection: 'row',

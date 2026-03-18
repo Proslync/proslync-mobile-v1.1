@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -23,6 +24,7 @@ import {
   useUpdateModerationRule,
   useDeleteModerationRule,
 } from '@/hooks/use-admin';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import type { ModerationRule, ContentType } from '@/lib/api/admin';
 
@@ -50,13 +52,15 @@ function ContentTypeTag({
       style={[
         styles.tag,
         {
-          backgroundColor: selected ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
+          overflow: 'hidden' as const,
+          backgroundColor: undefined,
           borderColor: selected ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
         },
       ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
+      <GlassView {...(selected ? liquidGlass.fill : liquidGlass.fillFaint)} borderRadius={8} style={StyleSheet.absoluteFillObject} />
       <Text style={[styles.tagText, { color: selected ? colors.text : colors.textTertiary }]}>
         {label}
       </Text>
@@ -245,11 +249,13 @@ export default function ModerationRulesScreen() {
 
       {/* Stats */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
-        <View style={[styles.statPill, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
+        <View style={[styles.statPill, { overflow: 'hidden' as const }]}>
+          <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Text style={[styles.statNum, { color: colors.text }]}>{rules?.length ?? 0}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total</Text>
         </View>
-        <View style={[styles.statPill, { backgroundColor: 'rgba(255,255,255,0.06)' }]}>
+        <View style={[styles.statPill, { overflow: 'hidden' as const }]}>
+          <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Text style={[styles.statNum, { color: '#4CAF50' }]}>{activeCount}</Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Active</Text>
         </View>
@@ -259,8 +265,9 @@ export default function ModerationRulesScreen() {
       {showForm && (
         <Animated.View
           entering={FadeInDown.duration(300)}
-          style={[styles.formCard, { backgroundColor: colors.cardElevated }]}
+          style={[styles.formCard, { overflow: 'hidden' }]}
         >
+          <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <View style={styles.formHeader}>
             <Text style={[styles.formTitle, { color: colors.text }]}>
               {editingRule ? 'Edit Rule' : 'New Rule'}
@@ -316,12 +323,13 @@ export default function ModerationRulesScreen() {
           <TouchableOpacity
             style={[
               styles.saveBtn,
-              { backgroundColor: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.25)' },
+              { overflow: 'hidden' as const, borderColor: 'rgba(255,255,255,0.25)' },
             ]}
             onPress={handleSave}
             activeOpacity={0.7}
             disabled={createRule.isPending || updateRule.isPending}
           >
+            <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
             {(createRule.isPending || updateRule.isPending) ? (
               <ActivityIndicator size="small" color={colors.text} />
             ) : (
@@ -392,6 +400,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     gap: 12,
+    overflow: 'hidden',
   },
   formHeader: {
     flexDirection: 'row',

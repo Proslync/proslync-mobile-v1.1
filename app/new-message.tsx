@@ -18,6 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { followsApi } from '@/lib/api/follows';
 import { chatApi } from '@/lib/api/chat';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme, type ThemeColors } from '@/hooks/use-app-theme';
 import type { UserFollowItem } from '@/lib/types/follows.types';
@@ -390,10 +392,11 @@ export default function NewMessageScreen() {
             contentContainerStyle={styles.chipsContent}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[styles.chip, { backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1 }]}
+                style={[styles.chip, { overflow: 'hidden' as const, borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1 }]}
                 onPress={() => toggleContact(item)}
                 activeOpacity={0.7}
               >
+                <GlassView {...liquidGlass.fill} borderRadius={20} style={StyleSheet.absoluteFillObject} />
                 <Image
                   source={item.image ? { uri: item.image } : DefaultAvatarImage}
                   style={styles.chipAvatar}
@@ -405,13 +408,16 @@ export default function NewMessageScreen() {
           />
           {selectedContacts.length >= 2 && (
             <View style={styles.groupNameRow}>
-              <TextInput
-                style={[styles.groupNameInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.input }]}
-                value={groupName}
-                onChangeText={setGroupName}
-                placeholder="Group name (optional)"
-                placeholderTextColor={colors.placeholder}
-              />
+              <View style={[styles.groupNameInput, { borderColor: colors.border, backgroundColor: isDark ? undefined : colors.input, overflow: 'hidden' as const }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={{ flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', paddingHorizontal: 12, paddingVertical: 8, color: colors.text }}
+                  value={groupName}
+                  onChangeText={setGroupName}
+                  placeholder="Group name (optional)"
+                  placeholderTextColor={colors.placeholder}
+                />
+              </View>
             </View>
           )}
         </View>
@@ -469,7 +475,8 @@ export default function NewMessageScreen() {
                   onPress={() => setIsGroupMode(true)}
                   activeOpacity={0.7}
                 >
-                  <View style={[styles.newGroupIcon, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                  <View style={[styles.newGroupIcon, { overflow: 'hidden' as const }]}>
+                    <GlassView {...liquidGlass.fill} borderRadius={25} style={StyleSheet.absoluteFillObject} />
                     <Ionicons name="people" size={22} color={colors.text} />
                   </View>
                   <Text style={[styles.contactName, { color: colors.text }]}>Create a Group</Text>
@@ -508,7 +515,6 @@ export default function NewMessageScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -566,7 +572,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
   },
   sectionTitle: {
     fontSize: 13,

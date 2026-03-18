@@ -7,6 +7,8 @@ import { useRefreshControl } from '@/hooks/use-refresh-control';
 import type { EventAttendee, EventUserStatus } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import {
   ActivityIndicator,
   FlatList,
@@ -143,7 +145,8 @@ export default function AttendeesScreen() {
             {avatarUri ? (
               <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
-              <View style={[styles.avatarFallback, { backgroundColor: colors.backgroundSecondary }]}>
+              <View style={[styles.avatarFallback, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
                 <Text style={[styles.avatarInitials, { color: colors.text }]}>
                   {getInitials(item)}
                 </Text>
@@ -198,7 +201,12 @@ export default function AttendeesScreen() {
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Attendees</Text>
           {!isLoading && (
-            <View style={[styles.countBadge, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+            <View style={[styles.countBadge, { overflow: 'hidden' }]}>
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={10}
+                style={StyleSheet.absoluteFillObject}
+              />
               <Text style={[styles.countText, { color: colors.text }]}>{total}</Text>
             </View>
           )}
@@ -211,9 +219,10 @@ export default function AttendeesScreen() {
         <View
           style={[
             styles.searchBar,
-            { backgroundColor: colors.input, borderColor: colors.inputBorder },
+            { overflow: 'hidden', borderColor: colors.inputBorder },
           ]}
         >
+          <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="search" size={18} color={colors.placeholder} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
@@ -250,15 +259,18 @@ export default function AttendeesScreen() {
                   style={[
                     styles.filterChip,
                     {
-                      backgroundColor: isActive
-                        ? 'rgba(255,255,255,0.2)'
-                        : 'rgba(255,255,255,0.07)',
+                      overflow: 'hidden',
                       borderColor: isActive
                         ? 'rgba(255,255,255,0.3)'
                         : 'rgba(255,255,255,0.1)',
                     },
                   ]}
                 >
+                  <GlassView
+                    {...(isActive ? liquidGlass.fillMedium : liquidGlass.fillFaint)}
+                    borderRadius={16}
+                    style={StyleSheet.absoluteFillObject}
+                  />
                   <Text
                     style={[
                       styles.filterLabel,

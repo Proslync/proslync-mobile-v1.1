@@ -126,7 +126,7 @@ export default function PostDetailScreen() {
   const router = useStableRouter();
   const { id: activityId } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
 
   const [commentText, setCommentText] = React.useState('');
   const [showComments, setShowComments] = React.useState(false);
@@ -455,7 +455,8 @@ export default function PostDetailScreen() {
       >
         {/* Reply indicator */}
         {replyingToUsername && (
-          <View style={[styles.replyIndicator, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={[styles.replyIndicator, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
             <Text style={[styles.replyIndicatorText, { color: colors.textTertiary }]}>
               Replying to <Text style={styles.replyIndicatorUsername}>@{replyingToUsername}</Text>
             </Text>
@@ -469,28 +470,28 @@ export default function PostDetailScreen() {
             source={user?.avatar?.url ? { uri: user.avatar.url } : DefaultAvatarImage}
             style={styles.commentInputAvatar}
           />
-          <TextInput
-            style={[
-              styles.commentInput,
-              { backgroundColor: colors.backgroundSecondary, color: colors.text },
-            ]}
-            placeholder={
-              replyingToUsername
-                ? `Reply to @${replyingToUsername}...`
+          <View style={[styles.commentInput, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
+            <TextInput
+              style={{ flex: 1, height: '100%', paddingHorizontal: 16, fontSize: 14, fontFamily: 'Lato_400Regular', color: colors.text }}
+              placeholder={
+                replyingToUsername
+                  ? `Reply to @${replyingToUsername}...`
                 : 'Add a comment...'
             }
             placeholderTextColor={colors.textTertiary}
             value={commentText}
             onChangeText={setCommentText}
-            multiline={false}
-            editable={!isAddingComment}
-          />
+              multiline={false}
+              editable={!isAddingComment}
+            />
+          </View>
           <TouchableOpacity
             style={[
               styles.sendButton,
               {
                 backgroundColor: commentText.trim() && !isAddingComment
-                  ? '#3897F0'
+                  ? '#fff'
                   : colors.backgroundSecondary,
               },
             ]}
@@ -500,7 +501,7 @@ export default function PostDetailScreen() {
             <Ionicons
               name="send"
               size={18}
-              color={commentText.trim() && !isAddingComment ? '#fff' : colors.textTertiary}
+              color={commentText.trim() && !isAddingComment ? '#000' : colors.textTertiary}
             />
           </TouchableOpacity>
         </View>

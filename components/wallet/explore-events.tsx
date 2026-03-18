@@ -10,6 +10,8 @@ import {
   Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { WalletEventCard } from '../../lib/types/wallet.types';
 
 interface ExploreEventsProps {
@@ -59,6 +61,7 @@ export function ExploreEvents({ events, onViewEvent }: ExploreEventsProps) {
               onPress={() => onViewEvent(event.id)}
               activeOpacity={0.8}
             >
+              <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />
               <Image source={{ uri: event.flyerUrl }} style={styles.eventFlyer} />
               <View style={styles.eventContent}>
                 <View style={styles.eventTags}>
@@ -148,7 +151,6 @@ const styles = StyleSheet.create({
   },
   eventCard: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -189,7 +191,7 @@ const styles = StyleSheet.create({
   perkTagText: {
     fontSize: 10,
     fontFamily: 'Lato_700Bold',
-    color: '#8b5cf6',
+    color: '#fff',
   },
   eventTitle: {
     fontSize: 14,
@@ -227,6 +229,6 @@ const styles = StyleSheet.create({
   viewButtonText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#0095f6',
+    color: '#fff',
   },
 });

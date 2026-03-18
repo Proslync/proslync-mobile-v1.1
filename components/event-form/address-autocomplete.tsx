@@ -10,8 +10,10 @@ import {
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
 import { useAddressSuggestions } from '@/hooks';
 import type { AddressSuggestion } from '@/hooks';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { LocationDetails } from '@/lib/api/events';
 
@@ -32,7 +34,7 @@ export function AddressAutocomplete({
   placeholder = 'Search for an address or venue...',
   error,
 }: AddressAutocompleteProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [retrieving, setRetrieving] = useState(false);
   const { suggestions, isLoading, retrieve } = useAddressSuggestions(
@@ -65,13 +67,13 @@ export function AddressAutocomplete({
       {label && (
         <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
       )}
-      <View>
+      <View style={styles.inputWrapper}>
+        {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
         <TextInput
           ref={inputRef}
           style={[
             styles.input,
             {
-              backgroundColor: colors.input,
               borderColor: error ? '#ef4444' : colors.inputBorder,
               color: colors.text,
             },
@@ -97,11 +99,11 @@ export function AddressAutocomplete({
           style={[
             styles.suggestionsContainer,
             {
-              backgroundColor: colors.input,
               borderColor: colors.inputBorder,
             },
           ]}
         >
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           {suggestions.map((suggestion) => (
             <TouchableOpacity
               key={suggestion.id}
@@ -139,6 +141,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     marginBottom: 12,
+  },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   input: {
     borderRadius: 12,

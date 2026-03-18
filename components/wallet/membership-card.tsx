@@ -6,6 +6,7 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { GlassView } from 'expo-glass-effect';
 import { WalletUser } from '../../lib/types/wallet.types';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 32;
@@ -26,6 +27,7 @@ function formatMemberSince(dateStr: string): string {
 }
 
 export function MembershipCard({ user, onPress, enlarged = false }: MembershipCardProps) {
+  const { isDark } = useAppTheme();
   const cardWidth = enlarged ? SCREEN_WIDTH - 64 : CARD_WIDTH;
   const hasAvatar = !!user.avatarUrl;
 
@@ -50,10 +52,13 @@ export function MembershipCard({ user, onPress, enlarged = false }: MembershipCa
             />
 
             <View style={styles.avatarContainer}>
-              <Image
-                source={hasAvatar ? { uri: user.avatarUrl } : DefaultAvatarImage}
-                style={styles.avatar}
-              />
+              <View style={[styles.avatar, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)', overflow: 'hidden' }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={28} style={StyleSheet.absoluteFillObject} />}
+                <Image
+                  source={hasAvatar ? { uri: user.avatarUrl } : DefaultAvatarImage}
+                  style={styles.avatarImage}
+                />
+              </View>
               <View style={styles.avatarRing} />
             </View>
 
@@ -203,7 +208,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  avatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   avatarRing: {
     position: 'absolute',

@@ -2,6 +2,8 @@
 
 import { useFormContext, Controller, FieldValues, Path } from 'react-hook-form';
 import { TextInput, Text, StyleSheet, TextInputProps, View } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 type FormTextInputProps<T extends FieldValues> = {
@@ -20,7 +22,7 @@ export function FormTextInput<T extends FieldValues>({
   ...props
 }: FormTextInputProps<T>) {
   const { control } = useFormContext<T>();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
 
   return (
     <Controller
@@ -29,26 +31,28 @@ export function FormTextInput<T extends FieldValues>({
       render={({ field: { onChange, value, onBlur }, fieldState: { error } }) => (
         <View>
           {label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
-          <TextInput
-            style={[
-              styles.input,
-              multiline && styles.textArea,
-              {
-                backgroundColor: colors.input,
-                borderColor: error ? '#ef4444' : colors.inputBorder,
-                color: colors.text,
-              },
-              style,
-            ]}
-            value={value ?? ''}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            placeholderTextColor={colors.placeholder}
-            multiline={multiline}
-            numberOfLines={numberOfLines}
-            textAlignVertical={multiline ? 'top' : 'center'}
-            {...props}
-          />
+          <View style={styles.inputWrapper}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+            <TextInput
+              style={[
+                styles.input,
+                multiline && styles.textArea,
+                {
+                  borderColor: error ? '#ef4444' : colors.inputBorder,
+                  color: colors.text,
+                },
+                style,
+              ]}
+              value={value ?? ''}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              placeholderTextColor={colors.placeholder}
+              multiline={multiline}
+              numberOfLines={numberOfLines}
+              textAlignVertical={multiline ? 'top' : 'center'}
+              {...props}
+            />
+          </View>
           {error && <Text style={styles.errorText}>{error.message}</Text>}
         </View>
       )}
@@ -61,6 +65,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     marginBottom: 12,
+  },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   input: {
     borderRadius: 12,

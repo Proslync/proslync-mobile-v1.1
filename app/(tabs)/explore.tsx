@@ -82,7 +82,7 @@ function ConversationAvatar({
       {hasUnread && (
         <View style={styles.unreadRing}>
           <LinearGradient
-            colors={["#0095f6", "#0095f6"]}
+            colors={["rgba(255,255,255,0.8)", "rgba(255,255,255,0.8)"]}
             style={[
               styles.unreadRingGradient,
               {
@@ -174,7 +174,7 @@ function ConversationRow({
         <Ionicons
           name="checkmark-done"
           size={14}
-          color="#0095f6"
+          color="#fff"
           style={{ marginRight: 4 }}
         />
       );
@@ -394,7 +394,7 @@ function PersonSearchRow({
         )}
       </View>
       {isSelected && (
-        <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+        <Ionicons name="checkmark-circle" size={24} color="#fff" />
       )}
     </TouchableOpacity>
   );
@@ -1073,7 +1073,7 @@ export default function MessagesScreen() {
                       )}
                     </View>
                     {isSelected && (
-                      <Ionicons name="checkmark-circle" size={24} color="#0095f6" />
+                      <Ionicons name="checkmark-circle" size={24} color="#fff" />
                     )}
                   </TouchableOpacity>
                 );
@@ -1399,7 +1399,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#0095f6",
+    backgroundColor: "#fff",
     marginLeft: 8,
   },
   emptyListContainer: {
@@ -1555,7 +1555,7 @@ const styles = StyleSheet.create({
   composeCancelText: {
     fontSize: 17,
     fontFamily: "Lato_400Regular",
-    color: "#0095f6",
+    color: "#fff",
     width: 60,
   },
   composeTitle: {

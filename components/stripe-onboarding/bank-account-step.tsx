@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
 import { CardField, createToken } from '@stripe/stripe-react-native';
 import { useMemo, useState } from 'react';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassButton } from '@/components/glass/glass-button';
 import type { StripeOnboardingFormData } from '@/lib/validation/stripe-onboarding';
@@ -74,7 +76,6 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
 
   const inputStyle = [styles.input, {
     color: colors.text,
-    backgroundColor: colors.input,
     borderColor: colors.borderStrong,
   }];
   const errorBorder = { borderColor: '#ef4444' };
@@ -99,12 +100,13 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
         <TouchableOpacity
           style={[
             styles.toggleButton,
-            { borderColor: colors.border, backgroundColor: colors.input },
-            isBank && { borderColor: colors.borderStrong, backgroundColor: colors.cardElevated },
+            { borderColor: colors.border, backgroundColor: isDark ? undefined : colors.input, overflow: 'hidden' as const },
+            isBank && { borderColor: colors.borderStrong },
           ]}
           activeOpacity={0.7}
           onPress={() => switchMethod('bank')}
         >
+          {isDark && <GlassView {...(isBank ? liquidGlass.fill : liquidGlass.fillFaint)} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           <Ionicons name="business-outline" size={18} color={colors.text} style={styles.toggleIcon} />
           <Text style={[styles.toggleText, { color: colors.textTertiary }, isBank && { color: colors.text, fontFamily: 'Lato_700Bold' }]}>
             Bank Account
@@ -113,12 +115,13 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
         <TouchableOpacity
           style={[
             styles.toggleButton,
-            { borderColor: colors.border, backgroundColor: colors.input },
-            !isBank && { borderColor: colors.borderStrong, backgroundColor: colors.cardElevated },
+            { borderColor: colors.border, backgroundColor: isDark ? undefined : colors.input, overflow: 'hidden' as const },
+            !isBank && { borderColor: colors.borderStrong },
           ]}
           activeOpacity={0.7}
           onPress={() => switchMethod('card')}
         >
+          {isDark && <GlassView {...(!isBank ? liquidGlass.fill : liquidGlass.fillFaint)} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           <Ionicons name="card-outline" size={18} color={colors.text} style={styles.toggleIcon} />
           <Text style={[styles.toggleText, { color: colors.textTertiary }, !isBank && { color: colors.text, fontFamily: 'Lato_700Bold' }]}>
             Debit Card
@@ -130,65 +133,74 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
         <>
           <Animated.View entering={FadeInDown.duration(300).delay(100)}>
             <Text style={[styles.label, { color: colors.text }]}>Account Holder Name</Text>
-            <Controller
-              name="accountHolderName"
-              control={control}
-              render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[inputStyle, errors.accountHolderName && errorBorder]}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  placeholder="John Doe"
-                  placeholderTextColor={colors.placeholder}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                />
-              )}
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+              <Controller
+                name="accountHolderName"
+                control={control}
+                render={({ field: { onChange, value, onBlur } }) => (
+                  <TextInput
+                    style={[inputStyle, errors.accountHolderName && errorBorder]}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="John Doe"
+                    placeholderTextColor={colors.placeholder}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                  />
+                )}
+              />
+            </View>
             {errors.accountHolderName && <Text style={styles.error}>{errors.accountHolderName.message}</Text>}
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(300).delay(150)}>
             <Text style={[styles.label, { color: colors.text }]}>Routing Number</Text>
-            <Controller
-              name="routingNumber"
-              control={control}
-              render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[inputStyle, errors.routingNumber && errorBorder]}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  placeholder="110000000"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="number-pad"
-                  maxLength={9}
-                />
-              )}
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+              <Controller
+                name="routingNumber"
+                control={control}
+                render={({ field: { onChange, value, onBlur } }) => (
+                  <TextInput
+                    style={[inputStyle, errors.routingNumber && errorBorder]}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="110000000"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={9}
+                  />
+                )}
+              />
+            </View>
             {errors.routingNumber && <Text style={styles.error}>{errors.routingNumber.message}</Text>}
           </Animated.View>
 
           <Animated.View entering={FadeInDown.duration(300).delay(200)}>
             <Text style={[styles.label, { color: colors.text }]}>Account Number</Text>
-            <Controller
-              name="accountNumber"
-              control={control}
-              render={({ field: { onChange, value, onBlur } }) => (
-                <TextInput
-                  style={[inputStyle, errors.accountNumber && errorBorder]}
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  placeholder="000123456789"
-                  placeholderTextColor={colors.placeholder}
-                  keyboardType="number-pad"
-                  maxLength={17}
-                  secureTextEntry
-                />
-              )}
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+              <Controller
+                name="accountNumber"
+                control={control}
+                render={({ field: { onChange, value, onBlur } }) => (
+                  <TextInput
+                    style={[inputStyle, errors.accountNumber && errorBorder]}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="000123456789"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={17}
+                    secureTextEntry
+                  />
+                )}
+              />
+            </View>
             {errors.accountNumber && <Text style={styles.error}>{errors.accountNumber.message}</Text>}
           </Animated.View>
         </>
@@ -201,12 +213,13 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
           <View style={[
             styles.cardFieldWrapper,
             {
-              backgroundColor: isDark ? '#1c1c1e' : '#F5F5F5',
+              backgroundColor: isDark ? undefined : '#F5F5F5',
               borderColor: cardError
                 ? '#ef4444'
                 : isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.15)',
             },
           ]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
             <CardField
               postalCodeEnabled={false}
               placeholders={{ number: '4242 4242 4242 4242' }}
@@ -305,6 +318,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
     marginBottom: 6,
+  },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 12,
   },
   input: {
     borderRadius: 12,

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
@@ -111,7 +113,6 @@ export default function VenueMenuScreen() {
     styles.input,
     {
       color: colors.text,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
       borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
     },
   ];
@@ -178,7 +179,8 @@ export default function VenueMenuScreen() {
                 {/* Category header */}
                 <View style={styles.categoryHeader}>
                   <View style={styles.categoryHeaderLeft}>
-                    <View style={[styles.categoryIconBg, { backgroundColor: colors.backgroundSecondary }]}>
+                    <View style={[styles.categoryIconBg, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+                      {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
                       <Ionicons name="restaurant-outline" size={16} color={colors.text} />
                     </View>
                     <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
@@ -277,19 +279,22 @@ export default function VenueMenuScreen() {
             </Text>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Category Name</Text>
-            <TextInput
-              style={inputStyle}
-              value={categoryName}
-              onChangeText={setCategoryName}
-              placeholder="e.g. Cocktails"
-              placeholderTextColor={inputPlaceholderColor}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={() => {
-                Keyboard.dismiss();
-                handleCreateCategory();
-              }}
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+              <TextInput
+                style={inputStyle}
+                value={categoryName}
+                onChangeText={setCategoryName}
+                placeholder="e.g. Cocktails"
+                placeholderTextColor={inputPlaceholderColor}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  Keyboard.dismiss();
+                  handleCreateCategory();
+                }}
+              />
+            </View>
 
             <View style={styles.sheetActions}>
               <GlassButton
@@ -316,43 +321,52 @@ export default function VenueMenuScreen() {
             </Text>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Item Name</Text>
-            <TextInput
-              style={inputStyle}
-              value={itemName}
-              onChangeText={setItemName}
-              placeholder="e.g. Old Fashioned"
-              placeholderTextColor={inputPlaceholderColor}
-              autoFocus
-              returnKeyType="next"
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+              <TextInput
+                style={inputStyle}
+                value={itemName}
+                onChangeText={setItemName}
+                placeholder="e.g. Old Fashioned"
+                placeholderTextColor={inputPlaceholderColor}
+                autoFocus
+                returnKeyType="next"
+              />
+            </View>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Price ($)</Text>
-            <TextInput
-              style={inputStyle}
-              value={itemPrice}
-              onChangeText={setItemPrice}
-              placeholder="e.g. 14.00"
-              placeholderTextColor={inputPlaceholderColor}
-              keyboardType="decimal-pad"
-              returnKeyType="next"
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+              <TextInput
+                style={inputStyle}
+                value={itemPrice}
+                onChangeText={setItemPrice}
+                placeholder="e.g. 14.00"
+                placeholderTextColor={inputPlaceholderColor}
+                keyboardType="decimal-pad"
+                returnKeyType="next"
+              />
+            </View>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
               Description{' '}
               <Text style={[styles.fieldLabelOptional, { color: colors.textTertiary }]}>(optional)</Text>
             </Text>
-            <TextInput
-              style={inputStyle}
-              value={itemDescription}
-              onChangeText={setItemDescription}
-              placeholder="e.g. Bourbon, sugar, bitters, orange peel"
-              placeholderTextColor={inputPlaceholderColor}
-              returnKeyType="done"
-              onSubmitEditing={() => {
-                Keyboard.dismiss();
-                handleCreateItem();
-              }}
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+              <TextInput
+                style={inputStyle}
+                value={itemDescription}
+                onChangeText={setItemDescription}
+                placeholder="e.g. Bourbon, sugar, bitters, orange peel"
+                placeholderTextColor={inputPlaceholderColor}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  Keyboard.dismiss();
+                  handleCreateItem();
+                }}
+              />
+            </View>
 
             <View style={styles.sheetActions}>
               <GlassButton
@@ -583,6 +597,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     fontSize: 12,
   },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 10,
+    marginBottom: 16,
+  },
   input: {
     height: 44,
     borderRadius: 10,
@@ -590,7 +609,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    marginBottom: 16,
   },
   sheetActions: {
     marginTop: 4,

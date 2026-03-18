@@ -10,6 +10,8 @@ import { eventsApi } from '@/lib/api/events';
 import type { OwnerContact, OwnerContactsResponse } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import {
   ActivityIndicator,
   FlatList,
@@ -110,7 +112,8 @@ export default function ContactsListScreen() {
             {item.avatar ? (
               <Image source={{ uri: item.avatar }} style={styles.avatar} />
             ) : (
-              <View style={[styles.avatarFallback, { backgroundColor: colors.backgroundSecondary }]}>
+              <View style={[styles.avatarFallback, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
                 <Text style={[styles.avatarInitials, { color: colors.text }]}>
                   {getInitials(item)}
                 </Text>
@@ -144,7 +147,7 @@ export default function ContactsListScreen() {
         </Animated.View>
       );
     },
-    [colors],
+    [colors, isDark],
   );
 
   return (
@@ -175,9 +178,10 @@ export default function ContactsListScreen() {
         <View
           style={[
             styles.searchBar,
-            { backgroundColor: colors.input, borderColor: colors.inputBorder },
+            { overflow: 'hidden', borderColor: colors.inputBorder },
           ]}
         >
+          <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="search" size={18} color={colors.placeholder} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}

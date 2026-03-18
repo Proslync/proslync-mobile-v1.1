@@ -10,6 +10,8 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +21,7 @@ import { useEventAttendees } from '@/hooks/use-event-attendees';
 import type { EventAttendee } from '@/lib/types/events.types';
 
 export default function GuestListPage() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ eventId?: string; eventTitle?: string }>();
@@ -56,7 +58,11 @@ export default function GuestListPage() {
         {item.avatarUrl ? (
           <Image source={{ uri: item.avatarUrl }} style={styles.guestAvatarImage} />
         ) : (
-          <View style={styles.guestAvatar}>
+          <View style={[
+            styles.guestAvatar,
+            { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' },
+          ]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
             <Text style={styles.guestAvatarText}>{displayName[0].toUpperCase()}</Text>
           </View>
         )}
@@ -71,6 +77,7 @@ export default function GuestListPage() {
           activeOpacity={0.7}
           onPress={() => navigateToProfile(item)}
         >
+          <GlassView {...liquidGlass.fill} borderRadius={8} style={StyleSheet.absoluteFill} />
           <Text style={styles.viewProfileText}>View Profile</Text>
         </TouchableOpacity>
       </TouchableOpacity>
@@ -84,10 +91,14 @@ export default function GuestListPage() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[
+            styles.backButton,
+            { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' },
+          ]}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
+          {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={18} style={StyleSheet.absoluteFillObject} />}
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -155,9 +166,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   headerCenter: {
     flex: 1,
@@ -204,11 +215,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
   },
   guestAvatarImage: {
     width: 44,
@@ -237,12 +248,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   viewProfileButton: {
-    backgroundColor: '#3897F0',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(56, 151, 240, 0.3)',
+    borderColor: 'rgba(255,255,255,0.25)',
+    overflow: 'hidden',
   },
   viewProfileText: {
     fontSize: 13,

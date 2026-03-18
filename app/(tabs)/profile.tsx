@@ -173,8 +173,7 @@ function AccountSwitcherModal({
             <View style={styles.modalContent}>
               <GlassView
                 {...liquidGlass.surface}
-                borderTopLeftRadius={20}
-                borderTopRightRadius={20}
+                borderRadius={20}
                 style={styles.modalGlassBg}
               />
 

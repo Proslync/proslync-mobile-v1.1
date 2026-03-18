@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { DRESS_CODE_LABELS } from '@/lib/constants/dress-codes';
 import type { EventDetailExtended } from '@/lib/types/event-detail.types';
@@ -11,7 +13,6 @@ interface QuickDetailsGridProps {
 
 export function QuickDetailsGrid({ event }: QuickDetailsGridProps) {
   const { colors, isDark } = useAppTheme();
-  const glassColor = isDark ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
 
   const dressCodeLabel = event.dressCode
     ? DRESS_CODE_LABELS[event.dressCode] || event.dressCode
@@ -27,7 +28,8 @@ export function QuickDetailsGrid({ event }: QuickDetailsGridProps) {
   return (
     <View style={styles.grid}>
       {items.map((item) => (
-        <View key={item.label} style={[styles.cell, { backgroundColor: `${glassColor}0.06)`, borderColor: `${glassColor}0.1)` }]}>
+        <View key={item.label} style={[styles.cell, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+          <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Ionicons name={item.icon} size={18} color={colors.textSecondary} />
           <Text style={[styles.cellLabel, { color: colors.textTertiary }]}>{item.label}</Text>
           <Text style={[styles.cellValue, { color: colors.text }]}>{item.value}</Text>

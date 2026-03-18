@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { authApi } from "@/lib/api/auth";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useStableRouter } from "@/hooks/use-stable-router";
@@ -61,7 +63,6 @@ export function MiniUserCard({ userId }: MiniUserCardProps) {
     });
   };
 
-  const cardBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
   const cardBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
 
   if (isLoading) {
@@ -69,9 +70,10 @@ export function MiniUserCard({ userId }: MiniUserCardProps) {
       <View
         style={[
           styles.card,
-          { backgroundColor: cardBg, borderColor: cardBorder },
+          { borderColor: cardBorder },
         ]}
       >
+        <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
         <ActivityIndicator
           size="small"
           color={colors.textSecondary}
@@ -91,11 +93,12 @@ export function MiniUserCard({ userId }: MiniUserCardProps) {
     <TouchableOpacity
       style={[
         styles.card,
-        { backgroundColor: cardBg, borderColor: cardBorder },
+        { borderColor: cardBorder },
       ]}
       onPress={handlePress}
       activeOpacity={0.8}
     >
+      <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
       {/* Avatar */}
       {avatarUrl ? (
         <Image source={{ uri: avatarUrl }} style={styles.avatar} />
@@ -128,7 +131,7 @@ export function MiniUserCard({ userId }: MiniUserCardProps) {
             <MaterialCommunityIcons
               name="check-decagram"
               size={14}
-              color="#0095F6"
+              color="#fff"
             />
           )}
         </View>
@@ -155,6 +158,11 @@ export function MiniUserCard({ userId }: MiniUserCardProps) {
         disabled={!!alreadyFollowing || followLoading}
         activeOpacity={0.8}
       >
+        <GlassView
+          {...(alreadyFollowing ? liquidGlass.fillFaint : liquidGlass.fill)}
+          borderRadius={8}
+          style={StyleSheet.absoluteFill}
+        />
         {followLoading ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
@@ -215,12 +223,12 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_400Regular",
   },
   followButton: {
-    backgroundColor: "#0095F6",
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 12,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   followButtonDone: {
     backgroundColor: "rgba(255,255,255,0.08)",

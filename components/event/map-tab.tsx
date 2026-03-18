@@ -1,6 +1,8 @@
 import * as React from 'react';
 import { View, Text, StyleSheet, Share, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassButton } from '@/components/glass';
 import { VenueMap, openDirections, openRideShare } from './venue-map';
@@ -15,8 +17,6 @@ interface MapTabProps {
 
 export function MapTab({ event, coordinates, address, venueName }: MapTabProps) {
   const { colors, isDark } = useAppTheme();
-  const glassColor = isDark ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
-
   const handleShare = async () => {
     try {
       await Share.share({
@@ -51,7 +51,8 @@ export function MapTab({ event, coordinates, address, venueName }: MapTabProps) 
       )}
 
       {!coordinates && (
-        <View style={[styles.noMap, { backgroundColor: `${glassColor}0.06)`, borderColor: `${glassColor}0.1)` }]}>
+        <View style={[styles.noMap, { overflow: 'hidden', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+          <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="location-outline" size={32} color={colors.textTertiary} />
           <Text style={[styles.noMapText, { color: colors.textTertiary }]}>Location not available</Text>
         </View>
@@ -89,7 +90,7 @@ export function MapTab({ event, coordinates, address, venueName }: MapTabProps) 
 
       {/* Transport info */}
       {address && (
-        <View style={[styles.transportSection, { borderColor: `${glassColor}0.08)` }]}>
+        <View style={[styles.transportSection, { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}>
           <Text style={[styles.transportTitle, { color: colors.text }]}>Getting There</Text>
           <View style={styles.transportRow}>
             <Ionicons name="car-outline" size={16} color={colors.textSecondary} />

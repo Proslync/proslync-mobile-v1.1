@@ -205,7 +205,7 @@ export function PhoneStep({ onSuccess, onBack }: PhoneStepProps) {
         >
           <GlassButton
             label={isLoading ? '' : 'Continue'}
-            variant={isPhoneComplete ? 'accent' : 'glass'}
+            variant="glass"
             size="lg"
             onPress={handleSendOTP}
             disabled={!isPhoneComplete || isLoading}
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   errorText: {
-    color: '#ff6b6b',
+    color: '#ef4444',
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     textAlign: 'center',

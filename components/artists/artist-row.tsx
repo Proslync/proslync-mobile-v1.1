@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { EventArtist } from '@/lib/types/artists.types';
@@ -43,7 +45,7 @@ function buildSpotifyEmbedHtml(url?: string | null): string | undefined {
 }
 
 export function ArtistRow({ artist, canManage, onOptions }: ArtistRowProps) {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const name = getDisplayName(artist);
   const timeRange = formatTimeRange(artist.startTime, artist.endTime);
   const embedHtml = buildSpotifyEmbedHtml(artist.playlistUrl);
@@ -62,7 +64,8 @@ export function ArtistRow({ artist, canManage, onOptions }: ArtistRowProps) {
         {artist.avatarUrl ? (
           <Image source={{ uri: artist.avatarUrl }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatarFallback, { backgroundColor: colors.backgroundSecondary }]}>
+          <View style={[styles.avatarFallback, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />}
             <Text style={[styles.avatarInitial, { color: colors.text }]}>{getInitial(artist)}</Text>
           </View>
         )}

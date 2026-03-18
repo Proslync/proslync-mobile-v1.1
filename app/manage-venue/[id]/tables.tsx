@@ -31,6 +31,8 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 
 export default function VenueTablesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -157,7 +159,7 @@ export default function VenueTablesScreen() {
     styles.input,
     {
       color: colors.text,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      backgroundColor: isDark ? 'transparent' : 'rgba(0,0,0,0.06)',
       borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
     },
   ];
@@ -224,7 +226,8 @@ export default function VenueTablesScreen() {
                 {/* Section header row */}
                 <View style={styles.sectionHeader}>
                   <View style={styles.sectionHeaderLeft}>
-                    <View style={[styles.sectionIconBg, { backgroundColor: colors.backgroundSecondary }]}>
+                    <View style={[styles.sectionIconBg, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+                      {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
                       <Ionicons name="grid-outline" size={16} color={colors.text} />
                     </View>
                     <View style={styles.sectionTitleBlock}>
@@ -265,7 +268,8 @@ export default function VenueTablesScreen() {
                         {table.imageUrl ? (
                           <Image source={{ uri: table.imageUrl }} style={styles.tableThumb} />
                         ) : (
-                          <View style={[styles.tableIconBg, { backgroundColor: colors.backgroundSecondary }]}>
+                          <View style={[styles.tableIconBg, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+                            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={6} style={StyleSheet.absoluteFillObject} />}
                             <Ionicons name="square-outline" size={14} color={colors.textSecondary} />
                           </View>
                         )}
@@ -338,32 +342,50 @@ export default function VenueTablesScreen() {
             </Text>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Section Name</Text>
-            <TextInput
-              style={inputStyle}
-              value={sectionName}
-              onChangeText={setSectionName}
-              placeholder="e.g. VIP Section"
-              placeholderTextColor={inputPlaceholderColor}
-              autoFocus
-              returnKeyType="next"
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
+              <TextInput
+                style={inputStyle}
+                value={sectionName}
+                onChangeText={setSectionName}
+                placeholder="e.g. VIP Section"
+                placeholderTextColor={inputPlaceholderColor}
+                autoFocus
+                returnKeyType="next"
+              />
+            </View>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
               Description{' '}
               <Text style={[styles.fieldLabelOptional, { color: colors.textTertiary }]}>(optional)</Text>
             </Text>
-            <TextInput
-              style={inputStyle}
-              value={sectionDesc}
-              onChangeText={setSectionDesc}
-              placeholder="e.g. Premium elevated seating area"
-              placeholderTextColor={inputPlaceholderColor}
-              returnKeyType="done"
-              onSubmitEditing={() => {
-                Keyboard.dismiss();
-                handleCreateSection();
-              }}
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
+              <TextInput
+                style={inputStyle}
+                value={sectionDesc}
+                onChangeText={setSectionDesc}
+                placeholder="e.g. Premium elevated seating area"
+                placeholderTextColor={inputPlaceholderColor}
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  Keyboard.dismiss();
+                  handleCreateSection();
+                }}
+              />
+            </View>
 
             <View style={styles.sheetActions}>
               <GlassButton
@@ -410,10 +432,18 @@ export default function VenueTablesScreen() {
                 <View style={[
                   styles.imagePlaceholder,
                   {
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                    overflow: 'hidden',
+                    backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)',
                     borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
                   },
                 ]}>
+                  {isDark && (
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={10}
+                      style={StyleSheet.absoluteFillObject}
+                    />
+                  )}
                   <Ionicons name="camera-outline" size={28} color={colors.textTertiary} />
                   <Text style={[styles.imagePlaceholderText, { color: colors.textTertiary }]}>
                     Add a photo
@@ -423,40 +453,67 @@ export default function VenueTablesScreen() {
             </TouchableOpacity>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary, marginTop: 16 }]}>Table Label</Text>
-            <TextInput
-              style={inputStyle}
-              value={tableLabel}
-              onChangeText={setTableLabel}
-              placeholder="e.g. T1, Table 1, Booth A"
-              placeholderTextColor={inputPlaceholderColor}
-              returnKeyType="next"
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
+              <TextInput
+                style={inputStyle}
+                value={tableLabel}
+                onChangeText={setTableLabel}
+                placeholder="e.g. T1, Table 1, Booth A"
+                placeholderTextColor={inputPlaceholderColor}
+                returnKeyType="next"
+              />
+            </View>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Seat Count</Text>
-            <TextInput
-              style={inputStyle}
-              value={tableSeatCount}
-              onChangeText={setTableSeatCount}
-              placeholder="e.g. 8"
-              placeholderTextColor={inputPlaceholderColor}
-              keyboardType="numeric"
-              returnKeyType="next"
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
+              <TextInput
+                style={inputStyle}
+                value={tableSeatCount}
+                onChangeText={setTableSeatCount}
+                placeholder="e.g. 8"
+                placeholderTextColor={inputPlaceholderColor}
+                keyboardType="numeric"
+                returnKeyType="next"
+              />
+            </View>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Price</Text>
-            <TextInput
-              style={inputStyle}
-              value={tablePrice}
-              onChangeText={setTablePrice}
-              placeholder="e.g. 500"
-              placeholderTextColor={inputPlaceholderColor}
-              keyboardType="decimal-pad"
-              returnKeyType="done"
-              onSubmitEditing={() => {
-                Keyboard.dismiss();
-                handleCreateTable();
-              }}
-            />
+            <View style={styles.inputWrapper}>
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
+              <TextInput
+                style={inputStyle}
+                value={tablePrice}
+                onChangeText={setTablePrice}
+                placeholder="e.g. 500"
+                placeholderTextColor={inputPlaceholderColor}
+                keyboardType="decimal-pad"
+                returnKeyType="done"
+                onSubmitEditing={() => {
+                  Keyboard.dismiss();
+                  handleCreateTable();
+                }}
+              />
+            </View>
 
             <View style={styles.sheetActions}>
               <GlassButton
@@ -706,6 +763,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
     fontSize: 12,
   },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 10,
+    marginBottom: 16,
+  },
   input: {
     height: 44,
     borderRadius: 10,
@@ -713,7 +775,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    marginBottom: 16,
   },
   sheetActions: {
     marginTop: 4,

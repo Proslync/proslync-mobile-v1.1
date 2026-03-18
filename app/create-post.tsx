@@ -19,6 +19,8 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useToast } from '@/components/shared/toast';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { postsApi } from '@/lib/api/posts';
 
@@ -110,9 +112,9 @@ export default function CreatePostScreen() {
   };
 
   // Accent colors
-  const primaryAccent = '#8b5cf6';
+  const primaryAccent = '#fff';
   const secondaryAccent = '#22c55e';
-  const shareButtonColor = '#0095f6';
+  const shareButtonColor = '#fff';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -158,10 +160,12 @@ export default function CreatePostScreen() {
             style={styles.mediaPickerContainer}
           >
             <TouchableOpacity
-              style={[styles.mediaPickerOption, { backgroundColor: colors.cardElevated }]}
+              style={[styles.mediaPickerOption, { overflow: 'hidden' }]}
               onPress={() => pickMedia('library')}
             >
-              <View style={[styles.mediaPickerIconContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+              <GlassView {...liquidGlass.surface} borderRadius={16} style={StyleSheet.absoluteFillObject} />
+              <View style={[styles.mediaPickerIconContainer, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)', overflow: 'hidden' }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={32} style={StyleSheet.absoluteFillObject} />}
                 <Ionicons name="images" size={32} color={primaryAccent} />
               </View>
               <Text style={[styles.mediaPickerTitle, { color: colors.text }]}>Choose from Library</Text>
@@ -169,10 +173,12 @@ export default function CreatePostScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.mediaPickerOption, { backgroundColor: colors.cardElevated }]}
+              style={[styles.mediaPickerOption, { overflow: 'hidden' }]}
               onPress={() => pickMedia('camera')}
             >
-              <View style={[styles.mediaPickerIconContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+              <GlassView {...liquidGlass.surface} borderRadius={16} style={StyleSheet.absoluteFillObject} />
+              <View style={[styles.mediaPickerIconContainer, { backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)', overflow: 'hidden' }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={32} style={StyleSheet.absoluteFillObject} />}
                 <Ionicons name="camera" size={32} color={secondaryAccent} />
               </View>
               <Text style={[styles.mediaPickerTitle, { color: colors.text }]}>Take Photo</Text>
@@ -204,7 +210,8 @@ export default function CreatePostScreen() {
             </View>
 
             {/* Caption Input */}
-            <View style={[styles.captionContainer, { backgroundColor: colors.input }]}>
+            <View style={[styles.captionContainer, { backgroundColor: isDark ? undefined : colors.input, overflow: 'hidden' as const }]}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
               <TextInput
                 style={[styles.captionInput, { color: colors.text }]}
                 placeholder="Write a caption..."
@@ -217,7 +224,8 @@ export default function CreatePostScreen() {
             </View>
 
             {/* Options */}
-            <View style={[styles.optionsList, { backgroundColor: colors.cardElevated }]}>
+            <View style={[styles.optionsList, { overflow: 'hidden' }]}>
+              <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
               <TouchableOpacity style={[styles.optionItem, { borderBottomColor: colors.border }]}>
                 <Ionicons name="location-outline" size={22} color={colors.text} />
                 <Text style={[styles.optionText, { color: colors.text }]}>Add location</Text>
@@ -278,7 +286,7 @@ const styles = StyleSheet.create({
   postButtonText: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#000',
   },
   scrollView: {
     flex: 1,

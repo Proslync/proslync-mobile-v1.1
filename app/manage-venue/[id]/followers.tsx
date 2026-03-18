@@ -7,6 +7,8 @@ import { useRefreshControl } from '@/hooks/use-refresh-control';
 import type { VenueFollower } from '@/lib/types/venues.types';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import {
   ActivityIndicator,
   FlatList,
@@ -98,7 +100,8 @@ export default function FollowersScreen() {
             {item.avatarUrl ? (
               <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
             ) : (
-              <View style={[styles.avatarFallback, { backgroundColor: colors.backgroundSecondary }]}>
+              <View style={[styles.avatarFallback, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
                 <Text style={[styles.avatarInitials, { color: colors.text }]}>
                   {getInitials(item)}
                 </Text>
@@ -139,7 +142,12 @@ export default function FollowersScreen() {
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Followers</Text>
           {!isLoading && (
-            <View style={[styles.countBadge, { backgroundColor: 'rgba(255,255,255,0.15)' }]}>
+            <View style={[styles.countBadge, { overflow: 'hidden' }]}>
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={10}
+                style={StyleSheet.absoluteFillObject}
+              />
               <Text style={[styles.countText, { color: colors.text }]}>{total}</Text>
             </View>
           )}
@@ -152,9 +160,10 @@ export default function FollowersScreen() {
         <View
           style={[
             styles.searchBar,
-            { backgroundColor: colors.input, borderColor: colors.inputBorder },
+            { overflow: 'hidden', borderColor: colors.inputBorder },
           ]}
         >
+          <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="search" size={18} color={colors.placeholder} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}

@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
   },
   errorText: {
-    color: '#ff6b6b',
+    color: '#ef4444',
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     textAlign: 'center',

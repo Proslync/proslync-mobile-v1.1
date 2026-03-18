@@ -51,11 +51,12 @@ function OfferCard({ offer, onClaim, colors, isDark }: OfferCardProps) {
       {/* Bottom: Claim button */}
       <View style={styles.offerFooter}>
         <TouchableOpacity
-          style={[styles.claimButton, offer.isClaimed && styles.claimButtonClaimed]}
+          style={[styles.claimButton, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(255,255,255,0.15)' }, offer.isClaimed && styles.claimButtonClaimed]}
           onPress={() => !offer.isClaimed && onClaim()}
           disabled={offer.isClaimed}
           activeOpacity={0.7}
         >
+          {isDark && <GlassView {...liquidGlass.fill} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
           {offer.isClaimed && (
             <Ionicons name="checkmark" size={14} color="#34c759" />
           )}
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   claimButton: {
-    backgroundColor: '#3897F0',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,

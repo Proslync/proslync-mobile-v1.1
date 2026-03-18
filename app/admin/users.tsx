@@ -16,6 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   useAdminUsers,
@@ -55,7 +57,8 @@ function UserRow({
       {user.avatarUrl ? (
         <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
       ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.cardElevated }]}>
+        <View style={[styles.avatar, styles.avatarPlaceholder, { overflow: 'hidden' as const }]}>
+          <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="person" size={18} color={colors.textTertiary} />
         </View>
       )}
@@ -164,7 +167,8 @@ export default function AdminUsersScreen() {
 
       {/* Search */}
       <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+        <View style={[styles.searchBar, { overflow: 'hidden' }]}>
+          <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
           <Ionicons name="search" size={18} color={colors.textTertiary} />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
@@ -192,9 +196,14 @@ export default function AdminUsersScreen() {
         {STATUS_FILTERS.map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterChip, statusFilter === f.key && styles.filterChipActive]}
+            style={[styles.filterChip, { overflow: 'hidden' }]}
             onPress={() => { setStatusFilter(f.key); setPage(1); }}
           >
+            <GlassView
+              {...(statusFilter === f.key ? liquidGlass.fillMedium : liquidGlass.fillFaint)}
+              borderRadius={16}
+              style={StyleSheet.absoluteFillObject}
+            />
             <Text style={[styles.filterText, statusFilter === f.key && styles.filterTextActive]}>
               {f.label}
             </Text>
@@ -292,9 +301,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  filterChipActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
   filterText: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.6)' },
   filterTextActive: { color: '#fff', fontFamily: 'Lato_700Bold' },
   row: {

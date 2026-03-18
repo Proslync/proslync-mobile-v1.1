@@ -13,15 +13,15 @@
 // Base colors (not theme-dependent)
 export const BaseColors = {
   // Brand colors
-  primary: '#3897F0',       // Instagram blue
-  primaryLight: '#5AA9F2',
-  primaryDark: '#2B7AC9',
+  primary: '#FFFFFF',       // White — liquid glass palette
+  primaryLight: '#FFFFFF',
+  primaryDark: '#E0E0E0',
 
   // Status colors
   success: '#34C759',
   warning: '#FF9500',
   error: '#FF3B30',
-  info: '#5856D6',
+  info: '#FFFFFF',
 
   // Social
   like: '#FF3B30',
@@ -70,11 +70,11 @@ export const LightColors = {
   // Input
   input: '#F5F5F5',
   inputBorder: 'rgba(0, 0, 0, 0.1)',
-  inputFocusBorder: '#3897F0',
+  inputFocusBorder: 'rgba(0, 0, 0, 0.3)',
   placeholder: 'rgba(0, 0, 0, 0.4)',
 
   // Buttons
-  buttonPrimary: '#3897F0',
+  buttonPrimary: '#1A1A1A',
   buttonPrimaryText: '#FFFFFF',
   buttonSecondary: '#E0E0E0',
   buttonSecondaryText: 'rgba(0, 0, 0, 0.7)',
@@ -85,7 +85,7 @@ export const LightColors = {
   tabBar: '#FFFFFF',
   tabBarBorder: 'rgba(0, 0, 0, 0.08)',
   tabIconDefault: '#687076',
-  tabIconSelected: '#3897F0',
+  tabIconSelected: '#1A1A1A',
 
   // Sidebar / Bottom sheet
   sidebar: '#FFFFFF',
@@ -137,11 +137,11 @@ export const DarkColors = {
   // Input
   input: 'rgba(255, 255, 255, 0.06)',
   inputBorder: 'rgba(255, 255, 255, 0.1)',
-  inputFocusBorder: '#3897F0',
+  inputFocusBorder: 'rgba(255, 255, 255, 0.3)',
   placeholder: 'rgba(255, 255, 255, 0.4)',
 
   // Buttons
-  buttonPrimary: '#3897F0',
+  buttonPrimary: '#FFFFFF',
   buttonPrimaryText: '#FFFFFF',
   buttonSecondary: 'rgba(255, 255, 255, 0.1)',
   buttonSecondaryText: '#FFFFFF',

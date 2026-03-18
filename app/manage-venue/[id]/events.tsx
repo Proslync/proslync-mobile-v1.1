@@ -1,4 +1,6 @@
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useMyEvents } from '@/hooks/use-events-query';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -101,10 +103,11 @@ export default function VenueEventsScreen() {
             return (
               <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
                 <TouchableOpacity
-                  style={[styles.eventCard, { backgroundColor: colors.cardElevated }]}
+                  style={styles.eventCard}
                   activeOpacity={0.7}
                   onPress={() => router.push(`/manage-event/${item.id}`)}
                 >
+                  <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
                   {item.imageUrl ? (
                     <Image
                       source={{ uri: item.imageUrl }}

@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassSurface } from '@/components/glass';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import type { LineupArtist } from '@/lib/types/event-detail.types';
 
 interface ArtistCardProps {
@@ -35,8 +37,9 @@ export function ArtistCard({ artist, isPlaying, onTogglePlay }: ArtistCardProps)
           <TouchableOpacity
             onPress={onTogglePlay}
             activeOpacity={0.7}
-            style={[styles.playButton, { backgroundColor: `${glassColor}0.12)`, borderColor: `${glassColor}0.2)` }]}
+            style={[styles.playButton, { overflow: 'hidden' }]}
           >
+            <GlassView {...liquidGlass.fill} borderRadius={19} style={StyleSheet.absoluteFillObject} />
             <Ionicons
               name={isPlaying ? 'pause' : 'play'}
               size={18}
@@ -99,7 +102,6 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },

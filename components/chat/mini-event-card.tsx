@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { eventsApi } from '@/lib/api/events';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -52,7 +54,8 @@ export function MiniEventCard({ eventId }: MiniEventCardProps) {
 
   if (isLoading) {
     return (
-      <View style={[styles.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }]}>
+      <View style={[styles.card, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }]}>
+        <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
         <ActivityIndicator size="small" color={colors.textSecondary} style={{ padding: 30 }} />
       </View>
     );
@@ -69,13 +72,13 @@ export function MiniEventCard({ eventId }: MiniEventCardProps) {
       style={[
         styles.card,
         {
-          backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
           borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
         },
       ]}
       onPress={handlePress}
       activeOpacity={0.8}
     >
+      <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
       {/* Flyer Image — full aspect, no cropping */}
       {flyerUrl ? (
         <View style={styles.flyerContainer}>
@@ -120,6 +123,11 @@ export function MiniEventCard({ eventId }: MiniEventCardProps) {
           disabled={alreadyRsvpd || rsvpLoading}
           activeOpacity={0.8}
         >
+          <GlassView
+            {...(alreadyRsvpd ? liquidGlass.fillFaint : liquidGlass.fill)}
+            borderRadius={8}
+            style={StyleSheet.absoluteFill}
+          />
           {rsvpLoading ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
@@ -181,12 +189,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rsvpButton: {
-    backgroundColor: '#0095F6',
     borderRadius: 8,
     paddingVertical: 8,
     alignSelf: 'stretch',
     marginTop: 8,
     alignItems: 'center',
+    overflow: 'hidden',
   },
   rsvpButtonDone: {
     backgroundColor: 'rgba(255,255,255,0.08)',
