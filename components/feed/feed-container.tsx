@@ -12,7 +12,8 @@ import { FeedItem } from './feed-item';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 import { analyticsApi } from '@/lib/api/analytics';
-import type { FeedItem as FeedItemType } from '@/lib/types/feed.types';
+import { useFeedEngagement } from '@/hooks/use-feed-engagement';
+import type { FeedItem as FeedItemType, FeedTab } from '@/lib/types/feed.types';
 
 interface FeedContainerProps {
   items: FeedItemType[];
@@ -33,6 +34,7 @@ interface FeedContainerProps {
   onEndReached?: () => void;
   isFetchingNextPage?: boolean;
   listKey?: string;
+  feedType?: FeedTab;
 }
 
 export function FeedContainer({
@@ -54,6 +56,7 @@ export function FeedContainer({
   onEndReached,
   isFetchingNextPage,
   listKey,
+  feedType = 'foryou',
 }: FeedContainerProps) {
   const flatListRef = React.useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
@@ -63,6 +66,7 @@ export function FeedContainer({
 
   const [activeIndex, setActiveIndex] = React.useState(0);
   const [containerHeight, setContainerHeight] = React.useState(0);
+  const engagement = useFeedEngagement(feedType);
 
   const handleLayout = React.useCallback((e: { nativeEvent: { layout: { height: number } } }) => {
     setContainerHeight(e.nativeEvent.layout.height);
@@ -95,8 +99,11 @@ export function FeedContainer({
             onIndexChange(index);
           }
 
-          // Track event view when post becomes visible in feed
+          // Track engagement: dwell time for previous item, start tracking new item
           const visibleItem = items[index];
+          engagement.onActiveItemChange(visibleItem ?? null, index);
+
+          // Track event view when post becomes visible in feed
           if (visibleItem?.eventId && !viewedEventIds.current.has(visibleItem.eventId)) {
             viewedEventIds.current.add(visibleItem.eventId);
             analyticsApi.trackEventView(visibleItem.eventId, 'mobile').catch(() => {});
@@ -104,7 +111,7 @@ export function FeedContainer({
         }
       }
     },
-    [currentIndex, onIndexChange, items]
+    [currentIndex, onIndexChange, items, engagement]
   );
 
   // ── Render item ─────────────────────────────────────────────────────

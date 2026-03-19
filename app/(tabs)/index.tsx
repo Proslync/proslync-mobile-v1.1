@@ -16,6 +16,7 @@ import { eventsApi } from '@/lib/api/events';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet';
+import { track, trackScreen } from '@/lib/analytics';
 import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
 
 export default function FeedScreen() {
@@ -35,6 +36,11 @@ export default function FeedScreen() {
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
   const likedItems = new Set<string>();
 
+  // Track screen view on mount
+  useEffect(() => {
+    trackScreen('feed', 'index');
+  }, []);
+
   // Fetch feed from API based on active tab
   const {
     items: feedItems,
@@ -51,6 +57,7 @@ export default function FeedScreen() {
   // Reset scroll position when switching feed tabs
   useEffect(() => {
     setCurrentIndex(0);
+    track('feed_action', { feed_type: activeTab === 'foryou' ? 'for_you' : 'following', action: 'load' });
   }, [activeTab]);
 
   // Filter out blocked users
@@ -58,7 +65,10 @@ export default function FeedScreen() {
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
-    onRefresh: refetch,
+    onRefresh: () => {
+      track('feed_action', { feed_type: activeTab === 'foryou' ? 'for_you' : 'following', action: 'refresh' });
+      return refetch();
+    },
   });
 
   const handleBlock = useCallback((userId: string) => {
@@ -87,6 +97,7 @@ export default function FeedScreen() {
     try {
       const response = await eventsApi.registerForEvent(item.eventId);
       if (response.success) {
+        track('event_action', { event_id: item.eventId, action: 'rsvp' });
         showSuccess(response.message || 'You have successfully RSVP\'d!');
         queryClient.invalidateQueries({ queryKey: ['my-tickets'] });
         queryClient.invalidateQueries({ queryKey: ['eventAttendees', item.eventId] });
@@ -185,6 +196,7 @@ export default function FeedScreen() {
 
   const handleUserClick = (item: FeedItem) => {
     if (item.userId) {
+      track('profile_view', { viewed_user_id: Number(item.userId), source: 'feed' });
       router.push({
         pathname: '/user/[username]',
         params: {
@@ -205,6 +217,7 @@ export default function FeedScreen() {
   const handleEventPress = useCallback((item: FeedItem) => {
     // Check if user has RSVP'd locally (optimistic update)
     const localRsvp = rsvpItems.get(item.id) || false;
+    track('event_view', { event_id: item.eventId ?? Number(item.id), source: 'feed' });
 
     router.push({
       pathname: '/event/[id]',
@@ -283,6 +296,7 @@ export default function FeedScreen() {
         onEndReached={loadMore}
         isFetchingNextPage={isFetchingNextPage}
         listKey={activeTab}
+        feedType={activeTab}
       />
       <FeedHeader
         activeTab={activeTab}

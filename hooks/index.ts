@@ -1,5 +1,6 @@
 // Feed hooks
 export { useFeed, FEED_QUERY_KEY, useRefreshFeeds } from './use-feed';
+export { useFeedEngagement } from './use-feed-engagement';
 export { useUserFeed, USER_FEED_QUERY_KEY } from './use-user-feed';
 export { useEventForm, useEditEventForm } from './use-event-form';
 export type { EventFormStep } from './use-event-form';
@@ -25,10 +26,14 @@ export type { AddressSuggestion } from './use-address-suggestions';
 // Post creation hooks
 export {
   useUploadPostMedia,
+  useUploadMultipleMedia,
   useCreatePost,
   useCreateEventPost,
 } from './use-create-post';
 export type { ActivityMedia } from './use-create-post';
+
+// Spotify search hook
+export { useSpotifySearch, SPOTIFY_SEARCH_KEY } from './use-spotify-search';
 
 // Post detail hooks
 export { usePost, POST_QUERY_KEY } from './use-post';
@@ -74,6 +79,13 @@ export {
 // Analytics hooks
 export { useTrackEventView, clearTrackingCache } from './use-track-event-view';
 export { useRevenueTimeSeries, REVENUE_TIMESERIES_KEY } from './use-revenue-analytics';
+
+// Feature flags (Statsig)
+export { useFeatureGate, useExperiment, useDynamicConfig } from './use-feature-gate';
+
+// Analytics
+export { useScreenTracking } from './use-screen-tracking';
+export { useTrackAction } from './use-track-action';
 
 // Pricing CRUD hooks
 export {
