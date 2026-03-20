@@ -62,6 +62,11 @@ export function useEventPermissions(eventId: number | undefined) {
   const canViewBilling = () => hasPermission('billing', 'view');
   const canEditBilling = () => hasPermission('billing', 'edit');
 
+  // Bar
+  const canViewBar = () => hasPermission('bar', 'view');
+  const canServeBar = () => hasPermission('bar', 'serve');
+  const canManageBar = () => hasPermission('bar', 'manage');
+
   return {
     isLoading,
     error,
@@ -87,5 +92,8 @@ export function useEventPermissions(eventId: number | undefined) {
     canRemoveTeam,
     canViewBilling,
     canEditBilling,
+    canViewBar,
+    canServeBar,
+    canManageBar,
   };
 }

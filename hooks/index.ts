@@ -230,6 +230,23 @@ export {
   VENUE_MENU_KEY,
 } from './use-venue-menu';
 
+// Bar Tab hooks
+export {
+  useBarTabs,
+  useBarTab,
+  useBarSummary,
+  useMyBarTab,
+  useOpenTab,
+  useAddItems,
+  useVoidItem,
+  useCloseTab,
+  useMarkTabPaid,
+  BAR_TABS_KEY,
+  BAR_TAB_KEY,
+  BAR_SUMMARY_KEY,
+  MY_BAR_TAB_KEY,
+} from './use-bar-tabs';
+
 // Admin hooks
 export {
   useAdminStats,

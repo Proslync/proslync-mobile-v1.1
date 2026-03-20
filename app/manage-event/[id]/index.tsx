@@ -43,6 +43,16 @@ const SECTIONS = [
     },
   },
   {
+    key: "bar",
+    label: "Bar",
+    subtitle: "Tabs and drink orders",
+    icon: "beer-outline" as const,
+    permission: {
+      resource: "bar" as keyof RolePermissions,
+      action: "view",
+    },
+  },
+  {
     key: "scanner",
     label: "Scanner",
     subtitle: "Scan IDs and membership cards",

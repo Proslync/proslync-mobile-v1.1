@@ -29,6 +29,8 @@ export default function ManageEventLayout() {
       <Stack.Screen name="payments" />
       <Stack.Screen name="revenue" />
       <Stack.Screen name="team" />
+      <Stack.Screen name="bar" />
+      <Stack.Screen name="bar-tab-detail" />
     </Stack>
   );
 }

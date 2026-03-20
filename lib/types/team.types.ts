@@ -30,6 +30,11 @@ export interface RolePermissions {
     view: boolean;
     edit: boolean;
   };
+  bar: {
+    view: boolean;
+    serve: boolean;
+    manage: boolean;
+  };
 }
 
 export interface RoleResponseDto {

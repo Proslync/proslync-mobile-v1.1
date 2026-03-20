@@ -31,6 +31,7 @@ import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
 import { TerminalProvider } from "@/lib/providers/terminal-provider";
 import { ChatSocketProvider } from "@/lib/providers/chat-socket-provider";
+import { BarSocketProvider } from "@/lib/providers/bar-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
 
 SplashScreen.preventAutoHideAsync();
@@ -109,6 +110,8 @@ function RootLayoutNav() {
         />
         <Stack.Screen name="user-profile/[userId]" />
         <Stack.Screen name="event/[id]" />
+        <Stack.Screen name="event/bar-menu" />
+        <Stack.Screen name="event/my-tab" />
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="edit-profile" />
         <Stack.Screen name="dashboard" />
@@ -213,6 +216,7 @@ export default function RootLayout() {
             <ToastProvider>
               <AuthProvider>
                 <ChatSocketProvider>
+                  <BarSocketProvider>
                   <CallProvider>
                     <TerminalProvider>
                       <LiveLocationProvider>
@@ -228,6 +232,7 @@ export default function RootLayout() {
                       </LiveLocationProvider>
                     </TerminalProvider>
                   </CallProvider>
+                  </BarSocketProvider>
                 </ChatSocketProvider>
               </AuthProvider>
             </ToastProvider>
