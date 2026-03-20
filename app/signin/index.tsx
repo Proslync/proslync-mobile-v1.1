@@ -12,12 +12,14 @@ import Animated, {
 import { PhoneStep } from '@/components/auth/phone-step';
 import { OtpStep } from '@/components/auth/otp-step';
 import { ProfileSetupStep } from '@/components/auth/profile-setup-step';
+import { AppleMessagesStep } from '@/components/auth/apple-messages-step';
 import { ContactsStep } from '@/components/auth/contacts-step';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function SignInScreen() {
-  const [step, setStep] = useState<'phone' | 'otp' | 'profile' | 'contacts'>('phone');
+  const [step, setStep] = useState<'phone' | 'otp' | 'profile' | 'apple-messages' | 'contacts'>('phone');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [requiresAppleMessagesLinking, setRequiresAppleMessagesLinking] = useState(false);
   const router = useRouter();
   const params = useLocalSearchParams();
   const redirectUrl = (params.redirect as string) || '/(tabs)';
@@ -41,7 +43,23 @@ export default function SignInScreen() {
     setStep('profile');
   };
 
+  const handleAppleMessagesLinkingNeeded = (requires: boolean) => {
+    setRequiresAppleMessagesLinking(requires);
+  };
+
+  const handleAppleMessagesSetupNeeded = () => {
+    setStep('apple-messages');
+  };
+
   const handleProfileComplete = () => {
+    if (requiresAppleMessagesLinking) {
+      setStep('apple-messages');
+    } else {
+      setStep('contacts');
+    }
+  };
+
+  const handleAppleMessagesComplete = () => {
     setStep('contacts');
   };
 
@@ -98,6 +116,8 @@ export default function SignInScreen() {
             redirectUrl={redirectUrl}
             onBack={handleBack}
             onProfileSetupNeeded={handleProfileSetupNeeded}
+            onAppleMessagesLinkingNeeded={handleAppleMessagesLinkingNeeded}
+            onAppleMessagesSetupNeeded={handleAppleMessagesSetupNeeded}
           />
         </Animated.View>
       )}
@@ -109,6 +129,16 @@ export default function SignInScreen() {
           style={styles.stepContainer}
         >
           <ProfileSetupStep onSuccess={handleProfileComplete} />
+        </Animated.View>
+      )}
+
+      {step === 'apple-messages' && (
+        <Animated.View
+          entering={SlideInRight.duration(350)}
+          exiting={SlideOutLeft.duration(300)}
+          style={styles.stepContainer}
+        >
+          <AppleMessagesStep onSuccess={handleAppleMessagesComplete} />
         </Animated.View>
       )}
 

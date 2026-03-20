@@ -35,9 +35,11 @@ interface OtpStepProps {
   redirectUrl?: string;
   onBack?: () => void;
   onProfileSetupNeeded?: () => void;
+  onAppleMessagesLinkingNeeded?: (requires: boolean) => void;
+  onAppleMessagesSetupNeeded?: () => void;
 }
 
-export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded }: OtpStepProps) {
+export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded, onAppleMessagesLinkingNeeded, onAppleMessagesSetupNeeded }: OtpStepProps) {
   const [otpValue, setOtpValue] = React.useState('');
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [isResending, setIsResending] = React.useState(false);
@@ -96,13 +98,28 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
       const response = await authApi.verifyOtp({
         phoneNumber,
         code,
+        deviceInfo: { platform: Platform.OS, deviceType: 'phone', userAgent: '' },
       });
 
       await login(response.user, response.accessToken, response.refreshToken);
       setIsSuccess(true);
 
+      const needsAppleLinking = !response.user.isAppleMessagesLinked;
+
+      // Capture Apple Messages linking requirement for later steps
+      if (needsAppleLinking && onAppleMessagesLinkingNeeded) {
+        onAppleMessagesLinkingNeeded(true);
+      }
+
       if (!response.user.isProfileComplete && onProfileSetupNeeded) {
+        // Profile setup will transition to apple-messages step after if needed
         onProfileSetupNeeded();
+        return;
+      }
+
+      // Profile is complete — if Apple Messages linking needed, go there directly
+      if (needsAppleLinking && onAppleMessagesSetupNeeded) {
+        onAppleMessagesSetupNeeded();
         return;
       }
     } catch (err) {

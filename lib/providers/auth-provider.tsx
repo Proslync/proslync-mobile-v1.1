@@ -29,6 +29,7 @@ interface AuthContextType {
   switchAccount: (accessToken: string, refreshToken?: string) => Promise<boolean>;
   hasRole: (role: UserRole) => boolean;
   refreshUser: () => Promise<void>;
+  skipAppleMessagesLinking: () => void;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -48,6 +49,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = React.useState<User | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [appleMessagesLinkingSkipped, setAppleMessagesLinkingSkipped] = React.useState(false);
   const router = useRouter();
   const segments = useSegments();
   const queryClient = useQueryClient();
@@ -88,10 +90,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (user && !user.isProfileComplete) {
         return;
       }
+      // Stay in signin for Apple Messages linking if not yet linked (and not skipped)
+      if (user && !user.isAppleMessagesLinked && !appleMessagesLinkingSkipped) {
+        return;
+      }
       // Authenticated with complete profile, redirect to main app
       router.replace('/(tabs)');
     }
-  }, [isAuthenticated, isLoading, segments]);
+  }, [isAuthenticated, isLoading, segments, appleMessagesLinkingSkipped]);
 
   const checkAuth = async () => {
     try {
@@ -148,6 +154,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  const skipAppleMessagesLinking = React.useCallback(() => {
+    setAppleMessagesLinkingSkipped(true);
+  }, []);
+
   const switchAccount = React.useCallback(async (accessToken: string, refreshToken?: string): Promise<boolean> => {
     try {
       // Clear previous user's cached data
@@ -180,8 +190,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       switchAccount,
       hasRole,
       refreshUser,
+      skipAppleMessagesLinking,
     }),
-    [user, isAuthenticated, isLoading, login, logout, switchAccount, hasRole, refreshUser],
+    [user, isAuthenticated, isLoading, login, logout, switchAccount, hasRole, refreshUser, skipAppleMessagesLinking],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
