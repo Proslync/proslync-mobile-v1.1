@@ -17,9 +17,10 @@ import { liquidGlass } from '@/constants/glass/liquid-glass';
 import * as Haptics from 'expo-haptics';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { useVenueMenu, useMyBarTab, useOpenTab, MY_BAR_TAB_KEY } from '@/hooks';
+import { useVenueMenu, useMyBarTab, useOpenTab, BAR_TABS_KEY, BAR_TAB_KEY, MY_BAR_TAB_KEY } from '@/hooks';
 import { barTabsApi } from '@/lib/api/bar-tabs';
 import { useQueryClient } from '@tanstack/react-query';
+import { Toast } from '@/components/shared/toast';
 import type { VenueMenuItem } from '@/lib/types/menu.types';
 
 const TAB_BAR_HEIGHT = 49;
@@ -112,11 +113,13 @@ export default function BarMenuScreen() {
     setIsAddingItems(true);
     try {
       await barTabsApi.addItems(eventId, myTab.id, { items });
+      queryClient.invalidateQueries({ queryKey: [BAR_TAB_KEY, eventId, myTab.id] });
+      queryClient.invalidateQueries({ queryKey: [BAR_TABS_KEY, eventId] });
       queryClient.invalidateQueries({ queryKey: [MY_BAR_TAB_KEY, eventId] });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSelectedItems(new Map());
     } catch {
-      // Error handled silently
+      Toast.show('Failed to add items. Please try again.', 'error');
     } finally {
       setIsAddingItems(false);
     }
@@ -135,17 +138,18 @@ export default function BarMenuScreen() {
         quantity: s.quantity,
       }));
 
-      // Use the API directly since the mutation hook is bound to the previous tab ID
-      const { barTabsApi } = await import('@/lib/api/bar-tabs');
       await barTabsApi.addItems(eventId, tab.id, { items });
+      queryClient.invalidateQueries({ queryKey: [BAR_TAB_KEY, eventId, tab.id] });
+      queryClient.invalidateQueries({ queryKey: [BAR_TABS_KEY, eventId] });
+      queryClient.invalidateQueries({ queryKey: [MY_BAR_TAB_KEY, eventId] });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSelectedItems(new Map());
       setCustomerName('');
     } catch {
-      // Error handled by mutation
+      Toast.show('Failed to open tab. Please try again.', 'error');
     }
-  }, [customerName, eventId, openTab, selectedItems]);
+  }, [customerName, eventId, openTab, selectedItems, queryClient]);
 
   const sections = React.useMemo(() => {
     return (categories ?? [])
