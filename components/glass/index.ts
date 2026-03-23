@@ -4,3 +4,4 @@ export { GlassCard } from './glass-card';
 export { GlassButton } from './glass-button';
 export { GlassBubbleButton } from './glass-bubble-button';
 export { GlassText } from './glass-text';
+export { GlassConfirm } from './glass-confirm';

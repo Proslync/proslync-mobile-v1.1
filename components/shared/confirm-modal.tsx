@@ -7,13 +7,20 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { GlassView } from 'expo-glass-effect';
+import { GlassView, GlassContainer } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 const TAB_BAR_HEIGHT = 49;
-const TAB_BAR_RADIUS = 24;
+const RADIUS = 24;
+const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -45,14 +52,25 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
+  const scale = useSharedValue(0.85);
+  const opacity = useSharedValue(0);
 
   React.useEffect(() => {
     if (visible) {
       bottomSheetRef.current?.expand();
+      scale.value = withSpring(1, SPRING_CONFIG);
+      opacity.value = withTiming(1, { duration: 200 });
     } else {
       bottomSheetRef.current?.close();
+      scale.value = withTiming(0.85, { duration: 150 });
+      opacity.value = withTiming(0, { duration: 150 });
     }
-  }, [visible]);
+  }, [visible, scale, opacity]);
+
+  const animatedContentStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
 
   const handleCancel = React.useCallback(() => {
     bottomSheetRef.current?.close();
@@ -74,7 +92,7 @@ export function ConfirmModal({
       onClose={onClose}
       backgroundStyle={{
         backgroundColor: 'transparent',
-        borderRadius: TAB_BAR_RADIUS,
+        borderRadius: RADIUS,
       }}
       handleIndicatorStyle={{
         width: 36,
@@ -87,77 +105,85 @@ export function ConfirmModal({
       detached
     >
       <BottomSheetView style={styles.sheetContent}>
-        <GlassView
-          {...liquidGlass.surface}
-          borderRadius={TAB_BAR_RADIUS}
-          style={StyleSheet.absoluteFill}
-        />
-
-        <View style={styles.header}>
-          {icon && (
-            <View style={styles.iconCircle}>
-              <GlassView
-                {...liquidGlass.fill}
-                borderRadius={28}
-                style={StyleSheet.absoluteFill}
-              />
-              <Ionicons name={icon} size={28} color={iconColor} />
-            </View>
-          )}
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
-        </View>
-
-        <View style={styles.actions}>
-          {alertOnly ? (
-            <TouchableOpacity
-              style={styles.confirmBtn}
-              onPress={handleCancel}
-              activeOpacity={0.7}
+        <Animated.View style={animatedContentStyle}>
+          <GlassContainer spacing={8} style={styles.glassContainer}>
+            {/* Icon + text header */}
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={RADIUS}
+              style={styles.headerGlass}
             >
-              <GlassView
-                {...liquidGlass.fillMedium}
-                borderRadius={12}
-                style={StyleSheet.absoluteFill}
-              />
-              <Text style={styles.confirmText}>OK</Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={[styles.cancelBtn, isLoading && { opacity: 0.5 }]}
-                onPress={handleCancel}
-                disabled={isLoading}
-                activeOpacity={0.7}
-              >
-                <GlassView
-                  {...liquidGlass.fill}
-                  borderRadius={12}
-                  style={StyleSheet.absoluteFill}
-                />
-                <Text style={styles.cancelText}>{cancelLabel}</Text>
-              </TouchableOpacity>
+              {icon && (
+                <View style={styles.iconCircle}>
+                  <GlassView
+                    {...liquidGlass.fillMedium}
+                    borderRadius={28}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Ionicons name={icon} size={28} color={iconColor} />
+                </View>
+              )}
+              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.message}>{message}</Text>
+            </GlassView>
 
-              <TouchableOpacity
-                style={[styles.confirmBtn, isLoading && { opacity: 0.5 }]}
-                onPress={handleConfirm}
-                disabled={isLoading}
-                activeOpacity={0.7}
-              >
-                <GlassView
-                  {...(destructive ? liquidGlass.danger : liquidGlass.fillMedium)}
-                  borderRadius={12}
-                  style={StyleSheet.absoluteFill}
-                />
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.confirmText}>{confirmLabel}</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+            {/* Action buttons */}
+            <GlassView
+              {...liquidGlass.surface}
+              borderRadius={RADIUS}
+              style={styles.actionsGlass}
+            >
+              {alertOnly ? (
+                <TouchableOpacity
+                  style={styles.btn}
+                  onPress={handleCancel}
+                  activeOpacity={0.7}
+                >
+                  <GlassView
+                    {...liquidGlass.fillMedium}
+                    borderRadius={12}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Text style={styles.confirmText}>OK</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.actionsRow}>
+                  <TouchableOpacity
+                    style={[styles.btn, isLoading && { opacity: 0.5 }]}
+                    onPress={handleCancel}
+                    disabled={isLoading}
+                    activeOpacity={0.7}
+                  >
+                    <GlassView
+                      {...liquidGlass.fill}
+                      borderRadius={12}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <Text style={styles.cancelText}>{cancelLabel}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.btn, isLoading && { opacity: 0.5 }]}
+                    onPress={handleConfirm}
+                    disabled={isLoading}
+                    activeOpacity={0.7}
+                  >
+                    <GlassView
+                      {...(destructive ? liquidGlass.danger : liquidGlass.fillMedium)}
+                      borderRadius={12}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    {isLoading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.confirmText}>{confirmLabel}</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </GlassView>
+          </GlassContainer>
+        </Animated.View>
       </BottomSheetView>
     </BottomSheet>
   );
@@ -165,12 +191,16 @@ export function ConfirmModal({
 
 const styles = StyleSheet.create({
   sheetContent: {
+    paddingHorizontal: 4,
     paddingBottom: 8,
   },
-  header: {
+  glassContainer: {
+    gap: 8,
+  },
+  headerGlass: {
     alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 20,
     paddingBottom: 16,
   },
   iconCircle: {
@@ -195,13 +225,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  actions: {
+  actionsGlass: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  actionsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
     gap: 10,
   },
-  cancelBtn: {
+  btn: {
     flex: 1,
     paddingVertical: 14,
     alignItems: 'center',
@@ -212,13 +244,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
     color: '#fff',
-  },
-  confirmBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderRadius: 12,
-    overflow: 'hidden',
   },
   confirmText: {
     fontSize: 16,

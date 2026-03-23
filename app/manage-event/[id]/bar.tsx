@@ -8,11 +8,18 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { GlassView } from 'expo-glass-effect';
+import { GlassView, GlassContainer } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -39,6 +46,8 @@ export default function BarDashboardScreen() {
   const [newTabSheetVisible, setNewTabSheetVisible] = React.useState(false);
   const [customerName, setCustomerName] = React.useState('');
   const newTabSheetRef = React.useRef<BottomSheet>(null);
+  const sheetScale = useSharedValue(0.85);
+  const sheetOpacity = useSharedValue(0);
 
   const refreshControl = useRefreshControl(refetch);
 
@@ -60,10 +69,19 @@ export default function BarDashboardScreen() {
   React.useEffect(() => {
     if (newTabSheetVisible) {
       newTabSheetRef.current?.expand();
+      sheetScale.value = withSpring(1, { damping: 20, stiffness: 300, mass: 0.8 });
+      sheetOpacity.value = withTiming(1, { duration: 200 });
     } else {
       newTabSheetRef.current?.close();
+      sheetScale.value = withTiming(0.85, { duration: 150 });
+      sheetOpacity.value = withTiming(0, { duration: 150 });
     }
-  }, [newTabSheetVisible]);
+  }, [newTabSheetVisible, sheetScale, sheetOpacity]);
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: sheetScale.value }],
+    opacity: sheetOpacity.value,
+  }));
 
   const handleConfirmOpenTab = React.useCallback(async () => {
     const name = customerName.trim();
@@ -173,40 +191,43 @@ export default function BarDashboardScreen() {
         keyboardBlurBehavior="restore"
       >
         <BottomSheetView style={styles.sheetContent}>
-          <GlassView
-            {...liquidGlass.surface}
-            borderRadius={TAB_BAR_RADIUS}
-            style={StyleSheet.absoluteFill}
-          />
-          <Text style={styles.sheetTitle}>Open New Tab</Text>
-          <View style={[styles.inputContainer, { overflow: 'hidden' }]}>
-            <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFill} />
-            <TextInput
-              style={styles.input}
-              placeholder="Customer name"
-              placeholderTextColor="rgba(255,255,255,0.3)"
-              value={customerName}
-              onChangeText={setCustomerName}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={handleConfirmOpenTab}
-            />
-          </View>
-          <TouchableOpacity
-            style={[
-              styles.confirmButton,
-              { overflow: 'hidden' },
-              (!customerName.trim() || openTab.isPending) && styles.disabled,
-            ]}
-            onPress={handleConfirmOpenTab}
-            disabled={!customerName.trim() || openTab.isPending}
-            activeOpacity={0.7}
-          >
-            <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
-            <Text style={styles.confirmText}>
-              {openTab.isPending ? 'Opening...' : 'Open Tab'}
-            </Text>
-          </TouchableOpacity>
+          <Animated.View style={sheetAnimatedStyle}>
+            <GlassContainer spacing={8} style={{ gap: 8 }}>
+              <GlassView {...liquidGlass.surface} borderRadius={TAB_BAR_RADIUS} style={styles.sheetHeader}>
+                <Text style={styles.sheetTitle}>Open New Tab</Text>
+                <View style={[styles.inputContainer, { overflow: 'hidden' }]}>
+                  <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFill} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Customer name"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    value={customerName}
+                    onChangeText={setCustomerName}
+                    autoFocus
+                    returnKeyType="done"
+                    onSubmitEditing={handleConfirmOpenTab}
+                  />
+                </View>
+              </GlassView>
+              <GlassView {...liquidGlass.surface} borderRadius={TAB_BAR_RADIUS} style={styles.sheetActions}>
+                <TouchableOpacity
+                  style={[
+                    styles.confirmButton,
+                    { overflow: 'hidden' },
+                    (!customerName.trim() || openTab.isPending) && styles.disabled,
+                  ]}
+                  onPress={handleConfirmOpenTab}
+                  disabled={!customerName.trim() || openTab.isPending}
+                  activeOpacity={0.7}
+                >
+                  <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
+                  <Text style={styles.confirmText}>
+                    {openTab.isPending ? 'Opening...' : 'Open Tab'}
+                  </Text>
+                </TouchableOpacity>
+              </GlassView>
+            </GlassContainer>
+          </Animated.View>
         </BottomSheetView>
       </BottomSheet>
     </View>
@@ -282,9 +303,18 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   sheetContent: {
+    paddingHorizontal: 4,
+    paddingBottom: 8,
+  },
+  sheetHeader: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingTop: 8,
+    paddingBottom: 16,
     gap: 12,
+  },
+  sheetActions: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   sheetTitle: {
     fontSize: 17,

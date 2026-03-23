@@ -247,9 +247,9 @@ export default function VenueStaffScreen() {
                       onPress={() => setDeleteTarget(member)}
                     >
                       <Ionicons
-                        name="close-circle"
+                        name="person-remove-outline"
                         size={22}
-                        color="rgba(255,255,255,0.3)"
+                        color="rgba(255,255,255,0.6)"
                       />
                     </TouchableOpacity>
                   )}

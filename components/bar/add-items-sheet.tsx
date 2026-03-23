@@ -1,15 +1,22 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import BottomSheet, { BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
-import { GlassView } from 'expo-glass-effect';
+import { GlassView, GlassContainer } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useVenueMenu } from '@/hooks';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import type { VenueMenuCategory, VenueMenuItem } from '@/lib/types/menu.types';
 
 const TAB_BAR_HEIGHT = 49;
-const TAB_BAR_RADIUS = 24;
+const RADIUS = 24;
+const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
 
 interface SelectedItem {
   menuItemId: number;
@@ -35,15 +42,26 @@ export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItems
   const insets = useSafeAreaInsets();
   const { data: categories } = useVenueMenu(venueId);
   const [selectedItems, setSelectedItems] = React.useState<Map<number, SelectedItem>>(new Map());
+  const scale = useSharedValue(0.85);
+  const opacity = useSharedValue(0);
 
   React.useEffect(() => {
     if (visible) {
       setSelectedItems(new Map());
       bottomSheetRef.current?.expand();
+      scale.value = withSpring(1, SPRING_CONFIG);
+      opacity.value = withTiming(1, { duration: 200 });
     } else {
       bottomSheetRef.current?.close();
+      scale.value = withTiming(0.85, { duration: 150 });
+      opacity.value = withTiming(0, { duration: 150 });
     }
-  }, [visible]);
+  }, [visible, scale, opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
 
   const updateQuantity = React.useCallback((item: VenueMenuItem, delta: number) => {
     setSelectedItems((prev) => {
@@ -97,7 +115,7 @@ export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItems
       snapPoints={['75%']}
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={{ backgroundColor: 'transparent', borderRadius: TAB_BAR_RADIUS }}
+      backgroundStyle={{ backgroundColor: 'transparent', borderRadius: RADIUS }}
       handleIndicatorStyle={{
         width: 36,
         height: 4,
@@ -108,42 +126,44 @@ export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItems
       bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
       detached
     >
-      <BottomSheetView style={styles.header}>
-        <GlassView {...liquidGlass.surface} borderRadius={TAB_BAR_RADIUS} style={StyleSheet.absoluteFill} />
-        <Text style={styles.title}>Add Items</Text>
-      </BottomSheetView>
-
-      <BottomSheetScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
-        {activeCategories.map((category) => (
-          <CategorySection
-            key={category.id}
-            category={category}
-            selectedItems={selectedItems}
-            onUpdateQuantity={updateQuantity}
-          />
-        ))}
-
-        {activeCategories.length === 0 && (
-          <Text style={styles.emptyText}>No menu items available</Text>
-        )}
-      </BottomSheetScrollView>
-
-      {totalItems.count > 0 && (
-        <BottomSheetView style={styles.footer}>
-          <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
-          <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} activeOpacity={0.7}>
-            <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
-            <Text style={styles.confirmText}>
-              Add {totalItems.count} item{totalItems.count !== 1 ? 's' : ''} · {formatCents(totalItems.cents)}
-            </Text>
-          </TouchableOpacity>
+      <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+        <BottomSheetView style={styles.header}>
+          <GlassView {...liquidGlass.surface} borderRadius={RADIUS} style={StyleSheet.absoluteFill} />
+          <Text style={styles.title}>Add Items</Text>
         </BottomSheetView>
-      )}
+
+        <BottomSheetScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
+          {activeCategories.map((category) => (
+            <CategorySection
+              key={category.id}
+              category={category}
+              selectedItems={selectedItems}
+              onUpdateQuantity={updateQuantity}
+            />
+          ))}
+
+          {activeCategories.length === 0 && (
+            <Text style={styles.emptyText}>No menu items available</Text>
+          )}
+        </BottomSheetScrollView>
+
+        {totalItems.count > 0 && (
+          <BottomSheetView style={styles.footer}>
+            <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
+            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} activeOpacity={0.7}>
+              <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
+              <Text style={styles.confirmText}>
+                Add {totalItems.count} item{totalItems.count !== 1 ? 's' : ''} · {formatCents(totalItems.cents)}
+              </Text>
+            </TouchableOpacity>
+          </BottomSheetView>
+        )}
+      </Animated.View>
     </BottomSheet>
   );
 }
@@ -220,8 +240,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     overflow: 'hidden',
-    borderTopLeftRadius: TAB_BAR_RADIUS,
-    borderTopRightRadius: TAB_BAR_RADIUS,
+    borderTopLeftRadius: RADIUS,
+    borderTopRightRadius: RADIUS,
   },
   title: {
     fontSize: 17,
