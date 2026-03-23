@@ -5,29 +5,29 @@ import type { VenueMenuCategory, VenueMenuItem } from '../types/menu.types';
 export const menuApi = {
   /**
    * Get full venue menu (categories with nested items)
-   * Backend endpoint: GET /api/venues/:venueId/menu
+   * Backend endpoint: GET /api/pos/venues/:venueId/menu
    */
   getMenu: async (venueId: number): Promise<VenueMenuCategory[]> => {
-    return apiClient.get<VenueMenuCategory[]>(`/api/venues/${venueId}/menu`);
+    return apiClient.get<VenueMenuCategory[]>(`/api/pos/venues/${venueId}/menu`);
   },
 
   /**
    * Create a new menu category
-   * Backend endpoint: POST /api/venues/:venueId/menu/categories
+   * Backend endpoint: POST /api/pos/venues/:venueId/menu/categories
    */
   createCategory: async (
     venueId: number,
     data: { name: string; description?: string },
   ): Promise<VenueMenuCategory> => {
     return apiClient.post<VenueMenuCategory>(
-      `/api/venues/${venueId}/menu/categories`,
+      `/api/pos/venues/${venueId}/menu/categories`,
       data,
     );
   },
 
   /**
    * Update a menu category
-   * Backend endpoint: PUT /api/venues/:venueId/menu/categories/:categoryId
+   * Backend endpoint: PUT /api/pos/venues/:venueId/menu/categories/:categoryId
    */
   updateCategory: async (
     venueId: number,
@@ -40,27 +40,27 @@ export const menuApi = {
     }>,
   ): Promise<VenueMenuCategory> => {
     return apiClient.put<VenueMenuCategory>(
-      `/api/venues/${venueId}/menu/categories/${categoryId}`,
+      `/api/pos/venues/${venueId}/menu/categories/${categoryId}`,
       data,
     );
   },
 
   /**
    * Delete a menu category
-   * Backend endpoint: DELETE /api/venues/:venueId/menu/categories/:categoryId
+   * Backend endpoint: DELETE /api/pos/venues/:venueId/menu/categories/:categoryId
    */
   deleteCategory: async (
     venueId: number,
     categoryId: number,
   ): Promise<void> => {
     return apiClient.delete<void>(
-      `/api/venues/${venueId}/menu/categories/${categoryId}`,
+      `/api/pos/venues/${venueId}/menu/categories/${categoryId}`,
     );
   },
 
   /**
    * Create a new menu item
-   * Backend endpoint: POST /api/venues/:venueId/menu/items
+   * Backend endpoint: POST /api/pos/venues/:venueId/menu/items
    */
   createItem: async (
     venueId: number,
@@ -73,14 +73,14 @@ export const menuApi = {
     },
   ): Promise<VenueMenuItem> => {
     return apiClient.post<VenueMenuItem>(
-      `/api/venues/${venueId}/menu/items`,
+      `/api/pos/venues/${venueId}/menu/items`,
       data,
     );
   },
 
   /**
    * Update a menu item
-   * Backend endpoint: PUT /api/venues/:venueId/menu/items/:itemId
+   * Backend endpoint: PUT /api/pos/venues/:venueId/menu/items/:itemId
    */
   updateItem: async (
     venueId: number,
@@ -96,18 +96,18 @@ export const menuApi = {
     }>,
   ): Promise<VenueMenuItem> => {
     return apiClient.put<VenueMenuItem>(
-      `/api/venues/${venueId}/menu/items/${itemId}`,
+      `/api/pos/venues/${venueId}/menu/items/${itemId}`,
       data,
     );
   },
 
   /**
    * Delete a menu item
-   * Backend endpoint: DELETE /api/venues/:venueId/menu/items/:itemId
+   * Backend endpoint: DELETE /api/pos/venues/:venueId/menu/items/:itemId
    */
   deleteItem: async (venueId: number, itemId: number): Promise<void> => {
     return apiClient.delete<void>(
-      `/api/venues/${venueId}/menu/items/${itemId}`,
+      `/api/pos/venues/${venueId}/menu/items/${itemId}`,
     );
   },
 };

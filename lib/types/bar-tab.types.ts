@@ -4,39 +4,39 @@ export type BarTabStatus = 'open' | 'closed' | 'paid' | 'voided';
 
 export type BarOrderItemStatus = 'pending' | 'served' | 'voided';
 
+// Matches PosOrderItem entity from backend
 export interface BarOrderItem {
   id: number;
   tabId: number;
-  menuItemId: number;
-  menuItemName: string;
+  menuItemId?: number;
+  name: string;
+  price: number; // cents
   quantity: number;
-  unitPriceCents: number;
-  totalCents: number;
   status: BarOrderItemStatus;
-  notes?: string;
-  addedBy: number;
+  modifiers?: unknown[];
+  voidReason?: string;
+  compReason?: string;
   createdAt: string;
   updatedAt: string;
 }
 
+// Matches PosTab entity from backend
 export interface BarTab {
   id: number;
-  eventId: number;
+  eventId?: number;
   venueId: number;
-  customerId?: number;
-  customerName: string;
+  shiftId: number;
+  staffId: number;
+  guestName?: string;
   status: BarTabStatus;
-  items: BarOrderItem[];
-  subtotalCents: number;
-  taxCents: number;
-  tipCents: number;
-  totalCents: number;
-  paymentIntentId?: string;
-  openedBy: number;
-  closedBy?: number;
+  orderItems: BarOrderItem[];
+  subtotal: number; // cents
+  taxAmount: number; // cents
+  tipAmount: number; // cents
+  total: number; // cents
+  paymentId?: number;
   openedAt: string;
   closedAt?: string;
-  paidAt?: string;
   createdAt: string;
   updatedAt: string;
 }

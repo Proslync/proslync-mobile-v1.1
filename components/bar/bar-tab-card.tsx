@@ -6,10 +6,12 @@ import type { BarTab } from '@/lib/types/bar-tab.types';
 import { TabStatusBadge } from './tab-status-badge';
 
 function formatCents(cents: number): string {
+  if (!Number.isFinite(cents)) return '$0.00';
   return `$${(cents / 100).toFixed(2)}`;
 }
 
 function timeAgo(dateStr: string): string {
+  if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return 'Just now';
@@ -24,7 +26,8 @@ interface BarTabCardProps {
 }
 
 export function BarTabCard({ tab, onPress }: BarTabCardProps) {
-  const activeItemCount = tab.items.filter((i) => i.status !== 'voided').length;
+  const items = tab.orderItems ?? [];
+  const activeItemCount = items.filter((i) => i.status !== 'voided').length;
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.container}>
@@ -38,8 +41,8 @@ export function BarTabCard({ tab, onPress }: BarTabCardProps) {
                 <Ionicons name="person" size={16} color="rgba(255,255,255,0.7)" />
               </View>
               <View style={styles.nameCol}>
-                <Text style={styles.customerName} numberOfLines={1}>
-                  {tab.customerName}
+                <Text style={styles.guestName} numberOfLines={1}>
+                  {tab.guestName || 'Guest'}
                 </Text>
                 <Text style={styles.meta}>
                   {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} · {timeAgo(tab.openedAt)}
@@ -47,7 +50,7 @@ export function BarTabCard({ tab, onPress }: BarTabCardProps) {
               </View>
             </View>
             <View style={styles.rightCol}>
-              <Text style={styles.total}>{formatCents(tab.subtotalCents)}</Text>
+              <Text style={styles.total}>{formatCents(tab.subtotal)}</Text>
               <TabStatusBadge status={tab.status} />
             </View>
           </View>
@@ -94,7 +97,7 @@ const styles = StyleSheet.create({
   nameCol: {
     flex: 1,
   },
-  customerName: {
+  guestName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
     color: '#fff',

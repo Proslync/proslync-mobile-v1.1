@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
-import { GlassView, GlassContainer } from 'expo-glass-effect';
+import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,8 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { VenueMenuCategory, VenueMenuItem } from '@/lib/types/menu.types';
 
-const TAB_BAR_HEIGHT = 49;
-const RADIUS = 24;
+const RADIUS = 20;
 const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
 
 interface SelectedItem {
@@ -34,15 +34,20 @@ interface AddItemsSheetProps {
 }
 
 function formatCents(cents: number): string {
+  if (!Number.isFinite(cents)) return '$0.00';
   return `$${(cents / 100).toFixed(2)}`;
 }
+
+const renderBackdrop = (props: BottomSheetBackdropProps) => (
+  <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+);
 
 export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItemsSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const insets = useSafeAreaInsets();
   const { data: categories } = useVenueMenu(venueId);
   const [selectedItems, setSelectedItems] = React.useState<Map<number, SelectedItem>>(new Map());
-  const scale = useSharedValue(0.85);
+  const scale = useSharedValue(0.92);
   const opacity = useSharedValue(0);
 
   React.useEffect(() => {
@@ -53,7 +58,7 @@ export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItems
       opacity.value = withTiming(1, { duration: 200 });
     } else {
       bottomSheetRef.current?.close();
-      scale.value = withTiming(0.85, { duration: 150 });
+      scale.value = withTiming(0.92, { duration: 150 });
       opacity.value = withTiming(0, { duration: 150 });
     }
   }, [visible, scale, opacity]);
@@ -112,32 +117,36 @@ export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItems
     <BottomSheet
       ref={bottomSheetRef}
       index={-1}
-      snapPoints={['75%']}
+      snapPoints={['80%']}
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={{ backgroundColor: 'transparent', borderRadius: RADIUS }}
+      backgroundStyle={{ backgroundColor: 'rgba(10,10,10,0.85)', borderRadius: RADIUS }}
       handleIndicatorStyle={{
         width: 36,
         height: 4,
         borderRadius: 2,
         backgroundColor: 'rgba(255,255,255,0.3)',
       }}
-      style={{ marginHorizontal: 12 }}
-      bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
-      detached
+      backdropComponent={renderBackdrop}
     >
       <Animated.View style={[{ flex: 1 }, animatedStyle]}>
-        <BottomSheetView style={styles.header}>
-          <GlassView {...liquidGlass.surface} borderRadius={RADIUS} style={StyleSheet.absoluteFill} />
+        {/* Header */}
+        <View style={styles.header}>
           <Text style={styles.title}>Add Items</Text>
-        </BottomSheetView>
+          <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+            <Ionicons name="close" size={22} color="rgba(255,255,255,0.5)" />
+          </TouchableOpacity>
+        </View>
 
+        {/* Scrollable menu */}
         <BottomSheetScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: totalItems.count > 0 ? 90 : 24 },
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
           {activeCategories.map((category) => (
             <CategorySection
               key={category.id}
@@ -152,16 +161,20 @@ export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItems
           )}
         </BottomSheetScrollView>
 
+        {/* Sticky footer */}
         {totalItems.count > 0 && (
-          <BottomSheetView style={styles.footer}>
-            <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
-            <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} activeOpacity={0.7}>
-              <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
+          <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+            <TouchableOpacity
+              style={styles.confirmButton}
+              onPress={handleConfirm}
+              activeOpacity={0.7}
+            >
+              <GlassView {...liquidGlass.fillStrong} borderRadius={14} style={StyleSheet.absoluteFill} />
               <Text style={styles.confirmText}>
                 Add {totalItems.count} item{totalItems.count !== 1 ? 's' : ''} · {formatCents(totalItems.cents)}
               </Text>
             </TouchableOpacity>
-          </BottomSheetView>
+          </View>
         )}
       </Animated.View>
     </BottomSheet>
@@ -237,24 +250,24 @@ function MenuItemRow({
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    overflow: 'hidden',
-    borderTopLeftRadius: RADIUS,
-    borderTopRightRadius: RADIUS,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   title: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
-    textAlign: 'center',
   },
   scroll: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 20,
   },
   emptyText: {
     fontSize: 14,
@@ -264,7 +277,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   category: {
-    marginTop: 16,
+    marginTop: 20,
   },
   categoryName: {
     fontSize: 13,
@@ -277,7 +290,7 @@ const styles = StyleSheet.create({
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(255,255,255,0.06)',
   },
@@ -323,15 +336,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    overflow: 'hidden',
+    paddingTop: 12,
+    backgroundColor: 'rgba(10,10,10,0.9)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   confirmButton: {
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   confirmText: {
     fontSize: 16,

@@ -21,35 +21,62 @@ import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView, GlassContainer } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { BarTabCard } from '@/components/bar/bar-tab-card';
 import { BarSummaryCard } from '@/components/bar/bar-summary-card';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useBarTabs, useBarSummary, useOpenTab } from '@/hooks';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
+import { useToast } from '@/components/shared/toast';
 import type { BarTab } from '@/lib/types/bar-tab.types';
 
 const TAB_BAR_HEIGHT = 49;
-const TAB_BAR_RADIUS = 24;
+const RADIUS = 24;
+const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
+
+const renderBackdrop = (props: BottomSheetBackdropProps) => (
+  <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+);
 
 export default function BarDashboardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
+  const { showError } = useToast();
   const eventId = id ? Number(id) : undefined;
 
   const { data: tabsData, isLoading, refetch } = useBarTabs(eventId);
   const { data: summary } = useBarSummary(eventId);
-  const openTab = useOpenTab(eventId!);
+  const openTab = useOpenTab(eventId ?? 0);
 
-  const [newTabSheetVisible, setNewTabSheetVisible] = React.useState(false);
   const [customerName, setCustomerName] = React.useState('');
   const newTabSheetRef = React.useRef<BottomSheet>(null);
   const sheetScale = useSharedValue(0.85);
   const sheetOpacity = useSharedValue(0);
 
-  const refreshControl = useRefreshControl(refetch);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => { await refetch(); },
+  });
+
+  const openSheet = React.useCallback(() => {
+    setCustomerName('');
+    newTabSheetRef.current?.expand();
+    sheetScale.value = withSpring(1, SPRING_CONFIG);
+    sheetOpacity.value = withTiming(1, { duration: 200 });
+  }, [sheetScale, sheetOpacity]);
+
+  const closeSheet = React.useCallback(() => {
+    sheetScale.value = withTiming(0.85, { duration: 150 });
+    sheetOpacity.value = withTiming(0, { duration: 150 });
+    newTabSheetRef.current?.close();
+  }, [sheetScale, sheetOpacity]);
+
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: sheetScale.value }],
+    opacity: sheetOpacity.value,
+  }));
 
   const handleTabPress = React.useCallback(
     (tab: BarTab) => {
@@ -61,43 +88,20 @@ export default function BarDashboardScreen() {
     [router, id],
   );
 
-  const handleOpenTab = React.useCallback(() => {
-    setCustomerName('');
-    setNewTabSheetVisible(true);
-  }, []);
-
-  React.useEffect(() => {
-    if (newTabSheetVisible) {
-      newTabSheetRef.current?.expand();
-      sheetScale.value = withSpring(1, { damping: 20, stiffness: 300, mass: 0.8 });
-      sheetOpacity.value = withTiming(1, { duration: 200 });
-    } else {
-      newTabSheetRef.current?.close();
-      sheetScale.value = withTiming(0.85, { duration: 150 });
-      sheetOpacity.value = withTiming(0, { duration: 150 });
-    }
-  }, [newTabSheetVisible, sheetScale, sheetOpacity]);
-
-  const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: sheetScale.value }],
-    opacity: sheetOpacity.value,
-  }));
-
   const handleConfirmOpenTab = React.useCallback(async () => {
     const name = customerName.trim();
     if (!name || !eventId) return;
     try {
       const { tab } = await openTab.mutateAsync({ customerName: name });
-      newTabSheetRef.current?.close();
-      setNewTabSheetVisible(false);
+      closeSheet();
       router.push({
         pathname: '/manage-event/[id]/bar-tab-detail',
         params: { id: id!, tabId: String(tab.id) },
       });
     } catch {
-      // Error handled by mutation
+      showError('Failed to open tab. Please try again.');
     }
-  }, [customerName, eventId, openTab, router, id]);
+  }, [customerName, eventId, openTab, router, id, closeSheet, showError]);
 
   const openTabs = React.useMemo(
     () => (tabsData?.tabs ?? []).filter((t) => t.status === 'open'),
@@ -109,6 +113,20 @@ export default function BarDashboardScreen() {
       <BarTabCard tab={item} onPress={() => handleTabPress(item)} />
     ),
     [handleTabPress],
+  );
+
+  const listHeader = React.useMemo(
+    () => (
+      <Animated.View entering={FadeInDown.duration(400)}>
+        {summary && <BarSummaryCard summary={summary} />}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            Open Tabs ({openTabs.length})
+          </Text>
+        </View>
+      </Animated.View>
+    ),
+    [summary, openTabs.length],
   );
 
   return (
@@ -141,16 +159,7 @@ export default function BarDashboardScreen() {
             styles.listContent,
             { paddingBottom: insets.bottom + 100 },
           ]}
-          ListHeaderComponent={
-            <Animated.View entering={FadeInDown.duration(400)}>
-              {summary && <BarSummaryCard summary={summary} />}
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>
-                  Open Tabs ({openTabs.length})
-                </Text>
-              </View>
-            </Animated.View>
-          }
+          ListHeaderComponent={listHeader}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No open tabs</Text>
           }
@@ -161,7 +170,7 @@ export default function BarDashboardScreen() {
       <View style={[styles.fabContainer, { bottom: insets.bottom + 24 }]}>
         <TouchableOpacity
           style={[styles.fab, { overflow: 'hidden' }]}
-          onPress={handleOpenTab}
+          onPress={openSheet}
           activeOpacity={0.7}
         >
           <GlassView {...liquidGlass.fillMedium} borderRadius={28} style={StyleSheet.absoluteFill} />
@@ -176,8 +185,8 @@ export default function BarDashboardScreen() {
         index={-1}
         enableDynamicSizing
         enablePanDownToClose
-        onClose={() => setNewTabSheetVisible(false)}
-        backgroundStyle={{ backgroundColor: 'transparent', borderRadius: TAB_BAR_RADIUS }}
+        onClose={closeSheet}
+        backgroundStyle={{ backgroundColor: 'transparent', borderRadius: RADIUS }}
         handleIndicatorStyle={{
           width: 36,
           height: 4,
@@ -189,18 +198,19 @@ export default function BarDashboardScreen() {
         detached
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
+        backdropComponent={renderBackdrop}
       >
         <BottomSheetView style={styles.sheetContent}>
           <Animated.View style={sheetAnimatedStyle}>
             <GlassContainer spacing={8} style={{ gap: 8 }}>
-              <GlassView {...liquidGlass.surface} borderRadius={TAB_BAR_RADIUS} style={styles.sheetHeader}>
+              <GlassView {...liquidGlass.surface} borderRadius={RADIUS} style={styles.sheetHeader}>
                 <Text style={styles.sheetTitle}>Open New Tab</Text>
-                <View style={[styles.inputContainer, { overflow: 'hidden' }]}>
-                  <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFill} />
+                <View style={styles.inputContainer}>
+                  <GlassView {...liquidGlass.fillMedium} borderRadius={12} style={StyleSheet.absoluteFill} />
                   <TextInput
                     style={styles.input}
                     placeholder="Customer name"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    placeholderTextColor="rgba(255,255,255,0.4)"
                     value={customerName}
                     onChangeText={setCustomerName}
                     autoFocus
@@ -209,18 +219,17 @@ export default function BarDashboardScreen() {
                   />
                 </View>
               </GlassView>
-              <GlassView {...liquidGlass.surface} borderRadius={TAB_BAR_RADIUS} style={styles.sheetActions}>
+              <GlassView {...liquidGlass.surface} borderRadius={RADIUS} style={styles.sheetActions}>
                 <TouchableOpacity
                   style={[
                     styles.confirmButton,
-                    { overflow: 'hidden' },
                     (!customerName.trim() || openTab.isPending) && styles.disabled,
                   ]}
                   onPress={handleConfirmOpenTab}
                   disabled={!customerName.trim() || openTab.isPending}
                   activeOpacity={0.7}
                 >
-                  <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
+                  <GlassView {...liquidGlass.fillStrong} borderRadius={14} style={StyleSheet.absoluteFill} isInteractive />
                   <Text style={styles.confirmText}>
                     {openTab.isPending ? 'Opening...' : 'Open Tab'}
                   </Text>
@@ -325,10 +334,13 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    overflow: 'hidden',
   },
   input: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 16,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
     color: '#fff',
@@ -337,6 +349,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    overflow: 'hidden',
   },
   confirmText: {
     fontSize: 16,

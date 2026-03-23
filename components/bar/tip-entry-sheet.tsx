@@ -1,8 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { GlassView, GlassContainer } from 'expo-glass-effect';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useAnimatedStyle,
@@ -11,15 +13,19 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-const TAB_BAR_HEIGHT = 49;
-const RADIUS = 24;
+const RADIUS = 20;
 const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
 
 const TIP_PRESETS = [15, 18, 20, 25];
 
 function formatCents(cents: number): string {
+  if (!Number.isFinite(cents)) return '$0.00';
   return `$${(cents / 100).toFixed(2)}`;
 }
+
+const renderBackdrop = (props: BottomSheetBackdropProps) => (
+  <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+);
 
 interface TipEntrySheetProps {
   visible: boolean;
@@ -40,7 +46,7 @@ export function TipEntrySheet({
   const insets = useSafeAreaInsets();
   const [selectedPercent, setSelectedPercent] = React.useState<number | null>(null);
   const [customTipCents, setCustomTipCents] = React.useState(0);
-  const scale = useSharedValue(0.85);
+  const scale = useSharedValue(0.92);
   const opacity = useSharedValue(0);
 
   React.useEffect(() => {
@@ -52,7 +58,7 @@ export function TipEntrySheet({
       opacity.value = withTiming(1, { duration: 200 });
     } else {
       bottomSheetRef.current?.close();
-      scale.value = withTiming(0.85, { duration: 150 });
+      scale.value = withTiming(0.92, { duration: 150 });
       opacity.value = withTiming(0, { duration: 150 });
     }
   }, [visible, scale, opacity]);
@@ -83,84 +89,99 @@ export function TipEntrySheet({
       enableDynamicSizing
       enablePanDownToClose
       onClose={onClose}
-      backgroundStyle={{ backgroundColor: 'transparent', borderRadius: RADIUS }}
+      backgroundStyle={{ backgroundColor: 'rgba(10,10,10,0.85)', borderRadius: RADIUS }}
       handleIndicatorStyle={{
         width: 36,
         height: 4,
         borderRadius: 2,
         backgroundColor: 'rgba(255,255,255,0.3)',
       }}
-      style={{ marginHorizontal: 12 }}
-      bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
-      detached
+      backdropComponent={renderBackdrop}
     >
-      <BottomSheetView style={styles.sheetContent}>
+      <BottomSheetView style={[styles.sheetContent, { paddingBottom: insets.bottom + 12 }]}>
         <Animated.View style={animatedStyle}>
-          <GlassContainer spacing={8} style={styles.glassContainer}>
-            {/* Header + presets */}
-            <GlassView {...liquidGlass.surface} borderRadius={RADIUS} style={styles.headerGlass}>
-              <Text style={styles.title}>Add Tip</Text>
-              <Text style={styles.subtotal}>Subtotal: {formatCents(subtotalCents)}</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Add Tip</Text>
+            <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
+              <Ionicons name="close" size={22} color="rgba(255,255,255,0.5)" />
+            </TouchableOpacity>
+          </View>
 
-              <View style={styles.presetsRow}>
-                {TIP_PRESETS.map((pct) => {
-                  const isActive = selectedPercent === pct;
-                  return (
-                    <TouchableOpacity
-                      key={pct}
-                      style={[styles.presetButton, { overflow: 'hidden' }]}
-                      onPress={() => setSelectedPercent(isActive ? null : pct)}
-                      activeOpacity={0.7}
-                    >
-                      <GlassView
-                        {...(isActive ? liquidGlass.fillStrong : liquidGlass.fill)}
-                        borderRadius={12}
-                        style={StyleSheet.absoluteFill}
-                      />
-                      <Text style={[styles.presetPercent, isActive && styles.presetActive]}>
-                        {pct}%
-                      </Text>
-                      <Text style={[styles.presetAmount, isActive && styles.presetActive]}>
-                        {formatCents(Math.round(subtotalCents * (pct / 100)))}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+          <Text style={styles.subtotal}>Subtotal: {formatCents(subtotalCents)}</Text>
 
-              <TouchableOpacity
-                style={[styles.noTipButton, { overflow: 'hidden' }]}
-                onPress={() => {
-                  setSelectedPercent(null);
-                  setCustomTipCents(0);
-                }}
-                activeOpacity={0.7}
-              >
-                <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFill} />
-                <Text style={styles.noTipText}>No Tip</Text>
-              </TouchableOpacity>
-            </GlassView>
+          {/* Tip presets */}
+          <View style={styles.presetsRow}>
+            {TIP_PRESETS.map((pct) => {
+              const isActive = selectedPercent === pct;
+              return (
+                <TouchableOpacity
+                  key={pct}
+                  style={[
+                    styles.presetButton,
+                    isActive && styles.presetButtonActive,
+                  ]}
+                  onPress={() => setSelectedPercent(isActive ? null : pct)}
+                  activeOpacity={0.7}
+                >
+                  <GlassView
+                    {...(isActive ? liquidGlass.fillStrong : liquidGlass.fill)}
+                    borderRadius={12}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Text style={[styles.presetPercent, isActive && styles.presetActiveText]}>
+                    {pct}%
+                  </Text>
+                  <Text style={[styles.presetAmount, isActive && styles.presetActiveText]}>
+                    {formatCents(Math.round(subtotalCents * (pct / 100)))}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-            {/* Total + charge button */}
-            <GlassView {...liquidGlass.surface} borderRadius={RADIUS} style={styles.footerGlass}>
+          {/* No tip */}
+          <TouchableOpacity
+            style={styles.noTipButton}
+            onPress={() => {
+              setSelectedPercent(null);
+              setCustomTipCents(0);
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.noTipText}>No Tip</Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider} />
+
+          {/* Total summary */}
+          <View style={styles.totalSection}>
+            {tipCents > 0 && (
               <View style={styles.totalRow}>
-                {tipCents > 0 && <Text style={styles.tipLabel}>Tip: {formatCents(tipCents)}</Text>}
-                <Text style={styles.totalLabel}>Total: {formatCents(totalCents)}</Text>
+                <Text style={styles.totalRowLabel}>Tip</Text>
+                <Text style={styles.totalRowValue}>{formatCents(tipCents)}</Text>
               </View>
+            )}
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Total</Text>
+              <Text style={styles.totalValue}>{formatCents(totalCents)}</Text>
+            </View>
+          </View>
 
-              <TouchableOpacity
-                style={[styles.chargeButton, { overflow: 'hidden' }, loading && styles.disabled]}
-                onPress={handleConfirm}
-                activeOpacity={0.7}
-                disabled={loading}
-              >
-                <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
-                <Text style={styles.chargeText}>
-                  {loading ? 'Processing...' : `Charge ${formatCents(totalCents)}`}
-                </Text>
-              </TouchableOpacity>
-            </GlassView>
-          </GlassContainer>
+          {/* Charge button */}
+          <TouchableOpacity
+            style={[styles.chargeButton, loading && styles.disabled]}
+            onPress={handleConfirm}
+            activeOpacity={0.7}
+            disabled={loading}
+          >
+            <GlassView {...liquidGlass.fillStrong} borderRadius={14} style={StyleSheet.absoluteFill} isInteractive />
+            <Ionicons name="flash" size={18} color="#fff" />
+            <Text style={styles.chargeText}>
+              {loading ? 'Processing...' : `Charge ${formatCents(totalCents)}`}
+            </Text>
+          </TouchableOpacity>
         </Animated.View>
       </BottomSheetView>
     </BottomSheet>
@@ -169,31 +190,25 @@ export function TipEntrySheet({
 
 const styles = StyleSheet.create({
   sheetContent: {
-    paddingHorizontal: 4,
-    paddingBottom: 8,
+    paddingHorizontal: 20,
   },
-  glassContainer: {
-    gap: 8,
-  },
-  headerGlass: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 4,
   },
   title: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
-    textAlign: 'center',
-    paddingTop: 4,
   },
   subtotal: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
-    textAlign: 'center',
     marginTop: 4,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   presetsRow: {
     flexDirection: 'row',
@@ -202,57 +217,83 @@ const styles = StyleSheet.create({
   presetButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  presetButtonActive: {
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   presetPercent: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.6)',
   },
   presetAmount: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(255,255,255,0.35)',
     marginTop: 2,
   },
-  presetActive: {
+  presetActiveText: {
     color: '#fff',
   },
   noTipButton: {
     alignItems: 'center',
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 12,
     marginTop: 8,
   },
   noTipText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.4)',
   },
-  footerGlass: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginVertical: 16,
+  },
+  totalSection: {
+    gap: 6,
+    marginBottom: 16,
   },
   totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
-    gap: 4,
   },
-  tipLabel: {
+  totalRowLabel: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
   },
+  totalRowValue: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
   totalLabel: {
-    fontSize: 20,
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  totalValue: {
+    fontSize: 18,
     fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   chargeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     borderRadius: 14,
     paddingVertical: 16,
-    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   chargeText: {
     fontSize: 16,

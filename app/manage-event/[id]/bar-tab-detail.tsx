@@ -80,7 +80,7 @@ function BarTabDetailScreen() {
   }, [eventId, isInitialized, isReaderConnected, readerStatus, connectReader]);
 
   const activeItems = React.useMemo(
-    () => (tab?.items ?? []).filter((i) => i.status !== 'voided'),
+    () => (tab?.orderItems ?? []).filter((i) => i.status !== 'voided'),
     [tab],
   );
 
@@ -193,7 +193,7 @@ function BarTabDetailScreen() {
       <View style={styles.orderItemRow}>
         <View style={styles.orderItemInfo}>
           <Text style={styles.orderItemName} numberOfLines={1}>
-            {item.menuItemName}
+            {item.name}
           </Text>
           {item.notes && (
             <Text style={styles.orderItemNotes} numberOfLines={1}>
@@ -202,7 +202,7 @@ function BarTabDetailScreen() {
           )}
         </View>
         <Text style={styles.orderItemQty}>x{item.quantity}</Text>
-        <Text style={styles.orderItemPrice}>{formatCents(item.totalCents)}</Text>
+        <Text style={styles.orderItemPrice}>{formatCents(item.price * item.quantity)}</Text>
         {tab?.status === 'open' && (
           <TouchableOpacity
             onPress={() => setVoidConfirm(item)}
@@ -236,7 +236,7 @@ function BarTabDetailScreen() {
         visible={!!voidConfirm}
         onClose={() => setVoidConfirm(null)}
         title="Void Item"
-        message={`Remove "${voidConfirm?.menuItemName}" from this tab?`}
+        message={`Remove "${voidConfirm?.name}" from this tab?`}
         confirmLabel="Void"
         onConfirm={() => voidConfirm && handleVoidItem(voidConfirm)}
         isLoading={voidItem.isPending}
@@ -262,7 +262,7 @@ function BarTabDetailScreen() {
         </TouchableOpacity>
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {tab.customerName}
+            {tab.guestName || 'Guest'}
           </Text>
           <TabStatusBadge status={tab.status} />
         </View>
@@ -329,19 +329,19 @@ function BarTabDetailScreen() {
         <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Subtotal</Text>
-          <Text style={styles.totalValue}>{formatCents(tab.subtotalCents)}</Text>
+          <Text style={styles.totalValue}>{formatCents(tab.subtotal)}</Text>
         </View>
-        {tab.tipCents > 0 && (
+        {tab.tipAmount > 0 && (
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Tip</Text>
-            <Text style={styles.totalValue}>{formatCents(tab.tipCents)}</Text>
+            <Text style={styles.totalValue}>{formatCents(tab.tipAmount)}</Text>
           </View>
         )}
         {tab.status === 'paid' && (
           <View style={styles.totalRow}>
             <Text style={[styles.totalLabel, styles.totalFinal]}>Total Charged</Text>
             <Text style={[styles.totalValue, styles.totalFinal]}>
-              {formatCents(tab.totalCents)}
+              {formatCents(tab.total)}
             </Text>
           </View>
         )}
@@ -382,7 +382,7 @@ function BarTabDetailScreen() {
       {/* Tip Entry Sheet */}
       <TipEntrySheet
         visible={tipSheetVisible}
-        subtotalCents={tab.subtotalCents}
+        subtotalCents={tab.subtotal}
         onClose={() => setTipSheetVisible(false)}
         onConfirm={handleChargeWithTip}
         loading={isProcessing}

@@ -30,6 +30,9 @@ export function BarSocketProvider({ children }: { children: React.ReactNode }) {
     if (!user?.id) return;
 
     let cancelled = false;
+    // Debounced invalidation timers — declared at effect scope for cleanup access
+    let tabsTimer: ReturnType<typeof setTimeout> | null = null;
+    let summaryTimer: ReturnType<typeof setTimeout> | null = null;
 
     const initSocket = async () => {
       const token = await apiClient.getAccessToken();
@@ -49,10 +52,6 @@ export function BarSocketProvider({ children }: { children: React.ReactNode }) {
       s.on('disconnect', () => {
         if (!cancelled) setIsConnected(false);
       });
-
-      // Debounced invalidation timers
-      let tabsTimer: ReturnType<typeof setTimeout> | null = null;
-      let summaryTimer: ReturnType<typeof setTimeout> | null = null;
 
       const invalidateTabs = (eventId: number) => {
         if (tabsTimer) clearTimeout(tabsTimer);

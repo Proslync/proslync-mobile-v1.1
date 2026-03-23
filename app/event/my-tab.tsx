@@ -31,7 +31,7 @@ export default function MyTabScreen() {
   const { data: tab, isLoading } = useMyBarTab(eventId);
 
   const activeItems = React.useMemo(
-    () => (tab?.items ?? []).filter((i) => i.status !== 'voided'),
+    () => (tab?.orderItems ?? []).filter((i) => i.status !== 'voided'),
     [tab],
   );
 
@@ -40,7 +40,7 @@ export default function MyTabScreen() {
       <View style={styles.itemRow}>
         <View style={styles.itemInfo}>
           <Text style={styles.itemName} numberOfLines={1}>
-            {item.menuItemName}
+            {item.name}
           </Text>
           {item.notes && (
             <Text style={styles.itemNotes} numberOfLines={1}>
@@ -49,7 +49,7 @@ export default function MyTabScreen() {
           )}
         </View>
         <Text style={styles.itemQty}>x{item.quantity}</Text>
-        <Text style={styles.itemPrice}>{formatCents(item.totalCents)}</Text>
+        <Text style={styles.itemPrice}>{formatCents(item.price * item.quantity)}</Text>
       </View>
     ),
     [],
@@ -132,24 +132,24 @@ export default function MyTabScreen() {
         <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Subtotal</Text>
-          <Text style={styles.totalValue}>{formatCents(tab.subtotalCents)}</Text>
+          <Text style={styles.totalValue}>{formatCents(tab.subtotal)}</Text>
         </View>
-        {tab.tipCents > 0 && (
+        {tab.tipAmount > 0 && (
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Tip</Text>
-            <Text style={styles.totalValue}>{formatCents(tab.tipCents)}</Text>
+            <Text style={styles.totalValue}>{formatCents(tab.tipAmount)}</Text>
           </View>
         )}
-        {tab.taxCents > 0 && (
+        {tab.taxAmount > 0 && (
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Tax</Text>
-            <Text style={styles.totalValue}>{formatCents(tab.taxCents)}</Text>
+            <Text style={styles.totalValue}>{formatCents(tab.taxAmount)}</Text>
           </View>
         )}
         {tab.status === 'paid' && (
           <View style={[styles.totalRow, styles.totalFinalRow]}>
             <Text style={styles.totalFinalLabel}>Total</Text>
-            <Text style={styles.totalFinalValue}>{formatCents(tab.totalCents)}</Text>
+            <Text style={styles.totalFinalValue}>{formatCents(tab.total)}</Text>
           </View>
         )}
         {tab.status === 'open' && (
