@@ -114,3 +114,14 @@ export function useMarkTabPaid(eventId: number, tabId: number) {
     },
   });
 }
+
+export function useDeleteTab(eventId: number, tabId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => barTabsApi.deleteTab(eventId, tabId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [BAR_TABS_KEY, eventId] });
+      queryClient.invalidateQueries({ queryKey: [BAR_SUMMARY_KEY, eventId] });
+    },
+  });
+}

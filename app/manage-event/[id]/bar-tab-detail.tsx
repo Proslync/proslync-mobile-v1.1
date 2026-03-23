@@ -28,8 +28,10 @@ import {
   useVoidItem,
   useCloseTab,
   useMarkTabPaid,
+  useDeleteTab,
   useEvent,
 } from '@/hooks';
+import { useToast } from '@/components/shared/toast';
 import type { BarOrderItem } from '@/lib/types/bar-tab.types';
 
 function formatCents(cents: number): string {
@@ -52,6 +54,8 @@ function BarTabDetailScreen() {
   const voidItem = useVoidItem(eventId!, tabId!);
   const closeTab = useCloseTab(eventId!, tabId!);
   const markPaid = useMarkTabPaid(eventId!, tabId!);
+  const deleteTab = useDeleteTab(eventId!, tabId!);
+  const { showError, showSuccess } = useToast();
 
   const {
     readerStatus,
@@ -64,6 +68,7 @@ function BarTabDetailScreen() {
   const [addItemsVisible, setAddItemsVisible] = React.useState(false);
   const [tipSheetVisible, setTipSheetVisible] = React.useState(false);
   const [voidConfirm, setVoidConfirm] = React.useState<BarOrderItem | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [paymentStatus, setPaymentStatus] = React.useState<
     'idle' | 'closing' | 'collecting' | 'processing' | 'success' | 'error'
   >('idle');
@@ -97,6 +102,18 @@ function BarTabDetailScreen() {
     [addItems],
   );
 
+  const handleDeleteTab = React.useCallback(async () => {
+    try {
+      await deleteTab.mutateAsync();
+      setDeleteConfirm(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showSuccess('Tab deleted');
+      router.back();
+    } catch {
+      showError('Cannot delete tab — void or remove items first.');
+    }
+  }, [deleteTab, router, showSuccess, showError]);
+
   const handleVoidItem = React.useCallback(
     async (item: BarOrderItem) => {
       try {
@@ -104,7 +121,7 @@ function BarTabDetailScreen() {
         setVoidConfirm(null);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } catch {
-        // Error handled by mutation
+        showError('Failed to void item.');
       }
     },
     [voidItem],
@@ -232,26 +249,6 @@ function BarTabDetailScreen() {
     <View style={styles.container}>
       <DarkGradientBg />
 
-      <ConfirmModal
-        visible={!!voidConfirm}
-        onClose={() => setVoidConfirm(null)}
-        title="Void Item"
-        message={`Remove "${voidConfirm?.name}" from this tab?`}
-        confirmLabel="Void"
-        onConfirm={() => voidConfirm && handleVoidItem(voidConfirm)}
-        isLoading={voidItem.isPending}
-        icon="trash-outline"
-      />
-
-      <ConfirmModal
-        visible={!!errorMessage}
-        onClose={() => setErrorMessage(null)}
-        title="Payment Failed"
-        message={errorMessage || ''}
-        alertOnly
-        icon="card-outline"
-      />
-
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
@@ -325,7 +322,7 @@ function BarTabDetailScreen() {
       />
 
       {/* Footer with total and charge button */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }, deleteConfirm && { opacity: 0 }]}>
         <GlassView {...liquidGlass.surface} borderRadius={0} style={StyleSheet.absoluteFill} />
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Subtotal</Text>
@@ -367,6 +364,17 @@ function BarTabDetailScreen() {
               : 'Terminal reader not connected'}
           </Text>
         )}
+
+        {tab.status === 'open' && activeItems.length === 0 && (
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => setDeleteConfirm(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+            <Text style={styles.deleteButtonText}>Delete Tab</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Add Items Sheet */}
@@ -386,6 +394,39 @@ function BarTabDetailScreen() {
         onClose={() => setTipSheetVisible(false)}
         onConfirm={handleChargeWithTip}
         loading={isProcessing}
+      />
+
+      {/* Confirm modals — last in tree so they render on top of everything */}
+      <ConfirmModal
+        visible={!!voidConfirm}
+        onClose={() => setVoidConfirm(null)}
+        title="Void Item"
+        message={`Remove "${voidConfirm?.name}" from this tab?`}
+        confirmLabel="Void"
+        onConfirm={() => voidConfirm && handleVoidItem(voidConfirm)}
+        isLoading={voidItem.isPending}
+        icon="trash-outline"
+      />
+
+      <ConfirmModal
+        visible={!!errorMessage}
+        onClose={() => setErrorMessage(null)}
+        title="Payment Failed"
+        message={errorMessage || ''}
+        alertOnly
+        icon="card-outline"
+      />
+
+      <ConfirmModal
+        visible={deleteConfirm}
+        onClose={() => setDeleteConfirm(false)}
+        onConfirm={handleDeleteTab}
+        title="Delete Tab"
+        message={`Delete ${tab?.guestName || 'this'} tab? This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        isLoading={deleteTab.isPending}
+        icon="trash-outline"
       />
     </View>
   );
@@ -558,5 +599,18 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
     marginTop: 8,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginTop: 12,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: '#FF3B30',
   },
 });

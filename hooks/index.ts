@@ -231,6 +231,7 @@ export {
   useVoidItem,
   useCloseTab,
   useMarkTabPaid,
+  useDeleteTab,
   BAR_TABS_KEY,
   BAR_TAB_KEY,
   BAR_SUMMARY_KEY,

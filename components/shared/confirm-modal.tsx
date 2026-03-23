@@ -6,7 +6,8 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { GlassView, GlassContainer } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,6 +22,10 @@ import Animated, {
 const TAB_BAR_HEIGHT = 49;
 const RADIUS = 24;
 const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
+
+const renderBackdrop = (props: BottomSheetBackdropProps) => (
+  <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+);
 
 interface ConfirmModalProps {
   visible: boolean;
@@ -91,7 +96,7 @@ export function ConfirmModal({
       enablePanDownToClose
       onClose={onClose}
       backgroundStyle={{
-        backgroundColor: 'transparent',
+        backgroundColor: 'rgba(10,10,10,0.85)',
         borderRadius: RADIUS,
       }}
       handleIndicatorStyle={{
@@ -103,6 +108,7 @@ export function ConfirmModal({
       style={{ marginHorizontal: 12 }}
       bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
       detached
+      backdropComponent={renderBackdrop}
     >
       <BottomSheetView style={styles.sheetContent}>
         <Animated.View style={animatedContentStyle}>
@@ -149,29 +155,30 @@ export function ConfirmModal({
               ) : (
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
-                    style={[styles.btn, isLoading && { opacity: 0.5 }]}
+                    style={[styles.btn, styles.cancelBtn, isLoading && { opacity: 0.5 }]}
                     onPress={handleCancel}
                     disabled={isLoading}
                     activeOpacity={0.7}
                   >
                     <GlassView
-                      {...liquidGlass.fill}
-                      borderRadius={12}
+                      {...liquidGlass.fillMedium}
+                      borderRadius={14}
                       style={StyleSheet.absoluteFill}
                     />
                     <Text style={styles.cancelText}>{cancelLabel}</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.btn, isLoading && { opacity: 0.5 }]}
+                    style={[styles.btn, styles.confirmBtn, isLoading && { opacity: 0.5 }]}
                     onPress={handleConfirm}
                     disabled={isLoading}
                     activeOpacity={0.7}
                   >
                     <GlassView
-                      {...(destructive ? liquidGlass.danger : liquidGlass.fillMedium)}
-                      borderRadius={12}
+                      {...(destructive ? liquidGlass.danger : liquidGlass.fillStrong)}
+                      borderRadius={14}
                       style={StyleSheet.absoluteFill}
+                      isInteractive
                     />
                     {isLoading ? (
                       <ActivityIndicator size="small" color="#fff" />
@@ -235,10 +242,18 @@ const styles = StyleSheet.create({
   },
   btn: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 16,
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: 14,
     overflow: 'hidden',
+  },
+  cancelBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  confirmBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   cancelText: {
     fontSize: 16,

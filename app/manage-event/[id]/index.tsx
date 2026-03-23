@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassSurface } from "@/components/glass/glass-surface";
-
+import { useToast } from "@/components/shared/toast";
 import { useEvent, useEventPermissions } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { EventStatus } from "@/lib/types/events.types";
@@ -300,6 +300,7 @@ export default function ManageEventScreen() {
 
   const eventId = id ? Number(id) : undefined;
   const { data: event, isLoading } = useEvent(eventId);
+  const { showError } = useToast();
   const {
     hasPermission,
     canEditEvents,
@@ -320,6 +321,10 @@ export default function ManageEventScreen() {
     }
     if (sectionKey === "scanner") {
       router.push({ pathname: "/scan-qr", params: { eventId: id! } });
+      return;
+    }
+    if (sectionKey === "bar" && !event?.venueId) {
+      showError('Assign a venue to this event first to use the bar.');
       return;
     }
     router.push(`/manage-event/${id}/${sectionKey}`);

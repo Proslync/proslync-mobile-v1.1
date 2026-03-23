@@ -69,6 +69,14 @@ export const barTabsApi = {
   },
 
   /**
+   * Delete an empty open tab
+   * Backend endpoint: DELETE /api/events/:eventId/bar/tabs/:tabId
+   */
+  deleteTab: async (eventId: number, tabId: number): Promise<void> => {
+    return apiClient.delete<void>(`/api/events/${eventId}/bar/tabs/${tabId}`);
+  },
+
+  /**
    * Close a tab and create a payment intent for Terminal collection
    * Backend endpoint: POST /api/events/:eventId/bar/tabs/:tabId/close
    */
