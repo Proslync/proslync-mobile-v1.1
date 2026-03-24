@@ -40,6 +40,7 @@ import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import { ShareLocationSheet } from '@/components/map/share-location-sheet';
 import { NativeShareLocationSheet, canUseNativeSheet } from '@/components/map/share-location-native-sheet';
 import { FriendProfileSheet } from '@/components/map/friend-profile-sheet';
+import { MapFabMenu } from '@/components/map/map-fab-menu';
 import { config } from '@/lib/config';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -461,6 +462,7 @@ function FullMapScreen() {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<MapEvent | null>(null);
   const [showShareSheet, setShowShareSheet] = useState(false);
+  const [showNearbySheet, setShowNearbySheet] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendMarker | null>(null);
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
   const { colors, isDark } = useAppTheme();
@@ -471,7 +473,7 @@ function FullMapScreen() {
   // Auth hook for current user's avatar
   const { user } = useAuth();
 
-  const snapPoints = useMemo(() => [75, '45%', '85%'], []);
+  const snapPoints = useMemo(() => ['35%', '60%', '90%'], []);
 
   useEffect(() => {
     (async () => {
@@ -659,51 +661,42 @@ function FullMapScreen() {
         )}
       </MapView>
 
-      {/* Share location button - only show when feature is enabled */}
-      {config.websocket.enabled && (
-        <TouchableOpacity
-          style={[styles.shareLocationButton, { bottom: 240 }]}
-          onPress={async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            try {
-              const { status } = await Location.requestForegroundPermissionsAsync();
-              if (status === 'granted' && !userLocation) {
-                const location = await Location.getCurrentPositionAsync({});
-                setUserLocation([location.coords.longitude, location.coords.latitude]);
-              }
-            } catch {}
-            setShowShareSheet(true);
-          }}
-          activeOpacity={0.7}
-        >
-          <GlassView
-            {...liquidGlass.surface}
-            borderRadius={23}
-            style={styles.mapButtonGlass}
-          />
-          <View style={styles.mapButtonContent}>
-            <Ionicons
-              name={sharingState.isSharing ? 'location' : 'location-outline'}
-              size={22}
-              color={sharingState.isSharing ? '#34c759' : '#fff'}
-            />
-          </View>
-          {sharingState.isSharing && <View style={styles.sharingIndicator} />}
-        </TouchableOpacity>
-      )}
+      {/* Expandable FAB with glass morphing */}
+      <MapFabMenu
+        onShareLocation={async () => {
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted' && !userLocation) {
+              const location = await Location.getCurrentPositionAsync({});
+              setUserLocation([location.coords.longitude, location.coords.latitude]);
+            }
+          } catch {}
+          setShowShareSheet(true);
+        }}
+        onRecenter={handleRecenter}
+        onNearby={() => {
+          if (showNearbySheet) {
+            bottomSheetRef.current?.close();
+            setShowNearbySheet(false);
+          } else {
+            bottomSheetRef.current?.snapToIndex(1);
+            setShowNearbySheet(true);
+          }
+        }}
+        isSharing={sharingState.isSharing}
+        hasLiveEvents={liveCount > 0}
+      />
 
-      <TouchableOpacity style={[styles.recenterButton, { bottom: 180 }]} onPress={handleRecenter} activeOpacity={0.7}>
-        <GlassView
-          {...liquidGlass.surface}
-          borderRadius={23}
-          style={styles.mapButtonGlass}
-        />
-        <View style={styles.mapButtonContent}>
-          <Ionicons name="locate" size={22} color="#fff" />
-        </View>
-      </TouchableOpacity>
-
-      <BottomSheet ref={bottomSheetRef} index={0} snapPoints={snapPoints} backgroundStyle={[styles.bottomSheetBackground, { backgroundColor: colors.background }]} handleIndicatorStyle={[styles.bottomSheetIndicator, { backgroundColor: colors.textTertiary }]} enablePanDownToClose={false} animateOnMount={true}>
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        backgroundStyle={[styles.bottomSheetBackground, { backgroundColor: colors.background }]}
+        handleIndicatorStyle={[styles.bottomSheetIndicator, { backgroundColor: colors.textTertiary }]}
+        enablePanDownToClose
+        onClose={() => setShowNearbySheet(false)}
+        animateOnMount={false}
+      >
         <View style={styles.bottomSheetHeader}>
           <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>Nearby</Text>
           <View style={styles.liveIndicator}>
