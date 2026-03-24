@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { ArtistCard } from './artist-card';
 import type { LineupArtist } from '@/lib/types/event-detail.types';
@@ -12,50 +12,41 @@ interface LineupTabProps {
 export function LineupTab({ artists }: LineupTabProps) {
   const { colors } = useAppTheme();
   const [playingId, setPlayingId] = React.useState<string | null>(null);
-  const soundRef = React.useRef<Audio.Sound | null>(null);
 
-  const stopSound = React.useCallback(async () => {
-    if (soundRef.current) {
-      await soundRef.current.stopAsync();
-      await soundRef.current.unloadAsync();
-      soundRef.current = null;
-    }
-    setPlayingId(null);
-  }, []);
+  const player = useAudioPlayer(null);
+  const status = useAudioPlayerStatus(player);
 
-  const togglePlay = React.useCallback(async (artist: LineupArtist) => {
-    if (playingId === artist.id) {
-      await stopSound();
-      return;
-    }
-
-    await stopSound();
-
-    if (!artist.audioPreviewUrl) return;
-
-    try {
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: artist.audioPreviewUrl },
-        { shouldPlay: true }
-      );
-      soundRef.current = sound;
-      setPlayingId(artist.id);
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded && status.didJustFinish) {
-          stopSound();
-        }
-      });
-    } catch {
-      // Audio playback failed silently
-    }
-  }, [playingId, stopSound]);
-
+  // When playback finishes (reached end of track), clear playingId
+  const prevPlayingRef = React.useRef(false);
   React.useEffect(() => {
-    return () => {
-      soundRef.current?.unloadAsync();
-    };
-  }, []);
+    if (prevPlayingRef.current && !status.playing && playingId) {
+      // Was playing, now stopped — track finished or was paused
+      // Check if we're near the end (duration > 0 and currentTime >= duration)
+      if (status.duration > 0 && status.currentTime >= status.duration - 0.1) {
+        setPlayingId(null);
+      }
+    }
+    prevPlayingRef.current = status.playing;
+  }, [status.playing, status.currentTime, status.duration, playingId]);
+
+  const togglePlay = React.useCallback(
+    (artist: LineupArtist) => {
+      // Tapped the currently playing artist — pause it
+      if (playingId === artist.id) {
+        player.pause();
+        setPlayingId(null);
+        return;
+      }
+
+      if (!artist.audioPreviewUrl) return;
+
+      // Replace source and play
+      player.replace({ uri: artist.audioPreviewUrl });
+      player.play();
+      setPlayingId(artist.id);
+    },
+    [playingId, player],
+  );
 
   if (artists.length === 0) {
     return (

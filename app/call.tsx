@@ -12,7 +12,7 @@ import { useRouter, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import {
   LiveKitRoom,
   useTracks,
@@ -151,39 +151,37 @@ function RoomContent({
   }, [hasRemoteParticipant, callId, onCallConnected]);
 
   // Ringtone — play while waiting for remote participant
+  const ringtonePlayer = useAudioPlayer(require('@/assets/sounds/ringtone.wav'));
+
   React.useEffect(() => {
-    if (hasRemoteParticipant) return;
+    ringtonePlayer.loop = true;
+    ringtonePlayer.volume = 0.7;
+  }, [ringtonePlayer]);
 
-    let sound: Audio.Sound | null = null;
-    let mounted = true;
+  React.useEffect(() => {
+    if (hasRemoteParticipant) {
+      ringtonePlayer.pause();
+      return;
+    }
 
-    const playRingtone = async () => {
+    const startRingtone = async () => {
       try {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
+        await setAudioModeAsync({
+          playsInSilentMode: true,
+          shouldPlayInBackground: true,
         });
-        const { sound: s } = await Audio.Sound.createAsync(
-          require('@/assets/sounds/ringtone.wav'),
-          { isLooping: true, volume: 0.7 },
-        );
-        if (!mounted) { await s.unloadAsync(); return; }
-        sound = s;
-        await s.playAsync();
+        ringtonePlayer.play();
       } catch (err) {
         console.error('Failed to play ringtone:', err);
       }
     };
 
-    playRingtone();
+    startRingtone();
 
     return () => {
-      mounted = false;
-      if (sound) {
-        sound.stopAsync().then(() => sound!.unloadAsync()).catch(() => {});
-      }
+      ringtonePlayer.pause();
     };
-  }, [hasRemoteParticipant]);
+  }, [hasRemoteParticipant, ringtonePlayer]);
 
   // Duration timer — starts when remote joins
   React.useEffect(() => {

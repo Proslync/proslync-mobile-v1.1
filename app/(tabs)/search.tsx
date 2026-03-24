@@ -38,6 +38,7 @@ import { EventStatus } from '@/lib/types/events.types';
 import Mapbox, { MapView, Camera, MarkerView, LocationPuck, SymbolLayer, ShapeSource, HeatmapLayer } from '@rnmapbox/maps';
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import { ShareLocationSheet } from '@/components/map/share-location-sheet';
+import { NativeShareLocationSheet, canUseNativeSheet } from '@/components/map/share-location-native-sheet';
 import { FriendProfileSheet } from '@/components/map/friend-profile-sheet';
 import { config } from '@/lib/config';
 import { useAuth } from '@/lib/providers/auth-provider';
@@ -782,11 +783,18 @@ function FullMapScreen() {
         </BottomSheetScrollView>
       </BottomSheet>
 
-      {/* Share Location Sheet */}
-      <ShareLocationSheet
-        isVisible={showShareSheet}
-        onClose={() => setShowShareSheet(false)}
-      />
+      {/* Share Location Sheet — native SwiftUI on iOS 26+, fallback otherwise */}
+      {canUseNativeSheet() ? (
+        <NativeShareLocationSheet
+          isVisible={showShareSheet}
+          onClose={() => setShowShareSheet(false)}
+        />
+      ) : (
+        <ShareLocationSheet
+          isVisible={showShareSheet}
+          onClose={() => setShowShareSheet(false)}
+        />
+      )}
 
       {/* Friend Profile Sheet */}
       <FriendProfileSheet

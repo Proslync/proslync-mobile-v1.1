@@ -20,7 +20,7 @@ import { useStableRouter } from "@/hooks/use-stable-router";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { useCall } from "@/lib/providers/call-provider";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, setAudioModeAsync, requestRecordingPermissionsAsync, RecordingPresets } from "expo-audio";
 import * as Clipboard from "expo-clipboard";
 import { GlassView } from "expo-glass-effect";
 import * as Haptics from "expo-haptics";
@@ -614,22 +614,11 @@ function VoiceMessagePlayer({
     () => generateWaveformBars(audioUrl, 20),
     [audioUrl],
   );
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const player = useAudioPlayer(audioUrl);
+  const status = useAudioPlayerStatus(player);
   const [isLoading, setIsLoading] = useState(false);
-  const [position, setPosition] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(duration || 0);
-  const [hasFinished, setHasFinished] = useState(false);
+  const audioDuration = status.duration > 0 ? status.duration : (duration || 0);
   const progressAnim = useSharedValue(0);
-
-  // Cleanup sound on unmount
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
-  }, [sound]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -637,88 +626,43 @@ function VoiceMessagePlayer({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  // Update progress animation from status
+  useEffect(() => {
+    if (audioDuration > 0 && status.playing) {
+      progressAnim.value = withTiming(status.currentTime / audioDuration, {
+        duration: 100,
+      });
+    }
+    // Reset on finish
+    if (!status.playing && status.currentTime >= audioDuration - 0.1 && audioDuration > 0 && status.currentTime > 0) {
+      progressAnim.value = withTiming(0, { duration: 200 });
+    }
+  }, [status.currentTime, status.playing, audioDuration]);
+
   const loadAndPlayAudio = async () => {
     try {
       setIsLoading(true);
-
-      // Configure audio mode for playback
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
+      await setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
+        shouldPlayInBackground: false,
       });
 
-      // If already loaded, handle play/pause/replay
-      if (sound) {
-        const status = await sound.getStatusAsync();
-        if (status.isLoaded) {
-          if (isPlaying) {
-            // Pause
-            await sound.pauseAsync();
-            setIsPlaying(false);
-          } else if (
-            hasFinished ||
-            status.positionMillis >= (status.durationMillis || 0) - 100
-          ) {
-            // Replay from beginning
-            await sound.setPositionAsync(0);
-            await sound.playAsync();
-            setIsPlaying(true);
-            setHasFinished(false);
-            setPosition(0);
-            progressAnim.value = 0;
-          } else {
-            // Resume
-            await sound.playAsync();
-            setIsPlaying(true);
-          }
-          setIsLoading(false);
-          return;
-        }
+      if (status.playing) {
+        player.pause();
+      } else if (status.currentTime >= audioDuration - 0.1 && audioDuration > 0) {
+        // Replay from beginning
+        await player.seekTo(0);
+        player.play();
+        progressAnim.value = 0;
+      } else {
+        player.play();
       }
-
-      // Load new sound
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
-        { shouldPlay: true },
-        onPlaybackStatusUpdate,
-      );
-
-      setSound(newSound);
-      setIsPlaying(true);
-      setHasFinished(false);
       setIsLoading(false);
     } catch (error) {
       console.error("Error playing audio:", error);
       setIsLoading(false);
       setErrorAlert("Failed to play voice message");
-    }
-  };
-
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (status.isLoaded) {
-      const currentPosition = status.positionMillis / 1000;
-      const totalDuration = status.durationMillis / 1000;
-
-      setPosition(currentPosition);
-      if (!audioDuration && totalDuration) {
-        setAudioDuration(totalDuration);
-      }
-
-      // Update progress animation
-      if (totalDuration > 0) {
-        progressAnim.value = withTiming(currentPosition / totalDuration, {
-          duration: 100,
-        });
-      }
-
-      if (status.didJustFinish) {
-        setIsPlaying(false);
-        setHasFinished(true);
-        setPosition(0);
-        progressAnim.value = withTiming(0, { duration: 200 });
-      }
     }
   };
 
@@ -751,7 +695,7 @@ function VoiceMessagePlayer({
           <ActivityIndicator size="small" color={isOwn ? "#fff" : "#fff"} />
         ) : (
           <Ionicons
-            name={isPlaying ? "pause" : "play"}
+            name={status.playing ? "pause" : "play"}
             size={20}
             color={isOwn ? "#fff" : "#fff"}
           />
@@ -800,7 +744,7 @@ function VoiceMessagePlayer({
             isOwn && styles.voiceDurationOwn,
           ]}
         >
-          {isPlaying ? formatTime(position) : formatTime(audioDuration)}
+          {status.playing ? formatTime(status.currentTime) : formatTime(audioDuration)}
         </Text>
       </View>
     </View>
@@ -841,16 +785,31 @@ function Composer({
     uri: string;
     duration: number;
   } | null>(null);
-  const [reviewSound, setReviewSound] = useState<Audio.Sound | null>(null);
   const [isReviewPlaying, setIsReviewPlaying] = useState(false);
   const [reviewPosition, setReviewPosition] = useState(0);
   const insets = useSafeAreaInsets();
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<TextInput>(null);
-  const recordingRef = useRef<Audio.Recording | null>(null);
   const durationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
   );
+
+  // expo-audio hooks for recording and review playback
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const reviewPlayer = useAudioPlayer(reviewAudio ? reviewAudio.uri : null);
+  const reviewStatus = useAudioPlayerStatus(reviewPlayer);
+
+  // Sync review playback state
+  useEffect(() => {
+    setIsReviewPlaying(reviewStatus.playing);
+    if (reviewStatus.playing) {
+      setReviewPosition(reviewStatus.currentTime);
+    }
+    // Reset on finish
+    if (!reviewStatus.playing && reviewStatus.currentTime > 0 && reviewStatus.duration > 0 && reviewStatus.currentTime >= reviewStatus.duration - 0.1) {
+      setReviewPosition(0);
+    }
+  }, [reviewStatus.playing, reviewStatus.currentTime, reviewStatus.duration]);
 
   // Recording animation
   const recordingScale = useSharedValue(1);
@@ -874,15 +833,6 @@ function Composer({
     transform: [{ scale: recordingScale.value }],
   }));
 
-  // Cleanup review sound on unmount
-  useEffect(() => {
-    return () => {
-      if (reviewSound) {
-        reviewSound.unloadAsync().catch(() => {});
-      }
-    };
-  }, [reviewSound]);
-
   const handleChangeText = (newText: string) => {
     setText(newText);
     if (onTyping && newText.length > 0) {
@@ -904,24 +854,22 @@ function Composer({
   const startRecording = async () => {
     try {
       // Request permissions
-      const { status } = await Audio.requestPermissionsAsync();
+      const { status } = await requestRecordingPermissionsAsync();
       if (status !== "granted") {
         setErrorAlert("Please allow microphone access to send voice messages.");
         return;
       }
 
-      // Configure audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+      // Configure audio mode for recording
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
 
       // Start recording
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      );
+      await recorder.prepareToRecordAsync();
+      recorder.record();
 
-      recordingRef.current = recording;
       setIsRecording(true);
       setRecordingDuration(0);
 
@@ -936,8 +884,6 @@ function Composer({
   };
 
   const stopRecording = async () => {
-    if (!recordingRef.current) return;
-
     try {
       // Stop duration counter
       if (durationIntervalRef.current) {
@@ -945,19 +891,17 @@ function Composer({
         durationIntervalRef.current = null;
       }
 
-      // Get URI before unloading (getURI returns null after stopAndUnloadAsync)
-      const uri = recordingRef.current.getURI();
-      await recordingRef.current.stopAndUnloadAsync();
+      await recorder.stop();
+      const uri = recorder.uri;
       const duration = recordingDuration;
 
       // Reset audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
+      await setAudioModeAsync({
+        allowsRecording: false,
       });
 
       setIsRecording(false);
       setRecordingDuration(0);
-      recordingRef.current = null;
 
       // Enter review mode instead of sending immediately
       if (uri && duration > 0) {
@@ -971,22 +915,19 @@ function Composer({
   };
 
   const cancelRecording = async () => {
-    if (!recordingRef.current) return;
-
     try {
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
         durationIntervalRef.current = null;
       }
 
-      await recordingRef.current.stopAndUnloadAsync();
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
+      await recorder.stop();
+      await setAudioModeAsync({
+        allowsRecording: false,
       });
 
       setIsRecording(false);
       setRecordingDuration(0);
-      recordingRef.current = null;
     } catch (error) {
       console.error("Failed to cancel recording:", error);
       setIsRecording(false);
@@ -999,48 +940,20 @@ function Composer({
     if (!reviewAudio) return;
 
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
+      await setAudioModeAsync({
+        allowsRecording: false,
+        playsInSilentMode: true,
       });
 
-      if (reviewSound) {
-        const status = await reviewSound.getStatusAsync();
-        if (status.isLoaded) {
-          if (isReviewPlaying) {
-            await reviewSound.pauseAsync();
-            setIsReviewPlaying(false);
-          } else if (
-            status.positionMillis >=
-            (status.durationMillis || 0) - 100
-          ) {
-            await reviewSound.setPositionAsync(0);
-            await reviewSound.playAsync();
-            setIsReviewPlaying(true);
-            setReviewPosition(0);
-          } else {
-            await reviewSound.playAsync();
-            setIsReviewPlaying(true);
-          }
-          return;
-        }
+      if (reviewStatus.playing) {
+        reviewPlayer.pause();
+      } else if (reviewStatus.currentTime >= reviewStatus.duration - 0.1 && reviewStatus.duration > 0) {
+        await reviewPlayer.seekTo(0);
+        reviewPlayer.play();
+        setReviewPosition(0);
+      } else {
+        reviewPlayer.play();
       }
-
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: reviewAudio.uri },
-        { shouldPlay: true },
-        (status: any) => {
-          if (status.isLoaded) {
-            setReviewPosition(status.positionMillis / 1000);
-            if (status.didJustFinish) {
-              setIsReviewPlaying(false);
-              setReviewPosition(0);
-            }
-          }
-        },
-      );
-      setReviewSound(newSound);
-      setIsReviewPlaying(true);
     } catch (error) {
       console.error("Failed to play review audio:", error);
     }
@@ -1050,29 +963,17 @@ function Composer({
   const confirmReviewAudio = async () => {
     if (!reviewAudio) return;
     // Stop playback if playing
-    if (reviewSound) {
-      try {
-        await reviewSound.stopAsync();
-        await reviewSound.unloadAsync();
-      } catch {}
-    }
+    reviewPlayer.pause();
     onSendAudio(reviewAudio.uri, reviewAudio.duration);
     setReviewAudio(null);
-    setReviewSound(null);
     setIsReviewPlaying(false);
     setReviewPosition(0);
   };
 
   // Discard the reviewed audio
   const discardReviewAudio = async () => {
-    if (reviewSound) {
-      try {
-        await reviewSound.stopAsync();
-        await reviewSound.unloadAsync();
-      } catch {}
-    }
+    reviewPlayer.pause();
     setReviewAudio(null);
-    setReviewSound(null);
     setIsReviewPlaying(false);
     setReviewPosition(0);
   };

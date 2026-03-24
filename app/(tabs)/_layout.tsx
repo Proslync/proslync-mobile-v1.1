@@ -29,47 +29,24 @@ export default function TabLayout() {
 
   return (
     <NativeTabs tintColor="#fff">
-      <NativeTabs.Trigger
-        name="search"
-        options={{
-          title: '',
-          icon: { sf: 'map' as any },
-          selectedIcon: { sf: 'map.fill' as any },
-        }}
-      />
-      <NativeTabs.Trigger
-        name="explore"
-        options={{
-          title: '',
-          icon: { sf: 'paperplane' as any },
-          selectedIcon: { sf: 'paperplane.fill' as any },
-          badgeValue: unreadCount > 0 ? String(unreadCount) : undefined,
-        }}
-      />
-      <NativeTabs.Trigger
-        name="index"
-        options={{
-          title: '',
-          icon: { sf: 'house' as any },
-          selectedIcon: { sf: 'house.fill' as any },
-        }}
-      />
-      <NativeTabs.Trigger
-        name="activity"
-        options={{
-          title: '',
-          icon: { sf: 'wallet.bifold' as any },
-          selectedIcon: { sf: 'wallet.bifold.fill' as any },
-        }}
-      />
-      <NativeTabs.Trigger
-        name="profile"
-        options={{
-          title: '',
-          icon: { sf: 'person.crop.circle' as any },
-          selectedIcon: { sf: 'person.crop.circle.fill' as any },
-        }}
-      />
+      <NativeTabs.Trigger name="search">
+        <NativeTabs.Trigger.Icon sf={{ default: 'map', selected: 'map.fill' }} />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="explore">
+        <NativeTabs.Trigger.Icon sf={{ default: 'paperplane', selected: 'paperplane.fill' }} />
+        {unreadCount > 0 && (
+          <NativeTabs.Trigger.Badge>{String(unreadCount)}</NativeTabs.Trigger.Badge>
+        )}
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="index">
+        <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="activity">
+        <NativeTabs.Trigger.Icon sf={{ default: 'wallet.bifold', selected: 'wallet.bifold.fill' }} />
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="profile">
+        <NativeTabs.Trigger.Icon sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }} />
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
