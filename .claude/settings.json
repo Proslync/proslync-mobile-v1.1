@@ -1,5 +1,6 @@
 {
   "enabledPlugins": {
-    "react-native-best-practices@callstack-agent-skills": true
+    "react-native-best-practices@callstack-agent-skills": true,
+    "expo@expo-plugins": true
   }
 }

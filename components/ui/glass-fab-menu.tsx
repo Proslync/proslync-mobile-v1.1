@@ -4,11 +4,11 @@
 import {
   GlassEffectContainer,
   Host,
+  HStack,
   Image,
   Namespace,
   Spacer,
   VStack,
-  HStack,
 } from "@expo/ui/swift-ui";
 import {
   animation,
@@ -18,10 +18,10 @@ import {
   glassEffectId,
   onTapGesture,
 } from "@expo/ui/swift-ui/modifiers";
-import type { SFSymbol } from "sf-symbols-typescript";
 import * as Haptics from "expo-haptics";
 import * as React from "react";
 import type { ViewStyle } from "react-native";
+import type { SFSymbol } from "sf-symbols-typescript";
 
 // ─── Types ───
 
@@ -84,7 +84,12 @@ const DEFAULTS = {
   spacing: 8,
   glassSpacing: 8,
   glassVariant: "clear" as const,
-  spring: { response: 0.7, dampingFraction: 0.9, blendDuration: 0.5, bounce: 1 },
+  spring: {
+    response: 0.6,
+    dampingFraction: 0.9,
+    blendDuration: 0.4,
+    bounce: 1,
+  },
   colorScheme: "dark" as const,
   closeOnAction: true,
 };
@@ -98,8 +103,7 @@ function getHostSize(
   spacing: number,
   actionCount: number,
 ) {
-  const expandedLength =
-    fabSize + actionCount * (actionSize + spacing) + 20;
+  const expandedLength = fabSize + actionCount * (actionSize + spacing) + 20;
 
   const isVertical = direction === "up" || direction === "down";
   return {
@@ -141,7 +145,13 @@ export function GlassFabMenu({
   };
 
   const isVertical = direction === "up" || direction === "down";
-  const hostSize = getHostSize(direction, actionSize, fabSize, spacing, actions.length);
+  const hostSize = getHostSize(
+    direction,
+    actionSize,
+    fabSize,
+    spacing,
+    actions.length,
+  );
   const Stack = isVertical ? VStack : HStack;
 
   // Build the spring animation
