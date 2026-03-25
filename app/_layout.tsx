@@ -110,7 +110,6 @@ function RootLayoutNav() {
         />
         <Stack.Screen name="user-profile/[userId]" />
         <Stack.Screen name="event/[id]" />
-        <Stack.Screen name="event/bar-menu" />
         <Stack.Screen name="event/my-tab" />
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="edit-profile" />
