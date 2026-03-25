@@ -7,7 +7,7 @@ import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { TicketTier, PricingRule } from '@/lib/types/pricing.types';
 
 interface TierCardProps {
@@ -130,7 +130,7 @@ export function TierCard({
           <Text style={[styles.addPricingText, { color: colors.textSecondary }]}>Add Pricing</Text>
         </TouchableOpacity>
       )}
-      <ConfirmModal
+      <ConfirmSheet
         visible={deleteTierVisible}
         onClose={() => setDeleteTierVisible(false)}
         onConfirm={() => { setDeleteTierVisible(false); onDeleteTier(tier.id); }}
@@ -141,7 +141,7 @@ export function TierCard({
         icon="trash-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deletePricingRule}
         onClose={() => setDeletePricingRule(null)}
         onConfirm={() => { if (deletePricingRule) { onDeletePricing(tier.id, deletePricingRule.id); setDeletePricingRule(null); } }}

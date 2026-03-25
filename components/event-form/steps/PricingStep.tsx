@@ -16,7 +16,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { CreateTierModal } from '@/components/pricing/create-tier-modal';
 import { CreatePricingRuleModal } from '@/components/pricing/create-pricing-rule-modal';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { EventFormData, TierFormData } from '@/lib/schemas/events';
 import type { CreateTierRequest, CreatePricingRuleRequest } from '@/lib/types/pricing.types';
 
@@ -260,7 +260,7 @@ export function PricingStep() {
         onSubmit={handleTierSubmit}
         initialValues={tierModalInitial}
       />
-      <ConfirmModal
+      <ConfirmSheet
         visible={deleteTierIndex !== null}
         onClose={() => setDeleteTierIndex(null)}
         onConfirm={() => {
@@ -278,7 +278,7 @@ export function PricingStep() {
         icon="trash-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={deletePricingTarget !== null}
         onClose={() => setDeletePricingTarget(null)}
         onConfirm={() => {

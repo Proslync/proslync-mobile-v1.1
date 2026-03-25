@@ -23,7 +23,7 @@ import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { ActionSheet } from '@/components/shared/action-sheet';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { UpdateProfileRequest } from '@/lib/types/auth.types';
 
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
@@ -396,7 +396,7 @@ export default function EditProfileScreen() {
         ]}
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={showDiscardConfirm}
         onClose={() => setShowDiscardConfirm(false)}
         onConfirm={() => { setShowDiscardConfirm(false); router.back(); }}

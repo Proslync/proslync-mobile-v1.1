@@ -15,7 +15,7 @@ import { GlassView } from "expo-glass-effect";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { paymentsApi } from "@/lib/api/payments";
 import { TerminalProvider, useTerminalPayment } from "@/lib/providers/terminal-provider";
 
@@ -183,7 +183,7 @@ function TapToChargeContent() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <DarkGradientBg />
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!paymentFailedAlert}
         onClose={() => setPaymentFailedAlert(null)}
         title="Payment Failed"

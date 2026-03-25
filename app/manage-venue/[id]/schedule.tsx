@@ -3,7 +3,7 @@ import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassSurface } from "@/components/glass/glass-surface";
 import { GlassButton } from "@/components/glass/glass-button";
 import { NativeSheet } from "@/components/ui/native-sheet";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import {
@@ -555,7 +555,7 @@ export default function VenueScheduleScreen() {
       </NativeSheet>
 
       {/* Delete Shift Confirmation */}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDeleteShift}

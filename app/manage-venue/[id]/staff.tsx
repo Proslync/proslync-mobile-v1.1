@@ -1,6 +1,6 @@
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassSurface } from "@/components/glass/glass-surface";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { NativeSheet } from "@/components/ui/native-sheet";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
@@ -412,7 +412,7 @@ export default function VenueStaffScreen() {
       </NativeSheet>
 
       {/* Delete Confirmation */}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleRemove}

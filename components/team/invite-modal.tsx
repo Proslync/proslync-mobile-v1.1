@@ -18,7 +18,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useUnifiedSearch } from '@/hooks/use-unified-search';
 import { useInviteByUserId } from '@/hooks';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { RoleResponseDto } from '@/lib/types/team.types';
 import type { UnifiedSearchItem, SearchSuggestion } from '@/lib/types/search.types';
 
@@ -224,7 +224,7 @@ export function InviteModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!inviteError}
         onClose={() => setInviteError(null)}
         title="Invite Error"

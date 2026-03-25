@@ -27,7 +27,7 @@ import {
   TerminalProvider,
   useTerminalPayment,
 } from "@/lib/providers/terminal-provider";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useEvent } from "@/hooks/use-events-query";
@@ -369,7 +369,7 @@ function CheckInsContent() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!paymentFailedAlert}
         onClose={() => setPaymentFailedAlert(null)}
         title="Payment Failed"

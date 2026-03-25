@@ -14,7 +14,7 @@ import {
   useDeleteTable,
 } from '@/hooks/use-venue-tables';
 import { filesApi } from '@/lib/api/files';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams } from 'expo-router';
@@ -530,7 +530,7 @@ export default function VenueTablesScreen() {
         </ScrollView>
       </NativeSheet>
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={permissionAlert}
         onClose={() => setPermissionAlert(false)}
         title="Permission Required"
@@ -539,7 +539,7 @@ export default function VenueTablesScreen() {
         icon="camera-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!errorAlert}
         onClose={() => setErrorAlert(null)}
         title="Error"
@@ -548,7 +548,7 @@ export default function VenueTablesScreen() {
         icon="alert-circle-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteSectionTarget}
         onClose={() => setDeleteSectionTarget(null)}
         onConfirm={() => { if (deleteSectionTarget) { deleteSection.mutateAsync(deleteSectionTarget.id); setDeleteSectionTarget(null); } }}
@@ -559,7 +559,7 @@ export default function VenueTablesScreen() {
         icon="trash-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteTableTarget}
         onClose={() => setDeleteTableTarget(null)}
         onConfirm={() => { if (deleteTableTarget) { deleteTable.mutateAsync(deleteTableTarget.id); setDeleteTableTarget(null); } }}

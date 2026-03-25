@@ -20,7 +20,7 @@ import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAdminPosts, useAdminDeletePost } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { AdminPost } from '@/lib/api/admin';
 
 function PostRow({
@@ -194,7 +194,7 @@ export default function AdminPostsScreen() {
         />
       )}
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => { if (deleteTarget) { deletePost.mutate(deleteTarget.id); setDeleteTarget(null); } }}

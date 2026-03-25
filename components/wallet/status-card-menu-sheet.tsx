@@ -21,7 +21,7 @@ import { generateAppleWalletToken } from "../../lib/api/wallet";
 import { TIER_PERKS, WalletUser } from "../../lib/types/wallet.types";
 import { GlassCard } from "../glass/glass-card";
 import { GlassText } from "../glass/glass-text";
-import { ConfirmModal } from "../shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 
 interface StatusCardMenuSheetProps {
   visible: boolean;
@@ -73,7 +73,7 @@ export function StatusCardMenuSheet({
         </ScrollView>
       </NativeSheet>
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!walletError}
         onClose={() => setWalletError(null)}
         title="Error"

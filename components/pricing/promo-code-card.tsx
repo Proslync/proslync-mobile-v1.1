@@ -5,7 +5,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { PromoCode } from '@/lib/types/pricing.types';
 
 interface PromoCodeCardProps {
@@ -76,7 +76,7 @@ export function PromoCodeCard({ promoCode, readOnly, onToggleActive, onEdit, onD
           </TouchableOpacity>
         </View>
       )}
-      <ConfirmModal
+      <ConfirmSheet
         visible={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={() => { setShowDeleteConfirm(false); onDelete(promoCode.id); }}

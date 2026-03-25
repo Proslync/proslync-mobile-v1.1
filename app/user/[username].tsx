@@ -2,7 +2,7 @@ import {
   ActionSheet,
   type ActionSheetOption,
 } from "@/components/shared/action-sheet";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useToast } from "@/components/shared/toast";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { chatApi } from "@/lib/api/chat";
@@ -611,7 +611,7 @@ export default function UserProfileScreen() {
         options={menuOptions}
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={showBlockConfirm}
         onClose={() => setShowBlockConfirm(false)}
         onConfirm={async () => {
@@ -632,7 +632,7 @@ export default function UserProfileScreen() {
         icon="ban"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={showReportConfirm}
         onClose={() => setShowReportConfirm(false)}
         onConfirm={async () => {

@@ -24,7 +24,7 @@ import {
 } from '@/hooks';
 import { EventStatus } from '@/lib/types/events.types';
 import type { PromoCode } from '@/lib/types/pricing.types';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -212,7 +212,7 @@ export default function MarketingScreen() {
         </ScrollView>
       )}
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!copiedAlert}
         onClose={() => setCopiedAlert(null)}
         title="Copied"
@@ -221,7 +221,7 @@ export default function MarketingScreen() {
         icon="checkmark-circle-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => { if (deleteTarget) { deletePromoCode.mutate(deleteTarget.id); setDeleteTarget(null); } }}

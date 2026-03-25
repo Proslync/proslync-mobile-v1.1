@@ -26,7 +26,7 @@ import {
 } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { AdminEvent } from '@/lib/api/admin';
 
 const STATUS_FILTERS = [
@@ -260,7 +260,7 @@ export default function AdminEventsScreen() {
         options={statusEvent ? getStatusItems(statusEvent) : []}
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteConfirmEvent}
         onClose={() => setDeleteConfirmEvent(null)}
         onConfirm={() => { if (deleteConfirmEvent) { deleteEvent.mutate(deleteConfirmEvent.id); setDeleteConfirmEvent(null); } }}

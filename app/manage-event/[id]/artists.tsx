@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ActionSheet } from '@/components/shared/action-sheet';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { ArtistRow } from '@/components/artists/artist-row';
 import { ArtistFormModal } from '@/components/artists/artist-form-modal';
 import {
@@ -206,7 +206,7 @@ export default function ArtistsScreen() {
       />
 
       {/* Delete Confirmation */}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!confirmDeleteArtist}
         title="Remove Artist"
         message={`Remove ${confirmDeleteArtist?.userName || confirmDeleteArtist?.userFullName || 'this artist'} from the event?`}

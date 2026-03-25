@@ -5,7 +5,7 @@ import { GlassView } from "expo-glass-effect";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useVenue } from "@/hooks/use-venue-query";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
@@ -204,7 +204,7 @@ export default function ManageVenueScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {isDark && <DarkGradientBg />}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!errorAlert}
         onClose={() => setErrorAlert(null)}
         title={errorAlert?.title || "Error"}

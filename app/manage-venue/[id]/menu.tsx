@@ -1,6 +1,6 @@
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassSurface } from "@/components/glass/glass-surface";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { NativeSheet } from "@/components/ui/native-sheet";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
@@ -594,7 +594,7 @@ export default function VenueMenuScreen() {
         </ScrollView>
       </NativeSheet>
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!errorAlert}
         onClose={() => setErrorAlert(null)}
         title="Error"
@@ -603,7 +603,7 @@ export default function VenueMenuScreen() {
         icon="alert-circle-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteCategoryTarget}
         onClose={() => setDeleteCategoryTarget(null)}
         onConfirm={() => {
@@ -619,7 +619,7 @@ export default function VenueMenuScreen() {
         icon="trash-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteItemTarget}
         onClose={() => setDeleteItemTarget(null)}
         onConfirm={() => {

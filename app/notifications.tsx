@@ -17,7 +17,7 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { ThemeColors } from '@/hooks/use-app-theme';
 import {
@@ -546,7 +546,7 @@ export default function NotificationsScreen() {
         )
       )}
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!confirmId}
         title={confirmType === 'accept' ? 'Accept Invitation' : 'Decline Invitation'}
         message={

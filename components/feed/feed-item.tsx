@@ -3,7 +3,7 @@ import {
   ActionSheet,
   type ActionSheetOption,
 } from "@/components/shared/action-sheet";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useFollowUser } from "@/hooks/use-follow-user";
 import { usersApi } from "@/lib/api/users";
@@ -363,7 +363,7 @@ export function FeedItem({
         options={menuItems}
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={showBlockConfirm}
         onClose={() => setShowBlockConfirm(false)}
         onConfirm={async () => {

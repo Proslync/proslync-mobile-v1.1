@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
@@ -171,7 +171,7 @@ export default function DashboardTextBlastConfirmScreen() {
         </TouchableOpacity>
       </View>
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={successAlert}
         onClose={() => {
           setSuccessAlert(false);

@@ -27,7 +27,7 @@ import {
 } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { AdminUser } from '@/lib/api/admin';
 
 const ROLE_OPTIONS = ['user', 'host', 'bouncer', 'owner', 'admin'];
@@ -252,7 +252,7 @@ export default function AdminUsersScreen() {
         options={roleUser ? getRoleItems(roleUser) : []}
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!banConfirmUser}
         onClose={() => setBanConfirmUser(null)}
         onConfirm={() => {

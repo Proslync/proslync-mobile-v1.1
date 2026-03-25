@@ -7,7 +7,6 @@ export { SwipeableConversationRow } from './swipeable-conversation-row';
 export { MessageBubble } from './message-bubble';
 export { DaySeparator } from './day-separator';
 export { TypingIndicator } from './typing-indicator';
-export { Composer } from './composer';
 export { ReactionSheet } from './reaction-sheet';
 export { InfoSheet } from './info-sheet';
 export { ActionSheet } from './action-sheet';

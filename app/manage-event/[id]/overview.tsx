@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassView } from 'expo-glass-effect';
@@ -268,7 +268,7 @@ export default function OverviewScreen() {
         )}
       </ScrollView>
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={showPublishConfirm}
         onClose={() => setShowPublishConfirm(false)}
         onConfirm={() => {
@@ -281,7 +281,7 @@ export default function OverviewScreen() {
         icon="rocket-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={() => {

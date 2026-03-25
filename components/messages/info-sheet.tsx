@@ -13,7 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
 import { useAppTheme } from "@/hooks/use-app-theme";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { Conversation } from "../../lib/types/messages.types";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { NativeSheet } from "@/components/ui/native-sheet";
@@ -273,7 +273,7 @@ export function InfoSheet({
         </ScrollView>
       </NativeSheet>
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={showBlockConfirm}
         onClose={() => setShowBlockConfirm(false)}
         onConfirm={() => {
@@ -287,7 +287,7 @@ export function InfoSheet({
         icon="ban"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={showReportConfirm}
         onClose={() => setShowReportConfirm(false)}
         onConfirm={() => {

@@ -38,7 +38,7 @@ import {
 import { useUnifiedSearch } from "@/hooks/use-unified-search";
 import { chatApi } from "@/lib/api/chat";
 import { usersApi } from "@/lib/api/users";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { ConversationActionSheet } from "@/components/messages/action-sheet";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAuth } from "@/lib/providers/auth-provider";
@@ -1086,7 +1086,7 @@ export default function MessagesScreen() {
         onBlock={handleBlockFromAction}
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={async () => {
@@ -1102,7 +1102,7 @@ export default function MessagesScreen() {
         icon="trash-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={deleteError}
         onClose={() => setDeleteError(false)}
         title="Error"
@@ -1111,7 +1111,7 @@ export default function MessagesScreen() {
         icon="alert-circle-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!blockTarget}
         onClose={() => setBlockTarget(null)}
         onConfirm={handleConfirmBlock}
@@ -1122,7 +1122,7 @@ export default function MessagesScreen() {
         icon="ban-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={blockError}
         onClose={() => setBlockError(false)}
         title="Error"

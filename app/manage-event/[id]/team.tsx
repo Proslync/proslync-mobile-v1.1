@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from "react";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassSurface } from "@/components/glass/glass-surface";
 import { ActionSheet } from "@/components/shared/action-sheet";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { TeamMemberRow } from "@/components/team/team-member-row";
 import { PendingInvitationRow } from "@/components/team/pending-invitation-row";
 import { RoleCard } from "@/components/team/role-card";
@@ -454,7 +454,7 @@ export default function TeamScreen() {
       />
 
       {/* Remove Member Confirmation */}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!confirmRemoveMember}
         title="Remove Member"
         message={`Remove ${confirmRemoveMember?.user.firstName || "this member"} from the team?`}
@@ -472,7 +472,7 @@ export default function TeamScreen() {
       />
 
       {/* Delete Role Confirmation */}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!confirmDeleteRole}
         title="Delete Role"
         message={`Delete "${confirmDeleteRole?.name}"? Members with this role will need to be reassigned.`}
@@ -490,7 +490,7 @@ export default function TeamScreen() {
       />
 
       {/* Cancel Invitation Confirmation */}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!confirmCancelInvitation}
         title="Cancel Invitation"
         message="Cancel this pending invitation?"

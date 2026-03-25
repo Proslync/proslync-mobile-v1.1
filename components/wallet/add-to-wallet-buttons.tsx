@@ -1,7 +1,7 @@
 // Add to Wallet Buttons - Platform-specific Apple/Google Wallet buttons
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image, Linking, ActivityIndicator, Platform } from 'react-native';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { addToGoogleWallet, generateAppleWalletToken } from '../../lib/api/wallet';
 
 interface AddToWalletButtonsProps {
@@ -73,7 +73,7 @@ export function AddToWalletButtons({ membershipCardId }: AddToWalletButtonsProps
   // Show only the relevant button based on platform
   return (
     <View style={styles.container}>
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!errorMessage}
         onClose={() => setErrorMessage(null)}
         title="Error"

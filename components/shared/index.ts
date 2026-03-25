@@ -1,7 +1,7 @@
 export { BottomNav } from './bottom-nav';
 export { ActionSheet } from './action-sheet';
 export type { ActionSheetOption } from './action-sheet';
-export { ConfirmModal } from './confirm-modal';
+export { ConfirmSheet } from '../ui/confirm-sheet';
 export { DarkGradientBg } from './dark-gradient-bg';
 export { IncomingCallOverlay } from './incoming-call-overlay';
 export { SegmentedControl } from './segmented-control';

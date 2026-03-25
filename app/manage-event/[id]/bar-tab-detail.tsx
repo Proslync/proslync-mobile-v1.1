@@ -19,7 +19,7 @@ import { GlassSurface } from '@/components/glass/glass-surface';
 import { TabStatusBadge } from '@/components/bar/tab-status-badge';
 import { AddItemsSheet } from '@/components/bar/add-items-sheet';
 import { CheckoutSheet } from '@/components/bar/checkout-sheet';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { useTerminalPayment } from '@/lib/providers/terminal-provider';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import {
@@ -397,7 +397,7 @@ function BarTabDetailScreen() {
       />
 
       {/* Confirm modals — last in tree so they render on top of everything */}
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!voidConfirm}
         onClose={() => setVoidConfirm(null)}
         title="Void Item"
@@ -408,7 +408,7 @@ function BarTabDetailScreen() {
         icon="trash-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!errorMessage}
         onClose={() => setErrorMessage(null)}
         title="Payment Failed"
@@ -417,7 +417,7 @@ function BarTabDetailScreen() {
         icon="card-outline"
       />
 
-      <ConfirmModal
+      <ConfirmSheet
         visible={deleteConfirm}
         onClose={() => setDeleteConfirm(false)}
         onConfirm={handleDeleteTab}

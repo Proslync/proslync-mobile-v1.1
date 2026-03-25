@@ -2,7 +2,7 @@
 import { MiniEventCard } from "@/components/chat/mini-event-card";
 import { MiniUserCard } from "@/components/chat/mini-user-card";
 import { MiniVenueCard } from "@/components/chat/mini-venue-card";
-import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useAppTheme, type ThemeColors } from "@/hooks/use-app-theme";
@@ -1875,7 +1875,7 @@ export default function ChatThreadScreen() {
     >
       {isDark && <DarkGradientBg />}
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-      <ConfirmModal
+      <ConfirmSheet
         visible={!!errorAlert}
         onClose={() => setErrorAlert(null)}
         title="Error"
@@ -1883,7 +1883,7 @@ export default function ChatThreadScreen() {
         alertOnly
         icon="alert-circle-outline"
       />
-      <ConfirmModal
+      <ConfirmSheet
         visible={showBlockConfirm}
         onClose={() => setShowBlockConfirm(false)}
         onConfirm={() => {
@@ -2537,7 +2537,7 @@ export default function ChatThreadScreen() {
         </View>
 
         {/* Remove member confirm */}
-        <ConfirmModal
+        <ConfirmSheet
           visible={!!removeMemberTarget}
           onClose={() => setRemoveMemberTarget(null)}
           onConfirm={handleRemoveMember}
@@ -2549,7 +2549,7 @@ export default function ChatThreadScreen() {
         />
 
         {/* Leave group confirm */}
-        <ConfirmModal
+        <ConfirmSheet
           visible={showLeaveConfirm}
           onClose={() => setShowLeaveConfirm(false)}
           onConfirm={handleLeaveGroup}
