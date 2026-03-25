@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { GlassView, GlassContainer } from "expo-glass-effect";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { Ionicons } from "@expo/vector-icons";
-import { NativeSheet } from "./native-sheet";
+import { NativeSheet, canUseNativeSheet } from "./native-sheet";
+import { ActionSheet as ActionSheetFallback } from "@/components/shared/action-sheet";
 
 export interface ActionSheetOption {
   label: string;
@@ -19,7 +20,15 @@ interface ActionSheetProps {
   onClose: () => void;
 }
 
-export function ActionSheet({
+export function ActionSheet(props: ActionSheetProps) {
+  if (!canUseNativeSheet()) {
+    return <ActionSheetFallback {...props} />;
+  }
+
+  return <NativeActionSheet {...props} />;
+}
+
+function NativeActionSheet({
   visible,
   title,
   options,

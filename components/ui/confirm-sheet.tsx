@@ -9,7 +9,8 @@ import {
 import { GlassView, GlassContainer } from "expo-glass-effect";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { Ionicons } from "@expo/vector-icons";
-import { NativeSheet } from "./native-sheet";
+import { NativeSheet, canUseNativeSheet } from "./native-sheet";
+import { ConfirmModal as ConfirmModalFallback } from "@/components/shared/confirm-modal";
 
 interface ConfirmSheetProps {
   visible: boolean;
@@ -26,7 +27,15 @@ interface ConfirmSheetProps {
   alertOnly?: boolean;
 }
 
-export function ConfirmSheet({
+export function ConfirmSheet(props: ConfirmSheetProps) {
+  if (!canUseNativeSheet()) {
+    return <ConfirmModalFallback {...props} />;
+  }
+
+  return <NativeConfirmSheet {...props} />;
+}
+
+function NativeConfirmSheet({
   visible,
   onClose,
   onConfirm,
