@@ -1,138 +1,267 @@
-import React from 'react';
+import { MenuItemCard } from "@/components/bar/menu-item-card";
+import { TipEntrySheet } from "@/components/bar/tip-entry-sheet";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { useToast } from "@/components/shared/toast";
+import { FloatingCartBar } from "@/components/ui/floating-cart-bar";
+import { GlassChipBar, type ChipItem } from "@/components/ui/glass-chip-bar";
+import { useEvent, useVenueMenu } from "@/hooks";
 import {
-  View,
-  Text,
+  useCancelOrder,
+  useCreateOrder,
+  usePayOrder,
+} from "@/hooks/use-bar-orders";
+import { useStableRouter } from "@/hooks/use-stable-router";
+import { useTerminalPayment } from "@/lib/providers/terminal-provider";
+import type { VenueMenuItem } from "@/lib/types/menu.types";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams } from "expo-router";
+import * as React from "react";
+import {
+  ActivityIndicator,
   FlatList,
   StyleSheet,
+  Text,
   TouchableOpacity,
-  ActivityIndicator,
-  TextInput,
-} from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { GlassView, GlassContainer } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { BarTabCard } from '@/components/bar/bar-tab-card';
-import { BarSummaryCard } from '@/components/bar/bar-summary-card';
-import { useStableRouter } from '@/hooks/use-stable-router';
-import { useBarTabs, useBarSummary, useOpenTab } from '@/hooks';
-import { useRefreshControl } from '@/hooks/use-refresh-control';
-import { useToast } from '@/components/shared/toast';
-import { OpenTabFab } from '@/components/bar/open-tab-fab';
-import { canUseNativeSheet } from '@/components/ui/native-sheet';
-import type { BarTab } from '@/lib/types/bar-tab.types';
+  View,
+} from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const TAB_BAR_HEIGHT = 49;
-const RADIUS = 24;
-const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
+const ALL_CATEGORY = "all";
+const NUM_COLUMNS = 2;
 
-const renderBackdrop = (props: BottomSheetBackdropProps) => (
-  <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
-);
+interface CartItem {
+  menuItemId: number;
+  name: string;
+  priceCents: number;
+  quantity: number;
+}
 
-export default function BarDashboardScreen() {
+type ScreenState = "ordering" | "tipping" | "processing" | "receipt";
+
+export default function BarQuickOrderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useStableRouter();
-  const insets = useSafeAreaInsets();
-  const { showError } = useToast();
   const eventId = id ? Number(id) : undefined;
+  const insets = useSafeAreaInsets();
+  const router = useStableRouter();
+  const toast = useToast();
+  const { collectPayment, connectReader, isReaderConnected } =
+    useTerminalPayment();
 
-  const { data: tabsData, isLoading, refetch } = useBarTabs(eventId);
-  const { data: summary } = useBarSummary(eventId);
-  const openTab = useOpenTab(eventId ?? 0);
+  // Data
+  const { data: event } = useEvent(eventId);
+  const venueId = event?.venueId;
+  const { data: menu, isLoading: menuLoading } = useVenueMenu(venueId);
 
-  const [customerName, setCustomerName] = React.useState('');
-  const newTabSheetRef = React.useRef<BottomSheet>(null);
-  const sheetScale = useSharedValue(0.85);
-  const sheetOpacity = useSharedValue(0);
+  // Mutations (guard against undefined eventId)
+  const createOrder = useCreateOrder(eventId ?? 0);
+  const payOrder = usePayOrder(eventId ?? 0);
+  const cancelOrder = useCancelOrder(eventId ?? 0);
 
-  const { refreshControl } = useRefreshControl({
-    onRefresh: async () => { await refetch(); },
-  });
+  // Terminal reader connects lazily — on first checkout, not on mount
 
-  const openSheet = React.useCallback(() => {
-    setCustomerName('');
-    newTabSheetRef.current?.expand();
-    sheetScale.value = withSpring(1, SPRING_CONFIG);
-    sheetOpacity.value = withTiming(1, { duration: 200 });
-  }, [sheetScale, sheetOpacity]);
+  // Local state
+  const [cart, setCart] = React.useState<Map<number, CartItem>>(new Map());
+  const [selectedCategory, setSelectedCategory] = React.useState(ALL_CATEGORY);
+  const [screenState, setScreenState] = React.useState<ScreenState>("ordering");
+  const [paidAmountCents, setPaidAmountCents] = React.useState(0);
+  const pendingOrderRef = React.useRef<{
+    orderId: number;
+    paymentIntentId: string;
+  } | null>(null);
 
-  const closeSheet = React.useCallback(() => {
-    sheetScale.value = withTiming(0.85, { duration: 150 });
-    sheetOpacity.value = withTiming(0, { duration: 150 });
-    newTabSheetRef.current?.close();
-  }, [sheetScale, sheetOpacity]);
+  // Derived
+  const itemCount = React.useMemo(
+    () =>
+      Array.from(cart.values()).reduce((sum, item) => sum + item.quantity, 0),
+    [cart],
+  );
+  const subtotalCents = React.useMemo(
+    () =>
+      Array.from(cart.values()).reduce(
+        (sum, item) => sum + item.priceCents * item.quantity,
+        0,
+      ),
+    [cart],
+  );
 
-  const sheetAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: sheetScale.value }],
-    opacity: sheetOpacity.value,
-  }));
+  // Categories for chip bar
+  const categories: ChipItem[] = React.useMemo(() => {
+    if (!menu) return [];
+    const active = menu.filter(
+      (cat) => cat.isActive && cat.items?.some((i) => i.isActive),
+    );
+    return [
+      { id: ALL_CATEGORY, label: "All" },
+      ...active.map((cat) => ({ id: String(cat.id), label: cat.name })),
+    ];
+  }, [menu]);
 
-  const handleTabPress = React.useCallback(
-    (tab: BarTab) => {
-      router.push({
-        pathname: '/manage-event/[id]/bar-tab-detail',
-        params: { id: id!, tabId: String(tab.id) },
+  // Filtered menu items
+  const menuItems: VenueMenuItem[] = React.useMemo(() => {
+    if (!menu) return [];
+    const active = menu.filter((cat) => cat.isActive);
+    if (selectedCategory === ALL_CATEGORY) {
+      return active.flatMap(
+        (cat) => cat.items?.filter((i) => i.isActive) || [],
+      );
+    }
+    const cat = active.find((c) => String(c.id) === selectedCategory);
+    return cat?.items?.filter((i) => i.isActive) || [];
+  }, [menu, selectedCategory]);
+
+  // Cart actions
+  const addToCart = React.useCallback((item: VenueMenuItem) => {
+    setCart((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(item.id);
+      if (existing) {
+        next.set(item.id, { ...existing, quantity: existing.quantity + 1 });
+      } else {
+        next.set(item.id, {
+          menuItemId: item.id,
+          name: item.name,
+          priceCents: item.price,
+          quantity: 1,
+        });
+      }
+      return next;
+    });
+  }, []);
+
+  const removeFromCart = React.useCallback((itemId: number) => {
+    setCart((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(itemId);
+      if (existing && existing.quantity > 1) {
+        next.set(itemId, { ...existing, quantity: existing.quantity - 1 });
+      } else {
+        next.delete(itemId);
+      }
+      return next;
+    });
+  }, []);
+
+  const setCartQuantity = React.useCallback(
+    (item: VenueMenuItem, qty: number) => {
+      setCart((prev) => {
+        const next = new Map(prev);
+        if (qty <= 0) {
+          next.delete(item.id);
+        } else {
+          next.set(item.id, {
+            menuItemId: item.id,
+            name: item.name,
+            priceCents: item.price,
+            quantity: qty,
+          });
+        }
+        return next;
       });
     },
-    [router, id],
+    [],
   );
 
-  const handleConfirmOpenTab = React.useCallback(async () => {
-    const name = customerName.trim();
-    if (!name || !eventId) return;
+  const clearCartItem = React.useCallback((itemId: number) => {
+    setCart((prev) => {
+      const next = new Map(prev);
+      next.delete(itemId);
+      return next;
+    });
+  }, []);
+
+  const resetOrder = React.useCallback(() => {
+    setCart(new Map());
+    setScreenState("ordering");
+    setPaidAmountCents(0);
+    pendingOrderRef.current = null;
+  }, []);
+
+  // Checkout flow
+  const handleCheckout = () => {
+    setScreenState("tipping");
+  };
+
+  const handleTipConfirm = async (tipCents: number) => {
+    setScreenState("processing");
     try {
-      const { tab } = await openTab.mutateAsync({ customerName: name });
-      closeSheet();
-      router.push({
-        pathname: '/manage-event/[id]/bar-tab-detail',
-        params: { id: id!, tabId: String(tab.id) },
+      // 1. Create order + PaymentIntent
+      const items = Array.from(cart.values()).map((item) => ({
+        menuItemId: item.menuItemId,
+        quantity: item.quantity,
+      }));
+      const result = await createOrder.mutateAsync({ items, tipCents });
+      pendingOrderRef.current = {
+        orderId: result.order.id,
+        paymentIntentId: result.paymentIntentId,
+      };
+
+      // 2. Connect reader if not already connected, then collect
+      if (!isReaderConnected) {
+        await connectReader(eventId);
+      }
+      await collectPayment(result.clientSecret);
+
+      // 3. Mark order paid
+      await payOrder.mutateAsync({
+        orderId: result.order.id,
+        data: { paymentIntentId: result.paymentIntentId },
       });
-    } catch {
-      showError('Failed to open tab. Please try again.');
+
+      // 4. Success
+      setPaidAmountCents(result.order.totalCents);
+      setScreenState("receipt");
+    } catch (error) {
+      // Cancel the pending order if it was created
+      if (pendingOrderRef.current) {
+        try {
+          await cancelOrder.mutateAsync(pendingOrderRef.current.orderId);
+        } catch {
+          // Webhook fallback will handle it
+        }
+        pendingOrderRef.current = null;
+      }
+      setScreenState("ordering");
+      toast.showError(
+        error instanceof Error ? error.message : "Payment failed",
+      );
     }
-  }, [customerName, eventId, openTab, router, id, closeSheet, showError]);
+  };
 
-  const openTabs = React.useMemo(
-    () => (tabsData?.tabs ?? []).filter((t) => t.status === 'open'),
-    [tabsData],
-  );
+  const handleTipClose = () => {
+    setScreenState("ordering");
+  };
 
-  const renderItem = React.useCallback(
-    ({ item }: { item: BarTab }) => (
-      <BarTabCard tab={item} onPress={() => handleTabPress(item)} />
-    ),
-    [handleTabPress],
-  );
+  // ─── Render ─────────────────────────────────────────────────
 
-  const listHeader = React.useMemo(
-    () => (
-      <Animated.View entering={FadeInDown.duration(400)}>
-        {summary && <BarSummaryCard summary={summary} />}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            Open Tabs ({openTabs.length})
+  if (!venueId && !menuLoading) {
+    return (
+      <View style={styles.root}>
+        <DarkGradientBg />
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={[styles.header, { paddingTop: insets.top + 8 }]}
+        >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Bar</Text>
+          <View style={styles.headerButton} />
+        </Animated.View>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            This event does not have a venue with a menu.
           </Text>
         </View>
-      </Animated.View>
-    ),
-    [summary, openTabs.length],
-  );
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.root}>
       <DarkGradientBg />
 
       {/* Header */}
@@ -140,242 +269,116 @@ export default function BarDashboardScreen() {
         entering={FadeIn.duration(300)}
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.back()}
+        >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Bar</Text>
         <View style={styles.headerButton} />
       </Animated.View>
 
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+      {menuLoading ? (
+        <View style={styles.emptyContainer}>
+          <ActivityIndicator color="#fff" size="large" />
+        </View>
+      ) : menuItems.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No menu items configured.</Text>
         </View>
       ) : (
-        <FlatList
-          data={openTabs}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={renderItem}
-          refreshControl={refreshControl}
-          contentContainerStyle={[
-            styles.listContent,
-            { paddingBottom: insets.bottom + 100 },
-          ]}
-          ListHeaderComponent={listHeader}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No open tabs</Text>
-          }
-        />
+        <View style={styles.menuContainer}>
+          {/* Category chips */}
+          <GlassChipBar
+            items={categories}
+            selectedId={selectedCategory}
+            onSelect={setSelectedCategory}
+          />
+
+          {/* Menu grid */}
+          <FlatList
+            data={menuItems}
+            numColumns={NUM_COLUMNS}
+            keyExtractor={(item) => String(item.id)}
+            contentContainerStyle={[
+              styles.grid,
+              { paddingBottom: itemCount > 0 ? 140 + insets.bottom : 20 },
+            ]}
+            renderItem={({ item }) => (
+              <MenuItemCard
+                name={item.name}
+                priceCents={item.price}
+                quantity={cart.get(item.id)?.quantity || 0}
+                onAdd={() => addToCart(item)}
+                onRemove={() => removeFromCart(item.id)}
+                onSetQuantity={(qty) => setCartQuantity(item, qty)}
+                onClear={() => clearCartItem(item.id)}
+              />
+            )}
+          />
+        </View>
       )}
 
-      {/* Open New Tab — native SwiftUI on iOS 26+, fallback to gorhom */}
-      {canUseNativeSheet() ? (
-        <OpenTabFab
-          onOpenTab={async (name) => {
-            if (!eventId) return;
-            const { tab } = await openTab.mutateAsync({ customerName: name });
-            router.push({
-              pathname: '/manage-event/[id]/bar-tab-detail',
-              params: { id: id!, tabId: String(tab.id) },
-            });
-          }}
-          isPending={openTab.isPending}
-        />
-      ) : (
-        <>
-          <View style={[styles.fabContainer, { bottom: insets.bottom + 24 }]}>
-            <TouchableOpacity
-              style={[styles.fab, { overflow: 'hidden' }]}
-              onPress={openSheet}
-              activeOpacity={0.7}
-            >
-              <GlassView {...liquidGlass.fillMedium} borderRadius={28} style={StyleSheet.absoluteFill} />
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.fabText}>Open New Tab</Text>
-            </TouchableOpacity>
-          </View>
+      {/* Floating cart / receipt bar */}
+      <FloatingCartBar
+        itemCount={itemCount}
+        totalCents={subtotalCents}
+        onCheckout={handleCheckout}
+        loading={screenState === "processing"}
+        receiptMode={screenState === "receipt"}
+        paidAmountCents={paidAmountCents}
+        onNewOrder={resetOrder}
+      />
 
-          <BottomSheet
-            ref={newTabSheetRef}
-            index={-1}
-            enableDynamicSizing
-            enablePanDownToClose
-            onClose={closeSheet}
-            backgroundStyle={{ backgroundColor: 'transparent', borderRadius: RADIUS }}
-            handleIndicatorStyle={{
-              width: 36,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: 'rgba(255,255,255,0.3)',
-            }}
-            style={{ marginHorizontal: 12 }}
-            bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
-            detached
-            keyboardBehavior="interactive"
-            keyboardBlurBehavior="restore"
-            backdropComponent={renderBackdrop}
-          >
-            <BottomSheetView style={styles.sheetContent}>
-              <Animated.View style={sheetAnimatedStyle}>
-                <GlassContainer spacing={8} style={{ gap: 8 }}>
-                  <GlassView {...liquidGlass.surface} borderRadius={RADIUS} style={styles.sheetHeader}>
-                    <Text style={styles.sheetTitle}>Open New Tab</Text>
-                    <View style={styles.inputContainer}>
-                      <GlassView {...liquidGlass.fillMedium} borderRadius={12} style={StyleSheet.absoluteFill} />
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Customer name"
-                        placeholderTextColor="rgba(255,255,255,0.4)"
-                        value={customerName}
-                        onChangeText={setCustomerName}
-                        autoFocus
-                        returnKeyType="done"
-                        onSubmitEditing={handleConfirmOpenTab}
-                      />
-                    </View>
-                  </GlassView>
-                  <GlassView {...liquidGlass.surface} borderRadius={RADIUS} style={styles.sheetActions}>
-                    <TouchableOpacity
-                      style={[
-                        styles.confirmButton,
-                        (!customerName.trim() || openTab.isPending) && styles.disabled,
-                      ]}
-                      onPress={handleConfirmOpenTab}
-                      disabled={!customerName.trim() || openTab.isPending}
-                      activeOpacity={0.7}
-                    >
-                      <GlassView {...liquidGlass.fillStrong} borderRadius={14} style={StyleSheet.absoluteFill} isInteractive />
-                      <Text style={styles.confirmText}>
-                        {openTab.isPending ? 'Opening...' : 'Open Tab'}
-                      </Text>
-                    </TouchableOpacity>
-                  </GlassView>
-                </GlassContainer>
-              </Animated.View>
-            </BottomSheetView>
-          </BottomSheet>
-        </>
-      )}
+      {/* Tip entry sheet */}
+      <TipEntrySheet
+        visible={screenState === "tipping"}
+        subtotalCents={subtotalCents}
+        onClose={handleTipClose}
+        onConfirm={handleTipConfirm}
+        loading={screenState === "processing"}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
   headerButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
+    color: "#fff",
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    fontWeight: "700",
   },
-  loadingContainer: {
+  emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    paddingHorizontal: 16,
-  },
-  sectionHeader: {
-    marginTop: 20,
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.5)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
   },
   emptyText: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.35)',
-    textAlign: 'center',
-    paddingVertical: 32,
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 16,
+    textAlign: "center",
   },
-  fabContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  fab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
-    borderRadius: 28,
-  },
-  fabText: {
-    fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  sheetContent: {
-    paddingHorizontal: 4,
-    paddingBottom: 8,
-  },
-  sheetHeader: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-    gap: 12,
-  },
-  sheetActions: {
+  grid: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  sheetTitle: {
-    fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    textAlign: 'center',
     paddingTop: 4,
-  },
-  inputContainer: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    overflow: 'hidden',
-  },
-  input: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-    color: '#fff',
-  },
-  confirmButton: {
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-    overflow: 'hidden',
-  },
-  confirmText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-  },
-  disabled: {
-    opacity: 0.4,
   },
 });

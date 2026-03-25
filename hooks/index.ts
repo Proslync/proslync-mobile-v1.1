@@ -238,6 +238,15 @@ export {
   MY_BAR_TAB_KEY,
 } from './use-bar-tabs';
 
+// Bar Orders
+export {
+  BAR_ORDERS_KEY,
+  useCreateOrder,
+  usePayOrder,
+  useCancelOrder,
+  useBarOrders,
+} from './use-bar-orders';
+
 // Admin hooks
 export {
   useAdminStats,
