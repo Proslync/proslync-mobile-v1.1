@@ -1,23 +1,23 @@
-import { useState } from 'react';
-import { GlassView } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { GlassSurface } from '@/components/glass/glass-surface';
-import { GlassButton } from '@/components/glass/glass-button';
-import { BottomSheet } from '@/components/wallet/bottom-sheet';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { useRefreshControl } from '@/hooks/use-refresh-control';
-import { useStableRouter } from '@/hooks/use-stable-router';
+import { GlassButton } from "@/components/glass/glass-button";
+import { GlassSurface } from "@/components/glass/glass-surface";
+import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { NativeSheet } from "@/components/ui/native-sheet";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { useRefreshControl } from "@/hooks/use-refresh-control";
+import { useStableRouter } from "@/hooks/use-stable-router";
 import {
-  useVenueMenu,
   useCreateMenuCategory,
-  useDeleteMenuCategory,
   useCreateMenuItem,
+  useDeleteMenuCategory,
   useDeleteMenuItem,
-} from '@/hooks/use-venue-menu';
-import { ConfirmModal } from '@/components/shared/confirm-modal';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+  useVenueMenu,
+} from "@/hooks/use-venue-menu";
+import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "expo-glass-effect";
+import { useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Keyboard,
@@ -27,9 +27,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function formatPrice(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -55,36 +55,46 @@ export default function VenueMenuScreen() {
   const deleteItem = useDeleteMenuItem(venueId!);
 
   const [showAddCategory, setShowAddCategory] = useState(false);
-  const [showAddItem, setShowAddItem] = useState<{ visible: boolean; categoryId: number | null }>({
+  const [showAddItem, setShowAddItem] = useState<{
+    visible: boolean;
+    categoryId: number | null;
+  }>({
     visible: false,
     categoryId: null,
   });
 
-  const [categoryName, setCategoryName] = useState('');
-  const [itemName, setItemName] = useState('');
-  const [itemPrice, setItemPrice] = useState('');
-  const [itemDescription, setItemDescription] = useState('');
+  const [categoryName, setCategoryName] = useState("");
+  const [itemName, setItemName] = useState("");
+  const [itemPrice, setItemPrice] = useState("");
+  const [itemDescription, setItemDescription] = useState("");
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
-  const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<{ id: number; name: string } | null>(null);
-  const [deleteItemTarget, setDeleteItemTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
+  const [deleteItemTarget, setDeleteItemTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   const handleCreateCategory = async () => {
     if (!categoryName.trim()) return;
     try {
       await createCategory.mutateAsync({ name: categoryName.trim() });
       setShowAddCategory(false);
-      setCategoryName('');
+      setCategoryName("");
     } catch (err: any) {
-      setErrorAlert(err?.message || 'Failed to create category.');
+      setErrorAlert(err?.message || "Failed to create category.");
     }
   };
 
   const handleCreateItem = async () => {
-    if (!itemName.trim() || !itemPrice.trim() || !showAddItem.categoryId) return;
+    if (!itemName.trim() || !itemPrice.trim() || !showAddItem.categoryId)
+      return;
     try {
       const priceInCents = Math.round(parseFloat(itemPrice) * 100);
       if (isNaN(priceInCents) || priceInCents < 0) {
-        setErrorAlert('Please enter a valid price.');
+        setErrorAlert("Please enter a valid price.");
         return;
       }
       await createItem.mutateAsync({
@@ -94,26 +104,26 @@ export default function VenueMenuScreen() {
         price: priceInCents,
       });
       setShowAddItem({ visible: false, categoryId: null });
-      setItemName('');
-      setItemPrice('');
-      setItemDescription('');
+      setItemName("");
+      setItemPrice("");
+      setItemDescription("");
     } catch (err: any) {
-      setErrorAlert(err?.message || 'Failed to create item.');
+      setErrorAlert(err?.message || "Failed to create item.");
     }
   };
 
   const resetItemForm = () => {
     setShowAddItem({ visible: false, categoryId: null });
-    setItemName('');
-    setItemPrice('');
-    setItemDescription('');
+    setItemName("");
+    setItemPrice("");
+    setItemDescription("");
   };
 
   const inputStyle = [
     styles.input,
     {
       color: colors.text,
-      borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)',
+      borderColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)",
     },
   ];
 
@@ -123,8 +133,16 @@ export default function VenueMenuScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {isDark && <DarkGradientBg />}
-        <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+        <View
+          style={[
+            styles.header,
+            { paddingTop: insets.top + 8, borderBottomColor: colors.border },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => router.back()}
+          >
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Menu</Text>
@@ -144,9 +162,15 @@ export default function VenueMenuScreen() {
       {/* Header */}
       <Animated.View
         entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+        style={[
+          styles.header,
+          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
+        ]}
       >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => router.back()}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: colors.text }]}>Menu</Text>
@@ -155,15 +179,27 @@ export default function VenueMenuScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
       >
         {/* Empty state */}
         {categories.length === 0 ? (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.emptyContainer}>
-            <Ionicons name="restaurant-outline" size={48} color={colors.textTertiary} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No menu categories yet</Text>
+          <Animated.View
+            entering={FadeInDown.duration(300)}
+            style={styles.emptyContainer}
+          >
+            <Ionicons
+              name="restaurant-outline"
+              size={48}
+              color={colors.textTertiary}
+            />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              No menu categories yet
+            </Text>
             <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
               Add a category to start building your menu.
             </Text>
@@ -175,32 +211,82 @@ export default function VenueMenuScreen() {
               entering={FadeInDown.delay(index * 60).duration(300)}
               style={styles.categoryWrapper}
             >
-              <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.categoryCard}>
+              <GlassSurface
+                fill="subtle"
+                border="subtle"
+                cornerRadius="lg"
+                style={styles.categoryCard}
+              >
                 {/* Category header */}
                 <View style={styles.categoryHeader}>
                   <View style={styles.categoryHeaderLeft}>
-                    <View style={[styles.categoryIconBg, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
-                      {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
-                      <Ionicons name="restaurant-outline" size={16} color={colors.text} />
+                    <View
+                      style={[
+                        styles.categoryIconBg,
+                        {
+                          backgroundColor: isDark
+                            ? undefined
+                            : colors.backgroundSecondary,
+                          overflow: "hidden" as const,
+                        },
+                      ]}
+                    >
+                      {isDark && (
+                        <GlassView
+                          {...liquidGlass.fillFaint}
+                          borderRadius={8}
+                          style={StyleSheet.absoluteFillObject}
+                        />
+                      )}
+                      <Ionicons
+                        name="restaurant-outline"
+                        size={16}
+                        color={colors.text}
+                      />
                     </View>
-                    <Text style={[styles.categoryName, { color: colors.text }]}>{category.name}</Text>
+                    <Text style={[styles.categoryName, { color: colors.text }]}>
+                      {category.name}
+                    </Text>
                   </View>
                   <TouchableOpacity
                     style={styles.deleteButton}
-                    onPress={() => setDeleteCategoryTarget({ id: category.id, name: category.name })}
+                    onPress={() =>
+                      setDeleteCategoryTarget({
+                        id: category.id,
+                        name: category.name,
+                      })
+                    }
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="trash-outline" size={18} color={colors.textTertiary} />
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={colors.textTertiary}
+                    />
                   </TouchableOpacity>
                 </View>
 
                 {/* Divider */}
-                <View style={[styles.divider, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' }]} />
+                <View
+                  style={[
+                    styles.divider,
+                    {
+                      backgroundColor: isDark
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.07)",
+                    },
+                  ]}
+                />
 
                 {/* Items list */}
                 {category.items.length === 0 ? (
                   <View style={styles.noItemsRow}>
-                    <Text style={[styles.noItemsText, { color: colors.textTertiary }]}>
+                    <Text
+                      style={[
+                        styles.noItemsText,
+                        { color: colors.textTertiary },
+                      ]}
+                    >
                       No items in this category
                     </Text>
                   </View>
@@ -208,26 +294,56 @@ export default function VenueMenuScreen() {
                   category.items.map((item, iIndex) => (
                     <View key={item.id}>
                       {iIndex > 0 && (
-                        <View style={[styles.itemDivider, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)' }]} />
+                        <View
+                          style={[
+                            styles.itemDivider,
+                            {
+                              backgroundColor: isDark
+                                ? "rgba(255,255,255,0.05)"
+                                : "rgba(0,0,0,0.04)",
+                            },
+                          ]}
+                        />
                       )}
                       <View style={styles.itemRow}>
                         <View style={styles.itemInfo}>
-                          <Text style={[styles.itemName, { color: colors.text }]}>{item.name}</Text>
+                          <Text
+                            style={[styles.itemName, { color: colors.text }]}
+                          >
+                            {item.name}
+                          </Text>
                           {item.description ? (
-                            <Text style={[styles.itemDesc, { color: colors.textTertiary }]} numberOfLines={1}>
+                            <Text
+                              style={[
+                                styles.itemDesc,
+                                { color: colors.textTertiary },
+                              ]}
+                              numberOfLines={1}
+                            >
                               {item.description}
                             </Text>
                           ) : null}
                         </View>
-                        <Text style={[styles.itemPrice, { color: colors.text }]}>
+                        <Text
+                          style={[styles.itemPrice, { color: colors.text }]}
+                        >
                           {formatPrice(item.price)}
                         </Text>
                         <TouchableOpacity
                           style={styles.deleteButton}
-                          onPress={() => setDeleteItemTarget({ id: item.id, name: item.name })}
+                          onPress={() =>
+                            setDeleteItemTarget({
+                              id: item.id,
+                              name: item.name,
+                            })
+                          }
                           activeOpacity={0.7}
                         >
-                          <Ionicons name="close-circle-outline" size={18} color={colors.textTertiary} />
+                          <Ionicons
+                            name="close-circle-outline"
+                            size={18}
+                            color={colors.textTertiary}
+                          />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -235,14 +351,36 @@ export default function VenueMenuScreen() {
                 )}
 
                 {/* Add Item button */}
-                <View style={[styles.addItemRow, { borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)' }]}>
+                <View
+                  style={[
+                    styles.addItemRow,
+                    {
+                      borderTopColor: isDark
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.07)",
+                    },
+                  ]}
+                >
                   <TouchableOpacity
                     style={styles.addItemButton}
-                    onPress={() => setShowAddItem({ visible: true, categoryId: category.id })}
+                    onPress={() =>
+                      setShowAddItem({ visible: true, categoryId: category.id })
+                    }
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="add-circle-outline" size={16} color={colors.textSecondary} />
-                    <Text style={[styles.addItemText, { color: colors.textSecondary }]}>Add Item</Text>
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[
+                        styles.addItemText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Add Item
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </GlassSurface>
@@ -251,10 +389,19 @@ export default function VenueMenuScreen() {
         )}
 
         {/* Add Category button */}
-        <Animated.View entering={FadeInDown.delay(categories.length * 60).duration(300)} style={styles.addCategoryRow}>
+        <Animated.View
+          entering={FadeInDown.delay(categories.length * 60).duration(300)}
+          style={styles.addCategoryRow}
+        >
           <GlassButton
             label="Add Category"
-            icon={<Ionicons name="add" size={18} color={isDark ? '#ffffff' : '#1a1a1a'} />}
+            icon={
+              <Ionicons
+                name="add"
+                size={18}
+                color={isDark ? "#ffffff" : "#1a1a1a"}
+              />
+            }
             variant="glass"
             size="md"
             fullWidth
@@ -264,23 +411,42 @@ export default function VenueMenuScreen() {
       </ScrollView>
 
       {/* Add Category Bottom Sheet */}
-      <BottomSheet
-        visible={showAddCategory}
-        onClose={() => {
+      <NativeSheet
+        rnContent
+        scrollable
+        isPresented={showAddCategory}
+        onDismiss={() => {
           setShowAddCategory(false);
-          setCategoryName('');
+          setCategoryName("");
         }}
+        detents={[{ fraction: 0.45 }, "large"]}
       >
-        <ScrollView bounces={false} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.sheetContent}>
-            <Text style={[styles.sheetTitle, { color: colors.text }]}>Add Category</Text>
-            <Text style={[styles.sheetSubtitle, { color: colors.textTertiary }]}>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>
+              Add Category
+            </Text>
+            <Text
+              style={[styles.sheetSubtitle, { color: colors.textTertiary }]}
+            >
               Categories group menu items (e.g. Cocktails, Beer, Shots)
             </Text>
 
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Category Name</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+              Category Name
+            </Text>
             <View style={styles.inputWrapper}>
-              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               <TextInput
                 style={inputStyle}
                 value={categoryName}
@@ -309,20 +475,42 @@ export default function VenueMenuScreen() {
             </View>
           </View>
         </ScrollView>
-      </BottomSheet>
+      </NativeSheet>
 
       {/* Add Item Bottom Sheet */}
-      <BottomSheet visible={showAddItem.visible} onClose={resetItemForm}>
-        <ScrollView bounces={false} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <NativeSheet
+        isPresented={showAddItem.visible}
+        onDismiss={resetItemForm}
+        detents={[{ fraction: 0.6 }, "large"]}
+        rnContent
+        scrollable
+      >
+        <ScrollView
+          bounces={false}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.sheetContent}>
-            <Text style={[styles.sheetTitle, { color: colors.text }]}>Add Item</Text>
-            <Text style={[styles.sheetSubtitle, { color: colors.textTertiary }]}>
+            <Text style={[styles.sheetTitle, { color: colors.text }]}>
+              Add Item
+            </Text>
+            <Text
+              style={[styles.sheetSubtitle, { color: colors.textTertiary }]}
+            >
               Add a menu item with name and price
             </Text>
 
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Item Name</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+              Item Name
+            </Text>
             <View style={styles.inputWrapper}>
-              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               <TextInput
                 style={inputStyle}
                 value={itemName}
@@ -334,9 +522,17 @@ export default function VenueMenuScreen() {
               />
             </View>
 
-            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>Price ($)</Text>
+            <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
+              Price ($)
+            </Text>
             <View style={styles.inputWrapper}>
-              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               <TextInput
                 style={inputStyle}
                 value={itemPrice}
@@ -349,11 +545,24 @@ export default function VenueMenuScreen() {
             </View>
 
             <Text style={[styles.fieldLabel, { color: colors.textSecondary }]}>
-              Description{' '}
-              <Text style={[styles.fieldLabelOptional, { color: colors.textTertiary }]}>(optional)</Text>
+              Description{" "}
+              <Text
+                style={[
+                  styles.fieldLabelOptional,
+                  { color: colors.textTertiary },
+                ]}
+              >
+                (optional)
+              </Text>
             </Text>
             <View style={styles.inputWrapper}>
-              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+              {isDark && (
+                <GlassView
+                  {...liquidGlass.fillFaint}
+                  borderRadius={10}
+                  style={StyleSheet.absoluteFillObject}
+                />
+              )}
               <TextInput
                 style={inputStyle}
                 value={itemDescription}
@@ -375,19 +584,21 @@ export default function VenueMenuScreen() {
                 size="md"
                 fullWidth
                 loading={createItem.isPending}
-                disabled={!itemName.trim() || !itemPrice.trim() || createItem.isPending}
+                disabled={
+                  !itemName.trim() || !itemPrice.trim() || createItem.isPending
+                }
                 onPress={handleCreateItem}
               />
             </View>
           </View>
         </ScrollView>
-      </BottomSheet>
+      </NativeSheet>
 
       <ConfirmModal
         visible={!!errorAlert}
         onClose={() => setErrorAlert(null)}
         title="Error"
-        message={errorAlert || ''}
+        message={errorAlert || ""}
         alertOnly
         icon="alert-circle-outline"
       />
@@ -432,9 +643,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomWidth: 1,
@@ -442,17 +653,17 @@ const styles = StyleSheet.create({
   headerButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scrollView: {
     flex: 1,
@@ -462,33 +673,33 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 48,
     gap: 10,
   },
   emptyTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginTop: 4,
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
   },
   categoryWrapper: {},
   categoryCard: {
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   categoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 14,
   },
   categoryHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
     flex: 1,
   },
@@ -496,19 +707,19 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   categoryName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     flex: 1,
   },
   deleteButton: {
     width: 36,
     height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   divider: {
     height: 1,
@@ -520,15 +731,15 @@ const styles = StyleSheet.create({
   },
   noItemsText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   itemDivider: {
     height: 1,
     marginHorizontal: 14,
   },
   itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 10,
@@ -538,16 +749,16 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   itemDesc: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   itemPrice: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
     marginRight: 4,
   },
   addItemRow: {
@@ -556,49 +767,51 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   addItemButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingVertical: 4,
   },
   addItemText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   addCategoryRow: {
     marginTop: 4,
   },
   sheetContent: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
     paddingBottom: 8,
   },
   sheetTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
+    textAlign: "center",
+    paddingTop: 20,
     marginBottom: 4,
   },
   sheetSubtitle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
     marginBottom: 20,
     lineHeight: 18,
   },
   fieldLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
-    textTransform: 'uppercase',
+    fontFamily: "Lato_700Bold",
+    textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   fieldLabelOptional: {
-    fontFamily: 'Lato_400Regular',
-    textTransform: 'none',
+    fontFamily: "Lato_400Regular",
+    textTransform: "none",
     letterSpacing: 0,
     fontSize: 12,
   },
   inputWrapper: {
-    overflow: 'hidden',
+    overflow: "hidden",
     borderRadius: 10,
     marginBottom: 16,
   },
@@ -608,7 +821,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
+    fontFamily: "Lato_400Regular",
   },
   sheetActions: {
     marginTop: 4,

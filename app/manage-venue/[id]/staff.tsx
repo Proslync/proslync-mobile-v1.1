@@ -1,20 +1,23 @@
-import { useState, useCallback } from "react";
-import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
-import { GlassSurface } from "@/components/glass/glass-surface";
 import { GlassButton } from "@/components/glass/glass-button";
-import { BottomSheet } from "@/components/wallet/bottom-sheet";
+import { GlassSurface } from "@/components/glass/glass-surface";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { NativeSheet } from "@/components/ui/native-sheet";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import {
-  useVenueStaff,
   useAddVenueStaff,
-  useUpdateVenueStaff,
   useRemoveVenueStaff,
+  useUpdateVenueStaff,
+  useVenueStaff,
 } from "@/hooks/use-venue-schedule";
+import type { VenueStaffMember } from "@/lib/api/venue-schedule";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "expo-glass-effect";
 import { useLocalSearchParams } from "expo-router";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -27,9 +30,6 @@ import {
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { GlassView } from "expo-glass-effect";
-import { liquidGlass } from "@/constants/glass/liquid-glass";
-import type { VenueStaffMember } from "@/lib/api/venue-schedule";
 
 const ROLE_OPTIONS = [
   { value: "admin", label: "Admin", desc: "Full venue management access" },
@@ -189,7 +189,7 @@ export default function VenueStaffScreen() {
                 <TouchableOpacity
                   style={styles.staffRow}
                   onPress={() => handleEdit(member)}
-                  activeOpacity={0.7}
+                  activeOpacity={0.6}
                 >
                   {member.user?.avatar?.url ? (
                     <Image
@@ -270,9 +270,12 @@ export default function VenueStaffScreen() {
       </ScrollView>
 
       {/* Add Staff Sheet */}
-      <BottomSheet
-        visible={showAddSheet}
-        onClose={() => setShowAddSheet(false)}
+      <NativeSheet
+        rnContent
+        scrollable
+        isPresented={showAddSheet}
+        onDismiss={() => setShowAddSheet(false)}
+        detents={[{ fraction: 0.7 }, "large"]}
       >
         <View style={styles.sheetContent}>
           <Text style={[styles.sheetTitle, { color: colors.text }]}>
@@ -282,14 +285,22 @@ export default function VenueStaffScreen() {
             User ID
           </Text>
           <View style={styles.inputWrapper}>
-            {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
+            {isDark && (
+              <GlassView
+                {...liquidGlass.fillFaint}
+                borderRadius={10}
+                style={StyleSheet.absoluteFillObject}
+              />
+            )}
             <TextInput
               style={[
                 styles.input,
                 {
                   color: colors.text,
                   borderColor: colors.border,
-                  backgroundColor: isDark ? undefined : colors.backgroundSecondary,
+                  backgroundColor: isDark
+                    ? undefined
+                    : colors.backgroundSecondary,
                 },
               ]}
               value={newUserId}
@@ -342,12 +353,15 @@ export default function VenueStaffScreen() {
             style={styles.sheetButton}
           />
         </View>
-      </BottomSheet>
+      </NativeSheet>
 
       {/* Edit Role Sheet */}
-      <BottomSheet
-        visible={showEditSheet}
-        onClose={() => setShowEditSheet(false)}
+      <NativeSheet
+        rnContent
+        scrollable
+        isPresented={showEditSheet}
+        onDismiss={() => setShowEditSheet(false)}
+        detents={[{ fraction: 0.6 }, "large"]}
       >
         <View style={styles.sheetContent}>
           <Text style={[styles.sheetTitle, { color: colors.text }]}>
@@ -395,7 +409,7 @@ export default function VenueStaffScreen() {
             style={styles.sheetButton}
           />
         </View>
-      </BottomSheet>
+      </NativeSheet>
 
       {/* Delete Confirmation */}
       <ConfirmModal
@@ -463,6 +477,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: "Lato_700Bold",
     textAlign: "center",
+    paddingTop: 20,
     marginBottom: 4,
   },
   inputLabel: { fontSize: 13, fontFamily: "Lato_700Bold" },

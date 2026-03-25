@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassSurface } from "@/components/glass/glass-surface";
 import { GlassButton } from "@/components/glass/glass-button";
-import { BottomSheet } from "@/components/wallet/bottom-sheet";
+import { NativeSheet } from "@/components/ui/native-sheet";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useStableRouter } from "@/hooks/use-stable-router";
@@ -385,9 +385,9 @@ export default function VenueScheduleScreen() {
       </ScrollView>
 
       {/* Add Shift Sheet */}
-      <BottomSheet
-        visible={showAddSheet}
-        onClose={() => setShowAddSheet(false)}
+      <NativeSheet rnContent scrollable
+        isPresented={showAddSheet}
+        onDismiss={() => setShowAddSheet(false)}
       >
         <View style={styles.sheetContent}>
           <Text style={[styles.sheetTitle, { color: colors.text }]}>
@@ -473,12 +473,12 @@ export default function VenueScheduleScreen() {
             style={styles.sheetButton}
           />
         </View>
-      </BottomSheet>
+      </NativeSheet>
 
       {/* Assign Staff Sheet */}
-      <BottomSheet
-        visible={showAssignSheet}
-        onClose={() => setShowAssignSheet(false)}
+      <NativeSheet rnContent scrollable
+        isPresented={showAssignSheet}
+        onDismiss={() => setShowAssignSheet(false)}
       >
         <View style={styles.sheetContent}>
           <Text style={[styles.sheetTitle, { color: colors.text }]}>
@@ -552,7 +552,7 @@ export default function VenueScheduleScreen() {
             style={styles.sheetButton}
           />
         </View>
-      </BottomSheet>
+      </NativeSheet>
 
       {/* Delete Shift Confirmation */}
       <ConfirmModal

@@ -119,7 +119,7 @@ function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, 
             borderRadius={20}
             style={StyleSheet.absoluteFillObject}
           />
-          <Text style={[styles.viewBtnText, { color: t.primary }]}>View</Text>
+          <Text style={[styles.viewBtnText, { color: t.primary }]}>Manage</Text>
         </TouchableOpacity>
       )}
     </TouchableOpacity>

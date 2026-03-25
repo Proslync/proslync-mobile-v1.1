@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useStripe } from '@stripe/stripe-react-native';
-import { BottomSheet } from '@/components/wallet/bottom-sheet';
+import { NativeSheet } from '@/components/ui/native-sheet';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { GlassButton } from '@/components/glass/glass-button';
@@ -209,9 +209,9 @@ export function PurchaseTableSheet({
   };
 
   return (
-    <BottomSheet visible={visible} onClose={onClose} maxHeight="60%">
+    <NativeSheet isPresented={visible} onDismiss={onClose} detents={[{ fraction: 0.60 }, "large"]} rnContent scrollable>
       <View style={styles.content}>{renderContent()}</View>
-    </BottomSheet>
+    </NativeSheet>
   );
 }
 

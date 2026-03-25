@@ -2,7 +2,7 @@
 // Uses preferredColorScheme (custom modifier) to theme the entire sheet presentation
 
 import * as React from "react";
-import { Platform } from "react-native";
+import { Platform, ScrollView } from "react-native";
 import { isGlassEffectAPIAvailable } from "expo-glass-effect";
 import { BottomSheet, Group, Host, RNHostView, VStack } from "@expo/ui/swift-ui";
 import {
@@ -53,6 +53,8 @@ interface NativeSheetProps {
    *  Use `rnContent` when children include: Image with URL, ScrollView,
    *  TouchableOpacity, or any RN component. See AI Skills/Native Sheet Patterns.md */
   rnContent?: boolean;
+  /** Wrap RN content in a ScrollView with top padding. Default: false */
+  scrollable?: boolean;
 
   // ─── SwiftUI VStack options (only when rnContent=false) ───
   /** Padding inside the sheet. Default: 24 */
@@ -75,6 +77,7 @@ export function NativeSheet({
   backgroundInteraction,
   preventDismiss = false,
   rnContent = false,
+  scrollable = false,
   contentPadding = 24,
   alignment = "center",
   spacing = 16,
@@ -139,7 +142,17 @@ export function NativeSheet({
             // Don't use matchContents with ScrollView — it collapses to 0.
             // Use matchContents only with fitToContents for fixed-size content.
             <RNHostView matchContents={fitToContents}>
-              {children}
+              {scrollable ? (
+                <ScrollView
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ paddingTop: 24, paddingHorizontal: 16 }}
+                  showsVerticalScrollIndicator={false}
+                >
+                  {children}
+                </ScrollView>
+              ) : (
+                children
+              )}
             </RNHostView>
           ) : (
             // SwiftUI content: VStack with padding

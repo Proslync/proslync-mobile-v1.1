@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
-import { BottomSheet } from '@/components/wallet/bottom-sheet';
+import { NativeSheet } from '@/components/ui/native-sheet';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -326,9 +326,9 @@ export default function VenueTablesScreen() {
       </ScrollView>
 
       {/* Add Section Bottom Sheet */}
-      <BottomSheet
-        visible={showAddSection}
-        onClose={() => {
+      <NativeSheet rnContent scrollable
+        isPresented={showAddSection}
+        onDismiss={() => {
           setShowAddSection(false);
           setSectionName('');
           setSectionDesc('');
@@ -400,10 +400,10 @@ export default function VenueTablesScreen() {
             </View>
           </View>
         </ScrollView>
-      </BottomSheet>
+      </NativeSheet>
 
       {/* Add Table Bottom Sheet */}
-      <BottomSheet visible={showAddTable.visible} onClose={resetTableForm}>
+      <NativeSheet isPresented={showAddTable.visible} onDismiss={resetTableForm} detents={["medium", "large"]} rnContent scrollable>
         <ScrollView bounces={false} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <View style={styles.sheetContent}>
             <Text style={[styles.sheetTitle, { color: colors.text }]}>Add Table</Text>
@@ -528,7 +528,7 @@ export default function VenueTablesScreen() {
             </View>
           </View>
         </ScrollView>
-      </BottomSheet>
+      </NativeSheet>
 
       <ConfirmModal
         visible={permissionAlert}
