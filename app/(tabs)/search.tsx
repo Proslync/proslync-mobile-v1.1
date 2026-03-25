@@ -29,7 +29,6 @@ import Animated, {
   withRepeat,
   withSequence,
 } from 'react-native-reanimated';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { NearbyNativeSheet } from '@/components/map/nearby-native-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { eventsApi } from '@/lib/api/events';
@@ -182,46 +181,6 @@ function transformEventToMapEvent(event: Event): MapEvent {
 }
 
 // Horizontal event card for bottom sheet
-function EventCard({ event, onPress }: { event: MapEvent; onPress: () => void }) {
-  return (
-    <TouchableOpacity style={styles.eventCard} onPress={onPress} activeOpacity={0.9}>
-      <Image source={{ uri: event.imageUrl }} style={styles.eventCardImage} />
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.85)']}
-        style={styles.eventCardGradient}
-      />
-      <View style={styles.eventCardContent}>
-        {event.isLive && (
-          <View style={styles.eventCardLive}>
-            <View style={styles.eventCardLiveDot} />
-            <Text style={styles.eventCardLiveText}>LIVE</Text>
-          </View>
-        )}
-        <Text style={styles.eventCardTitle} numberOfLines={1}>
-          {event.title}
-        </Text>
-        <Text style={styles.eventCardVenue} numberOfLines={1}>
-          {event.venue}
-        </Text>
-        <Text style={styles.eventCardMetaText}>{event.date} @ {event.time}</Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// Horizontal friend avatar for bottom sheet
-function FriendAvatarItem({ friend, onPress, colors }: { friend: FriendMarker; onPress: () => void; colors: any }) {
-  return (
-    <TouchableOpacity style={styles.friendAvatarItem} onPress={onPress} activeOpacity={0.8}>
-      <Image source={{ uri: friend.imageUrl }} style={[styles.friendAvatarImage, { borderColor: colors.border }]} />
-      <Text style={[styles.friendAvatarName, { color: colors.text }]} numberOfLines={1}>
-        {friend.name.split(' ')[0]}
-      </Text>
-    </TouchableOpacity>
-  );
-}
-
-
 // Event flyer card marker for map (rectangular flyer style)
 const EventMarker = React.memo(function EventMarker({ event, onPress }: { event: MapEvent; onPress: () => void }) {
   return (
@@ -262,194 +221,6 @@ const MyLocationMarker = React.memo(function MyLocationMarker({ imageUrl }: { im
     </View>
   );
 });
-
-// Fallback/Preview screen for Expo Go
-function MapPreview() {
-  const insets = useSafeAreaInsets();
-  const router = useStableRouter();
-  const bottomSheetRef = useRef<BottomSheet>(null);
-  const [events, setEvents] = useState<MapEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { colors, isDark } = useAppTheme();
-
-  const snapPoints = useMemo(() => [75, '45%'], []);
-
-  // Fetch events from API
-  const fetchEvents = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const apiEvents = await eventsApi.getEvents({ limit: 50 });
-      const mapEvents = apiEvents.map(transformEventToMapEvent);
-      setEvents(mapEvents);    } catch (err) {
-      console.error('Failed to fetch events:', err);
-      setError('Failed to load events');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
-  // Pull-to-refresh with haptic feedback
-  const { refreshControl } = useRefreshControl({
-    onRefresh: fetchEvents,
-  });
-
-  const filteredEvents = useMemo(() => {
-    return events.filter(e => e.date !== 'Past');
-  }, [events]);
-
-  const handleEventPress = useCallback(
-    (event: MapEvent) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      router.push({
-        pathname: '/event/[id]',
-        params: {
-          id: event.id,
-          title: event.title,
-          date: event.rawDate,
-          imageUrl: event.imageUrl,
-          venueName: event.venue,
-          isPaid: 'false',
-          isUserRegistered: 'false',
-        },
-      });
-    },
-    [router]
-  );
-
-  const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
-
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Map placeholder background */}
-      <LinearGradient
-        colors={isDark ? ['#0F090C', '#1A1215', '#251A1F'] : ['#1a1a2e', '#16213e', '#0f3460']}
-        style={StyleSheet.absoluteFill}
-      />
-
-      {/* Decorative map grid */}
-      <View style={styles.mapGrid}>
-        {[...Array(8)].map((_, i) => (
-          <View key={`h-${i}`} style={[styles.gridLineH, { top: `${(i + 1) * 12}%` }]} />
-        ))}
-        {[...Array(6)].map((_, i) => (
-          <View key={`v-${i}`} style={[styles.gridLineV, { left: `${(i + 1) * 16}%` }]} />
-        ))}
-      </View>
-
-      {/* Floating event markers preview */}
-      <View style={styles.markerPreviewContainer}>
-        {events.slice(0, 5).map((event, index) => (
-          <TouchableOpacity
-            key={event.id}
-            style={[
-              styles.markerPreview,
-              {
-                top: 80 + (index * 45) % 180,
-                left: 30 + (index * 67) % (SCREEN_WIDTH - 100),
-              },
-            ]}
-            onPress={() => handleEventPress(event)}
-          >
-            <Image source={{ uri: event.imageUrl }} style={styles.markerPreviewImage} />
-            {event.isLive && <View style={styles.markerPreviewLive} />}
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Development build notice */}
-      <View style={[styles.devNotice, { top: insets.top + 12 }]}>
-        <GlassView
-          {...liquidGlass.surface}
-          borderRadius={16}
-          style={styles.devNoticeGlass}
-        />
-        <View style={styles.devNoticeContent}>
-          <Ionicons name="information-circle" size={16} color="#fff" />
-          <Text style={styles.devNoticeText}>
-            Full map requires dev build
-          </Text>
-        </View>
-      </View>
-
-      {/* Bottom Sheet with friends + events together */}
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={1}
-        snapPoints={snapPoints}
-        backgroundStyle={[styles.bottomSheetBackground, { backgroundColor: colors.background }]}
-        handleIndicatorStyle={[styles.bottomSheetIndicator, { backgroundColor: colors.textTertiary }]}
-        enablePanDownToClose={false}
-        animateOnMount={true}
-      >
-        <View style={styles.bottomSheetHeader}>
-          <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>Nearby</Text>
-          <View style={styles.liveIndicator}>
-            {liveCount > 0 && (
-              <>
-                <View style={styles.liveIndicatorDot} />
-                <Text style={[styles.liveIndicatorText, { color: colors.textSecondary }]}>{liveCount} Live</Text>
-              </>
-            )}
-            {isLoading && <ActivityIndicator size="small" color={colors.textTertiary} />}
-          </View>
-        </View>
-
-        <BottomSheetScrollView
-          contentContainerStyle={styles.bottomSheetContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={refreshControl}
-        >
-          {/* Friends section - horizontal scroll (placeholder in preview) */}
-          <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Friends</Text>
-            <View style={styles.emptyFriendsRow}>
-              <Text style={[styles.emptyFriendsText, { color: colors.textTertiary }]}>No friends nearby</Text>
-            </View>
-          </View>
-
-          {/* Events section - horizontal scroll */}
-          <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Events</Text>
-            {isLoading && events.length === 0 ? (
-              <View style={styles.loadingState}>
-                <ActivityIndicator size="large" color={colors.text} />
-                <Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text>
-              </View>
-            ) : error && events.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} />
-                <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()} activeOpacity={0.7}>
-                  <GlassView {...liquidGlass.surface} borderRadius={8} style={styles.inlineButtonGlass} />
-                  <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-              </View>
-            ) : filteredEvents.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="map-outline" size={48} color={colors.textTertiary} />
-                <Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No events available</Text>
-              </View>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalEventsContent}>
-                {filteredEvents.map((event) => (
-                  <EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        </BottomSheetScrollView>
-      </BottomSheet>
-    </View>
-  );
-}
 
 // Full Mapbox Map Screen
 function FullMapScreen() {
@@ -736,11 +507,7 @@ function FullMapScreen() {
   );
 }
 
-// Main Map Screen - shows preview in Expo Go, full map in dev build
 export default function MapScreen() {
-  if (isExpoGo || !MAPBOX_TOKEN) {
-    return <MapPreview />;
-  }
   return <FullMapScreen />;
 }
 
