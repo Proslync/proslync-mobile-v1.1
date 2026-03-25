@@ -1,43 +1,34 @@
-// Native SwiftUI Nearby Sheet — Apple Maps-style persistent overlay
-// Uses @expo/ui BottomSheet with peek/half/full detents, map stays interactive
+// Native SwiftUI Nearby Sheet — uses native BottomSheet with RN content inside
+// All content is React Native wrapped in RNHostView (SwiftUI Image doesn't support URLs)
 
 import * as React from "react";
-import {
-  BottomSheet,
-  Button,
-  Group,
-  Host,
-  HStack,
-  Image as SwiftImage,
-  ScrollView as SwiftScrollView,
-  Text,
-  VStack,
-  RNHostView,
-} from "@expo/ui/swift-ui";
-import {
-  presentationDetents,
-  presentationDragIndicator,
-  presentationBackgroundInteraction,
-  padding,
-  frame,
-  font,
-  foregroundStyle,
-  glassEffect,
-  buttonStyle,
-  controlSize,
-} from "@expo/ui/swift-ui/modifiers";
-import { preferredColorScheme } from "@/modules/native-ui-ext";
-import { useAppTheme } from "@/hooks/use-app-theme";
 import {
   Image,
   TouchableOpacity,
   View,
   StyleSheet,
   ActivityIndicator,
-  ScrollView as RNScrollView,
-  Text as RNText,
+  ScrollView,
+  Text,
 } from "react-native";
+import {
+  BottomSheet,
+  Group,
+  Host,
+  RNHostView,
+} from "@expo/ui/swift-ui";
+import {
+  presentationDetents,
+  presentationDragIndicator,
+  presentationBackgroundInteraction,
+  type PresentationDetent,
+} from "@expo/ui/swift-ui/modifiers";
+import { preferredColorScheme } from "@/modules/native-ui-ext";
+import { useAppTheme } from "@/hooks/use-app-theme";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import * as Haptics from "expo-haptics";
 
 const DefaultAvatar = require("@/assets/images/default-avatar.png");
@@ -83,12 +74,16 @@ export function NearbyNativeSheet({
   onSharePress,
   onDismiss,
 }: NearbyNativeSheetProps) {
-  const { isDark, colors } = useAppTheme();
+  const { isDark } = useAppTheme();
   const scheme = isDark ? "dark" : "light";
 
-  const primary = foregroundStyle({ type: "hierarchical", style: "primary" });
-  const secondary = foregroundStyle({ type: "hierarchical", style: "secondary" });
-  const tertiary = foregroundStyle({ type: "hierarchical", style: "tertiary" });
+  const detents: PresentationDetent[] = [
+    { fraction: 0.15 },
+    { fraction: 0.45 },
+    "large",
+  ];
+  const [selectedDetent, setSelectedDetent] =
+    React.useState<PresentationDetent>({ fraction: 0.45 });
 
   return (
     <Host
@@ -103,160 +98,186 @@ export function NearbyNativeSheet({
       >
         <Group
           modifiers={[
-            presentationDetents([
-              { fraction: 0.15 },
-              { fraction: 0.45 },
-              "large",
-            ]),
+            presentationDetents(detents, {
+              selection: selectedDetent,
+              onSelectionChange: setSelectedDetent,
+            }),
             presentationDragIndicator("visible"),
             presentationBackgroundInteraction("enabled"),
             preferredColorScheme(scheme),
           ]}
         >
-          <SwiftScrollView>
-            <VStack
-              alignment="leading"
-              spacing={20}
-              modifiers={[padding({ horizontal: 20, top: 8, bottom: 40 })]}
+          <RNHostView>
+            <ScrollView
+              style={styles.scrollView}
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator={false}
             >
-              {/* Header */}
-              <HStack spacing={8}>
-                <Text modifiers={[font({ size: 22, weight: "bold" }), primary]}>
-                  Nearby
-                </Text>
-
+              {/* ─── Header ─── */}
+              <View style={styles.header}>
+                <Text style={styles.headerTitle}>Nearby</Text>
                 {liveCount > 0 && (
-                  <Text modifiers={[font({ size: 13 }), foregroundStyle("#ff3b30")]}>
-                    {`● ${liveCount} Live`}
-                  </Text>
+                  <View style={styles.livePill}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.liveText}>{liveCount} Live</Text>
+                  </View>
                 )}
-
                 {isLoading && (
-                  <RNHostView matchContents>
-                    <ActivityIndicator size="small" color={colors.textTertiary} />
-                  </RNHostView>
+                  <ActivityIndicator
+                    size="small"
+                    color="rgba(255,255,255,0.4)"
+                    style={{ marginLeft: 8 }}
+                  />
                 )}
-              </HStack>
+              </View>
 
-              {/* Friends section */}
-              <VStack alignment="leading" spacing={10}>
-                <Text modifiers={[font({ size: 13, weight: "semibold" }), secondary]}>
-                  Friends
-                </Text>
+              {/* ─── Friends Section ─── */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons
+                    name="people"
+                    size={14}
+                    color="rgba(255,255,255,0.5)"
+                  />
+                  <Text style={styles.sectionTitle}>Friends</Text>
+                </View>
 
                 {nearbyFriends.length > 0 ? (
-                  <SwiftScrollView axes="horizontal" showsIndicators={false}>
-                    <HStack spacing={14}>
-                      {nearbyFriends.map((friend) => (
-                        <RNHostView key={friend.id} matchContents>
-                          <TouchableOpacity
-                            onPress={() => {
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              onFriendPress(friend);
-                            }}
-                            activeOpacity={0.7}
-                            style={styles.friendItem}
-                          >
-                            <Image
-                              source={
-                                friend.imageUrl
-                                  ? { uri: friend.imageUrl }
-                                  : DefaultAvatar
-                              }
-                              style={styles.friendAvatar}
-                            />
-                            <View style={styles.friendOnline} />
-                          </TouchableOpacity>
-                        </RNHostView>
-                      ))}
-                    </HStack>
-                  </SwiftScrollView>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.friendsScroll}
+                  >
+                    {nearbyFriends.map((friend) => (
+                      <TouchableOpacity
+                        key={friend.id}
+                        onPress={() => {
+                          Haptics.impactAsync(
+                            Haptics.ImpactFeedbackStyle.Light,
+                          );
+                          onFriendPress(friend);
+                        }}
+                        activeOpacity={0.7}
+                        style={styles.friendItem}
+                      >
+                        <Image
+                          source={
+                            friend.imageUrl
+                              ? { uri: friend.imageUrl }
+                              : DefaultAvatar
+                          }
+                          style={styles.friendAvatar}
+                        />
+                        <View style={styles.friendOnline} />
+                        <Text style={styles.friendName} numberOfLines={1}>
+                          {friend.name.split(" ")[0]}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 ) : (
-                  <HStack spacing={10}>
-                    <Text modifiers={[font({ size: 14 }), tertiary]}>
+                  <View style={styles.emptyRow}>
+                    <Text style={styles.emptyText}>
                       {isSharing
                         ? "No friends sharing"
                         : "Share location to see friends"}
                     </Text>
-
                     {!isSharing && (
-                      <Button
-                        systemImage="location"
-                        label="Share"
+                      <TouchableOpacity
                         onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          Haptics.impactAsync(
+                            Haptics.ImpactFeedbackStyle.Light,
+                          );
                           onSharePress();
                         }}
-                        modifiers={[buttonStyle("glass"), controlSize("small")]}
-                      />
+                        activeOpacity={0.7}
+                        style={styles.shareBtn}
+                      >
+                        {/* @ts-expect-error — augmented GlassViewProps */}
+                        <GlassView
+                          {...liquidGlass.fillMedium}
+                          borderRadius={8}
+                          style={StyleSheet.absoluteFill}
+                          isInteractive
+                        />
+                        <Ionicons
+                          name="location"
+                          size={14}
+                          color="#fff"
+                          style={{ marginRight: 4 }}
+                        />
+                        <Text style={styles.shareBtnText}>Share</Text>
+                      </TouchableOpacity>
                     )}
-                  </HStack>
+                  </View>
                 )}
-              </VStack>
+              </View>
 
-              {/* Events section */}
-              <VStack alignment="leading" spacing={10}>
-                <Text modifiers={[font({ size: 13, weight: "semibold" }), secondary]}>
-                  Events
-                </Text>
+              {/* ─── Events Section ─── */}
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Ionicons
+                    name="calendar"
+                    size={14}
+                    color="rgba(255,255,255,0.5)"
+                  />
+                  <Text style={styles.sectionTitle}>Events</Text>
+                </View>
 
                 {isLoading && events.length === 0 ? (
-                  <RNHostView matchContents>
-                    <View style={styles.loadingWrap}>
-                      <ActivityIndicator size="large" color={colors.textTertiary} />
-                    </View>
-                  </RNHostView>
+                  <View style={styles.loadingWrap}>
+                    <ActivityIndicator
+                      size="large"
+                      color="rgba(255,255,255,0.4)"
+                    />
+                  </View>
                 ) : events.length === 0 ? (
-                  <Text modifiers={[font({ size: 14 }), tertiary]}>
-                    No events nearby
-                  </Text>
+                  <Text style={styles.emptyText}>No events nearby</Text>
                 ) : (
-                  <RNHostView matchContents>
-                    <RNScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={styles.eventsScroll}
-                    >
-                      {events.map((event) => (
-                        <TouchableOpacity
-                          key={event.id}
-                          style={styles.eventCard}
-                          onPress={() => onEventPress(event)}
-                          activeOpacity={0.9}
-                        >
-                          <Image
-                            source={{ uri: event.imageUrl }}
-                            style={styles.eventImage}
-                          />
-                          <LinearGradient
-                            colors={["transparent", "rgba(0,0,0,0.85)"]}
-                            style={styles.eventGradient}
-                          />
-                          <View style={styles.eventContent}>
-                            {event.isLive && (
-                              <View style={styles.liveBadge}>
-                                <View style={styles.liveDot} />
-                                <RNText style={styles.liveText}>LIVE</RNText>
-                              </View>
-                            )}
-                            <RNText style={styles.eventTitle} numberOfLines={1}>
-                              {event.title}
-                            </RNText>
-                            <RNText style={styles.eventVenue} numberOfLines={1}>
-                              {event.venue}
-                            </RNText>
-                            <RNText style={styles.eventMeta}>
-                              {event.date} @ {event.time}
-                            </RNText>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                    </RNScrollView>
-                  </RNHostView>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.eventsScroll}
+                  >
+                    {events.map((event) => (
+                      <TouchableOpacity
+                        key={event.id}
+                        style={styles.eventCard}
+                        onPress={() => onEventPress(event)}
+                        activeOpacity={0.9}
+                      >
+                        <Image
+                          source={{ uri: event.imageUrl }}
+                          style={styles.eventImage}
+                        />
+                        <LinearGradient
+                          colors={["transparent", "rgba(0,0,0,0.85)"]}
+                          style={styles.eventGradient}
+                        />
+                        <View style={styles.eventContent}>
+                          {event.isLive && (
+                            <View style={styles.eventLiveBadge}>
+                              <View style={styles.eventLiveDot} />
+                              <Text style={styles.eventLiveText}>LIVE</Text>
+                            </View>
+                          )}
+                          <Text style={styles.eventTitle} numberOfLines={1}>
+                            {event.title}
+                          </Text>
+                          <Text style={styles.eventVenue} numberOfLines={1}>
+                            {event.venue}
+                          </Text>
+                          <Text style={styles.eventMeta}>
+                            {event.date} @ {event.time}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
                 )}
-              </VStack>
-            </VStack>
-          </SwiftScrollView>
+              </View>
+            </ScrollView>
+          </RNHostView>
         </Group>
       </BottomSheet>
     </Host>
@@ -264,6 +285,66 @@ export function NearbyNativeSheet({
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+    marginTop: 12,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#fff",
+  },
+  livePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginLeft: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    backgroundColor: "rgba(255, 59, 48, 0.15)",
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#ff3b30",
+  },
+  liveText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#ff3b30",
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.5)",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  friendsScroll: {
+    gap: 14,
+  },
   friendItem: {
     alignItems: "center",
     width: 56,
@@ -276,7 +357,7 @@ const styles = StyleSheet.create({
   },
   friendOnline: {
     position: "absolute",
-    bottom: 0,
+    top: 36,
     right: 4,
     width: 12,
     height: 12,
@@ -285,13 +366,40 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#000",
   },
+  friendName: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.7)",
+    marginTop: 4,
+    textAlign: "center",
+  },
+  emptyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.35)",
+  },
+  shareBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  shareBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#fff",
+  },
   loadingWrap: {
     paddingVertical: 20,
     alignItems: "center",
   },
   eventsScroll: {
     gap: 12,
-    paddingRight: 20,
   },
   eventCard: {
     width: 200,
@@ -319,36 +427,34 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 12,
   },
-  liveBadge: {
+  eventLiveBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     marginBottom: 4,
   },
-  liveDot: {
+  eventLiveDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: "#ff3b30",
   },
-  liveText: {
+  eventLiveText: {
     fontSize: 10,
-    fontFamily: "Lato_700Bold",
+    fontWeight: "700",
     color: "#ff3b30",
   },
   eventTitle: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
+    fontWeight: "700",
     color: "#fff",
   },
   eventVenue: {
     fontSize: 11,
-    fontFamily: "Lato_400Regular",
     color: "rgba(255,255,255,0.7)",
   },
   eventMeta: {
     fontSize: 10,
-    fontFamily: "Lato_400Regular",
     color: "rgba(255,255,255,0.5)",
     marginTop: 2,
   },

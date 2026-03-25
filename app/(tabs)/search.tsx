@@ -30,6 +30,7 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { NearbyNativeSheet } from '@/components/map/nearby-native-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { eventsApi } from '@/lib/api/events';
 import { locationsApi, HeatmapPoint } from '@/lib/api/locations';
@@ -455,7 +456,6 @@ function FullMapScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const cameraRef = useRef<Camera>(null);
-  const bottomSheetRef = useRef<BottomSheet>(null);
   const [events, setEvents] = useState<MapEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -472,8 +472,6 @@ function FullMapScreen() {
 
   // Auth hook for current user's avatar
   const { user } = useAuth();
-
-  const snapPoints = useMemo(() => ['35%', '60%', '90%'], []);
 
   useEffect(() => {
     (async () => {
@@ -530,8 +528,6 @@ function FullMapScreen() {
     return () => clearInterval(interval);
   }, [userLocation, fetchHeatmap]);
 
-  const { refreshControl } = useRefreshControl({ onRefresh: fetchEvents });
-
   const filteredEvents = useMemo(() => {
     return events.filter(e => e.date !== 'Past');
   }, [events]);
@@ -564,7 +560,7 @@ function FullMapScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedEvent(event);
     cameraRef.current?.setCamera({ centerCoordinate: [event.longitude, event.latitude], zoomLevel: 14, animationDuration: 500 });
-    bottomSheetRef.current?.snapToIndex(1);
+    setShowNearbySheet(true);
   }, []);
 
   const handleFriendMarkerPress = useCallback((friend: FriendMarker) => {
@@ -675,106 +671,37 @@ function FullMapScreen() {
         }}
         onRecenter={handleRecenter}
         onNearby={() => {
-          if (showNearbySheet) {
-            bottomSheetRef.current?.close();
-            setShowNearbySheet(false);
-          } else {
-            bottomSheetRef.current?.snapToIndex(1);
-            setShowNearbySheet(true);
-          }
+          setShowNearbySheet((prev) => !prev);
         }}
         isSharing={sharingState.isSharing}
         hasLiveEvents={liveCount > 0}
       />
 
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        snapPoints={snapPoints}
-        backgroundStyle={[styles.bottomSheetBackground, { backgroundColor: colors.background }]}
-        handleIndicatorStyle={[styles.bottomSheetIndicator, { backgroundColor: colors.textTertiary }]}
-        enablePanDownToClose
-        onClose={() => setShowNearbySheet(false)}
-        animateOnMount={false}
-      >
-        <View style={styles.bottomSheetHeader}>
-          <Text style={[styles.bottomSheetTitle, { color: colors.text }]}>Nearby</Text>
-          <View style={styles.liveIndicator}>
-            {liveCount > 0 && (<><View style={styles.liveIndicatorDot} /><Text style={[styles.liveIndicatorText, { color: colors.textSecondary }]}>{liveCount} Live</Text></>)}
-            {isLoading && <ActivityIndicator size="small" color={colors.textTertiary} />}
-          </View>
-        </View>
-        <BottomSheetScrollView contentContainerStyle={styles.bottomSheetContent} showsVerticalScrollIndicator={false} refreshControl={refreshControl}>
-          {/* Friends section - horizontal scroll of avatars */}
-          <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Friends</Text>
-            {nearbyFriends.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.friendsScrollContent}>
-                {nearbyFriends.map((friend) => (
-                  <FriendAvatarItem
-                    key={friend.id}
-                    friend={friend}
-                    colors={colors}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      cameraRef.current?.setCamera({
-                        centerCoordinate: [friend.longitude, friend.latitude],
-                        zoomLevel: 15,
-                        animationDuration: 500,
-                      });
-                      bottomSheetRef.current?.snapToIndex(0);
-                    }}
-                  />
-                ))}
-              </ScrollView>
-            ) : (
-              <View style={styles.emptyFriendsRow}>
-                <Text style={[styles.emptyFriendsText, { color: colors.textTertiary }]}>
-                  {sharingState.isSharing ? 'No friends sharing location' : 'Share your location to see friends'}
-                </Text>
-                {!sharingState.isSharing && (
-                  <TouchableOpacity
-                    style={styles.shareLocationInline}
-                    onPress={async () => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      await Location.requestForegroundPermissionsAsync();
-                      setShowShareSheet(true);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <GlassView
-                      {...liquidGlass.surface}
-                      borderRadius={8}
-                      style={styles.inlineButtonGlass}
-                    />
-                    <View style={styles.inlineButtonContent}>
-                      <Ionicons name="location-outline" size={14} color="#fff" />
-                      <Text style={styles.shareLocationInlineText}>Share</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-          </View>
-
-          {/* Events section - horizontal scroll cards */}
-          <View style={styles.sectionContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Events</Text>
-            {isLoading && events.length === 0 ? (
-              <View style={styles.loadingState}><ActivityIndicator size="large" color={colors.text} /><Text style={[styles.loadingStateText, { color: colors.textSecondary }]}>Loading events...</Text></View>
-            ) : error && events.length === 0 ? (
-              <View style={styles.emptyState}><Ionicons name="cloud-offline-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>{error}</Text><TouchableOpacity style={styles.retryButton} onPress={() => fetchEvents()} activeOpacity={0.7}><GlassView {...liquidGlass.surface} borderRadius={8} style={styles.inlineButtonGlass} /><Text style={styles.retryButtonText}>Retry</Text></TouchableOpacity></View>
-            ) : filteredEvents.length === 0 ? (
-              <View style={styles.emptyState}><Ionicons name="map-outline" size={48} color={colors.textTertiary} /><Text style={[styles.emptyStateText, { color: colors.textTertiary }]}>No events available</Text></View>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalEventsContent}>
-                {selectedEvent && <EventCard key={`selected-${selectedEvent.id}`} event={selectedEvent} onPress={() => handleEventPress(selectedEvent)} />}
-                {filteredEvents.filter(e => !selectedEvent || e.id !== selectedEvent.id).map((event) => (<EventCard key={event.id} event={event} onPress={() => handleEventPress(event)} />))}
-              </ScrollView>
-            )}
-          </View>
-        </BottomSheetScrollView>
-      </BottomSheet>
+      {showNearbySheet && (
+        <NearbyNativeSheet
+          events={filteredEvents}
+          isLoading={isLoading}
+          liveCount={liveCount}
+          nearbyFriends={nearbyFriends}
+          isSharing={sharingState.isSharing}
+          onFriendPress={(friend) => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            cameraRef.current?.setCamera({
+              centerCoordinate: [friend.longitude, friend.latitude],
+              zoomLevel: 15,
+              animationDuration: 500,
+            });
+          }}
+          onEventPress={handleEventPress}
+          onSharePress={async () => {
+            try {
+              await Location.requestForegroundPermissionsAsync();
+            } catch {}
+            setShowShareSheet(true);
+          }}
+          onDismiss={() => setShowNearbySheet(false)}
+        />
+      )}
 
       {/* Share Location Sheet — native SwiftUI on iOS 26+, fallback otherwise */}
       {canUseNativeSheet() ? (
