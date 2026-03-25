@@ -24,8 +24,7 @@ import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, { FadeIn, FadeInDown, useSharedValue, useAnimatedStyle, withTiming, runOnJS } from "react-native-reanimated";
-import { Gesture, GestureDetector, TouchableOpacity as GHTouchableOpacity } from "react-native-gesture-handler";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { GlassView } from "expo-glass-effect";
 import { liquidGlass, glassTint, glassText, glassBorder, glassSurfaceTint } from "@/constants/glass/liquid-glass";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
@@ -40,6 +39,7 @@ import { useUnifiedSearch } from "@/hooks/use-unified-search";
 import { chatApi } from "@/lib/api/chat";
 import { usersApi } from "@/lib/api/users";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
+import { ConversationActionSheet } from "@/components/messages/action-sheet";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { useTabNavigation } from "@/lib/providers/tab-navigation-provider";
@@ -650,37 +650,13 @@ export default function MessagesScreen() {
   const [actionTarget, setActionTarget] = useState<ChannelData | null>(null);
   const [blockTarget, setBlockTarget] = useState<ChannelData | null>(null);
   const [blockError, setBlockError] = useState(false);
-  const actionSheetTranslateY = useSharedValue(400);
-
   const handleLongPress = useCallback((channel: ChannelData) => {
     setActionTarget(channel);
-    actionSheetTranslateY.value = withTiming(0, { duration: 300 });
   }, []);
 
   const dismissActionSheet = useCallback(() => {
-    actionSheetTranslateY.value = withTiming(400, { duration: 200 });
-    setTimeout(() => setActionTarget(null), 200);
+    setActionTarget(null);
   }, []);
-
-  const actionSheetPanGesture = Gesture.Pan()
-    .activeOffsetY(10)
-    .onUpdate((e) => {
-      if (e.translationY > 0) {
-        actionSheetTranslateY.value = e.translationY;
-      }
-    })
-    .onEnd((e) => {
-      if (e.translationY > 80 || e.velocityY > 500) {
-        actionSheetTranslateY.value = withTiming(400, { duration: 200 });
-        runOnJS(setActionTarget)(null);
-      } else {
-        actionSheetTranslateY.value = withTiming(0, { duration: 200 });
-      }
-    });
-
-  const actionSheetAnimStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: actionSheetTranslateY.value }],
-  }));
 
   const handleTogglePin = useCallback(async () => {
     if (!actionTarget) return;
@@ -1100,101 +1076,15 @@ export default function MessagesScreen() {
         </View>
       </Modal>
 
-      {/* Long press action sheet - account switcher style */}
-      <Modal
+      {/* Long press action sheet — native SwiftUI */}
+      <ConversationActionSheet
         visible={!!actionTarget}
-        transparent
-        animationType="fade"
-        onRequestClose={dismissActionSheet}
-      >
-        <View style={styles.actionOverlay}>
-          <GlassView
-            {...liquidGlass.surface}
-            borderRadius={0}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={dismissActionSheet} />
-
-          <GestureDetector gesture={actionSheetPanGesture}>
-            <Animated.View style={[styles.actionSheet, actionSheetAnimStyle]}>
-              <View style={styles.actionSheetContent}>
-                <GlassView
-                  {...liquidGlass.surface}
-                  borderRadius={20}
-                  style={StyleSheet.absoluteFillObject}
-                />
-                {/* Handle bar */}
-                <View style={styles.actionSheetHandle} />
-
-                {/* Header */}
-                <View style={styles.actionSheetHeader}>
-                  <Text style={styles.actionTitle} numberOfLines={1}>
-                    {actionTarget?.name}
-                  </Text>
-                  <GHTouchableOpacity onPress={dismissActionSheet} style={styles.actionSheetClose}>
-                    <Ionicons name="close-circle" size={24} color="rgba(255,255,255,0.4)" />
-                  </GHTouchableOpacity>
-                </View>
-
-                {/* Actions */}
-                <View style={[styles.actionList, { paddingBottom: insets.bottom + 14 }]}>
-                  <GHTouchableOpacity style={styles.actionItem} onPress={handleTogglePin}>
-                    <View style={[styles.actionItemIcon, { overflow: "hidden" }]}>
-                      <GlassView
-                        {...liquidGlass.surface}
-                        borderRadius={18}
-                        style={StyleSheet.absoluteFillObject}
-                      />
-                      <Ionicons
-                        name={actionTarget?.isPinned ? "pin-outline" : "pin"}
-                        size={20}
-                        color="#fff"
-                      />
-                    </View>
-                    <Text style={styles.actionText}>
-                      {actionTarget?.isPinned ? "Unpin conversation" : "Pin conversation"}
-                    </Text>
-                  </GHTouchableOpacity>
-
-                  {actionTarget && !actionTarget.isConcierge && (
-                    <>
-                      <GHTouchableOpacity style={styles.actionItem} onPress={handleDeleteFromAction}>
-                        <View style={[styles.actionItemIcon, { overflow: "hidden" }]}>
-                          <GlassView
-                            {...liquidGlass.surface}
-                            borderRadius={18}
-                            style={StyleSheet.absoluteFillObject}
-                          />
-                          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                        </View>
-                        <Text style={[styles.actionText, { color: "#FF3B30" }]}>
-                          Delete conversation
-                        </Text>
-                      </GHTouchableOpacity>
-
-                      {actionTarget.otherUserId && (
-                        <GHTouchableOpacity style={styles.actionItem} onPress={handleBlockFromAction}>
-                          <View style={[styles.actionItemIcon, { overflow: "hidden" }]}>
-                            <GlassView
-                              {...liquidGlass.surface}
-                              borderRadius={18}
-                              style={StyleSheet.absoluteFillObject}
-                            />
-                            <Ionicons name="ban-outline" size={20} color="#FF3B30" />
-                          </View>
-                          <Text style={[styles.actionText, { color: "#FF3B30" }]}>
-                            Block user
-                          </Text>
-                        </GHTouchableOpacity>
-                      )}
-                    </>
-                  )}
-                </View>
-              </View>
-            </Animated.View>
-          </GestureDetector>
-        </View>
-      </Modal>
+        onClose={dismissActionSheet}
+        channel={actionTarget}
+        onTogglePin={handleTogglePin}
+        onDelete={handleDeleteFromAction}
+        onBlock={handleBlockFromAction}
+      />
 
       <ConfirmModal
         visible={!!deleteTarget}

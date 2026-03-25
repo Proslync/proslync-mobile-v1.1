@@ -1,35 +1,30 @@
-// Action Sheet - Long press actions for conversations (native SwiftUI sheet)
+// Conversation Action Sheet — long press actions (native SwiftUI sheet)
 
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { GlassView } from "expo-glass-effect";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { Ionicons } from "@expo/vector-icons";
-import { useAppTheme } from "@/hooks/use-app-theme";
-import { Conversation } from "../../lib/types/messages.types";
 import { NativeSheet } from "@/components/ui/native-sheet";
+import type { ChannelData } from "@/hooks/use-conversations";
 
-interface ActionSheetProps {
+interface ConversationActionSheetProps {
   visible: boolean;
   onClose: () => void;
-  conversation: Conversation | null;
-  onPin: () => void;
-  onMute: () => void;
-  onArchive: () => void;
+  channel: ChannelData | null;
+  onTogglePin: () => void;
   onDelete: () => void;
+  onBlock: () => void;
 }
 
-export function ActionSheet({
+export function ConversationActionSheet({
   visible,
   onClose,
-  conversation,
-  onPin,
-  onMute,
-  onArchive,
+  channel,
+  onTogglePin,
   onDelete,
-}: ActionSheetProps) {
-  const { colors } = useAppTheme();
-
+  onBlock,
+}: ConversationActionSheetProps) {
   const handleAction = React.useCallback(
     (action: () => void) => {
       onClose();
@@ -38,88 +33,115 @@ export function ActionSheet({
     [onClose],
   );
 
-  const actions = conversation
-    ? [
-        {
-          icon: conversation.isPinned ? "pin-outline" : "pin",
-          label: conversation.isPinned ? "Unpin" : "Pin",
-          onPress: onPin,
-          color: colors.text,
-        },
-        {
-          icon: conversation.isMuted ? "notifications" : "notifications-off",
-          label: conversation.isMuted ? "Unmute" : "Mute",
-          onPress: onMute,
-          color: colors.text,
-        },
-        {
-          icon: "archive",
-          label: "Archive",
-          onPress: onArchive,
-          color: colors.text,
-        },
-        {
-          icon: "trash",
-          label: "Delete",
-          onPress: onDelete,
-          color: "#ff3b30",
-        },
-      ]
-    : [];
-
   return (
     <NativeSheet
-      isPresented={visible && !!conversation}
+      isPresented={visible && !!channel}
       onDismiss={onClose}
-      fitToContents
+      detents={[{ fraction: 0.4 }]}
       rnContent
     >
       <View style={styles.content}>
-        {conversation && (
+        {channel && (
           <>
-            {/* Conversation Preview */}
-            <View style={styles.preview}>
-              <Text
-                style={[styles.previewTitle, { color: colors.text }]}
-                numberOfLines={1}
-              >
-                {conversation.title}
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title} numberOfLines={1}>
+                {channel.name}
               </Text>
             </View>
 
             {/* Actions */}
             <View style={styles.actionsList}>
-              {actions.map((action) => (
-                <TouchableOpacity
-                  key={action.label}
-                  style={styles.actionRow}
-                  onPress={() => handleAction(action.onPress)}
-                  activeOpacity={0.7}
-                >
+              {/* Pin/Unpin */}
+              <TouchableOpacity
+                style={styles.actionRow}
+                onPress={() => handleAction(onTogglePin)}
+                activeOpacity={0.7}
+              >
+                <GlassView
+                  {...liquidGlass.fill}
+                  borderRadius={12}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={styles.iconCircle}>
                   <GlassView
-                    {...(action.color === "#ff3b30"
-                      ? liquidGlass.danger
-                      : liquidGlass.fill)}
-                    borderRadius={12}
+                    {...liquidGlass.fillMedium}
+                    borderRadius={18}
                     style={StyleSheet.absoluteFill}
                   />
-                  <View style={styles.actionIconCircle}>
+                  <Ionicons
+                    name={channel.isPinned ? "pin-outline" : "pin"}
+                    size={18}
+                    color="#fff"
+                  />
+                </View>
+                <Text style={styles.actionText}>
+                  {channel.isPinned
+                    ? "Unpin conversation"
+                    : "Pin conversation"}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Delete + Block — only for non-concierge */}
+              {!channel.isConcierge && (
+                <>
+                  <TouchableOpacity
+                    style={styles.actionRow}
+                    onPress={() => handleAction(onDelete)}
+                    activeOpacity={0.7}
+                  >
                     <GlassView
-                      {...liquidGlass.fillMedium}
-                      borderRadius={14}
+                      {...liquidGlass.fill}
+                      borderRadius={12}
                       style={StyleSheet.absoluteFill}
                     />
-                    <Ionicons
-                      name={action.icon as any}
-                      size={18}
-                      color={action.color}
-                    />
-                  </View>
-                  <Text style={[styles.actionText, { color: action.color }]}>
-                    {action.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <View style={styles.iconCircle}>
+                      <GlassView
+                        {...liquidGlass.fillMedium}
+                        borderRadius={18}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#FF3B30"
+                      />
+                    </View>
+                    <Text style={[styles.actionText, styles.dangerText]}>
+                      Delete conversation
+                    </Text>
+                  </TouchableOpacity>
+
+                  {channel.otherUserId && (
+                    <TouchableOpacity
+                      style={styles.actionRow}
+                      onPress={() => handleAction(onBlock)}
+                      activeOpacity={0.7}
+                    >
+                      <GlassView
+                        {...liquidGlass.fill}
+                        borderRadius={12}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <View style={styles.iconCircle}>
+                        <GlassView
+                          {...liquidGlass.fillMedium}
+                          borderRadius={18}
+                          style={StyleSheet.absoluteFill}
+                        />
+                        <Ionicons
+                          name="ban-outline"
+                          size={18}
+                          color="#FF3B30"
+                        />
+                      </View>
+                      <Text style={[styles.actionText, styles.dangerText]}>
+                        Block user
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              )}
             </View>
           </>
         )}
@@ -134,13 +156,14 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
   },
-  preview: {
+  header: {
     paddingHorizontal: 4,
     paddingVertical: 10,
   },
-  previewTitle: {
+  title: {
     fontSize: 17,
     fontWeight: "700",
+    color: "#fff",
     textAlign: "center",
   },
   actionsList: {
@@ -155,15 +178,19 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     gap: 12,
   },
-  actionIconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
   },
   actionText: {
     fontSize: 16,
+    color: "#fff",
+  },
+  dangerText: {
+    color: "#FF3B30",
   },
 });
