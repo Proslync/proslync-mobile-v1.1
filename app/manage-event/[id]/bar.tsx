@@ -338,6 +338,11 @@ export default function BarQuickOrderScreen() {
         onClose={handleTipClose}
         onConfirm={handleTipConfirm}
         loading={screenState === "processing"}
+        items={Array.from(cart.values()).map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          priceCents: item.priceCents,
+        }))}
       />
     </View>
   );

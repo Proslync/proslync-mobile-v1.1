@@ -138,15 +138,9 @@ export function MenuItemCard({
                     onPress={handleRemove}
                     hitSlop={8}
                     style={styles.glassBtn}
+                    activeOpacity={0.6}
                   >
-                    {/* @ts-expect-error — augmented GlassViewProps */}
-                    <GlassView
-                      {...liquidGlass.fillStrong}
-                      borderRadius={24}
-                      style={StyleSheet.absoluteFill}
-                      isInteractive
-                    />
-                    <Ionicons name="remove" size={24} color="#fff" />
+                    <Ionicons name="remove" size={20} color="#fff" />
                   </TouchableOpacity>
 
                   <TouchableOpacity onPress={handleBadgeTap} hitSlop={4}>
@@ -157,15 +151,9 @@ export function MenuItemCard({
                     onPress={handleAdd}
                     hitSlop={8}
                     style={styles.glassBtn}
+                    activeOpacity={0.6}
                   >
-                    {/* @ts-expect-error — augmented GlassViewProps */}
-                    <GlassView
-                      {...liquidGlass.fillStrong}
-                      borderRadius={24}
-                      style={StyleSheet.absoluteFill}
-                      isInteractive
-                    />
-                    <Ionicons name="add" size={24} color="#fff" />
+                    <Ionicons name="add" size={20} color="#fff" />
                   </TouchableOpacity>
                 </Animated.View>
               )}
@@ -248,12 +236,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   glassBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
+    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   qtyInputOverlay: {
     ...StyleSheet.absoluteFillObject,
