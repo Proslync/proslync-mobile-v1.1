@@ -1,19 +1,19 @@
-import * as React from 'react';
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { useFeedEngagement } from "@/hooks/use-feed-engagement";
+import { analyticsApi } from "@/lib/api/analytics";
+import { useTabNavigation } from "@/lib/providers/tab-navigation-provider";
+import type { FeedItem as FeedItemType, FeedTab } from "@/lib/types/feed.types";
+import * as React from "react";
 import {
+  ActivityIndicator,
   FlatList,
+  RefreshControlProps,
+  StyleSheet,
   View,
   ViewToken,
-  StyleSheet,
-  RefreshControlProps,
-  ActivityIndicator,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FeedItem } from './feed-item';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
-import { analyticsApi } from '@/lib/api/analytics';
-import { useFeedEngagement } from '@/hooks/use-feed-engagement';
-import type { FeedItem as FeedItemType, FeedTab } from '@/lib/types/feed.types';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FeedItem } from "./feed-item";
 
 interface FeedContainerProps {
   items: FeedItemType[];
@@ -56,21 +56,24 @@ export function FeedContainer({
   onEndReached,
   isFetchingNextPage,
   listKey,
-  feedType = 'foryou',
+  feedType = "foryou",
 }: FeedContainerProps) {
   const flatListRef = React.useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const { currentTab } = useTabNavigation();
-  const isFeedTab = currentTab === 'index';
+  const isFeedTab = currentTab === "index";
 
   const [activeIndex, setActiveIndex] = React.useState(0);
   const [containerHeight, setContainerHeight] = React.useState(0);
   const engagement = useFeedEngagement(feedType);
 
-  const handleLayout = React.useCallback((e: { nativeEvent: { layout: { height: number } } }) => {
-    setContainerHeight(e.nativeEvent.layout.height);
-  }, []);
+  const handleLayout = React.useCallback(
+    (e: { nativeEvent: { layout: { height: number } } }) => {
+      setContainerHeight(e.nativeEvent.layout.height);
+    },
+    [],
+  );
 
   const getItemLayout = React.useCallback(
     (_data: any, index: number) => ({
@@ -78,7 +81,7 @@ export function FeedContainer({
       offset: containerHeight * index,
       index,
     }),
-    [containerHeight]
+    [containerHeight],
   );
 
   // ── Viewability ─────────────────────────────────────────────────────
@@ -104,14 +107,19 @@ export function FeedContainer({
           engagement.onActiveItemChange(visibleItem ?? null, index);
 
           // Track event view when post becomes visible in feed
-          if (visibleItem?.eventId && !viewedEventIds.current.has(visibleItem.eventId)) {
+          if (
+            visibleItem?.eventId &&
+            !viewedEventIds.current.has(visibleItem.eventId)
+          ) {
             viewedEventIds.current.add(visibleItem.eventId);
-            analyticsApi.trackEventView(visibleItem.eventId, 'mobile').catch(() => {});
+            analyticsApi
+              .trackEventView(visibleItem.eventId, "mobile")
+              .catch(() => {});
           }
         }
       }
     },
-    [currentIndex, onIndexChange, items, engagement]
+    [currentIndex, onIndexChange, items, engagement],
   );
 
   // ── Render item ─────────────────────────────────────────────────────
@@ -153,14 +161,11 @@ export function FeedContainer({
       onUserClick,
       onEventPress,
       onBlock,
-    ]
+    ],
   );
 
   // ── Key extractor ───────────────────────────────────────────────────
-  const keyExtractor = React.useCallback(
-    (item: FeedItemType) => item.id,
-    []
-  );
+  const keyExtractor = React.useCallback((item: FeedItemType) => item.id, []);
 
   // ── Footer loading indicator ───────────────────────────────────────
   const ListFooter = React.useCallback(() => {
@@ -174,12 +179,18 @@ export function FeedContainer({
 
   if (containerHeight === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout} />
+      <View
+        style={[styles.container, { backgroundColor: colors.background }]}
+        onLayout={handleLayout}
+      />
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]} onLayout={handleLayout}>
+    <View
+      style={[styles.container, { backgroundColor: colors.background }]}
+      onLayout={handleLayout}
+    >
       <FlatList
         key={listKey}
         ref={flatListRef}
@@ -201,7 +212,7 @@ export function FeedContainer({
         initialNumToRender={3}
         bounces
         style={styles.list}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingTop: 44 }}
         refreshControl={refreshControl}
         onEndReached={onEndReached}
         onEndReachedThreshold={2}
@@ -220,7 +231,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
