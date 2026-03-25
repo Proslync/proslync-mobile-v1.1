@@ -1,30 +1,27 @@
-// Status Card Menu Sheet — QR code + tier perks (gorhom BottomSheet, detached)
+// Status Card Menu Sheet — QR code + tier perks (native SwiftUI sheet)
+import { NativeSheet } from "@/components/ui/native-sheet";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "expo-glass-effect";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
-  View,
-  StyleSheet,
-  Linking,
-  TouchableOpacity,
   ActivityIndicator,
+  Linking,
+  ScrollView,
+  StyleSheet,
   Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { GlassView } from "expo-glass-effect";
 import QRCode from "react-native-qrcode-svg";
-import { useAppTheme } from "@/hooks/use-app-theme";
+import { radius, spacing } from "../../constants/glass/tokens";
 import { generateAppleWalletToken } from "../../lib/api/wallet";
-import { WalletUser, TIER_PERKS } from "../../lib/types/wallet.types";
-import { ConfirmModal } from "../shared/confirm-modal";
+import { TIER_PERKS, WalletUser } from "../../lib/types/wallet.types";
 import { GlassCard } from "../glass/glass-card";
 import { GlassText } from "../glass/glass-text";
-import { radius, spacing } from "../../constants/glass/tokens";
-import { liquidGlass } from "@/constants/glass/liquid-glass";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const TAB_BAR_HEIGHT = 49;
-const TAB_BAR_RADIUS = 24;
+import { ConfirmModal } from "../shared/confirm-modal";
 
 interface StatusCardMenuSheetProps {
   visible: boolean;
@@ -45,66 +42,36 @@ export function StatusCardMenuSheet({
   cardNumber,
   isLoadingCard,
 }: StatusCardMenuSheetProps) {
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
-  const insets = useSafeAreaInsets();
   const [walletError, setWalletError] = useState<string | null>(null);
 
-  React.useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.expand();
-    } else {
-      bottomSheetRef.current?.close();
-    }
-  }, [visible, user?.statusTier, pdf417Payload, isLoadingCard]);
-
-  const handleDismiss = React.useCallback(() => {
-    bottomSheetRef.current?.close();
-  }, []);
-
   const handleExpandQR = React.useCallback(() => {
-    bottomSheetRef.current?.close();
+    onClose();
     setTimeout(() => onExpandQR(), 150);
-  }, [onExpandQR]);
+  }, [onClose, onExpandQR]);
 
   return (
     <>
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        enableDynamicSizing
-        enablePanDownToClose
-        onClose={onClose}
-        backgroundStyle={{
-          backgroundColor: "transparent",
-          borderRadius: TAB_BAR_RADIUS,
-        }}
-        handleIndicatorStyle={{
-          width: 36,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: "rgba(255,255,255,0.3)",
-        }}
-        style={{ marginHorizontal: 12 }}
-        bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
-        detached
+      <NativeSheet
+        isPresented={visible}
+        onDismiss={onClose}
+        detents={[{ fraction: 0.7 }, "large"]}
+        rnContent
       >
-        <BottomSheetView style={styles.sheetContent}>
-          <GlassView
-            {...liquidGlass.surface}
-            borderRadius={TAB_BAR_RADIUS}
-            style={StyleSheet.absoluteFill}
-          />
-
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
           <StatusCardMenuContent
             user={user}
             pdf417Payload={pdf417Payload}
             isLoadingCard={isLoadingCard}
             onExpandQR={handleExpandQR}
-            onDismiss={handleDismiss}
+            onDismiss={onClose}
             onWalletError={setWalletError}
           />
-        </BottomSheetView>
-      </BottomSheet>
+        </ScrollView>
+      </NativeSheet>
 
       <ConfirmModal
         visible={!!walletError}
@@ -191,10 +158,7 @@ function StatusCardMenuContent({
           </View>
         ) : pdf417Payload ? (
           <View
-            style={[
-              styles.qrContainer,
-              { borderColor: qrContainerBorder },
-            ]}
+            style={[styles.qrContainer, { borderColor: qrContainerBorder }]}
           >
             <GlassView
               {...liquidGlass.surface}
@@ -345,6 +309,7 @@ const styles = StyleSheet.create({
   qrSection: {
     alignItems: "center",
     marginBottom: 16,
+    marginTop: 20,
   },
   loadingContainer: {
     height: 180,
