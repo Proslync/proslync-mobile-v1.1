@@ -1,22 +1,13 @@
-// Action Sheet - Long press actions for conversations
+// Action Sheet - Long press actions for conversations (native SwiftUI sheet)
 
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { GlassView } from "expo-glass-effect";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { Ionicons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { Conversation } from "../../lib/types/messages.types";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const TAB_BAR_HEIGHT = 49;
-const TAB_BAR_RADIUS = 24;
+import { NativeSheet } from "@/components/ui/native-sheet";
 
 interface ActionSheetProps {
   visible: boolean;
@@ -37,22 +28,15 @@ export function ActionSheet({
   onArchive,
   onDelete,
 }: ActionSheetProps) {
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
-  const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
 
-  React.useEffect(() => {
-    if (visible && conversation) {
-      bottomSheetRef.current?.expand();
-    } else {
-      bottomSheetRef.current?.close();
-    }
-  }, [visible, conversation?.id]);
-
-  const handleAction = React.useCallback((action: () => void) => {
-    bottomSheetRef.current?.close();
-    setTimeout(action, 150);
-  }, []);
+  const handleAction = React.useCallback(
+    (action: () => void) => {
+      onClose();
+      setTimeout(action, 150);
+    },
+    [onClose],
+  );
 
   const actions = conversation
     ? [
@@ -84,33 +68,13 @@ export function ActionSheet({
     : [];
 
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={-1}
-      enableDynamicSizing
-      enablePanDownToClose
-      onClose={onClose}
-      backgroundStyle={{
-        backgroundColor: "transparent",
-        borderRadius: TAB_BAR_RADIUS,
-      }}
-      handleIndicatorStyle={{
-        width: 36,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: "rgba(255,255,255,0.3)",
-      }}
-      style={{ marginHorizontal: 12 }}
-      bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
-      detached
+    <NativeSheet
+      isPresented={visible && !!conversation}
+      onDismiss={onClose}
+      fitToContents
+      rnContent
     >
-      <BottomSheetView style={styles.sheetContent}>
-        <GlassView
-          {...liquidGlass.surface}
-          borderRadius={TAB_BAR_RADIUS}
-          style={StyleSheet.absoluteFill}
-        />
-
+      <View style={styles.content}>
         {conversation && (
           <>
             {/* Conversation Preview */}
@@ -133,7 +97,9 @@ export function ActionSheet({
                   activeOpacity={0.7}
                 >
                   <GlassView
-                    {...(action.color === "#ff3b30" ? liquidGlass.danger : liquidGlass.fill)}
+                    {...(action.color === "#ff3b30"
+                      ? liquidGlass.danger
+                      : liquidGlass.fill)}
                     borderRadius={12}
                     style={StyleSheet.absoluteFill}
                   />
@@ -157,15 +123,16 @@ export function ActionSheet({
             </View>
           </>
         )}
-      </BottomSheetView>
-    </BottomSheet>
+      </View>
+    </NativeSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  sheetContent: {
+  content: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
   preview: {
     paddingHorizontal: 4,
@@ -173,7 +140,7 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
+    fontWeight: "700",
     textAlign: "center",
   },
   actionsList: {
@@ -198,6 +165,5 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
   },
 });

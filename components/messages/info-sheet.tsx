@@ -1,4 +1,4 @@
-// Info Sheet - Thread details modal
+// Info Sheet - Thread details modal (native SwiftUI sheet)
 
 import React from "react";
 import {
@@ -7,22 +7,17 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  ScrollView,
   Switch,
 } from "react-native";
-import BottomSheet, {
-  BottomSheetView,
-  BottomSheetScrollView,
-} from "@gorhom/bottom-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ConfirmModal } from "@/components/shared/confirm-modal";
 import { Conversation } from "../../lib/types/messages.types";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NativeSheet } from "@/components/ui/native-sheet";
 
-const TAB_BAR_HEIGHT = 49;
-const TAB_BAR_RADIUS = 24;
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
 interface InfoSheetProps {
@@ -46,64 +41,35 @@ export function InfoSheet({
   onReport,
   onViewEvent,
 }: InfoSheetProps) {
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
-  const insets = useSafeAreaInsets();
   const { colors } = useAppTheme();
   const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
   const [showReportConfirm, setShowReportConfirm] = React.useState(false);
 
-  React.useEffect(() => {
-    if (visible && conversation) {
-      bottomSheetRef.current?.expand();
-    } else {
-      bottomSheetRef.current?.close();
-    }
-  }, [visible, conversation?.id]);
-
   const handleViewEvent = React.useCallback(
     (eventId: string) => {
-      bottomSheetRef.current?.close();
+      onClose();
       setTimeout(() => onViewEvent?.(eventId), 150);
     },
-    [onViewEvent],
+    [onClose, onViewEvent],
   );
 
   const participant = conversation?.participants[0];
 
   return (
     <>
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={-1}
-        enableDynamicSizing
-        enablePanDownToClose
-        onClose={onClose}
-        backgroundStyle={{
-          backgroundColor: "transparent",
-          borderRadius: TAB_BAR_RADIUS,
-        }}
-        handleIndicatorStyle={{
-          width: 36,
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: "rgba(255,255,255,0.3)",
-        }}
-        style={{ marginHorizontal: 12 }}
-        bottomInset={TAB_BAR_HEIGHT + insets.bottom + 12}
-        detached
+      <NativeSheet
+        isPresented={visible && !!conversation}
+        onDismiss={onClose}
+        detents={["medium", "large"]}
+        rnContent
       >
-        <BottomSheetView style={styles.sheetContent}>
-          <GlassView
-            {...liquidGlass.surface}
-            borderRadius={TAB_BAR_RADIUS}
-            style={StyleSheet.absoluteFill}
-          />
-
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
           {conversation && (
-            <BottomSheetScrollView
-              style={{ maxHeight: 400 }}
-              showsVerticalScrollIndicator={false}
-            >
+            <View style={styles.content}>
               {/* Profile Section */}
               <View style={styles.profileSection}>
                 <Image
@@ -127,7 +93,9 @@ export function InfoSheet({
                     />
                   )}
                 </View>
-                <Text style={[styles.roleText, { color: colors.textSecondary }]}>
+                <Text
+                  style={[styles.roleText, { color: colors.textSecondary }]}
+                >
                   {participant?.role === "venue"
                     ? "Venue"
                     : participant?.role === "promoter"
@@ -300,10 +268,10 @@ export function InfoSheet({
                   </TouchableOpacity>
                 </View>
               </View>
-            </BottomSheetScrollView>
+            </View>
           )}
-        </BottomSheetView>
-      </BottomSheet>
+        </ScrollView>
+      </NativeSheet>
 
       <ConfirmModal
         visible={showBlockConfirm}
@@ -337,9 +305,9 @@ export function InfoSheet({
 }
 
 const styles = StyleSheet.create({
-  sheetContent: {
+  content: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingTop: 16,
   },
   profileSection: {
     alignItems: "center",
@@ -358,19 +326,17 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
+    fontWeight: "700",
   },
   verifiedIcon: {
     marginLeft: 6,
   },
   roleText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   section: {
     paddingVertical: 4,
-    paddingHorizontal: 0,
   },
   eventCard: {
     flexDirection: "row",
@@ -389,12 +355,11 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
+    fontWeight: "700",
     marginBottom: 4,
   },
   eventVenue: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   settingsGroup: {
     gap: 4,
@@ -423,7 +388,6 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
   },
   dangerGroup: {
     gap: 4,
@@ -439,7 +403,6 @@ const styles = StyleSheet.create({
   },
   dangerText: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
     color: "#ff3b30",
   },
 });
