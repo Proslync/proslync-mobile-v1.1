@@ -18,7 +18,7 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { TabStatusBadge } from '@/components/bar/tab-status-badge';
 import { AddItemsSheet } from '@/components/bar/add-items-sheet';
-import { TipEntrySheet } from '@/components/bar/tip-entry-sheet';
+import { CheckoutSheet } from '@/components/bar/checkout-sheet';
 import { ConfirmModal } from '@/components/shared/confirm-modal';
 import { useTerminalPayment } from '@/lib/providers/terminal-provider';
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -388,7 +388,7 @@ function BarTabDetailScreen() {
       )}
 
       {/* Tip Entry Sheet */}
-      <TipEntrySheet
+      <CheckoutSheet
         visible={tipSheetVisible}
         subtotalCents={tab.subtotal}
         onClose={() => setTipSheetVisible(false)}

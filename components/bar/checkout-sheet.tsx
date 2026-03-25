@@ -41,7 +41,7 @@ export interface OrderLineItem {
   priceCents: number;
 }
 
-interface TipEntrySheetProps {
+interface CheckoutSheetProps {
   visible: boolean;
   subtotalCents: number;
   onClose: () => void;
@@ -59,7 +59,7 @@ function TipContent({
   onConfirm,
   loading,
   items,
-}: Omit<TipEntrySheetProps, "visible">) {
+}: Omit<CheckoutSheetProps, "visible">) {
   const insets = useSafeAreaInsets();
   const [selectedPercent, setSelectedPercent] = React.useState<number | null>(
     null,
@@ -221,7 +221,7 @@ function NativeTipSheet({
   onConfirm,
   loading,
   items,
-}: TipEntrySheetProps) {
+}: CheckoutSheetProps) {
   return (
     <NativeSheet
       isPresented={visible}
@@ -249,7 +249,7 @@ function GorhomTipSheet({
   onConfirm,
   loading,
   items,
-}: TipEntrySheetProps) {
+}: CheckoutSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);
   const scale = useSharedValue(0.92);
   const opacity = useSharedValue(0);
@@ -307,7 +307,7 @@ function GorhomTipSheet({
 
 // ─── Export: auto-select native or fallback ───
 
-export function TipEntrySheet(props: TipEntrySheetProps) {
+export function CheckoutSheet(props: CheckoutSheetProps) {
   if (canUseNativeSheet()) {
     return <NativeTipSheet {...props} />;
   }

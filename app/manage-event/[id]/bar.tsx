@@ -1,5 +1,5 @@
 import { MenuItemCard } from "@/components/bar/menu-item-card";
-import { TipEntrySheet } from "@/components/bar/tip-entry-sheet";
+import { CheckoutSheet } from "@/components/bar/checkout-sheet";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { useToast } from "@/components/shared/toast";
 import { FloatingCartBar } from "@/components/ui/floating-cart-bar";
@@ -332,7 +332,7 @@ export default function BarQuickOrderScreen() {
       />
 
       {/* Tip entry sheet */}
-      <TipEntrySheet
+      <CheckoutSheet
         visible={screenState === "tipping"}
         subtotalCents={subtotalCents}
         onClose={handleTipClose}
