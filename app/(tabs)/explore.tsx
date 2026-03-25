@@ -202,7 +202,6 @@ function ConversationRow({
         delayLongPress={500}
         activeOpacity={0.6}
       >
-        {/* @ts-expect-error — augmented GlassViewProps */}
         <GlassView
           {...liquidGlass.surface}
           tintColor={surfaceTint}

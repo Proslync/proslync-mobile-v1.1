@@ -59,7 +59,6 @@ function DoorCoverInput() {
         name="doorCoverPrice"
         render={({ field: { onChange, onBlur, value } }) => (
           <View style={[styles.glassInputRow, { borderColor: border }]}>
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={12} style={StyleSheet.absoluteFill} />
             <Text style={[styles.dollarSign, { color: t.tertiary }]}>$</Text>
             <TextInput
@@ -163,7 +162,6 @@ export default function CreateEventScreen() {
             style={[styles.backButton, { borderColor: border }]}
             onPress={() => router.back()}
           >
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
             <Ionicons name="arrow-back" size={20} color={t.primary} />
           </TouchableOpacity>
@@ -209,7 +207,6 @@ export default function CreateEventScreen() {
                   key={index}
                   style={[styles.artistRow, { borderColor: border }]}
                 >
-                  {/* @ts-expect-error — augmented GlassViewProps */}
                   <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={12} style={StyleSheet.absoluteFill} />
                   <Ionicons name="musical-notes-outline" size={18} color={t.tertiary} />
                   <View style={styles.artistInfo}>
@@ -251,7 +248,6 @@ export default function CreateEventScreen() {
               onPress={form.handleSubmit(onSubmit, onSubmitError)}
               disabled={!canSubmit || createEvent.isPending}
             >
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={StyleSheet.absoluteFill} />
               {createEvent.isPending ? (
                 <ActivityIndicator color={t.primary} />

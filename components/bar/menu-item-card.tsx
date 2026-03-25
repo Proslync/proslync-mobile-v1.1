@@ -115,7 +115,6 @@ export function MenuItemCard({
       <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.cardOuter, swipeStyle]}>
           <TouchableOpacity onPress={handleAdd} activeOpacity={0.7}>
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView
               {...liquidGlass.fillMedium}
               {...(quantity > 0 && { tintColor: "rgba(52, 199, 89, 0.25)" })}
@@ -161,7 +160,6 @@ export function MenuItemCard({
               {/* Inline quantity input overlay */}
               {showQtyInput && (
                 <View style={styles.qtyInputOverlay}>
-                  {/* @ts-expect-error — augmented GlassViewProps */}
                   <GlassView
                     {...liquidGlass.surface}
                     borderRadius={16}

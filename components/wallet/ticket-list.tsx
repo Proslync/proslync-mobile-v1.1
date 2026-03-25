@@ -79,7 +79,6 @@ function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, 
       onPress={onView}
       activeOpacity={0.8}
     >
-      {/* @ts-expect-error — augmented GlassViewProps */}
       <GlassView
         {...liquidGlass.surface}
         tintColor={surfaceTint}
@@ -114,7 +113,6 @@ function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, 
           }}
           activeOpacity={0.7}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView
             {...liquidGlass.surface}
             tintColor={surfaceTint}
@@ -172,7 +170,6 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
             onPress={() => setActiveFilter(f.key)}
             activeOpacity={0.7}
           >
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView
               {...liquidGlass.surface}
               tintColor={activeFilter === f.key ? surfaceTint : 'transparent'}

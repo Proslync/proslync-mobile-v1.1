@@ -1147,7 +1147,6 @@ function Composer({
               onPress={onOpenCamera}
               activeOpacity={0.7}
             >
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
                 tintColor={
@@ -1177,7 +1176,6 @@ function Composer({
                 },
               ]}
             >
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
                 tintColor={
@@ -1234,7 +1232,6 @@ function Composer({
               disabled={isSending}
               activeOpacity={0.7}
             >
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
                 tintColor={
@@ -1260,7 +1257,6 @@ function Composer({
               activeOpacity={0.7}
             >
               {!isRecording && (
-                // @ts-expect-error — augmented GlassViewProps
                 <GlassView
                   {...liquidGlass.surface}
                   tintColor={

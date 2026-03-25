@@ -97,7 +97,6 @@ function MenuGroup({
     >
       <Text style={[styles.sectionTitle, { color: t.muted }]}>{title}</Text>
       <View style={[styles.sectionCard, { borderColor: border }]}>
-        {/* @ts-expect-error — augmented GlassViewProps */}
         <GlassView
           {...liquidGlass.surface}
           tintColor={surfaceTint}
@@ -196,7 +195,6 @@ export default function DashboardScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
           <Ionicons name="arrow-back" size={20} color={t.primary} />
         </TouchableOpacity>

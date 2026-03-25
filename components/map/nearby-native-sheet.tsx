@@ -165,7 +165,6 @@ export function NearbyNativeSheet({
                         activeOpacity={0.7}
                         style={styles.shareBtn}
                       >
-                        {/* @ts-expect-error — augmented GlassViewProps */}
                         <GlassView
                           {...liquidGlass.fillMedium}
                           borderRadius={8}

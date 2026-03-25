@@ -143,14 +143,12 @@ export function EventTabBar({ activeTab, onTabChange }: EventTabBarProps) {
 
   return (
     <View style={[styles.container, { borderColor: border }]}>
-      {/* @ts-expect-error — augmented GlassViewProps */}
       <GlassView
         {...liquidGlass.surface}
         borderRadius={12}
         style={StyleSheet.absoluteFillObject}
       />
       <Animated.View style={[styles.indicator, indicatorStyle]}>
-        {/* @ts-expect-error — augmented GlassViewProps */}
         <GlassView
           {...liquidGlass.interactive}
           tintColor={glassTint.fillStrong}

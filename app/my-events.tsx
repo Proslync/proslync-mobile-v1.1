@@ -191,7 +191,6 @@ function EventCard({
       onPress={onPress}
       activeOpacity={0.8}
     >
-      {/* @ts-expect-error — augmented GlassViewProps */}
       <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={StyleSheet.absoluteFill} />
       <View>
         {thumbUri ? (
@@ -325,7 +324,6 @@ export default function MyEventsScreen() {
           style={[styles.backButton, { borderColor: border }]}
           onPress={() => router.back()}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
           <Ionicons name="arrow-back" size={20} color={t.primary} />
         </TouchableOpacity>
@@ -334,7 +332,6 @@ export default function MyEventsScreen() {
           style={[styles.addButton, { borderColor: border }]}
           onPress={() => router.push("/create-event")}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
           <Ionicons name="add" size={20} color={t.primary} />
         </TouchableOpacity>

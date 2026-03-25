@@ -114,7 +114,6 @@ export function Composer({
             },
           ]}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView
             {...liquidGlass.surface}
             tintColor={surfaceTint}
@@ -143,7 +142,6 @@ export function Composer({
             onPress={handleSend}
             activeOpacity={0.7}
           >
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView
               {...liquidGlass.surface}
               tintColor="rgba(255,255,255,0.2)"

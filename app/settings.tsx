@@ -68,7 +68,6 @@ export default function SettingsScreen() {
           onPress={() => router.back()}
           style={[styles.backButton, { borderColor: border }]}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
           <Ionicons name="chevron-back" size={20} color={t.primary} />
         </TouchableOpacity>
@@ -86,7 +85,6 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionTitle, { color: t.muted }]}>PREFERENCES</Text>
 
           <View style={[styles.sectionCard, { borderColor: border }]}>
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
 
             <TouchableOpacity
@@ -147,7 +145,6 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: t.muted }]}>ACCOUNT</Text>
           <View style={[styles.sectionCard, { borderColor: border }]}>
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
 
             <TouchableOpacity

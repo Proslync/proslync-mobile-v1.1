@@ -575,13 +575,11 @@ export default function SearchScreen() {
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor="rgba(10, 10, 10, 0.25)" borderRadius={18} style={styles.backButtonGlass} />
           <Ionicons name="arrow-back" size={20} color="#fff" />
         </TouchableOpacity>
 
         <View style={styles.searchBar}>
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor="rgba(10, 10, 10, 0.25)" borderRadius={14} style={styles.searchBarGlass} />
           <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.5)" />
           <TextInput

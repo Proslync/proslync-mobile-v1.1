@@ -90,7 +90,6 @@ function CommentItem({
 
   return (
     <View style={[styles.commentCard, { borderColor: cBorder }]}>
-      {/* @ts-expect-error — augmented GlassViewProps */}
       <GlassView {...liquidGlass.surface} tintColor={cSurface} borderRadius={14} style={StyleSheet.absoluteFillObject} />
       <View style={styles.commentInner}>
         <Image
@@ -284,7 +283,6 @@ export default function PostDetailScreen() {
           style={[styles.backButton, { borderColor: border }]}
           onPress={() => router.back()}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
           <Ionicons name="chevron-back" size={20} color={t.primary} />
         </TouchableOpacity>
@@ -466,7 +464,6 @@ export default function PostDetailScreen() {
         {/* Reply indicator */}
         {replyingToUsername && (
           <View style={[styles.replyIndicator, { borderColor: border, overflow: 'hidden' as const }]}>
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={8} style={StyleSheet.absoluteFillObject} />
             <Text style={[styles.replyIndicatorText, { color: t.tertiary }]}>
               Replying to <Text style={styles.replyIndicatorUsername}>@{replyingToUsername}</Text>
@@ -482,7 +479,6 @@ export default function PostDetailScreen() {
             style={[styles.commentInputAvatar, { borderColor: border }]}
           />
           <View style={[styles.commentInput, { borderColor: border, overflow: 'hidden' as const }]}>
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
             <TextInput
               style={{ flex: 1, height: '100%', paddingHorizontal: 16, fontSize: 14, fontFamily: 'Lato_400Regular', color: t.primary }}
@@ -504,7 +500,6 @@ export default function PostDetailScreen() {
             onPress={handleCommentSubmit}
             disabled={!commentText.trim() || isAddingComment}
           >
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView
               {...liquidGlass.surface}
               tintColor={commentText.trim() && !isAddingComment ? 'rgba(255,255,255,0.2)' : surfaceTint}

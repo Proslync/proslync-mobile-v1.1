@@ -40,7 +40,6 @@ export function FeedBottomCTA({
       style={styles.wrapper}
     >
       <View style={styles.button}>
-        {/* @ts-expect-error — augmented GlassViewProps not resolving for spread + style */}
         <GlassView
           {...liquidGlass.surface}
           tintColor="rgba(10, 10, 10, 0.25)"

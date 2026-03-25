@@ -135,7 +135,6 @@ function TipContent({
               onPress={() => setSelectedPercent(isActive ? null : pct)}
               activeOpacity={0.7}
             >
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...(isActive ? liquidGlass.fillStrong : liquidGlass.fill)}
                 borderRadius={12}
@@ -198,7 +197,6 @@ function TipContent({
         activeOpacity={0.7}
         disabled={loading}
       >
-        {/* @ts-expect-error — augmented GlassViewProps */}
         <GlassView
           {...liquidGlass.fillStrong}
           borderRadius={14}

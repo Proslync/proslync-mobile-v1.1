@@ -120,7 +120,6 @@ function CustomGlassSegmented({ segments, selectedIndex, onSelect }: SegmentedCo
 
   return (
     <View style={styles.container} onLayout={handleLayout}>
-      {/* @ts-expect-error — augmented GlassViewProps */}
       <GlassView
         {...liquidGlass.surface}
         borderRadius={10}
@@ -129,7 +128,6 @@ function CustomGlassSegmented({ segments, selectedIndex, onSelect }: SegmentedCo
       />
       {segmentWidth > 0 && (
         <Animated.View style={[styles.bubbleWrapper, bubbleStyle]} pointerEvents="none">
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView
             {...liquidGlass.interactive}
             tintColor={glassTint.fillStrong}

@@ -265,7 +265,6 @@ export default function EditProfileScreen() {
                 <Image source={DEFAULT_AVATAR} style={[styles.avatar, { borderColor: border }]} />
               )}
               <View style={[styles.editPhotoOverlay, { borderColor: isDark ? '#000' : '#fff' }]}>
-                {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView {...liquidGlass.surface} tintColor="rgba(10, 10, 10, 0.5)" borderRadius={16} style={StyleSheet.absoluteFill} />
                 {isUploadingPhoto ? (
                   <ActivityIndicator color="#fff" size="small" />
@@ -286,7 +285,6 @@ export default function EditProfileScreen() {
             <Text style={[styles.sectionTitle, { color: t.muted }]}>About You</Text>
 
             <View style={[styles.fieldsCard, { borderColor: border }]}>
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={16} style={styles.fieldsCardGlass} />
 
               <View style={styles.fieldRow}>
@@ -355,7 +353,6 @@ export default function EditProfileScreen() {
             </View>
 
             <View style={[styles.fieldsCard, { marginTop: 16, borderColor: border }]}>
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={16} style={styles.fieldsCardGlass} />
 
               <View style={[styles.fieldRow, { alignItems: 'flex-start' }]}>

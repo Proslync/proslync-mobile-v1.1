@@ -90,7 +90,6 @@ export default function PrivacySettingsScreen() {
           onPress={() => router.back()}
           style={[styles.backButton, { borderColor: border }]}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
           <Ionicons name="chevron-back" size={20} color={t.primary} />
         </TouchableOpacity>
@@ -112,7 +111,6 @@ export default function PrivacySettingsScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: t.muted }]}>ACCOUNT PRIVACY</Text>
             <View style={[styles.sectionCard, { borderColor: border }]}>
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
               {PRIVACY_TOGGLES.map((item) => (
                 <View key={item.key} style={styles.toggleRow}>
@@ -143,7 +141,6 @@ export default function PrivacySettingsScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: t.muted }]}>CONNECTIONS</Text>
             <View style={[styles.sectionCard, { borderColor: border }]}>
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
               {CONNECTIONS_ITEMS.map((item, index) => (
                 <React.Fragment key={item.label}>
@@ -168,7 +165,6 @@ export default function PrivacySettingsScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: t.muted }]}>YOUR DATA</Text>
             <View style={[styles.sectionCard, { borderColor: border }]}>
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
               {DATA_ITEMS.map((item, index) => (
                 <React.Fragment key={item.label}>

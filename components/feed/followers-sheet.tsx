@@ -106,7 +106,6 @@ function UserRow({
           onPress={handleFollowPress}
           disabled={followLoading || isActionInProgress}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView
             {...liquidGlass.surface}
             tintColor={glassSurfaceTint[themeKey]}
@@ -245,7 +244,6 @@ export function FollowersSheet({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { borderColor: border }]}>
-            {/* @ts-expect-error — augmented GlassViewProps */}
             <GlassView
               {...liquidGlass.surface}
               tintColor={surfaceTint}

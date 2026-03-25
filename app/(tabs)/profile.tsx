@@ -619,7 +619,6 @@ export default function ProfileScreen() {
               style={[styles.headerIconWrapper, { borderColor: border }]}
               activeOpacity={0.7}
             >
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
                 tintColor={surfaceTint}
@@ -656,7 +655,6 @@ export default function ProfileScreen() {
               activeOpacity={0.7}
               onPress={() => router.push("/settings")}
             >
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
                 tintColor={surfaceTint}
@@ -685,7 +683,6 @@ export default function ProfileScreen() {
               />
             </TouchableOpacity>
             <View style={[styles.statsCard, { borderColor: border }]}>
-              {/* @ts-expect-error — augmented GlassViewProps */}
               <GlassView
                 {...liquidGlass.surface}
                 tintColor={surfaceTint}
@@ -752,7 +749,6 @@ export default function ProfileScreen() {
               onPress={() => router.push("/dashboard")}
             >
               <View style={[styles.glassButton, { borderColor: border }]}>
-                {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView
                   {...liquidGlass.surface}
                   tintColor={surfaceTint}
@@ -778,7 +774,6 @@ export default function ProfileScreen() {
               style={{ flex: 1 }}
             >
               <View style={[styles.glassButton, { borderColor: border }]}>
-                {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView
                   {...liquidGlass.surface}
                   tintColor={surfaceTint}
@@ -796,7 +791,6 @@ export default function ProfileScreen() {
               style={{ flex: 1 }}
             >
               <View style={[styles.glassButton, { borderColor: border }]}>
-                {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView
                   {...liquidGlass.surface}
                   tintColor={surfaceTint}
@@ -896,7 +890,6 @@ export default function ProfileScreen() {
           >
             <TouchableOpacity activeOpacity={0.8} onPress={logout}>
               <View style={[styles.glassButton, { borderColor: border }]}>
-                {/* @ts-expect-error — augmented GlassViewProps */}
                 <GlassView
                   {...liquidGlass.surface}
                   tintColor="rgba(255, 59, 48, 0.15)"

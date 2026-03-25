@@ -108,7 +108,6 @@ function Section({
     <View style={styles.section}>
       <Text style={[styles.sectionTitle, { color: t.muted }]}>{title}</Text>
       <View style={[styles.sectionCard, { borderColor: border }]}>
-        {/* @ts-expect-error — augmented GlassViewProps */}
         <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
         {items.map((item, index) => (
           <ToggleRow
@@ -156,7 +155,6 @@ export default function NotificationSettingsScreen() {
           onPress={() => router.back()}
           style={[styles.backButton, { borderColor: border }]}
         >
-          {/* @ts-expect-error — augmented GlassViewProps */}
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
           <Ionicons name="chevron-back" size={20} color={t.primary} />
         </TouchableOpacity>

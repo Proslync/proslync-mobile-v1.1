@@ -48,7 +48,6 @@ export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* @ts-expect-error — augmented GlassViewProps */}
       {isSelected && <GlassView {...liquidGlass.fillFaint} borderRadius={0} style={StyleSheet.absoluteFillObject} />}
       <View style={styles.avatarContainer}>
         <Image
