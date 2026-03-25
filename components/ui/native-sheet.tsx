@@ -4,7 +4,7 @@
 import * as React from "react";
 import { Platform } from "react-native";
 import { isGlassEffectAPIAvailable } from "expo-glass-effect";
-import { BottomSheet, Group, Host, VStack } from "@expo/ui/swift-ui";
+import { BottomSheet, Group, Host, RNHostView, VStack } from "@expo/ui/swift-ui";
 import {
   presentationDetents,
   presentationDragIndicator,
@@ -40,6 +40,9 @@ interface NativeSheetProps {
   alignment?: "leading" | "center" | "trailing";
   /** VStack spacing. Default: 16 */
   spacing?: number;
+  /** When true, children are React Native views and will be wrapped in RNHostView.
+   *  When false (default), children are SwiftUI components passed directly to VStack. */
+  rnContent?: boolean;
 }
 
 export function NativeSheet({
@@ -53,6 +56,7 @@ export function NativeSheet({
   contentPadding = 24,
   alignment = "center",
   spacing = 16,
+  rnContent = false,
 }: NativeSheetProps) {
   const { isDark } = useAppTheme();
   const scheme = isDark ? "dark" : "light";
@@ -80,16 +84,22 @@ export function NativeSheet({
         fitToContents={fitToContents}
       >
         <Group modifiers={groupModifiers}>
-          <VStack
-            alignment={alignment}
-            spacing={spacing}
-            modifiers={[
-              padding({ all: contentPadding }),
-              frame({ maxWidth: 99999, maxHeight: 99999 }),
-            ]}
-          >
-            {children}
-          </VStack>
+          {rnContent ? (
+            <RNHostView matchContents={fitToContents}>
+              {children}
+            </RNHostView>
+          ) : (
+            <VStack
+              alignment={alignment}
+              spacing={spacing}
+              modifiers={[
+                padding({ all: contentPadding }),
+                frame({ maxWidth: 99999, maxHeight: 99999 }),
+              ]}
+            >
+              {children}
+            </VStack>
+          )}
         </Group>
       </BottomSheet>
     </Host>
