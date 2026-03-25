@@ -11,20 +11,8 @@ import {
   ScrollView,
   Text,
 } from "react-native";
-import {
-  BottomSheet,
-  Group,
-  Host,
-  RNHostView,
-} from "@expo/ui/swift-ui";
-import {
-  presentationDetents,
-  presentationDragIndicator,
-  presentationBackgroundInteraction,
-  type PresentationDetent,
-} from "@expo/ui/swift-ui/modifiers";
-import { preferredColorScheme } from "@/modules/native-ui-ext";
-import { useAppTheme } from "@/hooks/use-app-theme";
+import { type PresentationDetent } from "@expo/ui/swift-ui/modifiers";
+import { NativeSheet } from "@/components/ui/native-sheet";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
@@ -74,9 +62,6 @@ export function NearbyNativeSheet({
   onSharePress,
   onDismiss,
 }: NearbyNativeSheetProps) {
-  const { isDark } = useAppTheme();
-  const scheme = isDark ? "dark" : "light";
-
   const detents: PresentationDetent[] = [
     { fraction: 0.15 },
     { fraction: 0.45 },
@@ -86,29 +71,16 @@ export function NearbyNativeSheet({
     React.useState<PresentationDetent>({ fraction: 0.45 });
 
   return (
-    <Host
-      style={{ position: "absolute", width: 0, height: 0 }}
-      colorScheme={scheme}
+    <NativeSheet
+      isPresented={true}
+      onDismiss={onDismiss}
+      detents={detents}
+      selectedDetent={selectedDetent}
+      onDetentChange={setSelectedDetent}
+      backgroundInteraction="enabled"
+      rnContent
     >
-      <BottomSheet
-        isPresented={true}
-        onIsPresentedChange={(presented) => {
-          if (!presented) onDismiss();
-        }}
-      >
-        <Group
-          modifiers={[
-            presentationDetents(detents, {
-              selection: selectedDetent,
-              onSelectionChange: setSelectedDetent,
-            }),
-            presentationDragIndicator("visible"),
-            presentationBackgroundInteraction("enabled"),
-            preferredColorScheme(scheme),
-          ]}
-        >
-          <RNHostView>
-            <ScrollView
+      <ScrollView
               style={styles.scrollView}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator={false}
@@ -277,10 +249,7 @@ export function NearbyNativeSheet({
                 )}
               </View>
             </ScrollView>
-          </RNHostView>
-        </Group>
-      </BottomSheet>
-    </Host>
+    </NativeSheet>
   );
 }
 
