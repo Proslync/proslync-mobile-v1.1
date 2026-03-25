@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from "react";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassSurface } from "@/components/glass/glass-surface";
-import { ActionSheet } from "@/components/shared/action-sheet";
+import { ActionSheet } from "@/components/ui/action-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { TeamMemberRow } from "@/components/team/team-member-row";
 import { PendingInvitationRow } from "@/components/team/pending-invitation-row";

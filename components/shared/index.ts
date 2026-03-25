@@ -1,6 +1,6 @@
 export { BottomNav } from './bottom-nav';
-export { ActionSheet } from './action-sheet';
-export type { ActionSheetOption } from './action-sheet';
+export { ActionSheet } from '../ui/action-sheet';
+export type { ActionSheetOption } from '../ui/action-sheet';
 export { ConfirmSheet } from '../ui/confirm-sheet';
 export { DarkGradientBg } from './dark-gradient-bg';
 export { IncomingCallOverlay } from './incoming-call-overlay';

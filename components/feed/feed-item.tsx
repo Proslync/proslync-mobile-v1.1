@@ -2,7 +2,7 @@ import { GlassBubbleButton } from "@/components/glass";
 import {
   ActionSheet,
   type ActionSheetOption,
-} from "@/components/shared/action-sheet";
+} from "@/components/ui/action-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useFollowUser } from "@/hooks/use-follow-user";

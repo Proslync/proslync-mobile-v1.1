@@ -22,7 +22,7 @@ import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { ActionSheet } from '@/components/shared/action-sheet';
+import { ActionSheet } from '@/components/ui/action-sheet';
 import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { UpdateProfileRequest } from '@/lib/types/auth.types';
 

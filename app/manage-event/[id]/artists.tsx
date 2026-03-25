@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ActionSheet } from '@/components/shared/action-sheet';
+import { ActionSheet } from '@/components/ui/action-sheet';
 import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { ArtistRow } from '@/components/artists/artist-row';
 import { ArtistFormModal } from '@/components/artists/artist-form-modal';

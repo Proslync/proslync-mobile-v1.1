@@ -25,7 +25,7 @@ import {
   useAdminDeleteEvent,
 } from '@/hooks/use-admin';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { ActionSheet, type ActionSheetOption } from '@/components/shared/action-sheet';
+import { ActionSheet, type ActionSheetOption } from '@/components/ui/action-sheet';
 import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { AdminEvent } from '@/lib/api/admin';
 

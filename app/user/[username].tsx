@@ -1,7 +1,7 @@
 import {
   ActionSheet,
   type ActionSheetOption,
-} from "@/components/shared/action-sheet";
+} from "@/components/ui/action-sheet";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { useToast } from "@/components/shared/toast";
 import { useStableRouter } from "@/hooks/use-stable-router";

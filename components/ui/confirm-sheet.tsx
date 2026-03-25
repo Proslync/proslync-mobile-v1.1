@@ -56,7 +56,7 @@ export function ConfirmSheet({
       onDismiss={onClose}
       detents={[{ fraction: 0.35 }]}
       rnContent
-      dragIndicator="hidden"
+      dragIndicator="visible"
     >
       <View style={styles.container}>
         <GlassContainer spacing={8} style={styles.glassContainer}>
