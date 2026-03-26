@@ -30,8 +30,8 @@ import { GlassView } from 'expo-glass-effect';
 import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { eventsApi } from '@/lib/api/events';
+import { MembershipResultSheet } from '@/components/scanner/membership-result-sheet';
 import { authApi } from '@/lib/api/auth';
 import type { EventAttendee } from '@/lib/types/events.types';
 import { EventUserStatus } from '@/lib/types/events.types';
@@ -733,114 +733,25 @@ export default function ScannerScreen() {
       )}
 
       {/* ─── Step 1 Result: Membership Card ─────────────────────────────── */}
-      {scanStep === 'membership' && showMembershipResult && membershipData && (
-        <Animated.View
-          entering={FadeInUp.duration(300)}
-          exiting={FadeOutDown.duration(200)}
-          style={styles.resultOverlay}
-        >
-          <View style={styles.membershipResultBlur}>
-            <GlassView
-              {...liquidGlass.surface}
-              borderRadius={32}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={[styles.membershipResultCard, { paddingBottom: insets.bottom + 28 }]}>
-              {/* Profile Card */}
-              <View style={mcStyles.card}>
-                {/* Avatar */}
-                <View style={mcStyles.avatarContainer}>
-                  {memberProfileLoading ? (
-                    <View style={[mcStyles.avatarPlaceholder, { backgroundColor: undefined, overflow: 'hidden' as const }]}>
-                      <GlassView {...liquidGlass.fillFaint} borderRadius={32} style={StyleSheet.absoluteFillObject} />
-                      <ActivityIndicator size="small" color="#fff" />
-                    </View>
-                  ) : memberProfile?.avatar?.url ? (
-                    <Image source={{ uri: memberProfile.avatar.url }} style={mcStyles.avatar} />
-                  ) : (
-                    <View style={[mcStyles.avatarPlaceholder, { backgroundColor: undefined, overflow: 'hidden' as const }]}>
-                      <GlassView {...liquidGlass.fillFaint} borderRadius={32} style={StyleSheet.absoluteFillObject} />
-                      <Ionicons name="person" size={28} color="rgba(255,255,255,0.5)" />
-                    </View>
-                  )}
-                  <View style={mcStyles.avatarRing} />
-                </View>
-
-                {/* Display name */}
-                <Text style={mcStyles.displayName} numberOfLines={1}>
-                  {memberProfile
-                    ? [memberProfile.firstName, memberProfile.lastName].filter(Boolean).join(' ') || membershipData.memberName || 'Member'
-                    : membershipData.memberName || 'Member'}
-                </Text>
-
-                {/* Username + verified badge */}
-                {(memberProfile?.userName || membershipData.memberId) && (
-                  <View style={mcStyles.handleRow}>
-                    <Text style={mcStyles.handle} numberOfLines={1}>
-                      @{memberProfile?.userName || `user${membershipData.memberId}`}
-                    </Text>
-                    {memberProfile?.isVerified && (
-                      <MaterialCommunityIcons name="check-decagram" size={15} color="#3897F0" />
-                    )}
-                  </View>
-                )}
-
-                {/* Member since */}
-                {(memberProfile?.createdAt || membershipData.rawPayload) && (() => {
-                  let dateStr = memberProfile?.createdAt;
-                  if (!dateStr) {
-                    try {
-                      const p = JSON.parse(membershipData.rawPayload);
-                      dateStr = p.issuedAt;
-                    } catch {}
-                  }
-                  if (!dateStr) return null;
-                  const date = new Date(dateStr);
-                  const month = date.toLocaleString('en-US', { month: 'short' });
-                  const year = date.getFullYear();
-                  return (
-                    <View style={mcStyles.memberRow}>
-                      <Ionicons name="calendar-outline" size={11} color="rgba(255,255,255,0.6)" />
-                      <Text style={mcStyles.memberSince}>Member since {month} {year}</Text>
-                    </View>
-                  );
-                })()}
-
-                {/* Status member badge */}
-                <View style={mcStyles.statusBadge}>
-                  <Ionicons name="shield-checkmark" size={12} color="#10b981" />
-                  <Text style={mcStyles.statusBadgeText}>Status Member</Text>
-                </View>
-              </View>
-
-              {/* Continue button */}
-              <TouchableOpacity
-                style={[styles.continueButton, { backgroundColor: undefined, overflow: 'hidden' as const }]}
-                onPress={handleContinueToId}
-                activeOpacity={0.8}
-              >
-                <GlassView {...liquidGlass.fill} borderRadius={14} style={StyleSheet.absoluteFillObject} />
-                <Text style={styles.continueButtonText}>Continue to ID Scan</Text>
-                <Ionicons name="arrow-forward" size={20} color="#fff" />
-              </TouchableOpacity>
-
-              {/* Scan another */}
-              <TouchableOpacity
-                style={styles.rescanLink}
-                onPress={() => {
-                  setShowMembershipResult(false);
-                  setMembershipData(null);
-                  setMemberProfile(null);
-                  setIsActive(true);
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.rescanLinkText}>Scan Different Card</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Animated.View>
-      )}
+      <MembershipResultSheet
+        isPresented={scanStep === 'membership' && showMembershipResult && !!membershipData}
+        membershipData={membershipData}
+        memberProfile={memberProfile}
+        memberProfileLoading={memberProfileLoading}
+        onContinueToId={handleContinueToId}
+        onScanDifferent={() => {
+          setShowMembershipResult(false);
+          setMembershipData(null);
+          setMemberProfile(null);
+          setIsActive(true);
+        }}
+        onDismiss={() => {
+          setShowMembershipResult(false);
+          setMembershipData(null);
+          setMemberProfile(null);
+          setIsActive(true);
+        }}
+      />
 
       {/* ─── Step 2 Result: ID Card ─────────────────────────────────────── */}
       {scanStep === 'id' && idResult && (
@@ -1055,26 +966,6 @@ const styles = StyleSheet.create({
 
   resultOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
 
-  membershipResultBlur: { borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
-  membershipResultCard: { padding: 28, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)' },
-
-  continueButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    width: '100%',
-    paddingVertical: 16,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-  },
-  continueButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
-
-  rescanLink: { marginTop: 16, padding: 8 },
-  rescanLinkText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.4)' },
-
   resultBlur: { borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
   resultCard: { padding: 28, alignItems: 'center' },
   statusIndicator: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
@@ -1191,95 +1082,3 @@ const styles = StyleSheet.create({
   settingsLinkText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.4)' },
 });
 
-// Membership card profile styles (matches wallet MembershipCard design)
-const mcStyles = StyleSheet.create({
-  card: {
-    width: '100%',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: '#0c0c0c',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 20,
-    marginBottom: 24,
-  },
-  avatarContainer: {
-    position: 'relative',
-    marginBottom: 12,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  avatarPlaceholder: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarRing: {
-    position: 'absolute',
-    top: -2,
-    left: -2,
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  displayName: {
-    fontSize: 22,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-  handleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    marginTop: 3,
-  },
-  handle: {
-    fontSize: 15,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-  },
-  memberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    marginTop: 6,
-  },
-  memberSince: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 12,
-    backgroundColor: 'rgba(16,185,129,0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 10,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontFamily: 'Lato_700Bold',
-    color: '#10b981',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-});
