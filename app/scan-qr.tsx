@@ -31,6 +31,7 @@ import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { eventsApi } from '@/lib/api/events';
+import { venueContactTagsApi } from '@/lib/api/venue-contact-tags';
 import { MembershipResultSheet } from '@/components/scanner/membership-result-sheet';
 import { authApi } from '@/lib/api/auth';
 import type { EventAttendee } from '@/lib/types/events.types';
@@ -217,6 +218,7 @@ export default function ScannerScreen() {
   const [showMembershipResult, setShowMembershipResult] = React.useState(false);
   const [memberProfile, setMemberProfile] = React.useState<PublicUserProfile | null>(null);
   const [memberProfileLoading, setMemberProfileLoading] = React.useState(false);
+  const [memberVenueTags, setMemberVenueTags] = React.useState<string[]>([]);
 
   // NFC state
   const [nfcSupported, setNfcSupported] = React.useState(false);
@@ -321,9 +323,10 @@ export default function ScannerScreen() {
     });
     setShowMembershipResult(true);
     setMemberProfile(null);
+    setMemberVenueTags([]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    // Fetch the member's full profile for professional display
+    // Fetch the member's full profile + venue tags
     if (memberId) {
       setMemberProfileLoading(true);
       try {
@@ -334,8 +337,21 @@ export default function ScannerScreen() {
       } finally {
         setMemberProfileLoading(false);
       }
+
+      // Fetch venue tags if we know the event's venue
+      if (eventId) {
+        try {
+          const event = await eventsApi.getEvent(eventId);
+          if (event?.venueId) {
+            const tagData = await venueContactTagsApi.getTagsForUser(event.venueId, Number(memberId));
+            setMemberVenueTags(tagData.tags);
+          }
+        } catch {
+          // Silently fail
+        }
+      }
     }
-  }, []);
+  }, [eventId]);
 
 
   const startNfcScan = React.useCallback(async () => {
@@ -738,17 +754,20 @@ export default function ScannerScreen() {
         membershipData={membershipData}
         memberProfile={memberProfile}
         memberProfileLoading={memberProfileLoading}
+        venueTags={memberVenueTags}
         onContinueToId={handleContinueToId}
         onScanDifferent={() => {
           setShowMembershipResult(false);
           setMembershipData(null);
           setMemberProfile(null);
+          setMemberVenueTags([]);
           setIsActive(true);
         }}
         onDismiss={() => {
           setShowMembershipResult(false);
           setMembershipData(null);
           setMemberProfile(null);
+          setMemberVenueTags([]);
           setIsActive(true);
         }}
       />
