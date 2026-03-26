@@ -20,12 +20,20 @@ export interface CheckInContact {
 }
 
 export const TAG_COLORS: Record<string, string> = {
+  free_entry: "#3b82f6",
   vip: "#f59e0b",
   line_skip: "#22c55e",
   backstage: "#a855f7",
   comp: "#3b82f6",
   plus_one: "#ec4899",
 };
+
+export const PREDEFINED_VENUE_TAGS = [
+  { key: "free_entry", label: "Free Entry" },
+  { key: "vip", label: "VIP" },
+  { key: "line_skip", label: "Line Skip" },
+  { key: "backstage", label: "Backstage" },
+] as const;
 
 export function formatDate(dateStr?: string): string {
   if (!dateStr) return "";

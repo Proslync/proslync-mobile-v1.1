@@ -220,6 +220,14 @@ export {
   VENUE_MENU_KEY,
 } from './use-venue-menu';
 
+// Venue Contact Tags hooks
+export {
+  useVenueContactTags,
+  useUserVenueTags,
+  useUpdateVenueTags,
+  VENUE_CONTACT_TAGS_KEY,
+} from './use-venue-contact-tags';
+
 // Bar Tab hooks
 export {
   useBarTabs,

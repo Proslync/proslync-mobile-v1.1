@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
-import { useDebounce } from '@/hooks';
+import { ContactTagSheet } from '@/components/dashboard/contact-tag-sheet';
+import { useDebounce, useMyVenues } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAuth } from '@/lib/providers/auth-provider';
@@ -61,7 +62,10 @@ export default function ContactsListScreen() {
   const { user } = useAuth();
 
   const [searchText, setSearchText] = useState('');
+  const [selectedContact, setSelectedContact] = useState<OwnerContact | null>(null);
   const debouncedSearch = useDebounce(searchText, 300);
+  const { data: venues } = useMyVenues();
+  const venueId = venues?.[0]?.id;
 
   const query = useInfiniteQuery<OwnerContactsResponse, Error>({
     queryKey: ['owner-contacts', debouncedSearch],
@@ -107,6 +111,7 @@ export default function ContactsListScreen() {
       const label = sourceLabel(item);
 
       return (
+        <TouchableOpacity activeOpacity={0.7} onPress={() => setSelectedContact(item)}>
         <Animated.View entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}>
           <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.contactRow}>
             {item.avatar ? (
@@ -145,6 +150,7 @@ export default function ContactsListScreen() {
             )}
           </GlassSurface>
         </Animated.View>
+        </TouchableOpacity>
       );
     },
     [colors, isDark],
@@ -234,6 +240,12 @@ export default function ContactsListScreen() {
           }
         />
       )}
+
+      <ContactTagSheet
+        contact={selectedContact}
+        venueId={venueId}
+        onDismiss={() => setSelectedContact(null)}
+      />
     </View>
   );
 }
