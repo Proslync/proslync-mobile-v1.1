@@ -52,7 +52,7 @@ interface ThemedVariantConfig extends VariantConfig {
 const baseVariantConfigs: Record<GlassButtonVariant, VariantConfig> = {
   glass: {
     fillOpacity: 1,
-    borderOpacity: 0,
+    borderOpacity: 0.25,
     blurIntensity: 0,
     useFrostedFill: true,
   },
@@ -161,6 +161,12 @@ export function GlassButton({
         : {
             backgroundColor: config.frostedBg,
           }),
+    ...(config.borderOpacity > 0 && {
+      borderWidth: 1,
+      borderColor: isDark
+        ? `rgba(255, 255, 255, ${config.borderOpacity})`
+        : `rgba(0, 0, 0, ${config.borderOpacity * 0.4})`,
+    }),
     ...shadowTokens.md,
     opacity: disabled ? 0.5 : 1,
   };

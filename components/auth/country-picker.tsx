@@ -13,6 +13,7 @@ import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { fontFamily } from '@/constants/glass/tokens';
 
@@ -147,7 +148,8 @@ export function CountryPicker({ selectedCode, onSelect }: CountryPickerProps) {
         presentationStyle="pageSheet"
         onRequestClose={() => setIsOpen(false)}
       >
-        <View style={[styles.modalContainer, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        <View style={[styles.modalContainer, { paddingTop: insets.top, backgroundColor: '#000' }]}>
+          {isDark && <DarkGradientBg />}
           {/* Header */}
           <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>Select Country</Text>
