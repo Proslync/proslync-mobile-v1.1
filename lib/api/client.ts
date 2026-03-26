@@ -7,6 +7,7 @@ interface RequestConfig {
   headers?: Record<string, string>;
   timeout?: number;
   skipAuth?: boolean;
+  params?: Record<string, string | number | boolean | undefined | null>;
 }
 
 class ApiClient {
@@ -178,7 +179,15 @@ class ApiClient {
     body?: unknown,
     requestConfig?: RequestConfig
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    let url = `${this.baseUrl}${endpoint}`;
+    if (requestConfig?.params) {
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(requestConfig.params)) {
+        if (value != null) searchParams.append(key, String(value));
+      }
+      const qs = searchParams.toString();
+      if (qs) url += `?${qs}`;
+    }
     const headers = await this.buildHeaders(
       requestConfig?.headers,
       requestConfig?.skipAuth
