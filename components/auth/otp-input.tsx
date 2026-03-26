@@ -1,24 +1,18 @@
-import * as React from 'react';
-import {
-  View,
-  TextInput,
-  StyleSheet,
-  Pressable,
-} from 'react-native';
+import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { useAppTheme } from "@/hooks/use-app-theme";
+import { BlurView } from "expo-blur";
+import * as ExpoClipboard from "expo-clipboard";
+import { GlassView, isGlassEffectAPIAvailable } from "expo-glass-effect";
+import * as React from "react";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import Animated, {
+  FadeIn,
+  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
-  interpolateColor,
   withSpring,
-  FadeIn,
-} from 'react-native-reanimated';
-import * as ExpoClipboard from 'expo-clipboard';
-import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
-import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
-import { BlurView } from 'expo-blur';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { fontFamily } from '@/constants/glass/tokens';
+  withTiming,
+} from "react-native-reanimated";
 
 const useNativeGlass = isGlassEffectAPIAvailable();
 
@@ -49,7 +43,7 @@ export function OTPInput({
   };
 
   const handleChange = (text: string) => {
-    const digits = text.replace(/\D/g, '').slice(0, maxLength);
+    const digits = text.replace(/\D/g, "").slice(0, maxLength);
     onChange(digits);
 
     if (digits.length === maxLength) {
@@ -62,7 +56,7 @@ export function OTPInput({
       const hasString = await ExpoClipboard.hasStringAsync();
       if (!hasString) return;
       const clipboardContent = await ExpoClipboard.getStringAsync();
-      const digits = clipboardContent.replace(/\D/g, '').slice(0, maxLength);
+      const digits = clipboardContent.replace(/\D/g, "").slice(0, maxLength);
       if (digits.length === maxLength && value.length === 0) {
         onChange(digits);
         onComplete(digits);
@@ -78,7 +72,7 @@ export function OTPInput({
           <OTPBox
             key={index}
             index={index}
-            digit={value[index] || ''}
+            digit={value[index] || ""}
             isFocused={value.length === index && !disabled}
             isFilled={index < value.length}
             error={error}
@@ -93,15 +87,14 @@ export function OTPInput({
         style={styles.realInput}
         value={value}
         onChangeText={handleChange}
+        autoFocus
         onFocus={handleFocus}
         keyboardType="number-pad"
-        keyboardAppearance={isDark ? 'dark' : 'light'}
+        keyboardAppearance={isDark ? "dark" : "light"}
         maxLength={maxLength}
-        autoComplete="one-time-code"
         textContentType="oneTimeCode"
         editable={!disabled}
         caretHidden
-        autoFocus
         selectionColor="transparent"
         contextMenuHidden={false}
         selectTextOnFocus
@@ -119,7 +112,14 @@ interface OTPBoxProps {
   success: boolean;
 }
 
-function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxProps) {
+function OTPBox({
+  index,
+  digit,
+  isFocused,
+  isFilled,
+  error,
+  success,
+}: OTPBoxProps) {
   const animatedValue = useSharedValue(0);
   const cursorOpacity = useSharedValue(0);
   const fillScale = useSharedValue(0);
@@ -138,7 +138,7 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
   // Animate digit entry
   React.useEffect(() => {
     if (isFilled) {
-      fillScale.value = withSpring(1, { damping: 12, stiffness: 300 });
+      fillScale.value = withSpring(1, { damping: 20, stiffness: 400 });
     } else {
       fillScale.value = withTiming(0, { duration: 150 });
     }
@@ -157,14 +157,18 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
     }
   }, [isFocused, cursorOpacity]);
 
-  const defaultBorder = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)';
-  const focusBorder = isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.25)';
+  const defaultBorder = isDark
+    ? "rgba(255, 255, 255, 0.12)"
+    : "rgba(0, 0, 0, 0.1)";
+  const focusBorder = isDark
+    ? "rgba(255, 255, 255, 0.3)"
+    : "rgba(0, 0, 0, 0.25)";
 
   const boxStyle = useAnimatedStyle(() => {
     const borderColor = interpolateColor(
       animatedValue.value,
       [0, 1, 2],
-      [isFocused ? focusBorder : defaultBorder, '#ff6b6b', '#4ade80']
+      [isFocused ? focusBorder : defaultBorder, "#ff6b6b", "#4ade80"],
     );
 
     return {
@@ -174,8 +178,8 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
   });
 
   const digitStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: fillScale.value }],
-    opacity: fillScale.value,
+    transform: [{ scale: 0.8 + fillScale.value * 0.2 }],
+    opacity: 0.6 + fillScale.value * 0.4,
   }));
 
   const cursorStyle = useAnimatedStyle(() => ({
@@ -185,9 +189,15 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
   const glassContent = (
     <>
       {digit ? (
-        <Animated.Text style={[styles.digit, { color: colors.text }, digitStyle]}>{digit}</Animated.Text>
+        <Animated.Text
+          style={[styles.digit, { color: colors.text }, digitStyle]}
+        >
+          {digit}
+        </Animated.Text>
       ) : isFocused ? (
-        <Animated.View style={[styles.cursor, { backgroundColor: '#fff' }, cursorStyle]} />
+        <Animated.View
+          style={[styles.cursor, { backgroundColor: "#fff" }, cursorStyle]}
+        />
       ) : null}
     </>
   );
@@ -198,10 +208,7 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
         entering={FadeIn.duration(300).delay(index * 50)}
         style={[styles.boxWrapper, boxStyle]}
       >
-        <GlassView
-          {...liquidGlass.surface}
-          style={styles.glassBox}
-        >
+        <GlassView {...liquidGlass.surface} style={styles.glassBox}>
           {glassContent}
         </GlassView>
       </Animated.View>
@@ -216,7 +223,7 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
       <View style={styles.glassBox}>
         <BlurView
           intensity={isDark ? 20 : 15}
-          tint={isDark ? 'dark' : 'light'}
+          tint={isDark ? "dark" : "light"}
           style={StyleSheet.absoluteFill}
         />
         <View
@@ -224,8 +231,8 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
             StyleSheet.absoluteFill,
             {
               backgroundColor: isDark
-                ? 'rgba(255, 255, 255, 0.05)'
-                : 'rgba(0, 0, 0, 0.03)',
+                ? "rgba(255, 255, 255, 0.05)"
+                : "rgba(0, 0, 0, 0.03)",
             },
           ]}
         />
@@ -237,28 +244,28 @@ function OTPBox({ index, digit, isFocused, isFilled, error, success }: OTPBoxPro
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    width: "100%",
   },
   boxesContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 10,
   },
   boxWrapper: {
     borderRadius: 14,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   glassBox: {
     width: 50,
     height: 60,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   digit: {
     fontSize: 26,
-    fontFamily: 'Lato_700Bold',
+    fontFamily: "Lato_700Bold",
   },
   cursor: {
     width: 2,
@@ -269,7 +276,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     fontSize: 24,
     letterSpacing: 20,
-    color: 'transparent',
-    tintColor: 'transparent',
+    color: "transparent",
+    tintColor: "transparent",
   },
 });
