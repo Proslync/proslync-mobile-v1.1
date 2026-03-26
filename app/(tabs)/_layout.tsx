@@ -39,7 +39,7 @@ export default function TabLayout() {
           />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="explore">
-          <NativeTabs.Trigger.Label>Messages</NativeTabs.Trigger.Label>
+          <NativeTabs.Trigger.Label>Chats</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{ default: "paperplane", selected: "paperplane.fill" }}
           />
