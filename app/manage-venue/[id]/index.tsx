@@ -33,54 +33,41 @@ interface SavedAccount {
   refreshToken?: string;
 }
 
-const SECTIONS = [
+interface VenueSection {
+  key: string;
+  label: string;
+  subtitle: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}
+
+interface VenueSectionGroup {
+  title: string;
+  items: VenueSection[];
+}
+
+const SECTION_GROUPS: VenueSectionGroup[] = [
   {
-    key: "info",
-    label: "Info",
-    subtitle: "Venue details and settings",
-    icon: "information-circle-outline" as const,
+    title: "Venue",
+    items: [
+      { key: "info", label: "Info", subtitle: "Venue details and settings", icon: "information-circle-outline" },
+      { key: "events", label: "Events", subtitle: "Events at this venue", icon: "calendar-outline" },
+      { key: "staff", label: "Team", subtitle: "Manage team members", icon: "people-outline" },
+    ],
   },
   {
-    key: "events",
-    label: "Events",
-    subtitle: "Events at this venue",
-    icon: "calendar-outline" as const,
+    title: "Operations",
+    items: [
+      { key: "schedule", label: "Schedule", subtitle: "Shifts and assignments", icon: "time-outline" },
+      { key: "tables", label: "Tables", subtitle: "Manage table sections", icon: "grid-outline" },
+      { key: "menu", label: "Menu", subtitle: "Manage food & drink items", icon: "restaurant-outline" },
+    ],
   },
   {
-    key: "staff",
-    label: "Team",
-    subtitle: "Manage team members",
-    icon: "people-outline" as const,
-  },
-  {
-    key: "schedule",
-    label: "Schedule",
-    subtitle: "Shifts and assignments",
-    icon: "time-outline" as const,
-  },
-  {
-    key: "tables",
-    label: "Tables",
-    subtitle: "Manage table sections",
-    icon: "grid-outline" as const,
-  },
-  {
-    key: "menu",
-    label: "Menu",
-    subtitle: "Manage food & drink items",
-    icon: "restaurant-outline" as const,
-  },
-  {
-    key: "followers",
-    label: "Followers",
-    subtitle: "View venue followers",
-    icon: "person-add-outline" as const,
-  },
-  {
-    key: "analytics",
-    label: "Analytics",
-    subtitle: "View detailed insights",
-    icon: "stats-chart-outline" as const,
+    title: "Insights",
+    items: [
+      { key: "followers", label: "Followers", subtitle: "View venue followers", icon: "person-add-outline" },
+      { key: "analytics", label: "Analytics", subtitle: "View detailed insights", icon: "stats-chart-outline" },
+    ],
   },
 ];
 
@@ -306,61 +293,68 @@ export default function ManageVenueScreen() {
           </GlassSurface>
         </Animated.View>
 
-        {/* Menu Items */}
-        <Animated.View
-          entering={FadeInDown.delay(150).duration(500).springify()}
-          style={styles.menuSection}
-        >
-          <View style={styles.menuList}>
-            <GlassView
-              {...liquidGlass.surface}
-              borderRadius={12}
-              style={StyleSheet.absoluteFill}
-            />
-            {SECTIONS.map((section) => (
-              <TouchableOpacity
-                key={section.key}
-                style={[styles.menuItem, { borderBottomColor: colors.border }]}
-                onPress={() => handleSectionPress(section.key)}
-                activeOpacity={0.7}
-              >
-                <View
+        {/* Menu Groups */}
+        {SECTION_GROUPS.map((group, groupIndex) => (
+          <Animated.View
+            key={group.title}
+            entering={FadeInDown.delay(150 + groupIndex * 100).duration(500).springify()}
+            style={styles.menuSection}
+          >
+            <Text style={styles.groupTitle}>{group.title}</Text>
+            <View style={styles.menuList}>
+              <GlassView
+                {...liquidGlass.surface}
+                borderRadius={12}
+                style={StyleSheet.absoluteFill}
+              />
+              {group.items.map((section, index) => (
+                <TouchableOpacity
+                  key={section.key}
                   style={[
-                    styles.menuItemIcon,
-                    { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.05)' },
+                    styles.menuItem,
+                    index < group.items.length - 1 && { borderBottomColor: colors.border, borderBottomWidth: 1 },
                   ]}
+                  onPress={() => handleSectionPress(section.key)}
+                  activeOpacity={0.7}
                 >
-                  {isDark && (
-                    <GlassView
-                      {...liquidGlass.fillFaint}
-                      borderRadius={10}
-                      style={StyleSheet.absoluteFillObject}
-                    />
-                  )}
-                  <Ionicons name={section.icon} size={22} color={colors.text} />
-                </View>
-                <View style={styles.menuItemContent}>
-                  <Text style={[styles.menuItemTitle, { color: colors.text }]}>
-                    {section.label}
-                  </Text>
-                  <Text
+                  <View
                     style={[
-                      styles.menuItemSubtitle,
-                      { color: colors.textSecondary },
+                      styles.menuItemIcon,
+                      { overflow: 'hidden', backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.05)' },
                     ]}
                   >
-                    {section.subtitle}
-                  </Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={colors.iconSecondary}
-                />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Animated.View>
+                    {isDark && (
+                      <GlassView
+                        {...liquidGlass.fillFaint}
+                        borderRadius={10}
+                        style={StyleSheet.absoluteFillObject}
+                      />
+                    )}
+                    <Ionicons name={section.icon} size={22} color={colors.text} />
+                  </View>
+                  <View style={styles.menuItemContent}>
+                    <Text style={[styles.menuItemTitle, { color: colors.text }]}>
+                      {section.label}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.menuItemSubtitle,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {section.subtitle}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={colors.iconSecondary}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Animated.View>
+        ))}
 
         {/* Login as Venue Owner */}
         {!isOwner && (
@@ -486,6 +480,15 @@ const styles = StyleSheet.create({
   menuSection: {
     marginTop: 20,
   },
+  groupTitle: {
+    fontSize: 13,
+    fontFamily: "Lato_700Bold",
+    color: "rgba(255,255,255,0.4)",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
   menuList: {
     borderRadius: 12,
     overflow: "hidden",
@@ -494,7 +497,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    borderBottomWidth: 1,
   },
   menuItemIcon: {
     width: 40,

@@ -24,120 +24,51 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 
-const SECTIONS = [
+interface SectionItem {
+  key: string;
+  label: string;
+  subtitle: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  permission: { resource: keyof RolePermissions; action: string };
+}
+
+interface SectionGroup {
+  title: string;
+  items: SectionItem[];
+}
+
+const SECTION_GROUPS: SectionGroup[] = [
   {
-    key: "overview",
-    label: "Overview",
-    subtitle: "Event details and flyer",
-    icon: "grid-outline" as const,
-    permission: { resource: "events" as keyof RolePermissions, action: "view" },
+    title: "Event",
+    items: [
+      { key: "overview", label: "Overview", subtitle: "Event details and flyer", icon: "grid-outline", permission: { resource: "events", action: "view" } },
+      { key: "pricing", label: "Pricing", subtitle: "Tickets and pricing tiers", icon: "pricetag-outline", permission: { resource: "billing", action: "view" } },
+      { key: "team", label: "Team", subtitle: "Staff and permissions", icon: "person-add-outline", permission: { resource: "team", action: "view" } },
+    ],
   },
   {
-    key: "check-ins",
-    label: "Check Ins",
-    subtitle: "Scan and verify tickets",
-    icon: "checkmark-circle-outline" as const,
-    permission: {
-      resource: "attendees" as keyof RolePermissions,
-      action: "view",
-    },
+    title: "Operations",
+    items: [
+      { key: "check-ins", label: "Check Ins", subtitle: "Scan and verify tickets", icon: "checkmark-circle-outline", permission: { resource: "attendees", action: "view" } },
+      { key: "bar", label: "Bar", subtitle: "Tabs and drink orders", icon: "beer-outline", permission: { resource: "bar", action: "view" } },
+      { key: "scanner", label: "Scanner", subtitle: "Scan IDs and membership cards", icon: "scan-outline", permission: { resource: "attendees", action: "view" } },
+      { key: "tap-to-pay", label: "Tap to Charge", subtitle: "Charge custom amounts", icon: "phone-portrait-outline", permission: { resource: "billing", action: "edit" } },
+    ],
   },
   {
-    key: "bar",
-    label: "Bar",
-    subtitle: "Tabs and drink orders",
-    icon: "beer-outline" as const,
-    permission: {
-      resource: "bar" as keyof RolePermissions,
-      action: "view",
-    },
+    title: "Insights",
+    items: [
+      { key: "analytics", label: "Analytics", subtitle: "View detailed insights", icon: "stats-chart-outline", permission: { resource: "analytics", action: "view" } },
+      { key: "revenue", label: "Revenue", subtitle: "Track earnings and trends", icon: "trending-up-outline", permission: { resource: "billing", action: "view" } },
+      { key: "payments", label: "Payments", subtitle: "Revenue and transactions", icon: "card-outline", permission: { resource: "billing", action: "view" } },
+    ],
   },
   {
-    key: "scanner",
-    label: "Scanner",
-    subtitle: "Scan IDs and membership cards",
-    icon: "scan-outline" as const,
-    permission: {
-      resource: "attendees" as keyof RolePermissions,
-      action: "view",
-    },
-  },
-  {
-    key: "analytics",
-    label: "Analytics",
-    subtitle: "View detailed insights",
-    icon: "stats-chart-outline" as const,
-    permission: {
-      resource: "analytics" as keyof RolePermissions,
-      action: "view",
-    },
-  },
-  {
-    key: "pricing",
-    label: "Pricing",
-    subtitle: "Tickets and pricing tiers",
-    icon: "pricetag-outline" as const,
-    permission: {
-      resource: "billing" as keyof RolePermissions,
-      action: "view",
-    },
-  },
-  {
-    key: "marketing",
-    label: "Marketing",
-    subtitle: "Promotions and sharing",
-    icon: "megaphone-outline" as const,
-    permission: {
-      resource: "marketing" as keyof RolePermissions,
-      action: "view",
-    },
-  },
-  {
-    key: "payments",
-    label: "Payments",
-    subtitle: "Revenue and transactions",
-    icon: "card-outline" as const,
-    permission: {
-      resource: "billing" as keyof RolePermissions,
-      action: "view",
-    },
-  },
-  {
-    key: "revenue",
-    label: "Revenue",
-    subtitle: "Track earnings and trends",
-    icon: "trending-up-outline" as const,
-    permission: {
-      resource: "billing" as keyof RolePermissions,
-      action: "view",
-    },
-  },
-  {
-    key: "text-blast",
-    label: "Text Blast",
-    subtitle: "SMS messages to guests",
-    icon: "chatbubble-outline" as const,
-    permission: {
-      resource: "marketing" as keyof RolePermissions,
-      action: "view",
-    },
-  },
-  {
-    key: "team",
-    label: "Team",
-    subtitle: "Staff and permissions",
-    icon: "person-add-outline" as const,
-    permission: { resource: "team" as keyof RolePermissions, action: "view" },
-  },
-  {
-    key: "tap-to-pay",
-    label: "Tap to Charge",
-    subtitle: "Charge custom amounts",
-    icon: "phone-portrait-outline" as const,
-    permission: {
-      resource: "billing" as keyof RolePermissions,
-      action: "edit",
-    },
+    title: "Tools",
+    items: [
+      { key: "text-blast", label: "Text Blast", subtitle: "SMS messages to guests", icon: "chatbubble-outline", permission: { resource: "marketing", action: "view" } },
+      { key: "marketing", label: "Marketing", subtitle: "Promotions and sharing", icon: "megaphone-outline", permission: { resource: "marketing", action: "view" } },
+    ],
   },
 ];
 
@@ -307,11 +238,15 @@ export default function ManageEventScreen() {
     isLoading: permissionsLoading,
   } = useEventPermissions(eventId);
 
-  const visibleSections = useMemo(() => {
-    if (permissionsLoading) return SECTIONS;
-    return SECTIONS.filter((section) =>
-      hasPermission(section.permission.resource, section.permission.action),
-    );
+  const visibleGroups = useMemo(() => {
+    return SECTION_GROUPS.map((group) => ({
+      ...group,
+      items: permissionsLoading
+        ? group.items
+        : group.items.filter((item) =>
+            hasPermission(item.permission.resource, item.permission.action),
+          ),
+    })).filter((group) => group.items.length > 0);
   }, [permissionsLoading, hasPermission]);
 
   const handleSectionPress = (sectionKey: string) => {
@@ -487,50 +422,54 @@ export default function ManageEventScreen() {
           </GlassSurface>
         </Animated.View>
 
-        {/* Menu Items */}
-        <Animated.View
-          entering={FadeInDown.delay(150).duration(500).springify()}
-          style={styles.menuSection}
-        >
-          <GlassSurface
-            fill="subtle"
-            border="subtle"
-            cornerRadius="lg"
-            style={styles.menuList}
+        {/* Menu Groups */}
+        {visibleGroups.map((group, groupIndex) => (
+          <Animated.View
+            key={group.title}
+            entering={FadeInDown.delay(150 + groupIndex * 100).duration(500).springify()}
+            style={styles.menuSection}
           >
-            {visibleSections.map((section, index) => (
-              <TouchableOpacity
-                key={section.key}
-                style={[
-                  styles.menuItem,
-                  index < visibleSections.length - 1 && styles.menuItemBorder,
-                ]}
-                onPress={() => handleSectionPress(section.key)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.menuItemIcon, { overflow: 'hidden' }]}>
-                  <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />
+            <Text style={styles.groupTitle}>{group.title}</Text>
+            <GlassSurface
+              fill="subtle"
+              border="subtle"
+              cornerRadius="lg"
+              style={styles.menuList}
+            >
+              {group.items.map((section, index) => (
+                <TouchableOpacity
+                  key={section.key}
+                  style={[
+                    styles.menuItem,
+                    index < group.items.length - 1 && styles.menuItemBorder,
+                  ]}
+                  onPress={() => handleSectionPress(section.key)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.menuItemIcon, { overflow: 'hidden' }]}>
+                    <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />
+                    <Ionicons
+                      name={section.icon}
+                      size={20}
+                      color="rgba(255,255,255,0.9)"
+                    />
+                  </View>
+                  <View style={styles.menuItemContent}>
+                    <Text style={styles.menuItemTitle}>{section.label}</Text>
+                    <Text style={styles.menuItemSubtitle}>
+                      {section.subtitle}
+                    </Text>
+                  </View>
                   <Ionicons
-                    name={section.icon}
-                    size={20}
-                    color="rgba(255,255,255,0.9)"
+                    name="chevron-forward"
+                    size={18}
+                    color="rgba(255,255,255,0.3)"
                   />
-                </View>
-                <View style={styles.menuItemContent}>
-                  <Text style={styles.menuItemTitle}>{section.label}</Text>
-                  <Text style={styles.menuItemSubtitle}>
-                    {section.subtitle}
-                  </Text>
-                </View>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color="rgba(255,255,255,0.3)"
-                />
-              </TouchableOpacity>
-            ))}
-          </GlassSurface>
-        </Animated.View>
+                </TouchableOpacity>
+              ))}
+            </GlassSurface>
+          </Animated.View>
+        ))}
       </ScrollView>
     </View>
   );
@@ -635,6 +574,15 @@ const styles = StyleSheet.create({
   },
   menuSection: {
     marginTop: 20,
+  },
+  groupTitle: {
+    fontSize: 13,
+    fontFamily: "Lato_700Bold",
+    color: "rgba(255,255,255,0.4)",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginLeft: 4,
   },
   menuList: {
     overflow: "hidden",
