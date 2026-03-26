@@ -68,7 +68,8 @@ export function ContactTagSheet({ contact, venueId, onDismiss }: ContactTagSheet
       isPresented={!!contact}
       onDismiss={onDismiss}
       detents={['medium']}
-      showDragIndicator
+      rnContent
+      scrollable
     >
       <View style={styles.container}>
         {/* Header */}

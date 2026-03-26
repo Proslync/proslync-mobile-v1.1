@@ -1,9 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { ContactTagSheet } from '@/components/dashboard/contact-tag-sheet';
-import { useDebounce, useMyVenues } from '@/hooks';
+import { TAG_COLORS } from '@/components/check-ins/utils';
+import { useDebounce, useMyVenues, useVenueContactTags } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAuth } from '@/lib/providers/auth-provider';
@@ -66,6 +67,18 @@ export default function ContactsListScreen() {
   const debouncedSearch = useDebounce(searchText, 300);
   const { data: venues } = useMyVenues();
   const venueId = venues?.[0]?.id;
+  const { data: tagRecords } = useVenueContactTags(venueId);
+
+  // Build a quick lookup: userId → tags[]
+  const tagsByUserId = useMemo(() => {
+    const map = new Map<number, string[]>();
+    if (tagRecords) {
+      for (const r of tagRecords) {
+        map.set(r.userId, r.tags);
+      }
+    }
+    return map;
+  }, [tagRecords]);
 
   const query = useInfiniteQuery<OwnerContactsResponse, Error>({
     queryKey: ['owner-contacts', debouncedSearch],
@@ -108,7 +121,7 @@ export default function ContactsListScreen() {
     ({ item, index }: { item: OwnerContact; index: number }) => {
       const name = getDisplayName(item);
       const subtext = getSubtext(item);
-      const label = sourceLabel(item);
+      const userTags = item.userId ? tagsByUserId.get(item.userId) ?? [] : [];
 
       return (
         <TouchableOpacity activeOpacity={0.7} onPress={() => setSelectedContact(item)}>
@@ -134,26 +147,39 @@ export default function ContactsListScreen() {
                 </Text>
               ) : null}
             </View>
-            {!!label && (
-              <View style={[styles.eventCountBadge, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
-                <Text style={[styles.eventCountText, { color: colors.text }]}>
-                  {label}
-                </Text>
+            {userTags.length > 0 ? (
+              <View style={styles.tagsRow}>
+                {userTags.slice(0, 2).map((tag) => {
+                  const color = TAG_COLORS[tag] || '#6b7280';
+                  return (
+                    <View key={tag} style={[styles.tagBadge, { backgroundColor: `${color}25` }]}>
+                      <Text style={[styles.tagBadgeText, { color }]}>
+                        {tag.replace(/_/g, ' ').toUpperCase()}
+                      </Text>
+                    </View>
+                  );
+                })}
+                {userTags.length > 2 && (
+                  <View style={[styles.tagBadge, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+                    <Text style={[styles.tagBadgeText, { color: 'rgba(255,255,255,0.5)' }]}>
+                      +{userTags.length - 2}
+                    </Text>
+                  </View>
+                )}
               </View>
-            )}
-            {item.eventCount > 1 && (
+            ) : item.eventCount > 1 ? (
               <View style={[styles.eventCountBadge, { backgroundColor: 'rgba(255,255,255,0.12)' }]}>
                 <Text style={[styles.eventCountText, { color: colors.text }]}>
                   {item.eventCount} events
                 </Text>
               </View>
-            )}
+            ) : null}
           </GlassSurface>
         </Animated.View>
         </TouchableOpacity>
       );
     },
-    [colors, isDark],
+    [colors, isDark, tagsByUserId],
   );
 
   return (
@@ -374,6 +400,23 @@ const styles = StyleSheet.create({
   eventCountText: {
     fontSize: 11,
     fontFamily: 'Lato_700Bold',
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    gap: 4,
+    flexShrink: 1,
+    maxWidth: '45%',
+    justifyContent: 'flex-end',
+  },
+  tagBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  tagBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   footerLoader: {
     paddingVertical: 16,
