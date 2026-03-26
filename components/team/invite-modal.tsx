@@ -24,11 +24,34 @@ import type { UnifiedSearchItem, SearchSuggestion } from '@/lib/types/search.typ
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
-interface InviteModalProps {
+export interface InviteRole {
+  id: number | string;
+  name: string;
+}
+
+interface InviteModalBaseProps {
   visible: boolean;
   onClose: () => void;
-  roles: RoleResponseDto[];
+  roles: InviteRole[];
+  /** Title shown at the top. Default: "Invite Team Member" */
+  title?: string;
+  /** Success message prefix. Default: "Invite Sent!" */
+  successTitle?: string;
+}
+
+interface EventInviteModalProps extends InviteModalBaseProps {
+  mode?: 'event';
   eventId: number;
+  onInvite?: never;
+  isInviting?: never;
+}
+
+interface CustomInviteModalProps extends InviteModalBaseProps {
+  mode: 'custom';
+  eventId?: never;
+  /** Custom invite handler — receives userId and roleId/string */
+  onInvite: (userId: number, roleId: number | string) => Promise<void>;
+  isInviting?: boolean;
 }
 
 interface SelectedUser {
@@ -39,12 +62,20 @@ interface SelectedUser {
   avatarUrl?: string | null;
 }
 
-export function InviteModal({
-  visible,
-  onClose,
-  roles,
-  eventId,
-}: InviteModalProps) {
+type InviteModalProps = EventInviteModalProps | CustomInviteModalProps;
+
+export function InviteModal(props: InviteModalProps) {
+  const {
+    visible,
+    onClose,
+    roles,
+    title = 'Invite Team Member',
+    successTitle = 'Invite Sent!',
+  } = props;
+
+  const isCustomMode = props.mode === 'custom';
+  const eventId = isCustomMode ? 0 : props.eventId;
+
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const inviteMutation = useInviteByUserId(eventId);
@@ -59,10 +90,12 @@ export function InviteModal({
   } = useUnifiedSearch();
 
   const [selectedUser, setSelectedUser] = useState<SelectedUser | null>(null);
-  const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<number | string | null>(null);
   const [sent, setSent] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [customInviting, setCustomInviting] = useState(false);
 
+  const isPending = isCustomMode ? customInviting : inviteMutation.isPending;
   const assignableRoles = roles.filter((r) => r.name !== 'Owner');
 
   // Filter to people only
@@ -104,19 +137,32 @@ export function InviteModal({
     });
   }, []);
 
-  const handleSendInvite = useCallback(() => {
+  const handleSendInvite = useCallback(async () => {
     if (!selectedUser || !selectedRoleId) return;
-    inviteMutation.mutate(
-      { userId: selectedUser.id, roleId: selectedRoleId },
-      {
-        onSuccess: () => setSent(true),
-        onError: (err: any) => {
-          const msg = err?.message || 'Failed to send invite';
-          setInviteError(msg);
+
+    if (isCustomMode && props.onInvite) {
+      setCustomInviting(true);
+      try {
+        await props.onInvite(selectedUser.id, selectedRoleId);
+        setSent(true);
+      } catch (err: any) {
+        setInviteError(err?.message || 'Failed to add member');
+      } finally {
+        setCustomInviting(false);
+      }
+    } else {
+      inviteMutation.mutate(
+        { userId: selectedUser.id, roleId: selectedRoleId as number },
+        {
+          onSuccess: () => setSent(true),
+          onError: (err: any) => {
+            const msg = err?.message || 'Failed to send invite';
+            setInviteError(msg);
+          },
         },
-      },
-    );
-  }, [selectedUser, selectedRoleId, inviteMutation]);
+      );
+    }
+  }, [selectedUser, selectedRoleId, inviteMutation, isCustomMode, props]);
 
   const handleClose = () => {
     onClose();
@@ -235,7 +281,7 @@ export function InviteModal({
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Invite Team Member</Text>
+          <Text style={styles.title}>{title}</Text>
           <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
             <GlassView
               {...liquidGlass.fillMedium}
@@ -250,12 +296,14 @@ export function InviteModal({
           /* Success state */
           <View style={styles.successContainer}>
             <Ionicons name="checkmark-circle" size={56} color="#22c55e" />
-            <Text style={styles.successTitle}>Invite Sent!</Text>
+            <Text style={styles.successTitle}>{successTitle}</Text>
             <Text style={styles.successSubtitle}>
               {selectedUser
                 ? `${selectedUser.firstName || ''} ${selectedUser.lastName || ''}`.trim()
                 : 'User'}{' '}
-              will see the invitation in their notifications.
+              {isCustomMode
+                ? 'has been added to the team.'
+                : 'will see the invitation in their notifications.'}
             </Text>
             <TouchableOpacity
               style={styles.doneButton}
@@ -392,10 +440,10 @@ export function InviteModal({
                 <TouchableOpacity
                   style={[
                     styles.sendButton,
-                    (!selectedRoleId || inviteMutation.isPending) && styles.sendDisabled,
+                    (!selectedRoleId || isPending) && styles.sendDisabled,
                   ]}
                   onPress={handleSendInvite}
-                  disabled={!selectedRoleId || inviteMutation.isPending}
+                  disabled={!selectedRoleId || isPending}
                   activeOpacity={0.7}
                 >
                   <GlassView
@@ -403,10 +451,12 @@ export function InviteModal({
                     borderRadius={12}
                     style={StyleSheet.absoluteFill}
                   />
-                  {inviteMutation.isPending ? (
+                  {isPending ? (
                     <ActivityIndicator color="#fff" size="small" />
                   ) : (
-                    <Text style={styles.sendText}>Send Invite</Text>
+                    <Text style={styles.sendText}>
+                      {isCustomMode ? 'Add Member' : 'Send Invite'}
+                    </Text>
                   )}
                 </TouchableOpacity>
               </View>

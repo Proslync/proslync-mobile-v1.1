@@ -3,6 +3,8 @@ import { GlassSurface } from "@/components/glass/glass-surface";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { NativeSheet } from "@/components/ui/native-sheet";
+import { InviteModal } from "@/components/team/invite-modal";
+import type { InviteRole } from "@/components/team/invite-modal";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
@@ -24,22 +26,26 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const ROLE_OPTIONS = [
-  { value: "admin", label: "Admin", desc: "Full venue management access" },
-  { value: "host", label: "Host", desc: "Greet guests, manage reservations" },
-  {
-    value: "bouncer",
-    label: "Bouncer",
-    desc: "Door security and ID checking",
-  },
-  { value: "user", label: "Staff", desc: "General venue staff" },
+const VENUE_ROLES: InviteRole[] = [
+  { id: "admin", name: "Admin" },
+  { id: "host", name: "Host" },
+  { id: "bouncer", name: "Bouncer" },
+  { id: "bartender", name: "Bartender" },
+  { id: "user", name: "Staff" },
+];
+
+const EDIT_ROLE_OPTIONS = [
+  { value: "admin", label: "Admin" },
+  { value: "host", label: "Host" },
+  { value: "bouncer", label: "Bouncer" },
+  { value: "bartender", label: "Bartender" },
+  { value: "user", label: "Staff" },
 ];
 
 function getRoleBadgeColor(role: string): string {
@@ -74,28 +80,23 @@ export default function VenueStaffScreen() {
   const updateStaff = useUpdateVenueStaff(venueId);
   const removeStaff = useRemoveVenueStaff(venueId);
 
-  const [showAddSheet, setShowAddSheet] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [editTarget, setEditTarget] = useState<VenueStaffMember | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VenueStaffMember | null>(
     null,
   );
 
-  // Add form
-  const [newUserId, setNewUserId] = useState("");
-  const [newRole, setNewRole] = useState("user");
-
   // Edit form
   const [editRole, setEditRole] = useState("");
 
-  const handleAdd = useCallback(async () => {
-    const uid = parseInt(newUserId, 10);
-    if (!uid) return;
-    await addStaff.mutateAsync({ userId: uid, role: newRole });
-    setShowAddSheet(false);
-    setNewUserId("");
-    setNewRole("user");
-  }, [newUserId, newRole, addStaff]);
+  const handleInvite = useCallback(
+    async (userId: number, roleId: number | string) => {
+      await addStaff.mutateAsync({ userId, role: String(roleId) });
+      setShowInviteModal(false);
+    },
+    [addStaff],
+  );
 
   const handleEdit = useCallback(async (member: VenueStaffMember) => {
     setEditTarget(member);
@@ -264,96 +265,21 @@ export default function VenueStaffScreen() {
           label="Add Team Member"
           variant="glass"
           icon="person-add-outline"
-          onPress={() => setShowAddSheet(true)}
+          onPress={() => setShowInviteModal(true)}
           style={styles.addButton}
         />
       </ScrollView>
 
-      {/* Add Staff Sheet */}
-      <NativeSheet
-        rnContent
-        scrollable
-        isPresented={showAddSheet}
-        onDismiss={() => setShowAddSheet(false)}
-        detents={[{ fraction: 0.7 }, "large"]}
-      >
-        <View style={styles.sheetContent}>
-          <Text style={[styles.sheetTitle, { color: colors.text }]}>
-            Add Team Member
-          </Text>
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-            User ID
-          </Text>
-          <View style={styles.inputWrapper}>
-            {isDark && (
-              <GlassView
-                {...liquidGlass.fillFaint}
-                borderRadius={10}
-                style={StyleSheet.absoluteFillObject}
-              />
-            )}
-            <TextInput
-              style={[
-                styles.input,
-                {
-                  color: colors.text,
-                  borderColor: colors.border,
-                  backgroundColor: isDark
-                    ? undefined
-                    : colors.backgroundSecondary,
-                },
-              ]}
-              value={newUserId}
-              onChangeText={setNewUserId}
-              placeholder="Enter user ID"
-              placeholderTextColor={colors.placeholder}
-              keyboardType="number-pad"
-            />
-          </View>
-
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-            Role
-          </Text>
-          <View style={styles.roleGrid}>
-            {ROLE_OPTIONS.map((opt) => {
-              const isActive = newRole === opt.value;
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[
-                    styles.roleOption,
-                    isActive && styles.roleOptionSelected,
-                  ]}
-                  onPress={() => setNewRole(opt.value)}
-                >
-                  <GlassView
-                    {...(isActive ? liquidGlass.fill : liquidGlass.fillFaint)}
-                    borderRadius={10}
-                    style={StyleSheet.absoluteFillObject}
-                  />
-                  <Text
-                    style={[
-                      styles.roleOptionLabel,
-                      isActive && styles.roleOptionLabelSelected,
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                  <Text style={styles.roleOptionDesc}>{opt.desc}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          <GlassButton
-            label={addStaff.isPending ? "Adding..." : "Add Member"}
-            variant="glass"
-            onPress={handleAdd}
-            disabled={!newUserId || addStaff.isPending}
-            style={styles.sheetButton}
-          />
-        </View>
-      </NativeSheet>
+      {/* Add Staff Modal */}
+      <InviteModal
+        mode="custom"
+        visible={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        roles={VENUE_ROLES}
+        title="Add Team Member"
+        successTitle="Member Added!"
+        onInvite={handleInvite}
+      />
 
       {/* Edit Role Sheet */}
       <NativeSheet
@@ -371,7 +297,7 @@ export default function VenueStaffScreen() {
             Role
           </Text>
           <View style={styles.roleGrid}>
-            {ROLE_OPTIONS.map((opt) => {
+            {EDIT_ROLE_OPTIONS.map((opt) => {
               const isActive = editRole === opt.value;
               return (
                 <TouchableOpacity
@@ -395,7 +321,6 @@ export default function VenueStaffScreen() {
                   >
                     {opt.label}
                   </Text>
-                  <Text style={styles.roleOptionDesc}>{opt.desc}</Text>
                 </TouchableOpacity>
               );
             })}
