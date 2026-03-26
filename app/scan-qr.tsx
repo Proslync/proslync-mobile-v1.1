@@ -33,6 +33,7 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { eventsApi } from '@/lib/api/events';
 import { venueContactTagsApi } from '@/lib/api/venue-contact-tags';
 import { MembershipResultSheet } from '@/components/scanner/membership-result-sheet';
+import { IdResultSheet } from '@/components/scanner/id-result-sheet';
 import { authApi } from '@/lib/api/auth';
 import type { EventAttendee } from '@/lib/types/events.types';
 import { EventUserStatus } from '@/lib/types/events.types';
@@ -172,33 +173,6 @@ const getAgeFromResult = (result: IdScanResult): number | undefined => {
   return ageField ? parseInt(ageField.value) : undefined;
 };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'success': return '#10b981';
-    case 'warning': return '#f59e0b';
-    case 'error': return '#ef4444';
-    default: return '#fff';
-  }
-};
-
-const getStatusIcon = (status: string): keyof typeof Ionicons.glyphMap => {
-  switch (status) {
-    case 'success': return 'checkmark-circle';
-    case 'warning': return 'alert-circle';
-    case 'error': return 'close-circle';
-    default: return 'checkmark-circle';
-  }
-};
-
-const getTicketBadge = (ticketStatus?: string) => {
-  switch (ticketStatus) {
-    case 'found': return { label: 'Ticket Found', color: '#10b981', bg: 'rgba(16,185,129,0.15)' };
-    case 'rsvp': return { label: "RSVP'd", color: '#10b981', bg: 'rgba(16,185,129,0.15)' };
-    case 'none': return { label: 'No Ticket', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' };
-    case 'skipped': return { label: 'Card Not Scanned', color: 'rgba(255,255,255,0.4)', bg: 'rgba(255,255,255,0.08)' };
-    default: return null;
-  }
-};
 
 
 export default function ScannerScreen() {
@@ -773,128 +747,17 @@ export default function ScannerScreen() {
       />
 
       {/* ─── Step 2 Result: ID Card ─────────────────────────────────────── */}
-      {scanStep === 'id' && idResult && (
-        <Animated.View
-          entering={FadeInUp.duration(300)}
-          exiting={FadeOutDown.duration(200)}
-          style={styles.resultOverlay}
-        >
-          <View style={styles.resultBlur}>
-            <GlassView
-              {...liquidGlass.fillStrong}
-              colorScheme={'light' as const}
-              borderRadius={32}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={[styles.resultCard, { paddingBottom: insets.bottom + 28 }]}>
-              {/* Status indicator */}
-              <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(idResult.status) }]}>
-                <Ionicons name={getStatusIcon(idResult.status)} size={32} color="#fff" />
-              </View>
-
-              {/* Status badge */}
-              {idResult.subtitle && (
-                <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(idResult.status)}20` }]}>
-                  <Text style={[styles.statusBadgeText, { color: getStatusColor(idResult.status) }]}>
-                    {idResult.subtitle}
-                  </Text>
-                </View>
-              )}
-
-              {/* Ticket status badge */}
-              {(() => {
-                const badge = getTicketBadge(idResult.ticketStatus);
-                if (!badge) return null;
-                return (
-                  <View style={[styles.ticketBadge, { backgroundColor: badge.bg }]}>
-                    <Ionicons
-                      name={idResult.ticketStatus === 'found' || idResult.ticketStatus === 'rsvp' ? 'ticket-outline' : 'alert-circle-outline'}
-                      size={14}
-                      color={badge.color}
-                    />
-                    <Text style={[styles.ticketBadgeText, { color: badge.color }]}>
-                      {badge.label}
-                    </Text>
-                    {idResult.ticketInfo && idResult.ticketStatus === 'found' && (
-                      <Text style={[styles.ticketBadgeDetail, { color: badge.color }]}>
-                        {idResult.ticketInfo}
-                      </Text>
-                    )}
-                  </View>
-                );
-              })()}
-
-              {/* Validating indicator */}
-              {isValidating && (
-                <View style={styles.validatingRow}>
-                  <ActivityIndicator size="small" color="rgba(0,0,0,0.4)" />
-                  <Text style={styles.validatingText}>Verifying...</Text>
-                </View>
-              )}
-
-              {/* Name */}
-              <Text style={styles.resultName}>{idResult.title}</Text>
-
-              {/* Fields */}
-              {idResult.fields.length > 0 && (
-                <View style={styles.fieldsGrid}>
-                  {idResult.fields.map((field, index) => (
-                    <View key={index} style={styles.fieldItem}>
-                      <Text style={styles.fieldLabel}>{field.label}</Text>
-                      <Text style={styles.fieldValue}>{field.value}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Actions */}
-              <View style={styles.resultActions}>
-                {idResult.status !== 'error' && idResult.title !== 'Could Not Read ID' && (
-                  <TouchableOpacity
-                    style={styles.approveButton}
-                    onPress={handleApprove}
-                    activeOpacity={0.8}
-                    disabled={isSubmitting}
-                  >
-                    <GlassView {...liquidGlass.success} borderRadius={14} style={StyleSheet.absoluteFill} />
-                    {isSubmitting ? (
-                      <ActivityIndicator size="small" color="#fff" />
-                    ) : (
-                      <>
-                        <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                        <Text style={styles.approveButtonText}>Approve</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                )}
-
-                {idResult.title !== 'Could Not Read ID' && (
-                  <TouchableOpacity
-                    style={styles.denyButton}
-                    onPress={handleDeny}
-                    activeOpacity={0.8}
-                    disabled={isSubmitting}
-                  >
-                    <Ionicons name="close-circle" size={20} color="#ef4444" />
-                    <Text style={styles.denyButtonText}>Deny</Text>
-                  </TouchableOpacity>
-                )}
-
-                {idResult.title === 'Could Not Read ID' && (
-                  <TouchableOpacity
-                    style={styles.scanNextButton}
-                    onPress={handleScanNext}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="scan-outline" size={20} color="#1a1a1a" />
-                    <Text style={styles.scanNextButtonText}>Try Again</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-        </Animated.View>
-      )}
+      <IdResultSheet
+        isPresented={scanStep === 'id' && !!idResult}
+        idResult={idResult}
+        isValidating={isValidating}
+        isSubmitting={isSubmitting}
+        venueTags={memberVenueTags}
+        onApprove={handleApprove}
+        onDeny={handleDeny}
+        onScanNext={handleScanNext}
+        onDismiss={handleScanNext}
+      />
 
       {/* ─── Bottom bar ─────────────────────────────────────────────────── */}
       {!isShowingResult && (
@@ -982,47 +845,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   nfcButtonText: { fontSize: 14, fontFamily: 'Lato_600SemiBold', color: '#fff' },
-
-  resultOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end' },
-
-  resultBlur: { borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' },
-  resultCard: { padding: 28, alignItems: 'center' },
-  statusIndicator: { width: 72, height: 72, borderRadius: 36, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  statusBadge: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, marginBottom: 8 },
-  statusBadgeText: { fontSize: 13, fontFamily: 'Lato_700Bold', textTransform: 'uppercase', letterSpacing: 0.5 },
-
-  // Ticket badge
-  ticketBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  ticketBadgeText: { fontSize: 13, fontFamily: 'Lato_700Bold', letterSpacing: 0.3 },
-  ticketBadgeDetail: { fontSize: 12, fontFamily: 'Lato_400Regular', opacity: 0.7 },
-
-  // Validating
-  validatingRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  validatingText: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.4)' },
-
-  resultName: { fontSize: 26, fontFamily: 'Lato_700Bold', color: '#1a1a1a', textAlign: 'center', marginBottom: 24 },
-  fieldsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12, marginBottom: 28, width: '100%' },
-  fieldItem: { backgroundColor: 'rgba(0,0,0,0.04)', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 12, minWidth: 80, alignItems: 'center' },
-  fieldLabel: { fontSize: 11, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
-  fieldValue: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1a1a1a' },
-  resultActions: { flexDirection: 'row', gap: 10, width: '100%' },
-
-  approveButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 14, gap: 8, overflow: 'hidden' as const },
-  approveButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
-
-  denyButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 16, borderRadius: 14, backgroundColor: 'rgba(239,68,68,0.1)', gap: 6 },
-  denyButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#ef4444' },
-
-  scanNextButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 16, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.06)', gap: 6 },
-  scanNextButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1a1a1a' },
 
   bottomBar: { position: 'absolute', left: 24, right: 24, gap: 12 },
 
