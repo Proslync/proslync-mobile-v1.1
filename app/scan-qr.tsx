@@ -243,7 +243,7 @@ export default function ScannerScreen() {
     if (!eventId) return;
     try {
       const response = await eventsApi.getEventAttendees(eventId, {
-        limit: 5000,
+        limit: 100,
         status: [
           EventUserStatus.VERIFIED,
           EventUserStatus.REJECTED,
