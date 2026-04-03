@@ -69,7 +69,7 @@ const NOTIFICATION_ICONS: Record<
 };
 
 // Types where we show the actor's profile photo instead of an icon
-const ACTOR_PHOTO_TYPES: NotificationType[] = ['follow', 'like', 'comment'];
+const ACTOR_PHOTO_TYPES: NotificationType[] = ['follow', 'like', 'comment', 'chat', 'payment', 'team_invitation'];
 
 function TeamInvitationRow({
   invitation,
