@@ -48,6 +48,9 @@ export { useMutualFollowers, MUTUAL_FOLLOWERS_KEY } from './use-mutual-followers
 // User profile hooks
 export { useUserProfile, USER_PROFILE_KEY } from './use-user-profile';
 
+// Block hooks
+export { useBlockedUsers, useBlockUser, useUnblockUser, BLOCKED_USERS_KEY } from './use-blocked-users';
+
 // Search/Discover hooks
 export { useDebounce } from './use-debounce';
 export {

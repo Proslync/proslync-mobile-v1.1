@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import { LinkifiedText } from '@/components/shared/linkified-text';
 import { Ionicons } from '@expo/vector-icons';
 import { Message, User } from '../../lib/types/messages.types';
 import { formatMessageTime } from '@/lib/utils/date';
@@ -76,9 +77,9 @@ export function MessageBubble({
     switch (message.type) {
       case 'text':
         return (
-          <Text style={[styles.messageText, isOwn && styles.messageTextOwn]}>
+          <LinkifiedText style={[styles.messageText, isOwn && styles.messageTextOwn] as any}>
             {message.text}
-          </Text>
+          </LinkifiedText>
         );
 
       case 'image':

@@ -2,6 +2,20 @@
 
 import { apiClient } from './client';
 
+export interface BlockedUserItem {
+  id: number;
+  userName?: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string | null;
+  blockedAt: string;
+}
+
+export interface BlockedUsersResponse {
+  blockedUsers: BlockedUserItem[];
+  total: number;
+}
+
 export interface BlockUserResponse {
   success: boolean;
   message: string;
@@ -13,6 +27,20 @@ export interface ReportUserResponse {
 }
 
 export const usersApi = {
+  /**
+   * Get blocked users list
+   */
+  getBlockedUsers: async (): Promise<BlockedUsersResponse> => {
+    try {
+      const response = await apiClient.get<any>('/api/users/me/blocked');
+      console.log('[BlockedUsers] API response:', JSON.stringify(response));
+      return response as BlockedUsersResponse;
+    } catch (err: any) {
+      console.error('[BlockedUsers] API error:', err?.statusCode, err?.message, JSON.stringify(err));
+      throw err;
+    }
+  },
+
   /**
    * Block a user
    */

@@ -184,4 +184,6 @@ export interface PublicUserProfile {
   followStats?: FollowStats;
   isPrivate?: boolean;
   createdAt?: string;
+  isBlocked?: boolean;
+  isBlockedBy?: boolean;
 }

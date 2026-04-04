@@ -72,7 +72,7 @@ export function LinkifiedText({ children, style }: LinkifiedTextProps) {
 
 const styles = StyleSheet.create({
   mention: {
-    color: '#fff',
+    color: '#4A9EFF',
     fontFamily: 'Lato_700Bold',
   },
 });

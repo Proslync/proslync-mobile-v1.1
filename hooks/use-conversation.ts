@@ -390,7 +390,7 @@ export function useConversation(conversationId: string | undefined) {
       );
       queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
     },
-    onError: (_err, _vars, context) => {
+    onError: (err: any, _vars, context) => {
       // Remove optimistic message on failure
       queryClient.setQueryData<InfiniteMessagesData>(
         [CONVERSATION_MESSAGES_KEY, conversationId],
@@ -407,6 +407,10 @@ export function useConversation(conversationId: string | undefined) {
           };
         },
       );
+      // Surface blocked error to caller
+      if (err?.statusCode === 403) {
+        throw new Error("You can't message this user");
+      }
     },
   });
 

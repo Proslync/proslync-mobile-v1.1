@@ -27,7 +27,6 @@ import Animated, {
 const TABS: { key: TabType; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "lineup", label: "Lineup" },
-  { key: "tables", label: "Tables1" },
   { key: "map", label: "Map" },
 ];
 

@@ -36,13 +36,9 @@ import { PurchaseTableSheet } from '@/components/tables/purchase-table-sheet';
 import { useTrackEventView } from '@/hooks/use-track-event-view';
 import { useEventTables, EVENT_TABLES_KEY } from '@/hooks/use-venue-tables';
 import { useQueryClient } from '@tanstack/react-query';
-import { OverviewTab, LineupTab, TablesTab, MapTab } from '@/components/event';
+import { OverviewTab, LineupTab, MapTab } from '@/components/event';
 import { SegmentedControl } from '@/components/shared/segmented-control';
 import {
-  MOCK_FLOORS,
-  MOCK_TABLE_INVENTORY,
-  MOCK_PUBLIC_TABLES,
-  MOCK_BOTTLE_CATEGORIES,
   MOCK_DEALS,
 } from '@/lib/mock/event-detail-mocks';
 import type { EventTableItem } from '@/lib/types/tables.types';
@@ -323,17 +319,6 @@ export default function EventPage() {
         );
       case 'lineup':
         return <LineupTab artists={artists} />;
-      case 'tables':
-        return (
-          <TablesTab
-            floors={MOCK_FLOORS}
-            mapTables={MOCK_TABLE_INVENTORY}
-            publicTables={MOCK_PUBLIC_TABLES}
-            bottleCategories={MOCK_BOTTLE_CATEGORIES}
-            apiTables={eventTables}
-            onSelectApiTable={handleSelectApiTable}
-          />
-        );
       case 'map':
         return (
           <MapTab
@@ -481,10 +466,10 @@ export default function EventPage() {
         {/* Tab Bar */}
         <View style={{ marginTop: 16 }}>
           <SegmentedControl
-            segments={['Overview', 'Lineup', 'Tables', 'Map']}
-            selectedIndex={['overview', 'lineup', 'tables', 'map'].indexOf(activeTab)}
+            segments={['Overview', 'Lineup', 'Map']}
+            selectedIndex={['overview', 'lineup', 'map'].indexOf(activeTab)}
             onSelect={(index) => {
-              const tabs: TabType[] = ['overview', 'lineup', 'tables', 'map'];
+              const tabs: TabType[] = ['overview', 'lineup', 'map'];
               setActiveTab(tabs[index]);
             }}
           />

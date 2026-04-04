@@ -33,7 +33,6 @@ export default function FeedScreen() {
   const [activeTab, setActiveTab] = useState<FeedTab>('foryou');
   const feedListRef = React.useRef<any>(null);
   const [purchaseItem, setPurchaseItem] = useState<FeedItem | null>(null);
-  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
   const likedItems = new Set<string>();
 
   // Track screen view on mount
@@ -60,8 +59,8 @@ export default function FeedScreen() {
     track('feed_action', { feed_type: activeTab === 'foryou' ? 'for_you' : 'following', action: 'load' });
   }, [activeTab]);
 
-  // Filter out blocked users
-  const visibleItems = feedItems.filter(item => !blockedUserIds.has(String(item.userId)));
+  // Backend filters blocked users from feed
+  const visibleItems = feedItems;
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
@@ -71,13 +70,10 @@ export default function FeedScreen() {
     },
   });
 
-  const handleBlock = useCallback((userId: string) => {
-    setBlockedUserIds(prev => {
-      const next = new Set(prev);
-      next.add(userId);
-      return next;
-    });
-  }, []);
+  const handleBlock = useCallback((_userId: string) => {
+    // Backend handles filtering; invalidate feed to refetch
+    queryClient.invalidateQueries({ queryKey: ['feed'] });
+  }, [queryClient]);
 
   const toggleRsvp = useCallback(async (id: string) => {
     // Find the item to get the eventId

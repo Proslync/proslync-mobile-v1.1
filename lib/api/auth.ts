@@ -120,6 +120,8 @@ export const authApi = {
         followStats: (raw.followStats) as PublicUserProfile['followStats'],
         isPrivate: (raw.isPrivate) as boolean | undefined,
         createdAt: (raw.createdAt) as string | undefined,
+        isBlocked: (raw.isBlocked as boolean) || false,
+        isBlockedBy: (raw.isBlockedBy as boolean) || false,
       };
     } catch (error) {
       console.error('Error fetching user by ID:', error);

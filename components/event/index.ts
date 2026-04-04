@@ -1,13 +1,8 @@
 export { EventTabBar } from './event-tab-bar';
 export { OverviewTab } from './overview-tab';
 export { LineupTab } from './lineup-tab';
-export { TablesTab } from './tables-tab';
 export { MapTab } from './map-tab';
 export { QuickDetailsGrid } from './quick-details-grid';
 export { DealsSection } from './deals-section';
 export { ArtistCard } from './artist-card';
-export { TableFloorMap } from './table-floor-map';
-export { TableDetailCard } from './table-detail-card';
-export { PublicTablesSection } from './public-tables-section';
-export { BottleMenu } from './bottle-menu';
 export { VenueMap } from './venue-map';

@@ -19,6 +19,7 @@ import { GlassView } from 'expo-glass-effect';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { liquidGlass, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { useAppTheme, type ThemeMode } from '@/hooks/use-app-theme';
+import { useAuth } from '@/lib/providers/auth-provider';
 import { AnimatedCollapsible } from '@/components/ui/animated-collapsible';
 
 function AnimatedChevron({ expanded, color }: { expanded: boolean; color: string }) {
@@ -44,6 +45,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDark, themeMode, setThemeMode } = useAppTheme();
+  const { logout } = useAuth();
   const [appearanceExpanded, setAppearanceExpanded] = React.useState(false);
 
   const theme = isDark ? 'dark' : 'light';
@@ -166,6 +168,22 @@ export default function SettingsScreen() {
             <TouchableOpacity
               style={styles.row}
               activeOpacity={0.7}
+              onPress={() => router.push('/blocked-users')}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
+                  <Ionicons name="ban-outline" size={18} color={t.primary} />
+                </View>
+                <Text style={[styles.rowLabel, { color: t.primary }]}>Blocked Users</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={t.muted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: border }]} />
+
+            <TouchableOpacity
+              style={styles.row}
+              activeOpacity={0.7}
               onPress={() => router.push('/privacy-settings')}
             >
               <View style={styles.rowLeft}>
@@ -175,6 +193,21 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowLabel, { color: t.primary }]}>Privacy</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={t.muted} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: border }]} />
+
+            <TouchableOpacity
+              style={styles.row}
+              activeOpacity={0.7}
+              onPress={logout}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 59, 48, 0.08)' }]}>
+                  <Ionicons name="log-out-outline" size={18} color="#ff3b30" />
+                </View>
+                <Text style={[styles.rowLabel, { color: '#ff3b30' }]}>Log Out</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>

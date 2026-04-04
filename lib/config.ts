@@ -4,7 +4,7 @@
 // Local development override
 // Set to true to use local backend (requires backend running on your machine)
 const USE_LOCAL_BACKEND = false;
-const LOCAL_IP = "192.168.101.60"; // Update with your IP: ifconfig (Mac) or ipconfig (Windows)
+const LOCAL_IP = "136.107.100.26"; // GCE dev VM
 
 // API URLs
 const PROD_API_URL =
@@ -16,11 +16,11 @@ const PROD_WS_URL =
 
 export const config = {
   api: {
-    baseUrl: USE_LOCAL_BACKEND ? `http://${LOCAL_IP}:5001` : PROD_API_URL,
+    baseUrl: USE_LOCAL_BACKEND ? `http://${LOCAL_IP}:5000` : PROD_API_URL,
     timeout: 10000,
   },
   websocket: {
-    url: USE_LOCAL_BACKEND ? `ws://${LOCAL_IP}:5001` : PROD_WS_URL,
+    url: USE_LOCAL_BACKEND ? `ws://${LOCAL_IP}:5000` : PROD_WS_URL,
     enabled: true,
   },
   auth: {

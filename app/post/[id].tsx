@@ -34,6 +34,7 @@ import {
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass, glassTint, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { LinkifiedText } from '@/components/shared/linkified-text';
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -113,9 +114,9 @@ function CommentItem({
               <Ionicons name="arrow-undo-outline" size={16} color={ct.muted} />
             </TouchableOpacity>
           </View>
-          <Text style={[styles.commentText, { color: ct.primary }]}>
+          <LinkifiedText style={[styles.commentText, { color: ct.primary }] as any}>
             {comment.text}
-          </Text>
+          </LinkifiedText>
         </View>
       </View>
     </View>
@@ -403,10 +404,9 @@ export default function PostDetailScreen() {
             entering={FadeInDown.delay(300).duration(400)}
             style={[styles.descriptionSection, { borderBottomColor: colors.border }]}
           >
-            <Text style={[styles.descriptionText, { color: colors.text }]}>
-              <Text style={styles.descriptionUsername}>@{username}</Text>{' '}
-              {post?.text}
-            </Text>
+            <LinkifiedText style={[styles.descriptionText, { color: colors.text }] as any}>
+              {`@${username} ${post?.text}`}
+            </LinkifiedText>
           </Animated.View>
         )}
 

@@ -36,6 +36,9 @@ import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useUserFeed } from "@/hooks/use-user-feed";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { useAuth } from "@/lib/providers/auth-provider";
+import { useQueryClient } from "@tanstack/react-query";
+import { useBlockUser, useUnblockUser, BLOCKED_USERS_KEY } from "@/hooks/use-blocked-users";
+import { GlassButton } from "@/components/glass/glass-button";
 import { GlassView } from "expo-glass-effect";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -78,6 +81,7 @@ export default function UserProfileScreen() {
     userId?: string;
   }>();
   const { showError, showSuccess } = useToast();
+  const queryClient = useQueryClient();
   const { colors, isDark } = useAppTheme();
   const {
     data: user,
@@ -95,12 +99,19 @@ export default function UserProfileScreen() {
   const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
   const [showReportConfirm, setShowReportConfirm] = React.useState(false);
 
+  // Block status
+  const isBlocked = user?.isBlocked ?? false;
+  const isBlockedBy = user?.isBlockedBy ?? false;
+  const isAnyBlock = isBlocked || isBlockedBy;
+  const { block, isBlocking } = useBlockUser();
+  const { unblock, isUnblocking } = useUnblockUser();
+
   // Fetch user posts from our backend
   const {
     activities: userPosts,
     isLoading: postsLoading,
     refetch: refetchPosts,
-  } = useUserFeed(user?.id);
+  } = useUserFeed(user?.id, !isAnyBlock);
   const followerCount = user?.followStats?.followers ?? 0;
   const followingCount = user?.followStats?.following ?? 0;
 
@@ -122,7 +133,7 @@ export default function UserProfileScreen() {
 
   const { user: currentUser } = useAuth();
   const { mutuals, totalCount: mutualCount } = useMutualFollowers(
-    currentUser?.id !== user?.id ? user?.id : undefined,
+    currentUser?.id !== user?.id && !isAnyBlock ? user?.id : undefined,
   );
 
   const error =
@@ -135,7 +146,7 @@ export default function UserProfileScreen() {
   const avatarUrl = user?.avatar?.url;
 
   const handleFollow = async () => {
-    if (!user?.id || isFollowInProgress || isUnfollowInProgress) return;
+    if (!user?.id || isFollowInProgress || isUnfollowInProgress || isAnyBlock) return;
     try {
       if (isFollowing) {
         await unfollow();
@@ -145,13 +156,18 @@ export default function UserProfileScreen() {
       await refetchPosts();
     } catch (err: any) {
       console.error("Follow error:", err);
-      showError(err?.message || "Failed to update follow status");
+      if (err?.statusCode === 403) {
+        showError("You can't follow this user");
+      } else {
+        showError(err?.message || "Failed to update follow status");
+      }
     }
   };
 
   const handleMessage = async () => {
-    if (!user?.id) {
-      showError("Unable to start chat. Please try again.");
+    if (!user?.id || isAnyBlock) {
+      if (isAnyBlock) showError("You can't message this user");
+      else showError("Unable to start chat. Please try again.");
       return;
     }
 
@@ -168,7 +184,11 @@ export default function UserProfileScreen() {
       });
     } catch (err: any) {
       console.error("Error creating chat:", err);
-      showError(err?.message || "Failed to start conversation");
+      if (err?.statusCode === 403) {
+        showError("You can't message this user");
+      } else {
+        showError(err?.message || "Failed to start conversation");
+      }
     } finally {
       setIsCreatingChat(false);
     }
@@ -190,18 +210,40 @@ export default function UserProfileScreen() {
         } catch {}
       },
     },
-    {
-      label: "Block",
-      icon: "ban",
-      destructive: true,
-      onPress: () => setShowBlockConfirm(true),
-    },
-    {
-      label: "Report",
-      icon: "flag-outline",
-      destructive: true,
-      onPress: () => setShowReportConfirm(true),
-    },
+    ...(isBlocked
+      ? [
+          {
+            label: "Unblock",
+            icon: "ban" as keyof typeof Ionicons.glyphMap,
+            onPress: async () => {
+              if (!user?.id) return;
+              try {
+                await unblock(user.id);
+                showSuccess(`Unblocked ${displayName}`);
+              } catch {
+                showError("Failed to unblock user");
+              }
+            },
+          },
+        ]
+      : [
+          {
+            label: "Block",
+            icon: "ban" as keyof typeof Ionicons.glyphMap,
+            destructive: true,
+            onPress: () => setShowBlockConfirm(true),
+          },
+        ]),
+    ...(!isBlocked
+      ? [
+          {
+            label: "Report",
+            icon: "flag-outline" as keyof typeof Ionicons.glyphMap,
+            destructive: true,
+            onPress: () => setShowReportConfirm(true),
+          },
+        ]
+      : []),
   ];
 
   // Dynamic styles based on theme
@@ -370,6 +412,62 @@ export default function UserProfileScreen() {
           )}
         </Animated.View>
 
+        {/* Blocked State */}
+        {isBlockedBy ? (
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(500).springify()}
+            style={styles.blockedContainer}
+          >
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={[styles.blockedAvatar, { borderColor: colors.borderStrong }]} />
+            ) : (
+              <Image source={DEFAULT_AVATAR} style={[styles.blockedAvatar, { borderColor: colors.borderStrong }]} />
+            )}
+            <Ionicons name="lock-closed" size={32} color={colors.textTertiary} style={{ marginTop: 20 }} />
+            <Text style={[styles.blockedTitle, { color: colors.text }]}>
+              This account is unavailable
+            </Text>
+            <Text style={[styles.blockedSubtext, { color: colors.textTertiary }]}>
+              You can't view this profile.
+            </Text>
+          </Animated.View>
+        ) : isBlocked ? (
+          <Animated.View
+            entering={FadeInDown.delay(100).duration(500).springify()}
+            style={styles.blockedContainer}
+          >
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={[styles.blockedAvatar, { borderColor: colors.borderStrong }]} />
+            ) : (
+              <Image source={DEFAULT_AVATAR} style={[styles.blockedAvatar, { borderColor: colors.borderStrong }]} />
+            )}
+            <Ionicons name="ban" size={32} color={colors.textTertiary} style={{ marginTop: 20 }} />
+            <Text style={[styles.blockedTitle, { color: colors.text }]}>
+              You blocked {displayName}
+            </Text>
+            <Text style={[styles.blockedSubtext, { color: colors.textTertiary }]}>
+              They can't see your profile or message you. You can unblock them anytime.
+            </Text>
+            <View style={{ marginTop: 16, width: 140 }}>
+              <GlassButton
+                label={isUnblocking ? "Unblocking..." : "Unblock"}
+                variant="glass"
+                size="md"
+                disabled={isUnblocking}
+                onPress={async () => {
+                  if (!user?.id) return;
+                  try {
+                    await unblock(user.id);
+                    showSuccess(`Unblocked ${displayName}`);
+                  } catch {
+                    showError("Failed to unblock user");
+                  }
+                }}
+              />
+            </View>
+          </Animated.View>
+        ) : (
+        <>
         {/* Profile Info Row - Same as own profile */}
         <Animated.View
           entering={FadeInDown.delay(100).duration(500).springify()}
@@ -601,6 +699,9 @@ export default function UserProfileScreen() {
           )}
         </Animated.View>
 
+        </>
+        )}
+
         {/* Bottom spacing */}
         <View style={{ height: insets.bottom + 100 }} />
       </ScrollView>
@@ -618,9 +719,8 @@ export default function UserProfileScreen() {
           setShowBlockConfirm(false);
           if (!user?.id) return;
           try {
-            await usersApi.blockUser(user.id);
+            await block(user.id);
             showSuccess(`Blocked ${displayName}`);
-            router.back();
           } catch {
             showError("Failed to block user");
           }
@@ -894,5 +994,32 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Lato_700Bold",
     color: "#fff",
+  },
+  blockedContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 40,
+    paddingTop: 40,
+    paddingBottom: 60,
+  },
+  blockedAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+  },
+  blockedTitle: {
+    fontSize: 18,
+    fontFamily: "Lato_700Bold",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  blockedSubtext: {
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
+    textAlign: "center",
+    lineHeight: 20,
+    marginTop: 8,
   },
 });
