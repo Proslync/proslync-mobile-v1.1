@@ -317,7 +317,7 @@ export default function UserProfileScreen() {
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerUsername, dynamicStyles.headerUsername]}>
-            Profile
+            {username ? `@${username}` : 'Profile'}
           </Text>
           <View style={styles.headerIcon} />
         </View>
@@ -329,16 +329,16 @@ export default function UserProfileScreen() {
             ]}
           >
             <Ionicons
-              name="person-outline"
+              name="lock-closed"
               size={48}
               color={colors.textTertiary}
             />
           </View>
           <Text style={[styles.errorTitle, dynamicStyles.errorTitle]}>
-            User Not Found
+            This account is unavailable
           </Text>
           <Text style={[styles.errorSubtitle, dynamicStyles.errorSubtitle]}>
-            @{username} doesn't exist or has been removed
+            This profile can't be viewed right now.
           </Text>
           <TouchableOpacity
             style={styles.goBackButton}

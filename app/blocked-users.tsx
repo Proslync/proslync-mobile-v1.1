@@ -88,10 +88,6 @@ export default function BlockedUsersScreen() {
   const { unblock } = useUnblockUser();
   const [unblockingId, setUnblockingId] = React.useState<number | null>(null);
 
-  // Debug: log what we get
-  React.useEffect(() => {
-    console.log('[BlockedUsers] count:', blockedUsers.length, 'loading:', isLoading, 'data:', JSON.stringify(blockedUsers));
-  }, [blockedUsers, isLoading]);
 
   const handleUnblock = (userId: number) => {
     const user = blockedUsers.find((u) => u.id === userId);

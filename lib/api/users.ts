@@ -31,14 +31,12 @@ export const usersApi = {
    * Get blocked users list
    */
   getBlockedUsers: async (): Promise<BlockedUsersResponse> => {
-    try {
-      const response = await apiClient.get<any>('/api/users/me/blocked');
-      console.log('[BlockedUsers] API response:', JSON.stringify(response));
-      return response as BlockedUsersResponse;
-    } catch (err: any) {
-      console.error('[BlockedUsers] API error:', err?.statusCode, err?.message, JSON.stringify(err));
-      throw err;
+    const response = await apiClient.get<any>('/api/users/me/blocked');
+    // Handle both { blockedUsers: [...] } and direct array response
+    if (Array.isArray(response)) {
+      return { blockedUsers: response, total: response.length };
     }
+    return response as BlockedUsersResponse;
   },
 
   /**
