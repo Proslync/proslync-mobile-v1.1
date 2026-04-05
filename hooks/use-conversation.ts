@@ -13,7 +13,9 @@ import {
 import { useAuth } from "@/lib/providers/auth-provider";
 import { useChatSocket } from "@/lib/providers/chat-socket-provider";
 import { CONVERSATIONS_KEY } from "./use-conversations";
+import { BLOCKED_USERS_KEY } from "./use-blocked-users";
 import { filesApi } from "@/lib/api/files";
+import { usersApi } from "@/lib/api/users";
 
 // --- Types ---
 
@@ -134,10 +136,11 @@ function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
 function deriveChannelInfo(
   conv: ConversationResponse,
   currentUserId: number,
+  blockedUserIds?: Set<number>,
 ): ChannelInfo {
   const otherMembers = conv.members.filter((m) => m.userId !== currentUserId);
   const firstOther = otherMembers[0];
-  const isBlocked = (conv as any).isBlocked ?? false;
+  const isBlocked = (conv as any).isBlocked ?? (firstOther && blockedUserIds?.has(firstOther.userId)) ?? false;
   const displayName = isBlocked
     ? "Blocked User"
     : conv.name ||
@@ -260,12 +263,24 @@ export function useConversation(conversationId: string | undefined) {
     enabled: !!conversationId && !!currentUserId,
   });
 
+  // Blocked users for avatar/name masking
+  const { data: blockedData } = useQuery({
+    queryKey: [BLOCKED_USERS_KEY],
+    queryFn: usersApi.getBlockedUsers,
+    staleTime: 2 * 60 * 1000,
+  });
+  const blockedIds = useMemo(() => {
+    const ids = new Set<number>();
+    (blockedData?.blockedUsers ?? []).forEach((u: any) => { if (u.id) ids.add(u.id); });
+    return ids;
+  }, [blockedData]);
+
   const channelInfo = useMemo((): ChannelInfo | null => {
     if (!conversationId || !currentUserId) return null;
     const conv = conversationsQuery.data?.find((c) => c.id === conversationId);
     if (!conv) return null;
-    return deriveChannelInfo(conv, currentUserId);
-  }, [conversationId, currentUserId, conversationsQuery.data]);
+    return deriveChannelInfo(conv, currentUserId, blockedIds);
+  }, [conversationId, currentUserId, conversationsQuery.data, blockedIds]);
 
   // --- Socket.IO for real-time updates (uses shared socket from ChatSocketProvider) ---
 

@@ -166,10 +166,7 @@ export default function DashboardScreen() {
   ];
 
   const adminItems: MenuItemData[] = user?.role === UserRole.ADMIN
-    ? [
-        { title: "Admin Panel", subtitle: "Manage users, events, and posts", icon: "shield-checkmark-outline", route: "/admin" },
-        { title: "Engineering", subtitle: "Code intelligence and deploys", icon: "code-slash-outline", route: "/dashboard/engineering" },
-      ]
+    ? [{ title: "Admin Panel", subtitle: "Manage users, events, and posts", icon: "shield-checkmark-outline", route: "/admin" }]
     : [];
 
   if (isLoading && !refreshing) {

@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useCallback } from 'react';
 import { chatApi, type ConversationResponse } from '@/lib/api/chat';
+import { usersApi } from '@/lib/api/users';
+import { BLOCKED_USERS_KEY } from './use-blocked-users';
 
 export const CONVERSATIONS_KEY = 'conversations';
 
@@ -27,11 +29,11 @@ export interface ChannelData {
   isBlocked?: boolean;
 }
 
-function mapConversation(conv: ConversationResponse, currentUserId?: number): ChannelData {
+function mapConversation(conv: ConversationResponse, currentUserId?: number, blockedUserIds?: Set<number>): ChannelData {
   const otherMembers = conv.members.filter((m) => m.userId !== currentUserId);
   const firstOther = otherMembers[0];
   const isConcierge = conv.type === 'system';
-  const isBlocked = (conv as any).isBlocked ?? false;
+  const isBlocked = (conv as any).isBlocked ?? (firstOther && blockedUserIds?.has(firstOther.userId)) ?? false;
 
   const displayName = isBlocked
     ? 'Blocked User'
@@ -80,10 +82,22 @@ export function useConversations(currentUserId?: number) {
     },
   });
 
+  // Fetch blocked users to cross-reference
+  const { data: blockedData } = useQuery({
+    queryKey: [BLOCKED_USERS_KEY],
+    queryFn: usersApi.getBlockedUsers,
+    staleTime: 2 * 60 * 1000,
+  });
+  const blockedIds = useMemo(() => {
+    const ids = new Set<number>();
+    (blockedData?.blockedUsers ?? []).forEach((u: any) => { if (u.id) ids.add(u.id); });
+    return ids;
+  }, [blockedData]);
+
   const channelData = useMemo(() => {
     const data = query.data ?? [];
     return data
-      .map((conv) => mapConversation(conv, currentUserId))
+      .map((conv) => mapConversation(conv, currentUserId, blockedIds))
       .sort((a, b) => {
         if (a.isConcierge && !b.isConcierge) return -1;
         if (!a.isConcierge && b.isConcierge) return 1;
@@ -93,7 +107,7 @@ export function useConversations(currentUserId?: number) {
         const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
         return bTime - aTime;
       });
-  }, [query.data, currentUserId]);
+  }, [query.data, currentUserId, blockedIds]);
 
   const deleteChannel = useCallback(async (conversationId: string) => {
     queryClient.setQueryData<ConversationResponse[]>(
