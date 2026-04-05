@@ -20,6 +20,10 @@ import { GlassView } from "expo-glass-effect";
 import * as SecureStore from "expo-secure-store";
 import * as React from "react";
 import {
+  ActionSheet,
+  type ActionSheetOption,
+} from "@/components/ui/action-sheet";
+import {
   ActivityIndicator,
   Dimensions,
   Image,
@@ -344,7 +348,26 @@ export default function ProfileScreen() {
     "followers" | "following"
   >("followers");
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
+  const [showCreateMenu, setShowCreateMenu] = React.useState(false);
   const lastTapRef = React.useRef<number>(0);
+
+  const createMenuOptions: ActionSheetOption[] = [
+    {
+      label: "New Post",
+      icon: "image-outline",
+      onPress: () => router.push("/create-post"),
+    },
+    {
+      label: "New Event",
+      icon: "calendar-outline",
+      onPress: () => router.push("/create-event"),
+    },
+    {
+      label: "Story (Coming Soon)",
+      icon: "add-circle-outline",
+      onPress: () => {},
+    },
+  ];
 
   // Fetch posts/activities - uses React Query for proper cache invalidation
   const {
@@ -618,6 +641,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={[styles.headerIconWrapper, { borderColor: border }]}
               activeOpacity={0.7}
+              onPress={() => setShowCreateMenu(true)}
             >
               <GlassView
                 {...liquidGlass.surface}
@@ -883,29 +907,6 @@ export default function ProfileScreen() {
             )}
           </Animated.View>
 
-          {/* Logout Button */}
-          <Animated.View
-            entering={FadeInDown.delay(600).duration(500).springify()}
-            style={styles.logoutButtonContainer}
-          >
-            <TouchableOpacity activeOpacity={0.8} onPress={logout}>
-              <View style={[styles.glassButton, { borderColor: border }]}>
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor="rgba(255, 59, 48, 0.15)"
-                  borderRadius={14}
-                  style={styles.glassButtonBg}
-                />
-                <View style={styles.glassButtonContent}>
-                  <Ionicons name="log-out-outline" size={18} color="#ff3b30" />
-                  <Text style={[styles.glassButtonText, { color: "#ff4444" }]}>
-                    Log Out
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-
           {/* Bottom spacing */}
           <View style={{ height: insets.bottom + 100 }} />
         </ScrollView>
@@ -936,6 +937,12 @@ export default function ProfileScreen() {
           onSelectAccount={handleSelectAccount}
           onAddAccount={handleAddAccount}
           onSelectVenue={handleSelectVenue}
+        />
+
+        <ActionSheet
+          visible={showCreateMenu}
+          onClose={() => setShowCreateMenu(false)}
+          options={createMenuOptions}
         />
       </View>
     </SwipeableTabView>
@@ -1130,10 +1137,6 @@ const styles = StyleSheet.create({
   noPostsText: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-  },
-  logoutButtonContainer: {
-    paddingHorizontal: 16,
-    marginTop: 20,
   },
   // Account switcher modal styles
   modalOverlay: {
