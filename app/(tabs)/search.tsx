@@ -303,23 +303,25 @@ function FullMapScreen() {
     return events.filter(e => e.date !== 'Past');
   }, [events]);
 
-  // Convert live location data to friend markers
+  // Convert live location data to friend markers, exclude stale (>24h)
   const nearbyFriends = useMemo<FriendMarker[]>(() => {
-    return Array.from(friendLocations.values()).map((loc) => {
-      // Build display name from firstName/lastName or fall back to userName
-      const displayName = loc.firstName || loc.lastName
-        ? `${loc.firstName || ''} ${loc.lastName || ''}`.trim()
-        : loc.userName || `User ${loc.userId}`;
+    const staleThreshold = Date.now() - 24 * 60 * 60 * 1000;
+    return Array.from(friendLocations.values())
+      .filter((loc) => loc.updatedAt > staleThreshold)
+      .map((loc) => {
+        const displayName = loc.firstName || loc.lastName
+          ? `${loc.firstName || ''} ${loc.lastName || ''}`.trim()
+          : loc.userName || `User ${loc.userId}`;
 
-      return {
-        id: String(loc.userId),
-        name: displayName,
-        imageUrl: loc.avatarUrl || '',
-        latitude: loc.latitude,
-        longitude: loc.longitude,
-        updatedAt: loc.updatedAt,
-      };
-    });
+        return {
+          id: String(loc.userId),
+          name: displayName,
+          imageUrl: loc.avatarUrl || '',
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          updatedAt: loc.updatedAt,
+        };
+      });
   }, [friendLocations]);
 
   const handleEventPress = useCallback((event: MapEvent) => {
