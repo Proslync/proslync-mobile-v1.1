@@ -317,7 +317,7 @@ export default function UserProfileScreen() {
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerUsername, dynamicStyles.headerUsername]}>
-            {username ? `@${username}` : 'Profile'}
+            Profile
           </Text>
           <View style={styles.headerIcon} />
         </View>
@@ -329,16 +329,16 @@ export default function UserProfileScreen() {
             ]}
           >
             <Ionicons
-              name="lock-closed"
+              name="person-outline"
               size={48}
               color={colors.textTertiary}
             />
           </View>
           <Text style={[styles.errorTitle, dynamicStyles.errorTitle]}>
-            This account is unavailable
+            User Not Found
           </Text>
           <Text style={[styles.errorSubtitle, dynamicStyles.errorSubtitle]}>
-            This profile can't be viewed right now.
+            @{username} doesn't exist or has been removed
           </Text>
           <TouchableOpacity
             style={styles.goBackButton}
@@ -721,6 +721,10 @@ export default function UserProfileScreen() {
           try {
             await block(user.id);
             showSuccess(`Blocked ${displayName}`);
+            // Navigate to messages tab if came from a chat, otherwise go back
+            if (router.canGoBack()) {
+              router.dismissAll();
+            }
           } catch {
             showError("Failed to block user");
           }
