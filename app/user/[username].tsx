@@ -586,6 +586,7 @@ export default function UserProfileScreen() {
           <TouchableOpacity
             style={[
               styles.actionButton,
+              !isFollowing && styles.actionButtonFollow,
               (isFollowInProgress || isUnfollowInProgress) &&
                 styles.actionButtonDisabled,
             ]}
@@ -593,11 +594,13 @@ export default function UserProfileScreen() {
             activeOpacity={0.8}
             disabled={isFollowInProgress || isUnfollowInProgress}
           >
-            <GlassView
-              {...liquidGlass.fill}
-              borderRadius={8}
-              style={styles.actionButtonGlass}
-            />
+            {isFollowing && (
+              <GlassView
+                {...liquidGlass.fill}
+                borderRadius={8}
+                style={styles.actionButtonGlass}
+              />
+            )}
             {isFollowInProgress || isUnfollowInProgress ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
@@ -872,6 +875,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 36,
     overflow: "hidden",
+  },
+  actionButtonFollow: {
+    backgroundColor: '#0A84FF',
   },
   actionButtonGlass: {
     ...StyleSheet.absoluteFillObject,
