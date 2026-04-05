@@ -46,7 +46,7 @@ function NativeActionSheet({
     <NativeSheet
       isPresented={visible}
       onDismiss={onClose}
-      detents={[{ fraction: 0.35 }]}
+      fitToContents
       rnContent
       dragIndicator="visible"
     >
