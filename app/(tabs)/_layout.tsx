@@ -33,13 +33,13 @@ export default function TabLayout() {
   return (
     <NativeTabs tintColor="#fff" minimizeBehavior="onScrollDown">
         <NativeTabs.Trigger name="search">
-          
+          <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{ default: "map", selected: "map.fill" }}
           />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="explore">
-          
+          <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{ default: "paperplane", selected: "paperplane.fill" }}
           />
@@ -50,19 +50,19 @@ export default function TabLayout() {
           )}
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="index">
-          
+          <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{ default: "house", selected: "house.fill" }}
           />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="activity">
-          
+          <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{ default: "wallet.bifold", selected: "wallet.bifold.fill" }}
           />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">
-          
+          <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
             sf={{
               default: "person.crop.circle",
