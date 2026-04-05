@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   DarkTheme,
-  DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { Stack, router } from "expo-router";
@@ -72,7 +71,7 @@ function RootLayoutNav() {
   useNotificationObserver();
 
   return (
-    <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+    <NavigationThemeProvider value={DarkTheme}>
       <Stack
         screenOptions={{
           headerShown: false,
