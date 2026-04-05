@@ -23,6 +23,10 @@ import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { postsApi } from '@/lib/api/posts';
+import { LocationPickerSheet, type PostLocation } from '@/components/post/location-picker-sheet';
+import { MusicPickerSheet } from '@/components/post/music-picker-sheet';
+import { PeopleTagSheet, type TaggedPerson } from '@/components/post/people-tag-sheet';
+import type { SpotifyTrack } from '@/lib/api/spotify';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
@@ -37,6 +41,12 @@ export default function CreatePostScreen() {
   const [mediaType, setMediaType] = React.useState<'image' | 'video'>('image');
   const [caption, setCaption] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [location, setLocation] = React.useState<PostLocation | null>(null);
+  const [spotifyTrack, setSpotifyTrack] = React.useState<SpotifyTrack | null>(null);
+  const [taggedPeople, setTaggedPeople] = React.useState<TaggedPerson[]>([]);
+  const [showLocationPicker, setShowLocationPicker] = React.useState(false);
+  const [showMusicPicker, setShowMusicPicker] = React.useState(false);
+  const [showPeoplePicker, setShowPeoplePicker] = React.useState(false);
 
   const avatarUrl = user?.avatar?.url;
   const username = user?.userName || 'username';
@@ -95,6 +105,9 @@ export default function CreatePostScreen() {
         caption: caption.trim() || undefined,
         mediaUrl: uploadResult.url,
         mediaType,
+        location: location || undefined,
+        spotifyTrack: spotifyTrack || undefined,
+        taggedUserIds: taggedPeople.length > 0 ? taggedPeople.map((p) => p.id) : undefined,
       });
 
       showSuccess('Post created!');
@@ -228,34 +241,79 @@ export default function CreatePostScreen() {
               <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
               <TouchableOpacity
                 style={[styles.optionItem, { borderBottomColor: colors.border }]}
-                onPress={() => showError('Location tagging coming soon')}
+                onPress={() => location ? setLocation(null) : setShowLocationPicker(true)}
               >
-                <Ionicons name="location-outline" size={22} color={colors.text} />
-                <Text style={[styles.optionText, { color: colors.text }]}>Add location</Text>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                <Ionicons name="location-outline" size={22} color={location ? '#0A84FF' : colors.text} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionText, { color: location ? '#0A84FF' : colors.text }]}>
+                    {location ? location.name : 'Add location'}
+                  </Text>
+                  {location && (
+                    <Text style={{ fontSize: 12, fontFamily: 'Lato_400Regular', color: colors.textTertiary }} numberOfLines={1}>
+                      {location.address}
+                    </Text>
+                  )}
+                </View>
+                {location ? (
+                  <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
+                ) : (
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                )}
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.optionItem, { borderBottomColor: colors.border }]}
-                onPress={() => showError('People tagging coming soon')}
+                onPress={() => setShowPeoplePicker(true)}
               >
-                <Ionicons name="person-outline" size={22} color={colors.text} />
-                <Text style={[styles.optionText, { color: colors.text }]}>Tag people</Text>
+                <Ionicons name="person-outline" size={22} color={taggedPeople.length > 0 ? '#0A84FF' : colors.text} />
+                <Text style={[styles.optionText, { color: taggedPeople.length > 0 ? '#0A84FF' : colors.text }]}>
+                  {taggedPeople.length > 0 ? `${taggedPeople.length} ${taggedPeople.length === 1 ? 'person' : 'people'} tagged` : 'Tag people'}
+                </Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.optionItem, { borderBottomColor: 'transparent' }]}
-                onPress={() => showError('Music coming soon')}
+                onPress={() => spotifyTrack ? setSpotifyTrack(null) : setShowMusicPicker(true)}
               >
-                <Ionicons name="musical-notes-outline" size={22} color={colors.text} />
-                <Text style={[styles.optionText, { color: colors.text }]}>Add music</Text>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                <Ionicons name="musical-notes-outline" size={22} color={spotifyTrack ? '#0A84FF' : colors.text} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.optionText, { color: spotifyTrack ? '#0A84FF' : colors.text }]}>
+                    {spotifyTrack ? spotifyTrack.name : 'Add music'}
+                  </Text>
+                  {spotifyTrack && (
+                    <Text style={{ fontSize: 12, fontFamily: 'Lato_400Regular', color: colors.textTertiary }} numberOfLines={1}>
+                      {spotifyTrack.artistName}
+                    </Text>
+                  )}
+                </View>
+                {spotifyTrack ? (
+                  <Ionicons name="close-circle" size={20} color={colors.textTertiary} />
+                ) : (
+                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                )}
               </TouchableOpacity>
             </View>
           </Animated.View>
         )}
       </ScrollView>
+
+      <LocationPickerSheet
+        visible={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        onSelect={setLocation}
+      />
+      <MusicPickerSheet
+        visible={showMusicPicker}
+        onClose={() => setShowMusicPicker(false)}
+        onSelect={setSpotifyTrack}
+      />
+      <PeopleTagSheet
+        visible={showPeoplePicker}
+        onClose={() => setShowPeoplePicker(false)}
+        selected={taggedPeople}
+        onConfirm={setTaggedPeople}
+      />
     </View>
   );
 }
