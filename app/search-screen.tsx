@@ -482,29 +482,34 @@ export default function SearchScreen() {
 
   const handleRecentPress = useCallback(
     (item: SearchSuggestion) => {
+      if (item.selectedType === 'person') {
+        const userId = item.selectedId;
+        const username = item.userName || (userId ? `user-${userId}` : null);
+        if (username) {
+          router.push({
+            pathname: '/user/[username]',
+            params: { username, ...(userId ? { userId: String(userId) } : {}) },
+          });
+          return;
+        }
+      }
       if (item.selectedId && item.selectedType) {
-        // Navigate to the item directly
         switch (item.selectedType) {
-          case 'person':
-            router.push({
-              pathname: '/user/[username]',
-              params: { username: `user-${item.selectedId}`, userId: String(item.selectedId) },
-            });
-            break;
           case 'event':
             router.push({
               pathname: '/event/[id]',
               params: { id: String(item.selectedId) },
             });
-            break;
+            return;
           case 'venue':
             router.push({
               pathname: '/(tabs)/search',
               params: { venueName: item.displayName || '' },
             });
-            break;
+            return;
         }
-      } else if (item.query) {
+      }
+      if (item.query) {
         setSearchQuery(item.query);
       }
     },
