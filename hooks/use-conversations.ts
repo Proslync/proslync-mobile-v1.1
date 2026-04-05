@@ -24,40 +24,46 @@ export interface ChannelData {
   isConcierge: boolean;
   otherUserId?: number;
   isVerified?: boolean;
+  isBlocked?: boolean;
 }
 
 function mapConversation(conv: ConversationResponse, currentUserId?: number): ChannelData {
   const otherMembers = conv.members.filter((m) => m.userId !== currentUserId);
   const firstOther = otherMembers[0];
   const isConcierge = conv.type === 'system';
+  const isBlocked = (conv as any).isBlocked ?? false;
 
-  const displayName =
-    conv.name ||
-    (firstOther
-      ? firstOther.userName ||
-        [firstOther.firstName, firstOther.lastName].filter(Boolean).join(' ') ||
-        'Unknown'
-      : 'Chat');
+  const displayName = isBlocked
+    ? 'Blocked User'
+    : conv.name ||
+      (firstOther
+        ? firstOther.userName ||
+          [firstOther.firstName, firstOther.lastName].filter(Boolean).join(' ') ||
+          'Unknown'
+        : 'Chat');
 
   return {
     id: conv.id,
     name: displayName,
-    imageUrl: conv.imageUrl || firstOther?.avatarUrl || undefined,
-    lastMessage: conv.lastMessagePreview
-      ? {
-          text: conv.lastMessagePreview,
-          createdAt: conv.lastMessageAt || conv.createdAt,
-          userId: '',
-          attachmentType: null,
-        }
-      : undefined,
-    unreadCount: conv.unreadCount,
+    imageUrl: isBlocked ? undefined : (conv.imageUrl || firstOther?.avatarUrl || undefined),
+    lastMessage: isBlocked
+      ? { text: 'You blocked this user', createdAt: conv.lastMessageAt || conv.createdAt, userId: '', attachmentType: null }
+      : conv.lastMessagePreview
+        ? {
+            text: conv.lastMessagePreview,
+            createdAt: conv.lastMessageAt || conv.createdAt,
+            userId: '',
+            attachmentType: null,
+          }
+        : undefined,
+    unreadCount: isBlocked ? 0 : conv.unreadCount,
     memberCount: conv.members.length,
     updatedAt: conv.lastMessageAt || conv.createdAt,
     isPinned: conv.isPinned || false,
     isConcierge,
     otherUserId: firstOther?.userId,
-    isVerified: firstOther?.isVerified,
+    isVerified: isBlocked ? false : firstOther?.isVerified,
+    isBlocked,
   };
 }
 

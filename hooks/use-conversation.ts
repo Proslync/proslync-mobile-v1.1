@@ -63,7 +63,9 @@ export interface ChannelInfo {
     image?: string;
     online?: boolean;
     isVerified?: boolean;
+    userName?: string;
   };
+  isBlocked?: boolean;
 }
 
 // --- Constants ---
@@ -135,19 +137,21 @@ function deriveChannelInfo(
 ): ChannelInfo {
   const otherMembers = conv.members.filter((m) => m.userId !== currentUserId);
   const firstOther = otherMembers[0];
-  const displayName =
-    conv.name ||
-    (firstOther
-      ? firstOther.userName ||
-        [firstOther.firstName, firstOther.lastName].filter(Boolean).join(" ") ||
-        "Chat"
-      : "Chat");
+  const isBlocked = (conv as any).isBlocked ?? false;
+  const displayName = isBlocked
+    ? "Blocked User"
+    : conv.name ||
+      (firstOther
+        ? firstOther.userName ||
+          [firstOther.firstName, firstOther.lastName].filter(Boolean).join(" ") ||
+          "Chat"
+        : "Chat");
 
   return {
     id: conv.id,
     type: conv.type,
     name: displayName,
-    imageUrl: conv.imageUrl || firstOther?.avatarUrl || undefined,
+    imageUrl: isBlocked ? undefined : (conv.imageUrl || firstOther?.avatarUrl || undefined),
     memberCount: conv.members.length,
     createdById: conv.createdById,
     members: conv.members.map((m) => ({
@@ -163,16 +167,19 @@ function deriveChannelInfo(
     otherMember: firstOther
       ? {
           id: String(firstOther.userId),
-          name:
-            firstOther.userName ||
-            [firstOther.firstName, firstOther.lastName]
-              .filter(Boolean)
-              .join(" ") ||
-            "Unknown",
-          image: firstOther.avatarUrl,
-          isVerified: firstOther.isVerified,
+          name: isBlocked
+            ? "Blocked User"
+            : firstOther.userName ||
+              [firstOther.firstName, firstOther.lastName]
+                .filter(Boolean)
+                .join(" ") ||
+              "Unknown",
+          image: isBlocked ? undefined : firstOther.avatarUrl,
+          isVerified: isBlocked ? false : firstOther.isVerified,
+          userName: firstOther.userName,
         }
       : undefined,
+    isBlocked,
   };
 }
 

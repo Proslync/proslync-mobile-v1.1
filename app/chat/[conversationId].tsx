@@ -18,6 +18,7 @@ import {
 } from "@/hooks/use-conversations";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { useAuth } from "@/lib/providers/auth-provider";
+import { useUnblockUser } from "@/hooks/use-blocked-users";
 import { useCall } from "@/lib/providers/call-provider";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAudioPlayer, useAudioPlayerStatus, useAudioRecorder, setAudioModeAsync, requestRecordingPermissionsAsync, RecordingPresets } from "expo-audio";
@@ -1445,6 +1446,7 @@ export default function ChatThreadScreen() {
   );
   const [showChatInfo, setShowChatInfo] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
+  const { unblock, isUnblocking } = useUnblockUser();
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -1717,6 +1719,7 @@ export default function ChatThreadScreen() {
   }));
 
   const handleHeaderPress = useCallback(() => {
+    if (channelInfo?.isBlocked) return;
     if (channelInfo?.otherMember) {
       router.push({
         pathname: "/user/[username]",
@@ -2051,20 +2054,40 @@ export default function ChatThreadScreen() {
           </TouchableOpacity>
         </Animated.View>
 
-        {/* Composer */}
-        <Composer
-          onSend={handleSend}
-          onTyping={sendTypingStart}
-          onPickImage={handlePickImage}
-          onOpenCamera={handleOpenCamera}
-          onSendAudio={handleSendAudio}
-          placeholder={`Message ${channelInfo?.name || ""}...`}
-          pendingMedia={pendingMedia}
-          onClearMedia={handleClearMedia}
-          isSending={isSending}
-          colors={colors}
-          isDark={isDark}
-        />
+        {/* Composer or Blocked Bar */}
+        {channelInfo?.isBlocked ? (
+          <View style={[styles.blockedBar, { paddingBottom: insets.bottom + 8, borderTopColor: colors.border }]}>
+            <Text style={styles.blockedBarText}>You blocked this user</Text>
+            <TouchableOpacity
+              style={styles.unblockButton}
+              onPress={async () => {
+                const otherId = channelInfo?.otherMember?.id;
+                if (!otherId) return;
+                await unblock(Number(otherId));
+              }}
+              disabled={isUnblocking}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.unblockButtonText}>
+                {isUnblocking ? 'Unblocking...' : 'Unblock'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <Composer
+            onSend={handleSend}
+            onTyping={sendTypingStart}
+            onPickImage={handlePickImage}
+            onOpenCamera={handleOpenCamera}
+            onSendAudio={handleSendAudio}
+            placeholder={`Message ${channelInfo?.name || ""}...`}
+            pendingMedia={pendingMedia}
+            onClearMedia={handleClearMedia}
+            isSending={isSending}
+            colors={colors}
+            isDark={isDark}
+          />
+        )}
       </KeyboardAvoidingView>
 
       {/* Image Viewer Modal */}
@@ -3368,5 +3391,30 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Lato_400Regular",
     color: "#FF3B30",
+  },
+  blockedBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  blockedBarText: {
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
+    color: "rgba(255,255,255,0.5)",
+  },
+  unblockButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  unblockButtonText: {
+    fontSize: 14,
+    fontFamily: "Lato_600SemiBold",
+    color: "#0A84FF",
   },
 });
