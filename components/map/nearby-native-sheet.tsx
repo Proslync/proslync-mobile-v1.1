@@ -109,7 +109,7 @@ export function NearbyNativeSheet({
                   {nearbyFriends.length > 0 && (
                     <View style={styles.countPill}>
                       <View style={[styles.countDot, { backgroundColor: '#34c759' }]} />
-                      <Text style={[styles.countText, { color: '#34c759' }]}>{nearbyFriends.length} Online</Text>
+                      <Text style={[styles.countText, { color: '#34c759' }]}>{nearbyFriends.length} Nearby</Text>
                     </View>
                   )}
                 </View>
