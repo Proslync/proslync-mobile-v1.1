@@ -88,12 +88,6 @@ export function NearbyNativeSheet({
               {/* ─── Header ─── */}
               <View style={styles.header}>
                 <Text style={styles.headerTitle}>Nearby</Text>
-                {liveCount > 0 && (
-                  <View style={styles.livePill}>
-                    <View style={styles.liveDot} />
-                    <Text style={styles.liveText}>{liveCount} Live</Text>
-                  </View>
-                )}
                 {isLoading && (
                   <ActivityIndicator
                     size="small"
@@ -247,6 +241,16 @@ export function NearbyNativeSheet({
                   </ScrollView>
                 )}
               </View>
+
+              {/* ─── Live Badge ─── */}
+              {liveCount > 0 && (
+                <View style={styles.liveSection}>
+                  <View style={styles.livePill}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.liveText}>{liveCount} Live</Text>
+                  </View>
+                </View>
+              )}
             </ScrollView>
     </NativeSheet>
   );
@@ -273,14 +277,17 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#fff",
   },
+  liveSection: {
+    alignItems: "center",
+    marginTop: 16,
+  },
   livePill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginLeft: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
     backgroundColor: "rgba(255, 59, 48, 0.15)",
   },
   liveDot: {
