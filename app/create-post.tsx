@@ -226,19 +226,28 @@ export default function CreatePostScreen() {
             {/* Options */}
             <View style={[styles.optionsList, { overflow: 'hidden' }]}>
               <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
-              <TouchableOpacity style={[styles.optionItem, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.optionItem, { borderBottomColor: colors.border }]}
+                onPress={() => showError('Location tagging coming soon')}
+              >
                 <Ionicons name="location-outline" size={22} color={colors.text} />
                 <Text style={[styles.optionText, { color: colors.text }]}>Add location</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.optionItem, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity
+                style={[styles.optionItem, { borderBottomColor: colors.border }]}
+                onPress={() => showError('People tagging coming soon')}
+              >
                 <Ionicons name="person-outline" size={22} color={colors.text} />
                 <Text style={[styles.optionText, { color: colors.text }]}>Tag people</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
               </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.optionItem, { borderBottomColor: 'transparent' }]}>
+              <TouchableOpacity
+                style={[styles.optionItem, { borderBottomColor: 'transparent' }]}
+                onPress={() => showError('Music coming soon')}
+              >
                 <Ionicons name="musical-notes-outline" size={22} color={colors.text} />
                 <Text style={[styles.optionText, { color: colors.text }]}>Add music</Text>
                 <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
