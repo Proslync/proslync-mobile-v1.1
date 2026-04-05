@@ -106,6 +106,12 @@ export function NearbyNativeSheet({
                     color="rgba(255,255,255,0.5)"
                   />
                   <Text style={styles.sectionTitle}>Friends</Text>
+                  {nearbyFriends.length > 0 && (
+                    <View style={styles.countPill}>
+                      <View style={[styles.countDot, { backgroundColor: '#34c759' }]} />
+                      <Text style={[styles.countText, { color: '#34c759' }]}>{nearbyFriends.length} Online</Text>
+                    </View>
+                  )}
                 </View>
 
                 {nearbyFriends.length > 0 ? (
@@ -187,6 +193,12 @@ export function NearbyNativeSheet({
                     color="rgba(255,255,255,0.5)"
                   />
                   <Text style={styles.sectionTitle}>Events</Text>
+                  {liveCount > 0 && (
+                    <View style={styles.countPill}>
+                      <View style={[styles.countDot, { backgroundColor: '#ff3b30' }]} />
+                      <Text style={[styles.countText, { color: '#ff3b30' }]}>{liveCount} Live</Text>
+                    </View>
+                  )}
                 </View>
 
                 {isLoading && events.length === 0 ? (
@@ -242,15 +254,6 @@ export function NearbyNativeSheet({
                 )}
               </View>
 
-              {/* ─── Live Badge ─── */}
-              {liveCount > 0 && (
-                <View style={styles.liveSection}>
-                  <View style={styles.livePill}>
-                    <View style={styles.liveDot} />
-                    <Text style={styles.liveText}>{liveCount} Live</Text>
-                  </View>
-                </View>
-              )}
             </ScrollView>
     </NativeSheet>
   );
@@ -277,26 +280,22 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#fff",
   },
-  liveSection: {
-    alignItems: "center",
-    marginTop: 16,
-  },
-  livePill: {
+  countPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: "rgba(255, 59, 48, 0.15)",
+    marginLeft: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
-  liveDot: {
+  countDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#ff3b30",
   },
-  liveText: {
+  countText: {
     fontSize: 12,
     fontWeight: "600",
     color: "#ff3b30",
