@@ -7,7 +7,6 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { GlassView } from 'expo-glass-effect';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassButton } from '@/components/glass/glass-button';
+import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { liquidGlass, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useBlockedUsers, useUnblockUser } from '@/hooks';
@@ -32,7 +32,7 @@ function BlockedUserRow({
   isDark,
 }: {
   user: BlockedUserItem;
-  onUnblock: (userId: number) => void;
+  onUnblock: (user: BlockedUserItem) => void;
   isUnblocking: boolean;
   border: string;
   t: { primary: string; muted: string; tertiary: string };
@@ -66,7 +66,7 @@ function BlockedUserRow({
           label={isUnblocking ? '' : 'Unblock'}
           variant="glass"
           size="sm"
-          onPress={() => onUnblock(user.id)}
+          onPress={() => onUnblock(user)}
           disabled={isUnblocking}
           icon={isUnblocking ? <ActivityIndicator size="small" color="#fff" /> : undefined}
         />
@@ -87,26 +87,19 @@ export default function BlockedUsersScreen() {
   const { blockedUsers, isLoading, error, refetch } = useBlockedUsers();
   const { unblock } = useUnblockUser();
   const [unblockingId, setUnblockingId] = React.useState<number | null>(null);
+  const [confirmUser, setConfirmUser] = React.useState<BlockedUserItem | null>(null);
 
+  const confirmName = confirmUser?.userName || confirmUser?.firstName || 'this user';
 
-  const handleUnblock = (userId: number) => {
-    const user = blockedUsers.find((u) => u.id === userId);
-    const name = user?.userName || user?.firstName || 'this user';
-
-    Alert.alert('Unblock User', `Are you sure you want to unblock ${name}?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Unblock',
-        onPress: async () => {
-          setUnblockingId(userId);
-          try {
-            await unblock(userId);
-          } finally {
-            setUnblockingId(null);
-          }
-        },
-      },
-    ]);
+  const handleUnblock = async () => {
+    if (!confirmUser) return;
+    setConfirmUser(null);
+    setUnblockingId(confirmUser.id);
+    try {
+      await unblock(confirmUser.id);
+    } finally {
+      setUnblockingId(null);
+    }
   };
 
   return (
@@ -155,7 +148,7 @@ export default function BlockedUsersScreen() {
           renderItem={({ item }) => (
             <BlockedUserRow
               user={item}
-              onUnblock={handleUnblock}
+              onUnblock={setConfirmUser}
               isUnblocking={unblockingId === item.id}
               border={border}
               t={t}
@@ -165,6 +158,17 @@ export default function BlockedUsersScreen() {
           )}
         />
       )}
+
+      <ConfirmSheet
+        visible={!!confirmUser}
+        onClose={() => setConfirmUser(null)}
+        onConfirm={handleUnblock}
+        title={`Unblock ${confirmName}?`}
+        message={`They will be able to find your profile, see your posts, and message you again. They won't be notified that you unblocked them.`}
+        confirmLabel="Unblock"
+        cancelLabel="Keep Blocked"
+        icon="shield-outline"
+      />
     </View>
   );
 }
