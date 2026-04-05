@@ -1717,8 +1717,16 @@ export default function ChatThreadScreen() {
   }));
 
   const handleHeaderPress = useCallback(() => {
-    setShowChatInfo(true);
-  }, []);
+    if (channelInfo?.otherMember) {
+      router.push({
+        pathname: "/user/[username]",
+        params: {
+          username: channelInfo.otherMember.userName || "_",
+          userId: String(channelInfo.otherMember.id),
+        },
+      });
+    }
+  }, [channelInfo, router]);
 
   const handleGoToProfile = useCallback(() => {
     setShowChatInfo(false);
