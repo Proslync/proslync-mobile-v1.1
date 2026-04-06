@@ -211,14 +211,18 @@ export default function FeedScreen() {
   };
 
   const handleEventPress = useCallback((item: FeedItem) => {
-    // Check if user has RSVP'd locally (optimistic update)
+    if (!item.eventId) {
+      router.push(`/post/${item.id}`);
+      return;
+    }
+
     const localRsvp = rsvpItems.get(item.id) || false;
-    track('event_view', { event_id: item.eventId ?? Number(item.id), source: 'feed' });
+    track('event_view', { event_id: item.eventId, source: 'feed' });
 
     router.push({
       pathname: '/event/[id]',
       params: {
-        id: item.eventId?.toString() || item.id,
+        id: item.eventId.toString(),
         title: item.eventTitle || item.description,
         date: item.eventDate || '',
         imageUrl: item.imageUrl || item.thumbnail,
