@@ -100,7 +100,7 @@ export function PeopleTagSheet({ visible, onClose, selected, onConfirm }: People
   if (!canUseNativeSheet()) return null;
 
   return (
-    <NativeSheet isPresented={visible} onDismiss={onClose} fitToContents rnContent dragIndicator="visible">
+    <NativeSheet isPresented={visible} onDismiss={onClose} rnContent dragIndicator="visible">
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose}>

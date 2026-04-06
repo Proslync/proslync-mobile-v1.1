@@ -59,7 +59,7 @@ export function MusicPickerSheet({ visible, onClose, onSelect }: MusicPickerShee
   if (!canUseNativeSheet()) return null;
 
   return (
-    <NativeSheet isPresented={visible} onDismiss={onClose} fitToContents rnContent dragIndicator="visible">
+    <NativeSheet isPresented={visible} onDismiss={onClose} rnContent dragIndicator="visible">
       <View style={styles.container}>
         <Text style={styles.title}>Add Music</Text>
 
