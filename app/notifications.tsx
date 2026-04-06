@@ -65,11 +65,12 @@ const NOTIFICATION_ICONS: Record<
   chat: { name: 'chatbubble-ellipses', color: '#fff' },
   like: { name: 'heart', color: '#fff' },
   comment: { name: 'chatbubble', color: '#fff' },
+  mention: { name: 'at', color: '#fff' },
   team_invitation: { name: 'people', color: '#fff' },
 };
 
 // Types where we show the actor's profile photo instead of an icon
-const ACTOR_PHOTO_TYPES: NotificationType[] = ['follow', 'like', 'comment', 'chat', 'payment', 'team_invitation'];
+const ACTOR_PHOTO_TYPES: NotificationType[] = ['follow', 'like', 'comment', 'mention', 'chat', 'payment', 'team_invitation'];
 
 function TeamInvitationRow({
   invitation,
@@ -380,6 +381,7 @@ export default function NotificationsScreen() {
           break;
         case 'like':
         case 'comment':
+        case 'mention':
           if (metadata?.postId) {
             router.push(`/post/${metadata.postId}`);
           }

@@ -6,6 +6,7 @@ export type NotificationType =
   | 'chat'
   | 'like'
   | 'comment'
+  | 'mention'
   | 'team_invitation';
 
 export interface AppNotification {
