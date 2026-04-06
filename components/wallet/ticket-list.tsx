@@ -20,13 +20,6 @@ import type { WalletEventCard } from '../../lib/types/wallet.types';
 import type { UserTicket } from '@/lib/api/tickets';
 import { liquidGlass, glassTint, glassText, glassBorder, glassSurfaceTint } from '@/constants/glass/liquid-glass';
 
-// Filter tab definitions
-const TICKET_FILTERS: { key: string; label: string; ticketStatus: string }[] = [
-  { key: 'active', label: 'Active', ticketStatus: 'active' },
-  { key: 'transferred', label: 'Transferred', ticketStatus: 'transferred' },
-  { key: 'redeemed', label: 'Redeemed', ticketStatus: 'redeemed' },
-  { key: 'cancelled', label: 'Cancelled', ticketStatus: 'cancelled' },
-];
 
 interface TicketListProps {
   rsvpEvents: WalletEventCard[];
@@ -133,55 +126,19 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
   const [selectedEvent, setSelectedEvent] = useState<WalletEventCard | null>(null);
-  const [activeFilter, setActiveFilter] = useState('active');
 
-  const activeFilterDef = TICKET_FILTERS.find((f) => f.key === activeFilter)!;
-  const { tickets, isLoading } = useMyTickets(activeFilterDef.ticketStatus);
+  const { tickets, isLoading } = useMyTickets('active');
 
-  // Convert tickets to display cards
+  // Convert tickets to display cards + merge RSVP events
   const ticketCards = useMemo(() => tickets.map(ticketToCard), [tickets]);
-
-  // Merge RSVP events into Active tab (they have no ticket status)
   const displayEvents = useMemo(() => {
-    const merged = activeFilter === 'active' ? [...ticketCards, ...rsvpEvents] : ticketCards;
+    const merged = [...ticketCards, ...rsvpEvents];
     return merged.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
-  }, [ticketCards, rsvpEvents, activeFilter]);
-
-  // Determine if a card should be dimmed (transferred/cancelled/redeemed)
-  const isDimmed = (event: WalletEventCard) =>
-    event.ticketStatus === 'cancelled' || event.ticketStatus === 'redeemed';
-
-  const emptyLabel = `No ${activeFilterDef.label.toLowerCase()} tickets`;
+  }, [ticketCards, rsvpEvents]);
 
   return (
     <View style={[styles.container, { borderTopColor: colors.border }]}>
-      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Your Tickets</Text>
-
-      {/* Filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {TICKET_FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.filterChip, { borderColor: border }, activeFilter === f.key && styles.filterChipActive]}
-            onPress={() => setActiveFilter(f.key)}
-            activeOpacity={0.7}
-          >
-            <GlassView
-              {...liquidGlass.surface}
-              tintColor={activeFilter === f.key ? surfaceTint : 'transparent'}
-              borderRadius={16}
-              style={StyleSheet.absoluteFillObject}
-            />
-            <Text style={[styles.filterText, { color: t.muted }, activeFilter === f.key && { color: t.primary, fontFamily: 'Lato_700Bold' }]}>
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Upcoming Tickets</Text>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -190,7 +147,7 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
       ) : displayEvents.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="ticket-outline" size={40} color={colors.textTertiary} />
-          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>{emptyLabel}</Text>
+          <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No upcoming tickets</Text>
         </View>
       ) : (
         <View style={styles.listContent}>
@@ -207,7 +164,7 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
                 border={border}
                 surfaceTint={surfaceTint}
                 isDark={isDark}
-                dimmed={isDimmed(event)}
+                dimmed={false}
               />
             </Animated.View>
           ))}

@@ -3,22 +3,8 @@ import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import type { BarTab } from '@/lib/types/bar-tab.types';
+import { formatCents, formatTimeAgo } from '@/lib/utils';
 import { TabStatusBadge } from './tab-status-badge';
-
-function formatCents(cents: number): string {
-  if (!Number.isFinite(cents)) return '$0.00';
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-function timeAgo(dateStr: string): string {
-  if (!dateStr) return '';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  return `${hrs}h ${mins % 60}m ago`;
-}
 
 interface BarTabCardProps {
   tab: BarTab;
@@ -45,7 +31,7 @@ export function BarTabCard({ tab, onPress }: BarTabCardProps) {
                   {tab.guestName || 'Guest'}
                 </Text>
                 <Text style={styles.meta}>
-                  {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} · {timeAgo(tab.openedAt)}
+                  {activeItemCount} item{activeItemCount !== 1 ? 's' : ''} · {formatTimeAgo(tab.openedAt)}
                 </Text>
               </View>
             </View>

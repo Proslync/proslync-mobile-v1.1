@@ -39,6 +39,7 @@ import type { EventAttendee } from '@/lib/types/events.types';
 import { EventUserStatus } from '@/lib/types/events.types';
 import type { PublicUserProfile } from '@/lib/types/auth.types';
 import NfcManager, { NfcTech, Ndef } from 'react-native-nfc-manager';
+import { formatShortDate, formatMessageTime } from '@/lib/utils';
 
 
 type ScanStep = 'membership' | 'id';
@@ -147,15 +148,8 @@ function parseDriverLicense(data: string): {
 }
 
 
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-const formatTime = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-};
+const formatDate = formatShortDate;
+const formatTime = formatMessageTime;
 
 const calculateAge = (birthDateStr: string): number => {
   const birthDate = new Date(birthDateStr);

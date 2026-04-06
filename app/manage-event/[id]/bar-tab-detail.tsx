@@ -32,11 +32,8 @@ import {
   useEvent,
 } from '@/hooks';
 import { useToast } from '@/components/shared/toast';
+import { formatCents } from '@/lib/utils';
 import type { BarOrderItem } from '@/lib/types/bar-tab.types';
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function BarTabDetailScreen() {
   const { id, tabId: tabIdParam } = useLocalSearchParams<{
@@ -437,7 +434,7 @@ export default BarTabDetailScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#f2f2f2',
   },
   loadingContainer: {
     flex: 1,

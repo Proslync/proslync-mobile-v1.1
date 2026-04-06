@@ -34,19 +34,13 @@ import {
 } from '@/components/analytics/analytics-chart';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRevenueTimeSeries, REVENUE_TIMESERIES_KEY } from '@/hooks/use-revenue-analytics';
+import { formatCents } from '@/lib/utils';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 const EMPTY_EVENT_SERIES = emptySeriesFor(EVENT_TIME_RANGES);
-
-function formatCents(cents: number): string {
-  if (cents >= 100_00) {
-    return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  }
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 export default function EventRevenueScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

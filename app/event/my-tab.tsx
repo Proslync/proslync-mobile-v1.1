@@ -16,11 +16,8 @@ import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { TabStatusBadge } from '@/components/bar/tab-status-badge';
 import { useMyBarTab } from '@/hooks';
+import { formatCents } from '@/lib/utils';
 import type { BarOrderItem } from '@/lib/types/bar-tab.types';
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 export default function MyTabScreen() {
   const { eventId: eventIdParam } = useLocalSearchParams<{ eventId: string }>();
@@ -165,7 +162,7 @@ export default function MyTabScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#f2f2f2',
   },
   loadingContainer: {
     flex: 1,

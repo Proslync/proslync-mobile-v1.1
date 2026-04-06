@@ -64,16 +64,30 @@ export function formatMessageTime(dateString: string): string {
 }
 
 /**
- * "5m ago", "2h ago", "3d ago"
+ * "Just now", "5m ago", "2h ago", "3d ago"
  */
 export function formatTimeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  if (!dateStr) return '';
+  const diff = Math.max(0, Date.now() - new Date(dateStr).getTime());
   const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
   if (minutes < 60) return `${minutes}m ago`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+/**
+ * "Mar 5, 2024" — short absolute date
+ */
+export function formatShortDate(dateStr: string): string {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
 /**

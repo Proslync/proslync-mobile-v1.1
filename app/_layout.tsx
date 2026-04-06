@@ -6,6 +6,7 @@ import {
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import * as SystemUI from "expo-system-ui";
 import * as Font from "expo-font";
 import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -34,6 +35,7 @@ import { BarSocketProvider } from "@/lib/providers/bar-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
 
 SplashScreen.preventAutoHideAsync();
+SystemUI.setBackgroundColorAsync("#000000");
 
 function useNotificationObserver() {
   useEffect(() => {

@@ -96,13 +96,7 @@ function MenuGroup({
       style={styles.section}
     >
       <Text style={[styles.sectionTitle, { color: t.muted }]}>{title}</Text>
-      <View style={[styles.sectionCard, { borderColor: border }]}>
-        <GlassView
-          {...liquidGlass.surface}
-          tintColor={surfaceTint}
-          borderRadius={14}
-          style={styles.cardGlass}
-        />
+      <View style={[styles.sectionCard, { borderColor: border, backgroundColor: "#ffffff" }]}>
         {items.map((item, index) => (
           <MenuItem
             key={item.route}
@@ -129,10 +123,9 @@ export default function DashboardScreen() {
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
 
-  const theme = isDark ? "dark" : "light";
-  const t = glassText[theme];
-  const border = glassBorder[theme];
-  const surfaceTint = glassSurfaceTint[theme];
+  const t = glassText["light"];
+  const border = glassBorder["light"];
+  const surfaceTint = glassSurfaceTint["light"];
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -171,8 +164,7 @@ export default function DashboardScreen() {
 
   if (isLoading && !refreshing) {
     return (
-      <View style={[styles.container, { backgroundColor: isDark ? "#000" : "#fff" }]}>
-        <DarkGradientBg />
+      <View style={[styles.container, { backgroundColor: "#f2f2f2" }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={t.primary} />
           <Text style={[styles.loadingText, { color: t.muted }]}>Loading dashboard...</Text>
@@ -182,8 +174,7 @@ export default function DashboardScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? "#000" : "#fff" }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: "#f2f2f2" }]}>
 
       {/* Header */}
       <Animated.View
@@ -196,7 +187,7 @@ export default function DashboardScreen() {
           activeOpacity={0.7}
         >
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
-          <Ionicons name="arrow-back" size={20} color={t.primary} />
+          <Ionicons name="chevron-back" size={22} color={t.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: t.primary }]}>Dashboard</Text>
         <View style={styles.headerSpacer} />

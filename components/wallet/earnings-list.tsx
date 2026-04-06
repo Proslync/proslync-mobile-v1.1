@@ -14,6 +14,7 @@ import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useEarnings } from '@/hooks/use-wallet-queries';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { EarningsItem } from '@/lib/api/wallet';
+import { formatCents } from '@/lib/utils';
 
 type EarningsFilter = 'all' | 'pending' | 'transferred';
 
@@ -22,10 +23,6 @@ const FILTERS: { key: EarningsFilter; label: string }[] = [
   { key: 'pending', label: 'Pending' },
   { key: 'transferred', label: 'Transferred' },
 ];
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function StatusBadge({ status }: { status: EarningsItem['status'] }) {
   const config = {

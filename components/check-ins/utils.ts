@@ -1,5 +1,6 @@
 import type { EventAttendee } from "@/lib/types/events.types";
 import { EventUserStatus } from "@/lib/types/events.types";
+import { formatShortDate } from "@/lib/utils";
 
 export interface CheckInContact {
   id: number;
@@ -37,12 +38,7 @@ export const PREDEFINED_VENUE_TAGS = [
 
 export function formatDate(dateStr?: string): string {
   if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatShortDate(dateStr);
 }
 
 export function sourceLabel(source: string, isGuest: boolean): string {

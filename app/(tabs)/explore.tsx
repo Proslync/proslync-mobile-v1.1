@@ -202,12 +202,6 @@ function ConversationRow({
         delayLongPress={500}
         activeOpacity={0.6}
       >
-        <GlassView
-          {...liquidGlass.surface}
-          tintColor={surfaceTint}
-          borderRadius={16}
-          style={StyleSheet.absoluteFillObject}
-        />
         {channel.isConcierge ? (
           <ConciergeAvatar />
         ) : (
@@ -406,8 +400,10 @@ function PersonSearchRow({
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { colors, isDark } = useAppTheme();
-  const themeKey = isDark ? 'dark' : 'light';
+  const { colors: _colors, isDark: _isDark } = useAppTheme();
+  const colors = { ..._colors, text: '#000', textSecondary: 'rgba(0,0,0,0.6)', textTertiary: 'rgba(0,0,0,0.4)', background: '#f2f2f2', border: 'rgba(0,0,0,0.08)' };
+  const isDark = false;
+  const themeKey = 'light' as const;
   const t = glassText[themeKey];
   const border = glassBorder[themeKey];
   const { user } = useAuth();
@@ -724,8 +720,7 @@ export default function MessagesScreen() {
   // Loading state
   if (isLoading && channelData.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DarkGradientBg />
+      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <View style={styles.headerIcon} />
           <Text style={[styles.headerTitle, { color: colors.text }]}>
@@ -744,8 +739,7 @@ export default function MessagesScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
       {/* Profile-style Header */}
       <Animated.View
@@ -849,9 +843,8 @@ export default function MessagesScreen() {
         presentationStyle="pageSheet"
         onRequestClose={handleCloseCompose}
       >
-        <View style={[styles.composeContainer, { backgroundColor: colors.background }]}>
-          <DarkGradientBg />
-
+        <View style={[styles.composeContainer, { backgroundColor: '#f2f2f2' }]}>
+  
           {/* Creating overlay */}
           {isCreating && (
             <View style={styles.composeOverlay}>
@@ -1210,6 +1203,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     marginVertical: 3,
     borderRadius: 16,
+    backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "rgba(128,128,128,0.12)",
   },

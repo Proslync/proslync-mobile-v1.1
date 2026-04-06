@@ -36,23 +36,11 @@ import type {
   AppNotification,
   NotificationType,
 } from '@/lib/types/notifications.types';
+import { formatTimeAgo } from '@/lib/utils';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 type NotificationTab = 'activity' | 'teams';
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now();
-  const date = new Date(dateStr).getTime();
-  const diff = Math.max(0, now - date);
-  const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 const NOTIFICATION_ICONS: Record<
   NotificationType,
@@ -127,7 +115,7 @@ function TeamInvitationRow({
             <Text style={[styles.eventName, { color: colors.text }]} numberOfLines={1}>{invitation.eventName}</Text>
             <Text style={[styles.roleLine, { color: colors.textSecondary }]} numberOfLines={1}>Role: {invitation.roleName}</Text>
             <Text style={[styles.fromLine, { color: colors.textTertiary }]} numberOfLines={1}>
-              From: {invitation.invitedByName} · {timeAgo(invitation.createdAt)}
+              From: {invitation.invitedByName} · {formatTimeAgo(invitation.createdAt)}
             </Text>
           </View>
         </View>
@@ -263,7 +251,7 @@ function ActivityRow({
           {'  '}
           {item.body}
         </Text>
-        <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{timeAgo(item.createdAt)}</Text>
+        <Text style={[styles.activityTime, { color: colors.textTertiary }]}>{formatTimeAgo(item.createdAt)}</Text>
       </View>
       {!item.read && <View style={styles.unreadDot} />}
     </TouchableOpacity>

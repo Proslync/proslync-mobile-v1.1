@@ -21,8 +21,6 @@ import { useFollowUser } from '@/hooks/use-follow-user';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { GlassView } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
 import type {
   UnifiedSearchItem,
   SearchSuggestion,
@@ -576,32 +574,30 @@ export default function SearchScreen() {
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.backButton, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <GlassView {...liquidGlass.surface} tintColor="rgba(10, 10, 10, 0.25)" borderRadius={18} style={styles.backButtonGlass} />
-          <Ionicons name="arrow-back" size={20} color="#fff" />
+          <Ionicons name="arrow-back" size={20} color={colors.text} />
         </TouchableOpacity>
 
-        <View style={styles.searchBar}>
-          <GlassView {...liquidGlass.surface} tintColor="rgba(10, 10, 10, 0.25)" borderRadius={14} style={styles.searchBarGlass} />
-          <Ionicons name="search-outline" size={18} color="rgba(255,255,255,0.5)" />
+        <View style={[styles.searchBar, { borderColor: colors.border, backgroundColor: colors.backgroundSecondary }]}>
+          <Ionicons name="search-outline" size={18} color={colors.textTertiary} />
           <TextInput
             ref={inputRef}
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.text }]}
             placeholder="Search people, events, venues..."
-            placeholderTextColor="rgba(255,255,255,0.35)"
+            placeholderTextColor={colors.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
             autoCorrect={false}
             autoFocus
-            keyboardAppearance="dark"
+            keyboardAppearance="light"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
+              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
             </TouchableOpacity>
           )}
         </View>
@@ -737,12 +733,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  backButtonGlass: {
-    ...StyleSheet.absoluteFillObject,
   },
   searchBar: {
     flex: 1,
@@ -752,18 +743,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 44,
     gap: 8,
-    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  searchBarGlass: {
-    ...StyleSheet.absoluteFillObject,
   },
   searchInput: {
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
   },
   listContent: {
     paddingHorizontal: 16,
@@ -784,7 +769,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: '#E0E0E0',
   },
   resultInfo: {
     flex: 1,
@@ -822,9 +807,9 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   followButtonFollowing: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   followButtonText: {
     fontSize: 13,
@@ -832,7 +817,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   followButtonTextFollowing: {
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.5)',
   },
   // Event row
   eventRow: {

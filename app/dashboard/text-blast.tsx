@@ -26,26 +26,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { TextBlastResponse } from '@/lib/types/text-blast.types';
 import { PERSON_VARIABLES, type TemplateVariable } from '@/lib/types/text-blast.types';
-
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleTimeString([], {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-}
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const isYesterday = d.toDateString() === yesterday.toDateString();
-
-  if (isToday) return 'Today';
-  if (isYesterday) return 'Yesterday';
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-}
+import { formatMessageTime } from '@/lib/utils';
 
 export default function DashboardTextBlastScreen() {
   const router = useRouter();
@@ -101,7 +82,7 @@ export default function DashboardTextBlastScreen() {
             <Text style={styles.audienceBadgeText}>All Contacts</Text>
           </View>
           <Text style={[styles.timeText, { color: colors.textTertiary }]}>
-            {formatTime(item.createdAt)}
+            {formatMessageTime(item.createdAt)}
           </Text>
           {item.recipientCount > 0 && (
             <Text style={[styles.statText, { color: colors.textTertiary }]}>

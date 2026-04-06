@@ -625,7 +625,7 @@ export default function ProfileScreen() {
 
   return (
     <SwipeableTabView>
-      <View style={[styles.container, { backgroundColor: '#000' }]}>
+      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
         <DarkGradientBg />
         <ScrollView
           style={styles.scrollView}

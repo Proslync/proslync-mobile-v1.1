@@ -31,14 +31,11 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { formatShortDate } from '@/lib/utils';
 
 function formatDiscount(code: PromoCode): string {
   if (code.discountType === 'percentage') return `${code.discountValue}% off`;
   return `$${code.discountValue.toFixed(2)} off`;
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export default function MarketingScreen() {
@@ -290,8 +287,8 @@ function PromoCard({ promo, colors, readOnly, onShare, onCopy, onToggle, onToggl
         <View style={styles.statItem}>
           <Ionicons name="calendar-outline" size={14} color={colors.textTertiary} />
           <Text style={[styles.statText, { color: colors.textTertiary }]}>
-            From {formatDate(promo.validFrom)}
-            {promo.validUntil ? ` to ${formatDate(promo.validUntil)}` : ''}
+            From {formatShortDate(promo.validFrom)}
+            {promo.validUntil ? ` to ${formatShortDate(promo.validUntil)}` : ''}
           </Text>
         </View>
       </View>

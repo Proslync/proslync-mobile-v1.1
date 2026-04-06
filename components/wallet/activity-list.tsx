@@ -5,17 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { WalletTransaction, ActivityFilter } from '../../lib/types/wallet.types';
+import { formatCentsSigned } from '@/lib/utils';
 
 interface ActivityListProps {
   transactions: WalletTransaction[];
   filter: ActivityFilter;
   onFilterChange: (filter: ActivityFilter) => void;
   onSeeAll?: () => void;
-}
-
-function formatCents(cents: number): string {
-  const prefix = cents >= 0 ? '+' : '';
-  return `${prefix}$${(Math.abs(cents) / 100).toFixed(2)}`;
 }
 
 function formatDate(dateString: string): string {
@@ -95,7 +91,7 @@ function TransactionRow({ transaction }: { transaction: WalletTransaction }) {
       {/* Right: Amount and date - Always visible, fixed width */}
       <View style={styles.txRight}>
         <Text style={[styles.txAmount, { color }]}>
-          {formatCents(transaction.amountCents)}
+          {formatCentsSigned(transaction.amountCents)}
         </Text>
         <Text style={styles.txDate}>{formatDate(transaction.createdAt)}</Text>
       </View>

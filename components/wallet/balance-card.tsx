@@ -6,16 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { GlassButton } from '@/components/glass/glass-button';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { formatCents } from '@/lib/utils';
 
 interface BalanceCardProps {
   availableCents: number;
   pendingCents: number;
   lifetimeCents: number;
   onWithdraw: () => void;
-}
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
 }
 
 export function BalanceCard({

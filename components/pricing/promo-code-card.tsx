@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { PromoCode } from '@/lib/types/pricing.types';
+import { formatShortDate } from '@/lib/utils';
 
 interface PromoCodeCardProps {
   promoCode: PromoCode;
@@ -19,10 +20,6 @@ interface PromoCodeCardProps {
 function formatDiscount(code: PromoCode): string {
   if (code.discountType === 'percentage') return `${code.discountValue}% off`;
   return `$${code.discountValue.toFixed(2)} off`;
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function PromoCodeCard({ promoCode, readOnly, onToggleActive, onEdit, onDelete }: PromoCodeCardProps) {
@@ -59,8 +56,8 @@ export function PromoCodeCard({ promoCode, readOnly, onToggleActive, onEdit, onD
       <View style={styles.detailsRow}>
         <Text style={[styles.detailText, { color: colors.textTertiary }]}>{usageText}</Text>
         <Text style={[styles.detailText, { color: colors.textTertiary }]}>
-          From {formatDate(promoCode.validFrom)}
-          {promoCode.validUntil ? ` to ${formatDate(promoCode.validUntil)}` : ''}
+          From {formatShortDate(promoCode.validFrom)}
+          {promoCode.validUntil ? ` to ${formatShortDate(promoCode.validUntil)}` : ''}
         </Text>
       </View>
 

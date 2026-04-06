@@ -17,11 +17,8 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useEarnings } from '@/hooks/use-wallet-queries';
+import { formatCents } from '@/lib/utils';
 import type { EarningsItem } from '@/lib/api/wallet';
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 function StatusBadge({ status }: { status: EarningsItem['status'] }) {
   const config = {

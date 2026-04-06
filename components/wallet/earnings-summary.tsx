@@ -6,14 +6,11 @@ import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { WalletBalances } from '../../lib/types/wallet.types';
+import { formatCents } from '@/lib/utils';
 
 interface EarningsSummaryProps {
   balances: WalletBalances;
   onWithdraw: () => void;
-}
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
 }
 
 export function EarningsSummary({ balances, onWithdraw }: EarningsSummaryProps) {

@@ -804,7 +804,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#ffffff',
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#f2f2f2',
   },
   eventMarkerImage: {
     width: '100%',
@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#ffffff',
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#f2f2f2',
   },
   friendMarkerImage: {
     width: '100%',
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#34c759',
     overflow: 'hidden',
-    backgroundColor: '#000',
+    backgroundColor: '#f2f2f2',
   },
   myLocationPointer: {
     width: 0,

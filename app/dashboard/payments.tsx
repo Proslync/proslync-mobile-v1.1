@@ -60,12 +60,9 @@ import Animated, {
   FadeOutRight,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { formatCents } from "@/lib/utils";
 
 const TAB_SEGMENTS = ["Overview", "Earnings", "Payouts"];
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 // Helper: convert ExternalAccount to PayoutMethod for WithdrawalSheet
 // Backend returns camelCase (type, bankName, defaultForCurrency)

@@ -41,12 +41,16 @@ function mapResponseToFeedItem(item: FeedItemResponse): FeedItem {
     ? item.eventFlyerUrl || item.eventImageUrl || firstMedia?.url || ''
     : firstMedia?.url || '';
 
-  const imageUrl = isVideo ? '' : primaryUrl;
-  const videoUrl = isVideo ? primaryUrl : undefined;
+  // For events, always preserve the flyer/image URL even when the media is a video
+  const eventFlyerOrImage = item.type === 'event'
+    ? (item.eventFlyerUrl || item.eventImageUrl || '')
+    : '';
+  const imageUrl = isVideo ? eventFlyerOrImage : primaryUrl;
+  const videoUrl = isVideo ? (firstMedia?.url || '') || undefined : undefined;
 
   const thumbnail =
     firstMedia?.thumbnailUrl
-    || (isVideo ? (item.eventImageUrl || primaryUrl || '') : '')
+    || eventFlyerOrImage
     || imageUrl || '';
 
   const displayName =

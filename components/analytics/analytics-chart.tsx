@@ -84,9 +84,9 @@ export function calcDelta(series: number[]): { text: string; isPositive: boolean
   const diff = avgSecond - avgFirst;
   const pct = avgFirst > 0 ? (diff / avgFirst) * 100 : avgSecond > 0 ? 100 : 0;
   const isPositive = diff >= 0;
-  const arrow = isPositive ? '▲' : '▼';
+  const sign = isPositive ? '+' : '-';
   return {
-    text: `${arrow} ${Math.abs(pct).toFixed(1)}%`,
+    text: `${sign}${Math.abs(pct).toFixed(1)}%`,
     isPositive,
   };
 }
@@ -762,8 +762,7 @@ export function AnalyticsScreenShell({
 
   if (isLoading && !refreshing) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DarkGradientBg />
+      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
         <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
           <TouchableOpacity
             style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}
@@ -784,8 +783,7 @@ export function AnalyticsScreenShell({
 
   if (!heroMetric) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DarkGradientBg />
+      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
         <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
           <TouchableOpacity
             style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}
@@ -807,8 +805,7 @@ export function AnalyticsScreenShell({
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
       <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
         <TouchableOpacity
           style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}

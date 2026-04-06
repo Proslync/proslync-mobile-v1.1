@@ -1,6 +1,6 @@
-// Venue Profile Screen — Public venue profile similar to user profiles
+// Venue Profile Screen — Store-style layout with hero image grid, overlaid controls, and event cards
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import {
   View,
@@ -8,30 +8,32 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   Dimensions,
   ActivityIndicator,
   Share,
   Linking,
 } from "react-native";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import { Image } from "expo-image";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useAppTheme } from "@/hooks/use-app-theme";
-import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useVenue } from "@/hooks/use-venue-query";
 import { useFollowVenue } from "@/hooks/use-follow-venue";
 import { useVenueFollowers } from "@/hooks/use-venue-followers";
 import { useAuth } from "@/lib/providers/auth-provider";
-import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { eventsApi } from "@/lib/api/events";
+import { useFeed } from "@/hooks/use-feed";
 import { GlassView } from "expo-glass-effect";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { LinearGradient } from "expo-linear-gradient";
+import { StatusBar } from "expo-status-bar";
+import type { Event } from "@/lib/types/events.types";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const DefaultVenueImage = require("@/assets/images/default-avatar.png");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const HERO_HEIGHT = SCREEN_HEIGHT * 0.32;
 
-function formatStat(n: number): string {
+function formatCount(n: number): string {
   if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
   if (n >= 10000) return (n / 1000).toFixed(0) + "K";
   if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "K";
@@ -41,574 +43,598 @@ function formatStat(n: number): string {
 export default function VenueProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { colors, isDark } = useAppTheme();
   const { user: currentUser } = useAuth();
   const params = useLocalSearchParams<{ venueId: string }>();
   const venueId = params.venueId ? Number(params.venueId) : undefined;
 
-  const { data: venue, isLoading, refetch } = useVenue(venueId);
-  const { refreshControl } = useRefreshControl({
-    onRefresh: async () => {
-      await refetch();
-    },
-  });
+  const { data: venue, isLoading } = useVenue(venueId);
   const {
     isFollowing,
-    isLoading: followLoading,
     follow,
     unfollow,
     isFollowInProgress,
     isUnfollowInProgress,
   } = useFollowVenue(venueId);
-  const { total: followersCount } = useVenueFollowers({
-    venueId,
-  });
+  const { total: followersCount } = useVenueFollowers({ venueId });
 
-  const isOwner = currentUser && venue?.ownerId === currentUser.id;
+  const [venueEvents, setVenueEvents] = useState<Event[]>([]);
+  useEffect(() => {
+    if (!venueId) return;
+    eventsApi.getEvents().then((events) => {
+      setVenueEvents(events.filter((e) => e.venueId === venueId || e.venue?.id === venueId));
+    }).catch(() => {});
+  }, [venueId]);
+
+  const now = new Date();
+  const upcomingEvents = venueEvents.filter((e) => new Date(e.endDate || e.startDate) >= now);
+  const pastEvents = venueEvents.filter((e) => new Date(e.endDate || e.startDate) < now);
+
   const isFollowActionInProgress = isFollowInProgress || isUnfollowInProgress;
 
-  const venueName = venue?.name || "Venue";
-  const venueImage = venue?.imageUrl;
-  const location = venue
-    ? [venue.address, venue.city, venue.state].filter(Boolean).join(", ")
-    : "";
-
   const handleFollowPress = async () => {
-    if (isFollowActionInProgress || followLoading) return;
-    if (isFollowing) {
-      await unfollow();
-    } else {
-      await follow();
-    }
+    if (isFollowActionInProgress) return;
+    if (isFollowing) await unfollow();
+    else await follow();
   };
 
   const handleSharePress = async () => {
     try {
       await Share.share({
-        message: `Check out ${venueName} on Status!`,
-        url: `status://venue-profile/${venueId}`,
+        message: `Check out ${venue?.name || "this venue"} on Status!`,
       });
-    } catch {
-      /* cancelled */
-    }
+    } catch {}
   };
 
-  const handleManagePress = () => {
-    if (!venueId) return;
-    router.push(`/manage-venue/${venueId}`);
+  const handleEventPress = (event: Event) => {
+    router.push({
+      pathname: "/event/[id]",
+      params: { id: String(event.id) },
+    });
   };
 
-  const handleCallPress = () => {
-    if (venue?.phoneNumber) {
-      Linking.openURL(`tel:${venue.phoneNumber}`);
-    }
-  };
+  // Find a video from the feed for this venue
+  const { items: feedItems } = useFeed({ feedType: "foryou", enabled: true });
+  const venueVideo = feedItems.find(
+    (item) => item.venueId === venueId && item.mediaType === "video" && item.videoUrl
+  )?.videoUrl;
 
-  const handleWebsitePress = () => {
-    if (venue?.website) {
-      Linking.openURL(
-        venue.website.startsWith("http")
-          ? venue.website
-          : `https://${venue.website}`,
-      );
-    }
-  };
+  // Hero image fallback
+  const heroImage = venue?.imageUrl
+    || venueEvents.find((e) => e.flyer?.url || e.imageUrl)?.flyer?.url
+    || venueEvents.find((e) => e.imageUrl)?.imageUrl
+    || "";
+
+  // Video player
+  const player = useVideoPlayer(venueVideo || null, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
 
   if (isLoading || !venue) {
     return (
-      <View
-        style={[
-          styles.container,
-          { paddingTop: insets.top, backgroundColor: colors.background },
-        ]}
-      >
-        {isDark && <DarkGradientBg />}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="chevron-back" size={26} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Venue
-          </Text>
-          <View style={styles.headerBtn} />
-        </View>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <StatusBar style="light" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text} />
+          <ActivityIndicator size="large" color="#fff" />
         </View>
       </View>
     );
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, backgroundColor: colors.background },
-      ]}
-    >
-      {isDark && <DarkGradientBg />}
-
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerBtn}
-          onPress={() => router.back()}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
-        </TouchableOpacity>
-        <Text
-          style={[styles.headerTitle, { color: colors.text }]}
-          numberOfLines={1}
-        >
-          {venueName}
-        </Text>
-        <TouchableOpacity
-          style={styles.headerBtn}
-          onPress={handleSharePress}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name="paper-plane-outline"
-            size={22}
-            color={colors.text}
-          />
-        </TouchableOpacity>
-      </View>
-
+    <View style={styles.container}>
+      <StatusBar style="light" />
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + 40 },
-        ]}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={refreshControl}
       >
-        {/* Profile Section */}
-        <Animated.View
-          entering={FadeIn.duration(400)}
-          style={styles.profileSection}
-        >
-          <View style={styles.avatarContainer}>
-            <Image
-              source={venueImage ? { uri: venueImage } : DefaultVenueImage}
-              style={[styles.avatar, { borderColor: colors.border }]}
+        {/* Hero Section — Photo Grid with Overlays */}
+        <View style={styles.hero}>
+          {/* Hero Media — Video or Image */}
+          {venueVideo && player ? (
+            <VideoView
+              player={player}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              nativeControls={false}
+              allowsFullscreen={false}
             />
-          </View>
-
-          <Text
-            style={[styles.displayName, { color: colors.text }]}
-            numberOfLines={2}
-          >
-            {venueName}
-          </Text>
-
-          {location ? (
-            <View style={styles.locationRow}>
-              <Ionicons
-                name="location-outline"
-                size={14}
-                color={colors.textTertiary}
-              />
-              <Text
-                style={[styles.locationText, { color: colors.textTertiary }]}
-                numberOfLines={1}
-              >
-                {location}
-              </Text>
-            </View>
-          ) : null}
-
-          {venue.description ? (
-            <Text
-              style={[styles.bio, { color: colors.textSecondary }]}
-              numberOfLines={4}
-            >
-              {venue.description}
-            </Text>
-          ) : null}
-        </Animated.View>
-
-        {/* Stats Row */}
-        <Animated.View
-          entering={FadeInDown.delay(100).duration(400)}
-          style={[
-            styles.statsRow,
-            {
-              borderColor: colors.border,
-              overflow: "hidden",
-            },
-          ]}
-        >
-          <GlassView
-            {...liquidGlass.surface}
-            borderRadius={16}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <View style={styles.statItem}>
-            <Text style={[styles.statNumber, { color: colors.text }]}>
-              {formatStat(followersCount)}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.textTertiary }]}>
-              Followers
-            </Text>
-          </View>
-        </Animated.View>
-
-        {/* Action Buttons */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(400)}
-          style={styles.actionsRow}
-        >
-          {isOwner ? (
-            <TouchableOpacity
-              style={[
-                styles.actionBtn,
-                {
-                  borderColor: colors.border,
-                  overflow: "hidden",
-                },
-              ]}
-              onPress={handleManagePress}
-              activeOpacity={0.8}
-            >
-              <GlassView
-                {...liquidGlass.fill}
-                borderRadius={10}
-                style={StyleSheet.absoluteFillObject}
-              />
-              <Ionicons name="settings-outline" size={16} color={colors.text} />
-              <Text style={[styles.actionBtnText, { color: colors.text }]}>
-                Manage
-              </Text>
-            </TouchableOpacity>
+          ) : heroImage ? (
+            <Image
+              source={{ uri: heroImage }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+            />
           ) : (
-            <TouchableOpacity
-              style={[
-                styles.actionBtn,
-                {
-                  borderColor: colors.border,
-                  overflow: "hidden",
-                },
-              ]}
-              onPress={handleFollowPress}
-              activeOpacity={0.8}
-              disabled={isFollowActionInProgress}
-            >
-              <GlassView
-                {...liquidGlass.fill}
-                borderRadius={10}
-                style={StyleSheet.absoluteFillObject}
-              />
-              {isFollowActionInProgress ? (
-                <ActivityIndicator size="small" color={colors.text} />
-              ) : (
-                <>
-                  <Ionicons
-                    name={isFollowing ? "checkmark" : "add-outline"}
-                    size={16}
-                    color={
-                      isFollowing ? colors.textTertiary : colors.text
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.actionBtnText,
-                      {
-                        color: isFollowing
-                          ? colors.textTertiary
-                          : colors.text,
-                      },
-                    ]}
-                  >
-                    {isFollowing ? "Following" : "Follow"}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#888" }]} />
           )}
 
-          <TouchableOpacity
-            style={[
-              styles.actionBtn,
-              {
-                borderColor: colors.border,
-                overflow: "hidden",
-              },
+          {/* Gradient fade into background */}
+          <LinearGradient
+            colors={[
+              "transparent",
+              "transparent",
+              "rgba(242,242,242,0.1)",
+              "rgba(242,242,242,0.25)",
+              "rgba(242,242,242,0.45)",
+              "rgba(242,242,242,0.65)",
+              "rgba(242,242,242,0.85)",
+              "#f2f2f2",
             ]}
-            onPress={handleSharePress}
-            activeOpacity={0.8}
-          >
-            <GlassView
-              {...liquidGlass.fill}
-              borderRadius={10}
-              style={StyleSheet.absoluteFillObject}
-            />
-            <Ionicons
-              name="share-outline"
-              size={16}
-              color={colors.text}
-            />
-            <Text style={[styles.actionBtnText, { color: colors.text }]}>
-              Share
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
+            locations={[0, 0.6, 0.68, 0.74, 0.8, 0.86, 0.93, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
 
-        {/* Contact Info */}
-        {(venue.phoneNumber || venue.website || venue.email) && (
-          <Animated.View
-            entering={FadeInDown.delay(300).duration(400)}
-            style={styles.contactSection}
+          {/* Top controls */}
+          <View style={[styles.topControls, { top: insets.top + 8 }]}>
+            <TouchableOpacity
+              style={styles.glassPill}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+            >
+              <GlassView
+                {...liquidGlass.surface}
+                tintColor="rgba(0,0,0,0.3)"
+                borderRadius={20}
+                style={StyleSheet.absoluteFill}
+              />
+              <Ionicons name="chevron-back" size={22} color="#fff" />
+            </TouchableOpacity>
+
+            <View style={styles.topControlsRight}>
+              <TouchableOpacity
+                style={styles.followPill}
+                onPress={handleFollowPress}
+                activeOpacity={0.7}
+                disabled={isFollowActionInProgress}
+              >
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor="rgba(0,0,0,0.3)"
+                  borderRadius={20}
+                  style={StyleSheet.absoluteFill}
+                />
+                {isFollowActionInProgress ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.followText}>
+                    {isFollowing ? "Following" : "Follow"}
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.glassPill}
+                onPress={handleSharePress}
+                activeOpacity={0.7}
+              >
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor="rgba(0,0,0,0.3)"
+                  borderRadius={20}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Ionicons name="share-outline" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Centered Venue Info */}
+          <View style={styles.heroCenter}>
+            {venue.imageUrl ? (
+              <Image
+                source={{ uri: venue.imageUrl }}
+                style={styles.venueLogo}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={[styles.venueLogo, styles.venueLogoPlaceholder]}>
+                <Text style={styles.venueLogoInitial}>
+                  {venue.name?.[0]?.toUpperCase() || "V"}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.followersText}>
+              {formatCount(followersCount)} followers
+            </Text>
+          </View>
+        </View>
+
+        {/* Search Pill */}
+        <View style={styles.searchSection}>
+          <TouchableOpacity
+            style={styles.searchPill}
+            activeOpacity={0.7}
+            onPress={() => router.push("/search-screen")}
           >
-            {venue.phoneNumber && (
-              <TouchableOpacity
-                style={[
-                  styles.contactRow,
-                  { borderBottomColor: colors.border },
-                ]}
-                onPress={handleCallPress}
-                activeOpacity={0.7}
+            <Ionicons name="search" size={18} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Upcoming Events Section */}
+        {upcomingEvents.length > 0 && (
+          <View style={styles.eventsSection}>
+            <View style={styles.eventsSectionInner}>
+              <Text style={styles.sectionTitle}>Upcoming Events</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.eventsScroll}
               >
-                <Ionicons
-                  name="call-outline"
-                  size={20}
-                  color={colors.text}
-                />
-                <Text style={[styles.contactText, { color: colors.text }]}>
-                  {venue.phoneNumber}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={colors.textTertiary}
-                />
-              </TouchableOpacity>
-            )}
-            {venue.website && (
-              <TouchableOpacity
-                style={[
-                  styles.contactRow,
-                  { borderBottomColor: colors.border },
-                ]}
-                onPress={handleWebsitePress}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="globe-outline"
-                  size={20}
-                  color={colors.text}
-                />
-                <Text
-                  style={[styles.contactText, { color: colors.text }]}
-                  numberOfLines={1}
-                >
-                  {venue.website}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={colors.textTertiary}
-                />
-              </TouchableOpacity>
-            )}
-            {venue.email && (
-              <TouchableOpacity
-                style={[
-                  styles.contactRow,
-                  { borderBottomColor: colors.border },
-                ]}
-                onPress={() => Linking.openURL(`mailto:${venue.email}`)}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={colors.text}
-                />
-                <Text style={[styles.contactText, { color: colors.text }]}>
-                  {venue.email}
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={colors.textTertiary}
-                />
-              </TouchableOpacity>
-            )}
-          </Animated.View>
+                {upcomingEvents.map((event) => {
+                  const imageUrl = event.flyer?.url || event.imageUrl;
+                  return (
+                    <TouchableOpacity
+                      key={event.id}
+                      style={styles.eventCard}
+                      activeOpacity={0.8}
+                      onPress={() => handleEventPress(event)}
+                    >
+                      <View style={styles.eventImageContainer}>
+                        {imageUrl ? (
+                          <Image
+                            source={{ uri: imageUrl }}
+                            style={StyleSheet.absoluteFill}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View style={styles.eventImagePlaceholder}>
+                            <Ionicons name="calendar" size={28} color="rgba(0,0,0,0.15)" />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.eventName} numberOfLines={1}>
+                        {event.name}
+                      </Text>
+                      <Text style={styles.eventDate} numberOfLines={1}>
+                        {new Date(event.startDate).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </Text>
+                      {event.isPaid && event.doorCoverPriceCents ? (
+                        <Text style={styles.eventPrice}>
+                          ${(event.doorCoverPriceCents / 100).toFixed(0)}
+                        </Text>
+                      ) : (
+                        <Text style={styles.eventPrice}>Free</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
         )}
 
-        {/* Empty content placeholder */}
-        <Animated.View
-          entering={FadeInDown.delay(400).duration(400)}
-          style={styles.emptyContent}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={48}
-            color={colors.textTertiary}
-          />
-          <Text
-            style={[styles.emptyText, { color: colors.textTertiary }]}
-          >
-            Events coming soon
-          </Text>
-        </Animated.View>
-      </ScrollView>
-
-      {/* Loading overlay */}
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.textTertiary} />
+        {/* Past Events Section */}
+        <View style={styles.eventsSection}>
+          <View style={styles.eventsSectionInner}>
+            <Text style={styles.sectionTitle}>Past Events</Text>
+            {pastEvents.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.eventsScroll}
+              >
+                {pastEvents.map((event) => {
+                  const imageUrl = event.flyer?.url || event.imageUrl;
+                  return (
+                    <TouchableOpacity
+                      key={event.id}
+                      style={styles.eventCard}
+                      activeOpacity={0.8}
+                      onPress={() => handleEventPress(event)}
+                    >
+                      <View style={styles.eventImageContainer}>
+                        {imageUrl ? (
+                          <Image
+                            source={{ uri: imageUrl }}
+                            style={StyleSheet.absoluteFill}
+                            contentFit="cover"
+                          />
+                        ) : (
+                          <View style={styles.eventImagePlaceholder}>
+                            <Ionicons name="calendar" size={28} color="rgba(0,0,0,0.15)" />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.eventName} numberOfLines={1}>
+                        {event.name}
+                      </Text>
+                      <Text style={styles.eventDate} numberOfLines={1}>
+                        {new Date(event.startDate).toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <Text style={styles.emptyCardText}>No past events yet</Text>
+            )}
+          </View>
         </View>
-      )}
+
+        {/* Contact & Info Section */}
+        {(venue.description || venue.phoneNumber || venue.website || venue.address) && (
+          <View style={styles.infoSection}>
+            <View style={styles.infoSectionInner}>
+              {venue.description ? (
+                <Text style={styles.description}>{venue.description}</Text>
+              ) : null}
+
+              {venue.address && (
+                <TouchableOpacity style={styles.infoRow} activeOpacity={0.7}>
+                  <Ionicons name="location-outline" size={18} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.infoText} numberOfLines={1}>
+                    {[venue.address, venue.city, venue.state].filter(Boolean).join(", ")}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {venue.phoneNumber && (
+                <TouchableOpacity
+                  style={styles.infoRow}
+                  activeOpacity={0.7}
+                  onPress={() => Linking.openURL(`tel:${venue.phoneNumber}`)}
+                >
+                  <Ionicons name="call-outline" size={18} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.infoText}>{venue.phoneNumber}</Text>
+                </TouchableOpacity>
+              )}
+
+              {venue.website && (
+                <TouchableOpacity
+                  style={styles.infoRow}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    Linking.openURL(
+                      venue.website!.startsWith("http") ? venue.website! : `https://${venue.website}`
+                    )
+                  }
+                >
+                  <Ionicons name="globe-outline" size={18} color="rgba(255,255,255,0.6)" />
+                  <Text style={styles.infoText} numberOfLines={1}>
+                    {venue.website}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Empty state if no events */}
+        {upcomingEvents.length === 0 && pastEvents.length === 0 && (
+          <View style={styles.emptyEvents}>
+            <Ionicons name="calendar-outline" size={40} color="rgba(255,255,255,0.3)" />
+            <Text style={styles.emptyText}>No upcoming events</Text>
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 8,
-    height: 48,
-  },
-  headerBtn: {
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
+  container: {
     flex: 1,
-    textAlign: "center",
-    fontSize: 16,
-    fontFamily: "Lato_700Bold",
+    backgroundColor: "#f2f2f2",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  scrollView: { flex: 1 },
-  scrollContent: { paddingTop: 8 },
-  profileSection: {
+
+  // Hero
+  hero: {
+    height: HERO_HEIGHT,
+    position: "relative",
+  },
+
+  // Top controls
+  topControls: {
+    position: "absolute",
+    left: 14,
+    right: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 8,
+    zIndex: 10,
   },
-  avatarContainer: {
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    borderWidth: 2,
-  },
-  displayName: {
-    fontSize: 22,
-    fontFamily: "Lato_700Bold",
-    maxWidth: SCREEN_WIDTH - 100,
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  locationRow: {
+  topControlsRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    marginBottom: 8,
+    gap: 8,
   },
-  locationText: {
-    fontSize: 14,
-    fontFamily: "Lato_400Regular",
-    maxWidth: SCREEN_WIDTH - 120,
+  glassPill: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
   },
-  bio: {
-    fontSize: 14,
-    fontFamily: "Lato_400Regular",
+  followPill: {
+    height: 40,
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  followText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  // Hero center content
+  heroCenter: {
+    position: "absolute",
+    bottom: 30,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  venueLogo: {
+    width: 80,
+    height: 80,
+    borderRadius: 16,
+    marginBottom: 4,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  venueLogoPlaceholder: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  venueLogoInitial: {
+    color: "#fff",
+    fontSize: 32,
+    fontWeight: "700",
+  },
+  venueName: {
+    color: "#fff",
+    fontSize: 26,
+    fontWeight: "800",
     textAlign: "center",
-    lineHeight: 20,
-    maxWidth: SCREEN_WIDTH - 80,
+    maxWidth: SCREEN_WIDTH - 60,
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  followersText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
+    fontWeight: "500",
     marginTop: 4,
   },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
+
+  // Search
+  searchSection: {
+    paddingHorizontal: 14,
+    paddingTop: 2,
+    paddingBottom: 4,
+  },
+  searchPill: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(255,255,255,0.1)",
     justifyContent: "center",
-    marginHorizontal: 32,
-    marginTop: 20,
-    marginBottom: 20,
-    paddingVertical: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  statItem: { flex: 1, alignItems: "center" },
-  statNumber: {
-    fontSize: 20,
-    fontFamily: "Lato_700Bold",
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontFamily: "Lato_400Regular",
-  },
-  actionsRow: {
-    flexDirection: "row",
-    paddingHorizontal: 24,
-    gap: 10,
-    marginBottom: 20,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
   },
-  actionBtnText: {
-    fontSize: 14,
-    fontFamily: "Lato_700Bold",
+
+  // Events section
+  eventsSection: {
+    paddingHorizontal: 14,
+    marginBottom: 16,
+    marginTop: -10,
   },
-  contactSection: {
-    marginHorizontal: 24,
-    marginBottom: 20,
+  eventsSectionInner: {
+    backgroundColor: "#ffffff",
+    borderRadius: 20,
+    paddingVertical: 18,
+    overflow: "hidden",
   },
-  contactRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
+  sectionTitle: {
+    color: "#000",
+    fontSize: 22,
+    fontWeight: "700",
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  eventsScroll: {
+    paddingHorizontal: 16,
     gap: 12,
-    borderBottomWidth: 1,
   },
-  contactText: {
+  eventCard: {
+    width: 160,
+    marginRight: 12,
+  },
+  eventImageContainer: {
+    width: 160,
+    height: 160,
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    marginBottom: 8,
+  },
+  eventImagePlaceholder: {
     flex: 1,
-    fontSize: 15,
-    fontFamily: "Lato_400Regular",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  emptyContent: {
+  eventName: {
+    color: "#000",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  eventDate: {
+    color: "rgba(0,0,0,0.45)",
+    fontSize: 12,
+    fontWeight: "400",
+    marginTop: 2,
+  },
+  eventPrice: {
+    color: "rgba(0,0,0,0.6)",
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+
+  // Info section
+  infoSection: {
+    paddingHorizontal: 14,
+    marginBottom: 16,
+  },
+  infoSectionInner: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 20,
+    padding: 18,
+  },
+  description: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 10,
+  },
+  infoText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
+    flex: 1,
+  },
+
+  // Empty
+  emptyEvents: {
     alignItems: "center",
     paddingTop: 40,
-    gap: 12,
+    gap: 10,
   },
   emptyText: {
+    color: "rgba(255,255,255,0.4)",
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
+  emptyCardText: {
+    color: "rgba(0,0,0,0.35)",
+    fontSize: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
   },
 });

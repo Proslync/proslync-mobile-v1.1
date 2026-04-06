@@ -478,7 +478,7 @@ export default function ManageEventScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#f2f2f2",
   },
   header: {
     flexDirection: "row",

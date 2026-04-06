@@ -14,14 +14,11 @@ import { GlassButton } from '@/components/glass/glass-button';
 import { usePayouts } from '@/hooks/use-wallet-queries';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { PayoutItem } from '@/lib/api/wallet';
+import { formatCents } from '@/lib/utils';
 
 interface PayoutsListProps {
   onWithdraw: () => void;
   canWithdraw: boolean;
-}
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
 }
 
 const STATUS_CONFIG: Record<PayoutItem['status'], { color: string; bg: string; label: string }> = {

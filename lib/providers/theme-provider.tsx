@@ -89,13 +89,8 @@ export function ThemeProvider({
     setThemeMode(currentTheme === 'dark' ? 'light' : 'dark');
   }, [themeMode, systemColorScheme, setThemeMode]);
 
-  // Resolve actual theme based on mode and system preference
-  const theme = React.useMemo((): 'light' | 'dark' => {
-    if (themeMode === 'system') {
-      return systemColorScheme || 'light';
-    }
-    return themeMode;
-  }, [themeMode, systemColorScheme]);
+  // Force light theme — app uses light backgrounds
+  const theme = 'light' as const;
 
   // Get colors for current theme
   const colors = React.useMemo((): ThemeColors => {

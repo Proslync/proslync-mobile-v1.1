@@ -28,6 +28,7 @@ export interface Venue {
   website?: string;
   status?: string;
   ownerId?: number;
+  feedBackground?: { id: string; url: string } | null;
 }
 
 export enum EventStatus {

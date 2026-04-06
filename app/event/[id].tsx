@@ -27,6 +27,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { eventsApi } from '@/lib/api/events';
+import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useEvent, useEventArtists } from '@/hooks';
@@ -91,7 +92,6 @@ export default function EventPage() {
 
   const eventTitle = eventData?.name || params.title || 'Event';
   const eventDate = params.date || eventData?.startDate;
-  const flyerImage = params.imageUrl || eventData?.flyer?.url || eventData?.imageUrl;
   const venueName = params.venueName || eventData?.venue?.name;
 
   // Detect video from route params, fetched flyer mimeType, or URL extension
@@ -103,16 +103,26 @@ export default function EventPage() {
     VIDEO_EXT.test(flyerUrl || '') ||
     VIDEO_EXT.test(params.videoUrl || '');
 
+  // For images: prefer static imageUrl, then flyer URL (only if not a video)
+  // For videos: use flyer URL as videoUrl, imageUrl as poster/thumbnail
+  const flyerImage = flyerIsVideo
+    ? (params.imageUrl || eventData?.imageUrl || '')
+    : (params.imageUrl || eventData?.flyer?.url || eventData?.imageUrl || '');
+
   const mediaType: 'video' | 'image' = flyerIsVideo ? 'video' : 'image';
   const videoUrl = flyerIsVideo ? (params.videoUrl || flyerUrl || undefined) : undefined;
   const thumbnail =
     params.thumbnail ||
-    (flyerIsVideo ? params.imageUrl || eventData?.imageUrl || '' : '') ||
+    eventData?.imageUrl ||
     flyerImage ||
     '';
-  const username = params.username;
-  const userAvatar = params.userAvatar;
-  const userId = params.userId;
+  const [hostName, setHostName] = React.useState(params.username);
+  const [hostAvatar, setHostAvatar] = React.useState(params.userAvatar);
+  const [hostId, setHostId] = React.useState(params.userId);
+  const [hostVerified, setHostVerified] = React.useState(params.isOrganizerVerified === 'true');
+  const username = hostName;
+  const userAvatar = hostAvatar;
+  const userId = hostId;
   const [isPaid, setIsPaid] = React.useState(params.isPaid === 'true');
   const eventPrice = params.price ? parseFloat(params.price) : undefined;
 
@@ -121,6 +131,18 @@ export default function EventPage() {
     if (eventData?.isUserRegistered) setIsRsvpd(true);
     if (eventData?.isPaid) setIsPaid(true);
   }, [eventData]);
+
+  // Fetch event host profile when not provided via route params
+  React.useEffect(() => {
+    if (hostName || !eventData?.ownerId) return;
+    authApi.getUserById(eventData.ownerId).then((profile) => {
+      if (!profile) return;
+      setHostName(profile.userName || [profile.firstName, profile.lastName].filter(Boolean).join(' ') || undefined);
+      setHostAvatar(profile.avatar?.url || undefined);
+      setHostId(String(profile.id));
+      setHostVerified(profile.isVerified || false);
+    }).catch(() => {});
+  }, [eventData?.ownerId, hostName]);
 
   // Fetch event tables
   const { data: eventTables } = useEventTables(
@@ -412,7 +434,7 @@ export default function EventPage() {
                     >
                       {username}
                     </Text>
-                    {params.isOrganizerVerified === 'true' && (
+                    {hostVerified && (
                       <MaterialCommunityIcons
                         name="check-decagram"
                         size={16}

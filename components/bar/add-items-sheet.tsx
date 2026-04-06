@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +13,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import type { VenueMenuCategory, VenueMenuItem } from '@/lib/types/menu.types';
+import { formatCents } from '@/lib/utils';
+import { renderBackdrop } from '@/components/shared/bottom-sheet-backdrop';
 
 const RADIUS = 20;
 const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
@@ -32,15 +33,6 @@ interface AddItemsSheetProps {
   onClose: () => void;
   onConfirm: (items: Array<{ menuItemId: number; quantity: number; notes?: string }>) => void;
 }
-
-function formatCents(cents: number): string {
-  if (!Number.isFinite(cents)) return '$0.00';
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-const renderBackdrop = (props: BottomSheetBackdropProps) => (
-  <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
-);
 
 export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItemsSheetProps) {
   const bottomSheetRef = React.useRef<BottomSheet>(null);

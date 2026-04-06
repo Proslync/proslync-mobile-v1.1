@@ -12,7 +12,6 @@ import {
   MembershipCard,
   IncompleteMembershipCard,
   StatusCardMenuSheet,
-  OfferCarousel,
   TicketList,
   WalletSkeleton,
 } from '@/components/wallet';
@@ -89,12 +88,6 @@ export default function WalletScreen() {
         ) : (
           <IncompleteMembershipCard onPress={() => router.push('/edit-profile')} />
         )}
-
-        {/* Promos Carousel */}
-        <OfferCarousel
-          offers={offers}
-          onClaimOffer={claimOffer}
-        />
 
         {/* Tickets */}
         <TicketList

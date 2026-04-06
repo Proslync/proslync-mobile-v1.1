@@ -6,8 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
-import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { GlassView, GlassContainer } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,14 +17,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { renderBackdrop } from './bottom-sheet-backdrop';
 
 const TAB_BAR_HEIGHT = 49;
 const RADIUS = 24;
 const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
-
-const renderBackdrop = (props: BottomSheetBackdropProps) => (
-  <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
-);
 
 interface ConfirmModalProps {
   visible: boolean;

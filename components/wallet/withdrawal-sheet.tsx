@@ -37,6 +37,7 @@ import {
   View,
 } from "react-native";
 import { PayoutMethod, WalletBalances } from "../../lib/types/wallet.types";
+import { formatCents } from "@/lib/utils";
 
 interface WithdrawalSheetProps {
   visible: boolean;
@@ -53,10 +54,6 @@ type SheetView =
   | "add-method-choice"
   | "add-bank"
   | "add-card";
-
-function formatCents(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
-}
 
 const QUICK_AMOUNTS = [
   { label: "25%", multiplier: 0.25 },

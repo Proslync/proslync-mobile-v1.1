@@ -7,9 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeSheet, canUseNativeSheet } from "@/components/ui/native-sheet";
 import BottomSheet, {
   BottomSheetView,
-  BottomSheetBackdrop,
 } from "@gorhom/bottom-sheet";
-import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -17,23 +15,12 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
+import { formatCents } from '@/lib/utils';
+import { renderBackdrop } from '@/components/shared/bottom-sheet-backdrop';
+
 const RADIUS = 20;
 const SPRING_CONFIG = { damping: 20, stiffness: 300, mass: 0.8 };
 const TIP_PRESETS = [15, 18, 20, 25];
-
-function formatCents(cents: number): string {
-  if (!Number.isFinite(cents)) return "$0.00";
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
-const renderBackdrop = (props: BottomSheetBackdropProps) => (
-  <BottomSheetBackdrop
-    {...props}
-    disappearsOnIndex={-1}
-    appearsOnIndex={0}
-    opacity={0.6}
-  />
-);
 
 export interface OrderLineItem {
   name: string;
