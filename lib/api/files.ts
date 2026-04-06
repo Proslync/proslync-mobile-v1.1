@@ -6,7 +6,7 @@ import type {
   ConfirmUploadResponse,
 } from '../types/files.types';
 
-function getFileInfoFromUri(uri: string): { name: string; type: string } {
+export function getFileInfo(uri: string): { name: string; type: string } {
   const filename = uri.split('/').pop() || 'file';
   const match = /\.(\w+)$/.exec(filename);
   const extension = match ? match[1].toLowerCase() : '';
@@ -94,7 +94,7 @@ export const filesApi = {
    * @returns Public URL of the uploaded flyer
    */
   uploadEventFlyer: async (eventId: number, fileUri: string): Promise<string> => {
-    const { name, type } = getFileInfoFromUri(fileUri);
+    const { name, type } = getFileInfo(fileUri);
 
     // Get file size
     const fileResponse = await fetch(fileUri);
@@ -133,7 +133,7 @@ export const filesApi = {
    * @returns Public URL of the uploaded image
    */
   uploadTableImage: async (fileUri: string): Promise<string> => {
-    const { name, type } = getFileInfoFromUri(fileUri);
+    const { name, type } = getFileInfo(fileUri);
     const fileResponse = await fetch(fileUri);
     const blob = await fileResponse.blob();
     const fileSize = blob.size.toString();
@@ -170,7 +170,7 @@ export const filesApi = {
    * @returns Public URL of the uploaded audio file
    */
   uploadVoiceMessage: async (fileUri: string): Promise<string> => {
-    const { name, type } = getFileInfoFromUri(fileUri);
+    const { name, type } = getFileInfo(fileUri);
     const fileResponse = await fetch(fileUri);
     const blob = await fileResponse.blob();
     const fileSize = blob.size.toString();

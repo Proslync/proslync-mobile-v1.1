@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { filesApi } from './files';
+import { filesApi, getFileInfo } from './files';
 
 export interface PostMedia {
   type: 'image' | 'video';
@@ -127,17 +127,9 @@ export const postsApi = {
   // Media upload via presigned URL (same flow as event flyer)
   uploadMedia: async (
     uri: string,
-    mediaType: 'image' | 'video',
+    _mediaType: 'image' | 'video',
   ): Promise<UploadMediaResponse> => {
-    const parts = uri.split('/');
-    const filename =
-      parts[parts.length - 1] ||
-      (mediaType === 'video' ? 'post.mp4' : 'post.jpg');
-    const extMatch = /\.(\w+)$/.exec(filename);
-    const mimeType =
-      mediaType === 'video'
-        ? `video/${extMatch?.[1] || 'mp4'}`
-        : `image/${extMatch?.[1] || 'jpeg'}`;
+    const { name, type } = getFileInfo(uri);
 
     // Step 1: Get file blob for size
     const fileResponse = await fetch(uri);
@@ -146,8 +138,8 @@ export const postsApi = {
     // Step 2: Get presigned URL
     const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
       fileType: 'post-media',
-      fileName: filename,
-      mimeType,
+      fileName: name,
+      mimeType: type,
       fileSize: blob.size.toString(),
     });
 
@@ -155,7 +147,7 @@ export const postsApi = {
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
       body: blob,
-      headers: { 'Content-Type': mimeType },
+      headers: { 'Content-Type': type },
     });
 
     if (!uploadResponse.ok) {
