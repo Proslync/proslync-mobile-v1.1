@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { filesApi } from './files';
 
 export interface PostMedia {
   type: 'image' | 'video';
@@ -123,7 +124,7 @@ export const postsApi = {
       params: { cursor, limit },
     }),
 
-  // Media upload
+  // Media upload via presigned URL (same flow as event flyer)
   uploadMedia: async (
     uri: string,
     mediaType: 'image' | 'video',
@@ -133,15 +134,36 @@ export const postsApi = {
       parts[parts.length - 1] ||
       (mediaType === 'video' ? 'post.mp4' : 'post.jpg');
     const extMatch = /\.(\w+)$/.exec(filename);
-    const type =
+    const mimeType =
       mediaType === 'video'
         ? `video/${extMatch?.[1] || 'mp4'}`
         : `image/${extMatch?.[1] || 'jpeg'}`;
 
-    return apiClient.uploadFile<UploadMediaResponse>(
-      '/api/files/post/upload',
-      { uri, name: filename, type },
-      'file',
-    );
+    // Step 1: Get file blob for size
+    const fileResponse = await fetch(uri);
+    const blob = await fileResponse.blob();
+
+    // Step 2: Get presigned URL
+    const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
+      fileType: 'post-media',
+      fileName: filename,
+      mimeType,
+      fileSize: blob.size.toString(),
+    });
+
+    // Step 3: Upload to GCS
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: blob,
+      headers: { 'Content-Type': mimeType },
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Upload failed: ${uploadResponse.status}`);
+    }
+
+    // Step 4: Confirm upload
+    const confirmed = await filesApi.confirmUpload(fileId);
+    return { url: confirmed.url, fileId };
   },
 };

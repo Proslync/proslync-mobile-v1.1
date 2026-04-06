@@ -99,12 +99,11 @@ export default function CreatePostScreen() {
 
     setIsSubmitting(true);
     try {
-      // Upload media then create post
+      // Upload media via presigned URL then create post
       const uploadResult = await postsApi.uploadMedia(mediaUri, mediaType);
       await postsApi.createPost({
-        caption: caption.trim() || undefined,
-        mediaUrl: uploadResult.url,
-        mediaType,
+        text: caption.trim() || undefined,
+        media: [{ type: mediaType, url: uploadResult.url, fileId: uploadResult.fileId }],
         location: location || undefined,
         spotifyTrack: spotifyTrack || undefined,
         taggedUserIds: taggedPeople.length > 0 ? taggedPeople.map((p) => p.id) : undefined,
