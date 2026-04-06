@@ -108,7 +108,7 @@ export default function UserProfileScreen() {
 
   // Fetch user posts from our backend
   const {
-    activities: userPosts,
+    posts: userPosts,
     isLoading: postsLoading,
     refetch: refetchPosts,
   } = useUserFeed(user?.id, !isAnyBlock);
@@ -657,37 +657,49 @@ export default function UserProfileScreen() {
               <ActivityIndicator color={colors.text} size="small" />
             </View>
           ) : userPosts.length > 0 ? (
-            userPosts.map((post) => (
-              <TouchableOpacity
-                key={post.id}
-                activeOpacity={0.9}
-                style={styles.postContainer}
-                onPress={() =>
-                  router.push({
-                    pathname: "/post/[id]",
-                    params: { id: post.id },
-                  })
-                }
-              >
-                {post.mediaType === "video" && post.videoUrl ? (
-                  <VideoThumbnailImage
-                    videoUrl={post.videoUrl}
-                    fallbackUri={post.thumbUrl || post.imageUrl}
-                    style={[styles.postImage, dynamicStyles.postImage]}
-                  />
-                ) : (
-                  <Image
-                    source={{ uri: post.imageUrl }}
-                    style={[styles.postImage, dynamicStyles.postImage]}
-                  />
-                )}
-                {post.mediaType === "video" && (
-                  <View style={styles.videoIndicator}>
-                    <Ionicons name="play" size={16} color="#fff" />
-                  </View>
-                )}
-              </TouchableOpacity>
-            ))
+            <>
+            {userPosts.map((post) => {
+              const firstMedia = post.media?.[0];
+              const imageUrl = firstMedia?.type === 'image' ? firstMedia.url : post.eventFlyerUrl || post.eventImageUrl;
+              const videoUrl = firstMedia?.type === 'video' ? firstMedia.url : undefined;
+              const isVideo = firstMedia?.type === 'video';
+
+              return (
+                <TouchableOpacity
+                  key={post.id}
+                  activeOpacity={0.9}
+                  style={styles.postContainer}
+                  onPress={() =>
+                    post.eventId
+                      ? router.push({ pathname: "/event/[id]", params: { id: post.eventId.toString() } })
+                      : router.push({ pathname: "/post/[id]", params: { id: String(post.id) } })
+                  }
+                >
+                  {isVideo && videoUrl ? (
+                    <VideoThumbnailImage
+                      videoUrl={videoUrl}
+                      fallbackUri={firstMedia?.thumbnailUrl || imageUrl}
+                      style={[styles.postImage, dynamicStyles.postImage]}
+                    />
+                  ) : imageUrl ? (
+                    <Image
+                      source={{ uri: imageUrl }}
+                      style={[styles.postImage, dynamicStyles.postImage]}
+                    />
+                  ) : (
+                    <View style={[styles.postImage, dynamicStyles.postImage, { justifyContent: 'center', alignItems: 'center' }]}>
+                      <Ionicons name="document-text-outline" size={24} color="rgba(255,255,255,0.3)" />
+                    </View>
+                  )}
+                  {isVideo && (
+                    <View style={styles.videoIndicator}>
+                      <Ionicons name="play" size={16} color="#fff" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+            </>
           ) : (
             <View style={styles.noPostsContainer}>
               <Ionicons

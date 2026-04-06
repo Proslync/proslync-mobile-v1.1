@@ -3,46 +3,6 @@ import { postsApi, type FeedItemResponse } from '@/lib/api/posts';
 
 export const USER_FEED_QUERY_KEY = 'user-posts';
 
-interface UserActivity {
-  id: string;
-  imageUrl?: string;
-  videoUrl?: string;
-  thumbUrl?: string;
-  mediaType: 'image' | 'video';
-  likes: number;
-  comments: number;
-}
-
-function mapToUserActivity(item: FeedItemResponse): UserActivity | null {
-  const firstMedia = item.media?.[0];
-
-  // For events, use flyer/image as the display image
-  const imageUrl =
-    item.type === 'event'
-      ? item.eventFlyerUrl || item.eventImageUrl || (firstMedia?.type === 'image' ? firstMedia.url : undefined)
-      : firstMedia?.type === 'image'
-        ? firstMedia.url
-        : undefined;
-
-  const videoUrl = firstMedia?.type === 'video' ? firstMedia.url : undefined;
-  const thumbUrl = firstMedia?.thumbnailUrl;
-
-  // Skip items without media (for the grid view)
-  if (!imageUrl && !videoUrl) {
-    return null;
-  }
-
-  return {
-    id: String(item.id),
-    imageUrl: imageUrl || undefined,
-    videoUrl,
-    thumbUrl,
-    mediaType: videoUrl ? 'video' : 'image',
-    likes: item.likeCount,
-    comments: item.commentCount,
-  };
-}
-
 export function useUserFeed(
   userId: string | number | null | undefined,
   enabled = true,
@@ -62,12 +22,12 @@ export function useUserFeed(
     gcTime: 5 * 60 * 1000,
   });
 
-  const activities = (query.data?.pages ?? [])
-    .flatMap((page) => page.items.map(mapToUserActivity))
-    .filter((item): item is UserActivity => item !== null);
+  const posts: FeedItemResponse[] = (query.data?.pages ?? []).flatMap(
+    (page) => page.items,
+  );
 
   return {
-    activities,
+    posts,
     isLoading: query.isLoading,
     error: query.error,
     refetch: query.refetch,
