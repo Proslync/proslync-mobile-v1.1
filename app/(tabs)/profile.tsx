@@ -769,9 +769,11 @@ export default function ProfileScreen() {
           >
             <View style={s.postsCard}>
               <GlassView {...liquidGlass.surface} borderRadius={20} style={StyleSheet.absoluteFill} />
-              <Text style={s.postsSectionTitle}>
-                Posts{userPosts.length > 0 ? ` (${userPosts.length})` : ""}
-              </Text>
+              {/* Letterhead header */}
+              <View style={s.postsHeader}>
+                <Text style={s.postsHeaderText}>Posts</Text>
+              </View>
+              <View style={s.postsDivider} />
 
               {postsLoading ? (
                 <View style={s.postsLoading}>
@@ -1072,10 +1074,17 @@ const s = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    height: 44,
+    height: 46,
     borderRadius: 14,
     gap: 8,
     overflow: "hidden",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(0,0,0,0.06)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   glassBtnText: {
     fontSize: 14,
@@ -1093,22 +1102,37 @@ const s = StyleSheet.create({
     overflow: "hidden",
     padding: CARD_INNER_PAD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.5)",
+    borderColor: "rgba(0,0,0,0.06)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  postsSectionTitle: {
-    fontSize: 18,
+  postsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+  },
+  postsHeaderText: {
+    fontSize: 13,
     fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
-    marginBottom: 12,
-    marginLeft: 4,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  postsDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(0,0,0,0.06)",
+    marginHorizontal: -CARD_INNER_PAD,
+    marginBottom: 10,
   },
   postsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "center",
     gap: POST_GAP,
   },
   postContainer: {

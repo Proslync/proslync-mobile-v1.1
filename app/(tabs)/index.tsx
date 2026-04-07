@@ -234,8 +234,21 @@ export default function FeedScreen() {
 
   const baseCards = React.useMemo(() => buildCards(enrichedItems, venueBackgrounds), [enrichedItems, venueBackgrounds]);
 
-  // Use base cards directly — onEndReached handles pagination
-  const cards = baseCards;
+  // Infinite loop: pre-populate enough copies so the feed never ends
+  const LOOP_COUNT = 50;
+  const cards = React.useMemo(() => {
+    if (baseCards.length === 0) return [];
+    const result: CardItem[] = [];
+    for (let i = 0; i < LOOP_COUNT; i++) {
+      for (const c of baseCards) {
+        result.push({ ...c, id: `${c.id}-${i}` });
+      }
+    }
+    return result;
+  }, [baseCards]);
+
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -418,8 +431,12 @@ export default function FeedScreen() {
         onFilterChange={(f) => setActiveFilter(f)}
         onAvatarPress={() => router.navigate('/(tabs)/profile')}
         onNotificationPress={() => router.push('/notifications')}
-        onSearchPress={() => router.push('/search-screen')}
+        onSearchPress={() => setIsSearchActive(true)}
         avatarInitial={avatarInitial}
+        isSearchActive={isSearchActive}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onSearchCancel={() => { setIsSearchActive(false); setSearchQuery(""); }}
       />
 
       <PurchaseTicketSheet

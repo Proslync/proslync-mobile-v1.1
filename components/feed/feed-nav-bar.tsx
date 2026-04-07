@@ -7,8 +7,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const FILTERS = ["For You", "Following", "Events Near Me", "Tables"];
@@ -20,6 +22,11 @@ export interface FeedNavBarProps {
   onNotificationPress: () => void;
   onSearchPress: () => void;
   avatarInitial: string;
+  /** Inline search mode */
+  isSearchActive?: boolean;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+  onSearchCancel?: () => void;
 }
 
 export function FeedNavBar({
@@ -29,62 +36,102 @@ export function FeedNavBar({
   onNotificationPress,
   onSearchPress,
   avatarInitial,
+  isSearchActive,
+  searchQuery = "",
+  onSearchChange,
+  onSearchCancel,
 }: FeedNavBarProps) {
   const insets = useSafeAreaInsets();
+  const inputRef = React.useRef<TextInput>(null);
+
+  React.useEffect(() => {
+    if (isSearchActive) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isSearchActive]);
 
   return (
     <View style={[styles.container, { top: insets.top + 16 }]}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {/* Notification pill */}
-        <Pressable
-          style={styles.pill}
-          onPress={onNotificationPress}
-        >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={20} style={StyleSheet.absoluteFill} />
+      {isSearchActive ? (
+        /* Search mode — input bar + close */
+        <Animated.View entering={FadeIn.duration(200)} style={styles.searchRow}>
+          <View style={styles.searchBar}>
+            <View style={styles.glassLayer} pointerEvents="none">
+              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
+            </View>
+            <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
+            <TextInput
+              ref={inputRef}
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={onSearchChange}
+              placeholder="Search events, venues..."
+              placeholderTextColor="rgba(0,0,0,0.35)"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => onSearchChange?.("")}>
+                <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.3)" />
+              </Pressable>
+            )}
           </View>
-          <Ionicons name="notifications-outline" size={18} color="#000" />
-        </Pressable>
-
-        {/* Search pill */}
-        <Pressable
-          style={styles.pill}
-          onPress={onSearchPress}
+          <Pressable style={styles.pill} onPress={onSearchCancel}>
+            <View style={styles.glassLayer} pointerEvents="none">
+              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
+            </View>
+            <Ionicons name="close" size={18} color="rgba(0,0,0,0.7)" />
+          </Pressable>
+        </Animated.View>
+      ) : (
+        /* Normal mode — pills */
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
         >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={20} style={StyleSheet.absoluteFill} />
-          </View>
-          <Ionicons name="search-outline" size={18} color="#000" />
-        </Pressable>
+          {/* Notification pill */}
+          <Pressable style={styles.pill} onPress={onNotificationPress}>
+            <View style={styles.glassLayer} pointerEvents="none">
+              <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={20} style={StyleSheet.absoluteFill} />
+            </View>
+            <Ionicons name="notifications-outline" size={18} color="#000" />
+          </Pressable>
 
-        {/* Filter pills */}
-        {FILTERS.map((filter) => {
-          const isActive = filter === activeFilter;
-          return (
-            <Pressable
-              key={filter}
-              style={[styles.filterPill, isActive && styles.filterPillActive]}
-              onPress={() => onFilterChange(filter)}
-            >
-              <View style={styles.glassLayer} pointerEvents="none">
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={isActive ? "rgba(0,0,0,0.12)" : "transparent"}
-                  borderRadius={20}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
-              <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-                {filter}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+          {/* Search pill */}
+          <Pressable style={styles.pill} onPress={onSearchPress}>
+            <View style={styles.glassLayer} pointerEvents="none">
+              <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={20} style={StyleSheet.absoluteFill} />
+            </View>
+            <Ionicons name="search-outline" size={18} color="#000" />
+          </Pressable>
+
+          {/* Filter pills */}
+          {FILTERS.map((filter) => {
+            const isActive = filter === activeFilter;
+            return (
+              <Pressable
+                key={filter}
+                style={[styles.filterPill, isActive && styles.filterPillActive]}
+                onPress={() => onFilterChange(filter)}
+              >
+                <View style={styles.glassLayer} pointerEvents="none">
+                  <GlassView
+                    {...liquidGlass.surface}
+                    tintColor={isActive ? "rgba(0,0,0,0.12)" : "transparent"}
+                    borderRadius={20}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+                <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
+                  {filter}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -108,11 +155,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarText: {
-    color: "#000",
-    fontWeight: "700",
-    fontSize: 15,
-  },
   filterPill: {
     height: 38,
     borderRadius: 19,
@@ -134,5 +176,28 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: "rgba(0,0,0,0.8)",
     fontWeight: "500",
+  },
+  // Search mode
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 14,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Lato_400Regular",
+    color: "#1A1A1A",
+    paddingVertical: 0,
   },
 });

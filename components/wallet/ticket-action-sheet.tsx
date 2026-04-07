@@ -223,7 +223,8 @@ export function TicketActionSheet({
     <NativeSheet
       isPresented={visible}
       onDismiss={handleClose}
-      detents={[{ fraction: 0.5 }, "large"]}
+      detents={["medium"]}
+      fitToContents
       rnContent
       scrollable
     >
