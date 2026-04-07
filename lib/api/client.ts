@@ -16,6 +16,8 @@ class ApiClient {
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<void> | null = null;
   private onAuthErrorCallback: (() => void) | null = null;
+  /** In-flight GET request deduplication */
+  private inflight = new Map<string, Promise<any>>();
 
   constructor() {
     this.baseUrl = config.api.baseUrl;
@@ -287,7 +289,15 @@ class ApiClient {
   }
 
   async get<T>(endpoint: string, config?: RequestConfig): Promise<T> {
-    return this.request<T>('GET', endpoint, undefined, config);
+    // Deduplicate identical in-flight GET requests
+    const key = endpoint + (config?.params ? JSON.stringify(config.params) : '');
+    const existing = this.inflight.get(key);
+    if (existing) return existing as Promise<T>;
+    const promise = this.request<T>('GET', endpoint, undefined, config).finally(() => {
+      this.inflight.delete(key);
+    });
+    this.inflight.set(key, promise);
+    return promise;
   }
 
   async post<T>(endpoint: string, body?: unknown, config?: RequestConfig): Promise<T> {

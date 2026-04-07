@@ -118,8 +118,8 @@ export function useFeed({ feedType, enabled = true }: UseFeedOptions): UseFeedRe
     },
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.nextCursor ?? undefined : undefined,
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     placeholderData: (prev) => prev,
   });
 

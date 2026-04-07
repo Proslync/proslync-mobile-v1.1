@@ -157,7 +157,7 @@ function AreaChart({
           {/* Horizontal grid lines */}
           {yLabels.map((yl, i) => (
             <React.Fragment key={i}>
-              <Line x1={pad} y1={yl.y} x2={CHART_W - pad} y2={yl.y} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+              <Line x1={pad} y1={yl.y} x2={CHART_W - pad} y2={yl.y} stroke="rgba(0,0,0,0.06)" strokeWidth={1} />
               <SvgText x={CHART_W - 2} y={yl.y - 4} fill="#b0b0b0" fontSize={11} fontWeight="600" textAnchor="end">
                 {yl.label}
               </SvgText>
@@ -172,7 +172,7 @@ function AreaChart({
             </SvgText>
           ))}
           {scrubX !== null && (
-            <Line x1={scrubX} y1={0} x2={scrubX} y2={CHART_H} stroke="rgba(255,255,255,0.4)" strokeWidth={1} strokeDasharray="4 2" />
+            <Line x1={scrubX} y1={0} x2={scrubX} y2={CHART_H} stroke="rgba(0,0,0,0.3)" strokeWidth={1} strokeDasharray="4 2" />
           )}
         </Svg>
       </View>
@@ -222,7 +222,7 @@ const gs = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, paddingHorizontal: 4 },
   vertDivider: { width: StyleSheet.hairlineWidth, backgroundColor: '#48484A', marginVertical: 2 },
   label: { fontSize: 12, color: '#8E8E93' },
-  value: { fontSize: 12, fontWeight: '600', color: '#fff' },
+  value: { fontSize: 12, fontWeight: '600', color: '#1A1A1A' },
 });
 
 // ═══════════════════════════════════════
@@ -347,12 +347,12 @@ export function MetricDetailModal({
             <View style={ms.headerRow}>
               <TouchableOpacity style={ms.glassBtn} onPress={onClose} activeOpacity={0.7}>
                 <GlassView {...liquidGlass.surface} tintColor="rgba(255,255,255,0.15)" borderRadius={22} style={StyleSheet.absoluteFill} />
-                <Ionicons name="close" size={20} color="#fff" />
+                <Ionicons name="close" size={20} color="#1A1A1A" />
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
               <TouchableOpacity style={[ms.glassBtn, { marginRight: 8 }]} activeOpacity={0.7}>
                 <GlassView {...liquidGlass.surface} tintColor="rgba(255,255,255,0.15)" borderRadius={22} style={StyleSheet.absoluteFill} />
-                <Ionicons name="share-outline" size={20} color="#fff" />
+                <Ionicons name="share-outline" size={20} color="#1A1A1A" />
               </TouchableOpacity>
             </View>
 
@@ -430,18 +430,18 @@ const ms = StyleSheet.create({
 
   // Identity
   identity: { paddingHorizontal: 20, marginTop: 12 },
-  metricName: { fontSize: 32, fontWeight: '800', color: '#fff' },
+  metricName: { fontSize: 32, fontWeight: '800', color: '#1A1A1A' },
   dividerThin: { height: StyleSheet.hairlineWidth, backgroundColor: '#48484A', marginVertical: 12 },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
-  primaryValue: { fontSize: 24, fontWeight: '700', color: '#fff' },
+  primaryValue: { fontSize: 24, fontWeight: '700', color: '#1A1A1A' },
   deltaValue: { fontSize: 17, fontWeight: '600' },
-  periodLabel: { fontSize: 15, color: 'rgba(255,255,255,0.5)', marginTop: 4, fontWeight: '700' },
+  periodLabel: { fontSize: 15, color: 'rgba(0,0,0,0.4)', marginTop: 4, fontWeight: '700' },
 
   // Range
   rangeRow: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 16, marginTop: 16, marginBottom: 16 },
   rangeChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  rangeChipActive: { backgroundColor: 'rgba(255,255,255,0.12)' },
-  rangeText: { fontSize: 15, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
-  rangeTextActive: { color: '#fff' },
+  rangeChipActive: { backgroundColor: 'rgba(0,0,0,0.08)' },
+  rangeText: { fontSize: 15, fontWeight: '600', color: 'rgba(0,0,0,0.4)' },
+  rangeTextActive: { color: '#1A1A1A' },
 
 });

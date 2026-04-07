@@ -97,7 +97,7 @@ export function VenuePickerModal({
 
         {isLoading ? (
           <View style={styles.centered}>
-            <ActivityIndicator color="#fff" size="large" />
+            <ActivityIndicator color="rgba(0,0,0,0.45)" size="large" />
           </View>
         ) : venues.length === 0 ? (
           <View style={styles.centered}>
@@ -158,12 +158,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: 'rgba(0, 0, 0, 0.06)',
   },
   modalTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   closeButton: {
     width: 32,
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 16,
-    color: '#fff',
+    color: '#1A1A1A',
   },
   listContent: {
     paddingHorizontal: 20,
@@ -194,18 +194,18 @@ const styles = StyleSheet.create({
   },
   venueName: {
     fontSize: 17,
-    color: '#fff',
+    color: '#1A1A1A',
     fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   venueAddress: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
   checkmark: {
     fontSize: 18,
-    color: '#fff',
+    color: '#1A1A1A',
     fontFamily: 'Lato_700Bold',
   },
   centered: {
@@ -216,6 +216,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.4)',
   },
 });

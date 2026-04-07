@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeSheet, canUseNativeSheet } from '@/components/ui/native-sheet';
 import { GlassView } from 'expo-glass-effect';
@@ -115,7 +116,7 @@ export function MusicPickerSheet({ visible, onClose, onSelect }: MusicPickerShee
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, minHeight: 300 },
-  title: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#fff', textAlign: 'center', marginBottom: 16 },
+  title: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#1A1A1A', textAlign: 'center', marginBottom: 16 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8,

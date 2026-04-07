@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Lato_700Bold",
     letterSpacing: 0.5,
-    color: "#fff",
+    color: "#1A1A1A",
   },
   buttonTextDone: {
     color: "rgba(255,255,255,0.5)",

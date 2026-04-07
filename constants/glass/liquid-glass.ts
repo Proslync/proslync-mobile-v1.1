@@ -4,26 +4,26 @@
 // ─── Core settings ───────────────────────────────────────────────
 // These apply to every glass element unless overridden by a preset.
 const EFFECT_STYLE = "regular" as const;
-const COLOR_SCHEME = "dark" as const;
+const COLOR_SCHEME = "light" as const;
 
 // ─── Tint palette ────────────────────────────────────────────────
-// Opacity controls how much background content bleeds through.
-// Higher opacity → more opaque, less color-shifting from content behind.
+// Light theme — frosted white glass on #f2f2f2 backgrounds.
+// Higher opacity → more opaque, less bleed-through.
 export const glassTint = {
-  /** Primary dark surface (tab bar, sheets, cards, overlays) */
-  surface: "rgba(10, 10, 10, 0.55)",
-  /** Subtle white fill (buttons, inputs, emoji pickers) */
-  fill: "rgba(255, 255, 255, 0.08)",
-  /** Medium white fill (active buttons, modal headers, close icons) */
-  fillMedium: "rgba(255, 255, 255, 0.12)",
-  /** Strong white fill (highlighted toggles, active selections) */
-  fillStrong: "rgba(255, 255, 255, 0.15)",
-  /** Very faint white fill (subtle CTAs, add-account icon) */
-  fillFaint: "rgba(255, 255, 255, 0.06)",
-  /** Danger (call decline, destructive) */
-  danger: "rgba(255, 59, 48, 0.5)",
-  /** Success (call accept, positive) */
-  success: "rgba(52, 199, 89, 0.5)",
+  /** Primary surface (sheets, cards, overlays) — frosted white */
+  surface: "rgba(255, 255, 255, 0.7)",
+  /** Subtle fill (buttons, inputs) */
+  fill: "rgba(0, 0, 0, 0.04)",
+  /** Medium fill (active buttons, modal headers) */
+  fillMedium: "rgba(0, 0, 0, 0.07)",
+  /** Strong fill (highlighted toggles, active selections) */
+  fillStrong: "rgba(0, 0, 0, 0.10)",
+  /** Very faint fill (subtle CTAs) */
+  fillFaint: "rgba(0, 0, 0, 0.03)",
+  /** Danger (destructive actions) */
+  danger: "rgba(255, 59, 48, 0.15)",
+  /** Success (positive actions) */
+  success: "rgba(52, 199, 89, 0.15)",
 } as const;
 
 // ─── Background gradients ───────────────────────────────────────
@@ -95,7 +95,7 @@ export type BackgroundMode = "gradient" | "image";
 export const backgroundMode: BackgroundMode = "gradient";
 
 /** Active gradients — change these to switch the whole app */
-export const activeGradient = glassGradients.midnight;
+export const activeGradient = glassGradientsLight.frost;
 export const activeGradientLight = glassGradientsLight.frost;
 
 /** Active images — used when backgroundMode is 'image' */
@@ -105,7 +105,7 @@ export const activeImageLight = glassBackgroundImages.ios26Light;
 /** Glass border colors per theme */
 export const glassBorder = {
   dark: "rgba(255,255,255,0.08)",
-  light: "rgba(0,0,0,0.08)",
+  light: "rgba(0,0,0,0.06)",
 } as const;
 
 /** Glass text colors per theme */
@@ -129,7 +129,7 @@ export const glassText = {
 /** Glass surface tint per theme (for buttons, cards) */
 export const glassSurfaceTint = {
   dark: "rgba(10, 10, 10, 0.25)",
-  light: "rgba(255, 255, 255, 0.6)",
+  light: "rgba(0, 0, 0, 0.05)",
 } as const;
 
 // ─── Presets ─────────────────────────────────────────────────────

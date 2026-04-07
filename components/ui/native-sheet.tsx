@@ -112,7 +112,7 @@ export function NativeSheet({
     }
 
     // Theme the entire sheet presentation
-    mods.push(preferredColorScheme("dark"));
+    mods.push(preferredColorScheme("light"));
 
     return mods;
   }, [

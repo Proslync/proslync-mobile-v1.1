@@ -40,7 +40,7 @@ export function ExploreEvents({ events, onViewEvent }: ExploreEventsProps) {
           <Switch
             value={earningOnly}
             onValueChange={setEarningOnly}
-            trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#34c759' }}
+            trackColor={{ false: 'rgba(0,0,0,0.1)', true: '#34c759' }}
             thumbColor="#fff"
           />
         </View>
@@ -49,7 +49,7 @@ export function ExploreEvents({ events, onViewEvent }: ExploreEventsProps) {
       {/* Events */}
       {filteredEvents.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="calendar-outline" size={40} color="rgba(255,255,255,0.2)" />
+          <Ionicons name="calendar-outline" size={40} color="rgba(0,0,0,0.1)" />
           <Text style={styles.emptyText}>No events found</Text>
         </View>
       ) : (
@@ -191,12 +191,12 @@ const styles = StyleSheet.create({
   perkTagText: {
     fontSize: 10,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   eventTitle: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
     marginBottom: 2,
   },
   eventMeta: {
@@ -229,6 +229,6 @@ const styles = StyleSheet.create({
   viewButtonText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
 });

@@ -1,4 +1,5 @@
 // Chat Thread Screen - Instagram/Snapchat-style messaging
+import { FlashList } from "@shopify/flash-list";
 import { MiniEventCard } from "@/components/chat/mini-event-card";
 import { MiniUserCard } from "@/components/chat/mini-user-card";
 import { MiniVenueCard } from "@/components/chat/mini-venue-card";
@@ -32,7 +33,6 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
-  FlatList,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -1433,7 +1433,7 @@ export default function ChatThreadScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlashList<any>>(null);
   const prevMessageCountRef = useRef(0);
   const scrollToBottomOpacity = useSharedValue(0);
   const { colors, isDark } = useAppTheme();
@@ -1999,7 +1999,7 @@ export default function ChatThreadScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
-        <FlatList
+        <FlashList
           ref={flatListRef}
           data={messageGroups}
           keyExtractor={(item, index) =>
@@ -2008,11 +2008,11 @@ export default function ChatThreadScreen() {
               : `msg-${item.message?.id || index}`
           }
           renderItem={renderItem}
+          estimatedItemSize={80}
           contentContainerStyle={
             messages.length === 0 ? styles.emptyList : styles.messagesList
           }
           onScroll={handleScroll}
-          onContentSizeChange={handleContentSizeChange}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           inverted={false}

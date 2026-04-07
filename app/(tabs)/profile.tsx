@@ -4,7 +4,7 @@ import { LinkifiedText } from "@/components/shared/linkified-text";
 import { SwipeableTabView } from "@/components/shared/swipeable-tab-view";
 import { useToast } from "@/components/shared/toast";
 import { VideoThumbnailImage } from "@/components/shared/video-thumbnail";
-import { liquidGlass, glassBorder, glassText, glassSurfaceTint } from "@/constants/glass/liquid-glass";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useUserFeed } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useUnreadNotificationCount } from "@/hooks/use-notifications";
@@ -17,6 +17,7 @@ import { useTabNavigation } from "@/lib/providers/tab-navigation-provider";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GlassView } from "expo-glass-effect";
+import { LinearGradient } from "expo-linear-gradient";
 import * as SecureStore from "expo-secure-store";
 import * as React from "react";
 import {
@@ -51,12 +52,25 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-// 3 columns with 2px gaps between them (2 gaps × 2px = 4px total)
 const POST_GAP = 2;
-const POST_SIZE = (SCREEN_WIDTH - POST_GAP * 2) / 3;
+const GRID_COLS = 3;
+const CARD_H_PAD = 16; // postsSection paddingHorizontal
+const CARD_INNER_PAD = 10; // postsCard padding
+// Card inner width = screen - outer padding*2 - inner padding*2 - hairline borders
+const CARD_INNER_WIDTH = SCREEN_WIDTH - CARD_H_PAD * 2 - CARD_INNER_PAD * 2;
+const GRID_POST_SIZE = Math.floor(
+  (CARD_INNER_WIDTH - POST_GAP * (GRID_COLS - 1)) / GRID_COLS
+);
 
-// Default avatar placeholder
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
+
+// Hero gradient — grey at top fading to light
+const HERO_GRADIENT = [
+  "rgba(140,140,148,0.65)",
+  "rgba(165,165,172,0.45)",
+  "rgba(200,200,206,0.22)",
+  "rgba(242,242,247,0)",
+] as const;
 
 // Storage key for saved accounts
 const SAVED_ACCOUNTS_KEY = "saved_accounts";
@@ -72,33 +86,14 @@ interface SavedAccount {
   refreshToken?: string;
 }
 
-function StatButton({
-  value,
-  label,
-  onPress,
-}: {
-  value: number;
-  label: string;
-  onPress?: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      style={styles.statButton}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-    >
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
 interface VenueItem {
   id: number;
   name: string;
   imageUrl?: string;
   ownerId?: number;
 }
+
+// ─── Account Switcher Modal (unchanged) ─────────────────────────
 
 function AccountSwitcherModal({
   visible,
@@ -164,7 +159,7 @@ function AccountSwitcherModal({
       animationType="fade"
       onRequestClose={dismiss}
     >
-      <View style={styles.modalOverlay}>
+      <View style={modalStyles.overlay}>
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
           activeOpacity={1}
@@ -172,37 +167,34 @@ function AccountSwitcherModal({
         />
 
         <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.modalSheet, sheetAnimStyle]}>
-            <View style={styles.modalContent}>
+          <Animated.View style={[modalStyles.sheet, sheetAnimStyle]}>
+            <View style={modalStyles.content}>
               <GlassView
                 {...liquidGlass.surface}
                 borderRadius={20}
-                style={styles.modalGlassBg}
+                style={StyleSheet.absoluteFillObject}
               />
 
-              {/* Handle bar */}
-              <View style={styles.modalHandle} />
+              <View style={modalStyles.handle} />
 
-              {/* Header */}
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Switch Account</Text>
+              <View style={modalStyles.header}>
+                <Text style={modalStyles.title}>Switch Account</Text>
                 <GHTouchableOpacity
                   onPress={dismiss}
-                  style={styles.modalCloseButton}
+                  style={modalStyles.closeButton}
                 >
                   <Ionicons
                     name="close-circle"
                     size={24}
-                    color="rgba(255,255,255,0.4)"
+                    color="rgba(0,0,0,0.3)"
                   />
                 </GHTouchableOpacity>
               </View>
 
-              {/* Account list */}
-              <View style={styles.accountList}>
+              <View>
                 {savedAccounts.map((account, index) => {
                   const isCurrentAccount = account.id === currentUserId;
-                  const displayName = account.firstName
+                  const name = account.firstName
                     ? `${account.firstName}${account.lastName ? " " + account.lastName : ""}`
                     : account.userName || "User";
 
@@ -210,9 +202,9 @@ function AccountSwitcherModal({
                     <GHTouchableOpacity
                       key={account.id}
                       style={[
-                        styles.accountItem,
+                        modalStyles.accountItem,
                         index < savedAccounts.length - 1 &&
-                          styles.accountItemBorder,
+                          modalStyles.accountItemBorder,
                       ]}
                       onPress={() =>
                         !isCurrentAccount && onSelectAccount(account)
@@ -226,19 +218,19 @@ function AccountSwitcherModal({
                             : DefaultAvatarImage
                         }
                         style={[
-                          styles.accountAvatar,
-                          isCurrentAccount && styles.accountAvatarActive,
+                          modalStyles.accountAvatar,
+                          isCurrentAccount && modalStyles.accountAvatarActive,
                         ]}
                       />
-                      <View style={styles.accountInfo}>
-                        <Text style={styles.accountUsername}>
+                      <View style={modalStyles.accountInfo}>
+                        <Text style={modalStyles.accountUsername}>
                           {account.userName || "username"}
                         </Text>
-                        <Text style={styles.accountName}>{displayName}</Text>
+                        <Text style={modalStyles.accountName}>{name}</Text>
                       </View>
                       {isCurrentAccount && unreadCount > 0 && (
-                        <View style={styles.unreadBadge}>
-                          <Text style={styles.unreadBadgeText}>
+                        <View style={modalStyles.unreadBadge}>
+                          <Text style={modalStyles.unreadBadgeText}>
                             {unreadCount > 99 ? "99+" : unreadCount}
                           </Text>
                         </View>
@@ -247,31 +239,32 @@ function AccountSwitcherModal({
                         <Ionicons
                           name="checkmark-circle"
                           size={22}
-                          color="#fff"
+                          color="#1A1A1A"
                         />
                       )}
                     </GHTouchableOpacity>
                   );
                 })}
 
-                {/* Venues Section */}
                 {venues.length > 0 && (
                   <>
-                    <View style={styles.venuesSectionHeader}>
+                    <View style={modalStyles.venuesSectionHeader}>
                       <Ionicons
                         name="business-outline"
                         size={14}
-                        color="rgba(255,255,255,0.4)"
+                        color="rgba(0,0,0,0.3)"
                       />
-                      <Text style={styles.venuesSectionTitle}>Your Venues</Text>
+                      <Text style={modalStyles.venuesSectionTitle}>
+                        Your Venues
+                      </Text>
                     </View>
                     {venues.map((venue, vIndex) => (
                       <GHTouchableOpacity
                         key={`venue-${venue.id}`}
                         style={[
-                          styles.accountItem,
+                          modalStyles.accountItem,
                           vIndex < venues.length - 1 &&
-                            styles.accountItemBorder,
+                            modalStyles.accountItemBorder,
                         ]}
                         onPress={() => onSelectVenue(venue)}
                         activeOpacity={0.7}
@@ -282,42 +275,41 @@ function AccountSwitcherModal({
                               ? { uri: venue.imageUrl }
                               : DefaultAvatarImage
                           }
-                          style={styles.accountAvatar}
+                          style={modalStyles.accountAvatar}
                         />
-                        <View style={styles.accountInfo}>
-                          <Text style={styles.accountUsername}>
+                        <View style={modalStyles.accountInfo}>
+                          <Text style={modalStyles.accountUsername}>
                             {venue.name}
                           </Text>
-                          <Text style={styles.accountName}>Venue</Text>
+                          <Text style={modalStyles.accountName}>Venue</Text>
                         </View>
                         <Ionicons
                           name="chevron-forward"
                           size={18}
-                          color="rgba(255,255,255,0.3)"
+                          color="rgba(0,0,0,0.25)"
                         />
                       </GHTouchableOpacity>
                     ))}
                   </>
                 )}
 
-                {/* Add Account Button */}
                 <GHTouchableOpacity
                   style={[
-                    styles.addAccountButton,
+                    modalStyles.addAccountButton,
                     { paddingBottom: insets.bottom + 14 },
                   ]}
                   onPress={onAddAccount}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.addAccountIcon}>
+                  <View style={modalStyles.addAccountIcon}>
                     <GlassView
                       {...liquidGlass.fillFaint}
                       borderRadius={22}
-                      style={styles.glassCircleBg}
+                      style={StyleSheet.absoluteFillObject}
                     />
-                    <Ionicons name="add" size={22} color="#fff" />
+                    <Ionicons name="add" size={22} color="rgba(0,0,0,0.5)" />
                   </View>
-                  <Text style={styles.addAccountText}>Add Account</Text>
+                  <Text style={modalStyles.addAccountText}>Add Account</Text>
                 </GHTouchableOpacity>
               </View>
             </View>
@@ -328,6 +320,8 @@ function AccountSwitcherModal({
   );
 }
 
+// ─── Main Profile Screen ────────────────────────────────────────
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
@@ -335,11 +329,7 @@ export default function ProfileScreen() {
   const { showSuccess, showError } = useToast();
   const { isAccountSwitcherOpen, closeAccountSwitcher, openAccountSwitcher } =
     useTabNavigation();
-  const { colors, isDark } = useAppTheme();
-  const theme = isDark ? 'dark' : 'light';
-  const t = glassText[theme];
-  const border = glassBorder[theme];
-  const surfaceTint = glassSurfaceTint[theme];
+  const { colors } = useAppTheme();
   const { data: myVenues = [] } = useMyVenues();
   const { data: unreadCount = 0 } = useUnreadNotificationCount();
   const [followersSheetVisible, setFollowersSheetVisible] =
@@ -349,6 +339,7 @@ export default function ProfileScreen() {
   >("followers");
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
   const [showCreateMenu, setShowCreateMenu] = React.useState(false);
+  const [showAvatarViewer, setShowAvatarViewer] = React.useState(false);
   const lastTapRef = React.useRef<number>(0);
 
   const createMenuOptions: ActionSheetOption[] = [
@@ -369,30 +360,22 @@ export default function ProfileScreen() {
     },
   ];
 
-  // Fetch posts - uses React Query for proper cache invalidation
   const {
     posts: userPosts,
     isLoading: postsLoading,
     refetch: refetchPosts,
   } = useUserFeed(user?.id);
 
-  // Fetch followers/following from backend API
-  // Fetches on mount to get counts, data is cached for modal
   const {
-    followers,
     totalFollowers: followerCount,
-    isLoading: followersLoading,
     refetch: refetchFollowers,
   } = useUserFollowers(user?.id);
 
   const {
-    following,
     totalFollowing: followingCount,
-    isLoading: followingLoading,
     refetch: refetchFollowing,
   } = useUserFollowing(user?.id);
 
-  // Pull-to-refresh
   const { refreshControl } = useRefreshControl({
     onRefresh: async () => {
       await Promise.all([
@@ -404,16 +387,13 @@ export default function ProfileScreen() {
     tintColor: "#1a1a1a",
   });
 
-  // Derive display values from user data
   const displayName = user?.firstName
     ? `${user.firstName}${user.lastName ? " " + user.lastName : ""}`
     : "User";
   const username = user?.userName || "username";
   const bio = user?.bio || "";
   const avatarUrl = user?.avatar?.url;
-
-  // Use real counts from activities
-  const postsCount = userPosts.length;
+  const initial = (user?.userName?.[0] || user?.firstName?.[0] || "?").toUpperCase();
 
   // Load saved accounts from storage on mount
   React.useEffect(() => {
@@ -435,8 +415,6 @@ export default function ProfileScreen() {
   React.useEffect(() => {
     async function saveCurrentAccount() {
       if (!user) return;
-
-      // Get current tokens from SecureStore (where apiClient stores them)
       const accessToken = await SecureStore.getItemAsync("accessToken");
       const refreshToken = await SecureStore.getItemAsync("refreshToken");
 
@@ -454,14 +432,12 @@ export default function ProfileScreen() {
             refreshToken: refreshToken || undefined,
           };
           const updated = [...prev, newAccount];
-          // Save to storage
           AsyncStorage.setItem(
             SAVED_ACCOUNTS_KEY,
             JSON.stringify(updated),
           ).catch(() => {});
           return updated;
         } else {
-          // Update existing account info (in case user updated their profile or got new tokens)
           const updated = prev.map((a) =>
             a.id === user.id
               ? {
@@ -475,11 +451,10 @@ export default function ProfileScreen() {
                 }
               : a,
           );
-          // Save updated info to storage
           AsyncStorage.setItem(
             SAVED_ACCOUNTS_KEY,
             JSON.stringify(updated),
-          ).catch((err) => console.error("Error updating account:", err));
+          ).catch(() => {});
           return updated;
         }
       });
@@ -487,18 +462,23 @@ export default function ProfileScreen() {
     saveCurrentAccount();
   }, [user]);
 
-  const handleAvatarDoubleTap = () => {
-    const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300;
+  const avatarTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap detected - show account switcher
+  const handleAvatarTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Double tap → account switcher
+      if (avatarTapTimer.current) clearTimeout(avatarTapTimer.current);
       openAccountSwitcher();
+    } else {
+      // Single tap → open avatar viewer (delayed to detect double tap)
+      avatarTapTimer.current = setTimeout(() => {
+        if (avatarUrl) setShowAvatarViewer(true);
+      }, 300);
     }
     lastTapRef.current = now;
   };
 
-  // Remove a saved account from storage (expired session)
   const removeSavedAccount = React.useCallback(async (accountId: number) => {
     setSavedAccounts((prev) => {
       const updated = prev.filter((a) => a.id !== accountId);
@@ -520,8 +500,6 @@ export default function ProfileScreen() {
     }
 
     closeAccountSwitcher();
-
-    // Try to switch to the account using saved tokens
     const success = await switchAccount(
       account.accessToken,
       account.refreshToken,
@@ -539,9 +517,6 @@ export default function ProfileScreen() {
 
   const handleAddAccount = async () => {
     closeAccountSwitcher();
-    // Log out first so the auth guard doesn't bounce us back to (tabs).
-    // The current account's tokens are already persisted in savedAccounts,
-    // so the user can switch back later.
     logout();
   };
 
@@ -556,14 +531,12 @@ export default function ProfileScreen() {
         return;
       }
 
-      // If the current user IS the owner, just go to manage venue
       if (user && venue.ownerId === user.id) {
         closeAccountSwitcher();
         router.push(`/manage-venue/${venue.id}`);
         return;
       }
 
-      // Try to switch to the venue owner's account
       const ownerAccount = savedAccounts.find((a) => a.id === venue.ownerId);
       if (!ownerAccount || !ownerAccount.accessToken) {
         showError("Venue owner account not saved on this device.");
@@ -601,23 +574,15 @@ export default function ProfileScreen() {
         message: `Check out @${username} on Status!`,
         url: `status://user/${username}`,
       });
-    } catch (error) {
-      console.log("Share error:", error);
-    }
+    } catch {}
   };
 
   if (isLoading) {
     return (
       <SwipeableTabView>
-        <View
-          style={[
-            styles.container,
-            styles.loadingContainer,
-            { backgroundColor: colors.background },
-          ]}
-        >
+        <View style={[s.container, s.centerContent]}>
           <DarkGradientBg />
-          <ActivityIndicator size="large" color={colors.text} />
+          <ActivityIndicator size="large" color={colors.textTertiary} />
         </View>
       </SwipeableTabView>
     );
@@ -625,305 +590,266 @@ export default function ProfileScreen() {
 
   return (
     <SwipeableTabView>
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={s.container}>
         <DarkGradientBg />
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop: insets.top + 8 },
-          ]}
-          showsVerticalScrollIndicator={false}
-          refreshControl={refreshControl}
-        >
-          {/* Header - Centered Username */}
-          <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-            <TouchableOpacity
-              style={[styles.headerIconWrapper, { borderColor: border }]}
-              activeOpacity={0.7}
-              onPress={() => setShowCreateMenu(true)}
-            >
-              <GlassView
-                {...liquidGlass.surface}
-                tintColor={surfaceTint}
-                borderRadius={20}
-                style={styles.headerIconGlass}
-              />
-              <Ionicons name="add" size={20} color={t.primary} />
-            </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.usernameButton}
-              onPress={openAccountSwitcher}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.headerUsername, { color: t.primary }]}>
-                {username}
-              </Text>
+        {/* Floating Header — stays fixed on scroll */}
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={[s.floatingHeader, { paddingTop: insets.top + 8 }]}
+        >
+          <LinearGradient
+            colors={[...HERO_GRADIENT]}
+            locations={[0, 0.35, 0.7, 1]}
+            style={StyleSheet.absoluteFillObject}
+          />
+          <TouchableOpacity
+            style={s.glassCircle}
+            activeOpacity={0.7}
+            onPress={() => setShowCreateMenu(true)}
+          >
+            <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
+            <Ionicons name="add" size={22} color="rgba(0,0,0,0.7)" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={s.usernameCenter}
+            onPress={openAccountSwitcher}
+            activeOpacity={0.7}
+          >
+            <View style={s.usernameSpacer}>
+              {user?.isVerified && <View style={{ width: 16 + 5 }} />}
+              <View style={{ width: 13 + 3 }} />
+            </View>
+            <Text style={s.heroUsername}>@{username}</Text>
+            <View style={s.usernameBadges}>
               {user?.isVerified && (
                 <MaterialCommunityIcons
                   name="check-decagram"
-                  size={20}
+                  size={16}
                   color="#3897F0"
                 />
               )}
-              <Ionicons
-                name="chevron-down"
-                size={16}
-                color={t.tertiary}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.headerIconWrapper, { borderColor: border }]}
-              activeOpacity={0.7}
-              onPress={() => router.push("/settings")}
-            >
-              <GlassView
-                {...liquidGlass.surface}
-                tintColor={surfaceTint}
-                borderRadius={20}
-                style={styles.headerIconGlass}
-              />
-              <Ionicons name="settings-outline" size={20} color={t.primary} />
-            </TouchableOpacity>
-          </Animated.View>
-
-          {/* Profile Info Row */}
-          <Animated.View
-            entering={FadeInDown.delay(100).duration(500).springify()}
-            style={styles.profileRow}
-          >
-            <TouchableOpacity
-              onPress={handleAvatarDoubleTap}
-              activeOpacity={0.9}
-            >
-              <Image
-                source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage}
-                style={[
-                  styles.avatar,
-                  { borderColor: border },
-                ]}
-              />
-            </TouchableOpacity>
-            <View style={[styles.statsCard, { borderColor: border }]}>
-              <GlassView
-                {...liquidGlass.surface}
-                tintColor={surfaceTint}
-                borderRadius={16}
-                style={styles.statsCardGlass}
-              />
-              <View style={styles.statsRow}>
-                <TouchableOpacity style={styles.statButton} activeOpacity={1}>
-                  <Text style={[styles.statValue, { color: t.primary }]}>{postsCount}</Text>
-                  <Text style={[styles.statLabel, { color: t.tertiary }]}>Posts</Text>
-                </TouchableOpacity>
-                <View style={[styles.statDivider, { backgroundColor: border }]} />
-                <TouchableOpacity
-                  style={styles.statButton}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setFollowersSheetTab("followers");
-                    setFollowersSheetVisible(true);
-                  }}
-                >
-                  <Text style={[styles.statValue, { color: t.primary }]}>{followerCount}</Text>
-                  <Text style={[styles.statLabel, { color: t.tertiary }]}>Followers</Text>
-                </TouchableOpacity>
-                <View style={[styles.statDivider, { backgroundColor: border }]} />
-                <TouchableOpacity
-                  style={styles.statButton}
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    setFollowersSheetTab("following");
-                    setFollowersSheetVisible(true);
-                  }}
-                >
-                  <Text style={[styles.statValue, { color: t.primary }]}>{followingCount}</Text>
-                  <Text style={[styles.statLabel, { color: t.tertiary }]}>Following</Text>
-                </TouchableOpacity>
-              </View>
+              <Ionicons name="chevron-down" size={13} color="rgba(0,0,0,0.35)" />
             </View>
-          </Animated.View>
+          </TouchableOpacity>
 
-          {/* Name and Bio */}
-          <Animated.View
-            entering={FadeInDown.delay(200).duration(500).springify()}
-            style={styles.bioSection}
+          <TouchableOpacity
+            style={s.glassCircle}
+            activeOpacity={0.7}
+            onPress={() => router.push("/settings")}
           >
-            <Text style={[styles.displayName, { color: t.primary }]}>
-              {displayName}
-            </Text>
-            {bio ? (
-              <LinkifiedText
-                style={{ ...styles.bio, color: t.secondary }}
+            <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
+            <Ionicons name="settings-outline" size={20} color="rgba(0,0,0,0.7)" />
+          </TouchableOpacity>
+        </Animated.View>
+
+        <ScrollView
+          style={{ flex: 1, backgroundColor: "rgba(160,160,168,0.35)" }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 100, backgroundColor: "#f2f2f2" }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        >
+          {/* ── Hero Section ── */}
+          <View style={[s.hero, { paddingTop: insets.top + 56 }]}>
+            <LinearGradient
+              colors={[...HERO_GRADIENT]}
+              locations={[0, 0.35, 0.7, 1]}
+              style={StyleSheet.absoluteFillObject}
+            />
+
+            {/* Avatar */}
+            <Animated.View
+              entering={FadeInDown.delay(100).duration(500).springify()}
+              style={s.avatarContainer}
+            >
+              <TouchableOpacity onPress={handleAvatarTap} activeOpacity={0.9}>
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={s.avatarImage} />
+                ) : (
+                  <View style={s.avatarSquare}>
+                    <GlassView {...liquidGlass.surface} borderRadius={24} style={StyleSheet.absoluteFill} />
+                    <Text style={s.avatarInitial}>{initial}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Display name */}
+            <Animated.View
+              entering={FadeInDown.delay(130).duration(500).springify()}
+            >
+              <Text style={s.heroDisplayName}>{displayName}</Text>
+            </Animated.View>
+
+            {/* Stats */}
+            <Animated.View
+              entering={FadeInDown.delay(150).duration(500).springify()}
+              style={s.heroStats}
+            >
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setFollowersSheetTab("followers");
+                  setFollowersSheetVisible(true);
+                }}
               >
-                {bio}
-              </LinkifiedText>
+                <Text style={s.heroStatText}>
+                  {followerCount} {followerCount === 1 ? "follower" : "followers"}
+                </Text>
+              </TouchableOpacity>
+              <Text style={s.heroStatDot}> · </Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  setFollowersSheetTab("following");
+                  setFollowersSheetVisible(true);
+                }}
+              >
+                <Text style={s.heroStatText}>{followingCount} following</Text>
+              </TouchableOpacity>
+            </Animated.View>
+
+            {/* Bio */}
+            {bio ? (
+              <Animated.View
+                entering={FadeInDown.delay(170).duration(500).springify()}
+                style={s.heroBioWrap}
+              >
+                <LinkifiedText style={s.heroBio as any}>{bio}</LinkifiedText>
+              </Animated.View>
             ) : null}
-          </Animated.View>
+          </View>
+
+          {/* ── Content Section ── */}
 
           {/* Dashboard Button */}
           <Animated.View
             entering={FadeInDown.delay(250).duration(500).springify()}
-            style={styles.dashboardButtonContainer}
+            style={s.btnSection}
           >
             <TouchableOpacity
-              activeOpacity={0.8}
+              style={s.glassBtn}
+              activeOpacity={0.7}
               onPress={() => router.push("/dashboard")}
             >
-              <View style={[styles.glassButton, { borderColor: border }]}>
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={surfaceTint}
-                  borderRadius={14}
-                  style={styles.glassButtonBg}
-                />
-                <View style={styles.glassButtonContent}>
-                  <Ionicons name="grid-outline" size={18} color={t.primary} />
-                  <Text style={[styles.glassButtonText, { color: t.primary }]}>Dashboard</Text>
-                </View>
-              </View>
+              <GlassView {...liquidGlass.surface} borderRadius={14} style={StyleSheet.absoluteFill} />
+              <Ionicons name="grid-outline" size={16} color="#1A1A1A" />
+              <Text style={s.glassBtnText}>Dashboard</Text>
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Action Buttons - Edit Profile and Share Profile */}
+          {/* Edit Profile / Share Profile */}
           <Animated.View
             entering={FadeInDown.delay(300).duration(500).springify()}
-            style={styles.actionButtons}
+            style={s.actionRow}
           >
             <TouchableOpacity
-              activeOpacity={0.8}
+              style={[s.glassBtn, { flex: 1 }]}
+              activeOpacity={0.7}
               onPress={() => router.push("/edit-profile")}
-              style={{ flex: 1 }}
             >
-              <View style={[styles.glassButton, { borderColor: border }]}>
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={surfaceTint}
-                  borderRadius={14}
-                  style={styles.glassButtonBg}
-                />
-                <View style={styles.glassButtonContent}>
-                  <Text style={[styles.glassButtonText, { color: t.primary }]}>Edit Profile</Text>
-                </View>
-              </View>
+              <GlassView {...liquidGlass.surface} borderRadius={14} style={StyleSheet.absoluteFill} />
+              <Text style={s.glassBtnText}>Edit Profile</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              activeOpacity={0.8}
+              style={[s.glassBtn, { flex: 1 }]}
+              activeOpacity={0.7}
               onPress={handleShareProfile}
-              style={{ flex: 1 }}
             >
-              <View style={[styles.glassButton, { borderColor: border }]}>
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={surfaceTint}
-                  borderRadius={14}
-                  style={styles.glassButtonBg}
-                />
-                <View style={styles.glassButtonContent}>
-                  <Text style={[styles.glassButtonText, { color: t.primary }]}>Share Profile</Text>
-                </View>
-              </View>
+              <GlassView {...liquidGlass.surface} borderRadius={14} style={StyleSheet.absoluteFill} />
+              <Text style={s.glassBtnText}>Share Profile</Text>
             </TouchableOpacity>
           </Animated.View>
 
-          {/* Posts Grid Header */}
+          {/* Posts Card */}
           <Animated.View
-            entering={FadeInDown.delay(400).duration(500).springify()}
-            style={[styles.gridHeader, { borderTopColor: border }]}
+            entering={FadeInDown.delay(350).duration(500).springify()}
+            style={s.postsSection}
           >
-            <View
-              style={[
-                styles.gridTab,
-                styles.gridTabActive,
-                { borderBottomColor: t.primary },
-              ]}
-            >
-              <Ionicons name="grid-outline" size={24} color={t.primary} />
+            <View style={s.postsCard}>
+              <GlassView {...liquidGlass.surface} borderRadius={20} style={StyleSheet.absoluteFill} />
+              <Text style={s.postsSectionTitle}>
+                Posts{userPosts.length > 0 ? ` (${userPosts.length})` : ""}
+              </Text>
+
+              {postsLoading ? (
+                <View style={s.postsLoading}>
+                  <ActivityIndicator color={colors.textTertiary} size="small" />
+                </View>
+              ) : userPosts.length > 0 ? (
+                <View style={s.postsGrid}>
+                  {userPosts.map((post) => {
+                    const firstMedia = post.media?.[0];
+                    const imageUrl =
+                      firstMedia?.type === "image"
+                        ? firstMedia.url
+                        : post.eventFlyerUrl || post.eventImageUrl;
+                    const videoUrl =
+                      firstMedia?.type === "video" ? firstMedia.url : undefined;
+                    const isVideo = firstMedia?.type === "video";
+
+                    return (
+                      <TouchableOpacity
+                        key={post.id}
+                        activeOpacity={0.9}
+                        style={s.postContainer}
+                        onPress={() =>
+                          post.eventId
+                            ? router.push({
+                                pathname: "/event/[id]",
+                                params: { id: post.eventId.toString() },
+                              })
+                            : router.push({
+                                pathname: "/post/[id]",
+                                params: { id: String(post.id) },
+                              })
+                        }
+                      >
+                        {isVideo && videoUrl ? (
+                          <VideoThumbnailImage
+                            videoUrl={videoUrl}
+                            fallbackUri={firstMedia?.thumbnailUrl || imageUrl || undefined}
+                            style={s.postImage}
+                          />
+                        ) : imageUrl ? (
+                          <Image
+                            source={{ uri: imageUrl }}
+                            style={s.postImage}
+                          />
+                        ) : (
+                          <View style={[s.postImage, s.postPlaceholder]}>
+                            <Ionicons
+                              name="document-text-outline"
+                              size={22}
+                              color={colors.textTertiary}
+                            />
+                          </View>
+                        )}
+                        {isVideo && (
+                          <View style={s.videoIndicator}>
+                            <Ionicons name="play" size={14} color="#fff" />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View style={s.noPosts}>
+                  <Ionicons
+                    name="images-outline"
+                    size={40}
+                    color={colors.textTertiary}
+                  />
+                  <Text style={s.noPostsText}>No posts yet</Text>
+                </View>
+              )}
             </View>
           </Animated.View>
-
-          {/* Posts Grid */}
-          <Animated.View
-            entering={FadeInDown.delay(500).duration(500).springify()}
-            style={styles.postsGrid}
-          >
-            {postsLoading ? (
-              <View style={styles.postsLoadingContainer}>
-                <ActivityIndicator color={t.primary} size="small" />
-              </View>
-            ) : userPosts.length > 0 ? (
-              <>
-              {userPosts.map((post) => {
-                const firstMedia = post.media?.[0];
-                const imageUrl = firstMedia?.type === 'image' ? firstMedia.url : post.eventFlyerUrl || post.eventImageUrl;
-                const videoUrl = firstMedia?.type === 'video' ? firstMedia.url : undefined;
-                const isVideo = firstMedia?.type === 'video';
-
-                return (
-                  <TouchableOpacity
-                    key={post.id}
-                    activeOpacity={0.9}
-                    style={styles.postContainer}
-                    onPress={() =>
-                      post.eventId
-                        ? router.push({ pathname: "/event/[id]", params: { id: post.eventId.toString() } })
-                        : router.push({ pathname: "/post/[id]", params: { id: String(post.id) } })
-                    }
-                  >
-                    {isVideo && videoUrl ? (
-                      <VideoThumbnailImage
-                        videoUrl={videoUrl}
-                        fallbackUri={firstMedia?.thumbnailUrl || imageUrl}
-                        style={[
-                          styles.postImage,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
-                        ]}
-                      />
-                    ) : imageUrl ? (
-                      <Image
-                        source={{ uri: imageUrl }}
-                        style={[
-                          styles.postImage,
-                          { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
-                        ]}
-                      />
-                    ) : (
-                      <View style={[styles.postImage, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', justifyContent: 'center', alignItems: 'center' }]}>
-                        <Ionicons name="document-text-outline" size={24} color={t.muted} />
-                      </View>
-                    )}
-                    {isVideo && (
-                      <View style={styles.videoIndicator}>
-                        <Ionicons name="play" size={32} color="#fff" />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-              </>
-            ) : (
-              <View style={styles.noPostsContainer}>
-                <Ionicons
-                  name="images-outline"
-                  size={48}
-                  color={t.muted}
-                />
-                <Text
-                  style={[styles.noPostsText, { color: t.muted }]}
-                >
-                  No posts yet
-                </Text>
-              </View>
-            )}
-          </Animated.View>
-
-          {/* Bottom spacing */}
-          <View style={{ height: insets.bottom + 100 }} />
         </ScrollView>
 
-        {/* Followers / Following Sheet */}
+        {/* Followers Sheet */}
         {user?.id && (
           <FollowersSheet
             visible={followersSheetVisible}
@@ -936,7 +862,7 @@ export default function ProfileScreen() {
           />
         )}
 
-        {/* Account Switcher Modal - only show accounts with active sessions */}
+        {/* Account Switcher */}
         <AccountSwitcherModal
           visible={isAccountSwitcherOpen}
           currentUserId={user?.id}
@@ -956,160 +882,229 @@ export default function ProfileScreen() {
           onClose={() => setShowCreateMenu(false)}
           options={createMenuOptions}
         />
+
+        {/* Avatar Viewer */}
+        <Modal
+          visible={showAvatarViewer}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowAvatarViewer(false)}
+        >
+          <TouchableOpacity
+            style={s.avatarViewerOverlay}
+            activeOpacity={1}
+            onPress={() => setShowAvatarViewer(false)}
+          >
+            <View style={s.avatarViewerContainer}>
+              {avatarUrl && (
+                <Image
+                  source={{ uri: avatarUrl }}
+                  style={s.avatarViewerImage}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+            <TouchableOpacity
+              style={s.avatarViewerClose}
+              onPress={() => setShowAvatarViewer(false)}
+            >
+              <Ionicons name="close" size={22} color="#fff" />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
       </View>
     </SwipeableTabView>
   );
 }
 
-const styles = StyleSheet.create({
+// ─── Styles ─────────────────────────────────────────────────────
+
+const AVATAR_SIZE = 100;
+const AVATAR_RADIUS = 24;
+
+const s = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f2f2f7",
   },
-  contextBg: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.5,
-    transform: [{ scale: 1.5 }],
-  },
-  loadingContainer: {
+  centerContent: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  scrollView: {
-    flex: 1,
+
+  // ── Hero ──
+  hero: {
+    paddingBottom: 12,
   },
-  scrollContent: {
-    paddingHorizontal: 0,
-  },
-  header: {
+
+  // ── Floating Header ──
+  floatingHeader: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingBottom: 8,
   },
-  usernameButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  headerUsername: {
-    fontSize: 22,
-    fontFamily: "Lato_700Bold",
-  },
-  headerIconWrapper: {
+  glassCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-  },
-  headerIconGlass: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  profileRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    borderWidth: 2,
-  },
-  statsCard: {
-    flex: 1,
-    marginLeft: 16,
-    borderRadius: 16,
     overflow: "hidden",
-    borderWidth: 1,
   },
-  statsCardGlass: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  statsRow: {
+  usernameCenter: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    justifyContent: "center",
   },
-  statButton: {
-    flex: 1,
+  usernameSpacer: {
+    flexDirection: "row",
+    opacity: 0,
+  },
+  usernameBadges: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 3,
+    marginLeft: 5,
   },
-  statDivider: {
-    width: 1,
-    height: 28,
+  heroUsername: {
+    fontSize: 20,
+    fontFamily: "Lato_700Bold",
+    color: "rgba(0,0,0,0.75)",
   },
-  statValue: {
+
+  // ── Avatar ──
+  avatarContainer: {
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  avatarSquare: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_RADIUS,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.6)",
+    // Subtle shadow for 3D lift
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+  },
+  avatarImage: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_RADIUS,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.6)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+  },
+  avatarInitial: {
+    fontSize: 38,
+    fontFamily: "Lato_700Bold",
+    color: "rgba(0,0,0,0.5)",
+  },
+
+  // ── Hero stats ──
+  heroStats: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  heroStatText: {
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.45)",
+  },
+  heroStatDot: {
+    fontSize: 14,
+    color: "rgba(0,0,0,0.25)",
+  },
+
+  // ── Hero display name ──
+  heroDisplayName: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
+    color: "rgba(0,0,0,0.75)",
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 2,
   },
-  statLabel: {
-    fontSize: 12,
-    fontFamily: "Lato_400Regular",
-    marginTop: 2,
+
+  // ── Hero bio ──
+  heroBioWrap: {
+    paddingHorizontal: 32,
+    marginTop: 4,
   },
-  bioSection: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  displayName: {
-    fontSize: 14,
-    fontFamily: "Lato_700Bold",
-    marginBottom: 4,
-  },
-  bio: {
+  heroBio: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.45)",
     lineHeight: 20,
+    textAlign: "center",
   },
-  dashboardButtonContainer: {
+
+  // ── Buttons ──
+  btnSection: {
     paddingHorizontal: 16,
-    marginBottom: 8,
+    paddingTop: 6,
   },
-  glassButton: {
-    borderRadius: 14,
-    overflow: "hidden",
-    borderWidth: 1,
+  actionRow: {
+    flexDirection: "row",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
   },
-  glassButtonBg: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  glassButtonContent: {
+  glassBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 11,
+    height: 44,
+    borderRadius: 14,
     gap: 8,
+    overflow: "hidden",
   },
-  glassButtonText: {
+  glassBtnText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
+    color: "#1A1A1A",
   },
-  glassCircleBg: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 22,
+
+  // ── Posts Card ──
+  postsSection: {
+    paddingHorizontal: CARD_H_PAD,
+    paddingTop: 16,
   },
-  actionButtons: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    gap: 8,
+  postsCard: {
+    borderRadius: 20,
+    overflow: "hidden",
+    padding: CARD_INNER_PAD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.5)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
   },
-  gridHeader: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-  },
-  gridTab: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  gridTabActive: {
-    borderBottomWidth: 1,
+  postsSectionTitle: {
+    fontSize: 18,
+    fontFamily: "Lato_700Bold",
+    color: "#1A1A1A",
+    marginBottom: 12,
+    marginLeft: 4,
   },
   postsGrid: {
     flexDirection: "row",
@@ -1118,85 +1113,119 @@ const styles = StyleSheet.create({
   },
   postContainer: {
     position: "relative",
-    width: POST_SIZE,
-    height: POST_SIZE,
+    width: GRID_POST_SIZE,
+    height: GRID_POST_SIZE,
+    borderRadius: 8,
+    overflow: "hidden",
   },
   postImage: {
     width: "100%",
     height: "100%",
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.04)",
+  },
+  postPlaceholder: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   videoIndicator: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.2)",
+    top: 6,
+    right: 6,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 4,
+    padding: 3,
   },
-  postsLoadingContainer: {
-    width: "100%",
+  postsLoading: {
     paddingVertical: 40,
     alignItems: "center",
   },
-  noPostsContainer: {
-    width: "100%",
-    paddingVertical: 60,
+  noPosts: {
+    paddingVertical: 32,
     alignItems: "center",
-    gap: 12,
+    gap: 8,
   },
   noPostsText: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.35)",
   },
-  // Account switcher modal styles
-  modalOverlay: {
+
+  // ── Avatar Viewer ──
+  avatarViewerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarViewerContainer: {
+    width: SCREEN_WIDTH - 40,
+    height: SCREEN_WIDTH - 40,
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  avatarViewerImage: {
+    width: "100%",
+    height: "100%",
+  },
+  avatarViewerClose: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
+
+// ─── Modal Styles (Account Switcher) ────────────────────────────
+
+const modalStyles = StyleSheet.create({
+  overlay: {
     flex: 1,
     justifyContent: "flex-end",
     backgroundColor: "rgba(0,0,0,0.3)",
   },
-  modalSheet: {
+  sheet: {
     paddingHorizontal: 0,
   },
-  modalContent: {
+  content: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: "hidden",
   },
-  modalGlassBg: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  modalHandle: {
+  handle: {
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(0,0,0,0.12)",
     alignSelf: "center",
     marginTop: 10,
     marginBottom: 4,
   },
-  modalHeader: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(255,255,255,0.08)",
+    borderBottomColor: "rgba(0,0,0,0.06)",
   },
-  modalTitle: {
+  title: {
     fontSize: 17,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
-  modalCloseButton: {
+  closeButton: {
     width: 32,
     height: 32,
     alignItems: "center",
     justifyContent: "center",
   },
-  accountList: {},
   accountItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1205,17 +1234,17 @@ const styles = StyleSheet.create({
   },
   accountItemBorder: {
     borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(255,255,255,0.08)",
+    borderBottomColor: "rgba(0,0,0,0.06)",
   },
   accountAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(0,0,0,0.08)",
   },
   accountAvatarActive: {
-    borderColor: "#fff",
+    borderColor: "#1A1A1A",
   },
   accountInfo: {
     flex: 1,
@@ -1224,12 +1253,12 @@ const styles = StyleSheet.create({
   accountUsername: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   accountName: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
     marginTop: 2,
   },
   addAccountButton: {
@@ -1238,7 +1267,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderTopWidth: 0.5,
-    borderTopColor: "rgba(255,255,255,0.08)",
+    borderTopColor: "rgba(0,0,0,0.06)",
   },
   addAccountIcon: {
     width: 44,
@@ -1251,7 +1280,7 @@ const styles = StyleSheet.create({
   addAccountText: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
     marginLeft: 12,
   },
   unreadBadge: {
@@ -1280,7 +1309,7 @@ const styles = StyleSheet.create({
   venuesSectionTitle: {
     fontSize: 12,
     fontFamily: "Lato_700Bold",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.35)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },

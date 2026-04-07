@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: 4,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(0,0,0,0.2)',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   submitText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   embedPreview: {
     marginTop: 12,

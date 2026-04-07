@@ -481,6 +481,9 @@ export default function NotificationsScreen() {
                 <ActivityIndicator color={colors.textTertiary} style={{ marginVertical: 16 }} />
               ) : null
             }
+            windowSize={15}
+            maxToRenderPerBatch={10}
+            removeClippedSubviews={true}
           />
         ) : (
           <ScrollView

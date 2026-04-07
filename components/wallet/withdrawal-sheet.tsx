@@ -912,7 +912,7 @@ export function WithdrawalSheet({
               borderRadius: 12,
               borderWidth: 1,
               borderColor: isDark
-                ? "rgba(255,255,255,0.25)"
+                ? "rgba(0,0,0,0.2)"
                 : "rgba(0,0,0,0.15)",
               backgroundColor: isDark ? undefined : "#f5f5f5",
               overflow: "hidden",
@@ -1052,7 +1052,7 @@ const styles = StyleSheet.create({
   quickAmountText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   methodSection: {
     marginBottom: 16,
@@ -1107,7 +1107,7 @@ const styles = StyleSheet.create({
   withdrawButtonText: {
     fontSize: 17,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   // View header
   viewHeader: {
@@ -1168,7 +1168,7 @@ const styles = StyleSheet.create({
   defaultBadgeText: {
     fontSize: 11,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   methodOptionLast4: {
     fontSize: 12,
@@ -1186,7 +1186,7 @@ const styles = StyleSheet.create({
   methodActionText: {
     fontSize: 13,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   addMethodOption: {
     flexDirection: "row",
@@ -1201,7 +1201,7 @@ const styles = StyleSheet.create({
   addMethodOptionText: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   // Method choices
   methodChoices: {
@@ -1334,6 +1334,6 @@ const styles = StyleSheet.create({
   confirmWithdrawText: {
     fontSize: 16,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
 });

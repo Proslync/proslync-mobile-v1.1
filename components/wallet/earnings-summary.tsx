@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   withdrawButtonText: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   helperTexts: {
     alignItems: 'center',

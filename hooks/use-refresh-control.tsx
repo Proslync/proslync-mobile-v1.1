@@ -1,10 +1,11 @@
 import * as React from 'react';
 import * as Haptics from 'expo-haptics';
-import { RefreshControl, RefreshControlProps } from 'react-native';
+import { Platform, RefreshControl, RefreshControlProps } from 'react-native';
 
 interface UseRefreshControlOptions {
   onRefresh: () => Promise<void> | void;
   tintColor?: string;
+  progressBackgroundColor?: string;
 }
 
 interface UseRefreshControlResult {
@@ -15,12 +16,12 @@ interface UseRefreshControlResult {
 
 export function useRefreshControl({
   onRefresh,
-  tintColor = '#fff',
+  tintColor = 'rgba(0,0,0,0.35)',
+  progressBackgroundColor,
 }: UseRefreshControlOptions): UseRefreshControlResult {
   const [refreshing, setRefreshing] = React.useState(false);
 
   const handleRefresh = React.useCallback(async () => {
-    // Trigger haptic feedback when pull-to-refresh is activated
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     setRefreshing(true);
@@ -39,10 +40,13 @@ export function useRefreshControl({
         refreshing={refreshing}
         onRefresh={handleRefresh}
         tintColor={tintColor}
-        colors={[tintColor]} // Android
+        colors={[tintColor]}
+        progressBackgroundColor={progressBackgroundColor}
+        // Pull the spinner down a bit so it doesn't hide behind nav bars
+        progressViewOffset={Platform.OS === 'android' ? 20 : 0}
       />
     ),
-    [refreshing, handleRefresh, tintColor]
+    [refreshing, handleRefresh, tintColor, progressBackgroundColor]
   );
 
   return {

@@ -18,6 +18,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const PEEK = 103;
 const PAGE_HEIGHT = SCREEN_HEIGHT - PEEK;
 import { useRouter } from 'expo-router';
+import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { FeedLoadingSkeleton } from '@/components/feed';
 import { FeedNavBar } from '@/components/feed/feed-nav-bar';
 import { VenueWeekCard, type VenueWeekCardData } from '@/components/feed/venue-week-card';
@@ -233,18 +234,8 @@ export default function FeedScreen() {
 
   const baseCards = React.useMemo(() => buildCards(enrichedItems, venueBackgrounds), [enrichedItems, venueBackgrounds]);
 
-  // Infinite loop: pre-populate enough copies so the feed never ends
-  const LOOP_COUNT = 50;
-  const cards = React.useMemo(() => {
-    if (baseCards.length === 0) return [];
-    const result: CardItem[] = [];
-    for (let i = 0; i < LOOP_COUNT; i++) {
-      for (const c of baseCards) {
-        result.push({ ...c, id: `${c.id}-${i}` });
-      }
-    }
-    return result;
-  }, [baseCards]);
+  // Use base cards directly — onEndReached handles pagination
+  const cards = baseCards;
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -391,6 +382,7 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
+      <DarkGradientBg />
       <Animated.FlatList
         data={cards}
         renderItem={renderCard}
@@ -409,6 +401,10 @@ export default function FeedScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#888" />
         }
         scrollEventThrottle={16}
+        windowSize={5}
+        maxToRenderPerBatch={3}
+        removeClippedSubviews
+        updateCellsBatchingPeriod={50}
       />
 
       <LinearGradient

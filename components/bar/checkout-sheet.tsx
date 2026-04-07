@@ -74,7 +74,7 @@ function TipContent({
       <View style={styles.header}>
         <Text style={styles.title}>Checkout</Text>
         <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-          <Ionicons name="close" size={22} color="rgba(255,255,255,0.5)" />
+          <Ionicons name="close" size={22} color="rgba(0,0,0,0.45)" />
         </TouchableOpacity>
       </View>
 
@@ -190,7 +190,7 @@ function TipContent({
           style={StyleSheet.absoluteFill}
           isInteractive
         />
-        <Ionicons name="flash" size={18} color="#fff" />
+        <Ionicons name="flash" size={18} color="#1A1A1A" />
         <Text style={styles.chargeText}>
           {loading ? "Processing..." : `Charge ${formatCents(totalCents)}`}
         </Text>
@@ -273,7 +273,7 @@ function GorhomTipSheet({
         width: 36,
         height: 4,
         borderRadius: 2,
-        backgroundColor: "rgba(255,255,255,0.3)",
+        backgroundColor: "rgba(0,0,0,0.25)",
       }}
       backdropComponent={renderBackdrop}
     >
@@ -316,16 +316,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   subtotal: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
     marginTop: 4,
     marginBottom: 20,
   },
   orderSummary: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(0,0,0,0.04)",
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
@@ -338,35 +338,35 @@ const styles = StyleSheet.create({
   orderQty: {
     fontSize: 13,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.35)",
     width: 28,
   },
   orderName: {
     flex: 1,
     fontSize: 13,
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(0,0,0,0.6)",
   },
   orderPrice: {
     fontSize: 13,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
     marginLeft: 8,
   },
   orderDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(0,0,0,0.06)",
     marginVertical: 4,
   },
   orderSubtotalLabel: {
     flex: 1,
     fontSize: 13,
     fontWeight: "600",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   orderSubtotalValue: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   presetsRow: {
     flexDirection: "row",
@@ -379,23 +379,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: "rgba(0,0,0,0.05)",
   },
   presetButtonActive: {
-    borderColor: "rgba(255,255,255,0.25)",
+    borderColor: "rgba(0,0,0,0.2)",
   },
   presetPercent: {
     fontSize: 16,
     fontWeight: "700",
-    color: "rgba(255,255,255,0.6)",
+    color: "rgba(0,0,0,0.45)",
   },
   presetAmount: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(0,0,0,0.3)",
     marginTop: 2,
   },
   presetActiveText: {
-    color: "#fff",
+    color: "#1A1A1A",
   },
   noTipButton: {
     alignItems: "center",
@@ -404,11 +404,11 @@ const styles = StyleSheet.create({
   },
   noTipText: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.35)",
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(0,0,0,0.06)",
     marginVertical: 16,
   },
   totalSection: {
@@ -422,22 +422,22 @@ const styles = StyleSheet.create({
   },
   totalRowLabel: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
   },
   totalRowValue: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   totalLabel: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   totalValue: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   chargeButton: {
     flexDirection: "row",
@@ -448,12 +448,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(0,0,0,0.1)",
   },
   chargeText: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   disabled: {
     opacity: 0.5,

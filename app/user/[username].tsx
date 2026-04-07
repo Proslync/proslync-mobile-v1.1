@@ -14,6 +14,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Modal,
   ScrollView,
   Share,
   StyleSheet,
@@ -23,12 +24,12 @@ import {
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { FollowersSheet } from "@/components/feed/followers-sheet";
-import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { LinkifiedText } from "@/components/shared/linkified-text";
 import { VideoThumbnailImage } from "@/components/shared/video-thumbnail";
-import { liquidGlass, activeGradient } from "@/constants/glass/liquid-glass";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useFollowUser } from "@/hooks/use-follow-user";
 import { useMutualFollowers } from "@/hooks/use-mutual-followers";
@@ -40,38 +41,20 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useBlockUser, useUnblockUser, BLOCKED_USERS_KEY } from "@/hooks/use-blocked-users";
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassView } from "expo-glass-effect";
-import { LinearGradient } from "expo-linear-gradient";
 
 const DEFAULT_AVATAR = require("@/assets/images/default-avatar.png");
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const POST_GAP = 2;
 const POST_SIZE = (SCREEN_WIDTH - POST_GAP * 2) / 3;
 
-function StatButton({
-  value,
-  label,
-  onPress,
-  colors,
-}: {
-  value: number | string;
-  label: string;
-  onPress?: () => void;
-  colors: any;
-}) {
-  return (
-    <TouchableOpacity
-      style={styles.statButton}
-      onPress={onPress}
-      activeOpacity={onPress ? 0.7 : 1}
-      disabled={!onPress}
-    >
-      <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
-      <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
+// Hero gradient colors — grey at top fading to light
+const HERO_GRADIENT = [
+  "rgba(140,140,148,0.65)",
+  "rgba(165,165,172,0.45)",
+  "rgba(200,200,206,0.22)",
+  "rgba(242,242,247,0)",
+] as const;
+const HERO_HEIGHT = 340;
 
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -82,7 +65,7 @@ export default function UserProfileScreen() {
   }>();
   const { showError, showSuccess } = useToast();
   const queryClient = useQueryClient();
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const {
     data: user,
     isLoading,
@@ -98,6 +81,7 @@ export default function UserProfileScreen() {
   const [showMenu, setShowMenu] = React.useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = React.useState(false);
   const [showReportConfirm, setShowReportConfirm] = React.useState(false);
+  const [showAvatarViewer, setShowAvatarViewer] = React.useState(false);
 
   // Block status
   const isBlocked = user?.isBlocked ?? false;
@@ -145,6 +129,9 @@ export default function UserProfileScreen() {
 
   const avatarUrl = user?.avatar?.url;
 
+  // Initial letter for avatar fallback
+  const initial = (user?.userName?.[0] || user?.firstName?.[0] || "?").toUpperCase();
+
   const handleFollow = async () => {
     if (!user?.id || isFollowInProgress || isUnfollowInProgress || isAnyBlock) return;
     try {
@@ -175,9 +162,7 @@ export default function UserProfileScreen() {
 
     setIsCreatingChat(true);
     try {
-      // Create conversation (backend will dedup existing DMs)
       const conversation = await chatApi.createConversation([user.id]);
-
       router.push({
         pathname: "/chat/[conversationId]",
         params: { conversationId: conversation.id },
@@ -194,6 +179,15 @@ export default function UserProfileScreen() {
     }
   };
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: `Check out ${displayName}'s profile on Status!`,
+        url: `status://user/${username}`,
+      });
+    } catch {}
+  };
+
   const isSelf =
     currentUser && user?.id && String(currentUser.id) === String(user.id);
 
@@ -201,14 +195,7 @@ export default function UserProfileScreen() {
     {
       label: "Share this profile",
       icon: "share-outline",
-      onPress: async () => {
-        try {
-          await Share.share({
-            message: `Check out ${displayName}'s profile on Status!`,
-            url: `status://user/${username}`,
-          });
-        } catch {}
-      },
+      onPress: handleShare,
     },
     ...(isBlocked
       ? [
@@ -246,104 +233,35 @@ export default function UserProfileScreen() {
       : []),
   ];
 
-  // Dynamic styles based on theme
-  const dynamicStyles = {
-    container: {
-      backgroundColor: colors.background,
-    },
-    headerUsername: {
-      color: colors.text,
-    },
-    avatar: {
-      borderColor: colors.borderStrong,
-    },
-    displayName: {
-      color: colors.text,
-    },
-    bio: {
-      color: colors.textSecondary,
-    },
-    gridHeader: {
-      borderTopColor: colors.border,
-    },
-    gridTabActive: {
-      borderBottomColor: colors.text,
-    },
-    postImage: {
-      backgroundColor: colors.backgroundSecondary,
-    },
-    noPostsText: {
-      color: colors.textTertiary,
-    },
-    errorIconContainer: {
-      borderColor: colors.borderStrong,
-    },
-    errorTitle: {
-      color: colors.text,
-    },
-    errorSubtitle: {
-      color: colors.textTertiary,
-    },
-  };
-
+  // ─── Loading ───
   if (isLoading) {
     return (
-      <View
-        style={[
-          styles.container,
-          styles.loadingContainer,
-          dynamicStyles.container,
-        ]}
-      >
-        <ActivityIndicator size="large" color={colors.text} />
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={colors.textTertiary} />
       </View>
     );
   }
 
+  // ─── Error / Not Found ───
   if (error || !user) {
     return (
-      <View
-        style={[
-          styles.container,
-          dynamicStyles.container,
-          { paddingTop: insets.top + 8 },
-        ]}
-      >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerIcon}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
+      <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+        <View style={styles.errorHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.glassCircle}>
+            <GlassView {...liquidGlass.surface} borderRadius={20} style={StyleSheet.absoluteFill} />
+            <Ionicons name="chevron-back" size={20} color="#fff" />
           </TouchableOpacity>
-          <Text style={[styles.headerUsername, dynamicStyles.headerUsername]}>
-            Profile
-          </Text>
-          <View style={styles.headerIcon} />
         </View>
-        <View style={styles.errorContainer}>
-          <View
-            style={[
-              styles.errorIconContainer,
-              dynamicStyles.errorIconContainer,
-            ]}
-          >
-            <Ionicons
-              name="person-outline"
-              size={48}
-              color={colors.textTertiary}
-            />
+        <View style={styles.centerContent}>
+          <View style={styles.errorIconWrap}>
+            <Ionicons name="person-outline" size={48} color={colors.textTertiary} />
           </View>
-          <Text style={[styles.errorTitle, dynamicStyles.errorTitle]}>
-            User Not Found
-          </Text>
-          <Text style={[styles.errorSubtitle, dynamicStyles.errorSubtitle]}>
+          <Text style={styles.errorTitle}>User Not Found</Text>
+          <Text style={styles.errorSubtitle}>
             @{username} doesn't exist or has been removed
           </Text>
-          <TouchableOpacity
-            style={styles.goBackButton}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.goBackButton} onPress={() => router.back()}>
+            <GlassView {...liquidGlass.fillMedium} borderRadius={10} style={StyleSheet.absoluteFill} />
             <Text style={styles.goBackButtonText}>Go Back</Text>
           </TouchableOpacity>
         </View>
@@ -351,376 +269,368 @@ export default function UserProfileScreen() {
     );
   }
 
+  // ─── Main Profile ───
   return (
-    <View style={[styles.container, { backgroundColor: "#f2f2f2" }]}>
-      <LinearGradient
-        colors={[...activeGradient.colors]}
-        locations={[...activeGradient.locations]}
-        start={activeGradient.start}
-        end={activeGradient.end}
-        style={StyleSheet.absoluteFill}
-      />
+    <View style={styles.container}>
       <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingTop: insets.top + 8 },
-        ]}
+        style={{ flex: 1, backgroundColor: "rgba(160,160,168,0.35)" }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100, backgroundColor: "#f2f2f7" }}
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
       >
-        {/* Header - Same style as own profile */}
-        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerIcon}
-            activeOpacity={0.7}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
+        {/* ── Hero Section ── */}
+        <View style={styles.hero}>
+          <LinearGradient
+            colors={[...HERO_GRADIENT]}
+            locations={[0, 0.35, 0.7, 1]}
+            style={styles.heroGradient}
+          />
 
-          <View style={styles.headerNameRow}>
-            <Text
-              style={[styles.headerUsername, dynamicStyles.headerUsername]}
-              numberOfLines={1}
-            >
-              {user.userName ? `@${user.userName}` : displayName}
-            </Text>
-            {user.isVerified && (
-              <MaterialCommunityIcons
-                name="check-decagram"
-                size={16}
-                color={colors.verified}
-              />
-            )}
-          </View>
-
-          {!isSelf ? (
-            <TouchableOpacity
-              style={styles.headerIcon}
-              activeOpacity={0.7}
-              onPress={() => setShowMenu(true)}
-            >
-              <Ionicons
-                name="ellipsis-horizontal"
-                size={24}
-                color={colors.text}
-              />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.headerIcon} />
-          )}
-        </Animated.View>
-
-        {/* Blocked State */}
-        {isBlockedBy ? (
+          {/* Header */}
           <Animated.View
-            entering={FadeInDown.delay(100).duration(500).springify()}
-            style={styles.blockedContainer}
-          >
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={[styles.blockedAvatar, { borderColor: colors.borderStrong }]} />
-            ) : (
-              <Image source={DEFAULT_AVATAR} style={[styles.blockedAvatar, { borderColor: colors.borderStrong }]} />
-            )}
-            <Ionicons name="lock-closed" size={32} color={colors.textTertiary} style={{ marginTop: 20 }} />
-            <Text style={[styles.blockedTitle, { color: colors.text }]}>
-              This account is unavailable
-            </Text>
-            <Text style={[styles.blockedSubtext, { color: colors.textTertiary }]}>
-              You can't view this profile.
-            </Text>
-          </Animated.View>
-        ) : isBlocked ? (
-          <Animated.View
-            entering={FadeInDown.delay(100).duration(500).springify()}
-            style={styles.blockedContainer}
-          >
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={[styles.blockedAvatar, { borderColor: colors.borderStrong }]} />
-            ) : (
-              <Image source={DEFAULT_AVATAR} style={[styles.blockedAvatar, { borderColor: colors.borderStrong }]} />
-            )}
-            <Ionicons name="ban" size={32} color={colors.textTertiary} style={{ marginTop: 20 }} />
-            <Text style={[styles.blockedTitle, { color: colors.text }]}>
-              You blocked {displayName}
-            </Text>
-            <Text style={[styles.blockedSubtext, { color: colors.textTertiary }]}>
-              They can't see your profile or message you. You can unblock them anytime.
-            </Text>
-            <View style={{ marginTop: 16, width: 140 }}>
-              <GlassButton
-                label={isUnblocking ? "Unblocking..." : "Unblock"}
-                variant="glass"
-                size="md"
-                disabled={isUnblocking}
-                onPress={async () => {
-                  if (!user?.id) return;
-                  try {
-                    await unblock(user.id);
-                    showSuccess(`Unblocked ${displayName}`);
-                  } catch {
-                    showError("Failed to unblock user");
-                  }
-                }}
-              />
-            </View>
-          </Animated.View>
-        ) : (
-        <>
-        {/* Profile Info Row - Same as own profile */}
-        <Animated.View
-          entering={FadeInDown.delay(100).duration(500).springify()}
-          style={styles.profileRow}
-        >
-          {avatarUrl ? (
-            <Image
-              source={{ uri: avatarUrl }}
-              style={[styles.avatar, dynamicStyles.avatar]}
-            />
-          ) : (
-            <Image
-              source={DEFAULT_AVATAR}
-              style={[styles.avatar, dynamicStyles.avatar]}
-            />
-          )}
-          <View style={styles.statsRow}>
-            <StatButton
-              value={userPosts.length}
-              label="Posts"
-              colors={colors}
-            />
-            <StatButton
-              value={followerCount}
-              label="Followers"
-              colors={colors}
-              onPress={() => {
-                setFollowersSheetTab("followers");
-                setFollowersSheetVisible(true);
-              }}
-            />
-            <StatButton
-              value={followingCount}
-              label="Following"
-              colors={colors}
-              onPress={() => {
-                setFollowersSheetTab("following");
-                setFollowersSheetVisible(true);
-              }}
-            />
-          </View>
-        </Animated.View>
-
-        {/* Name and Bio - Same as own profile */}
-        <Animated.View
-          entering={FadeInDown.delay(200).duration(500).springify()}
-          style={styles.bioSection}
-        >
-          <Text style={[styles.displayName, dynamicStyles.displayName]}>
-            {displayName}
-          </Text>
-          {user.bio ? (
-            <LinkifiedText style={[styles.bio, dynamicStyles.bio] as any}>
-              {user.bio}
-            </LinkifiedText>
-          ) : null}
-        </Animated.View>
-
-        {/* Mutual Followers */}
-        {mutualCount > 0 && (
-          <Animated.View
-            entering={FadeInDown.delay(250).duration(500).springify()}
-            style={styles.mutualsSection}
+            entering={FadeIn.duration(300)}
+            style={[styles.headerRow, { paddingTop: insets.top + 8 }]}
           >
             <TouchableOpacity
-              style={styles.mutualsRow}
+              style={styles.glassCircle}
               activeOpacity={0.7}
-              onPress={() => {
-                setFollowersSheetTab("followers");
-                setFollowersSheetVisible(true);
-              }}
+              onPress={() => router.back()}
             >
-              <View style={styles.mutualsAvatars}>
-                {mutuals.slice(0, 3).map((m, i) => (
-                  <Image
-                    key={m.id}
-                    source={m.avatarUrl ? { uri: m.avatarUrl } : DEFAULT_AVATAR}
-                    style={[
-                      styles.mutualAvatar,
-                      {
-                        marginLeft: i > 0 ? -8 : 0,
-                        zIndex: 3 - i,
-                        borderColor: colors.background,
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-              <Text
-                style={[styles.mutualsText, { color: colors.textSecondary }]}
-                numberOfLines={2}
-              >
-                Followed by{" "}
-                <Text style={{ fontFamily: "Lato_700Bold" }}>
-                  {mutuals
-                    .slice(0, 2)
-                    .map((m) => m.userName || m.firstName || "User")
-                    .join(", ")}
-                </Text>
-                {mutualCount > 2 && (
-                  <Text>
-                    , and {mutualCount - 2}{" "}
-                    {mutualCount - 2 === 1 ? "other" : "others"}
-                  </Text>
-                )}
-              </Text>
+              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
+              <Ionicons name="chevron-back" size={20} color="rgba(0,0,0,0.7)" />
             </TouchableOpacity>
-          </Animated.View>
-        )}
 
-        {/* Action Buttons - Follow + Message */}
-        <Animated.View
-          entering={FadeInDown.delay(300).duration(500).springify()}
-          style={styles.actionButtons}
-        >
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              !isFollowing && styles.actionButtonFollow,
-              (isFollowInProgress || isUnfollowInProgress) &&
-                styles.actionButtonDisabled,
-            ]}
-            onPress={handleFollow}
-            activeOpacity={0.8}
-            disabled={isFollowInProgress || isUnfollowInProgress}
-          >
-            {isFollowing && (
-              <GlassView
-                {...liquidGlass.fill}
-                borderRadius={8}
-                style={styles.actionButtonGlass}
-              />
-            )}
-            {isFollowInProgress || isUnfollowInProgress ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.actionButtonText}>
-                {isFollowing ? "Following" : "Follow"}
-              </Text>
-            )}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.actionButton,
-              isCreatingChat && styles.actionButtonDisabled,
-            ]}
-            onPress={handleMessage}
-            activeOpacity={0.8}
-            disabled={isCreatingChat}
-          >
-            <GlassView
-              {...liquidGlass.fill}
-              borderRadius={8}
-              style={styles.actionButtonGlass}
-            />
-            {isCreatingChat ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.actionButtonText}>Message</Text>
-            )}
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Grid Header - Same as own profile */}
-        <Animated.View
-          entering={FadeInDown.delay(400).duration(500).springify()}
-          style={[styles.gridHeader, dynamicStyles.gridHeader]}
-        >
-          <View
-            style={[
-              styles.gridTab,
-              styles.gridTabActive,
-              dynamicStyles.gridTabActive,
-            ]}
-          >
-            <Ionicons name="grid-outline" size={24} color={colors.text} />
-          </View>
-        </Animated.View>
-
-        {/* Posts Grid */}
-        <Animated.View
-          entering={FadeInDown.delay(500).duration(500).springify()}
-          style={styles.postsGrid}
-        >
-          {postsLoading ? (
-            <View style={styles.postsLoadingContainer}>
-              <ActivityIndicator color={colors.text} size="small" />
-            </View>
-          ) : userPosts.length > 0 ? (
-            <>
-            {userPosts.map((post) => {
-              const firstMedia = post.media?.[0];
-              const imageUrl = firstMedia?.type === 'image' ? firstMedia.url : post.eventFlyerUrl || post.eventImageUrl;
-              const videoUrl = firstMedia?.type === 'video' ? firstMedia.url : undefined;
-              const isVideo = firstMedia?.type === 'video';
-
-              return (
+            <View style={styles.headerRight}>
+              {!isSelf && (
                 <TouchableOpacity
-                  key={post.id}
-                  activeOpacity={0.9}
-                  style={styles.postContainer}
-                  onPress={() =>
-                    post.eventId
-                      ? router.push({ pathname: "/event/[id]", params: { id: post.eventId.toString() } })
-                      : router.push({ pathname: "/post/[id]", params: { id: String(post.id) } })
-                  }
+                  style={styles.followPill}
+                  activeOpacity={0.7}
+                  onPress={handleFollow}
+                  disabled={isFollowInProgress || isUnfollowInProgress}
                 >
-                  {isVideo && videoUrl ? (
-                    <VideoThumbnailImage
-                      videoUrl={videoUrl}
-                      fallbackUri={firstMedia?.thumbnailUrl || imageUrl}
-                      style={[styles.postImage, dynamicStyles.postImage]}
-                    />
-                  ) : imageUrl ? (
-                    <Image
-                      source={{ uri: imageUrl }}
-                      style={[styles.postImage, dynamicStyles.postImage]}
-                    />
+                  <GlassView {...liquidGlass.fillMedium} borderRadius={18} style={StyleSheet.absoluteFill} />
+                  {isFollowInProgress || isUnfollowInProgress ? (
+                    <ActivityIndicator size="small" color="rgba(0,0,0,0.6)" />
                   ) : (
-                    <View style={[styles.postImage, dynamicStyles.postImage, { justifyContent: 'center', alignItems: 'center' }]}>
-                      <Ionicons name="document-text-outline" size={24} color="rgba(255,255,255,0.3)" />
-                    </View>
+                    <Text style={styles.followPillText}>
+                      {isFollowing ? "Following" : "Follow"}
+                    </Text>
                   )}
-                  {isVideo && (
-                    <View style={styles.videoIndicator}>
-                      <Ionicons name="play" size={16} color="#fff" />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={styles.glassCircle}
+                activeOpacity={0.7}
+                onPress={handleShare}
+              >
+                <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
+                <Ionicons name="share-outline" size={18} color="rgba(0,0,0,0.7)" />
+              </TouchableOpacity>
+              {!isSelf && (
+                <TouchableOpacity
+                  style={styles.glassCircle}
+                  activeOpacity={0.7}
+                  onPress={() => setShowMenu(true)}
+                >
+                  <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
+                  <Ionicons name="ellipsis-horizontal" size={18} color="rgba(0,0,0,0.7)" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+
+          {/* Blocked States */}
+          {isBlockedBy ? (
+            <Animated.View
+              entering={FadeInDown.delay(100).duration(500).springify()}
+              style={styles.blockedHero}
+            >
+              <View style={styles.avatarSquare}>
+                <GlassView {...liquidGlass.surface} borderRadius={24} style={StyleSheet.absoluteFill} />
+                <Ionicons name="lock-closed" size={40} color="rgba(0,0,0,0.35)" />
+              </View>
+              <Text style={styles.heroName}>This account is unavailable</Text>
+              <Text style={styles.heroSub}>You can't view this profile.</Text>
+            </Animated.View>
+          ) : isBlocked ? (
+            <Animated.View
+              entering={FadeInDown.delay(100).duration(500).springify()}
+              style={styles.blockedHero}
+            >
+              <View style={styles.avatarSquare}>
+                <GlassView {...liquidGlass.surface} borderRadius={24} style={StyleSheet.absoluteFill} />
+                <Ionicons name="ban" size={40} color="rgba(0,0,0,0.35)" />
+              </View>
+              <Text style={styles.heroName}>You blocked {displayName}</Text>
+              <Text style={styles.heroSub}>
+                They can't see your profile or message you.
+              </Text>
+              <View style={{ marginTop: 16, width: 140 }}>
+                <GlassButton
+                  label={isUnblocking ? "Unblocking..." : "Unblock"}
+                  variant="glass"
+                  size="md"
+                  disabled={isUnblocking}
+                  onPress={async () => {
+                    if (!user?.id) return;
+                    try {
+                      await unblock(user.id);
+                      showSuccess(`Unblocked ${displayName}`);
+                    } catch {
+                      showError("Failed to unblock user");
+                    }
+                  }}
+                />
+              </View>
+            </Animated.View>
+          ) : (
+            <>
+              {/* Avatar */}
+              <Animated.View
+                entering={FadeInDown.delay(100).duration(500).springify()}
+                style={styles.avatarContainer}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => avatarUrl && setShowAvatarViewer(true)}
+                >
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                  ) : (
+                    <View style={styles.avatarSquare}>
+                      <GlassView {...liquidGlass.surface} borderRadius={24} style={StyleSheet.absoluteFill} />
+                      <Text style={styles.avatarInitial}>{initial}</Text>
                     </View>
                   )}
                 </TouchableOpacity>
-              );
-            })}
+              </Animated.View>
+
+              {/* Follower count — tappable */}
+              <Animated.View
+                entering={FadeInDown.delay(150).duration(500).springify()}
+                style={styles.heroStats}
+              >
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setFollowersSheetTab("followers");
+                    setFollowersSheetVisible(true);
+                  }}
+                >
+                  <Text style={styles.heroStatText}>
+                    {followerCount} {followerCount === 1 ? "follower" : "followers"}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.heroStatDot}> · </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setFollowersSheetTab("following");
+                    setFollowersSheetVisible(true);
+                  }}
+                >
+                  <Text style={styles.heroStatText}>{followingCount} following</Text>
+                </TouchableOpacity>
+              </Animated.View>
             </>
-          ) : (
-            <View style={styles.noPostsContainer}>
-              <Ionicons
-                name="images-outline"
-                size={48}
-                color={colors.textTertiary}
-              />
-              <Text style={[styles.noPostsText, dynamicStyles.noPostsText]}>
-                No posts yet
-              </Text>
-            </View>
           )}
-        </Animated.View>
+        </View>
 
-        </>
+        {/* ── Content Section (light bg) ── */}
+        {!isAnyBlock && (
+          <>
+            {/* Username + Verified */}
+            <Animated.View
+              entering={FadeInDown.delay(200).duration(500).springify()}
+              style={styles.nameSection}
+            >
+              <View style={styles.usernameRow}>
+                {user.isVerified && (
+                  <MaterialCommunityIcons
+                    name="check-decagram"
+                    size={16}
+                    color={colors.verified}
+                  />
+                )}
+                <Text style={styles.usernameText} numberOfLines={1}>
+                  @{user.userName}
+                </Text>
+              </View>
+              <Text style={styles.displayName}>{displayName}</Text>
+              {user.bio ? (
+                <LinkifiedText style={styles.bio as any}>
+                  {user.bio}
+                </LinkifiedText>
+              ) : null}
+            </Animated.View>
+
+            {/* Mutual Followers */}
+            {mutualCount > 0 && (
+              <Animated.View
+                entering={FadeInDown.delay(250).duration(500).springify()}
+                style={styles.mutualsSection}
+              >
+                <TouchableOpacity
+                  style={styles.mutualsRow}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    setFollowersSheetTab("followers");
+                    setFollowersSheetVisible(true);
+                  }}
+                >
+                  <View style={styles.mutualsAvatars}>
+                    {mutuals.slice(0, 3).map((m, i) => (
+                      <Image
+                        key={m.id}
+                        source={m.avatarUrl ? { uri: m.avatarUrl } : DEFAULT_AVATAR}
+                        style={[
+                          styles.mutualAvatar,
+                          { marginLeft: i > 0 ? -8 : 0, zIndex: 3 - i },
+                        ]}
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.mutualsText} numberOfLines={2}>
+                    Followed by{" "}
+                    <Text style={{ fontFamily: "Lato_700Bold" }}>
+                      {mutuals
+                        .slice(0, 2)
+                        .map((m) => m.userName || m.firstName || "User")
+                        .join(", ")}
+                    </Text>
+                    {mutualCount > 2 && (
+                      <Text>
+                        , and {mutualCount - 2}{" "}
+                        {mutualCount - 2 === 1 ? "other" : "others"}
+                      </Text>
+                    )}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+
+            {/* Message button */}
+            {!isSelf && (
+              <Animated.View
+                entering={FadeInDown.delay(300).duration(500).springify()}
+                style={styles.messageSection}
+              >
+                <TouchableOpacity
+                  style={styles.messageBtn}
+                  activeOpacity={0.7}
+                  onPress={handleMessage}
+                  disabled={isCreatingChat}
+                >
+                  <GlassView {...liquidGlass.surface} borderRadius={14} style={StyleSheet.absoluteFill} />
+                  {isCreatingChat ? (
+                    <ActivityIndicator size="small" color={colors.text} />
+                  ) : (
+                    <>
+                      <Ionicons name="chatbubble-outline" size={16} color={colors.text} />
+                      <Text style={styles.messageBtnText}>Message</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            )}
+
+            {/* Posts Card */}
+            <Animated.View
+              entering={FadeInDown.delay(350).duration(500).springify()}
+              style={styles.postsSection}
+            >
+              <View style={styles.postsCard}>
+                <GlassView {...liquidGlass.surface} borderRadius={20} style={StyleSheet.absoluteFill} />
+                <Text style={styles.postsSectionTitle}>
+                  Posts{userPosts.length > 0 ? ` (${userPosts.length})` : ""}
+                </Text>
+
+                {postsLoading ? (
+                  <View style={styles.postsLoadingContainer}>
+                    <ActivityIndicator color={colors.textTertiary} size="small" />
+                  </View>
+                ) : userPosts.length > 0 ? (
+                  <View style={styles.postsGrid}>
+                    {userPosts.map((post) => {
+                      const firstMedia = post.media?.[0];
+                      const imageUrl =
+                        firstMedia?.type === "image"
+                          ? firstMedia.url
+                          : post.eventFlyerUrl || post.eventImageUrl;
+                      const videoUrl =
+                        firstMedia?.type === "video" ? firstMedia.url : undefined;
+                      const isVideo = firstMedia?.type === "video";
+
+                      return (
+                        <TouchableOpacity
+                          key={post.id}
+                          activeOpacity={0.9}
+                          style={styles.postContainer}
+                          onPress={() =>
+                            post.eventId
+                              ? router.push({
+                                  pathname: "/event/[id]",
+                                  params: { id: post.eventId.toString() },
+                                })
+                              : router.push({
+                                  pathname: "/post/[id]",
+                                  params: { id: String(post.id) },
+                                })
+                          }
+                        >
+                          {isVideo && videoUrl ? (
+                            <VideoThumbnailImage
+                              videoUrl={videoUrl}
+                              fallbackUri={
+                                firstMedia?.thumbnailUrl || imageUrl || undefined
+                              }
+                              style={styles.postImage}
+                            />
+                          ) : imageUrl ? (
+                            <Image
+                              source={{ uri: imageUrl }}
+                              style={styles.postImage}
+                            />
+                          ) : (
+                            <View
+                              style={[
+                                styles.postImage,
+                                styles.postPlaceholder,
+                              ]}
+                            >
+                              <Ionicons
+                                name="document-text-outline"
+                                size={22}
+                                color={colors.textTertiary}
+                              />
+                            </View>
+                          )}
+                          {isVideo && (
+                            <View style={styles.videoIndicator}>
+                              <Ionicons name="play" size={14} color="#fff" />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ) : (
+                  <View style={styles.noPostsContainer}>
+                    <Ionicons
+                      name="images-outline"
+                      size={40}
+                      color={colors.textTertiary}
+                    />
+                    <Text style={styles.noPostsText}>No posts yet</Text>
+                  </View>
+                )}
+              </View>
+            </Animated.View>
+          </>
         )}
-
-        {/* Bottom spacing */}
-        <View style={{ height: insets.bottom + 100 }} />
       </ScrollView>
 
+      {/* Sheets & Modals */}
       <ActionSheet
         visible={showMenu}
         onClose={() => setShowMenu(false)}
@@ -736,7 +646,6 @@ export default function UserProfileScreen() {
           try {
             await block(user.id);
             showSuccess(`Blocked ${displayName}`);
-            // Navigate to messages tab if came from a chat, otherwise go back
             if (router.canGoBack()) {
               router.dismissAll();
             }
@@ -781,183 +690,220 @@ export default function UserProfileScreen() {
           followingCount={followingCount}
         />
       )}
+
+      {/* Avatar Viewer */}
+      <Modal
+        visible={showAvatarViewer}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowAvatarViewer(false)}
+      >
+        <TouchableOpacity
+          style={styles.avatarViewerOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAvatarViewer(false)}
+        >
+          <View style={styles.avatarViewerContainer}>
+            {avatarUrl && (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatarViewerImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.avatarViewerClose}
+            onPress={() => setShowAvatarViewer(false)}
+          >
+            <Ionicons name="close" size={22} color="#fff" />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
 
+// ─── Styles ─────────────────────────────────────────────────────
+
+const AVATAR_SIZE = 100;
+const AVATAR_RADIUS = 24;
+const GRID_GAP = 2;
+const GRID_COLS = 3;
+const CARD_H_PAD = 16;
+const CARD_INNER_PAD = 10;
+const CARD_INNER_WIDTH = SCREEN_WIDTH - CARD_H_PAD * 2 - CARD_INNER_PAD * 2;
+const GRID_POST_SIZE = Math.floor(
+  (CARD_INNER_WIDTH - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#f2f2f7",
   },
-  contextBg: {
+  centerContent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // ── Hero ──
+  hero: {
+    minHeight: HERO_HEIGHT,
+    paddingBottom: 24,
+  },
+  heroGradient: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 0.5,
-    transform: [{ scale: 1.5 }],
   },
-  loadingContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 0,
-  },
-  header: {
+
+  // ── Header ──
+  headerRow: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "center",
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  headerNameRow: {
-    flex: 1,
+  headerRight: {
     flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  glassCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    overflow: "hidden",
   },
-  headerUsername: {
-    fontSize: 22,
+  followPill: {
+    height: 36,
+    paddingHorizontal: 22,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  followPillText: {
+    fontSize: 15,
     fontFamily: "Lato_700Bold",
-    textAlign: "center",
-    marginHorizontal: 8,
+    color: "rgba(0,0,0,0.7)",
   },
-  headerIcon: {
-    padding: 4,
-    width: 40,
+
+  // ── Avatar ──
+  avatarContainer: {
     alignItems: "center",
+    marginBottom: 12,
   },
-  profileRow: {
-    flexDirection: "row",
+  avatarSquare: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_RADIUS,
     alignItems: "center",
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
+    justifyContent: "center",
+    overflow: "hidden",
     borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.6)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
   },
-  statsRow: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginLeft: 24,
+  avatarImage: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_RADIUS,
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.6)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
   },
-  statButton: {
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 18,
+  avatarInitial: {
+    fontSize: 38,
     fontFamily: "Lato_700Bold",
+    color: "rgba(0,0,0,0.5)",
   },
-  statLabel: {
+
+  // ── Hero stats ──
+  heroStats: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  heroStatText: {
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.45)",
+  },
+  heroStatDot: {
+    fontSize: 14,
+    color: "rgba(0,0,0,0.25)",
+  },
+
+  // ── Blocked hero ──
+  blockedHero: {
+    alignItems: "center",
+    paddingHorizontal: 40,
+    paddingTop: 8,
+    paddingBottom: 20,
+  },
+
+  // ── Hero name (used in blocked states) ──
+  heroName: {
+    fontSize: 17,
+    fontFamily: "Lato_700Bold",
+    color: "rgba(0,0,0,0.75)",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  heroSub: {
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.45)",
+    marginTop: 4,
+    textAlign: "center",
+  },
+
+  // ── Content — Name & Bio ──
+  nameSection: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  usernameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 4,
+  },
+  usernameText: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    marginTop: 2,
-  },
-  bioSection: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
+    color: "rgba(0,0,0,0.45)",
   },
   displayName: {
-    fontSize: 14,
+    fontSize: 18,
     fontFamily: "Lato_700Bold",
+    color: "#1A1A1A",
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.55)",
     lineHeight: 20,
   },
-  actionButtons: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    gap: 8,
-  },
-  actionButton: {
-    flex: 1,
-    borderRadius: 8,
-    paddingVertical: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 36,
-    overflow: "hidden",
-  },
-  actionButtonFollow: {
-    backgroundColor: '#0A84FF',
-  },
-  actionButtonGlass: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 8,
-  },
-  actionButtonDisabled: {
-    opacity: 0.7,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    fontFamily: "Lato_700Bold",
-    color: "#fff",
-  },
-  actionButtonTextPrimary: {
-    color: "#fff",
-  },
-  gridHeader: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-  },
-  gridTab: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-  },
-  gridTabActive: {
-    borderBottomWidth: 1,
-  },
-  postsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: POST_GAP,
-  },
-  postContainer: {
-    position: "relative",
-    width: POST_SIZE,
-    height: POST_SIZE,
-  },
-  postImage: {
-    width: "100%",
-    height: "100%",
-  },
-  videoIndicator: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 4,
-    padding: 4,
-  },
-  postsLoadingContainer: {
-    width: "100%",
-    paddingVertical: 40,
-    alignItems: "center",
-  },
-  noPostsContainer: {
-    width: "100%",
-    paddingVertical: 60,
-    alignItems: "center",
-    gap: 12,
-  },
-  noPostsText: {
-    fontSize: 14,
-    fontFamily: "Lato_400Regular",
-  },
+
+  // ── Mutuals ──
   mutualsSection: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   mutualsRow: {
     flexDirection: "row",
@@ -969,28 +915,120 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   mutualAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
+    borderColor: "#f2f2f7",
   },
   mutualsText: {
     flex: 1,
     fontSize: 12,
     fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.45)",
     lineHeight: 16,
   },
-  errorContainer: {
-    flex: 1,
+
+  // ── Message ──
+  messageSection: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  messageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 44,
+    borderRadius: 14,
+    gap: 8,
+    overflow: "hidden",
+  },
+  messageBtnText: {
+    fontSize: 15,
+    fontFamily: "Lato_600SemiBold",
+    color: "#1A1A1A",
+  },
+
+  // ── Posts Card ──
+  postsSection: {
+    paddingHorizontal: CARD_H_PAD,
+    paddingTop: 16,
+  },
+  postsCard: {
+    borderRadius: 20,
+    overflow: "hidden",
+    padding: CARD_INNER_PAD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: "rgba(255,255,255,0.5)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+  },
+  postsSectionTitle: {
+    fontSize: 18,
+    fontFamily: "Lato_700Bold",
+    color: "#1A1A1A",
+    marginBottom: 12,
+    marginLeft: 4,
+  },
+  postsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: GRID_GAP,
+  },
+  postContainer: {
+    position: "relative",
+    width: GRID_POST_SIZE,
+    height: GRID_POST_SIZE,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  postImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.04)",
+  },
+  postPlaceholder: {
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 32,
   },
-  errorIconContainer: {
+  videoIndicator: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 4,
+    padding: 3,
+  },
+  postsLoadingContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+  },
+  noPostsContainer: {
+    paddingVertical: 32,
+    alignItems: "center",
+    gap: 8,
+  },
+  noPostsText: {
+    fontSize: 14,
+    fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.35)",
+  },
+
+  // ── Error ──
+  errorHeader: {
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  errorIconWrap: {
     width: 96,
     height: 96,
     borderRadius: 48,
     borderWidth: 2,
+    borderColor: "rgba(0,0,0,0.08)",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
@@ -998,50 +1036,55 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 22,
     fontFamily: "Lato_700Bold",
+    color: "#1A1A1A",
     marginBottom: 8,
   },
   errorSubtitle: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.4)",
     textAlign: "center",
     marginBottom: 24,
+    paddingHorizontal: 32,
   },
   goBackButton: {
-    backgroundColor: "#0095f6",
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 24,
     paddingVertical: 12,
+    overflow: "hidden",
   },
   goBackButtonText: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
-  blockedContainer: {
+
+  // ── Avatar Viewer ──
+  avatarViewerOverlay: {
     flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarViewerContainer: {
+    width: SCREEN_WIDTH - 40,
+    height: SCREEN_WIDTH - 40,
+    borderRadius: 20,
+    overflow: "hidden",
+  },
+  avatarViewerImage: {
+    width: "100%",
+    height: "100%",
+  },
+  avatarViewerClose: {
+    position: "absolute",
+    top: 60,
+    right: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
-    paddingTop: 40,
-    paddingBottom: 60,
-  },
-  blockedAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 2,
-  },
-  blockedTitle: {
-    fontSize: 18,
-    fontFamily: "Lato_700Bold",
-    marginTop: 12,
-    textAlign: "center",
-  },
-  blockedSubtext: {
-    fontSize: 14,
-    fontFamily: "Lato_400Regular",
-    textAlign: "center",
-    lineHeight: 20,
-    marginTop: 8,
   },
 });

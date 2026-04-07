@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeSheet, canUseNativeSheet } from '@/components/ui/native-sheet';
 import { GlassView } from 'expo-glass-effect';
@@ -131,7 +132,7 @@ export function PeopleTagSheet({ visible, onClose, selected, onConfirm }: People
               <TouchableOpacity key={p.id} style={styles.chip} onPress={() => toggle(p)}>
                 <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
                 <Text style={styles.chipText}>{displayName(p)}</Text>
-                <Ionicons name="close" size={14} color="rgba(255,255,255,0.6)" />
+                <Ionicons name="close" size={14} color="rgba(0,0,0,0.45)" />
               </TouchableOpacity>
             ))}
           </View>
@@ -179,8 +180,8 @@ export function PeopleTagSheet({ visible, onClose, selected, onConfirm }: People
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, minHeight: 350 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  title: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#fff' },
-  cancelText: { fontSize: 15, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.6)' },
+  title: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
+  cancelText: { fontSize: 15, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.45)' },
   doneText: { fontSize: 15, fontFamily: 'Lato_700Bold', color: '#0A84FF' },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, overflow: 'hidden',
   },
-  chipText: { fontSize: 13, fontFamily: 'Lato_600SemiBold', color: '#fff' },
+  chipText: { fontSize: 13, fontFamily: 'Lato_600SemiBold', color: '#1A1A1A' },
   loader: { marginVertical: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   avatar: { width: 40, height: 40, borderRadius: 20 },

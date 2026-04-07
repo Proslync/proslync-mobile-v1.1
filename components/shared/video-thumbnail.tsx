@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Image, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
@@ -54,7 +55,7 @@ export function VideoThumbnailImage({ videoUrl, style, fallbackUri }: VideoThumb
     <Image
       source={{ uri }}
       style={style}
-      resizeMode="cover"
+      contentFit="cover"
     />
   );
 }

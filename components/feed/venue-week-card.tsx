@@ -43,7 +43,7 @@ interface VenueWeekCardProps {
   onMore: () => void;
 }
 
-export function VenueWeekCard({
+export const VenueWeekCard = React.memo(function VenueWeekCard({
   data,
   isVisible,
   onSaveToggle,
@@ -218,7 +218,7 @@ export function VenueWeekCard({
     </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

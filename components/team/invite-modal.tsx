@@ -211,7 +211,7 @@ export function InviteModal(props: InviteModalProps) {
           )}
         </View>
         {isSelected && (
-          <Ionicons name="checkmark-circle" size={22} color="#fff" />
+          <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
         )}
       </TouchableOpacity>
     );
@@ -262,7 +262,7 @@ export function InviteModal(props: InviteModalProps) {
           )}
         </View>
         {isSelected && (
-          <Ionicons name="checkmark-circle" size={22} color="#fff" />
+          <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
         )}
       </TouchableOpacity>
     );
@@ -327,11 +327,11 @@ export function InviteModal(props: InviteModalProps) {
                 borderRadius={12}
                 style={StyleSheet.absoluteFill}
               />
-              <Ionicons name="search" size={18} color="rgba(255,255,255,0.4)" />
+              <Ionicons name="search" size={18} color="rgba(0,0,0,0.35)" />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search by name or username..."
-                placeholderTextColor="rgba(255,255,255,0.3)"
+                placeholderTextColor="rgba(0,0,0,0.25)"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoCapitalize="none"
@@ -339,7 +339,7 @@ export function InviteModal(props: InviteModalProps) {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
+                  <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.35)" />
                 </TouchableOpacity>
               )}
             </View>
@@ -350,7 +350,7 @@ export function InviteModal(props: InviteModalProps) {
                 // Active search
                 isSearching && peopleResults.length === 0 ? (
                   <ActivityIndicator
-                    color="rgba(255,255,255,0.5)"
+                    color="rgba(0,0,0,0.45)"
                     style={styles.loadingIndicator}
                   />
                 ) : peopleResults.length > 0 ? (
@@ -363,7 +363,7 @@ export function InviteModal(props: InviteModalProps) {
                   />
                 ) : (
                   <View style={styles.emptyState}>
-                    <Ionicons name="search-outline" size={32} color="rgba(255,255,255,0.2)" />
+                    <Ionicons name="search-outline" size={32} color="rgba(0,0,0,0.1)" />
                     <Text style={styles.emptyText}>No users found</Text>
                   </View>
                 )
@@ -391,7 +391,7 @@ export function InviteModal(props: InviteModalProps) {
 
                   {frequentFriends.length === 0 && mutualSuggestions.length === 0 && (
                     <View style={styles.emptyState}>
-                      <Ionicons name="person-add-outline" size={32} color="rgba(255,255,255,0.2)" />
+                      <Ionicons name="person-add-outline" size={32} color="rgba(0,0,0,0.1)" />
                       <Text style={styles.emptyText}>Search for a user to invite</Text>
                     </View>
                   )}
@@ -452,7 +452,7 @@ export function InviteModal(props: InviteModalProps) {
                     style={StyleSheet.absoluteFill}
                   />
                   {isPending ? (
-                    <ActivityIndicator color="#fff" size="small" />
+                    <ActivityIndicator color="#1A1A1A" size="small" />
                   ) : (
                     <Text style={styles.sendText}>
                       {isCustomMode ? 'Add Member' : 'Send Invite'}
@@ -477,9 +477,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
-  title: { fontSize: 18, fontFamily: 'Lato_700Bold', color: '#fff' },
+  title: { fontSize: 18, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
   closeButton: {
     width: 32,
     height: 32,
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: { fontSize: 16, color: '#fff' },
+  closeText: { fontSize: 16, color: '#1A1A1A' },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0,0,0,0.06)',
     overflow: 'hidden',
     gap: 10,
   },
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1A1A1A',
     padding: 0,
   },
   resultsContainer: {
@@ -522,12 +522,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(0,0,0,0.25)',
   },
   sectionLabel: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.45)',
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 4,
@@ -558,30 +558,30 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
     flexShrink: 1,
   },
   userHandle: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.45)',
     marginTop: 1,
   },
   mutualText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.35)',
+    color: 'rgba(0,0,0,0.3)',
     marginTop: 2,
   },
   footer: {
     padding: 20,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderTopColor: 'rgba(0,0,0,0.06)',
   },
   label: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.6)',
     marginBottom: 10,
   },
   rolesRow: {
@@ -593,24 +593,24 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0,0,0,0.06)',
     overflow: 'hidden',
   },
   roleChipSelected: {
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(0,0,0,0.25)',
   },
   roleChipText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.45)',
   },
   roleChipTextSelected: {
-    color: '#fff',
+    color: '#1A1A1A',
   },
   sendButton: {
     marginTop: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(0,0,0,0.2)',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   sendDisabled: { opacity: 0.4 },
-  sendText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
+  sendText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
   successContainer: {
     flex: 1,
     alignItems: 'center',
@@ -629,19 +629,19 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: 22,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   successSubtitle: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.45)',
     textAlign: 'center',
     lineHeight: 22,
   },
   doneButton: {
     marginTop: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(0,0,0,0.2)',
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 48,
@@ -650,6 +650,6 @@ const styles = StyleSheet.create({
   doneButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
 });

@@ -24,7 +24,7 @@ export function BarTabCard({ tab, onPress }: BarTabCardProps) {
             <View style={styles.nameRow}>
               <View style={[styles.avatar, { overflow: 'hidden' }]}>
                 <GlassView {...liquidGlass.fillMedium} borderRadius={16} style={StyleSheet.absoluteFill} />
-                <Ionicons name="person" size={16} color="rgba(255,255,255,0.7)" />
+                <Ionicons name="person" size={16} color="rgba(0,0,0,0.6)" />
               </View>
               <View style={styles.nameCol}>
                 <Text style={styles.guestName} numberOfLines={1}>
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   guestName: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   meta: {
     fontSize: 12,
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   total: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   chevron: {
     marginLeft: 8,

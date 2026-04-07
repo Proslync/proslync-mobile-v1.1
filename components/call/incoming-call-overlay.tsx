@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';

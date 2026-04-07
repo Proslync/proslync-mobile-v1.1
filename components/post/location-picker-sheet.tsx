@@ -91,7 +91,7 @@ export function LocationPickerSheet({ visible, onClose, onSelect }: LocationPick
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, minHeight: 300 },
-  title: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#fff', textAlign: 'center', marginBottom: 16 },
+  title: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#1A1A1A', textAlign: 'center', marginBottom: 16 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8,

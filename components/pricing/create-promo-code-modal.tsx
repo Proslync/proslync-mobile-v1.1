@@ -190,7 +190,7 @@ export function CreatePromoCodeModal({
             <Switch
               value={isActive}
               onValueChange={setIsActive}
-              trackColor={{ false: 'rgba(255,255,255,0.15)', true: 'rgba(255,255,255,0.4)' }}
+              trackColor={{ false: 'rgba(0,0,0,0.08)', true: 'rgba(0,0,0,0.35)' }}
               thumbColor="#fff"
             />
           </View>
@@ -203,7 +203,7 @@ export function CreatePromoCodeModal({
             <Switch
               value={isPublic}
               onValueChange={setIsPublic}
-              trackColor={{ false: 'rgba(255,255,255,0.15)', true: 'rgba(255,255,255,0.4)' }}
+              trackColor={{ false: 'rgba(0,0,0,0.08)', true: 'rgba(0,0,0,0.35)' }}
               thumbColor="#fff"
             />
           </View>
@@ -240,9 +240,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
   },
-  title: { fontSize: 18, fontFamily: 'Lato_700Bold', color: '#fff' },
+  title: { fontSize: 18, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
   closeButton: {
     width: 32,
     height: 32,
@@ -251,18 +251,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: { fontSize: 16, color: '#fff' },
+  closeText: { fontSize: 16, color: '#1A1A1A' },
   form: { padding: 20 },
   label: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.6)',
     marginTop: 12,
     marginBottom: 6,
   },
   inputWrapper: {
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(0,0,0,0.07)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   codeInput: {
     fontFamily: 'Lato_700Bold',
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(0,0,0,0.07)',
     overflow: 'hidden',
     alignItems: 'center',
   },
@@ -296,10 +296,10 @@ const styles = StyleSheet.create({
   typeText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.45)',
   },
   typeTextActive: {
-    color: '#fff',
+    color: '#1A1A1A',
     fontFamily: 'Lato_700Bold',
   },
   switchRow: {
@@ -311,23 +311,23 @@ const styles = StyleSheet.create({
   switchLabel: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.6)',
   },
   switchHint: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(0,0,0,0.35)',
     marginTop: 2,
   },
   footer: { padding: 20 },
   submitButton: {
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(0,0,0,0.2)',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
   },
   submitDisabled: { opacity: 0.4 },
-  submitText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
+  submitText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
 });

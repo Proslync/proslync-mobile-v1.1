@@ -51,7 +51,7 @@ function OfferCard({ offer, onClaim, colors, isDark }: OfferCardProps) {
       {/* Bottom: Claim button */}
       <View style={styles.offerFooter}>
         <TouchableOpacity
-          style={[styles.claimButton, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(255,255,255,0.15)' }, offer.isClaimed && styles.claimButtonClaimed]}
+          style={[styles.claimButton, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.08)' }, offer.isClaimed && styles.claimButtonClaimed]}
           onPress={() => !offer.isClaimed && onClaim()}
           disabled={offer.isClaimed}
           activeOpacity={0.7}
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   claimButton: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(0,0,0,0.08)',
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 8,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   claimButtonText: {
     fontSize: 12,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   claimButtonTextClaimed: {
     color: '#34c759',

@@ -273,8 +273,8 @@ export function EditPermissionsModal({
             value={allSelected}
             onValueChange={(val) => toggleAll(val)}
             trackColor={{
-              false: "rgba(255,255,255,0.15)",
-              true: "rgba(255,255,255,0.4)",
+              false: "rgba(0,0,0,0.08)",
+              true: "rgba(0,0,0,0.35)",
             }}
             thumbColor="#fff"
           />
@@ -318,8 +318,8 @@ export function EditPermissionsModal({
                       value={catPerms[perm.key]}
                       onValueChange={() => togglePermission(cat.key, perm.key)}
                       trackColor={{
-                        false: "rgba(255,255,255,0.15)",
-                        true: "rgba(255,255,255,0.4)",
+                        false: "rgba(0,0,0,0.08)",
+                        true: "rgba(0,0,0,0.35)",
                       }}
                       thumbColor="#fff"
                     />
@@ -369,14 +369,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
+    borderBottomColor: "rgba(0,0,0,0.06)",
   },
   headerLeft: { flex: 1 },
-  title: { fontSize: 18, fontFamily: "Lato_700Bold", color: "#fff" },
+  title: { fontSize: 18, fontFamily: "Lato_700Bold", color: "#1A1A1A" },
   roleName: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
     marginTop: 2,
   },
   closeButton: {
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  closeText: { fontSize: 16, color: "#fff" },
+  closeText: { fontSize: 16, color: "#1A1A1A" },
   toggleAllRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -395,12 +395,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.06)",
+    borderBottomColor: "rgba(0,0,0,0.04)",
   },
   toggleAllText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(0,0,0,0.6)",
   },
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: 20, paddingTop: 8 },
@@ -416,12 +416,12 @@ const styles = StyleSheet.create({
   categoryLabel: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   categoryCount: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.35)",
   },
   permRow: {
     flexDirection: "row",
@@ -440,12 +440,12 @@ const styles = StyleSheet.create({
   permLabel: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.8)",
+    color: "rgba(0,0,0,0.6)",
   },
   permDescription: {
     fontSize: 12,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.35)",
     marginTop: 2,
   },
   footer: {
@@ -455,15 +455,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.06)",
+    borderTopColor: "rgba(0,0,0,0.04)",
   },
   submitButton: {
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
+    borderColor: "rgba(0,0,0,0.2)",
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
     overflow: "hidden",
   },
-  submitText: { fontSize: 16, fontFamily: "Lato_700Bold", color: "#fff" },
+  submitText: { fontSize: 16, fontFamily: "Lato_700Bold", color: "#1A1A1A" },
 });

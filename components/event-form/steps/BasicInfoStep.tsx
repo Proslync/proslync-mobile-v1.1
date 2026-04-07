@@ -1,7 +1,8 @@
 // Step 1: Basic Info - Event name, description, and flyer
 
 import { useFormContext, useWatch } from 'react-hook-form';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
@@ -124,7 +125,7 @@ export function BasicInfoStep({ existingFlyerUrl, existingFlyerMediaType, onFlye
             {displayMediaType === 'video' ? (
               <FlyerVideoPreview uri={displayFlyerUri} />
             ) : (
-              <Image source={{ uri: displayFlyerUri }} style={styles.flyerPreview} />
+              <Image source={{ uri: displayFlyerUri }} style={styles.flyerPreview} contentFit="cover" />
             )}
             <TouchableOpacity style={styles.flyerRemoveButton} onPress={removeFlyer}>
               <Ionicons name="close-circle" size={28} color="#fff" />
@@ -205,7 +206,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 280,
     borderRadius: 12,
-    resizeMode: 'cover',
   },
   flyerRemoveButton: {
     position: 'absolute',
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
   flyerChangeText: {
     fontSize: 14,
     fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   required: {
     color: '#ff3b30',

@@ -6,6 +6,7 @@ import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { CONVERSATIONS_KEY } from '@/hooks/use-conversations';
 import { NOTIFICATIONS_KEY, UNREAD_COUNT_KEY } from '@/hooks/use-notifications';
+import type { ConversationResponse } from '@/lib/api/chat';
 
 interface ChatSocketContextValue {
   socket: Socket | null;
@@ -44,17 +45,63 @@ export function ChatSocketProvider({ children }: { children: React.ReactNode }) 
         if (!cancelled) setIsConnected(false);
       });
 
-      // Debounced invalidation — batch rapid socket events (e.g. burst of messages)
-      let chatTimer: ReturnType<typeof setTimeout> | null = null;
-      let notifTimer: ReturnType<typeof setTimeout> | null = null;
+      // --- chat:new-message ---
+      // Optimistic cache update: bump conversation to top + increment unread count.
+      // Debounced invalidation syncs the full preview text from the server.
+      let chatFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
-      s.on('chat:new-message', () => {
-        if (chatTimer) clearTimeout(chatTimer);
-        chatTimer = setTimeout(() => {
+      s.on('chat:new-message', (data: { conversationId: string }) => {
+        // Immediately update cached conversations list (avoids a full refetch)
+        queryClient.setQueryData<ConversationResponse[]>(
+          [CONVERSATIONS_KEY],
+          (old) => {
+            if (!old) return old;
+            const now = new Date().toISOString();
+            return old.map((conv) =>
+              conv.id === data.conversationId
+                ? {
+                    ...conv,
+                    lastMessageAt: now,
+                    unreadCount: conv.unreadCount + 1,
+                  }
+                : conv,
+            );
+          },
+        );
+
+        // Debounced fallback invalidation — syncs full data (preview text, etc.)
+        // after a burst of messages settles
+        if (chatFallbackTimer) clearTimeout(chatFallbackTimer);
+        chatFallbackTimer = setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: [CONVERSATIONS_KEY] });
-          chatTimer = null;
-        }, 300);
+          chatFallbackTimer = null;
+        }, 2000);
       });
+
+      // --- chat:read ---
+      // Update the read receipt directly in cache when another user reads messages
+      s.on('chat:read', (data: { userId: number; conversationId: string; lastReadAt: string }) => {
+        queryClient.setQueryData<ConversationResponse[]>(
+          [CONVERSATIONS_KEY],
+          (old) => {
+            if (!old) return old;
+            return old.map((conv) => {
+              if (conv.id !== data.conversationId) return conv;
+              return {
+                ...conv,
+                members: conv.members.map((m) =>
+                  m.userId === data.userId
+                    ? { ...m, lastReadAt: data.lastReadAt }
+                    : m,
+                ),
+              };
+            });
+          },
+        );
+      });
+
+      // --- notification:new ---
+      let notifTimer: ReturnType<typeof setTimeout> | null = null;
 
       s.on('notification:new', () => {
         if (notifTimer) clearTimeout(notifTimer);

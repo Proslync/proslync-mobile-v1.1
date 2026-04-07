@@ -49,7 +49,7 @@ interface FeedItemProps {
   onBlock?: (userId: string) => void;
 }
 
-export function FeedItem({
+export const FeedItem = React.memo(function FeedItem({
   item,
   itemHeight,
   isActive,
@@ -383,7 +383,7 @@ export function FeedItem({
       />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -478,6 +478,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: "Lato_700Bold",
     lineHeight: 26,
+    lineHeight: 32,
   },
   eventDate: {
     fontSize: 14,

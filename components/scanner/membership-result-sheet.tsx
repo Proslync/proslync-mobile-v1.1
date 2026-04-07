@@ -76,13 +76,13 @@ export function MembershipResultSheet({
           <View style={styles.avatarContainer}>
             {memberProfileLoading ? (
               <View style={styles.avatarPlaceholder}>
-                <ActivityIndicator size="small" color="#fff" />
+                <ActivityIndicator size="small" color="rgba(0,0,0,0.45)" />
               </View>
             ) : memberProfile?.avatar?.url ? (
               <Image source={{ uri: memberProfile.avatar.url }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Ionicons name="person" size={28} color="rgba(255,255,255,0.5)" />
+                <Ionicons name="person" size={28} color="rgba(0,0,0,0.45)" />
               </View>
             )}
             <View style={styles.avatarRing} />
@@ -106,7 +106,7 @@ export function MembershipResultSheet({
           {/* Member since */}
           {memberSince && (
             <View style={styles.metaRow}>
-              <Ionicons name="calendar-outline" size={11} color="rgba(255,255,255,0.6)" />
+              <Ionicons name="calendar-outline" size={11} color="rgba(0,0,0,0.45)" />
               <Text style={styles.metaText}>{memberSince}</Text>
             </View>
           )}
@@ -142,7 +142,7 @@ export function MembershipResultSheet({
           activeOpacity={0.8}
         >
           <Text style={styles.continueButtonText}>Continue to ID Scan</Text>
-          <Ionicons name="arrow-forward" size={20} color="#fff" />
+          <Ionicons name="arrow-forward" size={20} color="#1A1A1A" />
         </TouchableOpacity>
 
         {/* Scan different card */}
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: 'rgba(0,0,0,0.08)',
     backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     paddingHorizontal: 16,
@@ -183,13 +183,13 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   avatarPlaceholder: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -201,12 +201,12 @@ const styles = StyleSheet.create({
     height: 68,
     borderRadius: 34,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   displayName: {
     fontSize: 22,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
     letterSpacing: 0.3,
     textAlign: 'center',
   },
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   handle: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(0,0,0,0.6)',
     textAlign: 'center',
   },
   metaRow: {
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.45)',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -285,14 +285,14 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 16,
     borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(0,0,0,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: 'rgba(0,0,0,0.2)',
   },
   continueButtonText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   rescanLink: {
     marginTop: 16,
@@ -301,6 +301,6 @@ const styles = StyleSheet.create({
   rescanLinkText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(0,0,0,0.35)',
   },
 });

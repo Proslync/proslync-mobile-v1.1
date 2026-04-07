@@ -1,6 +1,7 @@
 // Add to Wallet Buttons - Platform-specific Apple/Google Wallet buttons
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, Linking, ActivityIndicator, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Linking, ActivityIndicator, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import { addToGoogleWallet, generateAppleWalletToken } from '../../lib/api/wallet';
 
@@ -98,7 +99,7 @@ export function AddToWalletButtons({ membershipCardId }: AddToWalletButtonsProps
             <Image
               source={require('../../assets/images/apple-wallet-button.png')}
               style={styles.buttonImage}
-              resizeMode="contain"
+              contentFit="contain"
             />
           )}
         </TouchableOpacity>
@@ -121,7 +122,7 @@ export function AddToWalletButtons({ membershipCardId }: AddToWalletButtonsProps
             <Image
               source={require('../../assets/images/google-wallet-button.png')}
               style={styles.buttonImage}
-              resizeMode="contain"
+              contentFit="contain"
             />
           )}
         </TouchableOpacity>

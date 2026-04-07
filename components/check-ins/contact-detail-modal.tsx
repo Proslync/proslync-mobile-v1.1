@@ -228,7 +228,7 @@ export function ContactDetailModal({
                 <Ionicons
                   name={row.icon}
                   size={16}
-                  color="rgba(255,255,255,0.7)"
+                  color="rgba(0,0,0,0.6)"
                 />
               </View>
               <View style={styles.infoContent}>
@@ -285,18 +285,18 @@ const styles = StyleSheet.create({
   profileInitials: {
     fontSize: 26,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   profileName: {
     fontSize: 20,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   profileSubname: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
     marginTop: 2,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
   },
   badgeRow: {
     flexDirection: "row",
@@ -362,12 +362,12 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
   },
   infoValue: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   closeButton: {
     alignItems: "center",
@@ -378,6 +378,6 @@ const styles = StyleSheet.create({
   closeText: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
 });

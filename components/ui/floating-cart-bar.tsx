@@ -122,12 +122,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemCount: {
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(0,0,0,0.6)',
     fontSize: 13,
     fontWeight: '500',
   },
   total: {
-    color: '#fff',
+    color: '#1A1A1A',
     fontSize: 20,
     fontWeight: '700',
     marginTop: 2,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   actionText: {
-    color: '#fff',
+    color: '#1A1A1A',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   receiptText: {
-    color: '#fff',
+    color: '#1A1A1A',
     fontSize: 18,
     fontWeight: '700',
   },

@@ -87,6 +87,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   labelSelected: {
-    color: '#fff',
+    color: '#1A1A1A',
   },
 });

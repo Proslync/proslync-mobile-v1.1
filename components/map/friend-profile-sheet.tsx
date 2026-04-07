@@ -154,7 +154,7 @@ export function FriendProfileSheet({
                   <Ionicons
                     name="time-outline"
                     size={13}
-                    color="rgba(255,255,255,0.5)"
+                    color="rgba(0,0,0,0.45)"
                   />
                   <Text style={styles.statusText}>
                     Last active {lastActiveText}
@@ -191,7 +191,7 @@ export function FriendProfileSheet({
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color="rgba(255,255,255,0.2)"
+                  color="rgba(0,0,0,0.1)"
                 />
               </TouchableOpacity>
 
@@ -220,7 +220,7 @@ export function FriendProfileSheet({
                   <Ionicons
                     name="chevron-forward"
                     size={16}
-                    color="rgba(255,255,255,0.2)"
+                    color="rgba(0,0,0,0.1)"
                   />
                 </TouchableOpacity>
               )}
@@ -247,7 +247,7 @@ export function FriendProfileSheet({
                 <Ionicons
                   name="chevron-forward"
                   size={16}
-                  color="rgba(255,255,255,0.2)"
+                  color="rgba(0,0,0,0.1)"
                 />
               </TouchableOpacity>
             </View>
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 17,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
     marginBottom: 2,
   },
   statusRow: {
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
   },
   actionsList: {
     gap: 4,
@@ -342,6 +342,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: "Lato_400Regular",
-    color: "#fff",
+    color: "#1A1A1A",
   },
 });

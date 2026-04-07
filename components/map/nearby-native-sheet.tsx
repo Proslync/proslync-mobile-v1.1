@@ -91,7 +91,7 @@ export function NearbyNativeSheet({
                 {isLoading && (
                   <ActivityIndicator
                     size="small"
-                    color="rgba(255,255,255,0.4)"
+                    color="rgba(0,0,0,0.35)"
                     style={{ marginLeft: 8 }}
                   />
                 )}
@@ -103,7 +103,7 @@ export function NearbyNativeSheet({
                   <Ionicons
                     name="people"
                     size={14}
-                    color="rgba(255,255,255,0.5)"
+                    color="rgba(0,0,0,0.45)"
                   />
                   <Text style={styles.sectionTitle}>Friends</Text>
                   {nearbyFriends.length > 0 && (
@@ -190,7 +190,7 @@ export function NearbyNativeSheet({
                   <Ionicons
                     name="calendar"
                     size={14}
-                    color="rgba(255,255,255,0.5)"
+                    color="rgba(0,0,0,0.45)"
                   />
                   <Text style={styles.sectionTitle}>Events</Text>
                   {liveCount > 0 && (
@@ -205,7 +205,7 @@ export function NearbyNativeSheet({
                   <View style={styles.loadingWrap}>
                     <ActivityIndicator
                       size="large"
-                      color="rgba(255,255,255,0.4)"
+                      color="rgba(0,0,0,0.35)"
                     />
                   </View>
                 ) : events.length === 0 ? (
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   countPill: {
     flexDirection: "row",
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(0,0,0,0.05)",
   },
   countDot: {
     width: 6,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(0,0,0,0.06)",
   },
   friendOnline: {
     position: "absolute",
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   },
   friendName: {
     fontSize: 10,
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(0,0,0,0.6)",
     marginTop: 4,
     textAlign: "center",
   },
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: "rgba(255,255,255,0.35)",
+    color: "rgba(0,0,0,0.3)",
   },
   shareBtn: {
     flexDirection: "row",
@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   shareBtnText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   loadingWrap: {
     paddingVertical: 20,
@@ -421,15 +421,15 @@ const styles = StyleSheet.create({
   eventTitle: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   eventVenue: {
     fontSize: 11,
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(0,0,0,0.6)",
   },
   eventMeta: {
     fontSize: 10,
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.45)",
     marginTop: 2,
   },
 });

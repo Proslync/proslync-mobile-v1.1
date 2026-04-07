@@ -1,7 +1,8 @@
 // Conversation Row - A single conversation item in the inbox list
 
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { glassText, glassBorder } from "@/constants/glass/liquid-glass";

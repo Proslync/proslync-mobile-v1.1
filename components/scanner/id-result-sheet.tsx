@@ -76,8 +76,8 @@ const getTicketBadge = (ticketStatus?: string) => {
     case "skipped":
       return {
         label: "Card Not Scanned",
-        color: "rgba(255,255,255,0.4)",
-        bg: "rgba(255,255,255,0.08)",
+        color: "rgba(0,0,0,0.35)",
+        bg: "rgba(0,0,0,0.05)",
       };
     default:
       return null;
@@ -196,7 +196,7 @@ export function IdResultSheet({
         {/* Validating indicator */}
         {isValidating && (
           <View style={styles.validatingRow}>
-            <ActivityIndicator size="small" color="rgba(255,255,255,0.4)" />
+            <ActivityIndicator size="small" color="rgba(0,0,0,0.35)" />
             <Text style={styles.validatingText}>Verifying...</Text>
           </View>
         )}
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   separator: {
     width: 40,
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(0,0,0,0.06)",
     marginVertical: 12,
   },
   tagsRow: {
@@ -352,12 +352,12 @@ const styles = StyleSheet.create({
   validatingText: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.35)",
   },
   resultName: {
     fontSize: 26,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
     textAlign: "center",
     marginBottom: 24,
   },
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   fieldItem: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "rgba(0,0,0,0.04)",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 12,
@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 11,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.35)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 4,
@@ -388,7 +388,7 @@ const styles = StyleSheet.create({
   fieldValue: {
     fontSize: 16,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   resultActions: {
     flexDirection: "row",
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   approveButtonText: {
     fontSize: 16,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   denyButton: {
     flexDirection: "row",
@@ -433,12 +433,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(0,0,0,0.06)",
     gap: 6,
   },
   scanNextButtonText: {
     fontSize: 16,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
 });

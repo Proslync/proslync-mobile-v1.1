@@ -10,6 +10,11 @@ import {
   BAR_SUMMARY_KEY,
   MY_BAR_TAB_KEY,
 } from '@/hooks/use-bar-tabs';
+import type {
+  ActiveTabsResponse,
+  BarTab,
+  BarTabSummary,
+} from '@/lib/types/bar-tab.types';
 
 interface BarSocketContextValue {
   socket: Socket | null;
@@ -30,9 +35,9 @@ export function BarSocketProvider({ children }: { children: React.ReactNode }) {
     if (!user?.id) return;
 
     let cancelled = false;
-    // Debounced invalidation timers — declared at effect scope for cleanup access
-    let tabsTimer: ReturnType<typeof setTimeout> | null = null;
-    let summaryTimer: ReturnType<typeof setTimeout> | null = null;
+    // Debounced fallback invalidation timers — declared at effect scope for cleanup
+    let tabsFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let summaryFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
     const initSocket = async () => {
       const token = await apiClient.getAccessToken();
@@ -53,60 +58,142 @@ export function BarSocketProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) setIsConnected(false);
       });
 
-      const invalidateTabs = (eventId: number) => {
-        if (tabsTimer) clearTimeout(tabsTimer);
-        tabsTimer = setTimeout(() => {
+      // --- Helpers ---
+
+      /** Update a specific tab in the single-tab cache */
+      const setTabData = (eventId: number, tab: BarTab) => {
+        queryClient.setQueryData<BarTab>(
+          [BAR_TAB_KEY, eventId, tab.id],
+          tab,
+        );
+      };
+
+      /** Update a tab within the tabs list cache, or append if new */
+      const upsertTabInList = (eventId: number, tab: BarTab) => {
+        queryClient.setQueryData<ActiveTabsResponse>(
+          [BAR_TABS_KEY, eventId],
+          (old) => {
+            if (!old) return old;
+            const exists = old.tabs.some((t) => t.id === tab.id);
+            const updatedTabs = exists
+              ? old.tabs.map((t) => (t.id === tab.id ? tab : t))
+              : [...old.tabs, tab];
+            return {
+              ...old,
+              tabs: updatedTabs,
+              totalOpenTabs: updatedTabs.filter((t) => t.status === 'open').length,
+            };
+          },
+        );
+      };
+
+      /** Update the customer's own tab cache if it matches */
+      const updateMyTab = (eventId: number, tab: BarTab) => {
+        queryClient.setQueryData<BarTab | null>(
+          [MY_BAR_TAB_KEY, eventId],
+          (old) => {
+            if (!old || old.id !== tab.id) return old;
+            return tab;
+          },
+        );
+      };
+
+      /** Debounced fallback: full tabs list sync after burst settles */
+      const debouncedTabsFallback = (eventId: number) => {
+        if (tabsFallbackTimer) clearTimeout(tabsFallbackTimer);
+        tabsFallbackTimer = setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: [BAR_TABS_KEY, eventId] });
-          tabsTimer = null;
-        }, 300);
+          tabsFallbackTimer = null;
+        }, 2000);
       };
 
-      const invalidateSummary = (eventId: number) => {
-        if (summaryTimer) clearTimeout(summaryTimer);
-        summaryTimer = setTimeout(() => {
+      /** Debounced fallback: full summary sync after burst settles */
+      const debouncedSummaryFallback = (eventId: number) => {
+        if (summaryFallbackTimer) clearTimeout(summaryFallbackTimer);
+        summaryFallbackTimer = setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: [BAR_SUMMARY_KEY, eventId] });
-          summaryTimer = null;
-        }, 300);
+          summaryFallbackTimer = null;
+        }, 2000);
       };
 
-      // Tab opened — refresh tabs list and summary
-      s.on('bar:tab-opened', (data: { eventId: number }) => {
-        invalidateTabs(data.eventId);
-        invalidateSummary(data.eventId);
+      // --- Socket event handlers ---
+
+      // Tab opened — insert new tab into list, update summary optimistically
+      s.on('bar:tab-opened', (data: { tab: BarTab }) => {
+        const eventId = data.tab.eventId;
+        if (!eventId) return;
+
+        upsertTabInList(eventId, data.tab);
+
+        // Optimistic summary update: increment open tab count
+        queryClient.setQueryData<BarTabSummary>(
+          [BAR_SUMMARY_KEY, eventId],
+          (old) => {
+            if (!old) return old;
+            return { ...old, totalOpenTabs: old.totalOpenTabs + 1 };
+          },
+        );
+
+        debouncedTabsFallback(eventId);
+        debouncedSummaryFallback(eventId);
       });
 
-      // Items added — refresh specific tab and tabs list
-      s.on('bar:items-added', (data: { eventId: number; tabId: number }) => {
-        queryClient.invalidateQueries({
-          queryKey: [BAR_TAB_KEY, data.eventId, data.tabId],
-        });
-        invalidateTabs(data.eventId);
-        queryClient.invalidateQueries({
-          queryKey: [MY_BAR_TAB_KEY, data.eventId],
-        });
+      // Items added — update the specific tab and the tabs list
+      s.on('bar:items-added', (data: { tab: BarTab }) => {
+        const eventId = data.tab.eventId;
+        if (!eventId) return;
+
+        setTabData(eventId, data.tab);
+        upsertTabInList(eventId, data.tab);
+        updateMyTab(eventId, data.tab);
+
+        debouncedTabsFallback(eventId);
       });
 
-      // Tab closed — refresh tab, tabs list, and customer's tab
-      s.on('bar:tab-closed', (data: { eventId: number; tabId: number }) => {
-        queryClient.invalidateQueries({
-          queryKey: [BAR_TAB_KEY, data.eventId, data.tabId],
-        });
-        invalidateTabs(data.eventId);
-        queryClient.invalidateQueries({
-          queryKey: [MY_BAR_TAB_KEY, data.eventId],
-        });
+      // Tab closed — update tab status in all relevant caches
+      s.on('bar:tab-closed', (data: { tab: BarTab; clientSecret: string; paymentIntentId: string; amount: number; currency: string }) => {
+        const eventId = data.tab.eventId;
+        if (!eventId) return;
+
+        setTabData(eventId, data.tab);
+        upsertTabInList(eventId, data.tab);
+        updateMyTab(eventId, data.tab);
+
+        debouncedTabsFallback(eventId);
       });
 
-      // Tab paid — refresh everything
-      s.on('bar:tab-paid', (data: { eventId: number; tabId: number }) => {
-        queryClient.invalidateQueries({
-          queryKey: [BAR_TAB_KEY, data.eventId, data.tabId],
-        });
-        invalidateTabs(data.eventId);
-        invalidateSummary(data.eventId);
-        queryClient.invalidateQueries({
-          queryKey: [MY_BAR_TAB_KEY, data.eventId],
-        });
+      // Tab paid — update tab, recalculate summary optimistically
+      s.on('bar:tab-paid', (data: { tab: BarTab }) => {
+        const eventId = data.tab.eventId;
+        if (!eventId) return;
+
+        setTabData(eventId, data.tab);
+        upsertTabInList(eventId, data.tab);
+        updateMyTab(eventId, data.tab);
+
+        // Optimistic summary update: move from open to paid, add revenue
+        queryClient.setQueryData<BarTabSummary>(
+          [BAR_SUMMARY_KEY, eventId],
+          (old) => {
+            if (!old) return old;
+            const totalPaidTabs = old.totalPaidTabs + 1;
+            const totalOpenTabs = Math.max(0, old.totalOpenTabs - 1);
+            const totalRevenueCents = old.totalRevenueCents + data.tab.total;
+            const averageTabCents = totalPaidTabs > 0
+              ? Math.round(totalRevenueCents / totalPaidTabs)
+              : 0;
+            return {
+              ...old,
+              totalOpenTabs,
+              totalPaidTabs,
+              totalRevenueCents,
+              averageTabCents,
+            };
+          },
+        );
+
+        debouncedTabsFallback(eventId);
+        debouncedSummaryFallback(eventId);
       });
     };
 
@@ -114,8 +201,8 @@ export function BarSocketProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       cancelled = true;
-      if (tabsTimer) clearTimeout(tabsTimer);
-      if (summaryTimer) clearTimeout(summaryTimer);
+      if (tabsFallbackTimer) clearTimeout(tabsFallbackTimer);
+      if (summaryFallbackTimer) clearTimeout(summaryFallbackTimer);
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;

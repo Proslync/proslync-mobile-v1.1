@@ -77,7 +77,7 @@ export function ContactTagSheet({ contact, venueId, onDismiss }: ContactTagSheet
           {contact?.avatar ? (
             <Image source={{ uri: contact.avatar }} style={styles.avatar} />
           ) : (
-            <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+            <View style={[styles.avatarPlaceholder, { backgroundColor: 'rgba(0,0,0,0.06)' }]}>
               <Text style={styles.avatarInitials}>{initials}</Text>
             </View>
           )}
@@ -108,13 +108,13 @@ export function ContactTagSheet({ contact, venueId, onDismiss }: ContactTagSheet
                     styles.tagChip,
                     isActive
                       ? { backgroundColor: `${color}30`, borderColor: color }
-                      : { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)' },
+                      : { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(0,0,0,0.06)' },
                   ]}
                   onPress={() => toggleTag(tag.key)}
                   activeOpacity={0.7}
                 >
                   <View style={[styles.tagDot, { backgroundColor: color, opacity: isActive ? 1 : 0.4 }]} />
-                  <Text style={[styles.tagLabel, { color: isActive ? color : 'rgba(255,255,255,0.5)' }]}>
+                  <Text style={[styles.tagLabel, { color: isActive ? color : 'rgba(0,0,0,0.45)' }]}>
                     {tag.label}
                   </Text>
                 </TouchableOpacity>
@@ -144,7 +144,7 @@ export function ContactTagSheet({ contact, venueId, onDismiss }: ContactTagSheet
         {/* Add custom tag */}
         <View style={styles.customTagRow}>
           <TextInput
-            style={[styles.customTagInput, { color: colors.text, borderColor: 'rgba(255,255,255,0.1)' }]}
+            style={[styles.customTagInput, { color: colors.text, borderColor: 'rgba(0,0,0,0.06)' }]}
             value={customTagInput}
             onChangeText={setCustomTagInput}
             placeholder="Add custom tag..."
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarInitials: {
-    color: '#fff',
+    color: '#1A1A1A',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -250,12 +250,12 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: {
-    color: '#fff',
+    color: '#1A1A1A',
     fontSize: 14,
     fontWeight: '600',
   },

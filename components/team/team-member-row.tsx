@@ -2,7 +2,8 @@ import { GlassSurface } from '@/components/glass/glass-surface';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import type { TeamMemberResponseDto } from '@/lib/types/team.types';
 import { Ionicons } from '@expo/vector-icons';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image } from 'expo-image';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   avatarInitials: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   info: {
     flex: 1,

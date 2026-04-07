@@ -11,3 +11,4 @@ export { ToastProvider, useToast } from './toast';
 export { VideoThumbnailImage } from './video-thumbnail';
 export { LinkifiedText } from './linkified-text';
 export { renderBackdrop } from './bottom-sheet-backdrop';
+export { GlassSheet } from './glass-sheet';

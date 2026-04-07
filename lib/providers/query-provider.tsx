@@ -25,15 +25,15 @@ function onAppStateChange(status: AppStateStatus) {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Data is considered fresh for 30 seconds
-      staleTime: 30 * 1000,
-      // Keep unused data in cache for 5 minutes
-      gcTime: 5 * 60 * 1000,
+      // Data fresh for 60s — pull-to-refresh for immediate updates
+      staleTime: 60 * 1000,
+      // Keep unused data in cache for 10 minutes
+      gcTime: 10 * 60 * 1000,
       // Retry failed requests 2 times
       retry: 2,
-      // Refetch when app comes to foreground (handled by focusManager)
-      refetchOnWindowFocus: true,
-      // Refetch when network reconnects (handled by onlineManager)
+      // Only refetch stale queries on focus (not all)
+      refetchOnWindowFocus: false,
+      // Refetch when network reconnects
       refetchOnReconnect: true,
     },
     mutations: {

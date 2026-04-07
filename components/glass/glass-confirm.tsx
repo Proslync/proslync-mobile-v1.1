@@ -76,7 +76,7 @@ export function GlassConfirm({
     opacity: opacity.value,
   }));
 
-  const iconColor = destructive ? '#FF3B30' : '#fff';
+  const iconColor = destructive ? '#FF3B30' : '#1A1A1A';
 
   return (
     <GlassContainer spacing={6} style={styles.container}>
@@ -133,7 +133,7 @@ export function GlassConfirm({
                   style={StyleSheet.absoluteFill}
                 />
                 {isLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color="#1A1A1A" />
                 ) : (
                   <Text style={styles.confirmText}>{confirmLabel}</Text>
                 )}
@@ -166,14 +166,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
     marginBottom: 6,
     textAlign: 'center',
   },
   message: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.45)',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
@@ -194,11 +194,11 @@ const styles = StyleSheet.create({
   cancelText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   confirmText: {
     fontSize: 15,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
 });

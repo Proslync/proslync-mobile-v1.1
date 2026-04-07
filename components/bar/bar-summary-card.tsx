@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   statLabel: {
     fontSize: 11,

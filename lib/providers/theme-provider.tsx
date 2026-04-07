@@ -11,7 +11,7 @@
 
 import * as React from 'react';
 import { useColorScheme } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkv } from '@/lib/storage/mmkv';
 import {
   Colors,
   LightColors,
@@ -55,30 +55,17 @@ export function ThemeProvider({
   defaultTheme = 'light',
 }: ThemeProviderProps) {
   const systemColorScheme = useColorScheme();
-  const [themeMode, setThemeModeState] = React.useState<ThemeMode>(defaultTheme);
-  const [isLoading, setIsLoading] = React.useState(true);
+  // MMKV reads are synchronous — no loading state needed
+  const [themeMode, setThemeModeState] = React.useState<ThemeMode>(() => {
+    const saved = mmkv.getString(THEME_STORAGE_KEY);
+    if (saved && ['light', 'dark', 'system'].includes(saved)) return saved as ThemeMode;
+    return defaultTheme;
+  });
+  const isLoading = false;
 
-  // Load saved theme on mount
-  React.useEffect(() => {
-    loadTheme();
-  }, []);
-
-  const loadTheme = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-      if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
-        setThemeModeState(savedTheme as ThemeMode);
-      }
-    } catch (error) {    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const setThemeMode = React.useCallback(async (mode: ThemeMode) => {
+  const setThemeMode = React.useCallback((mode: ThemeMode) => {
     setThemeModeState(mode);
-    try {
-      await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
-    } catch (error) {    }
+    mmkv.setString(THEME_STORAGE_KEY, mode);
   }, []);
 
   const toggleTheme = React.useCallback(() => {

@@ -87,7 +87,7 @@ function HeartButton({
   );
 }
 
-export function EventLineupCard({
+export const EventLineupCard = React.memo(function EventLineupCard({
   data,
   isVisible = true,
   onSaveToggle,
@@ -251,7 +251,7 @@ export function EventLineupCard({
     </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   name: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontSize: 15,
     fontWeight: "600",
     marginBottom: 6,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   qtyInput: {
-    color: "#fff",
+    color: "#1A1A1A",
     fontSize: 28,
     fontWeight: "700",
     textAlign: "center",

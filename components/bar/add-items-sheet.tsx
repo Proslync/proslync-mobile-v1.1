@@ -117,7 +117,7 @@ export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItems
         width: 36,
         height: 4,
         borderRadius: 2,
-        backgroundColor: 'rgba(255,255,255,0.3)',
+        backgroundColor: 'rgba(0,0,0,0.25)',
       }}
       backdropComponent={renderBackdrop}
     >
@@ -126,7 +126,7 @@ export function AddItemsSheet({ visible, venueId, onClose, onConfirm }: AddItems
         <View style={styles.header}>
           <Text style={styles.title}>Add Items</Text>
           <TouchableOpacity onPress={onClose} activeOpacity={0.7}>
-            <Ionicons name="close" size={22} color="rgba(255,255,255,0.5)" />
+            <Ionicons name="close" size={22} color="rgba(0,0,0,0.45)" />
           </TouchableOpacity>
         </View>
 
@@ -226,14 +226,14 @@ function MenuItemRow({
           <>
             <TouchableOpacity onPress={onDecrement} style={styles.qtyButton} activeOpacity={0.7}>
               <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
-              <Ionicons name="remove" size={18} color="#fff" />
+              <Ionicons name="remove" size={18} color="#1A1A1A" />
             </TouchableOpacity>
             <Text style={styles.qtyText}>{quantity}</Text>
           </>
         )}
         <TouchableOpacity onPress={onIncrement} style={styles.qtyButton} activeOpacity={0.7}>
           <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
-          <Ionicons name="add" size={18} color="#fff" />
+          <Ionicons name="add" size={18} color="#1A1A1A" />
         </TouchableOpacity>
       </View>
     </View>
@@ -248,12 +248,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   title: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   scroll: {
     flex: 1,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(0,0,0,0.35)',
     textAlign: 'center',
     paddingVertical: 32,
   },
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.45)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: 'rgba(0,0,0,0.04)',
   },
   itemInfo: {
     flex: 1,
@@ -293,18 +293,18 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   itemDescription: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(0,0,0,0.35)',
     marginTop: 2,
   },
   itemPrice: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.45)',
     marginTop: 2,
   },
   quantityControls: {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   qtyText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
     minWidth: 20,
     textAlign: 'center',
   },
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     backgroundColor: 'rgba(10,10,10,0.9)',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderTopColor: 'rgba(0,0,0,0.06)',
   },
   confirmButton: {
     borderRadius: 14,
@@ -344,11 +344,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   confirmText: {
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
   },
 });

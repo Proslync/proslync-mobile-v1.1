@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.45)',
     textAlign: 'center',
   },
   optionsGlass: {
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.06)',
     marginHorizontal: 16,
   },
   optionRow: {
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   optionDestructive: {
     color: '#FF3B30',

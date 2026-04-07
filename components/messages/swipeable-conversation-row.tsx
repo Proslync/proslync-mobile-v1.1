@@ -1,7 +1,8 @@
 // Swipeable Conversation Row - Row with half-swipe peek preview gesture
 
 import React, { useCallback } from "react";
-import { View, Text, StyleSheet, Image } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedStyle,

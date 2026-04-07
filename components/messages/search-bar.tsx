@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#fff',
+    color: '#1A1A1A',
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
     padding: 0,

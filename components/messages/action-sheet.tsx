@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#fff",
+    color: "#1A1A1A",
     textAlign: "center",
   },
   actionsList: {
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 16,
-    color: "#fff",
+    color: "#1A1A1A",
   },
   dangerText: {
     color: "#FF3B30",

@@ -48,7 +48,7 @@ function NativeConfirmSheet({
   icon,
   alertOnly = false,
 }: ConfirmSheetProps) {
-  const iconColor = destructive ? "#ff3b30" : "#fff";
+  const iconColor = destructive ? "#ff3b30" : "#1A1A1A";
 
   const handleCancel = React.useCallback(() => {
     onClose();
@@ -143,7 +143,7 @@ function NativeConfirmSheet({
                     isInteractive
                   />
                   {isLoading ? (
-                    <ActivityIndicator size="small" color="#fff" />
+                    <ActivityIndicator size="small" color="#1A1A1A" />
                   ) : (
                     <Text style={styles.confirmText}>{confirmLabel}</Text>
                   )}
@@ -184,13 +184,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
     marginBottom: 8,
   },
   message: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255, 255, 255, 0.6)",
+    color: "rgba(0, 0, 0, 0.45)",
     textAlign: "center",
     lineHeight: 20,
   },
@@ -211,20 +211,20 @@ const styles = StyleSheet.create({
   },
   cancelBtn: {
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(0,0,0,0.06)",
   },
   confirmBtn: {
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(0,0,0,0.1)",
   },
   cancelText: {
     fontSize: 16,
     fontFamily: "Lato_400Regular",
-    color: "#fff",
+    color: "#1A1A1A",
   },
   confirmText: {
     fontSize: 16,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#1A1A1A",
   },
 });

@@ -150,7 +150,7 @@ export function ActivityList({
       {/* Transactions */}
       {filteredTransactions.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="receipt-outline" size={40} color="rgba(255,255,255,0.2)" />
+          <Ionicons name="receipt-outline" size={40} color="rgba(0,0,0,0.1)" />
           <Text style={styles.emptyText}>No activity yet</Text>
         </View>
       ) : (
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: '#fff',
+    color: '#1A1A1A',
   },
   filterRow: {
     flexDirection: 'row',
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.6)',
   },
   filterTextActive: {
-    color: '#fff',
+    color: '#1A1A1A',
     fontFamily: 'Lato_700Bold',
   },
   emptyState: {
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   txTitle: {
     fontSize: 14,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#1A1A1A',
     flexShrink: 1,
   },
   pendingChip: {

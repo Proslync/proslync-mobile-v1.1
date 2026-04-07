@@ -193,7 +193,7 @@ function ConversationRow({
 
   return (
     <Animated.View
-      entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}
+      entering={index < 5 ? FadeInDown.delay(index * 30).duration(250) : undefined}
     >
       <TouchableOpacity
         style={[styles.conversationRow, { overflow: "hidden" }]}
@@ -833,6 +833,9 @@ export default function MessagesScreen() {
           ]}
           refreshControl={refreshControl}
           showsVerticalScrollIndicator={false}
+          windowSize={10}
+          maxToRenderPerBatch={8}
+          removeClippedSubviews={true}
         />
       </Animated.View>
 

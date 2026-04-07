@@ -446,7 +446,7 @@ export function ShareLocationSheet({
             style={styles.stopButton}
           >
             <Ionicons name="stop-circle" size={16} color="#fff" />
-            <GlassText weight="bold" size={14} style={{ color: "#fff" }}>
+            <GlassText weight="bold" size={14} style={{ color: "#1A1A1A" }}>
               Stop Sharing
             </GlassText>
           </TouchableOpacity>

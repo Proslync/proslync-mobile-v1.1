@@ -1,6 +1,7 @@
 // Membership Card - Social profile card with avatar
 import React from 'react';
-import { View, Text, Image, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 import { GlassView } from 'expo-glass-effect';
@@ -48,7 +49,7 @@ export function MembershipCard({ user, onPress, enlarged = false }: MembershipCa
             <Image
               source={StatusLogo}
               style={styles.logo}
-              resizeMode="contain"
+              contentFit="contain"
             />
 
             <View style={styles.avatarContainer}>
@@ -102,7 +103,7 @@ export function IncompleteMembershipCard({ onPress }: IncompleteMembershipCardPr
           <Image
             source={StatusLogo}
             style={styles.logo}
-            resizeMode="contain"
+            contentFit="contain"
           />
 
           <View style={incompleteStyles.iconContainer}>
