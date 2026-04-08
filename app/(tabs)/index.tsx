@@ -30,6 +30,8 @@ import { eventsApi } from '@/lib/api/events';
 import { venuesApi } from '@/lib/api/venues';
 import { useToast } from '@/components/shared/toast';
 import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet';
+import { SearchSheet } from '@/components/shared/search-sheet';
+import { NotificationSheet } from '@/components/shared/notification-sheet';
 import { track, trackScreen } from '@/lib/analytics';
 import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
 
@@ -249,6 +251,8 @@ export default function FeedScreen() {
 
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [notifVisible, setNotifVisible] = useState(false);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -430,14 +434,17 @@ export default function FeedScreen() {
         activeFilter={activeFilter}
         onFilterChange={(f) => setActiveFilter(f)}
         onAvatarPress={() => router.navigate('/(tabs)/profile')}
-        onNotificationPress={() => router.push('/notifications')}
-        onSearchPress={() => setIsSearchActive(true)}
+        onNotificationPress={() => setNotifVisible(true)}
+        onSearchPress={() => setSearchVisible(true)}
         avatarInitial={avatarInitial}
         isSearchActive={isSearchActive}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onSearchCancel={() => { setIsSearchActive(false); setSearchQuery(""); }}
       />
+
+      <SearchSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
+      <NotificationSheet visible={notifVisible} onClose={() => setNotifVisible(false)} />
 
       <PurchaseTicketSheet
         visible={!!purchaseItem}
