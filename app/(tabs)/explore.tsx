@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
   Modal,
   Keyboard,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -176,7 +177,7 @@ function ConversationRow({
         <Ionicons
           name="checkmark-done"
           size={14}
-          color="#3897F0"
+          color="#fff"
           style={{ marginRight: 4 }}
         />
       );
@@ -193,9 +194,8 @@ function ConversationRow({
 
   return (
     <Animated.View
-      entering={index < 5 ? FadeInDown.delay(index * 30).duration(250) : undefined}
+      entering={FadeInDown.delay(Math.min(index * 30, 300)).duration(250)}
     >
-      <View style={styles.cardShadow}>
       <TouchableOpacity
         style={[styles.conversationRow, { overflow: "hidden" }]}
         onPress={onPress}
@@ -203,7 +203,6 @@ function ConversationRow({
         delayLongPress={500}
         activeOpacity={0.6}
       >
-        <GlassView {...liquidGlass.surface} borderRadius={16} style={StyleSheet.absoluteFillObject} />
         {channel.isConcierge ? (
           <ConciergeAvatar />
         ) : (
@@ -276,7 +275,6 @@ function ConversationRow({
           </View>
         </View>
       </TouchableOpacity>
-      </View>
     </Animated.View>
   );
 }
@@ -370,36 +368,26 @@ function PersonSearchRow({
 
   return (
     <TouchableOpacity
-      style={[styles.personRow, { overflow: "hidden" }]}
+      style={[styles.personRow, { backgroundColor: '#fff' }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <GlassView
-        {...liquidGlass.surface}
-        borderRadius={14}
-        style={StyleSheet.absoluteFillObject}
-      />
       <Image
         source={avatarUrl ? { uri: avatarUrl } : DefaultAvatarImage}
         style={styles.personAvatar}
       />
       <View style={styles.personInfo}>
-        <View style={styles.personNameRow}>
-          <Text style={[styles.personName, { color: colors.text }]}>
-            {displayName}
-          </Text>
-          {item.isVerified && (
-            <MaterialCommunityIcons name="check-decagram" size={14} color="#3897F0" style={{ marginLeft: 4 }} />
-          )}
-        </View>
+        <Text style={[styles.personName, { color: '#1a1a1a' }]}>
+          {displayName}
+        </Text>
         {item.userName && (
-          <Text style={[styles.personUsername, { color: colors.textSecondary }]}>
+          <Text style={[styles.personUsername, { color: '#777' }]}>
             @{item.userName}
           </Text>
         )}
       </View>
       {isSelected && (
-        <Ionicons name="checkmark-circle" size={24} color="#1A1A1A" />
+        <Ionicons name="checkmark-circle" size={24} color="#1a1a1a" />
       )}
     </TouchableOpacity>
   );
@@ -432,6 +420,17 @@ export default function MessagesScreen() {
 
   // Compose new DM state
   const [showCompose, setShowCompose] = useState(false);
+  const [composeKeyboardHeight, setComposeKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardWillShow", (e) => {
+      setComposeKeyboardHeight(e.endCoordinates.height + 12);
+    });
+    const hideSub = Keyboard.addListener("keyboardWillHide", () => {
+      setComposeKeyboardHeight(0);
+    });
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
   const [selectedPeople, setSelectedPeople] = useState<UnifiedSearchItem[]>([]);
   const [groupName, setGroupName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -545,6 +544,17 @@ export default function MessagesScreen() {
     setIsSearchActive(false);
     Keyboard.dismiss();
   }, []);
+
+  // Close search when keyboard hides
+  useEffect(() => {
+    const sub = Keyboard.addListener("keyboardWillHide", () => {
+      if (isSearchActive) {
+        setSearchQuery("");
+        setIsSearchActive(false);
+      }
+    });
+    return () => sub.remove();
+  }, [isSearchActive]);
 
   // Compose handlers
   const handleOpenCompose = useCallback(() => {
@@ -729,8 +739,18 @@ export default function MessagesScreen() {
   if (isLoading && channelData.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+          <View style={styles.headerIcon} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Messages
+          </Text>
+          <View style={styles.headerIcon} />
+        </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="rgba(0,0,0,0.3)" />
+          <ActivityIndicator size="large" color={colors.text} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+            Loading messages...
+          </Text>
         </View>
       </View>
     );
@@ -739,68 +759,68 @@ export default function MessagesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Floating Header */}
-      {/* Floating Header */}
-      <View style={[styles.floatingHeader, { paddingTop: insets.top + 8 }]}>
-        {isSearchActive ? (
-          /* Search mode — full-width search bar replaces title */
-          <Animated.View entering={FadeIn.duration(200)} style={styles.searchBarRow}>
-            <View style={[styles.searchBar, { overflow: "hidden" }]}>
-              <GlassView
-                {...liquidGlass.fillMedium}
-                borderRadius={20}
-                style={StyleSheet.absoluteFillObject}
-              />
-              <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
+      {/* Header */}
+      <Animated.View
+        entering={FadeIn.duration(400)}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
+      >
+        <TouchableOpacity
+          style={styles.headerCircleBtn}
+          onPress={handleSearchPress}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="search" size={20} color={colors.text} />
+        </TouchableOpacity>
+
+        <View style={styles.headerTitleButton}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Messages
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.headerCircleBtn}
+          onPress={handleOpenCompose}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={24} color={colors.text} />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Search input above keyboard */}
+      {isSearchActive && (
+        <KeyboardAvoidingView
+          style={styles.searchSheet}
+          behavior="padding"
+          pointerEvents="box-none"
+        >
+          <View style={{ flex: 1 }} pointerEvents="box-none" />
+          <View style={[styles.searchSheetContent, { paddingBottom: 8 }]}>
+            <View style={styles.searchSheetInput}>
               <TextInput
                 ref={searchInputRef}
-                style={[styles.searchBarInput, { color: colors.text }]}
+                style={styles.searchSheetTextInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                placeholder="Search messages..."
-                placeholderTextColor="rgba(0,0,0,0.35)"
+                placeholder="Search messages"
+                placeholderTextColor="#999"
                 autoCapitalize="none"
                 autoCorrect={false}
+                keyboardAppearance="light"
               />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery("")}>
-                  <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.3)" />
+              <View style={styles.searchSheetActions}>
+                <TouchableOpacity style={styles.searchSheetPlusBtn} onPress={handleSearchCancel} activeOpacity={0.7}>
+                  <Ionicons name="close" size={18} color="#666" />
                 </TouchableOpacity>
-              )}
+                <View style={{ flex: 1 }} />
+                <TouchableOpacity style={searchQuery.length > 0 ? styles.searchSheetArrowBtn : styles.searchSheetArrowBtnInactive} activeOpacity={0.7}>
+                  <Ionicons name="arrow-forward" size={18} color={searchQuery.length > 0 ? "#fff" : "#ccc"} />
+                </TouchableOpacity>
+              </View>
             </View>
-            <TouchableOpacity onPress={handleSearchCancel} style={styles.glassCircle} activeOpacity={0.7}>
-              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFillObject} />
-              <Ionicons name="close" size={18} color="rgba(0,0,0,0.7)" />
-            </TouchableOpacity>
-          </Animated.View>
-        ) : (
-          /* Normal mode — search icon, title, compose */
-          <>
-            <TouchableOpacity
-              style={styles.glassCircle}
-              onPress={handleSearchPress}
-              activeOpacity={0.7}
-            >
-              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFillObject} />
-              <Ionicons name="search" size={18} color="rgba(0,0,0,0.7)" />
-            </TouchableOpacity>
-
-            <View style={styles.headerTitlePill}>
-              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFillObject} />
-              <Text style={styles.headerTitle}>Messages</Text>
-            </View>
-
-            <TouchableOpacity
-              style={styles.glassCircle}
-              onPress={handleOpenCompose}
-              activeOpacity={0.7}
-            >
-              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFillObject} />
-              <Ionicons name="create-outline" size={20} color="rgba(0,0,0,0.7)" />
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
+          </View>
+        </KeyboardAvoidingView>
+      )}
 
       {/* Conversations List */}
       <Animated.View
@@ -816,13 +836,10 @@ export default function MessagesScreen() {
             filteredChannels.length === 0
               ? styles.emptyListContainer
               : styles.listContent,
-            { paddingTop: insets.top + 60, paddingBottom: tabBarTopOffset + 20 },
+            { paddingBottom: tabBarTopOffset + 20 },
           ]}
           refreshControl={refreshControl}
           showsVerticalScrollIndicator={false}
-          windowSize={10}
-          maxToRenderPerBatch={8}
-          removeClippedSubviews={true}
         />
       </Animated.View>
 
@@ -834,7 +851,7 @@ export default function MessagesScreen() {
         onRequestClose={handleCloseCompose}
       >
         <View style={[styles.composeContainer, { backgroundColor: '#f2f2f2' }]}>
-  
+
           {/* Creating overlay */}
           {isCreating && (
             <View style={styles.composeOverlay}>
@@ -844,19 +861,22 @@ export default function MessagesScreen() {
           )}
 
           {/* Compose Header */}
-          <View style={[styles.composeHeader, { paddingTop: insets.top + 8 }]}>
-            <TouchableOpacity onPress={handleCloseCompose}>
-              <Text style={styles.composeCancelText}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={[styles.composeTitle, { color: colors.text }]}>
+          <View style={[styles.composeHeader, { paddingTop: 16 }]}>
+            <Text style={styles.composeTitle}>
               New Message
             </Text>
-            <View style={{ width: 60 }} />
+            <TouchableOpacity
+              style={styles.composeCloseBtn}
+              onPress={handleCloseCompose}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={22} color="#1a1a1a" />
+            </TouchableOpacity>
           </View>
 
           {/* Selected chips + group name */}
           {selectedPeople.length > 0 && (
-            <View style={[styles.chipsSection, { borderBottomColor: colors.border }]}>
+            <View style={[styles.chipsSection, { borderBottomColor: 'rgba(0,0,0,0.08)' }]}>
               <FlatList
                 horizontal
                 data={selectedPeople}
@@ -865,7 +885,7 @@ export default function MessagesScreen() {
                 contentContainerStyle={styles.chipsRow}
                 renderItem={({ item }) => (
                   <TouchableOpacity
-                    style={[styles.chip, { overflow: "hidden" }]}
+                    style={[styles.chip, { backgroundColor: '#eee' }]}
                     onPress={() => togglePersonSelection(item)}
                     activeOpacity={0.7}
                   >
@@ -926,30 +946,7 @@ export default function MessagesScreen() {
             </View>
           )}
 
-          {/* Search input */}
-          <View style={[styles.composeSearchRow, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.toLabel, { color: colors.textSecondary }]}>
-              To:
-            </Text>
-            <TextInput
-              ref={composeSearchRef}
-              style={[styles.composeSearchInput, { color: colors.text }]}
-              value={composeQuery}
-              onChangeText={setComposeQuery}
-              placeholder="Search people..."
-              placeholderTextColor={colors.textTertiary}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {isComposeSearching && (
-              <ActivityIndicator size="small" color={colors.textTertiary} />
-            )}
-            {composeQuery.length > 0 && !isComposeSearching && (
-              <TouchableOpacity onPress={() => setComposeQuery("")}>
-                <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-              </TouchableOpacity>
-            )}
-          </View>
+          {/* Search input moved to bottom — placeholder here for layout */}
 
           {/* Results / Suggestions */}
           {composeQuery.trim() ? (
@@ -1029,14 +1026,9 @@ export default function MessagesScreen() {
                       style={styles.personAvatar}
                     />
                     <View style={styles.personInfo}>
-                      <View style={styles.personNameRow}>
-                        <Text style={[styles.personName, { color: colors.text }]}>
-                          {displayName}
-                        </Text>
-                        {suggestion.isVerified && (
-                          <MaterialCommunityIcons name="check-decagram" size={14} color="#3897F0" style={{ marginLeft: 4 }} />
-                        )}
-                      </View>
+                      <Text style={[styles.personName, { color: colors.text }]}>
+                        {displayName}
+                      </Text>
                       {suggestion.userName && (
                         <Text style={[styles.personUsername, { color: colors.textSecondary }]}>
                           @{suggestion.userName}
@@ -1044,7 +1036,7 @@ export default function MessagesScreen() {
                       )}
                     </View>
                     {isSelected && (
-                      <Ionicons name="checkmark-circle" size={24} color="#1A1A1A" />
+                      <Ionicons name="checkmark-circle" size={24} color="#fff" />
                     )}
                   </TouchableOpacity>
                 );
@@ -1061,6 +1053,27 @@ export default function MessagesScreen() {
               showsVerticalScrollIndicator={false}
             />
           )}
+
+          {/* To: input at bottom */}
+          <Animated.View style={[styles.composeBottomInput, { marginBottom: composeKeyboardHeight }]}>
+            <Text style={styles.composeToLabel}>To:</Text>
+            <TextInput
+              ref={composeSearchRef}
+              style={styles.composeToInput}
+              value={composeQuery}
+              onChangeText={setComposeQuery}
+              placeholder="Search people..."
+              placeholderTextColor="#999"
+              keyboardAppearance="light"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {composeQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setComposeQuery("")}>
+                <Ionicons name="close-circle" size={18} color="#999" />
+              </TouchableOpacity>
+            )}
+          </Animated.View>
         </View>
       </Modal>
 
@@ -1126,55 +1139,106 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // Floating header
-  floatingHeader: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
+  // Profile-style header
+  header: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 10,
   },
-  headerTitlePill: {
-    height: 40,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+  headerTitleButton: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
+    gap: 4,
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 22,
     fontFamily: "Lato_700Bold",
-    color: "rgba(0,0,0,0.7)",
   },
-  glassCircle: {
+  headerIcon: {
+    padding: 4,
+    width: 40,
+    alignItems: "center",
+  },
+  headerCircleBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.05)",
     justifyContent: "center",
-    overflow: "hidden",
+    alignItems: "center",
   },
-  // Search bar (inside floating header)
-  searchBarRow: {
-    flex: 1,
+  searchSheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
+  searchSheetContent: {
+    backgroundColor: "#f7f7f7",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  searchSheetInput: {
+    backgroundColor: "#eee",
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  searchSheetTextInput: {
+    fontSize: 16,
+    color: "#1a1a1a",
+  },
+  searchSheetActions: {
     flexDirection: "row",
     alignItems: "center",
+    paddingTop: 10,
+  },
+  searchSheetPlusBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(0,0,0,0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchSheetArrowBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#1a1a1a",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  searchSheetArrowBtnInactive: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(0,0,0,0.06)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  // Search bar
+  searchBarContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
     gap: 10,
   },
   searchBar: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    height: 40,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    gap: 8,
+    height: 36,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    gap: 6,
   },
   searchBarInput: {
     flex: 1,
@@ -1187,6 +1251,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Lato_400Regular",
   },
+  searchCancelBtn: {
+    paddingVertical: 4,
+  },
+  searchCancelText: {
+    fontSize: 15,
+    fontFamily: "Lato_400Regular",
+  },
   // List
   listContainer: {
     flex: 1,
@@ -1194,24 +1265,17 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: 4,
   },
-  cardShadow: {
-    marginHorizontal: 10,
-    marginVertical: 4,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
-  },
   conversationRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 12,
+    marginHorizontal: 10,
+    marginVertical: 3,
     borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.5)",
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "rgba(128,128,128,0.12)",
   },
   avatarContainer: {
     position: "relative",
@@ -1420,7 +1484,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 16,
     fontFamily: "Lato_400Regular",
-    color: "#1A1A1A",
+    color: "#fff",
   },
   // Compose modal
   composeContainer: {
@@ -1443,18 +1507,42 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingBottom: 12,
   },
-  composeCancelText: {
-    fontSize: 17,
-    fontFamily: "Lato_400Regular",
-    color: "#3897F0",
-    width: 60,
+  composeCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.06)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   composeTitle: {
-    fontSize: 17,
-    fontFamily: "Lato_700Bold",
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#1a1a1a",
+  },
+  composeBottomInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    marginHorizontal: 16,
+    marginBottom: 200,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  composeToLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#777",
+  },
+  composeToInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#1a1a1a",
   },
   chipsSection: {
     borderBottomWidth: 1,
@@ -1500,7 +1588,7 @@ const styles = StyleSheet.create({
   },
   createGroupBtn: {
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
+    borderColor: "rgba(255,255,255,0.25)",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -1508,7 +1596,7 @@ const styles = StyleSheet.create({
   createGroupText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "#1A1A1A",
+    color: "#fff",
   },
   composeSearchRow: {
     flexDirection: "row",
@@ -1547,7 +1635,7 @@ const styles = StyleSheet.create({
     marginVertical: 2,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.04)",
+    borderColor: "rgba(255,255,255,0.04)",
   },
   personAvatar: {
     width: 50,
@@ -1557,10 +1645,6 @@ const styles = StyleSheet.create({
   personInfo: {
     flex: 1,
     marginLeft: 12,
-  },
-  personNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
   },
   personName: {
     fontSize: 16,
