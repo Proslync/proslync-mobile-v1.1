@@ -41,7 +41,8 @@ import {
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 const personalTabs = ['Tickets', 'Tables', 'Offers'] as const;
-const venueTabs = ['Manage', 'Insights', 'Tools', 'Admin'] as const;
+const personalAdminTabs = ['Tickets', 'Tables', 'Offers', 'Admin'] as const;
+const venueTabs = ['Manage', 'Insights', 'Tools'] as const;
 
 // ─── Profile Selector Modal ────────────────────────────────────
 
@@ -49,19 +50,25 @@ function ProfileSelectorModal({
   visible,
   currentUser,
   venues,
+  organizations,
   selectedVenueId,
+  selectedOrgId,
   onClose,
   onSelectPersonal,
   onSelectVenue,
+  onSelectOrg,
   onCreateOrg,
 }: {
   visible: boolean;
   currentUser: { id: number; userName?: string; firstName?: string; lastName?: string; avatar?: { url: string } | null };
   venues: { id: number; name: string; imageUrl?: string }[];
+  organizations: { id: number; name: string; logo?: { url: string } | null }[];
   selectedVenueId: number | null;
+  selectedOrgId: number | null;
   onClose: () => void;
   onSelectPersonal: () => void;
   onSelectVenue: (venue: { id: number; name: string }) => void;
+  onSelectOrg: (org: { id: number; name: string }) => void;
   onCreateOrg: () => void;
 }) {
   const insets = useSafeAreaInsets();
@@ -104,6 +111,8 @@ function ProfileSelectorModal({
     ? `${currentUser.firstName}${currentUser.lastName ? ' ' + currentUser.lastName : ''}`
     : currentUser.userName || 'User';
 
+  const isPersonal = selectedVenueId === null && selectedOrgId === null;
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={dismiss}>
       <View style={selectorStyles.overlay}>
@@ -116,79 +125,92 @@ function ProfileSelectorModal({
 
               <View style={selectorStyles.handle} />
 
-              <View style={selectorStyles.header}>
-                <Text style={selectorStyles.title}>Switch Profile</Text>
-                <GHTouchableOpacity onPress={dismiss} style={selectorStyles.closeButton}>
-                  <Ionicons name="close-circle" size={24} color="rgba(0,0,0,0.3)" />
+              <View style={selectorStyles.listContainer}>
+                {/* Current user — personal account */}
+                <GHTouchableOpacity
+                  style={selectorStyles.item}
+                  activeOpacity={isPersonal ? 1 : 0.7}
+                  onPress={() => !isPersonal && onSelectPersonal()}
+                >
+                  <Image
+                    source={currentUser.avatar?.url ? { uri: currentUser.avatar.url } : DefaultAvatarImage}
+                    style={[selectorStyles.avatar, isPersonal && selectorStyles.avatarActive]}
+                  />
+                  <View style={selectorStyles.info}>
+                    <Text style={selectorStyles.nameText}>{displayName}</Text>
+                    <Text style={selectorStyles.subtitleText}>Personal Account</Text>
+                  </View>
+                  {isPersonal && (
+                    <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
+                  )}
+                </GHTouchableOpacity>
+
+                {/* Venues */}
+                {venues.map((venue) => {
+                  const isSelected = selectedVenueId === venue.id;
+                  return (
+                    <GHTouchableOpacity
+                      key={`venue-${venue.id}`}
+                      style={selectorStyles.item}
+                      onPress={() => !isSelected && onSelectVenue(venue)}
+                      activeOpacity={isSelected ? 1 : 0.7}
+                    >
+                      <Image
+                        source={venue.imageUrl ? { uri: venue.imageUrl } : DefaultAvatarImage}
+                        style={[selectorStyles.avatar, isSelected && selectorStyles.avatarActive]}
+                      />
+                      <View style={selectorStyles.info}>
+                        <Text style={selectorStyles.nameText}>{venue.name}</Text>
+                        <Text style={selectorStyles.subtitleText}>Venue</Text>
+                      </View>
+                      {isSelected ? (
+                        <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
+                      ) : (
+                        <Ionicons name="chevron-forward" size={18} color="rgba(0,0,0,0.25)" />
+                      )}
+                    </GHTouchableOpacity>
+                  );
+                })}
+
+                {/* Organizations */}
+                {organizations.map((org) => {
+                  const isSelected = selectedOrgId === org.id;
+                  return (
+                    <GHTouchableOpacity
+                      key={`org-${org.id}`}
+                      style={selectorStyles.item}
+                      onPress={() => !isSelected && onSelectOrg(org)}
+                      activeOpacity={isSelected ? 1 : 0.7}
+                    >
+                      <Image
+                        source={org.logo?.url ? { uri: org.logo.url } : DefaultAvatarImage}
+                        style={[selectorStyles.avatar, isSelected && selectorStyles.avatarActive]}
+                      />
+                      <View style={selectorStyles.info}>
+                        <Text style={selectorStyles.nameText}>{org.name}</Text>
+                        <Text style={selectorStyles.subtitleText}>Organization</Text>
+                      </View>
+                      {isSelected ? (
+                        <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
+                      ) : (
+                        <Ionicons name="chevron-forward" size={18} color="rgba(0,0,0,0.25)" />
+                      )}
+                    </GHTouchableOpacity>
+                  );
+                })}
+
+                {/* Create New Organization */}
+                <GHTouchableOpacity
+                  style={selectorStyles.createOrgButton}
+                  onPress={onCreateOrg}
+                  activeOpacity={0.7}
+                >
+                  <View style={selectorStyles.createOrgIcon}>
+                    <Ionicons name="add" size={24} color="#1a1a1a" />
+                  </View>
+                  <Text style={selectorStyles.createOrgText}>Create New Organization</Text>
                 </GHTouchableOpacity>
               </View>
-
-              {/* Current user — personal account */}
-              <GHTouchableOpacity
-                style={selectorStyles.item}
-                activeOpacity={selectedVenueId === null ? 1 : 0.7}
-                onPress={() => selectedVenueId !== null && onSelectPersonal()}
-              >
-                <Image
-                  source={currentUser.avatar?.url ? { uri: currentUser.avatar.url } : DefaultAvatarImage}
-                  style={[selectorStyles.avatar, selectedVenueId === null && selectorStyles.avatarActive]}
-                />
-                <View style={selectorStyles.info}>
-                  <Text style={selectorStyles.nameText}>{displayName}</Text>
-                  <Text style={selectorStyles.subtitleText}>Personal Account</Text>
-                </View>
-                {selectedVenueId === null && (
-                  <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
-                )}
-              </GHTouchableOpacity>
-
-              {/* Venues */}
-              {venues.length > 0 && (
-                <>
-                  <View style={selectorStyles.sectionHeader}>
-                    <Ionicons name="business-outline" size={14} color="rgba(0,0,0,0.3)" />
-                    <Text style={selectorStyles.sectionTitle}>Your Venues</Text>
-                  </View>
-                  {venues.map((venue) => {
-                    const isSelected = selectedVenueId === venue.id;
-                    return (
-                      <GHTouchableOpacity
-                        key={`venue-${venue.id}`}
-                        style={selectorStyles.item}
-                        onPress={() => !isSelected && onSelectVenue(venue)}
-                        activeOpacity={isSelected ? 1 : 0.7}
-                      >
-                        <Image
-                          source={venue.imageUrl ? { uri: venue.imageUrl } : DefaultAvatarImage}
-                          style={[selectorStyles.avatar, isSelected && selectorStyles.avatarActive]}
-                        />
-                        <View style={selectorStyles.info}>
-                          <Text style={selectorStyles.nameText}>{venue.name}</Text>
-                          <Text style={selectorStyles.subtitleText}>Venue</Text>
-                        </View>
-                        {isSelected ? (
-                          <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
-                        ) : (
-                          <Ionicons name="chevron-forward" size={18} color="rgba(0,0,0,0.25)" />
-                        )}
-                      </GHTouchableOpacity>
-                    );
-                  })}
-                </>
-              )}
-
-              {/* Create New Organization */}
-              <GHTouchableOpacity
-                style={[selectorStyles.createOrgButton, { paddingBottom: insets.bottom + 14 }]}
-                onPress={onCreateOrg}
-                activeOpacity={0.7}
-              >
-                <View style={selectorStyles.createOrgIcon}>
-                  <GlassView {...liquidGlass.fillFaint} borderRadius={22} style={StyleSheet.absoluteFillObject} />
-                  <Ionicons name="add" size={22} color="rgba(0,0,0,0.5)" />
-                </View>
-                <Text style={selectorStyles.createOrgText}>Create New Organization</Text>
-              </GHTouchableOpacity>
             </View>
           </Animated.View>
         </GestureDetector>
@@ -244,7 +266,7 @@ function DashboardMenuGroup({
   );
 }
 
-function VenueDashboardContent({ venueId, activeSection }: { venueId: number; activeSection: string }) {
+function VenueDashboardContent({ venueId, organizationId, activeSection }: { venueId: number; organizationId?: number; activeSection: string }) {
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -254,32 +276,29 @@ function VenueDashboardContent({ venueId, activeSection }: { venueId: number; ac
     [router],
   );
 
+  const orgQuery = organizationId ? `?organizationId=${organizationId}` : '';
+
   const manageItems: DashboardMenuItem[] = [
-    { title: 'Create Event', subtitle: 'Set up a new event', icon: 'add-circle-outline', route: '/create-event' },
-    { title: 'My Events', subtitle: 'View and edit your events', icon: 'calendar-outline', route: '/my-events' },
-    { title: 'My Venues', subtitle: 'Manage your venues', icon: 'business-outline', route: '/my-venues' },
-    { title: 'My List', subtitle: "Everyone who RSVP'd", icon: 'list-outline', route: '/dashboard/attendees' },
+    { title: 'Create Event', subtitle: 'Set up a new event', icon: 'add-circle-outline', route: `/create-event${orgQuery}` },
+    { title: 'My Events', subtitle: 'View and edit your events', icon: 'calendar-outline', route: `/my-events${orgQuery}` },
+    ...(venueId ? [{ title: 'Manage Venue', subtitle: 'Manage your venue', icon: 'business-outline' as const, route: `/manage-venue/${venueId}` }] : []),
+    { title: 'My List', subtitle: "Everyone who RSVP'd", icon: 'list-outline', route: `/dashboard/attendees${orgQuery}` },
   ];
 
   const insightsItems: DashboardMenuItem[] = [
-    { title: 'Analytics', subtitle: 'View detailed insights', icon: 'bar-chart-outline', route: '/dashboard/analytics' },
-    { title: 'Revenue', subtitle: 'Track earnings and trends', icon: 'trending-up-outline', route: '/dashboard/revenue' },
-    { title: 'Wallet', subtitle: 'View earnings and payouts', icon: 'wallet-outline', route: '/dashboard/payments' },
+    { title: 'Analytics', subtitle: 'View detailed insights', icon: 'bar-chart-outline', route: `/dashboard/analytics${orgQuery}` },
+    { title: 'Revenue', subtitle: 'Track earnings and trends', icon: 'trending-up-outline', route: `/dashboard/revenue${orgQuery}` },
+    { title: 'Wallet', subtitle: 'View earnings and payouts', icon: 'wallet-outline', route: `/dashboard/payments${orgQuery}` },
   ];
 
   const toolsItems: DashboardMenuItem[] = [
-    { title: 'Text Blast', subtitle: 'SMS to all your contacts', icon: 'chatbubble-outline', route: '/dashboard/text-blast' },
+    { title: 'Text Blast', subtitle: 'SMS to all your contacts', icon: 'chatbubble-outline', route: `/dashboard/text-blast${orgQuery}` },
   ];
-
-  const adminItems: DashboardMenuItem[] = user?.role === UserRole.ADMIN
-    ? [{ title: 'Admin Panel', subtitle: 'Manage users, events, and posts', icon: 'shield-checkmark-outline', route: '/admin' }]
-    : [];
 
   const sectionMap: Record<string, { title: string; items: DashboardMenuItem[] }> = {
     Manage: { title: 'MANAGE', items: manageItems },
     Insights: { title: 'INSIGHTS', items: insightsItems },
     Tools: { title: 'TOOLS', items: toolsItems },
-    Admin: { title: 'ADMIN', items: adminItems },
   };
 
   const section = sectionMap[activeSection];
@@ -304,6 +323,30 @@ function VenueDashboardContent({ venueId, activeSection }: { venueId: number; ac
   );
 }
 
+function PersonalAdminContent() {
+  const router = useStableRouter();
+  const insets = useSafeAreaInsets();
+
+  const handleNav = useCallback(
+    (route: string) => router.push(route as any),
+    [router],
+  );
+
+  const adminItems: DashboardMenuItem[] = [
+    { title: 'Admin Panel', subtitle: 'Manage users, events, and posts', icon: 'shield-checkmark-outline', route: '/admin' },
+  ];
+
+  return (
+    <ScrollView
+      style={dashStyles.scrollView}
+      contentContainerStyle={[dashStyles.scrollContent, { paddingBottom: insets.bottom + 80 }]}
+      showsVerticalScrollIndicator={false}
+    >
+      <DashboardMenuGroup title="ADMIN" items={adminItems} delay={100} onItemPress={handleNav} />
+    </ScrollView>
+  );
+}
+
 export default function WalletScreen() {
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
@@ -323,6 +366,7 @@ export default function WalletScreen() {
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
   const [profileSelectorVisible, setProfileSelectorVisible] = React.useState(false);
   const [selectedVenue, setSelectedVenue] = React.useState<{ id: number; name: string } | null>(null);
+  const [selectedOrg, setSelectedOrg] = React.useState<{ id: number; name: string } | null>(null);
   const [activeTab, setActiveTab] = React.useState<string>('Tickets');
 
   const { data: membershipCard, isLoading: isLoadingCard } = useMembershipCard(
@@ -384,16 +428,20 @@ export default function WalletScreen() {
                 ? (myVenues.find((v) => v.id === selectedVenue.id)?.imageUrl
                     ? { uri: myVenues.find((v) => v.id === selectedVenue.id)!.imageUrl }
                     : DefaultAvatarImage)
-                : (authUser?.avatar?.url ? { uri: authUser.avatar.url } : DefaultAvatarImage)
+                : selectedOrg
+                  ? (authUser?.organizations?.find((o) => o.id === selectedOrg.id)?.logo?.url
+                      ? { uri: authUser!.organizations!.find((o) => o.id === selectedOrg.id)!.logo!.url }
+                      : DefaultAvatarImage)
+                  : (authUser?.avatar?.url ? { uri: authUser.avatar.url } : DefaultAvatarImage)
             }
             style={styles.headerPillAvatar}
           />
           <Ionicons name="menu" size={22} color="#000" style={styles.headerPillIcon} />
         </TouchableOpacity>
 
-        {(selectedVenue
-          ? venueTabs.filter((t) => t !== 'Admin' || authUser?.role === UserRole.ADMIN)
-          : personalTabs
+        {(selectedVenue || selectedOrg
+          ? venueTabs
+          : authUser?.role === UserRole.ADMIN ? personalAdminTabs : personalTabs
         ).map((label) => {
           const isActive = activeTab === label;
           return (
@@ -416,8 +464,10 @@ export default function WalletScreen() {
         })}
       </ScrollView>
 
-      {selectedVenue ? (
-        <VenueDashboardContent venueId={selectedVenue.id} activeSection={activeTab} />
+      {(selectedVenue || selectedOrg) ? (
+        <VenueDashboardContent venueId={selectedVenue?.id ?? 0} organizationId={selectedOrg?.id} activeSection={activeTab} />
+      ) : activeTab === 'Admin' ? (
+        <PersonalAdminContent />
       ) : (
         <View style={styles.emptyState}>
           <Ionicons
@@ -437,21 +487,31 @@ export default function WalletScreen() {
           visible={profileSelectorVisible}
           currentUser={authUser}
           venues={myVenues.map((v) => ({ id: v.id, name: v.name, imageUrl: v.imageUrl }))}
+          organizations={(authUser?.organizations ?? []).map((o) => ({ id: o.id, name: o.name, logo: o.logo }))}
           selectedVenueId={selectedVenue?.id ?? null}
+          selectedOrgId={selectedOrg?.id ?? null}
           onClose={() => setProfileSelectorVisible(false)}
           onSelectPersonal={() => {
             setSelectedVenue(null);
+            setSelectedOrg(null);
             setActiveTab('Tickets');
             setProfileSelectorVisible(false);
           }}
           onSelectVenue={(venue) => {
             setSelectedVenue(venue);
+            setSelectedOrg(null);
+            setActiveTab('Manage');
+            setProfileSelectorVisible(false);
+          }}
+          onSelectOrg={(org) => {
+            setSelectedOrg(org);
+            setSelectedVenue(null);
             setActiveTab('Manage');
             setProfileSelectorVisible(false);
           }}
           onCreateOrg={() => {
             setProfileSelectorVisible(false);
-            // TODO: navigate to create organization screen
+            router.push('/create-organization');
           }}
         />
       )}
@@ -538,6 +598,7 @@ const selectorStyles = StyleSheet.create({
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     overflow: 'hidden',
+    paddingBottom: 40,
   },
   handle: {
     width: 36,
@@ -546,32 +607,34 @@ const selectorStyles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.12)',
     alignSelf: 'center',
     marginTop: 10,
-    marginBottom: 4,
+    marginBottom: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
-  },
-  title: {
-    fontSize: 17,
-    fontFamily: 'Lato_700Bold',
-    color: '#1A1A1A',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingTop: 2,
+    paddingBottom: 4,
   },
   closeButton: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  listContainer: {
+    marginHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    overflow: 'hidden',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 0.5,
     borderBottomColor: 'rgba(0,0,0,0.06)',
@@ -619,18 +682,16 @@ const selectorStyles = StyleSheet.create({
   createOrgButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(0,0,0,0.06)',
   },
   createOrgIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
   },
   createOrgText: {
     fontSize: 15,

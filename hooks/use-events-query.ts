@@ -4,16 +4,15 @@ import { useQuery } from '@tanstack/react-query';
 import { eventsApi } from '@/lib/api/events';
 import type { Event } from '@/lib/types/events.types';
 
-export function useMyEvents() {
+export function useMyEvents(organizationId?: number) {
   return useQuery<Event[], Error>({
-    queryKey: ['myEvents'],
+    queryKey: ['myEvents', organizationId],
     queryFn: async () => {
-      const events = await eventsApi.getMyEvents();
-      // Sort by start date, newest first
+      const events = await eventsApi.getMyEvents(organizationId);
       events.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
       return events;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
+    staleTime: 1000 * 60 * 2,
   });
 }
 

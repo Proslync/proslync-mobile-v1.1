@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/providers/auth-provider';
 import { eventsApi } from '@/lib/api/events';
 import type { OwnerContact, OwnerContactsResponse } from '@/lib/types/events.types';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import {
@@ -58,6 +58,8 @@ const PAGE_SIZE = 20;
 
 export default function ContactsListScreen() {
   const router = useRouter();
+  const { organizationId: orgIdParam } = useLocalSearchParams<{ organizationId?: string }>();
+  const orgId = orgIdParam ? parseInt(orgIdParam, 10) : undefined;
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const { user } = useAuth();
@@ -81,12 +83,13 @@ export default function ContactsListScreen() {
   }, [tagRecords]);
 
   const query = useInfiniteQuery<OwnerContactsResponse, Error>({
-    queryKey: ['owner-contacts', debouncedSearch],
+    queryKey: ['owner-contacts', debouncedSearch, orgId],
     queryFn: async ({ pageParam }) => {
       return eventsApi.getOwnerContacts({
         page: pageParam as number,
         limit: PAGE_SIZE,
         search: debouncedSearch || undefined,
+        organizationId: orgId,
       });
     },
     initialPageParam: 1,

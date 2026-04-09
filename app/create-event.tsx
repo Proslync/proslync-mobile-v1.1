@@ -15,7 +15,7 @@ import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
 import { artistsApi } from '@/lib/api/artists';
 import type { CreateEventArtistRequest } from '@/lib/types/artists.types';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { Controller, FormProvider, useFormContext } from 'react-hook-form';
 import {
@@ -81,6 +81,7 @@ function DoorCoverInput() {
 export default function CreateEventScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { organizationId: orgIdParam } = useLocalSearchParams<{ organizationId?: string }>();
   const { showSuccess, showError } = useToast();
   const { isDark } = useAppTheme();
 
@@ -106,6 +107,9 @@ export default function CreateEventScreen() {
 
   const onSubmit = (data: EventFormData) => {
     const parsedData = parseEventFormData(data);
+    if (orgIdParam) {
+      parsedData.organizationId = parseInt(orgIdParam, 10);
+    }
     createEvent.mutate(
       {
         data: parsedData,

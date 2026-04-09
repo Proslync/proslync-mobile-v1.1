@@ -60,7 +60,7 @@ export default function TabLayout() {
         <NativeTabs.Trigger name="activity">
           <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
-            sf={{ default: "wallet.bifold", selected: "wallet.bifold.fill" }}
+            sf={{ default: "square.grid.2x2", selected: "square.grid.2x2.fill" }}
           />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="profile">

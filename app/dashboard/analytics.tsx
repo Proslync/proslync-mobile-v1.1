@@ -12,7 +12,7 @@ import {
   Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -223,6 +223,8 @@ const tk = StyleSheet.create({
 export default function DashboardAnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { organizationId: orgIdParam } = useLocalSearchParams<{ organizationId?: string }>();
+  const orgId = orgIdParam ? parseInt(orgIdParam, 10) : undefined;
   const queryClient = useQueryClient();
   const { colors } = useAppTheme();
 
@@ -241,8 +243,8 @@ export default function DashboardAnalyticsScreen() {
   }, [router]);
 
   const timeSeriesQuery = useQuery({
-    queryKey: [DASHBOARD_TIMESERIES_KEY, selectedRange],
-    queryFn: () => analyticsApi.getDashboardTimeSeries(selectedRange),
+    queryKey: [DASHBOARD_TIMESERIES_KEY, selectedRange, orgId],
+    queryFn: () => analyticsApi.getDashboardTimeSeries(selectedRange, orgId),
     staleTime: 0,
     gcTime: 10 * 60 * 1000,
   });

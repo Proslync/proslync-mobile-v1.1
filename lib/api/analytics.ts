@@ -100,9 +100,12 @@ export const analyticsApi = {
    */
   getDashboardTimeSeries: async (
     range: string = '1M',
+    organizationId?: number,
   ): Promise<TimeSeriesResponse> => {
+    const params = new URLSearchParams({ range });
+    if (organizationId) params.set('organizationId', String(organizationId));
     return apiClient.get<TimeSeriesResponse>(
-      `/api/analytics/dashboard/timeseries?range=${range}`,
+      `/api/analytics/dashboard/timeseries?${params.toString()}`,
     );
   },
 
@@ -111,9 +114,12 @@ export const analyticsApi = {
    */
   getRevenueTimeSeries: async (
     range: string = '1M',
+    organizationId?: number,
   ): Promise<RevenueTimeSeriesResponse> => {
+    const params = new URLSearchParams({ range });
+    if (organizationId) params.set('organizationId', String(organizationId));
     return apiClient.get<RevenueTimeSeriesResponse>(
-      `/api/analytics/revenue/timeseries?range=${range}`,
+      `/api/analytics/revenue/timeseries?${params.toString()}`,
     );
   },
 

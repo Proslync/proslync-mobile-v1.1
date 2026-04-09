@@ -84,7 +84,8 @@ export default function PaymentsScreen() {
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const { setup } = useLocalSearchParams<{ setup?: string }>();
+  const { setup, organizationId: orgIdParam } = useLocalSearchParams<{ setup?: string; organizationId?: string }>();
+  const orgId = orgIdParam ? parseInt(orgIdParam, 10) : undefined;
 
   const [selectedTab, setSelectedTab] = useState(0);
   const previousTabRef = React.useRef(0);
@@ -106,7 +107,7 @@ export default function PaymentsScreen() {
   const hasAccount = !!accountStatus?.hasAccount;
   const { data: balance } = useStripeBalance(hasAccount);
   const { data: externalAccounts } = useExternalAccounts(hasAccount);
-  const { data: earningsData } = useEarnings(undefined, hasAccount);
+  const { data: earningsData } = useEarnings(orgId ? { organizationId: orgId } : undefined, hasAccount);
   const { data: payoutsData } = usePayouts(undefined, hasAccount);
   // Handle return from Stripe onboarding deep link
   React.useEffect(() => {

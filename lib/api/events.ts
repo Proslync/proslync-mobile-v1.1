@@ -162,6 +162,7 @@ export interface CreateEventDto {
   isPublic?: boolean;
   tiers?: CreateTierInline[];
   doorCoverPriceCents?: number;
+  organizationId?: number;
 }
 
 export interface UpdateEventDto {
@@ -308,8 +309,10 @@ export const eventsApi = {
    * Get events created by the current user
    * Backend endpoint: GET /api/events?myEvents=true
    */
-  getMyEvents: async (): Promise<Event[]> => {
-    const response = await apiClient.get<EventsSearchResponse>('/api/events?myEvents=true&limit=100');
+  getMyEvents: async (organizationId?: number): Promise<Event[]> => {
+    const params = new URLSearchParams({ myEvents: 'true', limit: '100' });
+    if (organizationId) params.set('organizationId', String(organizationId));
+    const response = await apiClient.get<EventsSearchResponse>(`/api/events?${params.toString()}`);
     return response.events;
   },
 
@@ -448,13 +451,14 @@ export const eventsApi = {
    * Get owner's contact list (My List) — deduplicated across all events
    */
   getOwnerContacts: async (
-    params?: { page?: number; limit?: number; search?: string; filter?: string },
+    params?: { page?: number; limit?: number; search?: string; filter?: string; organizationId?: number },
   ): Promise<OwnerContactsResponse> => {
     const query = new URLSearchParams();
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.search) query.set('search', params.search);
     if (params?.filter) query.set('filter', params.filter);
+    if (params?.organizationId) query.set('organizationId', String(params.organizationId));
     const qs = query.toString();
     return apiClient.get<OwnerContactsResponse>(
       `/api/owner-contacts${qs ? `?${qs}` : ''}`,

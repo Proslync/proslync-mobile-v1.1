@@ -33,7 +33,8 @@ export interface FollowStats {
 export interface Organization {
   id: number;
   name: string;
-  role: 'owner' | 'manager' | 'member' | null;
+  role: 'owner' | 'admin' | 'manager' | 'viewer' | null;
+  logo?: { id: string; url: string } | null;
 }
 
 export interface User {

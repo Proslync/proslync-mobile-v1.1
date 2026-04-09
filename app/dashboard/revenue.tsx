@@ -14,7 +14,7 @@ import {
   UIManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
@@ -51,6 +51,8 @@ function formatCents(cents: number): string {
 export default function DashboardRevenueScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { organizationId: orgIdParam } = useLocalSearchParams<{ organizationId?: string }>();
+  const orgId = orgIdParam ? parseInt(orgIdParam, 10) : undefined;
   const { colors, isDark } = useAppTheme();
   const queryClient = useQueryClient();
 
@@ -60,7 +62,7 @@ export default function DashboardRevenueScreen() {
   const [heroMetricId, setHeroMetricId] = React.useState('netRevenue');
   const [metricsOrder, setMetricsOrder] = React.useState<string[]>([]);
 
-  const { data, isLoading } = useRevenueTimeSeries(selectedRange);
+  const { data, isLoading } = useRevenueTimeSeries(selectedRange, undefined, orgId);
 
   const handleRangeChange = React.useCallback((range: TimeRange) => {
     setSelectedRange(range);

@@ -306,6 +306,7 @@ export interface GetEarningsParams {
   status?: 'pending' | 'transferred' | 'refunded';
   startDate?: string;
   endDate?: string;
+  organizationId?: number;
 }
 
 export interface CreatePayoutDto {
@@ -507,6 +508,7 @@ export const stripeConnectApi = {
     if (params?.status) queryParams.append('status', params.status);
     if (params?.startDate) queryParams.append('startDate', params.startDate);
     if (params?.endDate) queryParams.append('endDate', params.endDate);
+    if (params?.organizationId) queryParams.append('organizationId', params.organizationId.toString());
 
     const queryString = queryParams.toString();
     const endpoint = queryString

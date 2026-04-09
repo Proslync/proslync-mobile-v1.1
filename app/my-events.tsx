@@ -1,5 +1,6 @@
 import { GlassButton } from "@/components/glass";
 import { useStableRouter } from "@/hooks/use-stable-router";
+import { useLocalSearchParams } from "expo-router";
 import { useMyEvents } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
@@ -246,6 +247,7 @@ function EventCard({
 export default function MyEventsScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
+  const { organizationId: orgIdParam } = useLocalSearchParams<{ organizationId?: string }>();
   const { isDark } = useAppTheme();
   const theme = isDark ? "dark" : "light";
   const t = glassText[theme];
@@ -254,7 +256,8 @@ export default function MyEventsScreen() {
   const [activeTab, setActiveTab] = React.useState<EventTab>("current");
 
   // Fetch events using React Query - auto-invalidated when events are created/updated
-  const { data: events = [], isLoading, refetch } = useMyEvents();
+  const orgId = orgIdParam ? parseInt(orgIdParam, 10) : undefined;
+  const { data: events = [], isLoading, refetch } = useMyEvents(orgId);
 
   // Pull-to-refresh with haptic feedback
   const { refreshControl } = useRefreshControl({
