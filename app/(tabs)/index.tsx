@@ -130,6 +130,8 @@ function buildCards(items: FeedItem[], venueBackgrounds: Record<number, string> 
       id: `el-${first.id}`,
       data: {
         id: first.id,
+        venueId: first.venueId ? String(first.venueId) : undefined,
+        userId: first.userId,
         organizerName: first.username || first.venueName || 'Organizer',
         organizerLogoUrl: first.userAvatar || '',
         organizerVerified: first.verified,
@@ -343,7 +345,7 @@ export default function FeedScreen() {
             onSaveToggle={toggleSave}
             onEventPress={handleCardEventPress}
             onVenuePress={handleVenuePress}
-            onShopAll={() => {}}
+            onShopAll={() => handleVenuePress(item.data.id)}
             onMore={handleMore}
           />
         );
@@ -355,7 +357,16 @@ export default function FeedScreen() {
             isVisible={isVisible}
             onSaveToggle={toggleSave}
             onEventPress={handleCardEventPress}
-            onShopAll={() => {}}
+            onShopAll={() => {
+              const d = item.data as any;
+              if (d.venueId) handleVenuePress(d.venueId);
+              else if (d.userId) router.push({ pathname: '/user/[username]', params: { username: d.organizerName, userId: d.userId } });
+            }}
+            onOrganizerPress={() => {
+              const d = item.data as any;
+              if (d.venueId) handleVenuePress(d.venueId);
+              else if (d.userId) router.push({ pathname: '/user/[username]', params: { username: d.organizerName, userId: d.userId } });
+            }}
             onMore={handleMore}
           />
         );

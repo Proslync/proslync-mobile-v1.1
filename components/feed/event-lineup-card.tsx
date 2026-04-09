@@ -41,6 +41,7 @@ interface EventLineupCardProps {
   onEventPress?: (eventId: string) => void;
   onShopAll: () => void;
   onMore: () => void;
+  onOrganizerPress?: () => void;
 }
 
 function HeartButton({
@@ -94,6 +95,7 @@ export const EventLineupCard = React.memo(function EventLineupCard({
   onEventPress,
   onShopAll,
   onMore,
+  onOrganizerPress,
 }: EventLineupCardProps) {
   const hasPromo = !!(data.promoBadge || data.promoDetail);
   const hasVideo = !!data.videoUrl;
@@ -154,7 +156,7 @@ export const EventLineupCard = React.memo(function EventLineupCard({
 
       {/* Top bar */}
       <View style={styles.topBar}>
-        <View style={styles.organizerInfo}>
+        <TouchableOpacity style={styles.organizerInfo} onPress={onOrganizerPress} activeOpacity={0.7}>
           {data.organizerLogoUrl ? (
             <Image
               source={{ uri: data.organizerLogoUrl }}
@@ -173,7 +175,7 @@ export const EventLineupCard = React.memo(function EventLineupCard({
           {data.organizerVerified && (
             <MaterialCommunityIcons name="check-decagram" size={18} color="#3897F0" />
           )}
-        </View>
+        </TouchableOpacity>
         <TouchableOpacity
           onPress={onMore}
           activeOpacity={0.7}
@@ -213,11 +215,6 @@ export const EventLineupCard = React.memo(function EventLineupCard({
               <View style={styles.priceBadge}>
                 <Text style={styles.priceBadgeText}>{event.price}</Text>
               </View>
-              {/* Heart button */}
-              <HeartButton
-                isSaved={event.isSaved}
-                onPress={() => onSaveToggle(event.id)}
-              />
             </TouchableOpacity>
           ))}
         </ScrollView>
