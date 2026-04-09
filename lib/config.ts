@@ -3,8 +3,8 @@
 
 // Local development override
 // Set to true to use local backend (requires backend running on your machine)
-const USE_LOCAL_BACKEND = false;
-const LOCAL_IP = "136.107.100.26"; // GCE dev VM
+const USE_LOCAL_BACKEND = true;
+const LOCAL_IP = "34.86.150.27"; // GCE dev VM
 
 // API URLs
 const PROD_API_URL =
