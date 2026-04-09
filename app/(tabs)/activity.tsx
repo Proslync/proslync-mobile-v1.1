@@ -8,6 +8,7 @@ import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '@/lib/providers/wallet-provider';
 import { useAuth } from '@/lib/providers/auth-provider';
+import { UserRole } from '@/lib/types/auth.types';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useMembershipCard } from '@/hooks/use-membership-card';
 import { useMyVenues } from '@/hooks/use-venues-query';
@@ -38,6 +39,9 @@ import {
 } from '@/components/wallet';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
+const personalTabs = ['Tickets', 'Tables', 'Offers'] as const;
+const venueTabs = ['Manage', 'Insights', 'Tools', 'Admin'] as const;
 
 // ─── Profile Selector Modal ────────────────────────────────────
 
@@ -240,9 +244,10 @@ function DashboardMenuGroup({
   );
 }
 
-function VenueDashboardContent({ venueId }: { venueId: number }) {
+function VenueDashboardContent({ venueId, activeSection }: { venueId: number; activeSection: string }) {
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
 
   const handleNav = useCallback(
     (route: string) => router.push(route as any),
@@ -252,6 +257,7 @@ function VenueDashboardContent({ venueId }: { venueId: number }) {
   const manageItems: DashboardMenuItem[] = [
     { title: 'Create Event', subtitle: 'Set up a new event', icon: 'add-circle-outline', route: '/create-event' },
     { title: 'My Events', subtitle: 'View and edit your events', icon: 'calendar-outline', route: '/my-events' },
+    { title: 'My Venues', subtitle: 'Manage your venues', icon: 'business-outline', route: '/my-venues' },
     { title: 'My List', subtitle: "Everyone who RSVP'd", icon: 'list-outline', route: '/dashboard/attendees' },
   ];
 
@@ -265,15 +271,35 @@ function VenueDashboardContent({ venueId }: { venueId: number }) {
     { title: 'Text Blast', subtitle: 'SMS to all your contacts', icon: 'chatbubble-outline', route: '/dashboard/text-blast' },
   ];
 
+  const adminItems: DashboardMenuItem[] = user?.role === UserRole.ADMIN
+    ? [{ title: 'Admin Panel', subtitle: 'Manage users, events, and posts', icon: 'shield-checkmark-outline', route: '/admin' }]
+    : [];
+
+  const sectionMap: Record<string, { title: string; items: DashboardMenuItem[] }> = {
+    Manage: { title: 'MANAGE', items: manageItems },
+    Insights: { title: 'INSIGHTS', items: insightsItems },
+    Tools: { title: 'TOOLS', items: toolsItems },
+    Admin: { title: 'ADMIN', items: adminItems },
+  };
+
+  const section = sectionMap[activeSection];
+
+  if (!section || section.items.length === 0) {
+    return (
+      <View style={styles.emptyState}>
+        <Ionicons name="construct-outline" size={48} color="rgba(0,0,0,0.2)" />
+        <Text style={styles.emptyStateText}>No items</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView
       style={dashStyles.scrollView}
       contentContainerStyle={[dashStyles.scrollContent, { paddingBottom: insets.bottom + 80 }]}
       showsVerticalScrollIndicator={false}
     >
-      <DashboardMenuGroup title="MANAGE" items={manageItems} delay={100} onItemPress={handleNav} />
-      <DashboardMenuGroup title="INSIGHTS" items={insightsItems} delay={200} onItemPress={handleNav} />
-      <DashboardMenuGroup title="TOOLS" items={toolsItems} delay={300} onItemPress={handleNav} />
+      <DashboardMenuGroup title={section.title} items={section.items} delay={100} onItemPress={handleNav} />
     </ScrollView>
   );
 }
@@ -297,7 +323,7 @@ export default function WalletScreen() {
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
   const [profileSelectorVisible, setProfileSelectorVisible] = React.useState(false);
   const [selectedVenue, setSelectedVenue] = React.useState<{ id: number; name: string } | null>(null);
-  const [activeTab, setActiveTab] = React.useState<'Tickets' | 'Tables' | 'Offers'>('Tickets');
+  const [activeTab, setActiveTab] = React.useState<string>('Tickets');
 
   const { data: membershipCard, isLoading: isLoadingCard } = useMembershipCard(
     !!user?.isProfileComplete
@@ -365,7 +391,10 @@ export default function WalletScreen() {
           <Ionicons name="menu" size={22} color="#000" style={styles.headerPillIcon} />
         </TouchableOpacity>
 
-        {!selectedVenue && (['Tickets', 'Tables', 'Offers'] as const).map((label) => {
+        {(selectedVenue
+          ? venueTabs.filter((t) => t !== 'Admin' || authUser?.role === UserRole.ADMIN)
+          : personalTabs
+        ).map((label) => {
           const isActive = activeTab === label;
           return (
             <Pressable
@@ -388,7 +417,7 @@ export default function WalletScreen() {
       </ScrollView>
 
       {selectedVenue ? (
-        <VenueDashboardContent venueId={selectedVenue.id} />
+        <VenueDashboardContent venueId={selectedVenue.id} activeSection={activeTab} />
       ) : (
         <View style={styles.emptyState}>
           <Ionicons
@@ -412,10 +441,12 @@ export default function WalletScreen() {
           onClose={() => setProfileSelectorVisible(false)}
           onSelectPersonal={() => {
             setSelectedVenue(null);
+            setActiveTab('Tickets');
             setProfileSelectorVisible(false);
           }}
           onSelectVenue={(venue) => {
             setSelectedVenue(venue);
+            setActiveTab('Manage');
             setProfileSelectorVisible(false);
           }}
           onCreateOrg={() => {

@@ -723,22 +723,6 @@ export default function ProfileScreen() {
 
           {/* ── Content Section ── */}
 
-          {/* Dashboard Button */}
-          <Animated.View
-            entering={FadeInDown.delay(250).duration(500).springify()}
-            style={s.btnSection}
-          >
-            <TouchableOpacity
-              style={s.glassBtn}
-              activeOpacity={0.7}
-              onPress={() => router.push("/dashboard")}
-            >
-              <GlassView {...liquidGlass.surface} borderRadius={14} style={StyleSheet.absoluteFill} />
-              <Ionicons name="grid-outline" size={16} color="#1A1A1A" />
-              <Text style={s.glassBtnText}>Dashboard</Text>
-            </TouchableOpacity>
-          </Animated.View>
-
           {/* Edit Profile / Share Profile */}
           <Animated.View
             entering={FadeInDown.delay(300).duration(500).springify()}
