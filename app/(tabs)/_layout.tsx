@@ -10,7 +10,7 @@ import {
 import { usePathname } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import * as React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, DynamicColorIOS } from "react-native";
 
 export default function TabLayout() {
   const { user } = useAuth();
@@ -33,7 +33,7 @@ export default function TabLayout() {
 
   return (
     <View style={styles.container}>
-    <NativeTabs tintColor="#000" minimizeBehavior="onScrollDown" screenOptions={{ contentStyle: { backgroundColor: '#f2f2f2' } }}>
+    <NativeTabs tintColor={DynamicColorIOS({ light: '#000', dark: '#fff' })} minimizeBehavior="onScrollDown" screenOptions={{ contentStyle: { backgroundColor: '#f2f2f2' } }}>
         <NativeTabs.Trigger name="search">
           <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
