@@ -244,7 +244,6 @@ function DashboardMenuGroup({
 
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(500).springify()} style={dashStyles.section}>
-      <Text style={[dashStyles.sectionTitle, { color: t.muted }]}>{title}</Text>
       <View style={[dashStyles.sectionCard, { borderColor: border }]}>
         {items.map((item, index) => (
           <React.Fragment key={item.route}>
@@ -707,6 +706,7 @@ const dashStyles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingTop: 21,
   },
   section: {
     marginBottom: 24,
