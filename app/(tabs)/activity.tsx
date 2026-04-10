@@ -1,7 +1,7 @@
 // Wallet Screen - Membership card, offers, and events
 import React, { useRef, useMemo, useCallback } from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Text, Image, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Text, Image, ActivityIndicator, FlatList, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -12,9 +12,11 @@ import { UserRole } from '@/lib/types/auth.types';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useMembershipCard } from '@/hooks/use-membership-card';
 import { useMyVenues } from '@/hooks/use-venues-query';
-import { useMyEvents } from '@/hooks';
-import type { Event as StatusEvent } from '@/lib/types/events.types';
+import { useMyEvents, useDebounce } from '@/hooks';
+import type { Event as StatusEvent, OwnerContact } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
+import { eventsApi } from '@/lib/api/events';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import {
   liquidGlass,
   glassBorder,
@@ -287,14 +289,8 @@ function VenueDashboardContent({ venueId, organizationId, activeSection }: { ven
     { title: 'Wallet', subtitle: 'View earnings and payouts', icon: 'wallet-outline', route: `/dashboard/payments${orgQuery}` },
   ];
 
-  const toolsItems: DashboardMenuItem[] = [
-    { title: 'My List', subtitle: "Everyone who RSVP'd", icon: 'list-outline', route: `/dashboard/attendees${orgQuery}` },
-    { title: 'Text Blast', subtitle: 'SMS to all your contacts', icon: 'chatbubble-outline', route: `/dashboard/text-blast${orgQuery}` },
-  ];
-
   const sectionMap: Record<string, { title: string; items: DashboardMenuItem[] }> = {
     Insights: { title: 'INSIGHTS', items: insightsItems },
-    Audience: { title: 'AUDIENCE', items: toolsItems },
   };
 
   if (activeSection === 'Overview') {
@@ -313,6 +309,10 @@ function VenueDashboardContent({ venueId, organizationId, activeSection }: { ven
         </View>
       </View>
     );
+  }
+
+  if (activeSection === 'Audience') {
+    return <AudienceContent organizationId={organizationId} insetsBottom={insets.bottom} />;
   }
 
   const section = sectionMap[activeSection];
@@ -419,6 +419,178 @@ function OverviewEventCard({ event, onPress }: { event: StatusEvent; onPress: ()
             <Text style={dashStyles.eventStatusText}>{statusLabel}</Text>
           </View>
         </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Audience Content (inline My List + Text Blast flow) ──────
+
+const PAGE_SIZE = 20;
+
+function AudienceContent({ organizationId, insetsBottom }: { organizationId?: number; insetsBottom: number }) {
+  const router = useStableRouter();
+  const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
+  const [searchText, setSearchText] = React.useState('');
+  const debouncedSearch = useDebounce(searchText, 300);
+
+  const query = useInfiniteQuery({
+    queryKey: ['owner-contacts-audience', debouncedSearch, organizationId],
+    queryFn: async ({ pageParam }) => {
+      return eventsApi.getOwnerContacts({
+        page: pageParam as number,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        organizationId,
+      });
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.hasNext && lastPage.page) return lastPage.page + 1;
+      return undefined;
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
+  const contacts: OwnerContact[] = React.useMemo(
+    () => query.data?.pages.flatMap((p) => p.contacts) ?? [],
+    [query.data],
+  );
+
+  const allSelected = contacts.length > 0 && contacts.every((c) => selectedIds.has(c.id));
+
+  const toggleSelect = React.useCallback((id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAll = React.useCallback(() => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(contacts.map((c) => c.id)));
+    }
+  }, [allSelected, contacts]);
+
+  const handleNext = React.useCallback(() => {
+    if (selectedIds.size === 0) return;
+    router.push({
+      pathname: '/text-blast-compose',
+      params: { count: String(selectedIds.size) },
+    } as any);
+  }, [selectedIds.size, router]);
+
+  return (
+    <View style={audStyles.flex}>
+      {/* Search */}
+      <View style={audStyles.searchRow}>
+        <View style={audStyles.searchBar}>
+          <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
+          <TextInput
+            style={audStyles.searchInput}
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder="Search contacts"
+            placeholderTextColor="rgba(0,0,0,0.35)"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {searchText.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchText('')}>
+              <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.3)" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <TouchableOpacity style={audStyles.selectAllPill} onPress={handleSelectAll} activeOpacity={0.7}>
+          <Text style={audStyles.selectAllText}>{allSelected ? 'Deselect' : 'Select All'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* List */}
+      <FlatList
+        style={audStyles.list}
+        data={contacts}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={({ item }) => (
+          <AudienceRow
+            contact={item}
+            selected={selectedIds.has(item.id)}
+            onToggle={() => toggleSelect(item.id)}
+          />
+        )}
+        contentContainerStyle={[audStyles.listContent, { paddingBottom: insetsBottom + 100 }]}
+        onEndReached={() => {
+          if (query.hasNextPage && !query.isFetchingNextPage) query.fetchNextPage();
+        }}
+        onEndReachedThreshold={0.5}
+        ListEmptyComponent={
+          query.isLoading ? (
+            <View style={audStyles.empty}>
+              <ActivityIndicator color="#000" />
+            </View>
+          ) : (
+            <View style={audStyles.empty}>
+              <Ionicons name="people-outline" size={44} color="rgba(0,0,0,0.2)" />
+              <Text style={audStyles.emptyText}>No contacts yet</Text>
+            </View>
+          )
+        }
+      />
+
+      {/* Next button */}
+      <View style={[audStyles.nextBar, { paddingBottom: insetsBottom + 13 }]}>
+        <TouchableOpacity
+          style={[audStyles.nextButton, selectedIds.size === 0 && audStyles.nextButtonDisabled]}
+          onPress={handleNext}
+          disabled={selectedIds.size === 0}
+          activeOpacity={0.85}
+        >
+          <Text style={audStyles.nextButtonText}>
+            {selectedIds.size > 0 ? `Next (${selectedIds.size})` : 'Select recipients'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+function AudienceRow({
+  contact,
+  selected,
+  onToggle,
+}: {
+  contact: OwnerContact;
+  selected: boolean;
+  onToggle: () => void;
+}) {
+  const displayName =
+    contact.firstName || contact.lastName
+      ? `${contact.firstName ?? ''}${contact.lastName ? ' ' + contact.lastName : ''}`.trim()
+      : contact.userName || 'User';
+  const subtitle = contact.userName ? `@${contact.userName}` : contact.phoneNumber || '';
+
+  return (
+    <TouchableOpacity style={audStyles.row} onPress={onToggle} activeOpacity={0.7}>
+      <Image
+        source={contact.avatar ? { uri: contact.avatar } : DefaultAvatarImage}
+        style={audStyles.rowAvatar}
+      />
+      <View style={audStyles.rowInfo}>
+        <Text style={audStyles.rowName} numberOfLines={1}>
+          {displayName}
+        </Text>
+        {subtitle ? (
+          <Text style={audStyles.rowSubtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      <View style={[audStyles.checkbox, selected && audStyles.checkboxChecked]}>
+        {selected ? <Ionicons name="checkmark" size={16} color="#fff" /> : null}
       </View>
     </TouchableOpacity>
   );
@@ -969,5 +1141,222 @@ const dashStyles = StyleSheet.create({
   divider: {
     height: 1,
     marginLeft: 62,
+  },
+});
+
+const audStyles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 14,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    color: '#000',
+  },
+  selectAllPill: {
+    paddingHorizontal: 14,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectAllText: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  list: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  rowAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#fff',
+  },
+  rowInfo: {
+    flex: 1,
+  },
+  rowName: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  rowSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.5)',
+    marginTop: 2,
+  },
+  checkbox: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  empty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    gap: 12,
+  },
+  emptyText: {
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.4)',
+  },
+  nextBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+  },
+  nextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    width: 240,
+    borderRadius: 26,
+    backgroundColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  nextButtonDisabled: {
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  nextButtonText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  composeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.08)',
+  },
+  composeBack: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  composeHeaderInfo: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  composeHeaderTitle: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  composeHeaderSubtitle: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.5)',
+    marginTop: 1,
+  },
+  composeBody: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  composeHint: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.4)',
+  },
+  composeInputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.08)',
+    backgroundColor: '#f2f2f2',
+  },
+  composeInputWrapper: {
+    flex: 1,
+    minHeight: 38,
+    maxHeight: 120,
+    borderRadius: 19,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    justifyContent: 'center',
+  },
+  composeInput: {
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    color: '#000',
+    padding: 0,
+    margin: 0,
+    maxHeight: 100,
+  },
+  composeSend: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  composeSendDisabled: {
+    opacity: 0.3,
   },
 });

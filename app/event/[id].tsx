@@ -9,12 +9,14 @@ import {
   ActivityIndicator,
   Share,
   InteractionManager,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
+import { LiquidGlassView } from '@callstack/liquid-glass';
 import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -38,7 +40,6 @@ import { useTrackEventView } from '@/hooks/use-track-event-view';
 import { useEventTables, EVENT_TABLES_KEY } from '@/hooks/use-venue-tables';
 import { useQueryClient } from '@tanstack/react-query';
 import { OverviewTab, LineupTab, MapTab } from '@/components/event';
-import { SegmentedControl } from '@/components/shared/segmented-control';
 import {
   MOCK_DEALS,
 } from '@/lib/mock/event-detail-mocks';
@@ -85,6 +86,7 @@ export default function EventPage() {
   const [showTableSheet, setShowTableSheet] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<TabType>('overview');
   const buttonScale = useSharedValue(1);
+
 
   const eventId = params.id;
   const numericEventId = eventId ? parseInt(eventId, 10) : undefined;
@@ -339,6 +341,59 @@ export default function EventPage() {
             organizerId={userId}
           />
         );
+      case 'tables':
+        return (
+          <View style={styles.tablesTabContainer}>
+            {!eventTables || eventTables.length === 0 ? (
+              <View style={styles.tablesEmpty}>
+                <Ionicons name="restaurant-outline" size={40} color={colors.textTertiary} />
+                <Text style={[styles.tablesEmptyText, { color: colors.textSecondary }]}>
+                  No tables available for this event
+                </Text>
+              </View>
+            ) : (
+              eventTables.map((table) => (
+                <TouchableOpacity
+                  key={table.id}
+                  style={[
+                    styles.tableRow,
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    table.status !== 'available' && styles.tableRowUnavailable,
+                  ]}
+                  onPress={() => {
+                    if (table.status === 'available') {
+                      setSelectedTable(table);
+                      setShowTableSheet(true);
+                    }
+                  }}
+                  disabled={table.status !== 'available'}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.tableRowInfo}>
+                    <Text style={[styles.tableRowLabel, { color: colors.text }]} numberOfLines={1}>
+                      {table.label}
+                    </Text>
+                    <Text style={[styles.tableRowSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                      {table.sectionName} · {table.seatCount} {table.seatCount === 1 ? 'seat' : 'seats'}
+                    </Text>
+                  </View>
+                  <View style={styles.tableRowRight}>
+                    <Text style={[styles.tableRowPrice, { color: colors.text }]}>
+                      ${table.price.toFixed(0)}
+                    </Text>
+                    {table.status !== 'available' ? (
+                      <Text style={styles.tableRowStatus}>
+                        {table.status === 'sold' ? 'Sold' : 'Reserved'}
+                      </Text>
+                    ) : (
+                      <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        );
       case 'lineup':
         return <LineupTab artists={artists} />;
       case 'map':
@@ -372,48 +427,51 @@ export default function EventPage() {
         />
       </View>
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={handleBack}
-          style={styles.headerButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleShare}
-          style={styles.headerButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="share-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
+      {/* Fixed pill tab row at top */}
+      <View style={[styles.pillRowContainer, { top: insets.top + 16 }]}>
+        <View style={styles.pillRowContent}>
+          {(['overview', 'tables', 'lineup', 'map'] as const).map((tab) => {
+            const isActive = activeTab === tab;
+            const label = tab === 'overview' ? 'Overview' : tab === 'tables' ? 'Tables' : tab === 'lineup' ? 'Lineup' : 'Map';
+            return (
+              <Pressable
+                key={tab}
+                style={styles.pillFilter}
+                onPress={() => setActiveTab(tab)}
+              >
+                <View style={styles.pillGlassLayer} pointerEvents="none">
+                  <GlassView
+                    {...liquidGlass.surface}
+                    tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                    borderRadius={19}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+                <Text style={[styles.pillFilterText, isActive && styles.pillFilterTextActive]}>
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
 
       {/* Main content */}
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 60 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 70 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Event Card */}
-        <Animated.View entering={FadeInDown.duration(500).springify()} style={styles.cardContainer}>
-          <View
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-          >
-            <BlurView
-              intensity={25}
-              tint={isDark ? 'dark' : 'light'}
-              style={styles.absoluteFill}
-            />
-
-            {/* Card Header — organizer */}
+        {/* Event sections — only on Overview tab */}
+        {activeTab === 'overview' && (
+          <Animated.View entering={FadeInDown.duration(500).springify()}>
+            {/* Organizer */}
             {username && (
-              <View style={styles.cardHeader}>
+              <LiquidGlassView effect="regular" style={styles.organizerCard}>
                 <TouchableOpacity
                   onPress={handleUserPress}
                   activeOpacity={0.7}
-                  style={styles.organizerSection}
+                  style={styles.organizerInner}
                 >
                   {userAvatar && (
                     <Image
@@ -443,36 +501,30 @@ export default function EventPage() {
                     )}
                   </View>
                 </TouchableOpacity>
-              </View>
+              </LiquidGlassView>
             )}
 
-            {/* Media — video or image */}
+            {/* Flyer */}
             {flyerImage || videoUrl ? (
-              <View style={styles.flyerContainer}>
+              <LiquidGlassView effect="regular" style={styles.flyerCard}>
                 <FeedMediaPlayer
                   mediaType={mediaType}
                   videoUrl={videoUrl}
                   imageUrl={flyerImage}
                   poster={thumbnail}
                   isActive={true}
-                  containerWidth={CARD_WIDTH - 2}
+                  containerWidth={CARD_WIDTH}
                   maxHeight={CARD_WIDTH * 1.25}
                 />
-              </View>
+              </LiquidGlassView>
             ) : isFetchingEvent ? (
-              <View
-                style={[
-                  styles.flyerContainer,
-                  styles.mediaLoading,
-                  { width: CARD_WIDTH - 2, backgroundColor: colors.backgroundSecondary },
-                ]}
-              >
+              <LiquidGlassView effect="regular" style={[styles.flyerCard, styles.mediaLoading, { width: CARD_WIDTH }]}>
                 <ActivityIndicator size="small" color={colors.textTertiary} />
-              </View>
+              </LiquidGlassView>
             ) : null}
 
-            {/* Card Footer — event title + date */}
-            <View style={styles.cardFooter}>
+            {/* Event Details */}
+            <LiquidGlassView effect="regular" style={styles.detailsCard}>
               <Text style={[styles.eventTitle, { color: colors.text }]} numberOfLines={2}>
                 {eventTitle}
               </Text>
@@ -481,60 +533,83 @@ export default function EventPage() {
                   {formatEventDate(eventDate, venueName)}
                 </Text>
               )}
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* Tab Bar */}
-        <View style={{ marginTop: 16 }}>
-          <SegmentedControl
-            segments={['Overview', 'Lineup', 'Map']}
-            selectedIndex={['overview', 'lineup', 'map'].indexOf(activeTab)}
-            onSelect={(index) => {
-              const tabs: TabType[] = ['overview', 'lineup', 'map'];
-              setActiveTab(tabs[index]);
-            }}
-          />
-        </View>
+            </LiquidGlassView>
+          </Animated.View>
+        )}
 
         {/* Tab Content */}
-        <View style={styles.tabContent}>{renderTabContent()}</View>
+        <View style={[styles.tabContent, { marginTop: activeTab === 'overview' ? 16 : 0 }]}>{renderTabContent()}</View>
 
         <View style={{ height: 140 }} />
       </ScrollView>
 
-      {/* RSVP Button */}
+      {/* Bottom action bar */}
       <View style={[styles.rsvpWrapper, { paddingBottom: insets.bottom + 16 }]}>
-        <TouchableOpacity onPress={handleRsvp} activeOpacity={0.85} disabled={isLoading}>
-          <Animated.View style={[styles.rsvpButton, buttonAnimatedStyle]}>
-            {useNativeGlass ? (
-              <GlassView
-                glassEffectStyle="regular"
-                colorScheme="dark"
-                tintColor={isDone ? 'rgba(10, 10, 10, 0.55)' : 'rgba(10, 10, 10, 0.25)'}
-                style={styles.absoluteFill}
-              />
-            ) : (
-              <>
-                {!isDone && (
-                  <>
-                    <BlurView intensity={30} tint="dark" style={styles.absoluteFill} />
-                    <View style={styles.rsvpFill} />
-                  </>
-                )}
-                <View style={[styles.rsvpBorder, isDone && styles.rsvpBorderDone]} />
-              </>
-            )}
-            <Text
-              style={[
-                styles.rsvpButtonText,
-                isDone && styles.rsvpButtonTextDone,
-              ]}
-            >
-              {rsvpLabel}
-            </Text>
-          </Animated.View>
-        </TouchableOpacity>
+        <View style={styles.bottomActionRow}>
+          <TouchableOpacity
+            style={styles.bottomIconButton}
+            onPress={handleBack}
+            activeOpacity={0.7}
+          >
+            <GlassView
+              {...liquidGlass.surface}
+              tintColor="rgba(10, 10, 10, 0.25)"
+              borderRadius={24}
+              style={StyleSheet.absoluteFill}
+            />
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.rsvpFlexWrapper}
+            onPress={handleRsvp}
+            activeOpacity={0.85}
+            disabled={isLoading}
+          >
+            <Animated.View style={[styles.rsvpButton, buttonAnimatedStyle]}>
+              {useNativeGlass ? (
+                <GlassView
+                  glassEffectStyle="regular"
+                  colorScheme="dark"
+                  tintColor={isDone ? 'rgba(10, 10, 10, 0.55)' : 'rgba(10, 10, 10, 0.25)'}
+                  style={styles.absoluteFill}
+                />
+              ) : (
+                <>
+                  {!isDone && (
+                    <>
+                      <BlurView intensity={30} tint="dark" style={styles.absoluteFill} />
+                      <View style={styles.rsvpFill} />
+                    </>
+                  )}
+                  <View style={[styles.rsvpBorder, isDone && styles.rsvpBorderDone]} />
+                </>
+              )}
+              <Text
+                style={[
+                  styles.rsvpButtonText,
+                  isDone && styles.rsvpButtonTextDone,
+                ]}
+              >
+                {rsvpLabel}
+              </Text>
+            </Animated.View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.bottomIconButton}
+            onPress={handleShare}
+            activeOpacity={0.7}
+          >
+            <GlassView
+              {...liquidGlass.surface}
+              tintColor="rgba(10, 10, 10, 0.25)"
+              borderRadius={24}
+              style={StyleSheet.absoluteFill}
+            />
+            <Ionicons name="share-outline" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <PurchaseTicketSheet
@@ -622,18 +697,17 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 10,
   },
-  cardHeader: {
+  organizerCard: {
+    borderRadius: 16,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  organizerInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
-  },
-  organizerSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: 8,
   },
   organizerAvatar: {
     width: 32,
@@ -652,19 +726,22 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_700Bold',
     flexShrink: 1,
   },
-  flyerContainer: {
-    width: '100%',
-    alignItems: 'center',
+  flyerCard: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 10,
   },
   mediaLoading: {
     height: 300,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cardFooter: {
+  detailsCard: {
     paddingHorizontal: 14,
     paddingVertical: 14,
     gap: 4,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   eventTitle: {
     fontSize: 20,
@@ -678,6 +755,91 @@ const styles = StyleSheet.create({
   tabContent: {
     marginTop: 8,
   },
+  pillRowContainer: {
+    position: 'absolute',
+    left: CARD_MARGIN,
+    right: CARD_MARGIN,
+    zIndex: 100,
+  },
+  pillRowContent: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+  },
+  pillFilter: {
+    flex: 1,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  pillGlassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    borderRadius: 19,
+  },
+  pillFilterText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(0,0,0,0.5)',
+  },
+  pillFilterTextActive: {
+    color: 'rgba(0,0,0,0.8)',
+  },
+  tablesTabContainer: {
+    gap: 10,
+    paddingVertical: 4,
+  },
+  tablesEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 12,
+  },
+  tablesEmptyText: {
+    fontSize: 14,
+    fontFamily: 'Lato_400Regular',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  tableRowUnavailable: {
+    opacity: 0.45,
+  },
+  tableRowInfo: {
+    flex: 1,
+  },
+  tableRowLabel: {
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+  },
+  tableRowSubtitle: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    marginTop: 2,
+  },
+  tableRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tableRowPrice: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+  },
+  tableRowStatus: {
+    fontSize: 12,
+    fontFamily: 'Lato_700Bold',
+    color: 'rgba(0,0,0,0.4)',
+    textTransform: 'uppercase',
+  },
   rsvpWrapper: {
     position: 'absolute',
     bottom: 0,
@@ -685,8 +847,24 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 16,
   },
+  bottomActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  bottomIconButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  rsvpFlexWrapper: {
+    flex: 1,
+  },
   rsvpButton: {
-    borderRadius: 16,
+    borderRadius: 28,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -707,7 +885,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderWidth: 1,
-    borderRadius: 16,
+    borderRadius: 28,
     borderColor: 'rgba(255, 255, 255, 0.15)',
   },
   rsvpBorderDone: {

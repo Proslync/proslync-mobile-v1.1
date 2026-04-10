@@ -107,6 +107,7 @@ function RootLayoutNav() {
         <Stack.Screen name="channel/[id]/settings" />
         <Stack.Screen name="create-channel" />
         <Stack.Screen name="discover-channels" />
+        <Stack.Screen name="text-blast-compose" />
         <Stack.Screen
           name="new-message"
           options={{

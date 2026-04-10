@@ -1,6 +1,6 @@
 import type { Event } from './events.types';
 
-export type TabType = 'overview' | 'lineup' | 'map';
+export type TabType = 'overview' | 'tables' | 'lineup' | 'map';
 
 export interface LineupArtist {
   id: string;
