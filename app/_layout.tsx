@@ -31,6 +31,7 @@ import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
 import { TerminalProvider } from "@/lib/providers/terminal-provider";
 import { ChatSocketProvider } from "@/lib/providers/chat-socket-provider";
+import { ChannelsSocketProvider } from "@/lib/providers/channels-socket-provider";
 import { BarSocketProvider } from "@/lib/providers/bar-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
 
@@ -101,6 +102,11 @@ function RootLayoutNav() {
         />
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
         <Stack.Screen name="chat/[conversationId]" />
+        <Stack.Screen name="channel/[id]" />
+        <Stack.Screen name="channel/[id]/compose" options={{ presentation: "modal" }} />
+        <Stack.Screen name="channel/[id]/settings" />
+        <Stack.Screen name="create-channel" />
+        <Stack.Screen name="discover-channels" />
         <Stack.Screen
           name="new-message"
           options={{
@@ -216,6 +222,7 @@ export default function RootLayout() {
             <ToastProvider>
               <AuthProvider>
                 <ChatSocketProvider>
+                  <ChannelsSocketProvider>
                   <BarSocketProvider>
                   <CallProvider>
                     <TerminalProvider>
@@ -233,6 +240,7 @@ export default function RootLayout() {
                     </TerminalProvider>
                   </CallProvider>
                   </BarSocketProvider>
+                  </ChannelsSocketProvider>
                 </ChatSocketProvider>
               </AuthProvider>
             </ToastProvider>

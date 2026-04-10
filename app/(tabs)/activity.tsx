@@ -1,7 +1,7 @@
 // Wallet Screen - Membership card, offers, and events
 import React, { useRef, useMemo, useCallback } from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Text, Image } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Text, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
@@ -12,6 +12,9 @@ import { UserRole } from '@/lib/types/auth.types';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useMembershipCard } from '@/hooks/use-membership-card';
 import { useMyVenues } from '@/hooks/use-venues-query';
+import { useMyEvents } from '@/hooks';
+import type { Event as StatusEvent } from '@/lib/types/events.types';
+import { EventStatus } from '@/lib/types/events.types';
 import {
   liquidGlass,
   glassBorder,
@@ -42,7 +45,7 @@ const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
 const personalTabs = ['Tickets', 'Tables', 'Offers'] as const;
 const personalAdminTabs = ['Tickets', 'Tables', 'Offers', 'Admin'] as const;
-const venueTabs = ['Manage', 'Insights', 'Tools'] as const;
+const venueTabs = ['Overview', 'Insights', 'Audience'] as const;
 
 // ─── Profile Selector Modal ────────────────────────────────────
 
@@ -277,31 +280,42 @@ function VenueDashboardContent({ venueId, organizationId, activeSection }: { ven
 
   const orgQuery = organizationId ? `?organizationId=${organizationId}` : '';
 
-  const manageItems: DashboardMenuItem[] = [
-    { title: 'Create Event', subtitle: 'Set up a new event', icon: 'add-circle-outline', route: `/create-event${orgQuery}` },
-    { title: 'My Events', subtitle: 'View and edit your events', icon: 'calendar-outline', route: `/my-events${orgQuery}` },
-    ...(venueId ? [{ title: 'Manage Venue', subtitle: 'Manage your venue', icon: 'business-outline' as const, route: `/manage-venue/${venueId}` }] : []),
-    { title: 'My List', subtitle: "Everyone who RSVP'd", icon: 'list-outline', route: `/dashboard/attendees${orgQuery}` },
-  ];
-
   const insightsItems: DashboardMenuItem[] = [
+    ...(venueId ? [{ title: 'Manage Venue' as const, subtitle: 'Manage your venue' as const, icon: 'business-outline' as const, route: `/manage-venue/${venueId}` }] : []),
     { title: 'Analytics', subtitle: 'View detailed insights', icon: 'bar-chart-outline', route: `/dashboard/analytics${orgQuery}` },
     { title: 'Revenue', subtitle: 'Track earnings and trends', icon: 'trending-up-outline', route: `/dashboard/revenue${orgQuery}` },
     { title: 'Wallet', subtitle: 'View earnings and payouts', icon: 'wallet-outline', route: `/dashboard/payments${orgQuery}` },
   ];
 
   const toolsItems: DashboardMenuItem[] = [
+    { title: 'My List', subtitle: "Everyone who RSVP'd", icon: 'list-outline', route: `/dashboard/attendees${orgQuery}` },
     { title: 'Text Blast', subtitle: 'SMS to all your contacts', icon: 'chatbubble-outline', route: `/dashboard/text-blast${orgQuery}` },
   ];
 
   const sectionMap: Record<string, { title: string; items: DashboardMenuItem[] }> = {
-    Manage: { title: 'MANAGE', items: manageItems },
     Insights: { title: 'INSIGHTS', items: insightsItems },
-    Tools: { title: 'TOOLS', items: toolsItems },
+    Audience: { title: 'AUDIENCE', items: toolsItems },
   };
 
-  const section = sectionMap[activeSection];
+  if (activeSection === 'Overview') {
+    return (
+      <View style={dashStyles.scrollView}>
+        <OverviewEventsList organizationId={organizationId} insetsBottom={insets.bottom} />
+        <View style={[dashStyles.createEventButtonWrapper, { paddingBottom: insets.bottom + 13 }]}>
+          <TouchableOpacity
+            style={dashStyles.createEventButton}
+            onPress={() => handleNav(`/create-event${orgQuery}`)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={22} color="#fff" />
+            <Text style={dashStyles.createEventButtonText}>Create Event</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
+  const section = sectionMap[activeSection];
   if (!section || section.items.length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -319,6 +333,94 @@ function VenueDashboardContent({ venueId, organizationId, activeSection }: { ven
     >
       <DashboardMenuGroup title={section.title} items={section.items} delay={100} onItemPress={handleNav} />
     </ScrollView>
+  );
+}
+
+// Inline event list shown on the Overview tab
+function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?: number; insetsBottom: number }) {
+  const router = useStableRouter();
+  const { data: events = [], isLoading } = useMyEvents(organizationId);
+
+  if (isLoading) {
+    return (
+      <View style={dashStyles.overviewEmpty}>
+        <ActivityIndicator color="#000" />
+      </View>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <View style={dashStyles.overviewEmpty}>
+        <Ionicons name="calendar-outline" size={48} color="rgba(0,0,0,0.2)" />
+        <Text style={dashStyles.overviewEmptyText}>No events yet</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      style={dashStyles.scrollView}
+      contentContainerStyle={[dashStyles.overviewListContent, { paddingBottom: insetsBottom + 180 }]}
+      showsVerticalScrollIndicator={false}
+    >
+      {events.map((event) => (
+        <OverviewEventCard
+          key={event.id}
+          event={event}
+          onPress={() => router.push({ pathname: '/manage-event/[id]', params: { id: event.id } } as any)}
+        />
+      ))}
+    </ScrollView>
+  );
+}
+
+function OverviewEventCard({ event, onPress }: { event: StatusEvent; onPress: () => void }) {
+  const flyerUrl = event.flyer?.url || event.imageUrl;
+  const dateStr = new Date(event.startDate).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+  const statusLabel =
+    event.status === EventStatus.DRAFT
+      ? 'Draft'
+      : event.status === EventStatus.PUBLISHED
+        ? 'Published'
+        : event.status === EventStatus.ACTIVE
+          ? 'Live'
+          : event.status === EventStatus.FINISHED
+            ? 'Ended'
+            : 'Cancelled';
+
+  return (
+    <TouchableOpacity style={dashStyles.eventCard} onPress={onPress} activeOpacity={0.85}>
+      {flyerUrl ? (
+        <Image source={{ uri: flyerUrl }} style={dashStyles.eventImage} resizeMode="cover" />
+      ) : (
+        <View style={[dashStyles.eventImage, dashStyles.eventImagePlaceholder]}>
+          <Ionicons name="calendar-outline" size={40} color="rgba(0,0,0,0.2)" />
+        </View>
+      )}
+      <View style={dashStyles.eventCardBody}>
+        <Text style={dashStyles.eventName} numberOfLines={1}>
+          {event.name}
+        </Text>
+        <Text style={dashStyles.eventMeta} numberOfLines={1}>
+          {dateStr}
+          {event.location ? ` · ${event.location}` : ''}
+        </Text>
+        <View style={dashStyles.eventStatsRow}>
+          <View style={dashStyles.eventStat}>
+            <Text style={dashStyles.eventStatValue}>{event.attendeeCount ?? 0}</Text>
+            <Text style={dashStyles.eventStatLabel}>RSVPs</Text>
+          </View>
+          <View style={dashStyles.eventStatusPill}>
+            <Text style={dashStyles.eventStatusText}>{statusLabel}</Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -499,13 +601,13 @@ export default function WalletScreen() {
           onSelectVenue={(venue) => {
             setSelectedVenue(venue);
             setSelectedOrg(null);
-            setActiveTab('Manage');
+            setActiveTab('Overview');
             setProfileSelectorVisible(false);
           }}
           onSelectOrg={(org) => {
             setSelectedOrg(org);
             setSelectedVenue(null);
-            setActiveTab('Manage');
+            setActiveTab('Overview');
             setProfileSelectorVisible(false);
           }}
           onCreateOrg={() => {
@@ -707,6 +809,120 @@ const dashStyles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingTop: 21,
+  },
+  createEventButtonWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+  },
+  createEventButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    width: 240,
+    borderRadius: 26,
+    backgroundColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  createEventButtonText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  overviewEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 80,
+    gap: 12,
+  },
+  overviewEmptyText: {
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.4)',
+  },
+  overviewListContent: {
+    padding: 16,
+    paddingTop: 12,
+    gap: 14,
+  },
+  eventCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    padding: 12,
+    marginBottom: 14,
+  },
+  eventImage: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderRadius: 12,
+  },
+  eventImagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eventCardBody: {
+    paddingTop: 12,
+    paddingHorizontal: 4,
+    gap: 6,
+  },
+  eventName: {
+    fontSize: 17,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  eventMeta: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.55)',
+  },
+  eventStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  eventStat: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+  },
+  eventStatValue: {
+    fontSize: 18,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  eventStatLabel: {
+    fontSize: 12,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.5)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  eventStatusPill: {
+    paddingHorizontal: 10,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    justifyContent: 'center',
+  },
+  eventStatusText: {
+    fontSize: 11,
+    fontFamily: 'Lato_700Bold',
+    color: 'rgba(0,0,0,0.6)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   section: {
     marginBottom: 24,

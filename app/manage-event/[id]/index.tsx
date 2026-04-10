@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { GlassSurface } from "@/components/glass/glass-surface";
@@ -17,6 +17,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Pressable,
 } from "react-native";
 import { FeedMediaPlayer } from "@/components/feed/feed-media-player";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
@@ -67,7 +68,6 @@ const SECTION_GROUPS: SectionGroup[] = [
     title: "Tools",
     items: [
       { key: "text-blast", label: "Text Blast", subtitle: "SMS messages to guests", icon: "chatbubble-outline", permission: { resource: "marketing", action: "view" } },
-      { key: "marketing", label: "Marketing", subtitle: "Promotions and sharing", icon: "megaphone-outline", permission: { resource: "marketing", action: "view" } },
     ],
   },
 ];
@@ -238,6 +238,8 @@ export default function ManageEventScreen() {
     isLoading: permissionsLoading,
   } = useEventPermissions(eventId);
 
+  const [activeSection, setActiveSection] = useState<string>("Event");
+
   const visibleGroups = useMemo(() => {
     return SECTION_GROUPS.map((group) => ({
       ...group,
@@ -249,7 +251,16 @@ export default function ManageEventScreen() {
     })).filter((group) => group.items.length > 0);
   }, [permissionsLoading, hasPermission]);
 
+  const activeGroup = useMemo(
+    () => visibleGroups.find((g) => g.title === activeSection) ?? visibleGroups[0],
+    [visibleGroups, activeSection],
+  );
+
   const handleSectionPress = (sectionKey: string) => {
+    if (sectionKey === "edit-event") {
+      router.push({ pathname: "/edit-event", params: { id: id! } });
+      return;
+    }
     if (sectionKey === "tap-to-pay") {
       router.push({ pathname: "/tap-to-pay", params: { eventId: id! } });
       return;
@@ -268,19 +279,13 @@ export default function ManageEventScreen() {
   if (isLoading || !event) {
     return (
       <View style={styles.container}>
-        <DarkGradientBg />
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Manage Event</Text>
-          <View style={styles.headerButton} />
+        <View style={{ paddingTop: insets.top + 16, paddingHorizontal: 12 }}>
+          <Pressable style={styles.iconPill} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color="#000" />
+          </Pressable>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color="#000" />
         </View>
       </View>
     );
@@ -301,33 +306,43 @@ export default function ManageEventScreen() {
 
   return (
     <View style={styles.container}>
-      <DarkGradientBg />
-
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
-      >
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
+      
+      {/* Header pills row */}
+      <View style={{ paddingTop: insets.top + 16 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.pillRow}
+          style={styles.pillScroll}
         >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Manage Event</Text>
-        {!isPastEvent && canEditEvents() ? (
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() =>
-              router.push({ pathname: "/edit-event", params: { id: id! } })
-            }
-          >
-            <Ionicons name="create-outline" size={22} color="#fff" />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerButton} />
-        )}
-      </Animated.View>
+          {/* Back button pill */}
+          <Pressable style={styles.iconPill} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color="#000" />
+          </Pressable>
+
+          {/* Section filter pills */}
+          {visibleGroups.map((group) => {
+            const isActive = activeGroup?.title === group.title;
+            return (
+              <Pressable
+                key={group.title}
+                style={styles.filterPill}
+                onPress={() => setActiveSection(group.title)}
+              >
+                <View
+                  style={[
+                    styles.filterPillBg,
+                    isActive && styles.filterPillBgActive,
+                  ]}
+                />
+                <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
+                  {group.title}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -345,27 +360,28 @@ export default function ManageEventScreen() {
             cornerRadius="xl"
             style={styles.eventCard}
           >
-            {flyerUrl ? (
-              <FeedMediaPlayer
-                mediaType={flyerMediaType}
-                videoUrl={flyerVideoUrl}
-                imageUrl={flyerUrl}
-                poster={flyerThumbnail || flyerUrl}
-                isActive={true}
-                muted
-                containerWidth={cardWidth}
-                maxHeight={cardWidth * (4 / 3)}
-              />
-            ) : (
-              <View style={[styles.flyerPlaceholder, { overflow: 'hidden' }]}>
-                <GlassView {...liquidGlass.fillFaint} borderRadius={0} style={StyleSheet.absoluteFillObject} />
-                <Ionicons
-                  name="calendar"
-                  size={48}
-                  color="rgba(255,255,255,0.2)"
+            <View style={styles.flyerWrapper}>
+              {flyerUrl ? (
+                <FeedMediaPlayer
+                  mediaType={flyerMediaType}
+                  videoUrl={flyerVideoUrl}
+                  imageUrl={flyerUrl}
+                  poster={flyerThumbnail || flyerUrl}
+                  isActive={true}
+                  muted
+                  containerWidth={cardWidth - 24}
+                  maxHeight={(cardWidth - 24) * (4 / 3)}
                 />
-              </View>
-            )}
+              ) : (
+                <View style={[styles.flyerPlaceholder, { backgroundColor: 'rgba(0,0,0,0.05)' }]}>
+                  <Ionicons
+                    name="calendar"
+                    size={48}
+                    color="rgba(0,0,0,0.2)"
+                  />
+                </View>
+              )}
+            </View>
 
             {/* Card footer */}
             <View style={styles.cardFooter}>
@@ -376,7 +392,7 @@ export default function ManageEventScreen() {
                 <Ionicons
                   name="calendar-outline"
                   size={14}
-                  color="rgba(255,255,255,0.5)"
+                  color="rgba(0,0,0,0.5)"
                 />
                 <Text style={styles.eventDate} numberOfLines={1}>
                   {formatDateRange(event.startDate, event.endDate)}
@@ -386,7 +402,7 @@ export default function ManageEventScreen() {
                 <Ionicons
                   name="location-outline"
                   size={14}
-                  color="rgba(255,255,255,0.5)"
+                  color="rgba(0,0,0,0.5)"
                 />
                 <Text style={styles.eventLocation} numberOfLines={1}>
                   {formatShortLocation(event)}
@@ -410,7 +426,7 @@ export default function ManageEventScreen() {
                     <Ionicons
                       name="people-outline"
                       size={13}
-                      color="rgba(255,255,255,0.4)"
+                      color="rgba(0,0,0,0.5)"
                     />
                     <Text style={styles.attendeeText}>
                       {event.attendeeCount} RSVPs
@@ -422,26 +438,39 @@ export default function ManageEventScreen() {
           </GlassSurface>
         </Animated.View>
 
-        {/* Menu Groups */}
-        {visibleGroups.map((group, groupIndex) => (
+        {/* Active group only */}
+        {activeGroup ? (() => {
+          const displayItems =
+            activeGroup.title === 'Event' && !isPastEvent && canEditEvents()
+              ? [
+                  ...activeGroup.items,
+                  {
+                    key: 'edit-event',
+                    label: 'Edit Event',
+                    subtitle: 'Update event info and flyer',
+                    icon: 'create-outline' as const,
+                    permission: { resource: 'events' as const, action: 'edit' },
+                  },
+                ]
+              : activeGroup.items;
+          return (
           <Animated.View
-            key={group.title}
-            entering={FadeInDown.delay(150 + groupIndex * 100).duration(500).springify()}
+            key={activeGroup.title}
+            entering={FadeInDown.duration(300)}
             style={styles.menuSection}
           >
-            <Text style={styles.groupTitle}>{group.title}</Text>
             <GlassSurface
               fill="subtle"
               border="subtle"
               cornerRadius="lg"
               style={styles.menuList}
             >
-              {group.items.map((section, index) => (
+              {displayItems.map((section, index) => (
                 <TouchableOpacity
                   key={section.key}
                   style={[
                     styles.menuItem,
-                    index < group.items.length - 1 && styles.menuItemBorder,
+                    index < displayItems.length - 1 && styles.menuItemBorder,
                   ]}
                   onPress={() => handleSectionPress(section.key)}
                   activeOpacity={0.7}
@@ -451,7 +480,7 @@ export default function ManageEventScreen() {
                     <Ionicons
                       name={section.icon}
                       size={20}
-                      color="rgba(255,255,255,0.9)"
+                      color="#000"
                     />
                   </View>
                   <View style={styles.menuItemContent}>
@@ -463,13 +492,14 @@ export default function ManageEventScreen() {
                   <Ionicons
                     name="chevron-forward"
                     size={18}
-                    color="rgba(255,255,255,0.3)"
+                    color="rgba(0,0,0,0.3)"
                   />
                 </TouchableOpacity>
               ))}
             </GlassSurface>
           </Animated.View>
-        ))}
+          );
+        })() : null}
       </ScrollView>
     </View>
   );
@@ -487,6 +517,46 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
+  pillScroll: {
+    flexGrow: 0,
+  },
+  pillRow: {
+    paddingHorizontal: 12,
+    gap: 8,
+    alignItems: "center",
+  },
+  iconPill: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.06)",
+  },
+  filterPill: {
+    height: 38,
+    paddingHorizontal: 16,
+    borderRadius: 19,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  filterPillBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.06)",
+    borderRadius: 19,
+  },
+  filterPillBgActive: {
+    backgroundColor: "rgba(0,0,0,0.12)",
+  },
+  filterPillText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "rgba(0,0,0,0.5)",
+  },
+  filterPillTextActive: {
+    color: "rgba(0,0,0,0.8)",
+  },
   headerButton: {
     width: 40,
     height: 40,
@@ -496,7 +566,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#000",
   },
   loadingContainer: {
     flex: 1,
@@ -510,6 +580,15 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   eventCard: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+    borderRadius: 18,
+    padding: 12,
+    overflow: "hidden",
+  },
+  flyerWrapper: {
+    borderRadius: 12,
     overflow: "hidden",
   },
   flyerPlaceholder: {
@@ -528,7 +607,7 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_700Bold",
     lineHeight: 26,
     marginBottom: 2,
-    color: "#fff",
+    color: "#000",
   },
   eventDateRow: {
     flexDirection: "row",
@@ -538,12 +617,12 @@ const styles = StyleSheet.create({
   eventDate: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.55)",
   },
   eventLocation: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.55)",
   },
   eventMeta: {
     flexDirection: "row",
@@ -570,7 +649,7 @@ const styles = StyleSheet.create({
   attendeeText: {
     fontSize: 12,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.5)",
   },
   menuSection: {
     marginTop: 20,
@@ -578,7 +657,7 @@ const styles = StyleSheet.create({
   groupTitle: {
     fontSize: 13,
     fontFamily: "Lato_700Bold",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.5)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 8,
@@ -586,6 +665,9 @@ const styles = StyleSheet.create({
   },
   menuList: {
     overflow: "hidden",
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
   },
   menuItem: {
     flexDirection: "row",
@@ -594,7 +676,7 @@ const styles = StyleSheet.create({
   },
   menuItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.08)",
+    borderBottomColor: "rgba(0,0,0,0.06)",
   },
   menuItemIcon: {
     width: 38,
@@ -610,12 +692,12 @@ const styles = StyleSheet.create({
   menuItemTitle: {
     fontSize: 15,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#000",
   },
   menuItemSubtitle: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
     marginTop: 2,
-    color: "rgba(255,255,255,0.45)",
+    color: "rgba(0,0,0,0.5)",
   },
 });

@@ -8,6 +8,7 @@ import React, {
   useRef,
 } from "react";
 import { useStableRouter } from "@/hooks/use-stable-router";
+import { useLocalSearchParams } from "expo-router";
 import {
   View,
   Text,
@@ -20,6 +21,9 @@ import {
   Modal,
   Keyboard,
   KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,6 +40,8 @@ import {
   useEnsureConcierge,
   type ChannelData,
 } from "@/hooks/use-conversations";
+import { useMyChannels } from "@/hooks/use-channels";
+import type { ChannelResponse } from "@/lib/api/channels";
 import { useUnifiedSearch } from "@/hooks/use-unified-search";
 import { chatApi } from "@/lib/api/chat";
 import { usersApi } from "@/lib/api/users";
@@ -393,6 +399,57 @@ function PersonSearchRow({
   );
 }
 
+// Channel row for the Channels tab
+function ChannelRow({
+  channel,
+  onPress,
+}: {
+  channel: ChannelResponse;
+  onPress: () => void;
+}) {
+  const hasUnread = (channel.unreadCount ?? 0) > 0;
+  return (
+    <TouchableOpacity style={styles.conversationRow} onPress={onPress} activeOpacity={0.7}>
+      <ConversationAvatar imageUrl={channel.avatarUrl ?? undefined} hasUnread={hasUnread} size={56} />
+      <View style={styles.conversationContent}>
+        <View style={styles.conversationHeader}>
+          <View style={styles.titleRow}>
+            <Text
+              style={[styles.conversationTitle, hasUnread && styles.conversationTitleUnread, { color: '#000' }]}
+              numberOfLines={1}
+            >
+              {channel.name}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.conversationFooter}>
+          <Text style={[styles.lastMessage, { color: 'rgba(0,0,0,0.6)' }]} numberOfLines={1}>
+            {channel.memberCount} {channel.memberCount === 1 ? 'member' : 'members'}
+            {channel.description ? ` · ${channel.description}` : ''}
+          </Text>
+          {hasUnread ? <View style={styles.unreadDot} /> : null}
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// Empty state for the Channels tab
+function ChannelsEmptyState({ onDiscover }: { onDiscover: () => void }) {
+  return (
+    <View style={styles.emptyContainerTop}>
+      <View style={styles.emptyIconContainer}>
+        <Ionicons name="megaphone-outline" size={56} color="rgba(0,0,0,0.2)" />
+      </View>
+      <Text style={[styles.emptyTitle, { color: '#000' }]}>No channels yet</Text>
+      <Text style={[styles.emptySubtitle, { color: 'rgba(0,0,0,0.6)' }]}>Discover channels to follow</Text>
+      <TouchableOpacity style={styles.sendMessageButton} onPress={onDiscover} activeOpacity={0.7}>
+        <Text style={[styles.sendMessageButtonText, { color: '#000' }]}>Discover</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
@@ -414,6 +471,15 @@ export default function MessagesScreen() {
   const searchInputRef = useRef<TextInput>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState<'Messages' | 'Channels'>(
+    tabParam === 'channels' ? 'Channels' : 'Messages',
+  );
+  // Sync to param when it changes (e.g. navigated from create-channel)
+  React.useEffect(() => {
+    if (tabParam === 'channels') setActiveTab('Channels');
+  }, [tabParam]);
+  const { data: myChannels = [], isLoading: isLoadingChannels, refetch: refetchChannels } = useMyChannels();
   const [searchResults, setSearchResults] = useState<Map<string, string>>(
     new Map(),
   );
@@ -739,13 +805,7 @@ export default function MessagesScreen() {
   if (isLoading && channelData.length === 0) {
     return (
       <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <View style={styles.headerIcon} />
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Messages
-          </Text>
-          <View style={styles.headerIcon} />
-        </View>
+        <View style={{ paddingTop: insets.top + 16, height: insets.top + 54 }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.text} />
           <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
@@ -759,33 +819,62 @@ export default function MessagesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
-      >
-        <TouchableOpacity
-          style={styles.headerCircleBtn}
-          onPress={handleSearchPress}
-          activeOpacity={0.7}
+      {/* Header pills */}
+      <View style={{ paddingTop: insets.top + 16 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.headerScrollContent}
+          style={styles.headerScroll}
         >
-          <Ionicons name="search" size={20} color={colors.text} />
-        </TouchableOpacity>
+          {/* Search icon pill */}
+          <Pressable style={styles.iconPill} onPress={handleSearchPress}>
+            <View style={styles.glassLayer} pointerEvents="none">
+              <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={19} style={StyleSheet.absoluteFill} />
+            </View>
+            <Ionicons name="search" size={18} color="#000" />
+          </Pressable>
 
-        <View style={styles.headerTitleButton}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Messages
-          </Text>
-        </View>
+          {/* New convo / new channel icon pill */}
+          <Pressable
+            style={styles.iconPill}
+            onPress={() => {
+              if (activeTab === 'Channels') {
+                router.push('/create-channel' as any);
+              } else {
+                handleOpenCompose();
+              }
+            }}
+          >
+            <View style={styles.glassLayer} pointerEvents="none">
+              <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={19} style={StyleSheet.absoluteFill} />
+            </View>
+            <Ionicons name="add" size={20} color="#000" />
+          </Pressable>
 
-        <TouchableOpacity
-          style={styles.headerCircleBtn}
-          onPress={handleOpenCompose}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </Animated.View>
+          {/* Filter pills */}
+          {(['Messages', 'Channels'] as const).map((label) => {
+            const isActive = activeTab === label;
+            return (
+              <Pressable
+                key={label}
+                style={styles.filterPill}
+                onPress={() => setActiveTab(label)}
+              >
+                <View style={styles.glassLayer} pointerEvents="none">
+                  <GlassView
+                    {...liquidGlass.surface}
+                    tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                    borderRadius={19}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+                <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* Search input above keyboard */}
       {isSearchActive && (
@@ -827,20 +916,54 @@ export default function MessagesScreen() {
         entering={FadeIn.duration(300)}
         style={styles.listContainer}
       >
-        <FlatList
-          data={filteredChannels}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          ListEmptyComponent={renderEmptyState}
-          contentContainerStyle={[
-            filteredChannels.length === 0
-              ? styles.emptyListContainer
-              : styles.listContent,
-            { paddingBottom: tabBarTopOffset + 20 },
-          ]}
-          refreshControl={refreshControl}
-          showsVerticalScrollIndicator={false}
-        />
+        {activeTab === 'Messages' ? (
+          <FlatList
+            data={filteredChannels}
+            keyExtractor={(item) => item.id}
+            renderItem={renderItem}
+            ListEmptyComponent={renderEmptyState}
+            contentContainerStyle={[
+              filteredChannels.length === 0
+                ? styles.emptyListContainer
+                : styles.listContent,
+              { paddingBottom: tabBarTopOffset + 20 },
+            ]}
+            refreshControl={refreshControl}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <FlatList
+            data={myChannels}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <ChannelRow
+                channel={item}
+                onPress={() => router.push({ pathname: '/channel/[id]', params: { id: item.id } } as any)}
+              />
+            )}
+            ListEmptyComponent={
+              isLoadingChannels ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color={colors.text} />
+                </View>
+              ) : (
+                <ChannelsEmptyState onDiscover={() => router.push('/discover-channels' as any)} />
+              )
+            }
+            contentContainerStyle={[
+              myChannels.length === 0 ? styles.emptyListContainer : styles.listContent,
+              { paddingBottom: tabBarTopOffset + 20 },
+            ]}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={false}
+                onRefresh={() => refetchChannels()}
+                tintColor="#000"
+              />
+            }
+          />
+        )}
       </Animated.View>
 
       {/* Compose New DM Modal */}
@@ -1169,6 +1292,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  headerScroll: {
+    flexGrow: 0,
+  },
+  headerScrollContent: {
+    paddingHorizontal: 12,
+    gap: 8,
+    alignItems: "center",
+  },
+  iconPill: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  filterPill: {
+    height: 38,
+    paddingHorizontal: 16,
+    borderRadius: 19,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  filterPillText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "rgba(0,0,0,0.5)",
+  },
+  filterPillTextActive: {
+    color: "rgba(0,0,0,0.8)",
+  },
+  glassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+    borderRadius: 19,
+  },
   searchSheet: {
     position: "absolute",
     left: 0,
@@ -1263,7 +1421,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingTop: 4,
+    paddingTop: 14,
   },
   conversationRow: {
     flexDirection: "row",
