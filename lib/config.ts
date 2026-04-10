@@ -14,6 +14,12 @@ const PROD_WS_URL =
   process.env.EXPO_PUBLIC_WS_URL ||
   "wss://status-social-api-dev-699705646196.us-east4.run.app";
 
+// Feature flags — disable features that require backend endpoints
+// not yet deployed to the official Cloud Run backend
+export const features = {
+  channels: USE_LOCAL_BACKEND, // new /api/channels/* endpoints
+};
+
 export const config = {
   api: {
     baseUrl: USE_LOCAL_BACKEND ? `http://${LOCAL_IP}:5000` : PROD_API_URL,

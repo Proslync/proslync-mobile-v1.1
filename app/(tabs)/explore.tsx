@@ -42,6 +42,7 @@ import {
 } from "@/hooks/use-conversations";
 import { useMyChannels } from "@/hooks/use-channels";
 import type { ChannelResponse } from "@/lib/api/channels";
+import { features } from "@/lib/config";
 import { useUnifiedSearch } from "@/hooks/use-unified-search";
 import { chatApi } from "@/lib/api/chat";
 import { usersApi } from "@/lib/api/users";
@@ -853,7 +854,7 @@ export default function MessagesScreen() {
           </Pressable>
 
           {/* Filter pills */}
-          {(['Messages', 'Channels'] as const).map((label) => {
+          {((features.channels ? ['Messages', 'Channels'] : ['Messages']) as ('Messages' | 'Channels')[]).map((label) => {
             const isActive = activeTab === label;
             return (
               <Pressable
