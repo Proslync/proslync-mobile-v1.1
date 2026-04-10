@@ -1,8 +1,7 @@
 import * as React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { GlassView } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { LiquidGlassView } from '@callstack/liquid-glass';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { DRESS_CODE_LABELS } from '@/lib/constants/dress-codes';
 import type { EventDetailExtended } from '@/lib/types/event-detail.types';
@@ -28,12 +27,11 @@ export function QuickDetailsGrid({ event }: QuickDetailsGridProps) {
   return (
     <View style={styles.grid}>
       {items.map((item) => (
-        <View key={item.label} style={[styles.cell, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
-          <GlassView {...liquidGlass.surface} borderRadius={12} style={StyleSheet.absoluteFillObject} />
+        <LiquidGlassView key={item.label} effect="regular" style={styles.cell}>
           <Ionicons name={item.icon} size={18} color={colors.textSecondary} />
           <Text style={[styles.cellLabel, { color: colors.textTertiary }]}>{item.label}</Text>
           <Text style={[styles.cellValue, { color: colors.text }]}>{item.value}</Text>
-        </View>
+        </LiquidGlassView>
       ))}
     </View>
   );
@@ -49,10 +47,10 @@ const styles = StyleSheet.create({
     width: '48%' as any,
     flexGrow: 1,
     borderRadius: 12,
-    borderWidth: 1,
     padding: 12,
     alignItems: 'center',
     gap: 4,
+    overflow: 'hidden',
   },
   cellLabel: {
     fontSize: 11,
