@@ -19,11 +19,14 @@ import * as React from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -237,20 +240,17 @@ export default function BarQuickOrderScreen() {
   if (!venueId && !menuLoading) {
     return (
       <View style={styles.root}>
-        <DarkGradientBg />
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          style={[styles.header, { paddingTop: insets.top + 8 }]}
-        >
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Bar</Text>
-          <View style={styles.headerButton} />
-        </Animated.View>
+        <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+          <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color="#000" />
+          </Pressable>
+          <View style={styles.pillLabel}>
+            <View style={styles.pillGlassLayer} pointerEvents="none">
+              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+            </View>
+            <Text style={styles.pillLabelText}>Bar</Text>
+          </View>
+        </View>
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
             This event does not have a venue with a menu.
@@ -262,22 +262,32 @@ export default function BarQuickOrderScreen() {
 
   return (
     <View style={styles.root}>
-      <DarkGradientBg />
-
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
-      >
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bar</Text>
-        <View style={styles.headerButton} />
-      </Animated.View>
+      {/* Pill row header */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        {categories.map((cat) => {
+          const isActive = selectedCategory === cat.id;
+          return (
+            <Pressable
+              key={cat.id}
+              style={styles.pillFilter}
+              onPress={() => setSelectedCategory(cat.id)}
+            >
+              <View style={styles.pillGlassLayer} pointerEvents="none">
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                  borderRadius={19}
+                  style={StyleSheet.absoluteFill}
+                />
+              </View>
+              <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{cat.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {menuLoading ? (
         <View style={styles.emptyContainer}>
@@ -289,13 +299,6 @@ export default function BarQuickOrderScreen() {
         </View>
       ) : (
         <View style={styles.menuContainer}>
-          {/* Category chips */}
-          <GlassChipBar
-            items={categories}
-            selectedId={selectedCategory}
-            onSelect={setSelectedCategory}
-          />
-
           {/* Menu grid */}
           <FlatList
             data={menuItems}
@@ -353,23 +356,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f2f2f2",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
+  pillRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    gap: 8,
+    alignItems: 'center',
     paddingBottom: 8,
+    flexWrap: 'wrap',
   },
-  headerButton: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
+  pillIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
+  pillFilter: {
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  pillLabel: {
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  pillLabelText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(0,0,0,0.8)',
+  },
+  pillGlassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    borderRadius: 19,
+  },
+  pillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(0,0,0,0.5)',
+  },
+  pillTextActive: {
+    color: 'rgba(0,0,0,0.8)',
   },
   emptyContainer: {
     flex: 1,
@@ -378,9 +413,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyText: {
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.4)",
     fontSize: 16,
     textAlign: "center",
+  },
+  menuContainer: {
+    flex: 1,
   },
   grid: {
     paddingHorizontal: 12,

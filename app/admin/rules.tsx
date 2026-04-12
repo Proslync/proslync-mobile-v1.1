@@ -11,8 +11,9 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView } from 'expo-glass-effect';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -25,7 +26,7 @@ import {
   useDeleteModerationRule,
 } from '@/hooks/use-admin';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+
 import type { ModerationRule, ContentType } from '@/lib/api/admin';
 
 const CONTENT_TYPES: { key: ContentType; label: string }[] = [
@@ -54,7 +55,7 @@ function ContentTypeTag({
         {
           overflow: 'hidden' as const,
           backgroundColor: undefined,
-          borderColor: selected ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+          borderColor: selected ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.1)',
         },
       ]}
       onPress={onPress}
@@ -98,7 +99,7 @@ function RuleRow({
             return (
               <View
                 key={ct}
-                style={[styles.miniTag, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
+                style={[styles.miniTag, { backgroundColor: 'rgba(0,0,0,0.06)' }]}
               >
                 <Text style={[styles.miniTagText, { color: colors.textTertiary }]}>
                   {found?.label ?? ct}
@@ -111,7 +112,7 @@ function RuleRow({
       <Switch
         value={rule.isEnabled}
         onValueChange={onToggle}
-        trackColor={{ false: 'rgba(255,255,255,0.1)', true: 'rgba(76,175,80,0.4)' }}
+        trackColor={{ false: 'rgba(0,0,0,0.1)', true: 'rgba(76,175,80,0.4)' }}
         thumbColor={rule.isEnabled ? '#4CAF50' : '#888'}
       />
     </TouchableOpacity>
@@ -121,7 +122,7 @@ function RuleRow({
 export default function ModerationRulesScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
 
   const { data: rules, isLoading } = useContentModerationRules();
   const createRule = useCreateModerationRule();
@@ -221,31 +222,30 @@ export default function ModerationRulesScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.text} />
+      <View style={[styles.container, styles.center, { backgroundColor: '#f2f2f2' }]}>
+        <ActivityIndicator size="large" color="rgba(0,0,0,0.5)" />
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={[styles.container, { backgroundColor: '#f2f2f2' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {isDark && <DarkGradientBg />}
 
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
-      >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        <View style={styles.pillLabel}>
+          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          <Text style={styles.pillLabelText}>Rules</Text>
+        </View>
+        <TouchableOpacity style={styles.pillIcon} onPress={openCreate} activeOpacity={0.7}>
+          <Ionicons name="add" size={22} color="#000" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Moderation Rules</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={openCreate} activeOpacity={0.7}>
-          <Ionicons name="add" size={24} color={colors.text} />
-        </TouchableOpacity>
-      </Animated.View>
+      </View>
 
       {/* Stats */}
       <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
@@ -323,7 +323,7 @@ export default function ModerationRulesScreen() {
           <TouchableOpacity
             style={[
               styles.saveBtn,
-              { overflow: 'hidden' as const, borderColor: 'rgba(255,255,255,0.25)' },
+              { overflow: 'hidden' as const, borderColor: 'rgba(0,0,0,0.15)' },
             ]}
             onPress={handleSave}
             activeOpacity={0.7}
@@ -370,16 +370,10 @@ export default function ModerationRulesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Lato_700Bold' },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
   statsRow: {
     flexDirection: 'row',
     gap: 12,

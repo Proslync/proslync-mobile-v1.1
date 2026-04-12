@@ -36,6 +36,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Modal,
+  ActionSheetIOS,
   Platform,
   Pressable,
   ScrollView,
@@ -1001,9 +1002,6 @@ function Composer({
         styles.composerContainer,
         {
           paddingBottom: Math.max(insets.bottom, 8),
-          borderTopColor: isDark
-            ? "rgba(255,255,255,0.08)"
-            : "rgba(0,0,0,0.08)",
         },
       ]}
     >
@@ -1141,76 +1139,38 @@ function Composer({
 
       {!reviewAudio && (
         <View style={styles.composerInner}>
-          {/* Camera button */}
-          {!isRecording && (
-            <TouchableOpacity
-              style={[styles.composerButton, { overflow: "hidden" as const }]}
-              onPress={onOpenCamera}
-              activeOpacity={0.7}
-            >
-              <GlassView
-                {...liquidGlass.surface}
-                tintColor={
-                  isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.06)"
-                }
-                borderRadius={18}
-                style={StyleSheet.absoluteFillObject}
-              />
-              <Ionicons
-                name="camera"
-                size={20}
-                color={isDark ? "#fff" : "#1a1a1a"}
-              />
-            </TouchableOpacity>
-          )}
-
-          {/* Input area */}
+          {/* Single rounded container with text + actions */}
           {!isRecording ? (
-            <View
-              style={[
-                styles.inputWrapper,
-                {
-                  borderColor: isDark
-                    ? "rgba(255,255,255,0.1)"
-                    : "rgba(0,0,0,0.08)",
-                  overflow: "hidden" as const,
-                },
-              ]}
-            >
-              <GlassView
-                {...liquidGlass.surface}
-                tintColor={
-                  isDark ? "rgba(10,10,10,0.25)" : "rgba(255,255,255,0.6)"
-                }
-                borderRadius={22}
-                style={StyleSheet.absoluteFillObject}
-              />
+            <View style={styles.composerBox}>
               <TextInput
                 ref={inputRef}
-                style={[styles.composerInput, { color: colors.text }]}
+                style={styles.composerBoxInput}
                 value={text}
                 onChangeText={handleChangeText}
                 placeholder={placeholder || "Message..."}
-                placeholderTextColor={
-                  isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)"
-                }
+                placeholderTextColor="rgba(0,0,0,0.35)"
                 multiline
                 maxLength={1000}
-                keyboardAppearance={isDark ? "dark" : "light"}
+                keyboardAppearance="light"
               />
-
-              {/* Gallery button inside input */}
-              <TouchableOpacity
-                style={styles.galleryButton}
-                onPress={onPickImage}
-                activeOpacity={0.7}
-              >
-                <Ionicons
-                  name="image-outline"
-                  size={24}
-                  color={colors.iconSecondary}
-                />
-              </TouchableOpacity>
+              <View style={styles.composerBoxActions}>
+                <TouchableOpacity
+                  onPress={() => {
+                    ActionSheetIOS.showActionSheetWithOptions(
+                      { options: ['Camera', 'Photo Library', 'Cancel'], cancelButtonIndex: 2 },
+                      (index) => { if (index === 0) onOpenCamera(); else if (index === 1) onPickImage(); },
+                    );
+                  }}
+                  activeOpacity={0.7}
+                  style={styles.composerBoxBtn}
+                >
+                  <Ionicons name="add" size={24} color="rgba(0,0,0,0.5)" />
+                </TouchableOpacity>
+                <View style={{ flex: 1 }} />
+                <TouchableOpacity onPress={handleMicPress} activeOpacity={0.7} style={styles.composerBoxBtn}>
+                  <Ionicons name="mic-outline" size={22} color="rgba(0,0,0,0.4)" />
+                </TouchableOpacity>
+              </View>
             </View>
           ) : (
             <View style={styles.recordingInputWrapper}>
@@ -1225,59 +1185,19 @@ function Composer({
             </View>
           )}
 
-          {/* Send or Mic button */}
-          {canSend && !isRecording ? (
+          {/* Send button — only when there's text */}
+          {canSend && !isRecording && (
             <TouchableOpacity
-              style={[styles.sendButton, { overflow: "hidden" as const }]}
+              style={styles.sendButton}
               onPress={handleSend}
               disabled={isSending}
-              activeOpacity={0.7}
+              activeOpacity={0.85}
             >
-              <GlassView
-                {...liquidGlass.surface}
-                tintColor={
-                  isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.08)"
-                }
-                borderRadius={22}
-                style={StyleSheet.absoluteFillObject}
-              />
               {isSending ? (
-                <ActivityIndicator size="small" color={colors.text} />
+                <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Ionicons name="send" size={20} color={colors.text} />
+                <Ionicons name="arrow-up" size={20} color="#fff" />
               )}
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[
-                styles.micButton,
-                { overflow: "hidden" as const },
-                isRecording && styles.micButtonRecording,
-              ]}
-              onPress={handleMicPress}
-              activeOpacity={0.7}
-            >
-              {!isRecording && (
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={
-                    isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)"
-                  }
-                  borderRadius={18}
-                  style={StyleSheet.absoluteFillObject}
-                />
-              )}
-              <Ionicons
-                name={isRecording ? "stop" : "mic"}
-                size={20}
-                color={
-                  isRecording
-                    ? "#fff"
-                    : isDark
-                      ? "rgba(255,255,255,0.6)"
-                      : "rgba(0,0,0,0.4)"
-                }
-              />
             </TouchableOpacity>
           )}
         </View>
@@ -1366,7 +1286,7 @@ function LoadingScreen({
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top, backgroundColor: colors.background },
+        {},
       ]}
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
@@ -1398,7 +1318,7 @@ function ErrorScreen({
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top, backgroundColor: colors.background },
+        {},
       ]}
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
@@ -1445,6 +1365,7 @@ export default function ChatThreadScreen() {
     null,
   );
   const [showChatInfo, setShowChatInfo] = useState(false);
+  const [showCallPicker, setShowCallPicker] = useState(false);
   const [showBlockConfirm, setShowBlockConfirm] = useState(false);
   const { unblock, isUnblocking } = useUnblockUser();
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
@@ -1878,14 +1799,8 @@ export default function ChatThreadScreen() {
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top, backgroundColor: colors.background },
-      ]}
-    >
-      {isDark && <DarkGradientBg />}
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       <ConfirmSheet
         visible={!!errorAlert}
         onClose={() => setErrorAlert(null)}
@@ -1909,89 +1824,67 @@ export default function ChatThreadScreen() {
         icon="ban"
       />
 
-      {/* Header - Instagram style */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
+      {/* Header — fixed at top */}
+      <View style={[styles.headerFixed, { paddingTop: insets.top + 10 }]}>
+        <TouchableOpacity style={styles.headerGlassBtn} onPress={() => router.back()} activeOpacity={0.7}>
+          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          <Ionicons name="chevron-back" size={22} color="#000" />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.headerCenter}
-          onPress={isConcierge ? undefined : handleHeaderPress}
-          activeOpacity={isConcierge ? 1 : 0.7}
-          disabled={isConcierge}
-        >
+        <TouchableOpacity style={styles.headerCenterColumn} onPress={isConcierge ? undefined : handleHeaderPress} activeOpacity={isConcierge ? 1 : 0.7} disabled={isConcierge}>
           <View style={styles.headerAvatarContainer}>
             {isConcierge ? (
-              <View style={styles.conciergeHeaderAvatar}>
-                <Ionicons name="sparkles" size={18} color="#fff" />
-              </View>
+              <View style={styles.conciergeHeaderAvatar}><Ionicons name="sparkles" size={18} color="#fff" /></View>
             ) : (
-              <Avatar
-                uri={channelInfo?.otherMember?.image}
-                size={40}
-                colors={colors}
-              />
+              <Avatar uri={channelInfo?.otherMember?.image} size={44} colors={colors} />
             )}
-            {!isConcierge && channelInfo?.isOnline && (
-              <View
-                style={[
-                  styles.onlineIndicator,
-                  { borderColor: colors.background },
-                ]}
-              />
-            )}
+            {!isConcierge && channelInfo?.isOnline && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
           </View>
-          <View style={styles.headerInfo}>
+          <View style={styles.headerNameGlass}>
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={16} style={StyleSheet.absoluteFill} />
             <View style={styles.headerNameRow}>
-              <Text
-                style={[styles.headerTitle, { color: colors.text }]}
-                numberOfLines={1}
-              >
-                {channelInfo?.name || "Chat"}
-              </Text>
-              {channelInfo?.otherMember?.isVerified && (
-                <MaterialCommunityIcons
-                  name="check-decagram"
-                  size={16}
-                  color={colors.verified}
-                />
-              )}
+              <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{channelInfo?.name || "Chat"}</Text>
+              {channelInfo?.otherMember?.isVerified && <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />}
             </View>
-            <Text
-              style={[styles.headerStatus, { color: colors.textSecondary }]}
-            >
-              {isConcierge
-                ? "AI Assistant"
-                : channelInfo?.type === "group"
-                  ? `${channelInfo.memberCount} members`
-                  : channelInfo?.isOnline
-                    ? "Active now"
-                    : "Tap to view profile"}
-            </Text>
+            {(isConcierge || channelInfo?.type === "group" || channelInfo?.isOnline) && (
+              <Text style={[styles.headerStatus, { color: colors.textSecondary }]}>
+                {isConcierge ? "AI Assistant" : channelInfo?.type === "group" ? `${channelInfo.memberCount} members` : "Active now"}
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
-
-        {!isConcierge && (
-          <>
-            <TouchableOpacity
-              style={styles.headerRight}
-              onPress={() => handleStartCall(false)}
-            >
-              <Ionicons name="call-outline" size={24} color={colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.headerRight}
-              onPress={() => handleStartCall(true)}
-            >
-              <Ionicons name="videocam-outline" size={26} color={colors.text} />
-            </TouchableOpacity>
-          </>
-        )}
+        {!isConcierge ? (
+          <TouchableOpacity style={styles.headerGlassBtn} onPress={() => setShowCallPicker(true)} activeOpacity={0.7}>
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
+            <Ionicons name="call-outline" size={20} color="#000" />
+          </TouchableOpacity>
+        ) : <View style={styles.headerGlassBtn} />}
       </View>
+
+      {/* Call picker modal */}
+      <Modal visible={showCallPicker} transparent animationType="fade" onRequestClose={() => setShowCallPicker(false)}>
+        <TouchableOpacity style={styles.callPickerOverlay} activeOpacity={1} onPress={() => setShowCallPicker(false)}>
+          <View style={styles.callPickerSheet}>
+            <GlassView {...liquidGlass.surface} borderRadius={20} style={StyleSheet.absoluteFillObject} />
+            <TouchableOpacity
+              style={styles.callPickerOption}
+              onPress={() => { setShowCallPicker(false); handleStartCall(false); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="call-outline" size={22} color="#000" />
+              <Text style={styles.callPickerText}>Voice Call</Text>
+            </TouchableOpacity>
+            <View style={styles.callPickerDivider} />
+            <TouchableOpacity
+              style={styles.callPickerOption}
+              onPress={() => { setShowCallPicker(false); handleStartCall(true); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="videocam-outline" size={22} color="#000" />
+              <Text style={styles.callPickerText}>Video Call</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Messages */}
       <KeyboardAvoidingView
@@ -2598,28 +2491,46 @@ export default function ChatThreadScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f2f2f2",
   },
   // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: 12,
     paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(0, 0, 0, 0.08)",
   },
-  backButton: {
-    width: 44,
-    height: 44,
+  headerFixed: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    zIndex: 10,
+  },
+  headerGlassBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
-  headerCenter: {
+  headerCenterColumn: {
     flex: 1,
-    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 4,
+    gap: 4,
+  },
+  headerNameGlass: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    overflow: 'hidden',
+    alignItems: 'center',
+    gap: 2,
   },
   headerAvatarContainer: {
     position: "relative",
@@ -2650,10 +2561,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
   },
-  headerInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
   headerNameRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -2670,19 +2577,41 @@ const styles = StyleSheet.create({
     color: "rgba(0, 0, 0, 0.5)",
     marginTop: 1,
   },
-  headerRight: {
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
+  callPickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-end',
+  },
+  callPickerSheet: {
+    marginHorizontal: 16,
+    marginBottom: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  callPickerOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+  },
+  callPickerText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  callPickerDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    marginHorizontal: 20,
   },
   // Content
   content: {
     flex: 1,
   },
   messagesList: {
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 140,
+    paddingBottom: 120,
     paddingHorizontal: 12,
   },
   emptyList: {
@@ -2946,9 +2875,12 @@ const styles = StyleSheet.create({
   },
   // Composer
   composerContainer: {
-    borderTopWidth: 0.5,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     paddingTop: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 16,
   },
   pendingMediaContainer: {
     flexDirection: "row",
@@ -2989,6 +2921,35 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  composerBox: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    minHeight: 80,
+  },
+  composerBoxInput: {
+    fontSize: 16,
+    fontFamily: 'Lato_400Regular',
+    color: '#000',
+    maxHeight: 100,
+    paddingVertical: 0,
+    marginBottom: 8,
+  },
+  composerBoxActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  composerBoxBtn: {
+    width: 36,
+    height: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   inputWrapper: {
     flex: 1,
     flexDirection: "row",
@@ -3017,6 +2978,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    backgroundColor: '#000',
     justifyContent: "center",
     alignItems: "center",
   },

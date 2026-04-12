@@ -5,6 +5,7 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
   Dimensions,
 } from "react-native";
@@ -357,9 +358,8 @@ function CheckInsContent() {
 
   if (!eventId) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {isDark && <DarkGradientBg />}
-        <Text style={[styles.errorText, { color: colors.textSecondary }]}>
+      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+                <Text style={[styles.errorText, { color: colors.textSecondary }]}>
           No event selected
         </Text>
       </View>
@@ -367,9 +367,8 @@ function CheckInsContent() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
-      <ConfirmSheet
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+            <ConfirmSheet
         visible={!!paymentFailedAlert}
         onClose={() => setPaymentFailedAlert(null)}
         title="Payment Failed"
@@ -382,117 +381,37 @@ function CheckInsContent() {
         onClose={() => setSelectedContact(null)}
       />
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>
-            Check Ins
-          </Text>
-          <View style={styles.headerStatusRow}>
-            <View
-              style={[
-                styles.readerDot,
-                {
-                  backgroundColor: isReaderConnected
-                    ? "#34d399"
-                    : readerStatus === "connecting"
-                      ? "#fbbf24"
-                      : "#f87171",
-                },
-              ]}
-            />
-            <Text
-              style={[styles.headerSubtitle, { color: colors.textTertiary }]}
+      {/* Pill row header */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        <Pressable style={styles.pillIcon} onPress={() => refetch()}>
+          <Ionicons name="refresh" size={18} color="#000" />
+        </Pressable>
+        {(['approved', 'denied'] as const).map((tab) => {
+          const isActive = activeTab === tab;
+          const count = tab === 'approved' ? approvedContacts.length : deniedContacts.length;
+          return (
+            <Pressable
+              key={tab}
+              style={styles.pillFilter}
+              onPress={() => handleTabPress(tab)}
             >
-              {activeTab === "approved"
-                ? `${approvedContacts.length} approved`
-                : `${deniedContacts.length} denied`}
-            </Text>
-          </View>
-        </View>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => refetch()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="refresh" size={20} color={colors.text} />
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* Tab Bar */}
-      <View style={[styles.tabBar, { borderBottomColor: colors.border }]}>
-        <Animated.View
-          style={[
-            styles.tabIndicator,
-            { width: tabWidth, backgroundColor: colors.text },
-            indicatorStyle,
-          ]}
-        />
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => handleTabPress("approved")}
-          activeOpacity={0.7}
-        >
-          <Animated.Text
-            style={[
-              styles.tabText,
-              { color: colors.text },
-              approvedTabTextStyle,
-            ]}
-          >
-            Approved
-          </Animated.Text>
-          {approvedContacts.length > 0 && (
-            <View
-              style={[
-                styles.tabBadge,
-                { overflow: 'hidden' },
-              ]}
-            >
-              <GlassView {...(activeTab === "approved" ? liquidGlass.fillStrong : liquidGlass.fill)} borderRadius={10} style={StyleSheet.absoluteFillObject} />
-              <Text style={[styles.tabBadgeText, { color: colors.text }]}>
-                {approvedContacts.length}
+              <View style={styles.pillGlassLayer} pointerEvents="none">
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                  borderRadius={19}
+                  style={StyleSheet.absoluteFill}
+                />
+              </View>
+              <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
+                {tab === 'approved' ? 'Approved' : 'Denied'}{count > 0 ? ` ${count}` : ''}
               </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.tab}
-          onPress={() => handleTabPress("denied")}
-          activeOpacity={0.7}
-        >
-          <Animated.Text
-            style={[styles.tabText, { color: colors.text }, deniedTabTextStyle]}
-          >
-            Denied
-          </Animated.Text>
-          {deniedContacts.length > 0 && (
-            <View
-              style={[
-                styles.tabBadge,
-                { overflow: 'hidden' },
-              ]}
-            >
-              <GlassView {...(activeTab === "denied" ? liquidGlass.fillStrong : liquidGlass.fill)} borderRadius={10} style={StyleSheet.absoluteFillObject} />
-              <Text style={[styles.tabBadgeText, { color: colors.text }]}>
-                {deniedContacts.length}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
+            </Pressable>
+          );
+        })}
       </View>
 
       {/* Content */}
@@ -627,6 +546,42 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_400Regular",
     textAlign: "center",
     marginTop: 100,
+  },
+  pillRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    gap: 8,
+    alignItems: 'center',
+    paddingBottom: 8,
+  },
+  pillIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pillFilter: {
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  pillGlassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    borderRadius: 19,
+  },
+  pillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(0,0,0,0.5)',
+  },
+  pillTextActive: {
+    color: 'rgba(0,0,0,0.8)',
   },
   listContent: {
     paddingHorizontal: 16,

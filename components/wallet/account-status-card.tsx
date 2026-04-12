@@ -98,7 +98,7 @@ export function AccountStatusCard({
 
   return (
     <Animated.View entering={FadeIn.duration(400).delay(100)}>
-      <GlassSurface fill="subtle" cornerRadius="lg" style={styles.container}>
+      <View style={styles.container}>
         {/* Trigger */}
         <TouchableOpacity
           style={styles.trigger}
@@ -182,15 +182,13 @@ export function AccountStatusCard({
             )}
           </View>
         </Animated.View>
-      </GlassSurface>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginTop: 12,
     overflow: 'hidden',
   },
   trigger: {

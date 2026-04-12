@@ -48,7 +48,7 @@ export function OnboardingCard({ onSetup, onCheckStatus, onDeleteAccount, onReme
   if (isRejected) {
     return (
       <Animated.View entering={FadeInDown.duration(400)} style={styles.wrapper}>
-        <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.container}>
+        <View style={styles.container}>
           <View style={[styles.iconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
             <Ionicons name="close-circle" size={56} color="#ef4444" />
           </View>
@@ -71,14 +71,14 @@ export function OnboardingCard({ onSetup, onCheckStatus, onDeleteAccount, onReme
           <Text style={[styles.hint, { color: colors.textTertiary }]}>
             Need help? Contact support@status.social
           </Text>
-        </GlassSurface>
+        </View>
       </Animated.View>
     );
   }
 
   return (
     <Animated.View entering={FadeInDown.duration(400)} style={styles.wrapper}>
-      <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.iconContainer}>
           <GlassView
             {...liquidGlass.surface}
@@ -172,7 +172,7 @@ export function OnboardingCard({ onSetup, onCheckStatus, onDeleteAccount, onReme
             You have a pending setup. Tap above to complete it.
           </Text>
         )}
-      </GlassSurface>
+      </View>
     </Animated.View>
   );
 }

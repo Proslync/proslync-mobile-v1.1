@@ -23,6 +23,7 @@ import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -100,7 +101,7 @@ export default function VenueStaffScreen() {
 
   const handleEdit = useCallback(async (member: VenueStaffMember) => {
     setEditTarget(member);
-    setEditRole(member.role);
+    setEditRole(typeof member.role === 'string' ? member.role : 'member');
     setShowEditSheet(true);
   }, []);
 
@@ -131,29 +132,31 @@ export default function VenueStaffScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <DarkGradientBg />
+      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+        <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+          <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color="#000" />
+          </Pressable>
+        </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.text} />
+          <ActivityIndicator size="large" color="#000" />
         </View>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Team</Text>
-        <View style={styles.headerButton} />
+      {/* Pill row header */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        <View style={styles.pillLabel}>
+          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          <Text style={styles.pillLabelText}>Team</Text>
+        </View>
       </View>
 
       <ScrollView
@@ -223,13 +226,15 @@ export default function VenueStaffScreen() {
                         style={[
                           styles.roleBadge,
                           {
-                            backgroundColor: getRoleBadgeColor(member.role),
+                            backgroundColor: getRoleBadgeColor(typeof member.role === 'string' ? member.role : 'member'),
                           },
                         ]}
                       >
                         <Text style={styles.roleBadgeText}>
-                          {member.role.charAt(0).toUpperCase() +
-                            member.role.slice(1)}
+                          {(() => {
+                            const r = typeof member.role === 'string' ? member.role : 'member';
+                            return r.charAt(0).toUpperCase() + r.slice(1);
+                          })()}
                         </Text>
                       </View>
                       <Text
@@ -242,7 +247,7 @@ export default function VenueStaffScreen() {
                       </Text>
                     </View>
                   </View>
-                  {member.role !== "owner" && (
+                  {(typeof member.role === 'string' ? member.role : '') !== "owner" && (
                     <TouchableOpacity
                       style={styles.removeButton}
                       onPress={() => setDeleteTarget(member)}
@@ -354,19 +359,10 @@ export default function VenueStaffScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
   headerTitle: { fontSize: 18, fontFamily: "Lato_700Bold" },
   scrollContent: { paddingHorizontal: 16, gap: 8 },
   emptyContainer: { alignItems: "center", paddingTop: 80, gap: 8 },
@@ -376,7 +372,7 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_400Regular",
     textAlign: "center",
   },
-  staffCard: { borderRadius: 12, overflow: "hidden" },
+  staffCard: { borderRadius: 14, overflow: "hidden", backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 8 },
   staffRow: {
     flexDirection: "row",
     alignItems: "center",

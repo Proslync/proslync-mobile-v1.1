@@ -44,6 +44,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -51,6 +52,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { GlassView } from 'expo-glass-effect';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -231,35 +234,44 @@ export default function PaymentsScreen() {
         style={[
           styles.container,
           styles.loadingContainer,
-          { backgroundColor: colors.background },
+          { backgroundColor: '#f2f2f2' },
         ]}
       >
-        {isDark && <DarkGradientBg />}
-        <ActivityIndicator size="large" color={colors.text} />
+        <ActivityIndicator size="large" color="#000" />
         <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Loading payments...</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
-      >
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Payments</Text>
-        <View style={styles.headerButton} />
-      </Animated.View>
+      {/* Pill row header */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        {TAB_SEGMENTS.map((label, index) => {
+          const isActive = selectedTab === index;
+          return (
+            <Pressable
+              key={label}
+              style={styles.pillFilter}
+              onPress={() => { previousTabRef.current = selectedTab; setSelectedTab(index); }}
+            >
+              <View style={styles.pillGlassLayer} pointerEvents="none">
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                  borderRadius={19}
+                  style={StyleSheet.absoluteFill}
+                />
+              </View>
+              <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {/* Setup result banner */}
       {setupResult && (
@@ -287,11 +299,13 @@ export default function PaymentsScreen() {
 
       {/* Account Status - always visible (matches web app) */}
       {accountStatus && (
-        <AccountStatusCard
-          accountStatus={accountStatus}
-          onContinueSetup={needsSetup ? handleSetup : undefined}
-          isSettingUp={false}
-        />
+        <View style={styles.statusContainer}>
+          <AccountStatusCard
+            accountStatus={accountStatus}
+            onContinueSetup={needsSetup ? handleSetup : undefined}
+            isSettingUp={false}
+          />
+        </View>
       )}
 
       {needsSetup ? (
@@ -307,15 +321,17 @@ export default function PaymentsScreen() {
             />
           }
         >
-          <OnboardingCard
-            onSetup={handleSetup}
-            onCheckStatus={handleRefresh}
-            onDeleteAccount={handleDeleteAccount}
-            onRemediationPress={handleRemediationPress}
-            isSettingUp={false}
-            isDeletingAccount={deleteAccount.isPending}
-            accountStatus={accountStatus}
-          />
+          <View style={styles.onboardingContainer}>
+            <OnboardingCard
+              onSetup={handleSetup}
+              onCheckStatus={handleRefresh}
+              onDeleteAccount={handleDeleteAccount}
+              onRemediationPress={handleRemediationPress}
+              isSettingUp={false}
+              isDeletingAccount={deleteAccount.isPending}
+              accountStatus={accountStatus}
+            />
+          </View>
         </ScrollView>
       ) : (
         /* Main tabbed content — single ScrollView so everything scrolls together */
@@ -392,14 +408,6 @@ export default function PaymentsScreen() {
             pendingCents={balancesForSheet.pendingCents}
             lifetimeCents={balancesForSheet.lifetimeCents}
             onWithdraw={() => setWithdrawalSheetVisible(true)}
-          />
-          <SegmentedControl
-            segments={TAB_SEGMENTS}
-            selectedIndex={selectedTab}
-            onSelect={(index) => {
-              previousTabRef.current = selectedTab;
-              setSelectedTab(index);
-            }}
           />
 
           <Animated.View
@@ -608,20 +616,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Lato_600SemiBold",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  statusContainer: { marginHorizontal: 16, marginTop: 8, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
+  onboardingContainer: { marginHorizontal: 16, marginTop: 8, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillFilter: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillGlassLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 19 },
+  pillText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.5)' },
+  pillTextActive: { color: 'rgba(0,0,0,0.8)' },
   headerTitle: {
     fontSize: 18,
     fontFamily: "Lato_700Bold",

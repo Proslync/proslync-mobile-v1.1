@@ -143,9 +143,8 @@ export default function StripeDocumentUploadScreen() {
   // Success state
   if (isComplete) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {isDark && <DarkGradientBg />}
-        <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
+      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+                <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
           <Animated.View entering={FadeIn.duration(400)} style={styles.successIcon}>
             <View style={styles.successCircle}>
               <Ionicons name="checkmark" size={40} color={colors.text} />
@@ -183,9 +182,8 @@ export default function StripeDocumentUploadScreen() {
   // No documents needed
   if (requiredTypes.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {isDark && <DarkGradientBg />}
-        <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
+      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+                <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
           <Ionicons name="checkmark-circle" size={64} color={colors.textTertiary} />
           <Text style={[styles.successTitle, { marginTop: 16, color: colors.text }]}>
             No Documents Needed
@@ -202,25 +200,18 @@ export default function StripeDocumentUploadScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
-
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
-      >
-        <GlassButton
-          label=""
-          icon={<Ionicons name="arrow-back" size={24} color={colors.text} />}
-          variant="glass"
-          size="sm"
-          onPress={() => router.back()}
-          style={styles.backButton}
-        />
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Upload Document</Text>
-        <View style={styles.headerSpacer} />
-      </Animated.View>
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      
+      {/* Pill row header */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <View style={styles.pillIcon}>
+          <Ionicons name="chevron-back" size={20} color="#000" onPress={() => router.back()} />
+        </View>
+        <View style={styles.pillLabel}>
+          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          <Text style={styles.pillLabelText}>Upload Document</Text>
+        </View>
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -233,7 +224,7 @@ export default function StripeDocumentUploadScreen() {
         {/* Info Card */}
         {docInfo && (
           <Animated.View entering={FadeInDown.duration(400).delay(100)}>
-            <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.infoCard}>
+            <View style={[styles.infoCard, { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' }]}>
               <View style={[styles.infoIconContainer, { backgroundColor: isDark ? undefined : colors.cardElevated, overflow: 'hidden' as const }]}>
                 {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={36} style={StyleSheet.absoluteFillObject} />}
                 <Ionicons
@@ -252,14 +243,14 @@ export default function StripeDocumentUploadScreen() {
                   Document {currentTypeIndex + 1} of {requiredTypes.length}
                 </Text>
               )}
-            </GlassSurface>
+            </View>
           </Animated.View>
         )}
 
         {/* Image Preview */}
         {selectedImage && (
           <Animated.View entering={FadeInDown.duration(300)}>
-            <GlassSurface fill="subtle" border="subtle" cornerRadius="xl" style={styles.previewCard}>
+            <View style={[styles.previewCard, { backgroundColor: '#fff', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' }]}>
               <Image source={{ uri: selectedImage }} style={styles.previewImage} resizeMode="contain" />
               <GlassButton
                 label="Change Photo"
@@ -269,7 +260,7 @@ export default function StripeDocumentUploadScreen() {
                 onPress={() => setSelectedImage(null)}
                 style={styles.changeButton}
               />
-            </GlassSurface>
+            </View>
           </Animated.View>
         )}
 
@@ -330,25 +321,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-  },
-  headerSpacer: {
-    width: 40,
-  },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
   scrollView: {
     flex: 1,
   },

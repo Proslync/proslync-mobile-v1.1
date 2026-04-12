@@ -16,8 +16,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { GlassView, isGlassEffectAPIAvailable } from 'expo-glass-effect';
-import { LiquidGlassView } from '@callstack/liquid-glass';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
+
+// Fallback wrapper when Liquid Glass is not supported
+function GlassCard({ children, style }: { children: React.ReactNode; style?: any }) {
+  if (isLiquidGlassSupported) {
+    return <LiquidGlassView effect="regular" style={style}>{children}</LiquidGlassView>;
+  }
+  return <View style={[style, { backgroundColor: 'rgba(255,255,255,0.85)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' }]}>{children}</View>;
+}
 import { Ionicons } from '@expo/vector-icons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Animated, {
@@ -467,7 +475,7 @@ export default function EventPage() {
           <Animated.View entering={FadeInDown.duration(500).springify()}>
             {/* Organizer */}
             {username && (
-              <LiquidGlassView effect="regular" style={styles.organizerCard}>
+              <GlassCard style={styles.organizerCard}>
                 <TouchableOpacity
                   onPress={handleUserPress}
                   activeOpacity={0.7}
@@ -501,12 +509,12 @@ export default function EventPage() {
                     )}
                   </View>
                 </TouchableOpacity>
-              </LiquidGlassView>
+              </GlassCard>
             )}
 
             {/* Flyer */}
             {flyerImage || videoUrl ? (
-              <LiquidGlassView effect="regular" style={styles.flyerCard}>
+              <GlassCard style={styles.flyerCard}>
                 <FeedMediaPlayer
                   mediaType={mediaType}
                   videoUrl={videoUrl}
@@ -516,15 +524,24 @@ export default function EventPage() {
                   containerWidth={CARD_WIDTH}
                   maxHeight={CARD_WIDTH * 1.25}
                 />
-              </LiquidGlassView>
-            ) : isFetchingEvent ? (
-              <LiquidGlassView effect="regular" style={[styles.flyerCard, styles.mediaLoading, { width: CARD_WIDTH }]}>
-                <ActivityIndicator size="small" color={colors.textTertiary} />
-              </LiquidGlassView>
-            ) : null}
+              </GlassCard>
+            ) : (
+              <GlassCard style={styles.flyerCard}>
+                <View style={styles.flyerPlaceholder}>
+                  {isFetchingEvent ? (
+                    <ActivityIndicator size="small" color="rgba(0,0,0,0.3)" />
+                  ) : (
+                    <>
+                      <Ionicons name="image-outline" size={40} color="rgba(0,0,0,0.2)" />
+                      <Text style={styles.flyerPlaceholderText}>No flyer uploaded</Text>
+                    </>
+                  )}
+                </View>
+              </GlassCard>
+            )}
 
             {/* Event Details */}
-            <LiquidGlassView effect="regular" style={styles.detailsCard}>
+            <GlassCard style={styles.detailsCard}>
               <Text style={[styles.eventTitle, { color: colors.text }]} numberOfLines={2}>
                 {eventTitle}
               </Text>
@@ -533,7 +550,7 @@ export default function EventPage() {
                   {formatEventDate(eventDate, venueName)}
                 </Text>
               )}
-            </LiquidGlassView>
+            </GlassCard>
           </Animated.View>
         )}
 
@@ -730,6 +747,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     marginBottom: 10,
+  },
+  flyerPlaceholder: {
+    width: '100%',
+    aspectRatio: 4 / 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    gap: 8,
+  },
+  flyerPlaceholderText: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.3)',
   },
   mediaLoading: {
     height: 300,

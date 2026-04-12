@@ -42,7 +42,6 @@ const SECTION_GROUPS: SectionGroup[] = [
   {
     title: "Event",
     items: [
-      { key: "overview", label: "Overview", subtitle: "Event details and flyer", icon: "grid-outline", permission: { resource: "events", action: "view" } },
       { key: "pricing", label: "Pricing", subtitle: "Tickets and pricing tiers", icon: "pricetag-outline", permission: { resource: "billing", action: "view" } },
       { key: "team", label: "Team", subtitle: "Staff and permissions", icon: "person-add-outline", permission: { resource: "team", action: "view" } },
     ],
@@ -62,12 +61,6 @@ const SECTION_GROUPS: SectionGroup[] = [
       { key: "analytics", label: "Analytics", subtitle: "View detailed insights", icon: "stats-chart-outline", permission: { resource: "analytics", action: "view" } },
       { key: "revenue", label: "Revenue", subtitle: "Track earnings and trends", icon: "trending-up-outline", permission: { resource: "billing", action: "view" } },
       { key: "payments", label: "Payments", subtitle: "Revenue and transactions", icon: "card-outline", permission: { resource: "billing", action: "view" } },
-    ],
-  },
-  {
-    title: "Tools",
-    items: [
-      { key: "text-blast", label: "Text Blast", subtitle: "SMS messages to guests", icon: "chatbubble-outline", permission: { resource: "marketing", action: "view" } },
     ],
   },
 ];

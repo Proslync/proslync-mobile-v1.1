@@ -296,6 +296,13 @@ export default function CreateEventScreen() {
         </LiquidGlassView>
       </View>
 
+      {/* Pricing — inline when paid */}
+      {isPaid && (
+        <LiquidGlassView effect="regular" style={s.pricingContainer}>
+          <PricingStep />
+        </LiquidGlassView>
+      )}
+
       {/* Date pickers */}
       {showStartPicker && (
         <Controller
@@ -540,6 +547,7 @@ const s = StyleSheet.create({
 
   // Toggles
   toggleRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
+  pricingContainer: { borderRadius: 16, padding: 14, overflow: 'hidden', marginBottom: 10 },
   toggleCard: { flex: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   toggleLabel: { fontSize: 14, fontFamily: 'Lato_700Bold' },
 

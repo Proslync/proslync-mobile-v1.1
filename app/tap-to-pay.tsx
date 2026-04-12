@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Pressable,
   ActivityIndicator,
 } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
@@ -173,16 +174,14 @@ function TapToChargeContent() {
 
   if (!eventId) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <DarkGradientBg />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <Text style={styles.errorText}>No event selected</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+    <View style={styles.container}>
       <ConfirmSheet
         visible={!!paymentFailedAlert}
         onClose={() => setPaymentFailedAlert(null)}
@@ -192,17 +191,16 @@ function TapToChargeContent() {
         icon="card-outline"
       />
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
-      >
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tap to Charge</Text>
-        <View style={styles.backButton} />
-      </Animated.View>
+      {/* Pill row header */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        <View style={styles.pillLabel}>
+          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          <Text style={styles.pillLabelText}>Tap to Charge</Text>
+        </View>
+      </View>
 
       {/* Reader Status Bar */}
       <View style={styles.statusBar}>
@@ -292,10 +290,10 @@ function TapToChargeContent() {
         >
           <GlassView {...liquidGlass.fillMedium} borderRadius={14} style={StyleSheet.absoluteFill} />
           {isProcessing ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="#000" />
           ) : (
             <>
-              <Ionicons name="flash" size={20} color="#fff" />
+              <Ionicons name="flash" size={20} color="#000" />
               <Text style={styles.chargeButtonText}>
                 Charge {displayAmount}
               </Text>
@@ -318,24 +316,35 @@ export default function TapToChargeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f2f2f2',
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  pillRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    gap: 8,
+    alignItems: 'center',
+    paddingBottom: 8,
+  },
+  pillIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pillLabel: {
+    height: 38,
+    borderRadius: 19,
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: "Lato_700Bold",
-    color: "#fff",
+  pillLabelText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(0,0,0,0.8)',
   },
   statusBar: {
     flexDirection: "row",
@@ -344,7 +353,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.08)",
+    borderBottomColor: "rgba(0,0,0,0.08)",
   },
   statusDot: {
     width: 8,
@@ -355,12 +364,12 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.6)",
+    color: "rgba(0,0,0,0.5)",
   },
   retryText: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#000",
   },
   amountSection: {
     flex: 1,
@@ -371,7 +380,7 @@ const styles = StyleSheet.create({
   amountText: {
     fontSize: 56,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#000",
     letterSpacing: -1,
   },
   amountSuccess: {
@@ -386,7 +395,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.5)",
+    color: "rgba(0,0,0,0.4)",
     textAlign: "center",
     marginTop: 100,
   },
@@ -406,7 +415,7 @@ const styles = StyleSheet.create({
   keypadKeyText: {
     fontSize: 28,
     fontFamily: "Lato_400Regular",
-    color: "#fff",
+    color: "#000",
   },
   chargeButton: {
     flexDirection: "row",
@@ -424,6 +433,6 @@ const styles = StyleSheet.create({
   chargeButtonText: {
     fontSize: 17,
     fontFamily: "Lato_700Bold",
-    color: "#fff",
+    color: "#000",
   },
 });

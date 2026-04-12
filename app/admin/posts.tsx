@@ -8,8 +8,9 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -19,7 +20,7 @@ import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAdminPosts, useAdminDeletePost } from '@/hooks/use-admin';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+
 import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { AdminPost } from '@/lib/api/admin';
 
@@ -99,7 +100,7 @@ function PostRow({
 export default function AdminPostsScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 300);
@@ -115,6 +116,7 @@ export default function AdminPostsScreen() {
   const deletePost = useAdminDeletePost();
 
   const [deleteTarget, setDeleteTarget] = useState<AdminPost | null>(null);
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
   const confirmDelete = useCallback(
     (post: AdminPost) => {
@@ -126,45 +128,47 @@ export default function AdminPostsScreen() {
   const posts = data?.posts ?? [];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
-      >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Posts</Text>
-        <View style={styles.backBtn}>
-          {data && (
-            <Text style={[styles.countBadge, { color: colors.textSecondary }]}>{data.total}</Text>
-          )}
+      {/* Top row */}
+      {isSearchActive ? (
+        <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+          <View style={styles.searchBarInline}>
+            <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
+            <TextInput
+              style={styles.searchInputInline}
+              value={search}
+              onChangeText={(t) => { setSearch(t); setPage(1); }}
+              placeholder="Search posts..."
+              placeholderTextColor="rgba(0,0,0,0.35)"
+              autoFocus
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.3)" />
+              </TouchableOpacity>
+            )}
+          </View>
+          <Pressable style={styles.pillIcon} onPress={() => { setIsSearchActive(false); setSearch(''); }}>
+            <Ionicons name="close" size={20} color="#000" />
+          </Pressable>
         </View>
-      </Animated.View>
-
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { overflow: 'hidden' }]}>
-          <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
-          <Ionicons name="search" size={18} color={colors.textTertiary} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search posts..."
-            placeholderTextColor={colors.textTertiary}
-            value={search}
-            onChangeText={(t) => { setSearch(t); setPage(1); }}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-            </TouchableOpacity>
-          )}
+      ) : (
+        <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+          <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color="#000" />
+          </Pressable>
+          <Pressable style={styles.pillIcon} onPress={() => setIsSearchActive(true)}>
+            <Ionicons name="search" size={18} color="#000" />
+          </Pressable>
+          <View style={styles.pillLabel}>
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+            <Text style={styles.pillLabelText}>Posts{data ? ` ${data.total}` : ''}</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       {isLoading ? (
         <View style={styles.center}>
@@ -211,17 +215,12 @@ export default function AdminPostsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Lato_700Bold' },
-  countBadge: { fontSize: 13, fontFamily: 'Lato_400Regular' },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  searchBarInline: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: 38, borderRadius: 19, backgroundColor: '#fff', paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
+  searchInputInline: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
   searchContainer: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBar: {
     flexDirection: 'row',

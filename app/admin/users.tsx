@@ -9,8 +9,9 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
+  Pressable,
 } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -25,7 +26,7 @@ import {
   useUpdateUserStatus,
   useUpdateUserVerified,
 } from '@/hooks/use-admin';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+
 import { ActionSheet, type ActionSheetOption } from '@/components/ui/action-sheet';
 import { ConfirmSheet } from '@/components/ui/confirm-sheet';
 import type { AdminUser } from '@/lib/api/admin';
@@ -89,8 +90,9 @@ function UserRow({
 export default function AdminUsersScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
   const [search, setSearch] = useState('');
+  const [isSearchActive, setIsSearchActive] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebounce(search, 300);
@@ -147,69 +149,70 @@ export default function AdminUsersScreen() {
   const users = data?.users ?? [];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
-      >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Users</Text>
-        <View style={styles.backBtn}>
-          {data && (
-            <Text style={[styles.countBadge, { color: colors.textSecondary }]}>{data.total}</Text>
-          )}
-        </View>
-      </Animated.View>
-
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <View style={[styles.searchBar, { overflow: 'hidden' }]}>
-          <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
-          <Ionicons name="search" size={18} color={colors.textTertiary} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search users..."
-            placeholderTextColor={colors.textTertiary}
-            value={search}
-            onChangeText={(t) => { setSearch(t); setPage(1); }}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch('')}>
-              <Ionicons name="close-circle" size={18} color={colors.textTertiary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {STATUS_FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f.key}
-            style={[styles.filterChip, { overflow: 'hidden' }]}
-            onPress={() => { setStatusFilter(f.key); setPage(1); }}
-          >
-            <GlassView
-              {...(statusFilter === f.key ? liquidGlass.fillMedium : liquidGlass.fillFaint)}
-              borderRadius={16}
-              style={StyleSheet.absoluteFillObject}
+      {/* Top row — back, search, filter pills */}
+      {isSearchActive ? (
+        <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+          <View style={styles.searchBarInline}>
+            <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
+            <TextInput
+              style={styles.searchInputInline}
+              value={search}
+              onChangeText={(t) => { setSearch(t); setPage(1); }}
+              placeholder="Search users..."
+              placeholderTextColor="rgba(0,0,0,0.35)"
+              autoFocus
+              autoCapitalize="none"
+              autoCorrect={false}
             />
-            <Text style={[styles.filterText, statusFilter === f.key && styles.filterTextActive]}>
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            {search.length > 0 && (
+              <TouchableOpacity onPress={() => setSearch('')}>
+                <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.3)" />
+              </TouchableOpacity>
+            )}
+          </View>
+          <Pressable style={styles.pillIcon} onPress={() => { setIsSearchActive(false); setSearch(''); }}>
+            <Ionicons name="close" size={20} color="#000" />
+          </Pressable>
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={[styles.pillRow, { paddingTop: insets.top + 16 }]}
+          style={styles.pillScroll}
+        >
+          <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={20} color="#000" />
+          </Pressable>
+          <Pressable style={styles.pillIcon} onPress={() => setIsSearchActive(true)}>
+            <Ionicons name="search" size={18} color="#000" />
+          </Pressable>
+          {STATUS_FILTERS.map((f) => {
+            const isActive = statusFilter === f.key;
+            return (
+              <Pressable
+                key={f.key}
+                style={styles.filterPill}
+                onPress={() => { setStatusFilter(f.key); setPage(1); }}
+              >
+                <View style={styles.filterPillGlass} pointerEvents="none">
+                  <GlassView
+                    {...liquidGlass.surface}
+                    tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                    borderRadius={19}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+                <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
+                  {f.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
 
       {/* User List */}
       {isLoading ? (
@@ -275,17 +278,15 @@ export default function AdminUsersScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-  },
-  backBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Lato_700Bold' },
-  countBadge: { fontSize: 13, fontFamily: 'Lato_400Regular' },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillScroll: { flexGrow: 0 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  filterPill: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  filterPillGlass: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 19 },
+  filterPillText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.5)' },
+  filterPillTextActive: { color: 'rgba(0,0,0,0.8)' },
+  searchBarInline: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: 38, borderRadius: 19, backgroundColor: '#fff', paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
+  searchInputInline: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
   searchContainer: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBar: {
     flexDirection: 'row',
@@ -298,12 +299,21 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, fontFamily: 'Lato_400Regular' },
   filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  filterText: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.6)' },
-  filterTextActive: { color: '#fff', fontFamily: 'Lato_700Bold' },
+  filterChipActive: {
+    backgroundColor: '#1a1a1a',
+    borderColor: '#1a1a1a',
+  },
+  filterText: { fontSize: 14, fontFamily: 'Lato_700Bold', color: '#1a1a1a' },
+  filterTextActive: { color: '#ffffff' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

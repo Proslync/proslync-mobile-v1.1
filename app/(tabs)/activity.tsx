@@ -4,7 +4,8 @@ import { useStableRouter } from '@/hooks/use-stable-router';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Text, Image, ActivityIndicator, FlatList, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '@/lib/providers/wallet-provider';
 import { useAuth } from '@/lib/providers/auth-provider';
@@ -23,6 +24,7 @@ import {
   glassText,
 } from '@/constants/glass/liquid-glass';
 import { GlassView } from 'expo-glass-effect';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import {
   Gesture,
   GestureDetector,
@@ -42,6 +44,7 @@ import {
   TicketList,
   WalletSkeleton,
 } from '@/components/wallet';
+import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
@@ -344,7 +347,7 @@ function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?:
   if (isLoading) {
     return (
       <View style={dashStyles.overviewEmpty}>
-        <ActivityIndicator color="#000" />
+        <ActivityIndicator color="#fff" />
       </View>
     );
   }
@@ -352,7 +355,7 @@ function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?:
   if (events.length === 0) {
     return (
       <View style={dashStyles.overviewEmpty}>
-        <Ionicons name="calendar-outline" size={48} color="rgba(0,0,0,0.2)" />
+        <Ionicons name="calendar-outline" size={48} color="rgba(255,255,255,0.2)" />
         <Text style={dashStyles.overviewEmptyText}>No events yet</Text>
       </View>
     );
@@ -376,7 +379,9 @@ function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?:
 }
 
 function OverviewEventCard({ event, onPress }: { event: StatusEvent; onPress: () => void }) {
-  const flyerUrl = event.flyer?.url || event.imageUrl;
+  const flyerUrl = event.flyer?.url || event.imageUrl || '';
+  const isVideo = event.flyer?.mimeType?.startsWith('video/') || false;
+
   const dateStr = new Date(event.startDate).toLocaleDateString('en-US', {
     weekday: 'short',
     month: 'short',
@@ -395,11 +400,42 @@ function OverviewEventCard({ event, onPress }: { event: StatusEvent; onPress: ()
 
   return (
     <TouchableOpacity style={dashStyles.eventCard} onPress={onPress} activeOpacity={0.85}>
+      {/* Blurred backdrop */}
       {flyerUrl ? (
-        <Image source={{ uri: flyerUrl }} style={dashStyles.eventImage} resizeMode="cover" />
+        <>
+          <Image
+            source={{ uri: flyerUrl }}
+            style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
+            resizeMode="cover"
+          />
+          <BlurView
+            intensity={50}
+            tint="dark"
+            style={[StyleSheet.absoluteFill, { borderRadius: 18, overflow: 'hidden' }]}
+          />
+        </>
+      ) : (
+        <View style={[StyleSheet.absoluteFill, { borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)' }]} />
+      )}
+
+      {/* Main media */}
+      {flyerUrl ? (
+        isVideo ? (
+          <View style={dashStyles.eventImage}>
+            <FeedMediaPlayer
+              mediaType="video"
+              videoUrl={flyerUrl}
+              imageUrl={flyerUrl}
+              poster={flyerUrl}
+              isActive={true}
+            />
+          </View>
+        ) : (
+          <Image source={{ uri: flyerUrl }} style={dashStyles.eventImage} resizeMode="cover" />
+        )
       ) : (
         <View style={[dashStyles.eventImage, dashStyles.eventImagePlaceholder]}>
-          <Ionicons name="calendar-outline" size={40} color="rgba(0,0,0,0.2)" />
+          <Ionicons name="calendar-outline" size={40} color="rgba(255,255,255,0.3)" />
         </View>
       )}
       <View style={dashStyles.eventCardBody}>
@@ -432,10 +468,25 @@ function AudienceContent({ organizationId, insetsBottom }: { organizationId?: nu
   const router = useStableRouter();
   const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
   const [searchText, setSearchText] = React.useState('');
+  const [filterEventIds, setFilterEventIds] = React.useState<Set<number>>(new Set());
+  const [filterModalVisible, setFilterModalVisible] = React.useState(false);
   const debouncedSearch = useDebounce(searchText, 300);
 
+  const { data: myEvents = [] } = useMyEvents(organizationId);
+  const filterCount = filterEventIds.size;
+  const filterLabel = filterCount === 0 ? null : filterCount === 1 ? myEvents.find((e) => filterEventIds.has(e.id))?.name : `${filterCount} events`;
+
+  const toggleFilterEvent = React.useCallback((id: number) => {
+    setFilterEventIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
   const query = useInfiniteQuery({
-    queryKey: ['owner-contacts-audience', debouncedSearch, organizationId],
+    queryKey: ['owner-contacts-audience', debouncedSearch, organizationId, [...filterEventIds]],
     queryFn: async ({ pageParam }) => {
       return eventsApi.getOwnerContacts({
         page: pageParam as number,
@@ -486,7 +537,7 @@ function AudienceContent({ organizationId, insetsBottom }: { organizationId?: nu
 
   return (
     <View style={audStyles.flex}>
-      {/* Search */}
+      {/* Search + Filter */}
       <View style={audStyles.searchRow}>
         <View style={audStyles.searchBar}>
           <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
@@ -505,10 +556,75 @@ function AudienceContent({ organizationId, insetsBottom }: { organizationId?: nu
             </TouchableOpacity>
           )}
         </View>
+        <TouchableOpacity
+          style={[audStyles.filterButton, filterCount > 0 && audStyles.filterButtonActive]}
+          onPress={() => setFilterModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="funnel-outline" size={16} color={filterCount > 0 ? '#fff' : '#000'} />
+          {filterLabel ? (
+            <Text style={[audStyles.filterButtonText, audStyles.filterButtonTextActive]} numberOfLines={1}>{filterLabel}</Text>
+          ) : null}
+        </TouchableOpacity>
         <TouchableOpacity style={audStyles.selectAllPill} onPress={handleSelectAll} activeOpacity={0.7}>
           <Text style={audStyles.selectAllText}>{allSelected ? 'Deselect' : 'Select All'}</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Filter Modal */}
+      <Modal visible={filterModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setFilterModalVisible(false)}>
+        <View style={audStyles.filterModal}>
+          <View style={audStyles.filterModalHeader}>
+            <Text style={audStyles.filterModalTitle}>Filter By Events</Text>
+            <TouchableOpacity
+              style={audStyles.filterModalDone}
+              onPress={() => setFilterModalVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={audStyles.filterModalDoneText}>Done{filterCount > 0 ? ` (${filterCount})` : ''}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[audStyles.filterModalAllRow, filterCount === 0 && audStyles.filterModalAllRowActive]}
+            onPress={() => setFilterEventIds(new Set())}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="people" size={20} color={filterCount === 0 ? '#fff' : '#000'} />
+            <Text style={[audStyles.filterModalAllText, filterCount === 0 && audStyles.filterModalAllTextActive]}>All Events</Text>
+            {filterCount === 0 && <Ionicons name="checkmark" size={20} color="#fff" />}
+          </TouchableOpacity>
+
+          <ScrollView contentContainerStyle={audStyles.filterModalGrid} showsVerticalScrollIndicator={false}>
+            {myEvents.map((ev) => {
+              const isActive = filterEventIds.has(ev.id);
+              const flyerUrl = ev.flyer?.url || ev.imageUrl;
+              return (
+                <TouchableOpacity
+                  key={ev.id}
+                  style={audStyles.filterModalCard}
+                  onPress={() => toggleFilterEvent(ev.id)}
+                  activeOpacity={0.7}
+                >
+                  {flyerUrl ? (
+                    <Image source={{ uri: flyerUrl }} style={[audStyles.filterModalCardImage, isActive && audStyles.filterModalCardImageActive]} resizeMode="cover" />
+                  ) : (
+                    <View style={[audStyles.filterModalCardImage, audStyles.filterModalCardImagePlaceholder, isActive && audStyles.filterModalCardImageActive]}>
+                      <Ionicons name="calendar-outline" size={28} color="rgba(0,0,0,0.2)" />
+                    </View>
+                  )}
+                  {isActive && (
+                    <View style={audStyles.filterModalCheckmark}>
+                      <Ionicons name="checkmark-circle" size={24} color="#000" />
+                    </View>
+                  )}
+                  <Text style={[audStyles.filterModalCardName, isActive && audStyles.filterModalCardNameActive]} numberOfLines={2}>{ev.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* List */}
       <FlatList
@@ -682,19 +798,16 @@ export default function WalletScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 16 }]}>
-      <DarkGradientBg />
+    <View style={styles.container}>
 
+      {/* Floating pill row */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.headerScrollContent}
-        style={styles.headerScroll}
+        contentContainerStyle={[styles.headerScrollContent, { paddingTop: insets.top + 16 }]}
+        style={styles.headerScrollFixed}
       >
-        <TouchableOpacity style={styles.headerPill} activeOpacity={0.7} onPress={() => setProfileSelectorVisible(true)}>
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={19} style={StyleSheet.absoluteFill} />
-          </View>
+        <Pressable style={styles.headerPill} onPress={() => setProfileSelectorVisible(true)}>
           <Image
             source={
               selectedVenue
@@ -709,8 +822,8 @@ export default function WalletScreen() {
             }
             style={styles.headerPillAvatar}
           />
-          <Ionicons name="menu" size={22} color="#000" style={styles.headerPillIcon} />
-        </TouchableOpacity>
+          <Ionicons name="menu" size={22} color="#fff" style={styles.headerPillIcon} />
+        </Pressable>
 
         {(selectedVenue || selectedOrg
           ? venueTabs
@@ -723,19 +836,30 @@ export default function WalletScreen() {
               style={styles.tabPill}
               onPress={() => setActiveTab(label)}
             >
-              <View style={styles.glassLayer} pointerEvents="none">
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
-                  borderRadius={19}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" tintColor="rgba(255,255,255,0.25)" colorScheme="dark" style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={styles.glassLayer} pointerEvents="none">
+                  <GlassView
+                    {...liquidGlass.surface}
+                    tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                    borderRadius={19}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+              )}
               <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>{label}</Text>
             </Pressable>
           );
         })}
       </ScrollView>
+
+      {/* Top fade — dims content as it scrolls behind the pill row */}
+      <LinearGradient
+        colors={['#000', 'rgba(0,0,0,0)']}
+        style={styles.topFade}
+        pointerEvents="none"
+      />
 
       {(selectedVenue || selectedOrg) ? (
         <VenueDashboardContent venueId={selectedVenue?.id ?? 0} organizationId={selectedOrg?.id} activeSection={activeTab} />
@@ -746,7 +870,7 @@ export default function WalletScreen() {
           <Ionicons
             name={activeTab === 'Tickets' ? 'ticket-outline' : activeTab === 'Tables' ? 'restaurant-outline' : 'pricetag-outline'}
             size={48}
-            color="rgba(0,0,0,0.2)"
+            color="rgba(255,255,255,0.2)"
           />
           <Text style={styles.emptyStateText}>
             {activeTab === 'Tickets' ? 'No upcoming tickets' : activeTab === 'Tables' ? 'No upcoming tables' : 'No available offers'}
@@ -795,13 +919,26 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000',
   },
   scrollView: {
     flex: 1,
   },
-  headerScroll: {
+  headerScrollFixed: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
     flexGrow: 0,
+  },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    zIndex: 99,
   },
   headerScrollContent: {
     paddingHorizontal: 12,
@@ -811,15 +948,19 @@ const styles = StyleSheet.create({
   headerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 38,
-    borderRadius: 19,
-    paddingLeft: 2,
-    paddingRight: 12,
+    height: 44,
+    borderRadius: 22,
+    paddingLeft: 5,
+    paddingRight: 14,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   headerPillAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
   },
   headerPillIcon: {
     marginLeft: 8,
@@ -835,14 +976,15 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   tabPillText: {
     fontSize: 14,
     fontWeight: '500',
-    color: 'rgba(0,0,0,0.5)',
+    color: 'rgba(255,255,255,0.5)',
   },
   tabPillTextActive: {
-    color: 'rgba(0,0,0,0.8)',
+    color: '#fff',
   },
   emptyState: {
     flex: 1,
@@ -854,7 +996,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.35)',
+    color: 'rgba(255,255,255,0.35)',
   },
 });
 
@@ -980,7 +1122,7 @@ const dashStyles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingTop: 21,
+    paddingTop: 140,
   },
   createEventButtonWrapper: {
     position: 'absolute',
@@ -997,12 +1139,9 @@ const dashStyles = StyleSheet.create({
     height: 52,
     width: 240,
     borderRadius: 26,
-    backgroundColor: '#000',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   createEventButtonText: {
     fontSize: 16,
@@ -1019,26 +1158,25 @@ const dashStyles = StyleSheet.create({
   overviewEmptyText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.4)',
+    color: 'rgba(255,255,255,0.4)',
   },
   overviewListContent: {
     padding: 16,
-    paddingTop: 12,
+    paddingTop: 140,
     gap: 14,
   },
   eventCard: {
-    backgroundColor: '#fff',
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
     padding: 12,
     marginBottom: 14,
+    overflow: 'hidden',
   },
   eventImage: {
     width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 12,
+    overflow: 'hidden',
   },
   eventImagePlaceholder: {
     justifyContent: 'center',
@@ -1052,12 +1190,12 @@ const dashStyles = StyleSheet.create({
   eventName: {
     fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    color: '#000',
+    color: '#fff',
   },
   eventMeta: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.55)',
+    color: 'rgba(255,255,255,0.6)',
   },
   eventStatsRow: {
     flexDirection: 'row',
@@ -1073,12 +1211,12 @@ const dashStyles = StyleSheet.create({
   eventStatValue: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#000',
+    color: '#fff',
   },
   eventStatLabel: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.5)',
+    color: 'rgba(255,255,255,0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
@@ -1086,13 +1224,13 @@ const dashStyles = StyleSheet.create({
     paddingHorizontal: 10,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
   },
   eventStatusText: {
     fontSize: 11,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(0,0,0,0.6)',
+    color: 'rgba(255,255,255,0.6)',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
@@ -1110,7 +1248,7 @@ const dashStyles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   menuItem: {
     flexDirection: 'row',
@@ -1124,7 +1262,7 @@ const dashStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   menuItemContent: {
     flex: 1,
@@ -1183,6 +1321,121 @@ const audStyles = StyleSheet.create({
   selectAllText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  filterButton: {
+    height: 44,
+    paddingHorizontal: 12,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: 130,
+  },
+  filterButtonActive: {
+    backgroundColor: '#000',
+  },
+  filterButtonText: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+    flexShrink: 1,
+  },
+  filterButtonTextActive: {
+    color: '#fff',
+  },
+  // Filter modal
+  filterModal: {
+    flex: 1,
+    backgroundColor: '#f2f2f2',
+    paddingTop: 16,
+  },
+  filterModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  filterModalTitle: {
+    fontSize: 20,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  filterModalDone: {
+    paddingHorizontal: 16,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterModalDoneText: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  filterModalAllRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    height: 50,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  filterModalAllRowActive: {
+    backgroundColor: '#000',
+  },
+  filterModalAllText: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  filterModalAllTextActive: {
+    color: '#fff',
+  },
+  filterModalGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    gap: 12,
+    paddingBottom: 40,
+  },
+  filterModalCard: {
+    width: '47%' as any,
+    marginBottom: 4,
+  },
+  filterModalCardImage: {
+    width: '100%',
+    aspectRatio: 3 / 4,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+  },
+  filterModalCardImagePlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterModalCardImageActive: {
+    borderWidth: 3,
+    borderColor: '#000',
+  },
+  filterModalCheckmark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  filterModalCardName: {
+    fontSize: 13,
+    fontFamily: 'Lato_700Bold',
+    color: 'rgba(0,0,0,0.6)',
+    marginTop: 6,
+  },
+  filterModalCardNameActive: {
     color: '#000',
   },
   list: {

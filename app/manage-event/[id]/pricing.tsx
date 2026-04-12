@@ -26,6 +26,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -65,6 +66,8 @@ export default function PricingScreen() {
   const createPromoCode = useCreatePromoCode(eventId);
   const deletePromoCode = useDeletePromoCode(eventId);
   const togglePromoActive = useTogglePromoCodeActive(eventId);
+
+  const [activeSection, setActiveSection] = useState<'tickets' | 'promos'>('tickets');
 
   // Modal state
   const [tierModalVisible, setTierModalVisible] = useState(false);
@@ -126,20 +129,35 @@ export default function PricingScreen() {
   const isLoading = tiersLoading || promosLoading;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
-      >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Pricing</Text>
-        <View style={styles.headerButton} />
-      </Animated.View>
+      {/* Pill row header */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        {(['tickets', 'promos'] as const).map((section) => {
+          const isActive = activeSection === section;
+          const label = section === 'tickets' ? 'Tickets' : 'Promos';
+          return (
+            <Pressable
+              key={section}
+              style={styles.pillFilter}
+              onPress={() => setActiveSection(section)}
+            >
+              <View style={styles.pillGlassLayer} pointerEvents="none">
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                  borderRadius={19}
+                  style={StyleSheet.absoluteFill}
+                />
+              </View>
+              <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -148,26 +166,13 @@ export default function PricingScreen() {
       ) : (
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24, paddingTop: 12 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
         >
           {/* Ticket Pricing Section */}
+          {activeSection === 'tickets' && (
           <Animated.View entering={FadeInDown.duration(300)}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Ticket Pricing</Text>
-              {!readOnly && (
-                <TouchableOpacity
-                  style={[styles.addButton, { overflow: 'hidden' }]}
-                  onPress={handleAddTier}
-                  activeOpacity={0.7}
-                >
-                  <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
-                  <Ionicons name="add" size={18} color={colors.text} />
-                  <Text style={[styles.addButtonText, { color: colors.text }]}>Add Tier</Text>
-                </TouchableOpacity>
-              )}
-            </View>
 
             {tiers.length === 0 ? (
               <View style={styles.emptySection}>
@@ -196,23 +201,11 @@ export default function PricingScreen() {
               ))
             )}
           </Animated.View>
+          )}
 
           {/* Promo Codes Section */}
-          <Animated.View entering={FadeInDown.delay(100).duration(300)} style={styles.promoSection}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Promo Codes</Text>
-              {!readOnly && (
-                <TouchableOpacity
-                  style={[styles.addButton, { overflow: 'hidden' }]}
-                  onPress={handleAddPromo}
-                  activeOpacity={0.7}
-                >
-                  <GlassView {...liquidGlass.fillFaint} borderRadius={16} style={StyleSheet.absoluteFillObject} />
-                  <Ionicons name="add" size={18} color={colors.text} />
-                  <Text style={[styles.addButtonText, { color: colors.text }]}>Add Code</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+          {activeSection === 'promos' && (
+          <Animated.View entering={FadeInDown.duration(300)}>
 
             {promoCodes.length === 0 ? (
               <View style={styles.emptySection}>
@@ -240,6 +233,7 @@ export default function PricingScreen() {
               ))
             )}
           </Animated.View>
+          )}
         </ScrollView>
       )}
 
@@ -251,6 +245,22 @@ export default function PricingScreen() {
         loading={createTier.isPending}
         initialValues={tierToEdit}
       />
+
+      {/* Floating add button */}
+      {!readOnly && (
+        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
+          <TouchableOpacity
+            style={styles.bottomButton}
+            onPress={activeSection === 'tickets' ? handleAddTier : handleAddPromo}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={22} color="#fff" />
+            <Text style={styles.bottomButtonText}>
+              {activeSection === 'tickets' ? 'Add Tier' : 'Add Promo Code'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <CreatePricingRuleModal
         visible={pricingModalVisible}
@@ -274,23 +284,69 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
+  bottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  bottomButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    width: 240,
+    borderRadius: 26,
+    backgroundColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  headerButton: {
-    width: 40,
-    height: 40,
+  bottomButtonText: {
+    fontSize: 16,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
+  },
+  pillRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    gap: 8,
+    alignItems: 'center',
+    paddingBottom: 8,
+  },
+  pillIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0,0,0,0.06)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
+  pillFilter: {
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  pillGlassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    borderRadius: 19,
+  },
+  pillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(0,0,0,0.5)',
+  },
+  pillTextActive: {
+    color: 'rgba(0,0,0,0.8)',
   },
   loadingContainer: {
     flex: 1,
@@ -342,6 +398,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_400Regular',
   },
   promoSection: {
-    marginTop: 24,
+    marginTop: 0,
   },
 });

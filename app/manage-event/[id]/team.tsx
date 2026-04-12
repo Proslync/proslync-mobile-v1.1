@@ -34,6 +34,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -73,6 +74,7 @@ export default function TeamScreen() {
   const updatePermissions = useUpdateRolePermissions(eventId);
   const cancelInvitation = useCancelInvitation(eventId);
 
+  const [activeSection, setActiveSection] = useState<'members' | 'invites' | 'roles'>('members');
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [changeRoleMember, setChangeRoleMember] =
     useState<TeamMemberResponseDto | null>(null);
@@ -151,36 +153,35 @@ export default function TeamScreen() {
   const isLoading = membersQuery.isLoading || rolesQuery.isLoading;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Team</Text>
-          {stats && (
-            <View style={[styles.countBadge, { overflow: 'hidden' }]}>
-              <GlassView {...liquidGlass.fill} borderRadius={10} style={StyleSheet.absoluteFillObject} />
-              <Text style={[styles.countText, { color: colors.text }]}>
-                {stats.totalMembers}
-              </Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.headerButton} />
-      </Animated.View>
+      {/* Pill row header */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        {(['members', 'invites', 'roles'] as const).map((section) => {
+          const isActive = activeSection === section;
+          const label = section === 'members' ? 'Members' : section === 'invites' ? 'Invites' : 'Roles';
+          return (
+            <Pressable
+              key={section}
+              style={styles.pillFilter}
+              onPress={() => setActiveSection(section)}
+            >
+              <View style={styles.pillGlassLayer} pointerEvents="none">
+                <GlassView
+                  {...liquidGlass.surface}
+                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
+                  borderRadius={19}
+                  style={StyleSheet.absoluteFill}
+                />
+              </View>
+              <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -196,62 +197,9 @@ export default function TeamScreen() {
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
         >
-          {/* Stats Grid */}
-          <Animated.View
-            entering={FadeInDown.duration(300)}
-            style={styles.statsGrid}
-          >
-            <GlassSurface
-              fill="subtle"
-              border="subtle"
-              cornerRadius="lg"
-              style={styles.statCard}
-            >
-              <View style={styles.statHeader}>
-                <Ionicons
-                  name="people-outline"
-                  size={18}
-                  color={colors.textSecondary}
-                />
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Members
-                </Text>
-              </View>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                {stats?.totalMembers ?? members.length}
-              </Text>
-            </GlassSurface>
-            <GlassSurface
-              fill="subtle"
-              border="subtle"
-              cornerRadius="lg"
-              style={styles.statCard}
-            >
-              <View style={styles.statHeader}>
-                <Ionicons
-                  name="mail-outline"
-                  size={18}
-                  color={colors.textSecondary}
-                />
-                <Text
-                  style={[styles.statLabel, { color: colors.textSecondary }]}
-                >
-                  Pending Invites
-                </Text>
-              </View>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                {stats?.pendingInvitations ?? invitations.length}
-              </Text>
-            </GlassSurface>
-          </Animated.View>
-
           {/* Team Members Section */}
-          <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Team Members
-            </Text>
+          {activeSection === 'members' && (
+          <Animated.View entering={FadeInDown.duration(300)}>
             {members.length === 0 ? (
               <View style={styles.emptySection}>
                 <Ionicons
@@ -314,46 +262,53 @@ export default function TeamScreen() {
                 onPress={() => setInviteModalVisible(true)}
                 activeOpacity={0.7}
               >
-                <GlassView {...liquidGlass.fillFaint} borderRadius={14} style={StyleSheet.absoluteFillObject} />
-                <Ionicons name="person-add-outline" size={18} color="#fff" />
-                <Text style={styles.addMemberButtonText}>Add Team Member</Text>
+                <Ionicons name="person-add-outline" size={18} color="#000" />
+                <Text style={[styles.addMemberButtonText, { color: '#000' }]}>Add Team Member</Text>
               </TouchableOpacity>
             )}
           </Animated.View>
+          )}
 
           {/* Pending Invitations Section */}
-          {invitations.length > 0 && (
-            <Animated.View
-              entering={FadeInDown.delay(200).duration(300)}
-              style={styles.section}
-            >
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Pending Invitations
-              </Text>
-              <View style={styles.membersList}>
-                {invitations.map((inv) => (
-                  <PendingInvitationRow
-                    key={inv.id}
-                    invitation={inv}
-                    roleName={roleNameMap.get(inv.roleId)}
-                    onCancel={
-                      canInviteTeam() ? handleCancelInvitation : undefined
-                    }
-                  />
-                ))}
-              </View>
+          {activeSection === 'invites' && (
+            <Animated.View entering={FadeInDown.duration(300)}>
+              {invitations.length > 0 ? (
+                <View style={styles.membersList}>
+                  {invitations.map((inv) => (
+                    <PendingInvitationRow
+                      key={inv.id}
+                      invitation={inv}
+                      roleName={roleNameMap.get(inv.roleId)}
+                      onCancel={
+                        canInviteTeam() ? handleCancelInvitation : undefined
+                      }
+                    />
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.emptySection}>
+                  <Ionicons name="mail-outline" size={32} color="rgba(0,0,0,0.25)" />
+                  <Text style={styles.emptyText}>No pending invitations</Text>
+                </View>
+              )}
+              {canInviteTeam() && (
+                <TouchableOpacity
+                  style={[styles.addMemberButton, { overflow: 'hidden' }]}
+                  onPress={() => setInviteModalVisible(true)}
+                  activeOpacity={0.7}
+                >
+                  <GlassView {...liquidGlass.fillFaint} borderRadius={14} style={StyleSheet.absoluteFillObject} />
+                  <Ionicons name="person-add-outline" size={18} color="#000" />
+                  <Text style={[styles.addMemberButtonText, { color: '#000' }]}>Invite Member</Text>
+                </TouchableOpacity>
+              )}
             </Animated.View>
           )}
 
           {/* Roles & Permissions Section */}
-          <Animated.View
-            entering={FadeInDown.delay(300).duration(300)}
-            style={styles.section}
-          >
+          {activeSection === 'roles' && (
+          <Animated.View entering={FadeInDown.duration(300)}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Roles
-              </Text>
               {canManageTeam() && (
                 <TouchableOpacity
                   style={[styles.addButton, { overflow: 'hidden' }]}
@@ -381,6 +336,7 @@ export default function TeamScreen() {
               ))}
             </View>
           </Animated.View>
+          )}
         </ScrollView>
       )}
 
@@ -514,19 +470,41 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+  pillRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    gap: 8,
+    alignItems: 'center',
+    paddingBottom: 8,
   },
-  headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: "center",
-    alignItems: "center",
+  pillIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pillFilter: {
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  pillGlassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    borderRadius: 19,
+  },
+  pillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(0,0,0,0.5)',
+  },
+  pillTextActive: {
+    color: 'rgba(0,0,0,0.8)',
   },
   headerCenter: {
     flexDirection: "row",
@@ -649,6 +627,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     marginTop: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1,
