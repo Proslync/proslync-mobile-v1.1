@@ -13,6 +13,7 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
+  FlatList,
 } from 'react-native';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +32,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { NearbyNativeSheet } from '@/components/map/nearby-native-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
+import { LiquidGlassView } from '@callstack/liquid-glass';
 import { eventsApi } from '@/lib/api/events';
 import { locationsApi, HeatmapPoint } from '@/lib/api/locations';
 import type { Event } from '@/lib/types/events.types';
@@ -236,6 +238,7 @@ function FullMapScreen() {
   const [showNearbySheet, setShowNearbySheet] = useState(false);
   const [selectedFriend, setSelectedFriend] = useState<FriendMarker | null>(null);
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
+  const [weather, setWeather] = useState<{ temp: number; icon: string } | null>(null);
   const { colors, isDark } = useAppTheme();
 
   // Live location hook
@@ -257,6 +260,21 @@ function FullMapScreen() {
             zoomLevel: 13,
             animationDuration: 800,
           });
+
+          // Fetch weather
+          const weatherKey = process.env.EXPO_PUBLIC_WEATHER_API_KEY;
+          if (weatherKey) {
+            try {
+              const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${weatherKey}&q=${location.coords.latitude},${location.coords.longitude}`);
+              const data = await res.json();
+              if (data.current) {
+                setWeather({
+                  temp: Math.round(data.current.temp_f),
+                  icon: `https:${data.current.condition.icon}`,
+                });
+              }
+            } catch {}
+          }
         }
       } catch {
         // Location unavailable (e.g. simulator)
@@ -430,7 +448,23 @@ function FullMapScreen() {
         )}
       </MapView>
 
-      {/* Expandable FAB with glass morphing */}
+      {/* Top dim */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0)']}
+        style={styles.mapTopFade}
+        pointerEvents="none"
+      />
+
+      {/* Weather pill — top left */}
+      {weather && (
+        <View style={[styles.weatherPill, { top: insets.top + 12 }]}>
+          <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          <Image source={{ uri: weather.icon }} style={styles.weatherIcon} />
+          <Text style={styles.weatherTemp}>{weather.temp}°</Text>
+        </View>
+      )}
+
+      {/* Glass pill with icons */}
       <MapFabMenu
         onShareLocation={async () => {
           try {
@@ -447,7 +481,7 @@ function FullMapScreen() {
           setShowNearbySheet((prev) => !prev);
         }}
         isSharing={sharingState.isSharing}
-        hasLiveEvents={liveCount > 0}
+        topInset={insets.top + 16}
       />
 
       {showNearbySheet && (
@@ -925,4 +959,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.95)',
   },
+  mapTopFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 120, zIndex: 10 },
+  weatherPill: { position: 'absolute', left: 16, zIndex: 20, flexDirection: 'row', alignItems: 'center', borderRadius: 20, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, gap: 2 },
+  weatherIcon: { width: 28, height: 28 },
+  weatherTemp: { fontSize: 17, fontWeight: '700', color: '#fff' },
+  nearbyModalOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 },
+  nearbyModalSheet: { backgroundColor: '#1c1c1e', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '75%', minHeight: 300 },
+  nearbyModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, paddingHorizontal: 16 },
+  nearbyModalTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  nearbyModalClose: { position: 'absolute', right: 16, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
+  nearbyModalEmpty: { alignItems: 'center', paddingVertical: 40 },
+  nearbyModalEmptyText: { fontSize: 14, color: 'rgba(255,255,255,0.35)' },
+  nearbyListRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.08)' },
+  nearbyListImage: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#2c2c2e' },
+  nearbyListTitle: { fontSize: 15, fontWeight: '600', color: '#fff', flex: 1 },
+  nearbyListSub: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
+  nearbyListMeta: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
+  nearbyListDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#34c759' },
 });

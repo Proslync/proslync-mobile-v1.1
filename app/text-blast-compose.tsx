@@ -92,7 +92,7 @@ export default function TextBlastComposeScreen() {
         </ScrollView>
 
         {/* Bottom input bar */}
-        <View style={[styles.inputBar, { paddingBottom: 8 }]}>
+        <View style={[styles.inputBar, { paddingBottom: insets.bottom + 8 }]}>
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}

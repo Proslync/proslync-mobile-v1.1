@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   price: {
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(0,0,0,0.5)",
     fontSize: 14,
     fontWeight: "500",
   },

@@ -45,6 +45,8 @@ interface NativeSheetProps {
   backgroundInteraction?: PresentationBackgroundInteractionType;
   /** Prevent swipe-to-dismiss (e.g. for forms with unsaved changes). Default: false */
   preventDismiss?: boolean;
+  /** Force a specific color scheme for the sheet. Default: 'light' */
+  colorScheme?: 'light' | 'dark';
 
   // ─── Content Mode ───
   /** When true, children are React Native views wrapped in RNHostView.
@@ -81,6 +83,7 @@ export function NativeSheet({
   contentPadding = 24,
   alignment = "center",
   spacing = 16,
+  colorScheme: colorSchemeProp,
 }: NativeSheetProps) {
   const { isDark } = useAppTheme();
   const scheme = isDark ? "dark" : "light";
@@ -112,7 +115,7 @@ export function NativeSheet({
     }
 
     // Theme the entire sheet presentation
-    mods.push(preferredColorScheme("light"));
+    mods.push(preferredColorScheme(colorSchemeProp ?? "light"));
 
     return mods;
   }, [
@@ -122,6 +125,7 @@ export function NativeSheet({
     dragIndicator,
     backgroundInteraction,
     preventDismiss,
+    colorSchemeProp,
   ]);
 
   return (

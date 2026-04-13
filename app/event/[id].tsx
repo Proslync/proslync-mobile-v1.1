@@ -560,6 +560,10 @@ export default function EventPage() {
         <View style={{ height: 140 }} />
       </ScrollView>
 
+      {/* Top & bottom fades */}
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['rgba(242,242,242,0)', '#f2f2f2']} style={styles.bottomFade} pointerEvents="none" />
+
       {/* Bottom action bar */}
       <View style={[styles.rsvpWrapper, { paddingBottom: insets.bottom + 16 }]}>
         <View style={styles.bottomActionRow}>
@@ -784,6 +788,22 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     marginTop: 8,
+  },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    zIndex: 99,
+  },
+  bottomFade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    zIndex: 99,
   },
   pillRowContainer: {
     position: 'absolute',

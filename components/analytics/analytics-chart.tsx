@@ -770,7 +770,7 @@ export function AnalyticsScreenShell({
             activeOpacity={0.7}
           >
             {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
+            <Ionicons name="chevron-back" size={22} color="#000" />
           </TouchableOpacity>
           <View style={styles.navRight} />
         </View>
@@ -791,7 +791,7 @@ export function AnalyticsScreenShell({
             activeOpacity={0.7}
           >
             {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
+            <Ionicons name="chevron-back" size={22} color="#000" />
           </TouchableOpacity>
           <View style={styles.navRight} />
         </View>

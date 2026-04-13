@@ -90,9 +90,6 @@ export function FloatingCartBar({
               <Text style={styles.actionText}>
                 {loading ? 'Processing...' : 'Checkout'}
               </Text>
-              {!loading && (
-                <Ionicons name="arrow-forward" size={18} color="#fff" />
-              )}
             </TouchableOpacity>
           </View>
         )}

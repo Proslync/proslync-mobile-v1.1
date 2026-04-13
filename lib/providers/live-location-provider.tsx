@@ -467,7 +467,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
       });
 
       socket.on('error', (data) => {
-        console.error('Server error:', data.code, data.message);
+        console.warn('Server error:', data.code, data.message);
       });
 
       socketRef.current = socket;

@@ -220,7 +220,7 @@ const gs = StyleSheet.create({
   container: { flexDirection: 'row', marginHorizontal: 16, marginTop: 16 },
   col: { flex: 1 },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, paddingHorizontal: 4 },
-  vertDivider: { width: StyleSheet.hairlineWidth, backgroundColor: '#48484A', marginVertical: 2 },
+  vertDivider: { width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(0,0,0,0.1)', marginVertical: 2 },
   label: { fontSize: 12, color: '#8E8E93' },
   value: { fontSize: 12, fontWeight: '600', color: '#1A1A1A' },
 });
@@ -406,11 +406,11 @@ export function MetricDetailModal({
 }
 
 const ms = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, zIndex: 998, backgroundColor: '#000' },
+  backdrop: { ...StyleSheet.absoluteFillObject, zIndex: 998, backgroundColor: '#f2f2f2' },
   fullScreen: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
-  card: { flex: 1, backgroundColor: '#1C1C1E', borderTopLeftRadius: 38, borderTopRightRadius: 38, overflow: 'hidden' },
+  card: { flex: 1, backgroundColor: '#e5e5e5', borderTopLeftRadius: 38, borderTopRightRadius: 38, overflow: 'hidden' },
   dragHandleArea: { paddingTop: 8, paddingBottom: 4, alignItems: 'center' },
-  dragHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#48484A' },
+  dragHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.15)' },
   scrollView: { flex: 1 },
   scrollContent: { paddingTop: 8, paddingBottom: 40 },
 
@@ -431,7 +431,7 @@ const ms = StyleSheet.create({
   // Identity
   identity: { paddingHorizontal: 20, marginTop: 12 },
   metricName: { fontSize: 32, fontWeight: '800', color: '#1A1A1A' },
-  dividerThin: { height: StyleSheet.hairlineWidth, backgroundColor: '#48484A', marginVertical: 12 },
+  dividerThin: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(0,0,0,0.1)', marginVertical: 12 },
   valueRow: { flexDirection: 'row', alignItems: 'baseline' },
   primaryValue: { fontSize: 24, fontWeight: '700', color: '#1A1A1A' },
   deltaValue: { fontSize: 17, fontWeight: '600' },

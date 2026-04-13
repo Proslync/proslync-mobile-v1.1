@@ -96,7 +96,7 @@ export default function BarQuickOrderScreen() {
     );
     return [
       { id: ALL_CATEGORY, label: "All" },
-      ...active.map((cat) => ({ id: String(cat.id), label: cat.name })),
+      ...active.map((cat) => ({ id: String(cat.id), label: cat.name.charAt(0).toUpperCase() + cat.name.slice(1) })),
     ];
   }, [menu]);
 

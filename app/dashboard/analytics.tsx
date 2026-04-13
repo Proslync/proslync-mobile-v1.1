@@ -324,7 +324,7 @@ export default function DashboardAnalyticsScreen() {
       <View style={[s.container, { paddingTop: insets.top }]}>
         <View style={s.header}>
           <TouchableOpacity onPress={handleBack} activeOpacity={0.7} style={s.backBtn}>
-            <Ionicons name="chevron-back" size={28} color="#fff" />
+            <Ionicons name="chevron-back" size={28} color="#000" />
           </TouchableOpacity>
           <View style={s.headerCenter}>
             <Text style={s.headerTitle}>Analytics</Text>
@@ -344,7 +344,7 @@ export default function DashboardAnalyticsScreen() {
       <View style={[s.container, { paddingTop: insets.top }]}>
         <View style={s.header}>
           <TouchableOpacity onPress={handleBack} activeOpacity={0.7} style={s.backBtn}>
-            <Ionicons name="chevron-back" size={28} color="#fff" />
+            <Ionicons name="chevron-back" size={28} color="#000" />
           </TouchableOpacity>
           <View style={s.headerCenter}>
             <Text style={s.headerTitle}>Analytics</Text>
@@ -369,7 +369,7 @@ export default function DashboardAnalyticsScreen() {
       <View style={[s.stickyHeader, { paddingTop: insets.top }, scrolledPastHeader && s.headerScrolled]}>
         <View style={s.header}>
           <TouchableOpacity onPress={handleBack} activeOpacity={0.7} style={s.backBtn}>
-            <Ionicons name="chevron-back" size={28} color="#fff" />
+            <Ionicons name="chevron-back" size={28} color="#000" />
           </TouchableOpacity>
           <View style={s.headerCenter}>
             <Text style={s.headerTitle}>Analytics</Text>
@@ -519,8 +519,8 @@ const s = StyleSheet.create({
 
   // Pill
   pill: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2, marginTop: 2 },
-  pillUp: { backgroundColor: '#1A3A1F' },
-  pillDown: { backgroundColor: '#3A1A1A' },
+  pillUp: { backgroundColor: 'rgba(0,0,0,0.06)' },
+  pillDown: { backgroundColor: 'rgba(0,0,0,0.06)' },
   pillText: { fontSize: 13, fontWeight: '600' },
 
   // Loading / Empty

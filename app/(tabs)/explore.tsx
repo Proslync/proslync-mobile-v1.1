@@ -820,14 +820,13 @@ export default function MessagesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header pills */}
-      <View style={{ paddingTop: insets.top + 16 }}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.headerScrollContent}
-          style={styles.headerScroll}
-        >
+      {/* Floating header pills */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.headerScrollContent, { paddingTop: insets.top + 16 }]}
+        style={styles.headerScrollFixed}
+      >
           {/* Search icon pill */}
           <Pressable style={styles.iconPill} onPress={handleSearchPress}>
             <View style={styles.glassLayer} pointerEvents="none">
@@ -875,7 +874,13 @@ export default function MessagesScreen() {
             );
           })}
         </ScrollView>
-      </View>
+
+      {/* Top fade */}
+      <LinearGradient
+        colors={['#f2f2f2', 'rgba(242,242,242,0)']}
+        style={styles.topFade}
+        pointerEvents="none"
+      />
 
       {/* Search input above keyboard */}
       {isSearchActive && (
@@ -1293,13 +1298,27 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  headerScroll: {
+  headerScrollFixed: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
     flexGrow: 0,
+  },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    zIndex: 99,
   },
   headerScrollContent: {
     paddingHorizontal: 12,
     gap: 8,
     alignItems: "center",
+    paddingBottom: 8,
   },
   iconPill: {
     width: 38,
@@ -1422,7 +1441,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingTop: 14,
+    paddingTop: 120,
   },
   conversationRow: {
     flexDirection: "row",

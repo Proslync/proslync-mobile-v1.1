@@ -19,9 +19,11 @@ import {
   View,
   Pressable,
 } from "react-native";
+import { Image } from "react-native";
 import { FeedMediaPlayer } from "@/components/feed/feed-media-player";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from 'expo-blur';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 
@@ -42,8 +44,7 @@ const SECTION_GROUPS: SectionGroup[] = [
   {
     title: "Event",
     items: [
-      { key: "pricing", label: "Pricing", subtitle: "Tickets and pricing tiers", icon: "pricetag-outline", permission: { resource: "billing", action: "view" } },
-      { key: "team", label: "Team", subtitle: "Staff and permissions", icon: "person-add-outline", permission: { resource: "team", action: "view" } },
+      { key: "edit-event", label: "Edit Event", subtitle: "Update event info and flyer", icon: "create-outline", permission: { resource: "events", action: "edit" } },
     ],
   },
   {
@@ -347,12 +348,23 @@ export default function ManageEventScreen() {
       >
         {/* Event Flyer Card */}
         <Animated.View entering={FadeInDown.duration(300)}>
-          <GlassSurface
-            fill="subtle"
-            border="subtle"
-            cornerRadius="xl"
-            style={styles.eventCard}
-          >
+          <View style={styles.eventCard}>
+            {/* Blurred flyer backdrop */}
+            {flyerUrl ? (
+              <>
+                <Image
+                  source={{ uri: flyerUrl }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
+                  resizeMode="cover"
+                />
+                <BlurView
+                  intensity={50}
+                  tint="dark"
+                  style={[StyleSheet.absoluteFill, { borderRadius: 18, overflow: 'hidden' }]}
+                />
+              </>
+            ) : null}
+
             <View style={styles.flyerWrapper}>
               {flyerUrl ? (
                 <FeedMediaPlayer
@@ -385,7 +397,7 @@ export default function ManageEventScreen() {
                 <Ionicons
                   name="calendar-outline"
                   size={14}
-                  color="rgba(0,0,0,0.5)"
+                  color="rgba(255,255,255,0.6)"
                 />
                 <Text style={styles.eventDate} numberOfLines={1}>
                   {formatDateRange(event.startDate, event.endDate)}
@@ -395,7 +407,7 @@ export default function ManageEventScreen() {
                 <Ionicons
                   name="location-outline"
                   size={14}
-                  color="rgba(0,0,0,0.5)"
+                  color="rgba(255,255,255,0.6)"
                 />
                 <Text style={styles.eventLocation} numberOfLines={1}>
                   {formatShortLocation(event)}
@@ -419,7 +431,7 @@ export default function ManageEventScreen() {
                     <Ionicons
                       name="people-outline"
                       size={13}
-                      color="rgba(0,0,0,0.5)"
+                      color="rgba(255,255,255,0.6)"
                     />
                     <Text style={styles.attendeeText}>
                       {event.attendeeCount} RSVPs
@@ -428,24 +440,12 @@ export default function ManageEventScreen() {
                 )}
               </View>
             </View>
-          </GlassSurface>
+          </View>
         </Animated.View>
 
         {/* Active group only */}
         {activeGroup ? (() => {
-          const displayItems =
-            activeGroup.title === 'Event' && !isPastEvent && canEditEvents()
-              ? [
-                  ...activeGroup.items,
-                  {
-                    key: 'edit-event',
-                    label: 'Edit Event',
-                    subtitle: 'Update event info and flyer',
-                    icon: 'create-outline' as const,
-                    permission: { resource: 'events' as const, action: 'edit' },
-                  },
-                ]
-              : activeGroup.items;
+          const displayItems = activeGroup.items;
           return (
           <Animated.View
             key={activeGroup.title}
@@ -573,9 +573,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   eventCard: {
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
     borderRadius: 18,
     padding: 12,
     overflow: "hidden",
@@ -600,7 +597,7 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_700Bold",
     lineHeight: 26,
     marginBottom: 2,
-    color: "#000",
+    color: "#fff",
   },
   eventDateRow: {
     flexDirection: "row",
@@ -610,12 +607,12 @@ const styles = StyleSheet.create({
   eventDate: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "rgba(0,0,0,0.55)",
+    color: "rgba(255,255,255,0.7)",
   },
   eventLocation: {
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-    color: "rgba(0,0,0,0.55)",
+    color: "rgba(255,255,255,0.7)",
   },
   eventMeta: {
     flexDirection: "row",
@@ -642,7 +639,7 @@ const styles = StyleSheet.create({
   attendeeText: {
     fontSize: 12,
     fontFamily: "Lato_400Regular",
-    color: "rgba(0,0,0,0.5)",
+    color: "rgba(255,255,255,0.6)",
   },
   menuSection: {
     marginTop: 20,

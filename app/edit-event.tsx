@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/providers/auth-provider';
 import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
 import { DRESS_CODE_OPTIONS } from '@/lib/constants/dress-codes';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { Controller, FormProvider } from 'react-hook-form';
@@ -372,6 +373,10 @@ export default function EditEventScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
 
+        {/* Top & bottom fades */}
+        <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={s.topFade} pointerEvents="none" />
+        <LinearGradient colors={['rgba(242,242,242,0)', '#f2f2f2']} style={s.bottomFade} pointerEvents="none" />
+
         {/* Bottom bar */}
         <View style={[s.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
           <View style={s.bottomRow}>
@@ -401,6 +406,8 @@ const s = StyleSheet.create({
   loadingContainer: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f2f2f2' },
   loadingText: { marginTop: 16, fontSize: 16, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)' },
 
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
+  bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, zIndex: 99 },
   pillRowContainer: { position: 'absolute', left: CARD_MARGIN, right: CARD_MARGIN, zIndex: 100 },
   pillRowContent: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   pillFilter: { flex: 1, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image as ExpoImage } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '@/lib/providers/wallet-provider';
 import { useAuth } from '@/lib/providers/auth-provider';
@@ -300,16 +301,13 @@ function VenueDashboardContent({ venueId, organizationId, activeSection }: { ven
     return (
       <View style={dashStyles.scrollView}>
         <OverviewEventsList organizationId={organizationId} insetsBottom={insets.bottom} />
-        <View style={[dashStyles.createEventButtonWrapper, { paddingBottom: insets.bottom + 13 }]}>
-          <TouchableOpacity
-            style={dashStyles.createEventButton}
-            onPress={() => handleNav(`/create-event${orgQuery}`)}
-            activeOpacity={0.85}
-          >
-            <Ionicons name="add" size={22} color="#fff" />
-            <Text style={dashStyles.createEventButtonText}>Create Event</Text>
-          </TouchableOpacity>
-        </View>
+        <Pressable
+          style={[dashStyles.createEventFab, { bottom: insets.bottom + 20 }]}
+          onPress={() => handleNav(`/create-event${orgQuery}`)}
+        >
+          <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          <Ionicons name="add" size={32} color="#000" style={{ fontWeight: '900' }} />
+        </Pressable>
       </View>
     );
   }
@@ -347,7 +345,7 @@ function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?:
   if (isLoading) {
     return (
       <View style={dashStyles.overviewEmpty}>
-        <ActivityIndicator color="#fff" />
+        <ActivityIndicator color="#000" />
       </View>
     );
   }
@@ -355,7 +353,7 @@ function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?:
   if (events.length === 0) {
     return (
       <View style={dashStyles.overviewEmpty}>
-        <Ionicons name="calendar-outline" size={48} color="rgba(255,255,255,0.2)" />
+        <Ionicons name="calendar-outline" size={48} color="rgba(0,0,0,0.2)" />
         <Text style={dashStyles.overviewEmptyText}>No events yet</Text>
       </View>
     );
@@ -367,7 +365,7 @@ function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?:
       contentContainerStyle={[dashStyles.overviewListContent, { paddingBottom: insetsBottom + 180 }]}
       showsVerticalScrollIndicator={false}
     >
-      {events.map((event) => (
+      {events.filter((e) => e.flyer?.url || e.imageUrl).map((event) => (
         <OverviewEventCard
           key={event.id}
           event={event}
@@ -435,7 +433,7 @@ function OverviewEventCard({ event, onPress }: { event: StatusEvent; onPress: ()
         )
       ) : (
         <View style={[dashStyles.eventImage, dashStyles.eventImagePlaceholder]}>
-          <Ionicons name="calendar-outline" size={40} color="rgba(255,255,255,0.3)" />
+          <Ionicons name="calendar-outline" size={40} color="rgba(0,0,0,0.2)" />
         </View>
       )}
       <View style={dashStyles.eventCardBody}>
@@ -808,7 +806,8 @@ export default function WalletScreen() {
         style={styles.headerScrollFixed}
       >
         <Pressable style={styles.headerPill} onPress={() => setProfileSelectorVisible(true)}>
-          <Image
+          <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          <ExpoImage
             source={
               selectedVenue
                 ? (myVenues.find((v) => v.id === selectedVenue.id)?.imageUrl
@@ -822,7 +821,7 @@ export default function WalletScreen() {
             }
             style={styles.headerPillAvatar}
           />
-          <Ionicons name="menu" size={22} color="#fff" style={styles.headerPillIcon} />
+          <Ionicons name="menu" size={22} color="#000" style={styles.headerPillIcon} />
         </Pressable>
 
         {(selectedVenue || selectedOrg
@@ -837,7 +836,7 @@ export default function WalletScreen() {
               onPress={() => setActiveTab(label)}
             >
               {isLiquidGlassSupported ? (
-                <LiquidGlassView effect="regular" tintColor="rgba(255,255,255,0.25)" colorScheme="dark" style={StyleSheet.absoluteFill} />
+                <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
               ) : (
                 <View style={styles.glassLayer} pointerEvents="none">
                   <GlassView
@@ -856,7 +855,7 @@ export default function WalletScreen() {
 
       {/* Top fade — dims content as it scrolls behind the pill row */}
       <LinearGradient
-        colors={['#000', 'rgba(0,0,0,0)']}
+        colors={['#f2f2f2', 'rgba(242,242,242,0)']}
         style={styles.topFade}
         pointerEvents="none"
       />
@@ -870,7 +869,7 @@ export default function WalletScreen() {
           <Ionicons
             name={activeTab === 'Tickets' ? 'ticket-outline' : activeTab === 'Tables' ? 'restaurant-outline' : 'pricetag-outline'}
             size={48}
-            color="rgba(255,255,255,0.2)"
+            color="rgba(0,0,0,0.2)"
           />
           <Text style={styles.emptyStateText}>
             {activeTab === 'Tickets' ? 'No upcoming tickets' : activeTab === 'Tables' ? 'No upcoming tables' : 'No available offers'}
@@ -919,7 +918,7 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#f2f2f2',
   },
   scrollView: {
     flex: 1,
@@ -948,19 +947,16 @@ const styles = StyleSheet.create({
   headerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 44,
-    borderRadius: 22,
-    paddingLeft: 5,
-    paddingRight: 14,
+    height: 38,
+    borderRadius: 19,
+    paddingLeft: 3,
+    paddingRight: 12,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
   headerPillAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   headerPillIcon: {
     marginLeft: 8,
@@ -981,10 +977,10 @@ const styles = StyleSheet.create({
   tabPillText: {
     fontSize: 14,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(0,0,0,0.5)',
   },
   tabPillTextActive: {
-    color: '#fff',
+    color: 'rgba(0,0,0,0.8)',
   },
   emptyState: {
     flex: 1,
@@ -996,7 +992,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.35)',
+    color: 'rgba(0,0,0,0.35)',
   },
 });
 
@@ -1124,29 +1120,21 @@ const dashStyles = StyleSheet.create({
     padding: 16,
     paddingTop: 140,
   },
-  createEventButtonWrapper: {
+  createEventFab: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-  },
-  createEventButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
     justifyContent: 'center',
-    gap: 8,
-    height: 52,
-    width: 240,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-  },
-  createEventButtonText: {
-    fontSize: 16,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.35)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
   overviewEmpty: {
     flex: 1,
@@ -1158,7 +1146,7 @@ const dashStyles = StyleSheet.create({
   overviewEmptyText: {
     fontSize: 15,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(0,0,0,0.4)',
   },
   overviewListContent: {
     padding: 16,
@@ -1195,7 +1183,7 @@ const dashStyles = StyleSheet.create({
   eventMeta: {
     fontSize: 13,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.7)',
   },
   eventStatsRow: {
     flexDirection: 'row',
@@ -1216,7 +1204,7 @@ const dashStyles = StyleSheet.create({
   eventStatLabel: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.6)',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
@@ -1248,7 +1236,7 @@ const dashStyles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#fff',
   },
   menuItem: {
     flexDirection: 'row',
@@ -1262,7 +1250,7 @@ const dashStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   menuItemContent: {
     flex: 1,
@@ -1291,7 +1279,7 @@ const audStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 140,
     paddingBottom: 8,
   },
   searchBar: {

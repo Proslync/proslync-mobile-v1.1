@@ -1,52 +1,59 @@
-// Map screen FAB — uses reusable GlassFabMenu with glass morphing
+// Map screen pill — static vertical glass pill with location + nearby icons
 
 import * as React from "react";
-import { GlassFabMenu, type FabAction } from "@/components/ui/glass-fab-menu";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
 
 interface MapFabMenuProps {
   onShareLocation: () => void;
   onRecenter: () => void;
   onNearby: () => void;
   isSharing?: boolean;
+  topInset?: number;
 }
 
 export function MapFabMenu({
   onShareLocation,
   onRecenter,
   onNearby,
-  isSharing = false,
+  topInset = 60,
 }: MapFabMenuProps) {
-  const actions: FabAction[] = React.useMemo(
-    () => [
-      {
-        id: "share",
-        icon: isSharing ? "location.fill" : "location",
-        color: isSharing ? "#34c759" : "#fff",
-        onPress: onShareLocation,
-      },
-      {
-        id: "recenter",
-        icon: "location.viewfinder",
-        onPress: onRecenter,
-      },
-      {
-        id: "nearby",
-        icon: "person.2.fill",
-        onPress: onNearby,
-      },
-    ],
-    [isSharing, onShareLocation, onRecenter, onNearby],
-  );
-
   return (
-    <GlassFabMenu
-      actions={actions}
-      direction="up"
-      style={{
-        position: "absolute",
-        bottom: 120,
-        right: 16,
-      }}
-    />
+    <View style={[styles.pill, { top: topInset }]}>
+      {isLiquidGlassSupported ? (
+        <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 28 }]} />
+      )}
+      <TouchableOpacity style={styles.iconBtn} onPress={onRecenter} activeOpacity={0.7}>
+        <Ionicons name="navigate" size={22} color="#fff" />
+      </TouchableOpacity>
+      <View style={styles.divider} />
+      <TouchableOpacity style={styles.iconBtn} onPress={onShareLocation} activeOpacity={0.7}>
+        <Ionicons name="locate-outline" size={22} color="#fff" />
+      </TouchableOpacity>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  pill: {
+    position: "absolute",
+    right: 16,
+    borderRadius: 28,
+    overflow: "hidden",
+    alignItems: "center",
+  },
+  iconBtn: {
+    width: 52,
+    height: 52,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  divider: {
+    width: 32,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.2)",
+  },
+});

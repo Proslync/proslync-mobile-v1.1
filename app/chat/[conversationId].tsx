@@ -4,6 +4,7 @@ import { MiniEventCard } from "@/components/chat/mini-event-card";
 import { MiniUserCard } from "@/components/chat/mini-user-card";
 import { MiniVenueCard } from "@/components/chat/mini-venue-card";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
+import { ActionSheet } from "@/components/ui/action-sheet";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useAppTheme, type ThemeColors } from "@/hooks/use-app-theme";
@@ -28,6 +29,7 @@ import { GlassView } from "expo-glass-effect";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { useLocalSearchParams } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -36,7 +38,6 @@ import {
   Image,
   KeyboardAvoidingView,
   Modal,
-  ActionSheetIOS,
   Platform,
   Pressable,
   ScrollView,
@@ -780,6 +781,7 @@ function Composer({
   isDark: boolean;
 }) {
   const [text, setText] = useState("");
+  const [showAttachSheet, setShowAttachSheet] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   // Review state: after recording stops, user can relisten before sending
@@ -1142,6 +1144,9 @@ function Composer({
           {/* Single rounded container with text + actions */}
           {!isRecording ? (
             <View style={styles.composerBox}>
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" style={[StyleSheet.absoluteFill, { borderRadius: 20 }]} />
+              ) : null}
               <TextInput
                 ref={inputRef}
                 style={styles.composerBoxInput}
@@ -1155,12 +1160,7 @@ function Composer({
               />
               <View style={styles.composerBoxActions}>
                 <TouchableOpacity
-                  onPress={() => {
-                    ActionSheetIOS.showActionSheetWithOptions(
-                      { options: ['Camera', 'Photo Library', 'Cancel'], cancelButtonIndex: 2 },
-                      (index) => { if (index === 0) onOpenCamera(); else if (index === 1) onPickImage(); },
-                    );
-                  }}
+                  onPress={() => setShowAttachSheet(true)}
                   activeOpacity={0.7}
                   style={styles.composerBoxBtn}
                 >
@@ -1202,6 +1202,15 @@ function Composer({
           )}
         </View>
       )}
+
+      <ActionSheet
+        visible={showAttachSheet}
+        onClose={() => setShowAttachSheet(false)}
+        options={[
+          { label: 'Camera', icon: 'camera-outline', onPress: () => { setShowAttachSheet(false); onOpenCamera(); } },
+          { label: 'Photo Library', icon: 'images-outline', onPress: () => { setShowAttachSheet(false); onPickImage(); } },
+        ]}
+      />
     </View>
   );
 }
@@ -1827,7 +1836,11 @@ export default function ChatThreadScreen() {
       {/* Header — fixed at top */}
       <View style={[styles.headerFixed, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity style={styles.headerGlassBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          {isLiquidGlassSupported ? (
+            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          ) : (
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          )}
           <Ionicons name="chevron-back" size={22} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerCenterColumn} onPress={isConcierge ? undefined : handleHeaderPress} activeOpacity={isConcierge ? 1 : 0.7} disabled={isConcierge}>
@@ -1854,11 +1867,29 @@ export default function ChatThreadScreen() {
         </TouchableOpacity>
         {!isConcierge ? (
           <TouchableOpacity style={styles.headerGlassBtn} onPress={() => setShowCallPicker(true)} activeOpacity={0.7}>
-            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
+            {isLiquidGlassSupported ? (
+              <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+            ) : (
+              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
+            )}
             <Ionicons name="call-outline" size={20} color="#000" />
           </TouchableOpacity>
         ) : <View style={styles.headerGlassBtn} />}
       </View>
+
+      {/* Top fade */}
+      <LinearGradient
+        colors={['#f2f2f2', 'rgba(242,242,242,0)']}
+        style={styles.topFade}
+        pointerEvents="none"
+      />
+
+      {/* Bottom fade */}
+      <LinearGradient
+        colors={['rgba(242,242,242,0)', '#f2f2f2']}
+        style={styles.bottomFade}
+        pointerEvents="none"
+      />
 
       {/* Call picker modal */}
       <Modal visible={showCallPicker} transparent animationType="fade" onRequestClose={() => setShowCallPicker(false)}>
@@ -2500,6 +2531,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    zIndex: 9,
+  },
+  bottomFade: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    zIndex: 9,
+  },
   headerFixed: {
     position: 'absolute',
     top: 0,
@@ -2517,6 +2564,8 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: "center",
     alignItems: "center",
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0,0,0,0.06)',
     overflow: "hidden",
   },
   headerCenterColumn: {
@@ -2699,7 +2748,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   messageBubbleOwn: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "#000",
     borderBottomRightRadius: 4,
   },
   messageBubbleGroupOther: {
@@ -2923,10 +2972,9 @@ const styles = StyleSheet.create({
   },
   composerBox: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
+    overflow: 'hidden',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,

@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
-import { Text, StyleSheet, TextStyle } from 'react-native';
+import { Text, StyleSheet, type TextStyle, type StyleProp } from 'react-native';
 
 interface LinkifiedTextProps {
   children: string;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
 }
 
 export function LinkifiedText({ children, style }: LinkifiedTextProps) {
