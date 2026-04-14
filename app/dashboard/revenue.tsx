@@ -12,13 +12,15 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Animated as RNAnimated,
+  Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { MetricDetailModal } from '@/components/analytics/metric-detail-modal';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import {
   HeroLineChart,
@@ -46,6 +48,55 @@ function formatCents(cents: number): string {
     return `$${(cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+// ---- Scrolling Ticker (Stocks-style) ----
+const TICKER_ITEM_W = 128;
+
+function TickerBar({ metrics, visible }: { metrics: AnalyticsMetric[]; visible: boolean }) {
+  const opacity = React.useRef(new RNAnimated.Value(0)).current;
+  const scrollX = React.useRef(new RNAnimated.Value(0)).current;
+  const animRef = React.useRef<RNAnimated.CompositeAnimation | null>(null);
+
+  React.useEffect(() => {
+    if (visible && metrics.length > 0) {
+      RNAnimated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      const totalW = metrics.length * TICKER_ITEM_W;
+      scrollX.setValue(0);
+      animRef.current = RNAnimated.loop(
+        RNAnimated.timing(scrollX, { toValue: -totalW, duration: totalW * 30, easing: Easing.linear, useNativeDriver: true }),
+      );
+      animRef.current.start();
+    } else {
+      animRef.current?.stop();
+      RNAnimated.timing(opacity, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    }
+    return () => { animRef.current?.stop(); };
+  }, [visible, metrics.length]);
+
+  if (metrics.length === 0) return null;
+
+  const renderItems = () =>
+    metrics.map((m, i) => {
+      const delta = m.deltaText;
+      const color = m.isPositive ? '#30D158' : '#FF3B30';
+      return (
+        <View key={`${m.id}-${i}`} style={{ width: TICKER_ITEM_W, paddingHorizontal: 6 }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#1A1A1A' }} numberOfLines={1}>{m.label}</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: '#1A1A1A' }}>{m.primaryValue}</Text>
+          <Text style={{ fontSize: 10, fontWeight: '600', color }} numberOfLines={1}>{delta}</Text>
+        </View>
+      );
+    });
+
+  return (
+    <RNAnimated.View style={{ opacity, height: 56, overflow: 'hidden', flexDirection: 'row' }}>
+      <RNAnimated.View style={{ flexDirection: 'row', transform: [{ translateX: scrollX }] }}>
+        {renderItems()}
+        {renderItems()}
+      </RNAnimated.View>
+    </RNAnimated.View>
+  );
 }
 
 export default function DashboardRevenueScreen() {
@@ -96,7 +147,7 @@ export default function DashboardRevenueScreen() {
         id: 'netRevenue',
         label: 'Net Revenue',
         primaryValue: formatCents(totals?.netRevenue ?? 0),
-        deltaText: hasTimeSeries ? `${netDelta.text} ${rangeLabel}` : 'No data yet',
+        deltaText: hasTimeSeries ? `${netDelta.text} ${rangeLabel}` : '+0.0%',
         isPositive: netDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: netSeries },
       },
@@ -104,7 +155,7 @@ export default function DashboardRevenueScreen() {
         id: 'grossRevenue',
         label: 'Gross Revenue',
         primaryValue: formatCents(totals?.grossRevenue ?? 0),
-        deltaText: hasTimeSeries ? `${grossDelta.text} ${rangeLabel}` : 'No data yet',
+        deltaText: hasTimeSeries ? `${grossDelta.text} ${rangeLabel}` : '+0.0%',
         isPositive: grossDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: grossSeries },
       },
@@ -112,7 +163,7 @@ export default function DashboardRevenueScreen() {
         id: 'platformFees',
         label: 'Platform Fees',
         primaryValue: formatCents(totals?.platformFees ?? 0),
-        deltaText: hasTimeSeries ? `${feesDelta.text} ${rangeLabel}` : 'No data yet',
+        deltaText: hasTimeSeries ? `${feesDelta.text} ${rangeLabel}` : '+0.0%',
         isPositive: !feesDelta.isPositive, // Lower fees = positive
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: feesSeries },
       },
@@ -120,7 +171,7 @@ export default function DashboardRevenueScreen() {
         id: 'transactions',
         label: 'Transactions',
         primaryValue: (totals?.transactionCount ?? 0).toLocaleString(),
-        deltaText: hasTimeSeries ? `${txnDelta.text} ${rangeLabel}` : 'No data yet',
+        deltaText: hasTimeSeries ? `${txnDelta.text} ${rangeLabel}` : '+0.0%',
         isPositive: txnDelta.isPositive,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: txnSeries },
       },
@@ -128,7 +179,7 @@ export default function DashboardRevenueScreen() {
         id: 'avgPerTransaction',
         label: 'Avg / Transaction',
         primaryValue: formatCents(totals?.avgPerTransaction ?? 0),
-        deltaText: totals?.transactionCount ? `${totals.transactionCount} total` : 'No data yet',
+        deltaText: totals?.transactionCount ? `${totals.transactionCount} total` : '+0.0%',
         isPositive: true,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: [0, 0] },
       },
@@ -136,7 +187,7 @@ export default function DashboardRevenueScreen() {
         id: 'avgPerEvent',
         label: 'Avg / Event',
         primaryValue: formatCents(totals?.avgPerEvent ?? 0),
-        deltaText: totals?.eventCount ? `Across ${totals.eventCount} events` : 'No data yet',
+        deltaText: totals?.eventCount ? `Across ${totals.eventCount} events` : '+0.0%',
         isPositive: true,
         seriesByRange: { ...EMPTY_SERIES, [selectedRange]: [0, 0] },
       },
@@ -155,16 +206,9 @@ export default function DashboardRevenueScreen() {
     .map((id) => metrics.find((m) => m.id === id)!)
     .filter(Boolean);
 
-  const handleSwap = (tappedId: string) => {
-    LayoutAnimation.configureNext(
-      LayoutAnimation.create(350, 'easeInEaseOut', 'opacity'),
-    );
-    const previousHeroId = heroMetricId;
-    setHeroMetricId(tappedId);
-    setMetricsOrder((prev) =>
-      prev.map((id) => (id === tappedId ? previousHeroId : id)),
-    );
-  };
+  const [detailMetricId, setDetailMetricId] = React.useState<string | null>(null);
+  const [detailExpanded, setDetailExpanded] = React.useState(false);
+  const detailMetric = detailMetricId ? metrics.find((m) => m.id === detailMetricId) ?? null : null;
 
   const heroData = heroMetric?.seriesByRange[selectedRange] ?? [];
 
@@ -173,14 +217,17 @@ export default function DashboardRevenueScreen() {
     return (
       <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#000" />
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Revenue</Text>
-          <View style={styles.headerButton} />
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Revenue</Text>
+            <Text style={styles.headerDate}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</Text>
+          </View>
+          <View style={{ width: 32 }} />
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color="#8E8E93" />
         </View>
       </View>
     );
@@ -191,14 +238,17 @@ export default function DashboardRevenueScreen() {
     return (
       <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#000" />
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Revenue</Text>
-          <View style={styles.headerButton} />
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Revenue</Text>
+            <Text style={styles.headerDate}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</Text>
+          </View>
+          <View style={{ width: 32 }} />
         </View>
         <View style={styles.emptyContainer}>
-          <Ionicons name="trending-up-outline" size={56} color="rgba(255,255,255,0.3)" />
+          <Ionicons name="trending-up-outline" size={56} color="rgba(0,0,0,0.15)" />
           <Text style={styles.emptyTitle}>No revenue data yet</Text>
           <Text style={styles.emptyHint}>Revenue from ticket sales will appear here</Text>
         </View>
@@ -212,85 +262,69 @@ export default function DashboardRevenueScreen() {
     <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
       {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(400)}
-        style={[styles.header, { paddingTop: insets.top + 8 }]}
-      >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Revenue</Text>
-        <View style={styles.headerButton} />
-      </Animated.View>
+      <View style={[styles.stickyHeader, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color="#000" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Revenue</Text>
+            <Text style={styles.headerDate}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</Text>
+          </View>
+          <View style={{ width: 32 }} />
+        </View>
+      </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
         scrollEnabled={scrollEnabled}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#fff" />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#8E8E93" />
         }
       >
-        {/* Summary Card */}
-        <Animated.View entering={FadeInDown.duration(300)}>
-          <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Gross</Text>
-                <Text style={styles.summaryGross}>{formatCents(totals.grossRevenue)}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Fees</Text>
-                <Text style={styles.summaryFees}>-{formatCents(totals.platformFees)}</Text>
-              </View>
-              <View style={styles.summaryDivider} />
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Net</Text>
-                <Text style={styles.summaryNet}>{formatCents(totals.netRevenue)}</Text>
-              </View>
-            </View>
-          </GlassSurface>
-        </Animated.View>
-
-        {/* Hero Chart */}
-        <HeroMetricHeader key={heroMetricId} metric={heroMetric} colors={colors} />
-        <HeroLineChart
-          key={`chart-${heroMetricId}-${selectedRange}`}
-          data={heroData}
-          isPositive={heroMetric.isPositive}
-          metricLabel={heroMetric.label}
-          colors={colors}
-          isDark={isDark}
-          onTouchActive={(active) => setScrollEnabled(!active)}
-        />
-
-        {/* Range Selector */}
+        {/* Range Selector — right below header */}
         <RangeSelector
           selected={selectedRange}
           onSelect={handleRangeChange}
           colors={colors}
         />
 
-        {/* Divider */}
-        <View style={[styles.divider, { backgroundColor: colors.separator }]} />
-
         {/* Metric Tiles */}
         <View style={styles.tilesContainer}>
-          {tileMetrics.map((metric, index) => (
+          {[heroMetric, ...tileMetrics].map((metric, index) => (
             <React.Fragment key={metric.id}>
               {index > 0 && <View style={[styles.tileSeparator, { backgroundColor: colors.separator }]} />}
               <MetricTile
                 metric={metric}
                 selectedRange={selectedRange}
-                onPress={() => handleSwap(metric.id)}
+                onPress={() => setDetailMetricId(metric.id)}
                 colors={colors}
               />
             </React.Fragment>
           ))}
         </View>
       </ScrollView>
+
+      {/* Fixed Ticker Bar — shows above the detail modal */}
+      {detailMetric !== null && (
+        <View style={[styles.fixedTicker, { paddingTop: insets.top - 6 }]}>
+          <TickerBar metrics={metrics} visible={detailMetric !== null} />
+        </View>
+      )}
+
+      {/* Detail Modal */}
+      <MetricDetailModal
+        visible={detailMetric !== null}
+        metric={detailMetric}
+        allMetrics={metrics}
+        selectedRange={selectedRange}
+        onClose={() => { setDetailMetricId(null); setDetailExpanded(false); }}
+        onExpandedChange={setDetailExpanded}
+        onRangeChange={handleRangeChange}
+        tickerContent={null}
+      />
     </View>
   );
 }
@@ -299,26 +333,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    color: '#000',
-  },
+  fixedTicker: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#f2f2f2', zIndex: 1000 },
+  stickyHeader: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: '#f2f2f2' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
+  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#1A1A1A' },
+  headerDate: { fontSize: 13, color: '#8E8E93', marginTop: 2, fontWeight: 'bold' },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
