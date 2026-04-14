@@ -10,6 +10,7 @@ interface MapFabMenuProps {
   onRecenter: () => void;
   onNearby: () => void;
   isSharing?: boolean;
+  isCentered?: boolean;
   topInset?: number;
 }
 
@@ -17,6 +18,7 @@ export function MapFabMenu({
   onShareLocation,
   onRecenter,
   onNearby,
+  isCentered = false,
   topInset = 60,
 }: MapFabMenuProps) {
   return (
@@ -27,7 +29,7 @@ export function MapFabMenu({
         <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 28 }]} />
       )}
       <TouchableOpacity style={styles.iconBtn} onPress={onRecenter} activeOpacity={0.7}>
-        <Ionicons name="navigate" size={22} color="#fff" />
+        <Ionicons name={isCentered ? "navigate" : "navigate-outline"} size={22} color="#fff" />
       </TouchableOpacity>
       <View style={styles.divider} />
       <TouchableOpacity style={styles.iconBtn} onPress={onShareLocation} activeOpacity={0.7}>

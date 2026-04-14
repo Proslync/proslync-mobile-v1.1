@@ -18,6 +18,8 @@ import {
 import type { VenueStaffMember } from "@/lib/api/venue-schedule";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
+import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useState } from "react";
 import {
@@ -60,7 +62,7 @@ function getRoleBadgeColor(role: string): string {
     case "bouncer":
       return "#22c55e";
     default:
-      return "rgba(255,255,255,0.3)";
+      return "rgba(0,0,0,0.08)";
   }
 }
 
@@ -154,15 +156,21 @@ export default function VenueStaffScreen() {
           <Ionicons name="chevron-back" size={20} color="#000" />
         </Pressable>
         <View style={styles.pillLabel}>
-          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          {isLiquidGlassSupported ? (
+            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          ) : (
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          )}
           <Text style={styles.pillLabelText}>Team</Text>
         </View>
       </View>
 
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingTop: insets.top + 70, paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
@@ -226,13 +234,13 @@ export default function VenueStaffScreen() {
                         style={[
                           styles.roleBadge,
                           {
-                            backgroundColor: getRoleBadgeColor(typeof member.role === 'string' ? member.role : 'member'),
+                            backgroundColor: getRoleBadgeColor(typeof member.role === 'string' ? member.role : (member.role as any)?.name || 'staff'),
                           },
                         ]}
                       >
                         <Text style={styles.roleBadgeText}>
                           {(() => {
-                            const r = typeof member.role === 'string' ? member.role : 'member';
+                            const r = typeof member.role === 'string' ? member.role : (member.role as any)?.name || 'staff';
                             return r.charAt(0).toUpperCase() + r.slice(1);
                           })()}
                         </Text>
@@ -240,7 +248,7 @@ export default function VenueStaffScreen() {
                       <Text
                         style={[
                           styles.statusText,
-                          { color: colors.textTertiary },
+                          { color: 'rgba(0,0,0,0.4)' },
                         ]}
                       >
                         {member.status}
@@ -265,15 +273,16 @@ export default function VenueStaffScreen() {
           ))
         )}
 
-        {/* Add Staff Button */}
-        <GlassButton
-          label="Add Team Member"
-          variant="glass"
-          icon="person-add-outline"
-          onPress={() => setShowInviteModal(true)}
-          style={styles.addButton}
-        />
       </ScrollView>
+
+      <Pressable style={[styles.fab, { bottom: insets.bottom + 20 }]} onPress={() => setShowInviteModal(true)}>
+        {isLiquidGlassSupported ? (
+          <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 28 }]} />
+        )}
+        <Ionicons name="person-add-outline" size={24} color="#000" />
+      </Pressable>
 
       {/* Add Staff Modal */}
       <InviteModal
@@ -292,7 +301,7 @@ export default function VenueStaffScreen() {
         scrollable
         isPresented={showEditSheet}
         onDismiss={() => setShowEditSheet(false)}
-        detents={[{ fraction: 0.6 }, "large"]}
+        detents={[{ fraction: 0.55 }]}
       >
         <View style={styles.sheetContent}>
           <Text style={[styles.sheetTitle, { color: colors.text }]}>
@@ -359,7 +368,8 @@ export default function VenueStaffScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
-  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
@@ -389,10 +399,10 @@ const styles = StyleSheet.create({
   staffName: { fontSize: 15, fontFamily: "Lato_700Bold" },
   roleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   roleBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
-  roleBadgeText: { fontSize: 11, fontFamily: "Lato_700Bold", color: "#fff" },
+  roleBadgeText: { fontSize: 11, fontFamily: "Lato_700Bold", color: "rgba(0,0,0,0.6)" },
   statusText: { fontSize: 12, fontFamily: "Lato_400Regular" },
   removeButton: { padding: 4 },
-  addButton: { marginTop: 8 },
+  fab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', zIndex: 20 },
   sheetContent: { paddingHorizontal: 16, paddingBottom: 20, gap: 12 },
   sheetTitle: {
     fontSize: 18,
@@ -417,24 +427,25 @@ const styles = StyleSheet.create({
   roleGrid: { gap: 8 },
   roleOption: {
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: "rgba(0,0,0,0.1)",
     borderRadius: 10,
     padding: 12,
     overflow: "hidden",
   },
   roleOptionSelected: {
-    borderColor: "rgba(255,255,255,0.4)",
+    borderColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.05)",
   },
   roleOptionLabel: {
     fontSize: 14,
     fontFamily: "Lato_700Bold",
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(0,0,0,0.7)",
   },
-  roleOptionLabelSelected: { color: "#fff" },
+  roleOptionLabelSelected: { color: "#000" },
   roleOptionDesc: {
     fontSize: 12,
     fontFamily: "Lato_400Regular",
-    color: "rgba(255,255,255,0.4)",
+    color: "rgba(0,0,0,0.4)",
     marginTop: 2,
   },
   sheetButton: { marginTop: 8 },

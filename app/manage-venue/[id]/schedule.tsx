@@ -24,8 +24,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Pressable,
 } from "react-native";
 import { GlassView } from "expo-glass-effect";
+import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
+import { LinearGradient } from "expo-linear-gradient";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -75,10 +78,12 @@ export default function VenueScheduleScreen() {
   const [weekOffset, setWeekOffset] = useState(0);
   const week = useMemo(() => getWeekRange(weekOffset), [weekOffset]);
 
-  const { data: shifts = [], isLoading } = useVenueShifts(venueId, {
+  const { data: rawShifts = [], isLoading } = useVenueShifts(venueId, {
     startDate: week.startDate,
     endDate: week.endDate,
   });
+  // Guard: API may return non-shift objects (templates) — filter to valid shifts only
+  const shifts = useMemo(() => rawShifts.filter((s: any) => typeof s.label === 'string' && typeof s.date === 'string'), [rawShifts]);
   const { data: staff = [] } = useVenueStaff(venueId);
   const createShift = useCreateVenueShift(venueId);
   const deleteShift = useDeleteVenueShift(venueId);
@@ -105,10 +110,10 @@ export default function VenueScheduleScreen() {
     setSelectedDay(week.startDate);
   }, [week.startDate]);
 
-  // Group shifts by date
+  // Group shifts by date — filter out invalid objects (e.g. shift templates)
   const shiftsByDate = useMemo(() => {
     const map = new Map<string, VenueShift[]>();
-    shifts.forEach((s) => {
+    shifts.filter((s) => s.label && s.date && s.startTime).forEach((s) => {
       const existing = map.get(s.date) || [];
       existing.push(s);
       map.set(s.date, existing);
@@ -189,85 +194,71 @@ export default function VenueScheduleScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>
-          Schedule
-        </Text>
-        <View style={styles.headerButton} />
+      {/* Fixed pill row */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        <View style={styles.pillLabel}>
+          {isLiquidGlassSupported ? (
+            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          ) : (
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          )}
+          <Text style={styles.pillLabelText}>Schedule</Text>
+        </View>
       </View>
 
-      {/* Week Navigation */}
-      <View style={styles.weekNav}>
-        <TouchableOpacity onPress={() => setWeekOffset((o) => o - 1)}>
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.weekLabel, { color: colors.text }]}>
-          {weekLabel}
-        </Text>
-        <TouchableOpacity onPress={() => setWeekOffset((o) => o + 1)}>
-          <Ionicons name="chevron-forward" size={22} color={colors.text} />
-        </TouchableOpacity>
-      </View>
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
-      {/* Day Selector */}
-      <View style={styles.daySelector}>
-        {week.days.map((day, i) => {
-          const dateStr = day.toISOString().split("T")[0];
-          const isSelected = dateStr === selectedDay;
-          const hasShifts = shiftsByDate.has(dateStr);
-          return (
-            <TouchableOpacity
-              key={dateStr}
-              style={[styles.dayButton, isSelected && styles.dayButtonSelected]}
-              onPress={() => setSelectedDay(dateStr)}
-            >
-              {isSelected && (
-                <GlassView
-                  {...liquidGlass.fillStrong}
-                  borderRadius={12}
-                  style={StyleSheet.absoluteFillObject}
-                />
-              )}
-              <Text
-                style={[
-                  styles.dayName,
-                  { color: isSelected ? "#fff" : colors.textSecondary },
-                ]}
-              >
-                {DAY_NAMES[i]}
-              </Text>
-              <Text
-                style={[
-                  styles.dayNumber,
-                  { color: isSelected ? "#fff" : colors.text },
-                ]}
-              >
-                {day.getDate()}
-              </Text>
-              {hasShifts && !isSelected && <View style={styles.dayDot} />}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {/* Shifts for Selected Day */}
+      {/* Scrollable content */}
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingTop: insets.top + 70, paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Week Navigation */}
+        <View style={styles.weekNav}>
+          <TouchableOpacity onPress={() => setWeekOffset((o) => o - 1)}>
+            <Ionicons name="chevron-back" size={22} color="#000" />
+          </TouchableOpacity>
+          <Text style={[styles.weekLabel, { color: '#000' }]}>
+            {weekLabel}
+          </Text>
+          <TouchableOpacity onPress={() => setWeekOffset((o) => o + 1)}>
+            <Ionicons name="chevron-forward" size={22} color="#000" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Day Selector */}
+        <View style={styles.daySelector}>
+          {week.days.map((day, i) => {
+            const dateStr = day.toISOString().split("T")[0];
+            const isSelected = dateStr === selectedDay;
+            const hasShifts = shiftsByDate.has(dateStr);
+            return (
+              <TouchableOpacity
+                key={dateStr}
+                style={[styles.dayButton, isSelected && styles.dayButtonSelected]}
+                onPress={() => setSelectedDay(dateStr)}
+              >
+                <Text style={[styles.dayName, { color: isSelected ? "#000" : "rgba(0,0,0,0.5)" }]}>
+                  {DAY_NAMES[i]}
+                </Text>
+                <Text style={[styles.dayNumber, { color: "#000", fontWeight: isSelected ? "800" : "600" }]}>
+                  {day.getDate()}
+                </Text>
+                {hasShifts && !isSelected && <View style={styles.dayDot} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Shifts for Selected Day */}
         {(() => {
           const dayShifts = shiftsByDate.get(selectedDay) || [];
           if (dayShifts.length === 0) {
@@ -375,17 +366,15 @@ export default function VenueScheduleScreen() {
           ));
         })()}
 
-        <GlassButton
-          label="Add Shift"
-          variant="glass"
-          icon="add-outline"
-          onPress={() => setShowAddSheet(true)}
-          style={styles.addButton}
-        />
       </ScrollView>
 
+      {/* Add Shift FAB */}
+      <Pressable style={[styles.fab, { bottom: insets.bottom + 20 }]} onPress={() => setShowAddSheet(true)}>
+        <Ionicons name="add" size={28} color="#000" />
+      </Pressable>
+
       {/* Add Shift Sheet */}
-      <NativeSheet rnContent scrollable
+      {showAddSheet && <NativeSheet rnContent scrollable
         isPresented={showAddSheet}
         onDismiss={() => setShowAddSheet(false)}
       >
@@ -473,10 +462,10 @@ export default function VenueScheduleScreen() {
             style={styles.sheetButton}
           />
         </View>
-      </NativeSheet>
+      </NativeSheet>}
 
       {/* Assign Staff Sheet */}
-      <NativeSheet rnContent scrollable
+      {showAssignSheet && <NativeSheet rnContent scrollable
         isPresented={showAssignSheet}
         onDismiss={() => setShowAssignSheet(false)}
       >
@@ -552,7 +541,7 @@ export default function VenueScheduleScreen() {
             style={styles.sheetButton}
           />
         </View>
-      </NativeSheet>
+      </NativeSheet>}
 
       {/* Delete Shift Confirmation */}
       <ConfirmSheet
@@ -571,6 +560,11 @@ export default function VenueScheduleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -613,6 +607,7 @@ const styles = StyleSheet.create({
   },
   dayButtonSelected: {
     overflow: "hidden",
+    backgroundColor: "rgba(0,0,0,0.08)",
   },
   dayName: { fontSize: 11, fontFamily: "Lato_400Regular" },
   dayNumber: { fontSize: 16, fontFamily: "Lato_700Bold" },
@@ -644,7 +639,7 @@ const styles = StyleSheet.create({
   },
   assignedName: { fontSize: 13, fontFamily: "Lato_400Regular" },
   noAssigned: { fontSize: 12, fontFamily: "Lato_400Regular", paddingTop: 4 },
-  addButton: { marginTop: 8 },
+  fab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center', zIndex: 20 },
   sheetContent: { paddingHorizontal: 16, paddingBottom: 20, gap: 12 },
   sheetTitle: {
     fontSize: 18,

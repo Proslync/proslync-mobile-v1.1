@@ -269,14 +269,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   bubbleOwn: {
-    backgroundColor: '#000',
+    backgroundColor: '#3a3a3c',
     borderBottomRightRadius: 6,
   },
   bubbleOther: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.85)',
     borderBottomLeftRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
   },
   bubbleEventCard: {
     padding: 0,

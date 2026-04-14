@@ -1,7 +1,8 @@
 import { GlassButton } from "@/components/glass/glass-button";
 import { GlassSurface } from "@/components/glass/glass-surface";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
-import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
+import { LinearGradient } from "expo-linear-gradient";
 import { NativeSheet } from "@/components/ui/native-sheet";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -27,6 +28,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Pressable,
 } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -156,32 +158,28 @@ export default function VenueMenuScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[
-          styles.header,
-          { paddingTop: insets.top + 8, borderBottomColor: colors.border },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Menu</Text>
-        <View style={styles.headerButton} />
-      </Animated.View>
+      {/* Fixed pill row */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        <View style={styles.pillLabel}>
+          {isLiquidGlassSupported ? (
+            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          ) : null}
+          <Text style={styles.pillLabelText}>Menu</Text>
+        </View>
+      </View>
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 24 },
+          { paddingTop: insets.top + 70, paddingBottom: insets.bottom + 24 },
         ]}
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
@@ -388,27 +386,17 @@ export default function VenueMenuScreen() {
           ))
         )}
 
-        {/* Add Category button */}
-        <Animated.View
-          entering={FadeInDown.delay(categories.length * 60).duration(300)}
-          style={styles.addCategoryRow}
-        >
-          <GlassButton
-            label="Add Category"
-            icon={
-              <Ionicons
-                name="add"
-                size={18}
-                color={isDark ? "#ffffff" : "#1a1a1a"}
-              />
-            }
-            variant="glass"
-            size="md"
-            fullWidth
-            onPress={() => setShowAddCategory(true)}
-          />
-        </Animated.View>
       </ScrollView>
+
+      {/* Add Category FAB */}
+      <Pressable style={[styles.fab, { bottom: insets.bottom + 20 }]} onPress={() => setShowAddCategory(true)}>
+        {isLiquidGlassSupported ? (
+          <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 28 }]} />
+        )}
+        <Ionicons name="add" size={28} color="#000" />
+      </Pressable>
 
       {/* Add Category Bottom Sheet */}
       <NativeSheet
@@ -419,7 +407,7 @@ export default function VenueMenuScreen() {
           setShowAddCategory(false);
           setCategoryName("");
         }}
-        detents={[{ fraction: 0.45 }, "large"]}
+        detents={[{ fraction: 0.30 }]}
       >
         <ScrollView
           bounces={false}
@@ -440,19 +428,12 @@ export default function VenueMenuScreen() {
               Category Name
             </Text>
             <View style={styles.inputWrapper}>
-              {isDark && (
-                <GlassView
-                  {...liquidGlass.fillFaint}
-                  borderRadius={10}
-                  style={StyleSheet.absoluteFillObject}
-                />
-              )}
               <TextInput
-                style={inputStyle}
+                style={[styles.cleanInput]}
                 value={categoryName}
                 onChangeText={setCategoryName}
                 placeholder="e.g. Cocktails"
-                placeholderTextColor={inputPlaceholderColor}
+                placeholderTextColor="rgba(0,0,0,0.3)"
                 autoFocus
                 returnKeyType="done"
                 onSubmitEditing={() => {
@@ -639,6 +620,12 @@ export default function VenueMenuScreen() {
 }
 
 const styles = StyleSheet.create({
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
+  fab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', zIndex: 20 },
   container: {
     flex: 1,
   },
@@ -814,6 +801,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderRadius: 10,
     marginBottom: 16,
+  },
+  cleanInput: {
+    fontSize: 15,
+    fontFamily: 'Lato_400Regular',
+    color: '#000',
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   input: {
     height: 44,

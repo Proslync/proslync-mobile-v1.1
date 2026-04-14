@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useVenueFollowers, useDebounce } from '@/hooks';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -18,6 +19,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Pressable,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -128,59 +130,25 @@ export default function FollowersScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
-      >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Followers</Text>
-          {!isLoading && (
-            <View style={[styles.countBadge, { overflow: 'hidden' }]}>
-              <GlassView
-                {...liquidGlass.fill}
-                borderRadius={10}
-                style={StyleSheet.absoluteFillObject}
-              />
-              <Text style={[styles.countText, { color: colors.text }]}>{total}</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.headerButton} />
-      </Animated.View>
-
-      {/* Search */}
-      <View style={styles.searchSection}>
-        <View
-          style={[
-            styles.searchBar,
-            { overflow: 'hidden', borderColor: colors.inputBorder },
-          ]}
-        >
-          <GlassView {...liquidGlass.fill} borderRadius={12} style={StyleSheet.absoluteFillObject} />
-          <Ionicons name="search" size={18} color={colors.placeholder} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search followers..."
-            placeholderTextColor={colors.placeholder}
-            value={searchText}
-            onChangeText={setSearchText}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {searchText.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchText('')}>
-              <Ionicons name="close-circle" size={18} color={colors.placeholder} />
-            </TouchableOpacity>
-          )}
+      {/* Fixed pill row */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        <Pressable style={styles.pillIcon} onPress={() => {}}>
+          <Ionicons name="search" size={18} color="#000" />
+        </Pressable>
+        <View style={styles.pillLabel}>
+          {isLiquidGlassSupported ? (
+            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          ) : null}
+          <Text style={styles.pillLabelText}>Followers{!isLoading ? ` ${total}` : ''}</Text>
         </View>
       </View>
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Followers List */}
       {isLoading ? (
@@ -202,7 +170,7 @@ export default function FollowersScreen() {
           data={followers}
           renderItem={renderFollower}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[styles.listContent, { paddingTop: insets.top + 70, paddingBottom: insets.bottom + 20 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
           onEndReached={handleLoadMore}
@@ -221,6 +189,11 @@ export default function FollowersScreen() {
 }
 
 const styles = StyleSheet.create({
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   container: {
     flex: 1,
   },

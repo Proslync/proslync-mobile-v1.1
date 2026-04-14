@@ -12,6 +12,8 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView } from 'expo-glass-effect';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAdminStats, useAdminActivity } from '@/hooks/use-admin';
@@ -69,14 +71,20 @@ export default function AdminDashboard() {
           const label = tab === 'overview' ? 'Overview' : tab === 'manage' ? 'Manage' : 'Activity';
           return (
             <Pressable key={tab} style={s.pillFilter} onPress={() => setActiveTab(tab)}>
-              <View style={s.pillGlassLayer} pointerEvents="none">
-                <GlassView {...liquidGlass.surface} tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'} borderRadius={19} style={StyleSheet.absoluteFill} />
-              </View>
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={s.pillGlassLayer} pointerEvents="none">
+                  <GlassView {...liquidGlass.surface} tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'} borderRadius={19} style={StyleSheet.absoluteFill} />
+                </View>
+              )}
               <Text style={[s.pillText, isActive && s.pillTextActive]}>{label}</Text>
             </Pressable>
           );
         })}
       </View>
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={s.topFade} pointerEvents="none" />
 
       <ScrollView
         style={s.scroll}
@@ -175,15 +183,16 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f2f2f2' },
   center: { justifyContent: 'center', alignItems: 'center' },
 
-  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   pillFilter: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   pillGlassLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 19 },
   pillText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.5)' },
   pillTextActive: { color: 'rgba(0,0,0,0.8)' },
 
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   scroll: { flex: 1 },
-  scrollContent: { padding: 16, paddingTop: 12 },
+  scrollContent: { padding: 16, paddingTop: 130 },
 
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
   statCard: { width: '31%' as any, flexGrow: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 6, backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },

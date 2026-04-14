@@ -3,6 +3,8 @@ import { useStableRouter } from "@/hooks/use-stable-router";
 import { GlassSurface } from "@/components/glass/glass-surface";
 import { GlassView } from "expo-glass-effect";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
+import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
+import { LinearGradient } from "expo-linear-gradient";
 import { useVenue } from "@/hooks/use-venue-query";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
@@ -206,25 +208,26 @@ export default function ManageVenueScreen() {
               style={styles.pillFilter}
               onPress={() => setActiveSection(group.title)}
             >
-              <View style={styles.pillGlassLayer} pointerEvents="none">
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
-                  borderRadius={19}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={styles.pillGlassLayer} pointerEvents="none">
+                  <GlassView {...liquidGlass.surface} tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'} borderRadius={19} style={StyleSheet.absoluteFill} />
+                </View>
+              )}
               <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{group.title}</Text>
             </Pressable>
           );
         })}
       </View>
 
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 24 },
+          { paddingTop: insets.top + 70, paddingBottom: insets.bottom + 24 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -319,7 +322,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   pillFilter: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   pillGlassLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 19 },

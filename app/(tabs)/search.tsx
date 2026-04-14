@@ -239,6 +239,20 @@ function FullMapScreen() {
   const [selectedFriend, setSelectedFriend] = useState<FriendMarker | null>(null);
   const [heatmapPoints, setHeatmapPoints] = useState<HeatmapPoint[]>([]);
   const [weather, setWeather] = useState<{ temp: number; icon: string } | null>(null);
+  const [isCentered, setIsCentered] = useState(true);
+  const weatherTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchWeather = useCallback(async (lat: number, lon: number) => {
+    const key = process.env.EXPO_PUBLIC_WEATHER_API_KEY;
+    if (!key) return;
+    try {
+      const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${key}&q=${lat},${lon}`);
+      const data = await res.json();
+      if (data.current) {
+        setWeather({ temp: Math.round(data.current.temp_f), icon: `https:${data.current.condition.icon}` });
+      }
+    } catch {}
+  }, []);
   const { colors, isDark } = useAppTheme();
 
   // Live location hook
@@ -261,20 +275,8 @@ function FullMapScreen() {
             animationDuration: 800,
           });
 
-          // Fetch weather
-          const weatherKey = process.env.EXPO_PUBLIC_WEATHER_API_KEY;
-          if (weatherKey) {
-            try {
-              const res = await fetch(`https://api.weatherapi.com/v1/current.json?key=${weatherKey}&q=${location.coords.latitude},${location.coords.longitude}`);
-              const data = await res.json();
-              if (data.current) {
-                setWeather({
-                  temp: Math.round(data.current.temp_f),
-                  icon: `https:${data.current.condition.icon}`,
-                });
-              }
-            } catch {}
-          }
+          // Fetch weather for initial location
+          fetchWeather(location.coords.latitude, location.coords.longitude);
         }
       } catch {
         // Location unavailable (e.g. simulator)
@@ -360,7 +362,7 @@ function FullMapScreen() {
     cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, animationDuration: 500 });
   }, []);
 
-  const handleRecenter = useCallback(() => { if (userLocation) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); cameraRef.current?.setCamera({ centerCoordinate: userLocation, zoomLevel: 13, animationDuration: 500 }); } }, [userLocation]);
+  const handleRecenter = useCallback(() => { if (userLocation) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setIsCentered(true); cameraRef.current?.setCamera({ centerCoordinate: userLocation, zoomLevel: 13, animationDuration: 500 }); } }, [userLocation]);
 
   const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
   const defaultCenter: [number, number] = userLocation || [-73.9855, 40.7580];
@@ -377,7 +379,25 @@ function FullMapScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <MapView style={StyleSheet.absoluteFill} styleURL={DARK_STYLE_URL} logoEnabled={false} attributionEnabled={false} compassEnabled={false} scaleBarEnabled={false} zoomEnabled={true} pitchEnabled={true} rotateEnabled={true}>
+      <MapView
+        style={StyleSheet.absoluteFill}
+        styleURL={DARK_STYLE_URL}
+        logoEnabled={false}
+        attributionEnabled={false}
+        compassEnabled={false}
+        scaleBarEnabled={false}
+        zoomEnabled={true}
+        pitchEnabled={true}
+        rotateEnabled={true}
+        onTouchStart={() => setIsCentered(false)}
+        onRegionDidChange={(feature) => {
+          if (weatherTimerRef.current) clearTimeout(weatherTimerRef.current);
+          weatherTimerRef.current = setTimeout(() => {
+            const [lon, lat] = feature.geometry.coordinates;
+            fetchWeather(lat, lon);
+          }, 1000);
+        }}
+      >
         <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12 }} minZoomLevel={2} maxZoomLevel={20} />
         {/* Override POI/business label colors to white */}
         <SymbolLayer id="poi-label" existing={true} style={{ textColor: '#ffffff' }} />
@@ -481,6 +501,7 @@ function FullMapScreen() {
           setShowNearbySheet((prev) => !prev);
         }}
         isSharing={sharingState.isSharing}
+        isCentered={isCentered}
         topInset={insets.top + 16}
       />
 

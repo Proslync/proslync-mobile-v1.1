@@ -16,6 +16,8 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView } from 'expo-glass-effect';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -239,7 +241,11 @@ export default function ModerationRulesScreen() {
           <Ionicons name="chevron-back" size={20} color="#000" />
         </Pressable>
         <View style={styles.pillLabel}>
-          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          {isLiquidGlassSupported ? (
+            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          ) : (
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          )}
           <Text style={styles.pillLabelText}>Rules</Text>
         </View>
         <TouchableOpacity style={styles.pillIcon} onPress={openCreate} activeOpacity={0.7}>
@@ -247,19 +253,7 @@ export default function ModerationRulesScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Stats */}
-      <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.statsRow}>
-        <View style={[styles.statPill, { overflow: 'hidden' as const }]}>
-          <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />
-          <Text style={[styles.statNum, { color: colors.text }]}>{rules?.length ?? 0}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total</Text>
-        </View>
-        <View style={[styles.statPill, { overflow: 'hidden' as const }]}>
-          <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />
-          <Text style={[styles.statNum, { color: '#4CAF50' }]}>{activeCount}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Active</Text>
-        </View>
-      </Animated.View>
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Form */}
       {showForm && (
@@ -349,7 +343,7 @@ export default function ModerationRulesScreen() {
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 40 },
+          { paddingTop: insets.top + 70, paddingBottom: insets.bottom + 40 },
         ]}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -370,9 +364,10 @@ export default function ModerationRulesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { justifyContent: 'center', alignItems: 'center' },
-  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
   statsRow: {
     flexDirection: 'row',

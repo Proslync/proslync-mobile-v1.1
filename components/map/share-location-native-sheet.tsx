@@ -1,45 +1,15 @@
-// Native SwiftUI Bottom Sheet for Share Location
-// Uses NativeSheet wrapper for automatic dark/light theme
+// Native SwiftUI Bottom Sheet for Share Location — Apple Find My style
+// Uses NativeSheet wrapper with dark theme and RN content
 
-import { useLiveLocation } from "@/lib/providers/live-location-provider";
-import {
-  SHARE_DURATION_OPTIONS,
-  type ShareDurationSeconds,
-} from "@/lib/types/live-location.types";
-import { useLocationVisibility } from "@/hooks/use-location-visibility";
-import { VISIBILITY_MODE_LABELS } from "@/lib/types/location-visibility.types";
-import {
-  Button,
-  Circle,
-  GlassEffectContainer,
-  HStack,
-  Text,
-  VStack,
-} from "@expo/ui/swift-ui";
-import {
-  buttonStyle,
-  controlSize,
-  font,
-  foregroundStyle,
-  frame,
-  glassEffect,
-  padding,
-} from "@expo/ui/swift-ui/modifiers";
-import * as Haptics from "expo-haptics";
 import * as React from "react";
+import { View, Text, StyleSheet, Switch, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { NativeSheet } from "@/components/ui/native-sheet";
+import { useLiveLocation } from "@/lib/providers/live-location-provider";
 
 // Re-export for search.tsx
 export { canUseNativeSheet } from "@/components/ui/native-sheet";
-
-// Shorthand for hierarchical styles
-const primary = foregroundStyle({ type: "hierarchical", style: "primary" });
-const secondary = foregroundStyle({ type: "hierarchical", style: "secondary" });
-const tertiary = foregroundStyle({ type: "hierarchical", style: "tertiary" });
-const quaternary = foregroundStyle({
-  type: "hierarchical",
-  style: "quaternary",
-});
 
 interface NativeShareLocationSheetProps {
   isVisible: boolean;
@@ -52,213 +22,150 @@ export function NativeShareLocationSheet({
 }: NativeShareLocationSheetProps) {
   const {
     sharingState,
-    remainingTime,
-    connectionState,
     startSharing,
     stopSharing,
     hasLocationPermission,
     requestLocationPermission,
   } = useLiveLocation();
-  const { settings } = useLocationVisibility();
-  const [isStarting, setIsStarting] = React.useState(false);
 
-  const isConnected = connectionState === "connected";
-  const visibilityLabel = VISIBILITY_MODE_LABELS[settings.mode];
+  const isSharing = sharingState.isSharing;
 
-  const handleDurationSelect = async (duration: ShareDurationSeconds) => {
+  const handleToggle = async (value: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsStarting(true);
-    try {
+    if (value) {
       if (!hasLocationPermission) {
-        const granted = await requestLocationPermission();
-        if (!granted) {
-          setIsStarting(false);
-          return;
-        }
+        await requestLocationPermission();
       }
-      await startSharing(duration);
-    } catch (error) {
-      console.error(
-        "[NativeShareLocationSheet] Failed to start sharing:",
-        error,
-      );
-    } finally {
-      setIsStarting(false);
+      startSharing(0); // 0 = indefinite
+    } else {
+      stopSharing();
     }
-  };
-
-  const handleStopSharing = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    await stopSharing();
-    onClose();
-  };
-
-  const formatTime = (seconds: number): string => {
-    if (seconds <= 0) return "0m";
-    if (seconds > 86400) return "Until I turn it off";
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    if (hours > 0 && mins > 0) return `${hours}h ${mins}m remaining`;
-    if (hours > 0) return `${hours}h remaining`;
-    return `${mins}m remaining`;
   };
 
   return (
     <NativeSheet
       isPresented={isVisible}
       onDismiss={onClose}
-      detents={[{ fraction: 0.45 }, "medium"]}
-      backgroundInteraction={{
-        type: "enabledUpThrough",
-        detent: { fraction: 0.45 },
-      }}
+      detents={[{ fraction: 0.32 }]}
+      colorScheme="dark"
+      rnContent
     >
-      {sharingState.isSharing ? (
-        // ─── Active Sharing State ───
-        <>
-          {/* Live badge */}
-          <HStack
-            spacing={6}
-            modifiers={[
-              padding({ horizontal: 12, vertical: 6 }),
-              glassEffect({
-                glass: { variant: "regular" },
-                shape: "capsule",
-              }),
-            ]}
-          >
-            <Circle
-              modifiers={[
-                frame({ width: 8, height: 8 }),
-                foregroundStyle("#00D632"),
-              ]}
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Me</Text>
+        </View>
+
+        {/* Status */}
+        <Text style={styles.statusText}>
+          {isSharing ? "Sharing Location" : "Not Sharing Location"}
+        </Text>
+
+        {/* Settings card */}
+        <View style={styles.card}>
+          {/* My Location */}
+          <View style={styles.row}>
+            <View style={styles.rowIconCircle}>
+              <Ionicons name="location-sharp" size={18} color="#fff" />
+            </View>
+            <Text style={styles.rowLabel}>My Location</Text>
+          </View>
+
+          <View style={styles.separator} />
+
+          {/* Share My Location */}
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Share My Location</Text>
+            <Switch
+              value={isSharing}
+              onValueChange={handleToggle}
+              trackColor={{ false: "#39393d", true: "#34c759" }}
+              thumbColor="#fff"
+              style={styles.toggle}
             />
-            <Text modifiers={[font({ size: 11, weight: "bold" }), primary]}>
-              LIVE
-            </Text>
-          </HStack>
+          </View>
 
-          {/* Title */}
-          <Text modifiers={[font({ size: 20, weight: "bold" }), primary]}>
-            Sharing your location
-          </Text>
+          <View style={styles.separator} />
 
-          <Text modifiers={[font({ size: 13 }), secondary]}>
-            {`Visible to: ${visibilityLabel}`}
-          </Text>
-
-          {/* Timer card */}
-          <GlassEffectContainer spacing={8}>
-            <HStack
-              spacing={8}
-              modifiers={[
-                padding({ horizontal: 16, vertical: 12 }),
-                glassEffect({
-                  glass: { variant: "regular" },
-                  shape: "roundedRectangle",
-                  cornerRadius: 16,
-                }),
-              ]}
-            >
-              <Text modifiers={[font({ size: 15 }), secondary]}>
-                {sharingState.duration === 0
-                  ? "∞ Sharing permanently"
-                  : remainingTime !== null
-                    ? formatTime(remainingTime)
-                    : "--"}
-              </Text>
-            </HStack>
-          </GlassEffectContainer>
-
-          {/* Stop button */}
-          <Button
-            systemImage="stop.circle"
-            label="Stop Sharing"
-            role="destructive"
-            onPress={handleStopSharing}
-            modifiers={[
-              buttonStyle("glassProminent"),
-              controlSize("large"),
-              padding({ top: 8 }),
-            ]}
-          />
-        </>
-      ) : (
-        // ─── Pick Duration State ───
-        <>
-          {/* Header icon */}
-          <GlassEffectContainer>
-            <VStack
-              modifiers={[
-                frame({ width: 56, height: 56 }),
-                glassEffect({
-                  glass: { variant: "regular" },
-                  shape: "roundedRectangle",
-                  cornerRadius: 16,
-                }),
-              ]}
-            >
-              <Button
-                systemImage="location.fill"
-                onPress={() => {}}
-                modifiers={[buttonStyle("plain"), primary]}
-              />
-            </VStack>
-          </GlassEffectContainer>
-
-          <Text modifiers={[font({ size: 20, weight: "bold" }), primary]}>
-            Share Live Location
-          </Text>
-
-          <Text modifiers={[font({ size: 13 }), tertiary]}>
-            Choose how long to share with friends
-          </Text>
-
-          {/* Duration options */}
-          <GlassEffectContainer spacing={2}>
-            <VStack
-              spacing={0}
-              modifiers={[
-                glassEffect({
-                  glass: { variant: "regular" },
-                  shape: "roundedRectangle",
-                  cornerRadius: 20,
-                }),
-              ]}
-            >
-              {SHARE_DURATION_OPTIONS.map((option) => (
-                <Button
-                  key={option.value}
-                  systemImage={option.isPermanent ? "infinity" : "clock"}
-                  label={option.label}
-                  onPress={() => handleDurationSelect(option.value)}
-                  modifiers={[
-                    buttonStyle("glass"),
-                    controlSize("large"),
-                    frame({ maxWidth: 99999 }),
-                  ]}
-                />
-              ))}
-            </VStack>
-          </GlassEffectContainer>
-
-          {/* Who can see */}
-          <Button
-            systemImage="eye"
-            label={`Who can see · ${visibilityLabel}`}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
-            modifiers={[buttonStyle("glass"), controlSize("regular")]}
-          />
-
-          {!hasLocationPermission && (
-            <Text modifiers={[font({ size: 12 }), quaternary]}>
-              Location permission required
-            </Text>
-          )}
-        </>
-      )}
+          {/* Sharing From */}
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Sharing From</Text>
+            <Text style={styles.rowValue}>This iPhone</Text>
+          </View>
+        </View>
+      </View>
     </NativeSheet>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 40,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#fff",
+  },
+  addBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  statusText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#34c759",
+    marginBottom: 20,
+  },
+  card: {
+    backgroundColor: "#2c2c2e",
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    gap: 12,
+  },
+  rowIconCircle: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: "#636366",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  rowLabel: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#fff",
+    flex: 1,
+  },
+  rowValue: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "rgba(255,255,255,0.5)",
+  },
+  toggle: {
+    transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    marginLeft: 58,
+  },
+});

@@ -10,6 +10,9 @@ import {
   FlatList,
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from 'react-native';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
@@ -165,8 +168,10 @@ export function InviteModal(props: InviteModalProps) {
   }, [selectedUser, selectedRoleId, inviteMutation, isCustomMode, props]);
 
   const handleClose = () => {
+    Keyboard.dismiss();
     onClose();
   };
+
 
   const renderPersonRow = ({ item }: { item: UnifiedSearchItem }) => {
     const isSelected = selectedUser?.id === item.id;
@@ -210,9 +215,9 @@ export function InviteModal(props: InviteModalProps) {
             </Text>
           )}
         </View>
-        {isSelected && (
-          <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
-        )}
+        <View style={[styles.selectCircle, isSelected && styles.selectCircleSelected]}>
+          {isSelected && <Ionicons name="checkmark" size={16} color="#fff" />}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -261,15 +266,15 @@ export function InviteModal(props: InviteModalProps) {
             </Text>
           )}
         </View>
-        {isSelected && (
-          <Ionicons name="checkmark-circle" size={22} color="#1A1A1A" />
-        )}
+        <View style={[styles.selectCircle, isSelected && styles.selectCircleSelected]}>
+          {isSelected && <Ionicons name="checkmark" size={16} color="#fff" />}
+        </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={handleClose}>
       <ConfirmSheet
         visible={!!inviteError}
         onClose={() => setInviteError(null)}
@@ -278,17 +283,12 @@ export function InviteModal(props: InviteModalProps) {
         alertOnly
         icon="alert-circle-outline"
       />
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#f2f2f2' }]}>
+        {/* X button — top right */}
+        <View style={styles.topBar}>
+          <View style={{ flex: 1 }} />
           <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-            <GlassView
-              {...liquidGlass.fillMedium}
-              borderRadius={16}
-              style={StyleSheet.absoluteFill}
-            />
-            <Text style={styles.closeText}>{'\u2715'}</Text>
+            <Ionicons name="close" size={22} color="#000" />
           </TouchableOpacity>
         </View>
 
@@ -319,31 +319,7 @@ export function InviteModal(props: InviteModalProps) {
             </TouchableOpacity>
           </View>
         ) : (
-          <>
-            {/* Search Input */}
-            <View style={styles.searchContainer}>
-              <GlassView
-                {...liquidGlass.fill}
-                borderRadius={12}
-                style={StyleSheet.absoluteFill}
-              />
-              <Ionicons name="search" size={18} color="rgba(0,0,0,0.35)" />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search by name or username..."
-                placeholderTextColor="rgba(0,0,0,0.25)"
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.35)" />
-                </TouchableOpacity>
-              )}
-            </View>
-
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             {/* Results / Suggestions */}
             <View style={styles.resultsContainer}>
               {hasQuery ? (
@@ -399,10 +375,9 @@ export function InviteModal(props: InviteModalProps) {
               )}
             </View>
 
-            {/* Role Selection + Send */}
+            {/* Role Selection + Send — glass card above search */}
             {selectedUser && (
-              <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
-                <Text style={styles.label}>Role</Text>
+              <View style={styles.roleCard}>
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
@@ -461,7 +436,29 @@ export function InviteModal(props: InviteModalProps) {
                 </TouchableOpacity>
               </View>
             )}
-          </>
+
+            {/* Search Input — bottom, above keyboard */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <Ionicons name="search" size={18} color="rgba(0,0,0,0.35)" />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search by name or username..."
+                  placeholderTextColor="rgba(0,0,0,0.25)"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.35)" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </KeyboardAvoidingView>
         )}
       </View>
     </Modal>
@@ -470,35 +467,31 @@ export function InviteModal(props: InviteModalProps) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
-  title: { fontSize: 18, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    overflow: 'hidden',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  closeText: { fontSize: 16, color: '#1A1A1A' },
   searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    margin: 16,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-    overflow: 'hidden',
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.05)',
     gap: 10,
   },
   searchInput: {
@@ -537,12 +530,20 @@ const styles = StyleSheet.create({
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
     gap: 12,
     overflow: 'hidden',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
   },
-  userRowSelected: {},
+  userRowSelected: {
+    borderColor: 'rgba(0,0,0,0.15)',
+  },
   avatar: {
     width: 44,
     height: 44,
@@ -577,6 +578,28 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  roleCard: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+  },
+  selectCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: 'rgba(0,0,0,0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectCircleSelected: {
+    backgroundColor: '#000',
+    borderColor: '#000',
   },
   label: {
     fontSize: 14,

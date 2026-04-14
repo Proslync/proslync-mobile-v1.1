@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useQuery } from '@tanstack/react-query';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
@@ -126,14 +128,13 @@ export default function ModerationScreen() {
               style={styles.filterPill}
               onPress={() => setActiveFilter(tab)}
             >
-              <View style={styles.filterPillGlass} pointerEvents="none">
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
-                  borderRadius={19}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={styles.filterPillGlass} pointerEvents="none">
+                  <GlassView {...liquidGlass.surface} tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'} borderRadius={19} style={StyleSheet.absoluteFill} />
+                </View>
+              )}
               <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </Text>
@@ -142,17 +143,7 @@ export default function ModerationScreen() {
         })}
       </ScrollView>
 
-      {/* Stats */}
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{allLogs?.total ?? 0}</Text>
-          <Text style={styles.statLabel}>Total Reviewed</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={[styles.statValue, { color: '#f87171' }]}>{removedLogs?.total ?? 0}</Text>
-          <Text style={styles.statLabel}>Removed</Text>
-        </View>
-      </View>
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* List */}
       {isLoading ? (
@@ -170,7 +161,7 @@ export default function ModerationScreen() {
           renderItem={renderItem}
           keyExtractor={(item) => String(item.id)}
           refreshControl={refreshControl}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[styles.listContent, { paddingTop: insets.top + 70, paddingBottom: insets.bottom + 20 }]}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -181,10 +172,11 @@ export default function ModerationScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
-  pillScroll: { flexGrow: 0 },
+  pillScroll: { flexGrow: 0, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   filterPill: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   filterPillGlass: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 19 },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   filterPillText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.5)' },
   filterPillTextActive: { color: 'rgba(0,0,0,0.8)' },
   statsRow: {
@@ -192,6 +184,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 12,
     marginBottom: 16,
+    marginTop: 130,
   },
   statCard: {
     flex: 1,

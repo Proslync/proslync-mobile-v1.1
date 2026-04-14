@@ -17,6 +17,8 @@ import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks';
 import { GlassView } from 'expo-glass-effect';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useAdminPosts, useAdminDeletePost } from '@/hooks/use-admin';
@@ -132,7 +134,7 @@ export default function AdminPostsScreen() {
 
       {/* Top row */}
       {isSearchActive ? (
-        <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <View style={[styles.pillRow, { paddingTop: insets.top + 16, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }]}>
           <View style={styles.searchBarInline}>
             <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
             <TextInput
@@ -156,7 +158,7 @@ export default function AdminPostsScreen() {
           </Pressable>
         </View>
       ) : (
-        <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <View style={[styles.pillRow, { paddingTop: insets.top + 16, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 }]}>
           <Pressable style={styles.pillIcon} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={20} color="#000" />
           </Pressable>
@@ -164,11 +166,17 @@ export default function AdminPostsScreen() {
             <Ionicons name="search" size={18} color="#000" />
           </Pressable>
           <View style={styles.pillLabel}>
-            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+            {isLiquidGlassSupported ? (
+              <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+            ) : (
+              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+            )}
             <Text style={styles.pillLabelText}>Posts{data ? ` ${data.total}` : ''}</Text>
           </View>
         </View>
       )}
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {isLoading ? (
         <View style={styles.center}>
@@ -182,7 +190,7 @@ export default function AdminPostsScreen() {
             <PostRow post={item} onDelete={() => confirmDelete(item)} colors={colors} />
           )}
           refreshControl={refreshControl}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+          contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No posts found</Text>
@@ -220,6 +228,7 @@ const styles = StyleSheet.create({
   searchInputInline: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
   searchContainer: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBar: {

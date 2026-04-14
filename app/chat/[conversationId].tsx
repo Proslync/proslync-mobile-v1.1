@@ -371,7 +371,7 @@ function MessageBubble({
                           {
                             backgroundColor: isDark
                               ? colors.cardElevated
-                              : "#f0f0f0",
+                              : "rgba(255,255,255,0.85)",
                           },
                           !isGroupStart &&
                             i === 0 &&
@@ -404,7 +404,7 @@ function MessageBubble({
                           {
                             backgroundColor: isDark
                               ? colors.cardElevated
-                              : "#f0f0f0",
+                              : "rgba(255,255,255,0.85)",
                           },
                         ],
                     !isGroupStart &&
@@ -681,7 +681,7 @@ function VoiceMessagePlayer({
           ? styles.voiceMessageOwn
           : [
               styles.voiceMessageOther,
-              { backgroundColor: isDark ? colors.cardElevated : "#f0f0f0" },
+              { backgroundColor: isDark ? colors.cardElevated : "rgba(255,255,255,0.85)" },
             ],
       ]}
     >
@@ -1164,11 +1164,11 @@ function Composer({
                   activeOpacity={0.7}
                   style={styles.composerBoxBtn}
                 >
-                  <Ionicons name="add" size={24} color="rgba(0,0,0,0.5)" />
+                  <Ionicons name="add" size={24} color="#000" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={handleMicPress} activeOpacity={0.7} style={styles.composerBoxBtn}>
-                  <Ionicons name="mic-outline" size={22} color="rgba(0,0,0,0.4)" />
+                  <Ionicons name="mic-outline" size={22} color="#000" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1834,33 +1834,33 @@ export default function ChatThreadScreen() {
       />
 
       {/* Header — fixed at top */}
-      <View style={[styles.headerFixed, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.headerFixed, { paddingTop: insets.top - 4 }]}>
         <TouchableOpacity style={styles.headerGlassBtn} onPress={() => router.back()} activeOpacity={0.7}>
           {isLiquidGlassSupported ? (
             <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
           ) : (
             <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
           )}
-          <Ionicons name="chevron-back" size={22} color="#000" />
+          <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerCenterColumn} onPress={isConcierge ? undefined : handleHeaderPress} activeOpacity={isConcierge ? 1 : 0.7} disabled={isConcierge}>
           <View style={styles.headerAvatarContainer}>
             {isConcierge ? (
-              <View style={styles.conciergeHeaderAvatar}><Ionicons name="sparkles" size={18} color="#fff" /></View>
+              <View style={styles.conciergeHeaderAvatar}><Ionicons name="sparkles" size={24} color="#fff" /></View>
             ) : (
-              <Avatar uri={channelInfo?.otherMember?.image} size={44} colors={colors} />
+              <Avatar uri={channelInfo?.otherMember?.image} size={62} colors={colors} />
             )}
             {!isConcierge && channelInfo?.isOnline && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
           </View>
           <View style={styles.headerNameGlass}>
-            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={16} style={StyleSheet.absoluteFill} />
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={20} style={StyleSheet.absoluteFill} />
             <View style={styles.headerNameRow}>
               <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{channelInfo?.name || "Chat"}</Text>
               {channelInfo?.otherMember?.isVerified && <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />}
             </View>
-            {(isConcierge || channelInfo?.type === "group" || channelInfo?.isOnline) && (
+            {(!isConcierge && (channelInfo?.type === "group" || channelInfo?.isOnline)) && (
               <Text style={[styles.headerStatus, { color: colors.textSecondary }]}>
-                {isConcierge ? "AI Assistant" : channelInfo?.type === "group" ? `${channelInfo.memberCount} members` : "Active now"}
+                {channelInfo?.type === "group" ? `${channelInfo.memberCount} members` : "Active now"}
               </Text>
             )}
           </View>
@@ -1870,23 +1870,23 @@ export default function ChatThreadScreen() {
             {isLiquidGlassSupported ? (
               <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
             ) : (
-              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
+              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={22} style={StyleSheet.absoluteFill} />
             )}
-            <Ionicons name="call-outline" size={20} color="#000" />
+            <Ionicons name="call-outline" size={22} color="#000" />
           </TouchableOpacity>
-        ) : <View style={styles.headerGlassBtn} />}
+        ) : <View style={{ width: 44 }} />}
       </View>
 
       {/* Top fade */}
       <LinearGradient
-        colors={['#f2f2f2', 'rgba(242,242,242,0)']}
+        colors={['#e8e8e8', 'rgba(232,232,232,0)']}
         style={styles.topFade}
         pointerEvents="none"
       />
 
       {/* Bottom fade */}
       <LinearGradient
-        colors={['rgba(242,242,242,0)', '#f2f2f2']}
+        colors={['rgba(232,232,232,0)', '#e8e8e8']}
         style={styles.bottomFade}
         pointerEvents="none"
       />
@@ -1954,6 +1954,11 @@ export default function ChatThreadScreen() {
               />
             ) : null
           }
+          onLoad={() => {
+            setTimeout(() => {
+              flatListRef.current?.scrollToEnd({ animated: false });
+            }, 150);
+          }}
         />
 
         {/* Scroll to Bottom Button */}
@@ -2059,7 +2064,7 @@ export default function ChatThreadScreen() {
                             {
                               backgroundColor: isDark
                                 ? colors.cardElevated
-                                : "#f0f0f0",
+                                : "rgba(255,255,255,0.85)",
                             },
                           ],
                     ]}
@@ -2522,7 +2527,7 @@ export default function ChatThreadScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#e8e8e8",
   },
   // Header
   header: {
@@ -2553,20 +2558,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: 12,
     paddingBottom: 10,
     zIndex: 10,
   },
   headerGlassBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
     overflow: 'hidden',
     backgroundColor: 'rgba(0,0,0,0.06)',
-    overflow: "hidden",
   },
   headerCenterColumn: {
     flex: 1,
@@ -2574,20 +2578,22 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   headerNameGlass: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 20,
     overflow: 'hidden',
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
   },
   headerAvatarContainer: {
     position: "relative",
+    marginBottom: -14,
+    zIndex: 1,
   },
   conciergeHeaderAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
     backgroundColor: "#1a1a2e",
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.15)",
@@ -2660,7 +2666,7 @@ const styles = StyleSheet.create({
   },
   messagesList: {
     paddingTop: 140,
-    paddingBottom: 120,
+    paddingBottom: 130,
     paddingHorizontal: 12,
   },
   emptyList: {
@@ -2744,11 +2750,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   messageBubbleOther: {
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "rgba(255,255,255,0.85)",
     borderBottomLeftRadius: 4,
   },
   messageBubbleOwn: {
-    backgroundColor: "#000",
+    backgroundColor: "#3a3a3c",
     borderBottomRightRadius: 4,
   },
   messageBubbleGroupOther: {
@@ -2930,6 +2936,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingTop: 8,
     paddingHorizontal: 16,
+    zIndex: 10,
   },
   pendingMediaContainer: {
     flexDirection: "row",

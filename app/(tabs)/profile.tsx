@@ -467,9 +467,8 @@ export default function ProfileScreen() {
   const handleAvatarTap = () => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      // Double tap → account switcher
+      // Double tap — no-op (account switcher removed)
       if (avatarTapTimer.current) clearTimeout(avatarTapTimer.current);
-      openAccountSwitcher();
     } else {
       // Single tap → open avatar viewer (delayed to detect double tap)
       avatarTapTimer.current = setTimeout(() => {
@@ -612,11 +611,7 @@ export default function ProfileScreen() {
             <Ionicons name="add" size={22} color="rgba(0,0,0,0.7)" />
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={s.usernameCenter}
-            onPress={openAccountSwitcher}
-            activeOpacity={0.7}
-          >
+          <View style={s.usernameCenter}>
             <View style={s.usernameSpacer}>
               {user?.isVerified && <View style={{ width: 16 + 5 }} />}
               <View style={{ width: 13 + 3 }} />
@@ -630,9 +625,8 @@ export default function ProfileScreen() {
                   color="#3897F0"
                 />
               )}
-              <Ionicons name="chevron-down" size={13} color="rgba(0,0,0,0.35)" />
             </View>
-          </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={s.glassCircle}
@@ -847,21 +841,6 @@ export default function ProfileScreen() {
             currentUserId={user.id}
           />
         )}
-
-        {/* Account Switcher */}
-        <AccountSwitcherModal
-          visible={isAccountSwitcherOpen}
-          currentUserId={user?.id}
-          savedAccounts={savedAccounts.filter(
-            (a) => a.id === user?.id || !!a.accessToken,
-          )}
-          venues={myVenues}
-          unreadCount={unreadCount}
-          onClose={closeAccountSwitcher}
-          onSelectAccount={handleSelectAccount}
-          onAddAccount={handleAddAccount}
-          onSelectVenue={handleSelectVenue}
-        />
 
         <ActionSheet
           visible={showCreateMenu}

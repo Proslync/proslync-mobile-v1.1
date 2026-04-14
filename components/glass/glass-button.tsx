@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { ViewStyle, TextStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -225,7 +226,7 @@ export function GlassButton({
             <ActivityIndicator color={config.textColor} size="small" />
           ) : (
             <>
-              {icon && <View style={styles.icon}>{icon}</View>}
+              {icon && <View style={styles.icon}>{typeof icon === 'string' ? <Ionicons name={icon as any} size={18} color={config.textColor} /> : icon}</View>}
               <Text style={textStyle}>{label}</Text>
             </>
           )}

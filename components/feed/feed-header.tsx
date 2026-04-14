@@ -35,27 +35,6 @@ export function FeedHeader({
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.headerRow}>
-        {/* Notification button */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => router.push('/notifications')}
-          style={styles.iconTouchable}
-        >
-          <View style={styles.iconWrapper}>
-            <GlassView
-              {...liquidGlass.surface}
-              borderRadius={20}
-              style={styles.iconGlassBg}
-            />
-            <View style={styles.iconContent}>
-              <Ionicons name="notifications-outline" size={20} color="#fff" />
-            </View>
-          </View>
-          {!!unreadCount && unreadCount > 0 && (
-            <View style={styles.unreadBadge} />
-          )}
-        </TouchableOpacity>
-
         {/* Glass segmented control */}
         <View style={styles.segmentedControl}>
           <SegmentedControl

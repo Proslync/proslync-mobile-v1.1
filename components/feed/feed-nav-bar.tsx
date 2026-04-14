@@ -13,7 +13,7 @@ import {
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const FILTERS = ["For You", "Following", "Events Near Me", "Tables"];
+const FILTERS = ["For You", "Following", "Nearby", "Tables"];
 
 export interface FeedNavBarProps {
   activeFilter: string;
@@ -91,14 +91,6 @@ export function FeedNavBar({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {/* Notification pill */}
-          <Pressable style={styles.pill} onPress={onNotificationPress}>
-            <View style={styles.glassLayer} pointerEvents="none">
-              <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={20} style={StyleSheet.absoluteFill} />
-            </View>
-            <Ionicons name="notifications-outline" size={18} color="#000" />
-          </Pressable>
-
           {/* Search pill */}
           <Pressable style={styles.pill} onPress={onSearchPress}>
             <View style={styles.glassLayer} pointerEvents="none">

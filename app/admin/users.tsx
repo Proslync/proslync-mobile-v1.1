@@ -19,6 +19,8 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 import { useDebounce } from '@/hooks';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import {
   useAdminUsers,
@@ -151,9 +153,9 @@ export default function AdminUsersScreen() {
   return (
     <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Top row — back, search, filter pills */}
+      {/* Top row — back, search, filter pills (fixed) */}
       {isSearchActive ? (
-        <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <View style={[styles.pillRow, styles.pillRowFixed, { paddingTop: insets.top + 16 }]}>
           <View style={styles.searchBarInline}>
             <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
             <TextInput
@@ -181,7 +183,7 @@ export default function AdminUsersScreen() {
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={[styles.pillRow, { paddingTop: insets.top + 16 }]}
-          style={styles.pillScroll}
+          style={[styles.pillScroll, styles.pillRowFixed]}
         >
           <Pressable style={styles.pillIcon} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={20} color="#000" />
@@ -197,14 +199,13 @@ export default function AdminUsersScreen() {
                 style={styles.filterPill}
                 onPress={() => { setStatusFilter(f.key); setPage(1); }}
               >
-                <View style={styles.filterPillGlass} pointerEvents="none">
-                  <GlassView
-                    {...liquidGlass.surface}
-                    tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
-                    borderRadius={19}
-                    style={StyleSheet.absoluteFill}
-                  />
-                </View>
+                {isLiquidGlassSupported ? (
+                  <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+                ) : (
+                  <View style={styles.filterPillGlass} pointerEvents="none">
+                    <GlassView {...liquidGlass.surface} tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'} borderRadius={19} style={StyleSheet.absoluteFill} />
+                  </View>
+                )}
                 <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
                   {f.label}
                 </Text>
@@ -213,6 +214,9 @@ export default function AdminUsersScreen() {
           })}
         </ScrollView>
       )}
+
+      {/* Top fade */}
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* User List */}
       {isLoading ? (
@@ -227,7 +231,7 @@ export default function AdminUsersScreen() {
             <UserRow user={item} onPress={() => showActions(item)} colors={colors} />
           )}
           refreshControl={refreshControl}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+          contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: insets.bottom + 40 }}
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No users found</Text>
@@ -279,6 +283,8 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
   pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillRowFixed: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   pillScroll: { flexGrow: 0 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   filterPill: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },

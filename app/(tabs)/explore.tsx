@@ -29,6 +29,7 @@ import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { GlassView } from "expo-glass-effect";
 import { liquidGlass, glassTint, glassText, glassBorder, glassSurfaceTint } from "@/constants/glass/liquid-glass";
@@ -41,6 +42,11 @@ import {
   type ChannelData,
 } from "@/hooks/use-conversations";
 import { useMyChannels } from "@/hooks/use-channels";
+import { useQuery } from "@tanstack/react-query";
+import { useNotifications, useMarkNotificationRead } from "@/hooks/use-notifications";
+import type { AppNotification, NotificationType } from "@/lib/types/notifications.types";
+import { formatTimeAgo } from "@/lib/utils";
+import { authApi } from "@/lib/api/auth";
 import type { ChannelResponse } from "@/lib/api/channels";
 import { features } from "@/lib/config";
 import { useUnifiedSearch } from "@/hooks/use-unified-search";
@@ -451,6 +457,50 @@ function ChannelsEmptyState({ onDiscover }: { onDiscover: () => void }) {
   );
 }
 
+const NOTIF_ICONS: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
+  follow: 'person-add', rsvp: 'calendar', event_update: 'refresh-circle',
+  payment: 'card', chat: 'chatbubble-ellipses', like: 'heart',
+  comment: 'chatbubble', mention: 'at', team_invitation: 'people',
+};
+const ACTOR_PHOTO_TYPES: NotificationType[] = ['follow', 'like', 'comment', 'mention', 'chat', 'payment', 'team_invitation'];
+
+function useActorUser(actorId?: number) {
+  return useQuery({ queryKey: ['user', actorId], queryFn: () => authApi.getUserById(actorId!), enabled: !!actorId, staleTime: 5 * 60_000 });
+}
+
+function NotificationRow({ item, onPress }: { item: AppNotification; onPress: () => void }) {
+  const actorId = item.metadata?.actorId as number | undefined;
+  const showActorPhoto = ACTOR_PHOTO_TYPES.includes(item.type) && actorId;
+  const { data: actorUser } = useActorUser(actorId);
+  const iconName = NOTIF_ICONS[item.type] || 'notifications';
+
+  return (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      onPress={onPress}
+      style={[styles.notifRow, !item.read && styles.notifRowUnread]}
+    >
+      {showActorPhoto && actorUser?.avatar?.url ? (
+        <Image source={{ uri: actorUser.avatar.url }} style={styles.notifActorAvatar} />
+      ) : (
+        <View style={styles.notifIcon}>
+          <Ionicons name={iconName} size={18} color="rgba(0,0,0,0.4)" />
+        </View>
+      )}
+      <View style={styles.notifContent}>
+        <Text style={styles.notifText} numberOfLines={2}>
+          <Text style={styles.notifTitle}>{item.title}</Text>
+          {actorUser?.isVerified && ' '}
+          {actorUser?.isVerified && <MaterialCommunityIcons name="check-decagram" size={14} color="#3897F0" />}
+          {'  '}{item.body}
+        </Text>
+        <Text style={styles.notifTime}>{formatTimeAgo(item.createdAt)}</Text>
+      </View>
+      {!item.read && <View style={styles.notifUnreadDot} />}
+    </TouchableOpacity>
+  );
+}
+
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
@@ -473,7 +523,7 @@ export default function MessagesScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
   const { tab: tabParam } = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<'Messages' | 'Channels'>(
+  const [activeTab, setActiveTab] = useState<'Messages' | 'Notifications' | 'Channels'>(
     tabParam === 'channels' ? 'Channels' : 'Messages',
   );
   // Sync to param when it changes (e.g. navigated from create-channel)
@@ -487,6 +537,8 @@ export default function MessagesScreen() {
 
   // Compose new DM state
   const [showCompose, setShowCompose] = useState(false);
+  const { notifications, fetchNextPage, hasNextPage, isLoading: notifsLoading } = useNotifications();
+  const markRead = useMarkNotificationRead();
   const [composeKeyboardHeight, setComposeKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -577,9 +629,12 @@ export default function MessagesScreen() {
 
   // Filter channels by search
   const filteredChannels = useMemo(() => {
-    if (!searchQuery.trim()) return channelData;
+    // Hide conversations with no messages (created but never used)
+    const withMessages = channelData.filter((channel) => !!channel.lastMessage);
 
-    return channelData.filter((channel) => {
+    if (!searchQuery.trim()) return withMessages;
+
+    return withMessages.filter((channel) => {
       if (searchResults.has(channel.id)) return true;
       const lowerQuery = searchQuery.toLowerCase();
       if (channel.name.toLowerCase().includes(lowerQuery)) return true;
@@ -836,30 +891,14 @@ export default function MessagesScreen() {
           </Pressable>
 
           {/* New convo / new channel icon pill */}
-          <Pressable
-            style={styles.iconPill}
-            onPress={() => {
-              if (activeTab === 'Channels') {
-                router.push('/create-channel' as any);
-              } else {
-                handleOpenCompose();
-              }
-            }}
-          >
-            <View style={styles.glassLayer} pointerEvents="none">
-              <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={19} style={StyleSheet.absoluteFill} />
-            </View>
-            <Ionicons name="add" size={20} color="#000" />
-          </Pressable>
-
           {/* Filter pills */}
-          {((features.channels ? ['Messages', 'Channels'] : ['Messages']) as ('Messages' | 'Channels')[]).map((label) => {
+          {((features.channels ? ['Messages', 'Notifications', 'Channels'] : ['Messages', 'Notifications']) as const).map((label) => {
             const isActive = activeTab === label;
             return (
               <Pressable
                 key={label}
                 style={styles.filterPill}
-                onPress={() => setActiveTab(label)}
+                onPress={() => setActiveTab(label as 'Messages' | 'Notifications' | 'Channels')}
               >
                 <View style={styles.glassLayer} pointerEvents="none">
                   <GlassView
@@ -922,7 +961,44 @@ export default function MessagesScreen() {
         entering={FadeIn.duration(300)}
         style={styles.listContainer}
       >
-        {activeTab === 'Messages' ? (
+        {activeTab === 'Notifications' ? (
+          <FlatList
+            data={notifications.filter((n) => n.type !== 'chat').filter((n, i, arr) => {
+              if (n.type !== 'follow') return true;
+              const actorId = n.metadata?.actorId;
+              if (!actorId) return true;
+              return arr.findIndex((x) => x.type === 'follow' && x.metadata?.actorId === actorId) === i;
+            })}
+            keyExtractor={(item) => String(item.id)}
+            renderItem={({ item }) => (
+              <NotificationRow
+                item={item}
+                onPress={() => {
+                  if (!item.read) markRead.mutate(item.id);
+                }}
+              />
+            )}
+            ListEmptyComponent={
+              notifsLoading ? (
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator color={colors.text} />
+                </View>
+              ) : (
+                <View style={styles.loadingContainer}>
+                  <Ionicons name="notifications-outline" size={48} color="rgba(0,0,0,0.15)" />
+                  <Text style={{ color: 'rgba(0,0,0,0.35)', fontSize: 15, marginTop: 12 }}>No notifications yet</Text>
+                </View>
+              )
+            }
+            contentContainerStyle={[
+              notifications.length === 0 ? styles.emptyListContainer : styles.listContent,
+              { paddingBottom: tabBarTopOffset + 20 },
+            ]}
+            showsVerticalScrollIndicator={false}
+            onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
+            onEndReachedThreshold={0.3}
+          />
+        ) : activeTab === 'Messages' ? (
           <FlatList
             data={filteredChannels}
             keyExtractor={(item) => item.id}
@@ -1260,6 +1336,26 @@ export default function MessagesScreen() {
         alertOnly
         icon="alert-circle-outline"
       />
+
+      {/* New conversation FAB */}
+      <Pressable
+        style={[styles.composeFab, { bottom: tabBarTopOffset + 100 }]}
+        onPress={() => {
+          if (activeTab === 'Channels') {
+            router.push('/create-channel' as any);
+          } else {
+            handleOpenCompose();
+          }
+        }}
+      >
+        {isLiquidGlassSupported ? (
+          <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 28 }]} />
+        )}
+        <Ionicons name="add" size={28} color="#000" />
+      </Pressable>
+
     </View>
   );
 }
@@ -1306,6 +1402,16 @@ const styles = StyleSheet.create({
     zIndex: 100,
     flexGrow: 0,
   },
+  composeFab: { position: 'absolute', right: 20, width: 44, height: 44, borderRadius: 22, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', zIndex: 50 },
+  notifRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.06)' },
+  notifRowUnread: { backgroundColor: 'rgba(0,0,0,0.02)' },
+  notifActorAvatar: { width: 40, height: 40, borderRadius: 20 },
+  notifIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center' },
+  notifContent: { flex: 1 },
+  notifText: { fontSize: 14, fontFamily: 'Lato_400Regular', lineHeight: 20, color: 'rgba(0,0,0,0.6)' },
+  notifTitle: { fontFamily: 'Lato_700Bold', color: '#000' },
+  notifTime: { fontSize: 12, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.35)', marginTop: 4 },
+  notifUnreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF3B30' },
   topFade: {
     position: 'absolute',
     top: 0,
@@ -1441,7 +1547,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingTop: 120,
+    paddingTop: 130,
   },
   conversationRow: {
     flexDirection: "row",

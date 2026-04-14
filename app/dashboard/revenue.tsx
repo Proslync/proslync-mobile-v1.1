@@ -174,7 +174,7 @@ export default function DashboardRevenueScreen() {
       <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Revenue</Text>
           <View style={styles.headerButton} />
@@ -192,7 +192,7 @@ export default function DashboardRevenueScreen() {
       <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Revenue</Text>
           <View style={styles.headerButton} />
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#000',
   },
   loadingContainer: {
     flex: 1,
@@ -333,13 +333,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontFamily: 'Lato_700Bold',
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0, 0, 0, 0.5)',
     marginTop: 8,
   },
   emptyHint: {
     fontSize: 14,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.3)',
+    color: 'rgba(0, 0, 0, 0.3)',
     textAlign: 'center',
   },
   scrollView: {
@@ -368,13 +368,13 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 12,
     fontFamily: 'Lato_400Regular',
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: 'rgba(0, 0, 0, 0.5)',
     marginBottom: 4,
   },
   summaryGross: {
     fontSize: 20,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
+    color: '#000',
   },
   summaryFees: {
     fontSize: 20,
