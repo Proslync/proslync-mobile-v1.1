@@ -88,24 +88,6 @@ export function MapTab({ event, coordinates, address, venueName }: MapTabProps) 
         </View>
       )}
 
-      {/* Transport info */}
-      {address && (
-        <View style={[styles.transportSection, { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}>
-          <Text style={[styles.transportTitle, { color: colors.text }]}>Getting There</Text>
-          <View style={styles.transportRow}>
-            <Ionicons name="car-outline" size={16} color={colors.textSecondary} />
-            <Text style={[styles.transportText, { color: colors.textTertiary }]}>
-              Rideshare recommended. Drop-off at main entrance.
-            </Text>
-          </View>
-          <View style={styles.transportRow}>
-            <Ionicons name="alert-circle-outline" size={16} color={colors.textSecondary} />
-            <Text style={[styles.transportText, { color: colors.textTertiary }]}>
-              Limited street parking available.
-            </Text>
-          </View>
-        </View>
-      )}
     </View>
   );
 }

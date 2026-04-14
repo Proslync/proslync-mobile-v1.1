@@ -1,0 +1,33 @@
+<h2>How should the orbs be rendered?</h2>
+<p class="subtitle">Trade-off: visual fidelity vs. complexity and performance. Your project currently has Reanimated, SVG, LinearGradient, and Blur — but no Skia or GL.</p>
+
+<div class="options">
+  <div class="option" data-choice="gradient-blur" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Animated gradient blobs</h3>
+      <p>Radial gradients with blur and glow effects using existing libs (LinearGradient + BlurView + Reanimated). Soft, glowy orbs — atmospheric but not photorealistic glass. <strong>No new deps.</strong></p>
+    </div>
+  </div>
+  <div class="option" data-choice="skia" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Skia shader orbs</h3>
+      <p>Add <code>@shopify/react-native-skia</code> — write GLSL-like shaders for true iridescent glass with refraction, specular highlights, and organic morphing. Closest to the reference image. <strong>New dependency, native rebuild required.</strong></p>
+    </div>
+  </div>
+  <div class="option" data-choice="prerendered" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Pre-rendered orb assets</h3>
+      <p>Use high-quality PNG/Lottie orb assets with Reanimated for movement and scale. Looks exactly like the reference because it <em>is</em> the reference aesthetic. <strong>No new deps, but less dynamic morphing.</strong></p>
+    </div>
+  </div>
+  <div class="option" data-choice="expo-gl" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>WebGL via expo-gl</h3>
+      <p>Use <code>expo-gl</code> with raw WebGL or Three.js for full 3D glass sphere rendering with environment mapping. Maximum fidelity. <strong>New dependency, heavier on GPU, native rebuild.</strong></p>
+    </div>
+  </div>
+</div>

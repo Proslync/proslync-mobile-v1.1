@@ -46,7 +46,7 @@ function NativeActionSheet({
     <NativeSheet
       isPresented={visible}
       onDismiss={onClose}
-      detents={[{ fraction: 0.08 + options.length * 0.065 + (title ? 0.05 : 0) }]}
+      detents={[{ fraction: 0.09 + options.length * 0.06 + (title ? 0.04 : 0) }]}
       rnContent
       dragIndicator="visible"
     >
@@ -87,7 +87,7 @@ function NativeActionSheet({
                       <Ionicons
                         name={option.icon}
                         size={18}
-                        color={option.destructive ? "#FF3B30" : "#fff"}
+                        color={option.destructive ? "#FF3B30" : "#000"}
                       />
                     </View>
                   )}

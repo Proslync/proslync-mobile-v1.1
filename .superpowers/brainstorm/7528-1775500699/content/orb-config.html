@@ -1,0 +1,39 @@
+<h2>Orb configuration</h2>
+<p class="subtitle">How many orbs, and should the component be configurable?</p>
+
+<div class="options">
+  <div class="option" data-choice="fixed-3" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Fixed: 1 large + 2 small</h3>
+      <p>Matches the reference exactly — one dominant orb in the center, two small accent orbs. Hardcoded layout.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="configurable" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Configurable via props</h3>
+      <p>Pass orb count, sizes, and color palette as props. Default matches the reference, but you can customize per screen. e.g. <code>&lt;OrbBackground orbs={[{size: 'lg'}, {size: 'sm'}, {size: 'sm'}]} /&gt;</code></p>
+    </div>
+  </div>
+</div>
+
+<h2 style="margin-top: 2rem;">Color palette</h2>
+<p class="subtitle">The reference uses purple/blue/pink iridescence on black</p>
+
+<div class="options">
+  <div class="option" data-choice="purple-iridescent" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Purple-blue-pink iridescent</h3>
+      <p>Match the reference — deep purple core with blue/pink/cyan reflections and white specular highlights.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="theme-adaptive" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Theme-adaptive palette</h3>
+      <p>Purple iridescent for dark mode, softer blue-lavender for light mode. Adapts to your existing glass theme system.</p>
+    </div>
+  </div>
+</div>

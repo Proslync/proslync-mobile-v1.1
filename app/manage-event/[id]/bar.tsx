@@ -26,6 +26,8 @@ import {
   View,
 } from "react-native";
 import { GlassView } from 'expo-glass-effect';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -275,19 +277,20 @@ export default function BarQuickOrderScreen() {
               style={styles.pillFilter}
               onPress={() => setSelectedCategory(cat.id)}
             >
-              <View style={styles.pillGlassLayer} pointerEvents="none">
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
-                  borderRadius={19}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={styles.pillGlassLayer} pointerEvents="none">
+                  <GlassView {...liquidGlass.surface} tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'} borderRadius={19} style={StyleSheet.absoluteFill} />
+                </View>
+              )}
               <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{cat.label}</Text>
             </Pressable>
           );
         })}
       </View>
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {menuLoading ? (
         <View style={styles.emptyContainer}>
@@ -306,7 +309,7 @@ export default function BarQuickOrderScreen() {
             keyExtractor={(item) => String(item.id)}
             contentContainerStyle={[
               styles.grid,
-              { paddingBottom: itemCount > 0 ? 140 + insets.bottom : 20 },
+              { paddingTop: insets.top + 70, paddingBottom: itemCount > 0 ? 140 + insets.bottom : 20 },
             ]}
             renderItem={({ item }) => (
               <MenuItemCard
@@ -363,6 +366,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 8,
     flexWrap: 'wrap',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    zIndex: 9,
   },
   pillIcon: {
     width: 38,

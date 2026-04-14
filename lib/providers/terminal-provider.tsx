@@ -155,7 +155,7 @@ function TerminalPaymentInner({ children }: { children: React.ReactNode }) {
 
       setReaderStatus('connected');
     } catch (err) {
-      console.error('Connect error:', err);
+      console.warn('Connect error:', err);
       setReaderStatus('disconnected');
       throw err;
     } finally {

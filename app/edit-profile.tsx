@@ -211,8 +211,7 @@ export default function EditProfileScreen() {
   const avatarUrl = selectedImage || user?.avatar?.url;
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
       <KeyboardAvoidingView
         style={styles.keyboardView}

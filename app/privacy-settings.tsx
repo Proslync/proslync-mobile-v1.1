@@ -74,8 +74,7 @@ export default function PrivacySettingsScreen() {
   }, []);
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? '#000' : '#fff' }]}>
-      <DarkGradientBg />
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: border }]}>

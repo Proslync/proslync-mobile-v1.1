@@ -1834,7 +1834,7 @@ export default function ChatThreadScreen() {
       />
 
       {/* Header — fixed at top */}
-      <View style={[styles.headerFixed, { paddingTop: insets.top - 4 }]}>
+      <View style={[styles.headerFixed, { paddingTop: insets.top + 6 }]}>
         <TouchableOpacity style={styles.headerGlassBtn} onPress={() => router.back()} activeOpacity={0.7}>
           {isLiquidGlassSupported ? (
             <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
@@ -1853,7 +1853,11 @@ export default function ChatThreadScreen() {
             {!isConcierge && channelInfo?.isOnline && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
           </View>
           <View style={styles.headerNameGlass}>
-            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={20} style={StyleSheet.absoluteFill} />
+            {isLiquidGlassSupported ? (
+              <LiquidGlassView effect="regular" style={[StyleSheet.absoluteFill, { borderRadius: 20 }]} />
+            ) : (
+              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={20} style={StyleSheet.absoluteFill} />
+            )}
             <View style={styles.headerNameRow}>
               <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{channelInfo?.name || "Chat"}</Text>
               {channelInfo?.otherMember?.isVerified && <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />}
@@ -2979,7 +2983,6 @@ const styles = StyleSheet.create({
   },
   composerBox: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 20,
     overflow: 'hidden',
     paddingHorizontal: 16,

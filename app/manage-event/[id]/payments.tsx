@@ -9,11 +9,13 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GlassSurface } from '@/components/glass/glass-surface';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useEarnings } from '@/hooks/use-wallet-queries';
@@ -68,17 +70,22 @@ export default function EventPaymentsScreen() {
   const earnings = data?.earnings ?? [];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
+    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
 
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Event Payments</Text>
-        <View style={styles.headerButton} />
+      {/* Fixed pill row */}
+      <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
+        <Pressable style={styles.pillIcon} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={20} color="#000" />
+        </Pressable>
+        <View style={styles.pillLabel}>
+          {isLiquidGlassSupported ? (
+            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          ) : null}
+          <Text style={styles.pillLabelText}>Payments</Text>
+        </View>
       </View>
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -89,7 +96,7 @@ export default function EventPaymentsScreen() {
           data={earnings}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => <EarningRow item={item} colors={colors} />}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 20 }]}
+          contentContainerStyle={[styles.listContent, { paddingTop: insets.top + 70, paddingBottom: insets.bottom + 20 }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.text} />
@@ -140,6 +147,11 @@ export default function EventPaymentsScreen() {
 }
 
 const styles = StyleSheet.create({
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   container: {
     flex: 1,
   },

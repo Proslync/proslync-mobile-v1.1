@@ -1,0 +1,26 @@
+<h2>Where should the floating orbs appear?</h2>
+<p class="subtitle">This determines how we architect the component and where it integrates</p>
+
+<div class="options">
+  <div class="option" data-choice="app-wide" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>App-wide background</h3>
+      <p>Replaces <code>DarkGradientBg</code> everywhere — orbs float behind all screens as the default background</p>
+    </div>
+  </div>
+  <div class="option" data-choice="specific-screens" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Specific screens only</h3>
+      <p>Only on select screens (e.g., auth flow, explore, feed) — other screens keep the current gradient</p>
+    </div>
+  </div>
+  <div class="option" data-choice="standalone" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Standalone component</h3>
+      <p>A reusable <code>&lt;OrbBackground /&gt;</code> you drop into any screen as needed — most flexible</p>
+    </div>
+  </div>
+</div>

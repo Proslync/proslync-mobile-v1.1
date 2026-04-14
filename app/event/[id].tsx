@@ -572,13 +572,12 @@ export default function EventPage() {
             onPress={handleBack}
             activeOpacity={0.7}
           >
-            <GlassView
-              {...liquidGlass.surface}
-              tintColor="rgba(10, 10, 10, 0.25)"
-              borderRadius={24}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name="chevron-back" size={22} color="#fff" />
+            {isLiquidGlassSupported ? (
+              <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+            ) : (
+              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={24} style={StyleSheet.absoluteFill} />
+            )}
+            <Ionicons name="chevron-back" size={22} color="#000" />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -588,23 +587,10 @@ export default function EventPage() {
             disabled={isLoading}
           >
             <Animated.View style={[styles.rsvpButton, buttonAnimatedStyle]}>
-              {useNativeGlass ? (
-                <GlassView
-                  glassEffectStyle="regular"
-                  colorScheme="dark"
-                  tintColor={isDone ? 'rgba(10, 10, 10, 0.55)' : 'rgba(10, 10, 10, 0.25)'}
-                  style={styles.absoluteFill}
-                />
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" style={styles.absoluteFill} />
               ) : (
-                <>
-                  {!isDone && (
-                    <>
-                      <BlurView intensity={30} tint="dark" style={styles.absoluteFill} />
-                      <View style={styles.rsvpFill} />
-                    </>
-                  )}
-                  <View style={[styles.rsvpBorder, isDone && styles.rsvpBorderDone]} />
-                </>
+                <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={28} style={styles.absoluteFill} />
               )}
               <Text
                 style={[
@@ -622,13 +608,12 @@ export default function EventPage() {
             onPress={handleShare}
             activeOpacity={0.7}
           >
-            <GlassView
-              {...liquidGlass.surface}
-              tintColor="rgba(10, 10, 10, 0.25)"
-              borderRadius={24}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name="share-outline" size={20} color="#fff" />
+            {isLiquidGlassSupported ? (
+              <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+            ) : (
+              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={24} style={StyleSheet.absoluteFill} />
+            )}
+            <Ionicons name="share-outline" size={20} color="#000" />
           </TouchableOpacity>
         </View>
       </View>
@@ -896,6 +881,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 16,
+    zIndex: 100,
   },
   bottomActionRow: {
     flexDirection: 'row',
@@ -945,7 +931,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_700Bold',
     letterSpacing: 0.5,
-    color: '#fff',
+    color: '#000',
   },
   rsvpButtonTextDone: {
     color: 'rgba(255, 255, 255, 0.5)',

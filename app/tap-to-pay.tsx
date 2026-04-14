@@ -13,6 +13,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { GlassView } from "expo-glass-effect";
+import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
+import { LinearGradient } from "expo-linear-gradient";
 import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
 import { useAppTheme } from "@/hooks/use-app-theme";
@@ -197,10 +199,16 @@ function TapToChargeContent() {
           <Ionicons name="chevron-back" size={20} color="#000" />
         </Pressable>
         <View style={styles.pillLabel}>
-          <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          {isLiquidGlassSupported ? (
+            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          ) : (
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.12)" borderRadius={19} style={StyleSheet.absoluteFill} />
+          )}
           <Text style={styles.pillLabelText}>Tap to Charge</Text>
         </View>
       </View>
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Reader Status Bar */}
       <View style={styles.statusBar}>
@@ -324,7 +332,13 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
     paddingBottom: 8,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   pillIcon: {
     width: 38,
     height: 38,
@@ -351,6 +365,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
     paddingVertical: 10,
+    marginTop: 100,
     gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(0,0,0,0.08)",

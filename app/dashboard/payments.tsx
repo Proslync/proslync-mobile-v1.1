@@ -53,6 +53,8 @@ import {
   View,
 } from "react-native";
 import { GlassView } from 'expo-glass-effect';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, {
   FadeIn,
@@ -259,19 +261,20 @@ export default function PaymentsScreen() {
               style={styles.pillFilter}
               onPress={() => { previousTabRef.current = selectedTab; setSelectedTab(index); }}
             >
-              <View style={styles.pillGlassLayer} pointerEvents="none">
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
-                  borderRadius={19}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={styles.pillGlassLayer} pointerEvents="none">
+                  <GlassView {...liquidGlass.surface} tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'} borderRadius={19} style={StyleSheet.absoluteFill} />
+                </View>
+              )}
               <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{label}</Text>
             </Pressable>
           );
         })}
       </View>
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Setup result banner */}
       {setupResult && (
@@ -312,7 +315,7 @@ export default function PaymentsScreen() {
         /* Onboarding */
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: insets.bottom + 20 }}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -337,7 +340,7 @@ export default function PaymentsScreen() {
         /* Main tabbed content — single ScrollView so everything scrolls together */
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: insets.bottom + 20 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -618,7 +621,8 @@ const styles = StyleSheet.create({
   },
   statusContainer: { marginHorizontal: 16, marginTop: 8, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
   onboardingContainer: { marginHorizontal: 16, marginTop: 8, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
-  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
+  pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   pillFilter: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   pillGlassLayer: { ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 19 },

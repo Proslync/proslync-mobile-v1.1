@@ -1,0 +1,136 @@
+<h2>Design: Interactive Floating Orb Background</h2>
+<p class="subtitle">Standalone <code>&lt;OrbBackground /&gt;</code> component — full interactive glass orbs via WebGL</p>
+
+<div class="section">
+  <h3>Architecture</h3>
+  <div class="mockup">
+    <div class="mockup-header">Component Stack</div>
+    <div class="mockup-body" style="font-family: monospace; font-size: 13px; line-height: 1.8; padding: 1.5rem;">
+      <div style="color: #a78bfa;">┌─────────────────────────────────────────────┐</div>
+      <div style="color: #a78bfa;">│  &lt;OrbBackground&gt;          (wrapper)         │</div>
+      <div style="color: #a78bfa;">│  ├─ StyleSheet.absoluteFill, pointerEvents   │</div>
+      <div style="color: #a78bfa;">│  │                                            │</div>
+      <div style="color: #a78bfa;">│  ├─ &lt;GLView&gt;              (expo-gl canvas)   │</div>
+      <div style="color: #a78bfa;">│  │   └─ Three.js scene                       │</div>
+      <div style="color: #a78bfa;">│  │       ├─ Glass sphere meshes (MeshPhysical)│</div>
+      <div style="color: #a78bfa;">│  │       ├─ Environment map (iridescent HDRI) │</div>
+      <div style="color: #a78bfa;">│  │       ├─ Point lights (purple/blue/pink)   │</div>
+      <div style="color: #a78bfa;">│  │       └─ Render loop (60fps)               │</div>
+      <div style="color: #a78bfa;">│  │                                            │</div>
+      <div style="color: #a78bfa;">│  ├─ GestureDetector       (react-native-gh)  │</div>
+      <div style="color: #a78bfa;">│  │   ├─ Pan → drag orbs                      │</div>
+      <div style="color: #a78bfa;">│  │   └─ Tap → wobble nearest orb             │</div>
+      <div style="color: #a78bfa;">│  │                                            │</div>
+      <div style="color: #a78bfa;">│  └─ useGyroscope          (expo-sensors)      │</div>
+      <div style="color: #a78bfa;">│      └─ Device tilt → orb drift              │</div>
+      <div style="color: #a78bfa;">└─────────────────────────────────────────────┘</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Props API</h3>
+  <div class="mockup">
+    <div class="mockup-header">OrbBackground Props</div>
+    <div class="mockup-body" style="font-family: monospace; font-size: 12px; line-height: 1.7; padding: 1.5rem;">
+      <div><span style="color:#67e8f9;">orbs?:</span> Array&lt;{ size: 'sm' | 'md' | 'lg', position?: {x,y} }&gt;</div>
+      <div style="color:#999;">  // Default: [{size:'lg'}, {size:'sm'}, {size:'sm'}]</div>
+      <br/>
+      <div><span style="color:#67e8f9;">interactive?:</span> boolean</div>
+      <div style="color:#999;">  // Enable drag + tap + gyro. Default: true</div>
+      <br/>
+      <div><span style="color:#67e8f9;">gyroscope?:</span> boolean</div>
+      <div style="color:#999;">  // Enable device tilt response. Default: true</div>
+      <br/>
+      <div><span style="color:#67e8f9;">speed?:</span> number</div>
+      <div style="color:#999;">  // Ambient drift speed multiplier. Default: 1</div>
+      <br/>
+      <div><span style="color:#67e8f9;">style?:</span> ViewStyle</div>
+      <div style="color:#999;">  // Container style override</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>New Dependencies</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem;">
+      <div style="color: #a78bfa; font-weight: 600;">expo-gl</div>
+      <div style="color: #999; font-size: 0.85rem;">WebGL context for Three.js rendering</div>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem;">
+      <div style="color: #a78bfa; font-weight: 600;">three</div>
+      <div style="color: #999; font-size: 0.85rem;">3D scene, MeshPhysicalMaterial for glass</div>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem;">
+      <div style="color: #a78bfa; font-weight: 600;">expo-three</div>
+      <div style="color: #999; font-size: 0.85rem;">Bridge between expo-gl and Three.js</div>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem;">
+      <div style="color: #a78bfa; font-weight: 600;">expo-sensors</div>
+      <div style="color: #999; font-size: 0.85rem;">Gyroscope for device tilt (may already be installed)</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>How the Glass Effect Works</h3>
+  <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.5rem; line-height: 1.7;">
+    <p style="margin: 0 0 0.8rem 0;">Each orb is a <strong>Three.js sphere</strong> with <code>MeshPhysicalMaterial</code>:</p>
+    <ul style="margin: 0; padding-left: 1.2rem; color: #ccc;">
+      <li><strong>transmission: 0.95</strong> — near-fully transparent glass</li>
+      <li><strong>roughness: 0.05</strong> — mirror-smooth surface</li>
+      <li><strong>ior: 2.4</strong> — high refraction index (diamond-like)</li>
+      <li><strong>iridescence: 1.0</strong> — rainbow color shifting at angles</li>
+      <li><strong>iridescenceIOR: 1.5</strong> — controls iridescence spread</li>
+      <li><strong>specularIntensity: 1.0</strong> — bright white highlights</li>
+      <li><strong>envMap</strong> — generated cubemap with purple/blue/pink gradient</li>
+    </ul>
+    <p style="margin: 0.8rem 0 0 0;">Organic morphing via <strong>vertex displacement</strong> using sine waves over time.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Physics & Interaction</h3>
+  <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.5rem; line-height: 1.7;">
+    <ul style="margin: 0; padding-left: 1.2rem; color: #ccc;">
+      <li><strong>Ambient drift:</strong> Orbs float with Perlin noise-based paths</li>
+      <li><strong>Drag:</strong> Pan gesture raycasts into scene, moves nearest orb</li>
+      <li><strong>Collision:</strong> Simple sphere-sphere overlap detection with spring pushback</li>
+      <li><strong>Edge bounce:</strong> Orbs spring back when hitting screen bounds</li>
+      <li><strong>Gyroscope:</strong> Device tilt adds directional force to all orbs</li>
+      <li><strong>Tap wobble:</strong> Nearest orb gets a vertex noise spike that decays</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Performance</h3>
+  <div style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.5rem; line-height: 1.7;">
+    <ul style="margin: 0; padding-left: 1.2rem; color: #ccc;">
+      <li>GL renders on a separate thread — won't block RN JS thread</li>
+      <li>Low poly spheres (32 segments) — sufficient for glass illusion</li>
+      <li>Auto-pauses render loop when component unmounts or app backgrounds</li>
+      <li>Gyroscope updates throttled to 30Hz</li>
+    </ul>
+  </div>
+</div>
+
+<div style="margin-top: 2rem;">
+  <div class="options">
+    <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+      <div class="letter" style="background: rgba(52,199,89,0.3); color: #34c759;">&#10003;</div>
+      <div class="content">
+        <h3>Looks good — let's build it</h3>
+        <p>Approve the design and move to implementation planning</p>
+      </div>
+    </div>
+    <div class="option" data-choice="revise" onclick="toggleSelect(this)">
+      <div class="letter" style="background: rgba(255,149,0,0.3); color: #ff9500;">&#8635;</div>
+      <div class="content">
+        <h3>I have changes</h3>
+        <p>Let me know what to adjust in the terminal</p>
+      </div>
+    </div>
+  </div>
+</div>

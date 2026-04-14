@@ -10,6 +10,8 @@ import {
   Dimensions,
 } from "react-native";
 import { GlassView } from 'expo-glass-effect';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
+import { LinearGradient } from 'expo-linear-gradient';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 import Animated, {
   FadeIn,
@@ -398,14 +400,13 @@ function CheckInsContent() {
               style={styles.pillFilter}
               onPress={() => handleTabPress(tab)}
             >
-              <View style={styles.pillGlassLayer} pointerEvents="none">
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
-                  borderRadius={19}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+              ) : (
+                <View style={styles.pillGlassLayer} pointerEvents="none">
+                  <GlassView {...liquidGlass.surface} tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'} borderRadius={19} style={StyleSheet.absoluteFill} />
+                </View>
+              )}
               <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
                 {tab === 'approved' ? 'Approved' : 'Denied'}{count > 0 ? ` ${count}` : ''}
               </Text>
@@ -413,6 +414,8 @@ function CheckInsContent() {
           );
         })}
       </View>
+
+      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Content */}
       {isLoading ? (
@@ -553,7 +556,13 @@ const styles = StyleSheet.create({
     gap: 8,
     alignItems: 'center',
     paddingBottom: 8,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
   pillIcon: {
     width: 38,
     height: 38,
@@ -585,7 +594,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: 120,
   },
   loadingFooter: {
     paddingVertical: 16,
