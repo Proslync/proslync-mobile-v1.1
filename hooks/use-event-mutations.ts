@@ -28,33 +28,48 @@ export function useCreateEvent() {
       // Step 1: Upload flyer first if provided (backend requires image to create event)
       let flyerUrl: string | undefined;
       if (flyerUri) {
-        // Upload to get a URL, then include in create payload
-        const { name, type } = getFileInfo(flyerUri);
-        const fileResponse = await fetch(flyerUri);
-        const blob = await fileResponse.blob();
-        const fileSize = blob.size.toString();
-        const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
-          fileType: 'flyer',
-          fileName: name,
-          mimeType: type,
-          fileSize,
-        });
-        const s3Controller = new AbortController();
-        const s3Timeout = setTimeout(() => s3Controller.abort(), 60000);
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          body: blob,
-          headers: { 'Content-Type': type },
-          signal: s3Controller.signal,
-        });
-        clearTimeout(s3Timeout);
-        if (!uploadResponse.ok) {
-          throw new Error(`Flyer upload failed: ${uploadResponse.status}`);
+        try {
+          const { name, type } = getFileInfo(flyerUri);
+          console.warn('[Upload] Fetching local file...');
+          const fileResponse = await fetch(flyerUri);
+          const blob = await fileResponse.blob();
+          console.warn('[Upload] Got blob, size:', blob.size, 'type:', type);
+
+          console.warn('[Upload] Getting presigned URL...');
+          const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
+            fileType: 'flyer',
+            fileName: name,
+            mimeType: type,
+            fileSize: blob.size.toString(),
+          });
+          console.warn('[Upload] Got presigned URL, uploading to S3...');
+
+          const s3Controller = new AbortController();
+          const s3Timeout = setTimeout(() => s3Controller.abort(), 15000);
+          const uploadResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            body: blob,
+            headers: { 'Content-Type': type },
+            signal: s3Controller.signal,
+          });
+          clearTimeout(s3Timeout);
+
+          if (!uploadResponse.ok) {
+            const errText = await uploadResponse.text().catch(() => '');
+            throw new Error(`S3 upload failed (${uploadResponse.status}): ${errText.slice(0, 100)}`);
+          }
+          console.warn('[Upload] S3 done, confirming...');
+
+          const confirmed = await filesApi.confirmUpload(fileId);
+          flyerUrl = confirmed.url;
+          (data as any).imageUrl = flyerUrl;
+          console.warn('[Upload] Complete:', flyerUrl);
+        } catch (uploadErr: any) {
+          if (uploadErr.name === 'AbortError') {
+            throw new Error('Flyer upload timed out (15s). Check your connection and try again.');
+          }
+          throw new Error(`Flyer upload failed: ${uploadErr.message}`);
         }
-        const confirmed = await filesApi.confirmUpload(fileId);
-        flyerUrl = confirmed.url;
-        // Add image URL to event data
-        (data as any).imageUrl = flyerUrl;
       }
 
       // Step 2: Create event (now with image attached)
@@ -93,8 +108,8 @@ export function useUpdateEvent() {
     mutationFn: async ({ eventId, data, flyerUri }) => {
       // Step 1: Update event
       const event = await eventsApi.updateEvent(eventId, data);
-      // Step 2: Upload new flyer if provided (using presigned URL flow)
-      if (flyerUri) {
+      // Step 2: Upload new flyer if provided (only local files, not existing URLs)
+      if (flyerUri && flyerUri.startsWith('file://')) {
         await filesApi.uploadEventFlyer(eventId, flyerUri);
       }
 

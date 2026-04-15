@@ -88,7 +88,7 @@ export default function CreateEventScreen() {
   }, [venueAddressParam]);
 
   // Location autocomplete
-  const [locationSuggestions, setLocationSuggestions] = React.useState<{ id: string; place_name: string }[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = React.useState<{ id: string; place_name: string; lat: number; lng: number }[]>([]);
   const locationTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [userCoords, setUserCoords] = React.useState<{ lat: number; lon: number } | null>(null);
@@ -111,7 +111,7 @@ export default function CreateEventScreen() {
         const proximity = userCoords ? `&proximity=${userCoords.lon},${userCoords.lat}` : '';
         const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&limit=5&types=address,poi,place&country=us${proximity}`);
         const data = await res.json();
-        setLocationSuggestions(data.features?.map((f: any) => ({ id: f.id, place_name: f.place_name })) || []);
+        setLocationSuggestions(data.features?.map((f: any) => ({ id: f.id, place_name: f.place_name, lng: f.center[0], lat: f.center[1] })) || []);
       } catch {
         setLocationSuggestions([]);
       }
@@ -316,6 +316,7 @@ export default function CreateEventScreen() {
               style={s.locationSuggestionRow}
               onPress={() => {
                 form.setValue('location', item.place_name);
+                form.setValue('locationDetails', { latitude: item.lat, longitude: item.lng } as any);
                 setLocationSuggestions([]);
               }}
               activeOpacity={0.7}
@@ -714,12 +715,6 @@ export default function CreateEventScreen() {
             onPress={async () => {
               try {
                 const vals = form.getValues();
-                const isValid = await form.trigger();
-                if (!isValid) {
-                  const fields = Object.keys(form.formState.errors);
-                  alert(`Please fix: ${fields.join(', ')}`);
-                  return;
-                }
                 onSubmit(vals);
               } catch (err: any) {
                 alert(`Error: ${err.message}`);

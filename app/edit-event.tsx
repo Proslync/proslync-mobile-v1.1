@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
+import * as Location from 'expo-location';
 import { Controller, FormProvider } from 'react-hook-form';
 import {
   ActionSheetIOS,
@@ -81,6 +82,37 @@ export default function EditEventScreen() {
   const [activeTab, setActiveTab] = React.useState<EditTab>('overview');
   const [showDateModal, setShowDateModal] = React.useState(false);
   const [editingField, setEditingField] = React.useState<'start' | 'end'>('start');
+
+  const [selectedCoords, setSelectedCoords] = React.useState<{ lat: number; lng: number } | null>(null);
+
+  // Location autocomplete
+  const [locationSuggestions, setLocationSuggestions] = React.useState<{ id: string; place_name: string; lat: number; lng: number }[]>([]);
+  const locationTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [userCoords, setUserCoords] = React.useState<{ lat: number; lon: number } | null>(null);
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setUserCoords({ lat: loc.coords.latitude, lon: loc.coords.longitude });
+      } catch {}
+    })();
+  }, []);
+  const fetchLocationSuggestions = React.useCallback((query: string) => {
+    if (locationTimerRef.current) clearTimeout(locationTimerRef.current);
+    if (query.length < 1) { setLocationSuggestions([]); return; }
+    locationTimerRef.current = setTimeout(async () => {
+      try {
+        const token = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+        if (!token) return;
+        const proximity = userCoords ? `&proximity=${userCoords.lon},${userCoords.lat}` : '';
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&limit=5&types=address,poi,place&country=us${proximity}`);
+        const data = await res.json();
+        setLocationSuggestions(data.features?.map((f: any) => ({ id: f.id, place_name: f.place_name, lng: f.center[0], lat: f.center[1] })) || []);
+      } catch {
+        setLocationSuggestions([]);
+      }
+    }, 300);
+  }, [userCoords]);
   const [existingFlyerUrl, setExistingFlyerUrl] = React.useState<string | null>(null);
   const [promoModalVisible, setPromoModalVisible] = React.useState(false);
 
@@ -135,16 +167,23 @@ export default function EditEventScreen() {
     );
   };
 
-  const onSubmit = (data: EventFormData) => {
+  const onSubmit = async (data: EventFormData) => {
     if (!event) return;
-    const parsedData = parseEventFormData(data);
-    updateEvent.mutate(
-      { eventId: event.id, data: parsedData, flyerUri: data.flyerUri },
-      {
-        onSuccess: () => { showSuccess('Event updated!'); router.back(); },
-        onError: (error) => showError(error.message || 'Failed to update event'),
-      },
-    );
+    try {
+      const parsedData = parseEventFormData(data);
+      delete (parsedData as any).locationDetails;
+      if (selectedCoords) {
+        (parsedData as any).latitude = selectedCoords.lat;
+        (parsedData as any).longitude = selectedCoords.lng;
+      }
+      await updateEvent.mutateAsync(
+        { eventId: event.id, data: parsedData, flyerUri: data.flyerUri },
+      );
+      showSuccess('Event updated!');
+      router.back();
+    } catch (err: any) {
+      alert(`Update failed: ${err.message}`);
+    }
   };
 
   const onSubmitError = () => showError('Please fill in all required fields');
@@ -195,11 +234,32 @@ export default function EditEventScreen() {
         </TouchableOpacity>
         <Controller control={form.control} name="location" render={({ field: { value, onChange } }) => (
           <View style={s.dateRow}>
-            <Ionicons name="location-outline" size={16} color="rgba(0,0,0,0.5)" />
-            <TextInput style={s.locationInput} value={value} onChangeText={onChange} placeholder="Event location" placeholderTextColor="rgba(0,0,0,0.35)" />
+            <TextInput style={s.locationInput} value={value} onChangeText={(text) => { onChange(text); fetchLocationSuggestions(text); }} placeholder="Location" placeholderTextColor="rgba(0,0,0,0.35)" />
+            {!!value && (
+              <TouchableOpacity onPress={() => { onChange(''); setLocationSuggestions([]); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.3)" />
+              </TouchableOpacity>
+            )}
           </View>
         )} />
       </GlassCard>
+
+      {/* Location suggestions */}
+      {locationSuggestions.length > 0 && (
+        <View style={{ marginTop: -4, marginBottom: 8, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 }}>
+          {locationSuggestions.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.06)' }}
+              onPress={() => { form.setValue('location', item.place_name); setSelectedCoords({ lat: item.lat, lng: item.lng }); setLocationSuggestions([]); }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="location" size={14} color="rgba(0,0,0,0.4)" />
+              <Text style={{ flex: 1, fontSize: 13, fontFamily: 'Lato_400Regular', color: '#333' }} numberOfLines={2}>{item.place_name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Quick Details Grid */}
       <View style={s.gridRow}>
@@ -436,22 +496,24 @@ export default function EditEventScreen() {
         <LinearGradient colors={['rgba(242,242,242,0)', '#f2f2f2']} style={s.bottomFade} pointerEvents="none" />
 
         {/* Bottom bar */}
-        <View style={[s.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
-          <View style={s.bottomRow}>
-            <TouchableOpacity style={s.bottomIcon} onPress={() => router.back()} activeOpacity={0.7}>
-              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={24} style={StyleSheet.absoluteFill} />
-              <Ionicons name="chevron-back" size={22} color="#000" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.saveButton, (!canSubmit || updateEvent.isPending) && s.saveButtonDisabled]}
-              onPress={form.handleSubmit(onSubmit, onSubmitError)}
-              disabled={!canSubmit || updateEvent.isPending}
-              activeOpacity={0.85}
-            >
-              {updateEvent.isPending ? <ActivityIndicator color="#fff" /> : <Text style={s.saveButtonText}>Save Changes</Text>}
-            </TouchableOpacity>
-            <View style={s.bottomIcon} />
-          </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingBottom: insets.bottom + 16 }}>
+          <Pressable style={{ width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }} onPress={() => router.back()}>
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={24} style={StyleSheet.absoluteFill} />
+            <Ionicons name="chevron-back" size={22} color="#000" />
+          </Pressable>
+          <Pressable
+            style={{ flex: 1, height: 48, borderRadius: 28, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', opacity: (!canSubmit || updateEvent.isPending) ? 0.4 : 1 }}
+            onPress={() => {
+              try {
+                const vals = form.getValues();
+                onSubmit(vals);
+              } catch (err: any) {
+                alert(`Error: ${err.message}`);
+              }
+            }}
+          >
+            {updateEvent.isPending ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'Lato_700Bold' }}>Save Changes</Text>}
+          </Pressable>
         </View>
       </View>
     </FormProvider>
