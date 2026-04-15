@@ -11,6 +11,7 @@ import { parseEventFormData, type EventFormData } from '@/lib/schemas/events';
 import { DRESS_CODE_OPTIONS } from '@/lib/constants/dress-codes';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { Controller, FormProvider } from 'react-hook-form';
@@ -29,6 +30,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Modal,
 } from 'react-native';
 import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { GlassView } from 'expo-glass-effect';
@@ -77,8 +79,8 @@ export default function EditEventScreen() {
   const updateEvent = useUpdateEvent();
 
   const [activeTab, setActiveTab] = React.useState<EditTab>('overview');
-  const [showStartPicker, setShowStartPicker] = React.useState(false);
-  const [showEndPicker, setShowEndPicker] = React.useState(false);
+  const [showDateModal, setShowDateModal] = React.useState(false);
+  const [editingField, setEditingField] = React.useState<'start' | 'end'>('start');
   const [existingFlyerUrl, setExistingFlyerUrl] = React.useState<string | null>(null);
   const [promoModalVisible, setPromoModalVisible] = React.useState(false);
 
@@ -188,9 +190,8 @@ export default function EditEventScreen() {
         <Controller control={form.control} name="name" render={({ field: { value, onChange } }) => (
           <TextInput style={s.eventNameInput} value={value} onChangeText={onChange} placeholder="Event name" placeholderTextColor="rgba(0,0,0,0.35)" maxLength={100} />
         )} />
-        <TouchableOpacity style={s.dateRow} onPress={() => setShowStartPicker(true)}>
-          <Ionicons name="calendar-outline" size={16} color="rgba(0,0,0,0.5)" />
-          <Text style={s.dateText}>{formatDateDisplay(startDate)}</Text>
+        <TouchableOpacity style={s.dateRow} onPress={() => { setEditingField('start'); setShowDateModal(true); }}>
+          <Text style={[s.dateText, { fontFamily: 'Lato_700Bold' }]}>{formatDateDisplay(startDate)}</Text>
         </TouchableOpacity>
         <Controller control={form.control} name="location" render={({ field: { value, onChange } }) => (
           <View style={s.dateRow}>
@@ -291,22 +292,66 @@ export default function EditEventScreen() {
         </>
       )}
 
-      {/* Date pickers */}
-      {showStartPicker && (
-        <Controller control={form.control} name="startDate" render={({ field: { value, onChange } }) => (
-          <DateTimePicker value={value instanceof Date ? value : new Date()} mode="datetime" display="spinner" onChange={(_, date) => {
-            setShowStartPicker(false);
-            if (date) { onChange(date); const end = form.getValues('endDate'); if (end && date >= end) form.setValue('endDate', new Date(date.getTime() + 4 * 3600000)); setShowEndPicker(true); }
-          }} themeVariant={isDark ? 'dark' : 'light'} />
-        )} />
-      )}
-      {showEndPicker && (
-        <Controller control={form.control} name="endDate" render={({ field: { value, onChange } }) => (
-          <DateTimePicker value={value instanceof Date ? value : new Date(Date.now() + 4 * 3600000)} mode="datetime" display="spinner" minimumDate={form.getValues('startDate') || new Date()} onChange={(_, date) => {
-            setShowEndPicker(false); if (date) onChange(date);
-          }} themeVariant={isDark ? 'dark' : 'light'} />
-        )} />
-      )}
+      {/* Date picker modal */}
+      <Modal visible={showDateModal} transparent animationType="slide">
+        <Pressable style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }} onPress={() => setShowDateModal(false)}>
+          <Pressable style={{ backgroundColor: '#2c2c2e', borderTopLeftRadius: 14, borderTopRightRadius: 14, maxHeight: '85%' }} onPress={() => {}}>
+            <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 12 }}>
+              <View style={{ width: 36, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 40 }}>
+              <View style={{ backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 12, padding: 8, overflow: 'hidden' }}>
+                <View style={editingField !== 'start' ? { display: 'none' } : undefined}>
+                  <Controller control={form.control} name="startDate" render={({ field: { value, onChange } }) => (
+                    <DateTimePicker value={value instanceof Date ? value : new Date()} mode="date" display="inline" minimumDate={new Date()} accentColor="#fff" onChange={(_, date) => {
+                      if (date) { const prev = value instanceof Date ? value : new Date(); date.setHours(prev.getHours(), prev.getMinutes()); onChange(date); const end = form.getValues('endDate'); if (end && date >= end) form.setValue('endDate', new Date(date.getTime() + 4 * 3600000)); }
+                    }} themeVariant="dark" />
+                  )} />
+                </View>
+                <View style={editingField !== 'end' ? { display: 'none' } : undefined}>
+                  <Controller control={form.control} name="endDate" render={({ field: { value, onChange } }) => (
+                    <DateTimePicker value={value instanceof Date ? value : new Date(Date.now() + 4 * 3600000)} mode="date" display="inline" minimumDate={form.getValues('startDate') || new Date()} accentColor="#fff" onChange={(_, date) => {
+                      if (date) { const prev = value instanceof Date ? value : new Date(); date.setHours(prev.getHours(), prev.getMinutes()); onChange(date); }
+                    }} themeVariant="dark" />
+                  )} />
+                </View>
+              </View>
+              <View style={{ backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 12, padding: 8, marginTop: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 4 }}>
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Time</Text>
+                  <View style={editingField !== 'start' ? { display: 'none' } : undefined}>
+                    <Controller control={form.control} name="startDate" render={({ field: { value, onChange } }) => (
+                      <DateTimePicker value={value instanceof Date ? value : new Date()} mode="time" display="compact" onChange={(_, date) => {
+                        if (date) { onChange(date); const end = form.getValues('endDate'); if (end && date >= end) form.setValue('endDate', new Date(date.getTime() + 4 * 3600000)); }
+                      }} themeVariant="dark" />
+                    )} />
+                  </View>
+                  <View style={editingField !== 'end' ? { display: 'none' } : undefined}>
+                    <Controller control={form.control} name="endDate" render={({ field: { value, onChange } }) => (
+                      <DateTimePicker value={value instanceof Date ? value : new Date(Date.now() + 4 * 3600000)} mode="time" display="compact" minimumDate={form.getValues('startDate') || new Date()} onChange={(_, date) => {
+                        if (date) onChange(date);
+                      }} themeVariant="dark" />
+                    )} />
+                  </View>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
+                <TouchableOpacity style={{ flex: 1, padding: 12, borderRadius: 12, backgroundColor: editingField === 'start' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }} onPress={() => setEditingField('start')}>
+                  <Text style={{ color: editingField === 'start' ? '#fff' : 'rgba(255,255,255,0.5)', fontWeight: '600', fontSize: 13 }}>Start</Text>
+                  <Text style={{ color: editingField === 'start' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 2 }}>{formatDateDisplay(form.watch('startDate'))}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, padding: 12, borderRadius: 12, backgroundColor: editingField === 'end' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }} onPress={() => setEditingField('end')}>
+                  <Text style={{ color: editingField === 'end' ? '#fff' : 'rgba(255,255,255,0.5)', fontWeight: '600', fontSize: 13 }}>End</Text>
+                  <Text style={{ color: editingField === 'end' ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)', fontSize: 12, marginTop: 2 }}>{formatDateDisplay(form.watch('endDate'))}</Text>
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity style={{ backgroundColor: '#007AFF', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 12 }} onPress={() => setShowDateModal(false)} activeOpacity={0.8}>
+                <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Animated.View>
   );
 
@@ -341,6 +386,19 @@ export default function EditEventScreen() {
   return (
     <FormProvider {...form}>
       <View style={[s.container, { backgroundColor: '#f2f2f2' }]}>
+        {/* Full-screen blurred flyer backdrop */}
+        {displayFlyer && (
+          <View style={StyleSheet.absoluteFill}>
+            <Image source={{ uri: displayFlyer }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFill} />
+            <LinearGradient
+              colors={['transparent', 'rgba(242,242,242,0.6)', 'rgba(242,242,242,0.9)', '#f2f2f2']}
+              locations={[0, 0.4, 0.6, 0.8]}
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
+        )}
+
         {/* Pill row */}
         <View style={[s.pillRowContainer, { top: insets.top + 16 }]}>
           <View style={s.pillRowContent}>

@@ -6,6 +6,7 @@ import { useToast } from "@/components/shared/toast";
 import { useEvent, useEventPermissions } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { EventStatus } from "@/lib/types/events.types";
+import { eventsApi } from "@/lib/api/events";
 import type { RolePermissions } from "@/lib/types/team.types";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
@@ -24,6 +25,7 @@ import { FeedMediaPlayer } from "@/components/feed/feed-media-player";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 
@@ -224,7 +226,7 @@ export default function ManageEventScreen() {
   const { colors, isDark } = useAppTheme();
 
   const eventId = id ? Number(id) : undefined;
-  const { data: event, isLoading } = useEvent(eventId);
+  const { data: event, isLoading, refetch } = useEvent(eventId);
   const { showError } = useToast();
   const {
     hasPermission,
@@ -300,7 +302,6 @@ export default function ManageEventScreen() {
 
   return (
     <View style={styles.container}>
-      
       {/* Header pills row */}
       <View style={{ paddingTop: insets.top + 16 }}>
         <ScrollView
@@ -358,8 +359,8 @@ export default function ManageEventScreen() {
                   resizeMode="cover"
                 />
                 <BlurView
-                  intensity={50}
-                  tint="dark"
+                  intensity={60}
+                  tint="light"
                   style={[StyleSheet.absoluteFill, { borderRadius: 18, overflow: 'hidden' }]}
                 />
               </>
@@ -442,6 +443,27 @@ export default function ManageEventScreen() {
             </View>
           </View>
         </Animated.View>
+
+        {/* Publish button for draft events */}
+        {event.status === EventStatus.DRAFT && (
+          <Animated.View entering={FadeInDown.delay(100).duration(300)}>
+            <TouchableOpacity
+              style={{ backgroundColor: '#000', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginBottom: 12 }}
+              activeOpacity={0.85}
+              onPress={async () => {
+                try {
+                  await eventsApi.publishEvent(event.id);
+                  showSuccess('Event published!');
+                  refetch();
+                } catch (err: any) {
+                  showError(err.message || 'Failed to publish');
+                }
+              }}
+            >
+              <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'Lato_700Bold' }}>Publish Event</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Active group only */}
         {activeGroup ? (() => {

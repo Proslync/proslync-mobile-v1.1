@@ -108,18 +108,30 @@ export const filesApi = {
       fileSize,
       eventId: eventId.toString(),
     });
-    // Step 2: Upload to S3
-    // Use the blob we already fetched
-    const uploadResponse = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: blob,
-      headers: {
-        'Content-Type': type,
-      },
-    });
+    // Step 2: Upload to S3 (with 60s timeout)
+    const s3Controller = new AbortController();
+    const s3Timeout = setTimeout(() => s3Controller.abort(), 60000);
+    try {
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: blob,
+        headers: {
+          'Content-Type': type,
+        },
+        signal: s3Controller.signal,
+      });
+      clearTimeout(s3Timeout);
 
-    if (!uploadResponse.ok) {
-      throw new Error(`S3 upload failed: ${uploadResponse.status}`);
+      if (!uploadResponse.ok) {
+        const errText = await uploadResponse.text().catch(() => '');
+        throw new Error(`S3 upload failed: ${uploadResponse.status} ${errText}`);
+      }
+    } catch (err: any) {
+      clearTimeout(s3Timeout);
+      if (err.name === 'AbortError') {
+        throw new Error('Flyer upload timed out. Please try again.');
+      }
+      throw err;
     }
     // Step 3: Confirm upload
     const confirmed = await filesApi.confirmUpload(fileId);

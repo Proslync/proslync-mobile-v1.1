@@ -219,12 +219,6 @@ export const EventLineupCard = React.memo(function EventLineupCard({
               <View style={styles.dayBadge}>
                 <Text style={styles.dayBadgeText}>{event.day || 'TBD'}</Text>
               </View>
-              {/* CTA — bottom center */}
-              <View style={styles.ctaWrapper}>
-                <View style={styles.ctaBtn}>
-                  <Text style={styles.ctaText}>{event.ctaLabel || event.price}</Text>
-                </View>
-              </View>
             </TouchableOpacity>
           ))}
         </ScrollView>

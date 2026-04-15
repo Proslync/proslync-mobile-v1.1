@@ -14,6 +14,7 @@ import { UserRole } from '@/lib/types/auth.types';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useMembershipCard } from '@/hooks/use-membership-card';
 import { useMyVenues } from '@/hooks/use-venues-query';
+import { useVenue } from '@/hooks/use-venue-query';
 import { useMyEvents, useDebounce } from '@/hooks';
 import type { Event as StatusEvent, OwnerContact } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
@@ -43,11 +44,91 @@ import {
   IncompleteMembershipCard,
   StatusCardMenuSheet,
   TicketList,
+  OfferCarousel,
   WalletSkeleton,
 } from '@/components/wallet';
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
+// ─── Mock Data ──────────────────────────────────────────────────
+const MOCK_TICKETS = [
+  {
+    id: 'mock-1',
+    title: 'Friday Night at Ultrabar',
+    dateTime: '2026-04-18T22:00:00Z',
+    dateTimeLabel: 'Fri, Apr 18 · 10:00 PM',
+    venueName: 'Ultrabar',
+    flyerUrl: 'https://storage.googleapis.com/status_social_flyers_dev/flyer/49408c91-1fac-49c7-ac7d-35e687766eff.jpg',
+    isEarningEnabled: false,
+    isPaid: true,
+    pricePaid: 25,
+    ticketStatus: 'active' as const,
+  },
+  {
+    id: 'mock-2',
+    title: 'Rooftop Sunset Sessions',
+    dateTime: '2026-04-20T17:00:00Z',
+    dateTimeLabel: 'Sun, Apr 20 · 5:00 PM',
+    venueName: 'The Roof DC',
+    flyerUrl: '',
+    isEarningEnabled: true,
+    isPaid: false,
+    ticketStatus: 'active' as const,
+  },
+];
+
+const MOCK_TABLES = [
+  {
+    id: 1,
+    label: 'VIP Booth A3',
+    venueName: 'Ultrabar',
+    sectionName: 'VIP Section',
+    date: 'Fri, Apr 18 · 10:00 PM',
+    seatCount: 8,
+    status: 'confirmed' as const,
+    price: 500,
+  },
+  {
+    id: 2,
+    label: 'Table 12',
+    venueName: 'The Roof DC',
+    sectionName: 'Main Floor',
+    date: 'Sun, Apr 20 · 5:00 PM',
+    seatCount: 4,
+    status: 'pending' as const,
+    price: 200,
+  },
+];
+
+const MOCK_OFFERS = [
+  {
+    id: 'offer-1',
+    code: 'FRIDAY20',
+    title: '20% Off Entry',
+    subtitle: 'Valid for Friday Night at Ultrabar',
+    eventId: 1,
+    isClaimed: false,
+    expiresAt: '2026-04-18T22:00:00Z',
+  },
+  {
+    id: 'offer-2',
+    code: 'FREEDRINK',
+    title: 'Free Welcome Drink',
+    subtitle: 'Complimentary cocktail at Rooftop Sunset',
+    eventId: 2,
+    isClaimed: true,
+    expiresAt: '2026-04-20T17:00:00Z',
+  },
+  {
+    id: 'offer-3',
+    code: 'VIP50',
+    title: '$50 Off VIP Table',
+    subtitle: 'Any table reservation this weekend',
+    eventId: 1,
+    isClaimed: false,
+  },
+];
 
 const personalTabs = ['Tickets', 'Tables', 'Offers'] as const;
 const personalAdminTabs = ['Tickets', 'Tables', 'Offers', 'Admin'] as const;
@@ -274,16 +355,23 @@ function DashboardMenuGroup({
   );
 }
 
-function VenueDashboardContent({ venueId, organizationId, activeSection }: { venueId: number; organizationId?: number; activeSection: string }) {
+function VenueDashboardContent({ venueId, venueName, organizationId, activeSection }: { venueId: number; venueName?: string; organizationId?: number; activeSection: string }) {
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { data: venueData } = useVenue(venueId || undefined);
 
   const handleNav = useCallback(
     (route: string) => router.push(route as any),
     [router],
   );
 
+  const createEventQuery = [
+    organizationId ? `organizationId=${organizationId}` : '',
+    venueId ? `venueId=${venueId}` : '',
+    venueName ? `venueName=${encodeURIComponent(venueName)}` : '',
+    venueData?.address ? `venueAddress=${encodeURIComponent(venueData.address)}` : '',
+  ].filter(Boolean).join('&');
   const orgQuery = organizationId ? `?organizationId=${organizationId}` : '';
 
   const insightsItems: DashboardMenuItem[] = [
@@ -303,7 +391,7 @@ function VenueDashboardContent({ venueId, organizationId, activeSection }: { ven
         <OverviewEventsList organizationId={organizationId} insetsBottom={insets.bottom} />
         <Pressable
           style={[dashStyles.createEventFab, { bottom: insets.bottom + 20 }]}
-          onPress={() => handleNav(`/create-event${orgQuery}`)}
+          onPress={() => handleNav(`/create-event${createEventQuery ? `?${createEventQuery}` : ''}`)}
         >
           <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
           <Ionicons name="add" size={32} color="#000" style={{ fontWeight: '900' }} />
@@ -861,20 +949,46 @@ export default function WalletScreen() {
       />
 
       {(selectedVenue || selectedOrg) ? (
-        <VenueDashboardContent venueId={selectedVenue?.id ?? 0} organizationId={selectedOrg?.id} activeSection={activeTab} />
+        <VenueDashboardContent venueId={selectedVenue?.id ?? 0} venueName={selectedVenue?.name} organizationId={selectedOrg?.id} activeSection={activeTab} />
       ) : activeTab === 'Admin' ? (
         <PersonalAdminContent />
       ) : (
-        <View style={styles.emptyState}>
-          <Ionicons
-            name={activeTab === 'Tickets' ? 'ticket-outline' : activeTab === 'Tables' ? 'restaurant-outline' : 'pricetag-outline'}
-            size={48}
-            color="rgba(0,0,0,0.2)"
-          />
-          <Text style={styles.emptyStateText}>
-            {activeTab === 'Tickets' ? 'No upcoming tickets' : activeTab === 'Tables' ? 'No upcoming tables' : 'No available offers'}
-          </Text>
-        </View>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 120, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+          {activeTab === 'Tickets' ? (
+            <TicketList
+              rsvpEvents={MOCK_TICKETS}
+              onViewEvent={(eventId) => router.push({ pathname: '/event/[id]', params: { id: eventId } })}
+            />
+          ) : activeTab === 'Tables' ? (
+            <View style={{ padding: 16, gap: 12 }}>
+              {MOCK_TABLES.map((table) => (
+                <TouchableOpacity key={table.id} style={styles.tableCard} activeOpacity={0.8}>
+                  <View style={styles.tableCardLeft}>
+                    <Text style={styles.tableLabel}>{table.label}</Text>
+                    <Text style={styles.tableMeta}>{table.venueName} · {table.sectionName}</Text>
+                    <Text style={styles.tableMeta}>{table.date}</Text>
+                  </View>
+                  <View style={styles.tableCardRight}>
+                    <Text style={styles.tableSeats}>{table.seatCount} seats</Text>
+                    <View style={[styles.tableStatusBadge, { backgroundColor: table.status === 'confirmed' ? '#22c55e' : '#f59e0b' }]}>
+                      <Text style={styles.tableStatusText}>{table.status === 'confirmed' ? 'Confirmed' : 'Pending'}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : activeTab === 'Offers' ? (
+            <OfferCarousel
+              offers={MOCK_OFFERS}
+              onClaimOffer={(id) => console.log('Claim offer', id)}
+            />
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="apps-outline" size={48} color="rgba(0,0,0,0.2)" />
+              <Text style={styles.emptyStateText}>Nothing here</Text>
+            </View>
+          )}
+        </ScrollView>
       )}
 
       {/* Profile Selector */}
@@ -993,6 +1107,50 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.35)',
+  },
+  tableCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+  },
+  tableCardLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  tableLabel: {
+    fontSize: 17,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  tableMeta: {
+    fontSize: 13,
+    fontFamily: 'Lato_400Regular',
+    color: 'rgba(0,0,0,0.5)',
+  },
+  tableCardRight: {
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  tableSeats: {
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
+    color: '#000',
+  },
+  tableStatusBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  tableStatusText: {
+    fontSize: 12,
+    fontFamily: 'Lato_700Bold',
+    color: '#fff',
   },
 });
 

@@ -28,44 +28,19 @@ interface OfferCardProps {
 function OfferCard({ offer, onClaim, colors, isDark }: OfferCardProps) {
   return (
     <View style={styles.offerCard}>
-      <GlassView
-        {...liquidGlass.surface}
-        borderRadius={16}
-        style={StyleSheet.absoluteFillObject}
-      />
-      {/* Top: Title (max 2 lines) */}
-      <Text style={[styles.offerTitle, { color: colors.text }]} numberOfLines={2}>
-        {offer.title}
-      </Text>
-
-      {/* Middle: Subtitle + code */}
-      <Text style={[styles.offerSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-        {offer.subtitle}
-      </Text>
-      {offer.code && (
-        <Text style={[styles.offerCode, { color: colors.text }]} numberOfLines={1}>
-          {offer.code}
-        </Text>
-      )}
-
-      {/* Bottom: Claim button */}
-      <View style={styles.offerFooter}>
+      <View style={styles.offerRow}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[styles.offerTitle, { color: colors.text }]} numberOfLines={1}>{offer.title}</Text>
+          <Text style={[styles.offerSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>{offer.subtitle}</Text>
+        </View>
         <TouchableOpacity
           style={[styles.claimButton, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.08)' }, offer.isClaimed && styles.claimButtonClaimed]}
           onPress={() => !offer.isClaimed && onClaim()}
           disabled={offer.isClaimed}
           activeOpacity={0.7}
         >
-          {isDark && <GlassView {...liquidGlass.fill} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
-          {offer.isClaimed && (
-            <Ionicons name="checkmark" size={14} color="#34c759" />
-          )}
-          <Text
-            style={[
-              styles.claimButtonText,
-              offer.isClaimed && styles.claimButtonTextClaimed,
-            ]}
-          >
+          {offer.isClaimed && <Ionicons name="checkmark" size={14} color="#34c759" />}
+          <Text style={[styles.claimButtonText, offer.isClaimed && styles.claimButtonTextClaimed]}>
             {offer.isClaimed ? 'Copied!' : 'Copy Code'}
           </Text>
         </TouchableOpacity>
@@ -79,8 +54,7 @@ export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
 
   if (offers.length === 0) {
     return (
-      <View style={[styles.container, { borderTopColor: colors.border }]}>
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Promos</Text>
+      <View style={styles.container}>
         <View style={styles.emptyState}>
           <Ionicons name="gift-outline" size={40} color={colors.textTertiary} />
           <Text style={[styles.emptyText, { color: colors.textTertiary }]}>No upcoming promos</Text>
@@ -90,13 +64,8 @@ export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
   }
 
   return (
-    <View style={[styles.container, { borderTopColor: colors.border }]}>
-      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Promos</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+    <View style={styles.container}>
+      <View style={styles.listContent}>
         {offers.map((offer) => (
           <OfferCard
             key={offer.id}
@@ -106,7 +75,7 @@ export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
             isDark={isDark}
           />
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -114,7 +83,6 @@ export function OfferCarousel({ offers, onClaimOffer }: OfferCarouselProps) {
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
-    borderTopWidth: 1,
   },
   sectionTitle: {
     fontSize: 13,
@@ -124,23 +92,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 12,
   },
-  scrollContent: {
+  listContent: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
   },
   offerCard: {
-    width: 180,
-    height: 150,
     borderRadius: 16,
     overflow: 'hidden',
-    padding: 16,
-    justifyContent: 'space-between',
+    padding: 14,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+  },
+  offerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   offerTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    lineHeight: 20,
-    height: 40,
+    lineHeight: 22,
   },
   offerSubtitle: {
     fontSize: 12,

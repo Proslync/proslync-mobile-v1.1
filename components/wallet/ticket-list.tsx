@@ -68,17 +68,13 @@ function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, 
 
   return (
     <TouchableOpacity
-      style={[styles.ticketCard, { borderColor: border }, dimmed && { opacity: 0.6 }]}
+      style={[styles.ticketCard, dimmed && { opacity: 0.6 }]}
       onPress={onView}
       activeOpacity={0.8}
     >
-      <GlassView
-        {...liquidGlass.surface}
-        tintColor={surfaceTint}
-        borderRadius={16}
-        style={StyleSheet.absoluteFillObject}
-      />
-      <Image source={{ uri: event.flyerUrl }} style={[styles.ticketImage, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]} />
+      <View style={styles.flyerWrapper}>
+        <Image source={{ uri: event.flyerUrl }} style={[styles.ticketImage, { backgroundColor: 'rgba(0,0,0,0.05)' }]} />
+      </View>
       <View style={styles.ticketInfo}>
         <View style={styles.titleRow}>
           <Text style={[styles.ticketTitle, { color: t.primary }]} numberOfLines={2}>
@@ -98,21 +94,14 @@ function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, 
       </View>
       {hasActions && (
         <TouchableOpacity
-          style={[styles.viewBtn, { borderColor: border }]}
+          style={styles.walletBtn}
           onPress={(e) => {
             e.stopPropagation();
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            onActions();
           }}
           activeOpacity={0.7}
         >
-          <GlassView
-            {...liquidGlass.surface}
-            tintColor={surfaceTint}
-            borderRadius={20}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <Text style={[styles.viewBtnText, { color: t.primary }]}>Manage</Text>
+          <Ionicons name="wallet-outline" size={20} color="#000" />
         </TouchableOpacity>
       )}
     </TouchableOpacity>
@@ -138,8 +127,6 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
 
   return (
     <View style={[styles.container, { borderTopColor: colors.border }]}>
-      <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>Upcoming Tickets</Text>
-
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={t.muted} />
@@ -170,12 +157,6 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
           ))}
         </View>
       )}
-      <TicketActionSheet
-        visible={!!selectedEvent}
-        onClose={() => setSelectedEvent(null)}
-        event={selectedEvent}
-        onActionComplete={onActionComplete}
-      />
     </View>
   );
 }
@@ -183,7 +164,6 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
-    borderTopWidth: 1,
   },
   sectionTitle: {
     fontSize: 13,
@@ -218,23 +198,31 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 10,
   },
   ticketCard: {
     flexDirection: 'row',
     borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+  },
+  flyerWrapper: {
+    padding: 8,
   },
   ticketImage: {
-    width: 80,
-    height: 80,
+    width: 82,
+    height: 82,
+    borderRadius: 12,
   },
   ticketInfo: {
     flex: 1,
     padding: 12,
     justifyContent: 'center',
-    gap: 2,
+    gap: 3,
   },
   titleRow: {
     flexDirection: 'row',
@@ -243,9 +231,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   ticketTitle: {
-    fontSize: 14,
+    fontSize: 17,
     fontFamily: 'Lato_700Bold',
-    lineHeight: 18,
+    lineHeight: 21,
     flexShrink: 1,
   },
   transferredBadge: {
@@ -262,8 +250,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Lato_700Bold',
   },
   ticketDate: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
+    fontSize: 14,
+    fontFamily: 'Lato_700Bold',
     marginTop: 2,
   },
   ticketMeta: {
@@ -272,21 +260,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ticketVenue: {
-    fontSize: 11,
-    fontFamily: 'Lato_400Regular',
-  },
-  viewBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    overflow: 'hidden' as const,
-    borderWidth: 1,
-    alignSelf: 'center',
-    marginRight: 12,
-  },
-  viewBtnText: {
     fontSize: 13,
     fontFamily: 'Lato_700Bold',
+  },
+  walletBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginRight: 12,
   },
   emptyState: {
     alignItems: 'center',

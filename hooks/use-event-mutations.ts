@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { eventsApi, CreateEventDto, UpdateEventDto } from '@/lib/api/events';
-import { filesApi } from '@/lib/api/files';
+import { filesApi, getFileInfo } from '@/lib/api/files';
 import type { Event } from '@/lib/types/events.types';
 import { USER_FEED_QUERY_KEY } from './use-user-feed';
 import { FEED_QUERY_KEY } from './use-feed';
@@ -25,20 +25,43 @@ export function useCreateEvent() {
 
   return useMutation<CreateEventResult, Error, CreateEventVariables>({
     mutationFn: async ({ data, flyerUri, shouldPublish = true }) => {
-      // Step 1: Create event
-      const event = await eventsApi.createEvent(data);
+      // Step 1: Upload flyer first if provided (backend requires image to create event)
       let flyerUrl: string | undefined;
-
-      // Step 2: Upload flyer if provided
       if (flyerUri) {
-        flyerUrl = await filesApi.uploadEventFlyer(event.id, flyerUri);
+        // Upload to get a URL, then include in create payload
+        const { name, type } = getFileInfo(flyerUri);
+        const fileResponse = await fetch(flyerUri);
+        const blob = await fileResponse.blob();
+        const fileSize = blob.size.toString();
+        const { uploadUrl, fileId } = await filesApi.getPresignedUrl({
+          fileType: 'flyer',
+          fileName: name,
+          mimeType: type,
+          fileSize,
+        });
+        const s3Controller = new AbortController();
+        const s3Timeout = setTimeout(() => s3Controller.abort(), 60000);
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: blob,
+          headers: { 'Content-Type': type },
+          signal: s3Controller.signal,
+        });
+        clearTimeout(s3Timeout);
+        if (!uploadResponse.ok) {
+          throw new Error(`Flyer upload failed: ${uploadResponse.status}`);
+        }
+        const confirmed = await filesApi.confirmUpload(fileId);
+        flyerUrl = confirmed.url;
+        // Add image URL to event data
+        (data as any).imageUrl = flyerUrl;
       }
 
-      // Step 3: Publish event (requires flyer/media)
-      if (shouldPublish) {
-        if (!flyerUri) {
-          throw new Error('Event must have a flyer or image before publishing');
-        }
+      // Step 2: Create event (now with image attached)
+      const event = await eventsApi.createEvent(data);
+
+      // Step 3: Publish event
+      if (shouldPublish && flyerUri) {
         await eventsApi.publishEvent(event.id);
       }
 

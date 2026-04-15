@@ -11,6 +11,7 @@ import { artistsApi } from '@/lib/api/artists';
 import type { CreateEventArtistRequest } from '@/lib/types/artists.types';
 import { DRESS_CODE_OPTIONS } from '@/lib/constants/dress-codes';
 import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { Controller, FormProvider, useFormContext } from 'react-hook-form';
@@ -29,6 +30,9 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  PanResponder,
+  Animated as RNAnimated,
+  Modal,
 } from 'react-native';
 import { LiquidGlassView } from '@callstack/liquid-glass';
 import { GlassView } from 'expo-glass-effect';
@@ -44,11 +48,20 @@ const CARD_MARGIN = 16;
 
 type CreateTab = 'overview' | 'tables' | 'lineup' | 'map';
 
-function formatDateDisplay(date: Date | null | undefined): string {
-  if (!date || !(date instanceof Date) || isNaN(date.getTime())) return 'Select date & time';
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) +
+function formatDateDisplay(date: Date | string | null | undefined): string {
+  if (!date) return 'Select date & time';
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return 'Select date & time';
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) +
     ' · ' +
-    date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
+function formatTimeOnly(date: Date | string | null | undefined): string {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 function formatDoorsTime(date: Date | null | undefined): string {
@@ -59,7 +72,7 @@ function formatDoorsTime(date: Date | null | undefined): string {
 export default function CreateEventScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { organizationId: orgIdParam } = useLocalSearchParams<{ organizationId?: string }>();
+  const { organizationId: orgIdParam, venueId: venueIdParam, venueName: venueNameParam, venueAddress: venueAddressParam } = useLocalSearchParams<{ organizationId?: string; venueId?: string; venueName?: string; venueAddress?: string }>();
   const { showSuccess, showError } = useToast();
   const { colors, isDark } = useAppTheme();
   const { user: authUser } = useAuth();
@@ -67,14 +80,98 @@ export default function CreateEventScreen() {
   const { form, canSubmit, isPaid } = useEventForm();
   const createEvent = useCreateEvent();
 
+  // Prefill venue location
+  React.useEffect(() => {
+    if (venueAddressParam && !form.getValues('location')) {
+      form.setValue('location', venueAddressParam);
+    }
+  }, [venueAddressParam]);
+
+  // Location autocomplete
+  const [locationSuggestions, setLocationSuggestions] = React.useState<{ id: string; place_name: string }[]>([]);
+  const locationTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [userCoords, setUserCoords] = React.useState<{ lat: number; lon: number } | null>(null);
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setUserCoords({ lat: loc.coords.latitude, lon: loc.coords.longitude });
+      } catch {}
+    })();
+  }, []);
+
+  const fetchLocationSuggestions = React.useCallback((query: string) => {
+    if (locationTimerRef.current) clearTimeout(locationTimerRef.current);
+    if (query.length < 1) { setLocationSuggestions([]); return; }
+    locationTimerRef.current = setTimeout(async () => {
+      try {
+        const token = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+        if (!token) return;
+        const proximity = userCoords ? `&proximity=${userCoords.lon},${userCoords.lat}` : '';
+        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${token}&limit=5&types=address,poi,place&country=us${proximity}`);
+        const data = await res.json();
+        setLocationSuggestions(data.features?.map((f: any) => ({ id: f.id, place_name: f.place_name })) || []);
+      } catch {
+        setLocationSuggestions([]);
+      }
+    }, 300);
+  }, [userCoords]);
+
   const [activeTab, setActiveTab] = React.useState<CreateTab>('overview');
   const [pendingArtists, setPendingArtists] = React.useState<CreateEventArtistRequest[]>([]);
   const [showArtistModal, setShowArtistModal] = React.useState(false);
-  const [showStartPicker, setShowStartPicker] = React.useState(false);
-  const [showEndPicker, setShowEndPicker] = React.useState(false);
+  const [showDateModal, setShowDateModal] = React.useState(false);
+  const [editingField, setEditingField] = React.useState<'start' | 'end'>('start');
+  const [showEndTime, setShowEndTime] = React.useState(true);
+  const [hasChosenTime, setHasChosenTime] = React.useState(false);
+
+  // Drag-to-dismiss for date modal
+  const dateSlideY = React.useRef(new RNAnimated.Value(Dimensions.get('window').height)).current;
+  const dateBackdropOpacity = dateSlideY.interpolate({
+    inputRange: [0, Dimensions.get('window').height],
+    outputRange: [0.4, 0],
+    extrapolate: 'clamp',
+  });
+
+  const openDateModal = React.useCallback(() => {
+    dateSlideY.setValue(600);
+    setShowDateModal(true);
+    setTimeout(() => {
+      RNAnimated.timing(dateSlideY, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+    }, 50);
+  }, []);
+
+  const closeDateModal = React.useCallback(() => {
+    RNAnimated.timing(dateSlideY, { toValue: Dimensions.get('window').height, duration: 250, useNativeDriver: true }).start(() => {
+      setShowDateModal(false);
+    });
+  }, []);
+
+  const datePanResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, g) => g.dy > 8,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (_, g) => g.dy > 12,
+      onPanResponderMove: (_, g) => {
+        if (g.dy > 0) dateSlideY.setValue(g.dy);
+      },
+      onPanResponderRelease: (_, g) => {
+        if (g.dy > 100 || g.vy > 0.5) {
+          RNAnimated.timing(dateSlideY, { toValue: Dimensions.get('window').height, duration: 200, useNativeDriver: true }).start(() => {
+            setShowDateModal(false);
+          });
+        } else {
+          RNAnimated.spring(dateSlideY, { toValue: 0, useNativeDriver: true, damping: 20 }).start();
+        }
+      },
+    })
+  ).current;
 
   const flyerUri = form.watch('flyerUri');
   const startDate = form.watch('startDate');
+  const endDate = form.watch('endDate');
   const dressCode = form.watch('dressCode');
 
   const handlePickFlyer = async () => {
@@ -106,25 +203,32 @@ export default function CreateEventScreen() {
     );
   };
 
-  const onSubmit = (data: EventFormData) => {
-    const parsedData = parseEventFormData(data);
-    if (orgIdParam) parsedData.organizationId = parseInt(orgIdParam, 10);
-    createEvent.mutate(
-      { data: parsedData, flyerUri: data.flyerUri, shouldPublish: true },
-      {
-        onSuccess: async ({ event }) => {
-          for (const artist of pendingArtists) {
-            try { await artistsApi.createEventArtist(event.id, artist); } catch {}
-          }
-          showSuccess('Event created!');
-          router.replace(`/event/${event.id}`);
-        },
-        onError: (error) => showError(error.message || 'Failed to create event'),
-      },
-    );
+  const onSubmit = async (data: EventFormData) => {
+    try {
+      const parsedData = parseEventFormData(data);
+      if (orgIdParam) parsedData.organizationId = parseInt(orgIdParam, 10);
+      if (venueIdParam) parsedData.venueId = parseInt(venueIdParam, 10);
+
+      // Create event first (don't publish yet — publish may fail if flyer upload has issues)
+      const { event } = await createEvent.mutateAsync(
+        { data: parsedData, flyerUri: data.flyerUri, shouldPublish: true },
+      );
+
+      for (const artist of pendingArtists) {
+        try { await artistsApi.createEventArtist(event.id, artist); } catch {}
+      }
+      showSuccess('Event created!');
+      router.replace(`/event/${event.id}`);
+    } catch (err: any) {
+      alert(`Create event failed: ${err.message}`);
+    }
   };
 
-  const onSubmitError = () => showError('Please fill in all required fields');
+  const onSubmitError = (errors: any) => {
+    const fields = Object.keys(errors).join(', ');
+    console.warn('Form validation errors:', JSON.stringify(errors, null, 2));
+    showError(`Missing required fields: ${fields}`);
+  };
 
   const renderOverview = () => (
     <Animated.View entering={FadeInDown.duration(400)}>
@@ -132,14 +236,13 @@ export default function CreateEventScreen() {
       <LiquidGlassView effect="regular" style={s.glassCard}>
         <View style={s.organizerInner}>
           <Image
-            source={authUser?.avatar?.url ? { uri: authUser.avatar.url } : DefaultAvatarImage}
+            source={venueNameParam ? DefaultAvatarImage : (authUser?.avatar?.url ? { uri: authUser.avatar.url } : DefaultAvatarImage)}
             style={s.organizerAvatar}
           />
           <View style={{ flex: 1 }}>
             <Text style={[s.organizerName, { color: colors.text }]} numberOfLines={1}>
-              {authUser?.firstName || authUser?.userName || 'You'}
+              {venueNameParam || authUser?.firstName || authUser?.userName || 'You'}
             </Text>
-            <Text style={[s.organizerRole, { color: colors.textSecondary }]}>Organizer</Text>
           </View>
         </View>
       </LiquidGlassView>
@@ -152,7 +255,7 @@ export default function CreateEventScreen() {
           ) : (
             <View style={s.flyerPlaceholder}>
               <Ionicons name="camera-outline" size={40} color="rgba(0,0,0,0.3)" />
-              <Text style={s.flyerPlaceholderText}>Add Event Flyer</Text>
+              <Text style={s.flyerPlaceholderText}>Add Flyer</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -168,16 +271,15 @@ export default function CreateEventScreen() {
               style={[s.eventNameInput, { color: colors.text }]}
               value={value}
               onChangeText={onChange}
-              placeholder="Event name"
+              placeholder="Title"
               placeholderTextColor="rgba(0,0,0,0.35)"
               maxLength={100}
             />
           )}
         />
-        <TouchableOpacity style={s.dateRow} onPress={() => setShowStartPicker(true)}>
-          <Ionicons name="calendar-outline" size={16} color="rgba(0,0,0,0.5)" />
-          <Text style={[s.dateText, { color: colors.textSecondary }]}>
-            {formatDateDisplay(startDate)}
+        <TouchableOpacity style={s.dateRow} onPress={() => { setEditingField('start'); openDateModal(); }}>
+          <Text style={[s.dateText, { color: hasChosenTime ? colors.textSecondary : 'rgba(0,0,0,0.35)' }]}>
+            {hasChosenTime ? formatDateDisplay(startDate) + (showEndTime && endDate ? ' - ' + formatTimeOnly(endDate) : '') : 'Time'}
           </Text>
         </TouchableOpacity>
         <Controller
@@ -185,18 +287,45 @@ export default function CreateEventScreen() {
           name="location"
           render={({ field: { value, onChange } }) => (
             <View style={s.dateRow}>
-              <Ionicons name="location-outline" size={16} color="rgba(0,0,0,0.5)" />
               <TextInput
                 style={[s.locationInput, { color: colors.textSecondary }]}
                 value={value}
-                onChangeText={onChange}
-                placeholder="Event location"
+                onChangeText={(text) => {
+                  onChange(text);
+                  fetchLocationSuggestions(text);
+                }}
+                placeholder="Location"
                 placeholderTextColor="rgba(0,0,0,0.35)"
               />
+              {!!value && (
+                <TouchableOpacity onPress={() => { onChange(''); setLocationSuggestions([]); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.3)" />
+                </TouchableOpacity>
+              )}
             </View>
           )}
         />
       </LiquidGlassView>
+
+      {/* Location suggestions dropdown — rendered outside the glass card */}
+      {locationSuggestions.length > 0 && (
+        <View style={s.locationSuggestions}>
+          {locationSuggestions.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={s.locationSuggestionRow}
+              onPress={() => {
+                form.setValue('location', item.place_name);
+                setLocationSuggestions([]);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="location" size={14} color="rgba(0,0,0,0.4)" />
+              <Text style={s.locationSuggestionText} numberOfLines={2}>{item.place_name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Quick Details Grid */}
       <View style={s.gridRow}>
@@ -303,51 +432,160 @@ export default function CreateEventScreen() {
         </LiquidGlassView>
       )}
 
-      {/* Date pickers */}
-      {showStartPicker && (
-        <Controller
-          control={form.control}
-          name="startDate"
-          render={({ field: { value, onChange } }) => (
-            <DateTimePicker
-              value={value instanceof Date ? value : new Date()}
-              mode="datetime"
-              display="spinner"
-              onChange={(_, date) => {
-                setShowStartPicker(false);
-                if (date) {
-                  onChange(date);
-                  const endDate = form.getValues('endDate');
-                  if (endDate && date >= endDate) {
-                    form.setValue('endDate', new Date(date.getTime() + 4 * 3600000));
-                  }
-                  setShowEndPicker(true);
-                }
-              }}
-              themeVariant={isDark ? 'dark' : 'light'}
-            />
-          )}
-        />
-      )}
-      {showEndPicker && (
-        <Controller
-          control={form.control}
-          name="endDate"
-          render={({ field: { value, onChange } }) => (
-            <DateTimePicker
-              value={value instanceof Date ? value : new Date(Date.now() + 4 * 3600000)}
-              mode="datetime"
-              display="spinner"
-              minimumDate={form.getValues('startDate') || new Date()}
-              onChange={(_, date) => {
-                setShowEndPicker(false);
-                if (date) onChange(date);
-              }}
-              themeVariant={isDark ? 'dark' : 'light'}
-            />
-          )}
-        />
-      )}
+      {/* Date picker modal */}
+      <Modal visible={showDateModal} transparent animationType="none" onRequestClose={closeDateModal}>
+        <View style={{ flex: 1 }}>
+          {/* Backdrop */}
+          <RNAnimated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000', opacity: dateBackdropOpacity }]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={closeDateModal} />
+          </RNAnimated.View>
+          {/* Sheet */}
+          <RNAnimated.View
+            style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '85%', backgroundColor: '#2c2c2e', borderTopLeftRadius: 14, borderTopRightRadius: 14, transform: [{ translateY: dateSlideY }] }}
+            {...datePanResponder.panHandlers}
+          >
+            {/* Modal indicator */}
+            <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 16 }}>
+              <View style={{ width: 36, height: 5, borderRadius: 2.5, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 40 }}>
+              {/* Calendar containers — both mounted, toggle visibility */}
+              <View style={[s.dateModalContainer, editingField !== 'start' && { display: 'none' }]}>
+                <Controller
+                  control={form.control}
+                  name="startDate"
+                  render={({ field: { value, onChange } }) => (
+                    <DateTimePicker
+                      value={value instanceof Date ? value : new Date()}
+                      mode="date"
+                      display="inline"
+                      minimumDate={new Date()}
+                      accentColor="#fff"
+                      onChange={(_, date) => {
+                        if (date) {
+                          const prev = value instanceof Date ? value : new Date();
+                          date.setHours(prev.getHours(), prev.getMinutes());
+                          onChange(date);
+                          const endDate = form.getValues('endDate');
+                          if (endDate && date >= endDate) {
+                            form.setValue('endDate', new Date(date.getTime() + 4 * 3600000));
+                          }
+                        }
+                      }}
+                      themeVariant="dark"
+                    />
+                  )}
+                />
+              </View>
+              <View style={[s.dateModalContainer, editingField !== 'end' && { display: 'none' }]}>
+                <Controller
+                  control={form.control}
+                  name="endDate"
+                  render={({ field: { value, onChange } }) => (
+                    <DateTimePicker
+                      value={value instanceof Date ? value : new Date(Date.now() + 4 * 3600000)}
+                      mode="date"
+                      display="inline"
+                      minimumDate={form.getValues('startDate') || new Date()}
+                      accentColor="#fff"
+                      onChange={(_, date) => {
+                        if (date) {
+                          const prev = value instanceof Date ? value : new Date();
+                          date.setHours(prev.getHours(), prev.getMinutes());
+                          onChange(date);
+                        }
+                      }}
+                      themeVariant="dark"
+                    />
+                  )}
+                />
+              </View>
+
+              {/* Time container */}
+              <View style={[s.dateModalContainer, { marginTop: 10 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 4 }}>
+                  <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>Time</Text>
+                  <View style={editingField !== 'start' ? { display: 'none' } : undefined}>
+                    <Controller
+                      control={form.control}
+                      name="startDate"
+                      render={({ field: { value, onChange } }) => (
+                        <DateTimePicker
+                          value={value instanceof Date ? value : new Date()}
+                          mode="time"
+                          display="compact"
+                          minimumDate={new Date()}
+                          onChange={(_, date) => {
+                            if (date) {
+                              onChange(date);
+                              const endDate = form.getValues('endDate');
+                              if (endDate && date >= endDate) {
+                                form.setValue('endDate', new Date(date.getTime() + 4 * 3600000));
+                              }
+                            }
+                          }}
+                          themeVariant="dark"
+                        />
+                      )}
+                    />
+                  </View>
+                  <View style={editingField !== 'end' ? { display: 'none' } : { flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <TouchableOpacity
+                      onPress={() => setShowEndTime(!showEndTime)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Ionicons name={showEndTime ? 'eye' : 'eye-off'} size={20} color="rgba(255,255,255,0.5)" />
+                    </TouchableOpacity>
+                    <Controller
+                      control={form.control}
+                      name="endDate"
+                      render={({ field: { value, onChange } }) => (
+                        <DateTimePicker
+                          value={value instanceof Date ? value : new Date(Date.now() + 4 * 3600000)}
+                          mode="time"
+                          display="compact"
+                          minimumDate={form.getValues('startDate') || new Date()}
+                          onChange={(_, date) => {
+                            if (date) onChange(date);
+                          }}
+                          themeVariant="dark"
+                        />
+                      )}
+                    />
+                  </View>
+                </View>
+              </View>
+
+              {/* Start / End tabs */}
+              <View style={[s.dateModalTabs, { marginTop: 12 }]}>
+                <TouchableOpacity
+                  style={[s.dateModalTab, editingField === 'start' && s.dateModalTabActive]}
+                  onPress={() => setEditingField('start')}
+                >
+                  <Text style={[s.dateModalTabText, editingField === 'start' && s.dateModalTabTextActive]}>Start</Text>
+                  <Text style={[s.dateModalTabSub, editingField === 'start' && s.dateModalTabSubActive]}>
+                    {formatDateDisplay(startDate || new Date())}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.dateModalTab, editingField === 'end' && s.dateModalTabActive]}
+                  onPress={() => setEditingField('end')}
+                >
+                  <Text style={[s.dateModalTabText, editingField === 'end' && s.dateModalTabTextActive]}>End</Text>
+                  <Text style={[s.dateModalTabSub, editingField === 'end' && s.dateModalTabSubActive]}>
+                    {showEndTime ? formatDateDisplay(form.watch('endDate')) : 'Hidden'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Confirm */}
+              <TouchableOpacity style={[s.dateModalConfirm, { marginTop: 12 }]} onPress={() => { setHasChosenTime(true); closeDateModal(); }} activeOpacity={0.8}>
+                <Text style={s.dateModalConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </RNAnimated.View>
+        </View>
+      </Modal>
     </Animated.View>
   );
 
@@ -466,26 +704,34 @@ export default function CreateEventScreen() {
         </KeyboardAvoidingView>
 
         {/* Bottom action bar */}
-        <View style={[s.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
-          <View style={s.bottomRow}>
-            <TouchableOpacity style={s.bottomIcon} onPress={() => router.back()} activeOpacity={0.7}>
-              <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={24} style={StyleSheet.absoluteFill} />
-              <Ionicons name="chevron-back" size={22} color="#000" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.createButton, (!canSubmit || createEvent.isPending) && s.createButtonDisabled]}
-              onPress={form.handleSubmit(onSubmit, onSubmitError)}
-              disabled={!canSubmit || createEvent.isPending}
-              activeOpacity={0.85}
-            >
-              {createEvent.isPending ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={s.createButtonText}>Create Event</Text>
-              )}
-            </TouchableOpacity>
-            <View style={s.bottomIcon} />
-          </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingBottom: insets.bottom + 16 }}>
+          <Pressable style={{ width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }} onPress={() => router.back()}>
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={24} style={StyleSheet.absoluteFill} />
+            <Ionicons name="chevron-back" size={22} color="#000" />
+          </Pressable>
+          <Pressable
+            style={{ flex: 1, height: 48, borderRadius: 28, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', opacity: (!canSubmit || createEvent.isPending) ? 0.4 : 1 }}
+            onPress={async () => {
+              try {
+                const vals = form.getValues();
+                const isValid = await form.trigger();
+                if (!isValid) {
+                  const fields = Object.keys(form.formState.errors);
+                  alert(`Please fix: ${fields.join(', ')}`);
+                  return;
+                }
+                onSubmit(vals);
+              } catch (err: any) {
+                alert(`Error: ${err.message}`);
+              }
+            }}
+          >
+            {createEvent.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'Lato_700Bold' }}>Create Event</Text>
+            )}
+          </Pressable>
         </View>
 
         <ArtistFormModal
@@ -531,8 +777,21 @@ const s = StyleSheet.create({
   detailsCard: { borderRadius: 16, marginBottom: 10, paddingHorizontal: 14, paddingVertical: 14, overflow: 'hidden', gap: 8 },
   eventNameInput: { fontSize: 20, fontFamily: 'Lato_700Bold', padding: 0 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dateText: { fontSize: 14, fontFamily: 'Lato_400Regular' },
+  dateText: { fontSize: 14, fontFamily: 'Lato_700Bold' },
+  dateModalContainer: { backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 12, padding: 8, overflow: 'hidden' },
+  dateModalTabs: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  dateModalTab: { flex: 1, padding: 12, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)' },
+  dateModalTabActive: { backgroundColor: 'rgba(255,255,255,0.18)' },
+  dateModalTabText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.5)' },
+  dateModalTabTextActive: { color: '#fff' },
+  dateModalTabSub: { fontSize: 12, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  dateModalTabSubActive: { color: 'rgba(255,255,255,0.7)' },
+  dateModalConfirm: { backgroundColor: '#007AFF', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 12 },
+  dateModalConfirmText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   locationInput: { flex: 1, fontSize: 14, fontFamily: 'Lato_400Regular', padding: 0 },
+  locationSuggestions: { marginTop: -4, marginBottom: 8, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
+  locationSuggestionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.06)' },
+  locationSuggestionText: { flex: 1, fontSize: 13, fontFamily: 'Lato_400Regular', color: '#333' },
 
   // Grid
   gridRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
@@ -570,7 +829,7 @@ const s = StyleSheet.create({
   mapInput: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
 
   // Bottom bar
-  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16 },
+  bottomBar: { paddingHorizontal: 16 },
   bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bottomIcon: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   createButton: { flex: 1, height: 48, borderRadius: 28, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },

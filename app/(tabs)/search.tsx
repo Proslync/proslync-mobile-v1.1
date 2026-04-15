@@ -7,38 +7,29 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
   TouchableOpacity,
   Pressable,
   Image,
-  ActivityIndicator,
-  ScrollView,
-  FlatList,
   Platform,
   Linking,
+  Share,
 } from 'react-native';
-import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import Constants from 'expo-constants';
 import { GlassView } from 'expo-glass-effect';
-import { liquidGlass, glassTint } from '@/constants/glass/liquid-glass';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSpring,
-  withRepeat,
-  withSequence,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Svg, { Path, Defs, ClipPath, Rect } from 'react-native-svg';
 import { NearbyNativeSheet } from '@/components/map/nearby-native-sheet';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { LiquidGlassView } from '@callstack/liquid-glass';
 import { eventsApi } from '@/lib/api/events';
 import { locationsApi, HeatmapPoint } from '@/lib/api/locations';
@@ -52,8 +43,8 @@ import { MapFabMenu } from '@/components/map/map-fab-menu';
 import { config } from '@/lib/config';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Check if running in Expo Go (native modules not available)
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -192,7 +183,7 @@ function transformEventToMapEvent(event: Event): MapEvent {
 // Event flyer card marker for map (rectangular flyer style)
 const EventMarker = React.memo(function EventMarker({ event, onPress }: { event: MapEvent; onPress: () => void }) {
   return (
-    <TouchableOpacity onPress={onPress} style={styles.eventMarkerContainer}>
+    <TouchableOpacity onPress={onPress} style={styles.eventMarkerContainer} accessibilityLabel={`Event: ${event.title} at ${event.venue}`} accessibilityRole="button">
       <View style={styles.eventMarker}>
         <Image source={{ uri: event.imageUrl }} style={styles.eventMarkerImage} />
       </View>
@@ -204,7 +195,7 @@ const EventMarker = React.memo(function EventMarker({ event, onPress }: { event:
 // Friend profile marker for map (circular profile photo)
 const FriendMarkerView = React.memo(function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} hitSlop={12} style={styles.friendMarkerContainer}>
+    <Pressable onPress={onPress} hitSlop={12} style={styles.friendMarkerContainer} accessibilityLabel={`Friend: ${friend.name}`} accessibilityRole="button">
       <View style={styles.friendMarker}>
         <Image source={{ uri: friend.imageUrl }} style={styles.friendMarkerImage} />
       </View>
@@ -235,7 +226,6 @@ function FullMapScreen() {
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<MapEvent | null>(null);
-  const [infoBoxSize, setInfoBoxSize] = useState({ w: 0, h: 0 });
 
   // Swipe-to-dismiss gesture for event preview card
   const cardTranslateY = useSharedValue(0);
@@ -246,6 +236,12 @@ function FullMapScreen() {
     setSelectedFriend(null);
     cardTranslateY.value = 0;
     cardOpacity.value = 1;
+  }, []);
+
+  const showCard = useCallback(() => {
+    cardTranslateY.value = 200;
+    cardOpacity.value = 1;
+    cardTranslateY.value = withTiming(0, { duration: 300 });
   }, []);
 
   const cardPanGesture = useMemo(() => Gesture.Pan()
@@ -261,8 +257,8 @@ function FullMapScreen() {
           runOnJS(dismissCard)();
         });
       } else {
-        cardTranslateY.value = withSpring(0, { damping: 20, stiffness: 300 });
-        cardOpacity.value = withSpring(1);
+        cardTranslateY.value = withTiming(0, { duration: 200 });
+        cardOpacity.value = withTiming(1, { duration: 200 });
       }
     }), [dismissCard]);
 
@@ -290,12 +286,15 @@ function FullMapScreen() {
     } catch {}
   }, []);
   const { colors, isDark } = useAppTheme();
+  const { currentTab } = useTabNavigation();
 
   // Live location hook
   const { friendLocations, sharingState } = useLiveLocation();
 
   // Auth hook for current user's avatar
   const { user } = useAuth();
+
+  const [locationDenied, setLocationDenied] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -313,6 +312,8 @@ function FullMapScreen() {
 
           // Fetch weather for initial location
           fetchWeather(location.coords.latitude, location.coords.longitude);
+        } else {
+          setLocationDenied(true);
         }
       } catch {
         // Location unavailable (e.g. simulator)
@@ -357,7 +358,18 @@ function FullMapScreen() {
     }
   }, [userLocation]);
 
-  useEffect(() => { fetchEvents(); }, [fetchEvents]);
+  useEffect(() => {
+    if (currentTab === 'search') {
+      fetchEvents();
+    }
+  }, [currentTab, fetchEvents]);
+
+  // Cleanup weather debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (weatherTimerRef.current) clearTimeout(weatherTimerRef.current);
+    };
+  }, []);
 
   // Fetch heatmap when user location is available, refresh every 60s
   useEffect(() => {
@@ -393,6 +405,17 @@ function FullMapScreen() {
   }, [friendLocations]);
 
   // Mock friend for UI testing
+  const friendDriveTime = useMemo(() => {
+    if (!userLocation || !selectedFriend) return '';
+    const R = 6371;
+    const dLat = (selectedFriend.latitude - userLocation[1]) * Math.PI / 180;
+    const dLon = (selectedFriend.longitude - userLocation[0]) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(userLocation[1] * Math.PI / 180) * Math.cos(selectedFriend.latitude * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const mins = Math.max(1, Math.round(km / 0.5));
+    return `${mins} min`;
+  }, [userLocation, selectedFriend]);
+
   const allNearbyFriends = useMemo<FriendMarker[]>(() => [
     ...nearbyFriends,
     {
@@ -413,14 +436,16 @@ function FullMapScreen() {
   const handleMarkerPress = useCallback((event: MapEvent) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedEvent(event);
+    showCard();
     cameraRef.current?.setCamera({ centerCoordinate: [event.longitude, event.latitude], zoomLevel: 14, animationDuration: 500 });
-  }, []);
+  }, [showCard]);
 
   const handleFriendMarkerPress = useCallback((friend: FriendMarker) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedFriend(friend);
+    showCard();
     cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, animationDuration: 500 });
-  }, []);
+  }, [showCard]);
 
   const handleRecenter = useCallback(() => { if (userLocation) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setIsCentered(true); cameraRef.current?.setCamera({ centerCoordinate: userLocation, zoomLevel: 13, animationDuration: 500 }); } }, [userLocation]);
 
@@ -449,7 +474,7 @@ function FullMapScreen() {
         zoomEnabled={true}
         pitchEnabled={true}
         rotateEnabled={true}
-        onTouchStart={() => setIsCentered(false)}
+        onTouchStart={() => { if (isCentered) setIsCentered(false); }}
         onRegionDidChange={(feature) => {
           if (weatherTimerRef.current) clearTimeout(weatherTimerRef.current);
           weatherTimerRef.current = setTimeout(() => {
@@ -537,11 +562,46 @@ function FullMapScreen() {
 
       {/* Weather pill — top left */}
       {weather && (
-        <View style={[styles.weatherPill, { top: insets.top + 12 }]}>
+        <View style={[styles.weatherPill, { top: insets.top + 12 }]} accessibilityLabel={`Weather: ${weather?.temp || ''}°`}>
           <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
           <Image source={{ uri: weather.icon }} style={styles.weatherIcon} />
           <Text style={styles.weatherTemp}>{weather.temp}°</Text>
         </View>
+      )}
+
+      {/* Error state */}
+      {error && events.length === 0 && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', zIndex: 30 }} pointerEvents="box-none">
+          <View style={{ backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 16, padding: 20, alignItems: 'center', gap: 10 }}>
+            <Ionicons name="cloud-offline-outline" size={28} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Couldn't load events</Text>
+            <TouchableOpacity
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingHorizontal: 20, paddingVertical: 8 }}
+              onPress={fetchEvents}
+              activeOpacity={0.7}
+            >
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Location denied banner */}
+      {locationDenied && !userLocation && (
+        <TouchableOpacity
+          style={{ position: 'absolute', bottom: 110, left: 16, right: 16, zIndex: 30, backgroundColor: 'rgba(0,0,0,0.75)', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+          activeOpacity={0.8}
+          accessibilityLabel="Enable location access. Tap to open Settings."
+          accessibilityRole="button"
+          onPress={() => Linking.openSettings()}
+        >
+          <Ionicons name="location-outline" size={22} color="#fff" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '700' }}>Location access needed</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Tap to open Settings</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+        </TouchableOpacity>
       )}
 
       {/* Glass pill with icons */}
@@ -599,7 +659,7 @@ function FullMapScreen() {
         >
           <GestureDetector gesture={cardPanGesture}>
           <Animated.View style={[styles.eventPreviewCard, { height: 155 }, cardAnimatedStyle]}>
-            <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.45)" borderRadius={20} style={StyleSheet.absoluteFill} />
+            <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.7)" borderRadius={20} style={StyleSheet.absoluteFill} />
             {/* Grab handle */}
             <View style={{ position: 'absolute', top: 6, left: 0, right: 0, alignItems: 'center', zIndex: 10 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
@@ -616,13 +676,15 @@ function FullMapScreen() {
             <View style={styles.eventPreviewInfo}>
               <View style={{ flex: 1, justifyContent: 'center', gap: 2 }}>
                 <Text style={[styles.eventPreviewTitle, { fontSize: 18 }]} numberOfLines={2}>{selectedEvent.title}</Text>
-                <Text style={[styles.eventPreviewVenue, { fontSize: 15 }]} numberOfLines={1}>{selectedEvent.venue}</Text>
-                <Text style={[styles.eventPreviewMeta, { fontSize: 13 }]}>{selectedEvent.date} · {selectedEvent.time}</Text>
+                <Text style={[styles.eventPreviewVenue, { fontSize: 15, fontWeight: '700' }]} numberOfLines={1}>{selectedEvent.venue}</Text>
+                <Text style={[styles.eventPreviewMeta, { fontSize: 13, fontWeight: '700' }]}>{selectedEvent.date} · {selectedEvent.time}</Text>
               </View>
               <View style={styles.eventPreviewActions}>
                 <TouchableOpacity
                   style={styles.eventPreviewRsvp}
                   activeOpacity={0.8}
+                  accessibilityLabel="RSVP to event"
+                  accessibilityRole="button"
                   onPress={() => {
                     const ev = selectedEvent;
                     setSelectedEvent(null);
@@ -631,7 +693,19 @@ function FullMapScreen() {
                 >
                   <Text style={styles.eventPreviewRsvpText}>RSVP</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={{ borderRadius: 14, overflow: 'hidden', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, gap: 2 }} activeOpacity={0.7}>
+                <TouchableOpacity
+                  style={{ borderRadius: 14, overflow: 'hidden', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, gap: 2 }}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Share event"
+                  accessibilityRole="button"
+                  onPress={() => {
+                    if (!selectedEvent) return;
+                    Share.share({
+                      message: `Check out ${selectedEvent.title} at ${selectedEvent.venue}! ${selectedEvent.date} · ${selectedEvent.time}`,
+                      url: `https://status.app/event/${selectedEvent.id}`,
+                    });
+                  }}
+                >
                   <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(255,255,255,0.12)" borderRadius={14} style={StyleSheet.absoluteFill} />
                   <Ionicons name="share-outline" size={18} color="#fff" />
                   <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Share</Text>
@@ -661,7 +735,7 @@ function FullMapScreen() {
         <View style={styles.eventPreviewOverlay} pointerEvents="box-none">
           <GestureDetector gesture={cardPanGesture}>
           <Animated.View style={[styles.eventPreviewCard, { flexDirection: 'column', height: 155 }, cardAnimatedStyle]}>
-            <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.45)" borderRadius={20} style={StyleSheet.absoluteFill} />
+            <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.7)" borderRadius={20} style={StyleSheet.absoluteFill} />
             {/* Grab handle */}
             <View style={{ position: 'absolute', top: 6, left: 0, right: 0, alignItems: 'center', zIndex: 10 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
@@ -679,7 +753,7 @@ function FullMapScreen() {
                 )}
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.eventPreviewTitle, { fontSize: 20 }]} numberOfLines={1}>{selectedFriend.name}</Text>
-                  <Text style={[styles.eventPreviewMeta, { fontSize: 14, marginTop: 5 }]}>Last active {(() => {
+                  <Text style={[styles.eventPreviewMeta, { fontSize: 14, marginTop: 5, fontWeight: '700' }]}>Last active {(() => {
                     const diff = Math.floor((Date.now() - selectedFriend.updatedAt) / 60000);
                     if (diff < 1) return 'Just now';
                     if (diff < 60) return `${diff}m ago`;
@@ -692,6 +766,8 @@ function FullMapScreen() {
                 <TouchableOpacity
                   style={[styles.eventPreviewRsvp, { flexDirection: 'row', gap: 6, justifyContent: 'center', marginRight: 5 }]}
                   activeOpacity={0.8}
+                  accessibilityLabel="Message friend"
+                  accessibilityRole="button"
                   onPress={() => {
                     const friendId = selectedFriend.id;
                     setSelectedFriend(null);
@@ -704,6 +780,8 @@ function FullMapScreen() {
                 <TouchableOpacity
                   style={{ borderRadius: 14, overflow: 'hidden', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, gap: 2 }}
                   activeOpacity={0.7}
+                  accessibilityLabel={`Get directions, ${friendDriveTime} away`}
+                  accessibilityRole="button"
                   onPress={() => {
                     const { latitude, longitude } = selectedFriend;
                     const url = Platform.select({
@@ -715,16 +793,7 @@ function FullMapScreen() {
                 >
                   <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(255,255,255,0.12)" borderRadius={14} style={StyleSheet.absoluteFill} />
                   <Ionicons name="car-outline" size={18} color="#fff" />
-                  <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{(() => {
-                    if (!userLocation || !selectedFriend) return '';
-                    const R = 6371;
-                    const dLat = (selectedFriend.latitude - userLocation[1]) * Math.PI / 180;
-                    const dLon = (selectedFriend.longitude - userLocation[0]) * Math.PI / 180;
-                    const a = Math.sin(dLat/2)**2 + Math.cos(userLocation[1]*Math.PI/180) * Math.cos(selectedFriend.latitude*Math.PI/180) * Math.sin(dLon/2)**2;
-                    const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                    const mins = Math.max(1, Math.round(km / 0.5));
-                    return `${mins} min`;
-                  })()}</Text>
+                  <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{friendDriveTime}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -744,282 +813,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // Map grid decoration
-  mapGrid: {
-    ...StyleSheet.absoluteFillObject,
-    opacity: 0.1,
-  },
-  gridLineH: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 1,
-    backgroundColor: '#ccc',
-  },
-  gridLineV: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 1,
-    backgroundColor: '#ccc',
-  },
-  // Marker previews
-  markerPreviewContainer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  markerPreview: {
-    position: 'absolute',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 3,
-    borderColor: '#fff',
-    overflow: 'hidden',
-    backgroundColor: '#f5f5f5',
-  },
-  markerPreviewImage: {
-    width: '100%',
-    height: '100%',
-  },
-  markerPreviewLive: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#ff3b30',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  // Dev notice
-  devNotice: {
-    position: 'absolute',
-    alignSelf: 'center',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  devNoticeGlass: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 16,
-  },
-  devNoticeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    gap: 6,
-  },
-  devNoticeText: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: '#fff',
-  },
-  // Bottom sheet
-  bottomSheetBackground: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-  },
-  bottomSheetIndicator: {
-    width: 40,
-  },
-  bottomSheetHeader: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  bottomSheetTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-    marginBottom: 12,
-  },
-  liveIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-    gap: 6,
-  },
-  liveIndicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ff3b30',
-  },
-  liveIndicatorText: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(0,0,0,0.6)',
-  },
-  bottomSheetContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 100,
-  },
-  // Section headers for bottom sheet
-  sectionContainer: {
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontFamily: 'Lato_700Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  // Friends horizontal scroll
-  friendsScrollContent: {
-    gap: 16,
-    paddingRight: 16,
-  },
-  friendAvatarItem: {
-    alignItems: 'center',
-    width: 64,
-  },
-  friendAvatarImage: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    borderWidth: 2,
-    marginBottom: 6,
-  },
-  friendAvatarName: {
-    fontSize: 11,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
-  },
-  emptyFriendsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-  },
-  emptyFriendsText: {
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-  },
-  shareLocationInline: {
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  inlineButtonGlass: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 8,
-  },
-  inlineButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  shareLocationInlineText: {
-    fontSize: 12,
-    fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
-  },
-  // Event card - horizontal scrollable
-  horizontalEventsContent: {
-    gap: 12,
-    paddingRight: 16,
-  },
-  eventCard: {
-    width: 200,
-    height: 260,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  eventCardImage: {
-    ...StyleSheet.absoluteFillObject,
-    resizeMode: 'cover',
-  },
-  eventCardGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  eventCardContent: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 12,
-  },
-  eventCardLive: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#ff3b30',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginBottom: 6,
-    gap: 4,
-  },
-  eventCardLiveDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#fff',
-  },
-  eventCardLiveText: {
-    fontSize: 9,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    letterSpacing: 0.5,
-  },
-  eventCardTitle: {
-    fontSize: 15,
-    fontFamily: 'Lato_700Bold',
-    color: '#fff',
-    marginBottom: 2,
-  },
-  eventCardVenue: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 4,
-  },
-  eventCardMetaText: {
-    fontSize: 11,
-    fontFamily: 'Lato_400Regular',
-    color: 'rgba(255,255,255,0.7)',
-  },
-  // Loading state
-  loadingState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  loadingStateText: {
-    marginTop: 16,
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-  },
-  // Empty state
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyStateText: {
-    marginTop: 12,
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-  },
-  emptyStateSubtext: {
-    marginTop: 8,
-    fontSize: 13,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
-    paddingHorizontal: 40,
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  retryButtonText: {
-    fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
-    color: '#fff',
-  },
   // Event flyer card markers
   eventMarkerContainer: {
     alignItems: 'center',
@@ -1037,28 +830,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-  },
-  eventMarkerPulse: {
-    position: 'absolute',
-    top: 6,
-    left: 6,
-    width: 14,
-    height: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  eventMarkerPulseOuter: {
-    position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: 'rgba(255,59,48,0.3)',
-  },
-  eventMarkerPulseDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ff3b30',
   },
   eventMarkerPointer: {
     width: 0,
@@ -1121,45 +892,6 @@ const styles = StyleSheet.create({
     borderTopColor: '#34c759',
     marginTop: -1,
   },
-  // Map overlay glass buttons
-  mapButtonGlass: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 23,
-  },
-  mapButtonContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Recenter button
-  recenterButton: {
-    position: 'absolute',
-    right: 16,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-  },
-  // Share location button
-  shareLocationButton: {
-    position: 'absolute',
-    right: 16,
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-  },
-  sharingIndicator: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#34c759',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.95)',
-  },
   eventPreviewOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 50, justifyContent: 'flex-end', paddingBottom: 100, paddingHorizontal: 16 },
   eventPreviewCard: { flexDirection: 'row', borderRadius: 20, overflow: 'hidden', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.15)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 },
   eventPreviewFlyer: { width: 110, height: 139, borderRadius: 12, margin: 8 },
@@ -1167,26 +899,11 @@ const styles = StyleSheet.create({
   eventPreviewTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
   eventPreviewVenue: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
   eventPreviewMeta: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
-  eventPreviewLive: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   eventPreviewActions: { flexDirection: 'row', alignItems: 'stretch', gap: 8, marginTop: 3 },
   eventPreviewRsvp: { flex: 1, backgroundColor: '#fff', borderRadius: 14, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
   eventPreviewRsvpText: { fontSize: 14, fontWeight: '700', color: '#000' },
-  eventPreviewShareBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
   mapTopFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 120, zIndex: 10 },
   weatherPill: { position: 'absolute', left: 16, zIndex: 20, flexDirection: 'row', alignItems: 'center', borderRadius: 20, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 6, gap: 2 },
   weatherIcon: { width: 28, height: 28 },
   weatherTemp: { fontSize: 17, fontWeight: '700', color: '#fff' },
-  nearbyModalOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 },
-  nearbyModalSheet: { backgroundColor: '#1c1c1e', borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '75%', minHeight: 300 },
-  nearbyModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, paddingHorizontal: 16 },
-  nearbyModalTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
-  nearbyModalClose: { position: 'absolute', right: 16, width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)', justifyContent: 'center', alignItems: 'center' },
-  nearbyModalEmpty: { alignItems: 'center', paddingVertical: 40 },
-  nearbyModalEmptyText: { fontSize: 14, color: 'rgba(255,255,255,0.35)' },
-  nearbyListRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255,255,255,0.08)' },
-  nearbyListImage: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#2c2c2e' },
-  nearbyListTitle: { fontSize: 15, fontWeight: '600', color: '#fff', flex: 1 },
-  nearbyListSub: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
-  nearbyListMeta: { fontSize: 12, color: 'rgba(255,255,255,0.4)' },
-  nearbyListDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#34c759' },
 });

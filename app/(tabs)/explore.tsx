@@ -1339,7 +1339,7 @@ export default function MessagesScreen() {
 
       {/* New conversation FAB */}
       <Pressable
-        style={[styles.composeFab, { bottom: tabBarTopOffset + 100 }]}
+        style={[styles.composeFab, { bottom: tabBarTopOffset + 105, right: 20 }]}
         onPress={() => {
           if (activeTab === 'Channels') {
             router.push('/create-channel' as any);
@@ -1348,12 +1348,8 @@ export default function MessagesScreen() {
           }
         }}
       >
-        {isLiquidGlassSupported ? (
-          <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 28 }]} />
-        )}
-        <Ionicons name="add" size={28} color="#000" />
+        <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+        <Ionicons name="add" size={30} color="#000" />
       </Pressable>
 
     </View>
@@ -1402,7 +1398,7 @@ const styles = StyleSheet.create({
     zIndex: 100,
     flexGrow: 0,
   },
-  composeFab: { position: 'absolute', right: 20, width: 44, height: 44, borderRadius: 22, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', zIndex: 50 },
+  composeFab: { position: 'absolute', width: 56, height: 56, borderRadius: 28, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', zIndex: 50 },
   notifRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, marginHorizontal: 16, marginBottom: 8, gap: 12, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
   notifRowUnread: { borderColor: 'rgba(0,0,0,0.12)' },
   notifActorAvatar: { width: 40, height: 40, borderRadius: 20 },

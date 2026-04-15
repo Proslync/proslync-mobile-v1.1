@@ -44,6 +44,32 @@ export const venuesApi = {
   },
 
   /**
+   * Update venue details
+   * Backend endpoint: PUT /api/venues/:id
+   */
+  updateVenue: async (id: number, data: Partial<Omit<Venue, 'id' | 'ownerId' | 'status'>>): Promise<Venue> => {
+    return apiClient.put<Venue>(`/api/venues/${id}`, data);
+  },
+
+  /**
+   * Upload venue profile image
+   * Backend endpoint: POST /api/venues/:id/image
+   */
+  uploadVenueImage: async (venueId: number, uri: string): Promise<{ url: string }> => {
+    const fileName = uri.split('/').pop() || 'venue.jpg';
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    let mimeType = 'image/jpeg';
+    if (extension === 'png') mimeType = 'image/png';
+    else if (extension === 'webp') mimeType = 'image/webp';
+
+    return apiClient.uploadFile<{ url: string }>(
+      `/api/venues/${venueId}/image`,
+      { uri, name: fileName, type: mimeType },
+      'image',
+    );
+  },
+
+  /**
    * Get paginated followers for a venue
    * Backend endpoint: GET /api/venues/:id/followers
    */

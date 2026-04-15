@@ -50,8 +50,9 @@ interface VenueSectionGroup {
 
 const SECTION_GROUPS: VenueSectionGroup[] = [
   {
-    title: "Operations",
+    title: "Manage Venue",
     items: [
+      { key: "info", label: "Edit Profile", subtitle: "Update venue info and details", icon: "create-outline" },
       { key: "staff", label: "Team", subtitle: "Manage team members", icon: "people-outline" },
       { key: "schedule", label: "Schedule", subtitle: "Shifts and assignments", icon: "time-outline" },
       { key: "tables", label: "Tables", subtitle: "Manage table sections", icon: "grid-outline" },
@@ -92,7 +93,7 @@ export default function ManageVenueScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const { user, switchAccount } = useAuth();
-  const [activeSection, setActiveSection] = React.useState<string>('Operations');
+  const [activeSection, setActiveSection] = React.useState<string>('Manage Venue');
   const [isSwitching, setIsSwitching] = React.useState(false);
   const [errorAlert, setErrorAlert] = React.useState<{
     title: string;

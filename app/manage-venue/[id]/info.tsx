@@ -1,75 +1,124 @@
-import { GlassView } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { GlassSurface } from '@/components/glass/glass-surface';
-import { useVenue } from '@/hooks/use-venue-query';
-import { useAppTheme } from '@/hooks/use-app-theme';
-import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as React from 'react';
 import {
   ActivityIndicator,
-  Linking,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useVenue, useUpdateVenue } from '@/hooks/use-venue-query';
+import { venuesApi } from '@/lib/api/venues';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { useToast } from '@/components/shared/toast';
+import { useQueryClient } from '@tanstack/react-query';
 
-interface InfoRowProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  value: string;
-  onPress?: () => void;
-  colors: ReturnType<typeof useAppTheme>['colors'];
-  isDark: boolean;
+interface FormData {
+  name: string;
+  description: string;
+  address: string;
+  phoneNumber: string;
+  email: string;
+  website: string;
 }
 
-function InfoRow({ icon, label, value, onPress, colors, isDark }: InfoRowProps) {
-  const content = (
-    <View style={styles.infoRow}>
-      <View style={[styles.infoIcon, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
-        {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={10} style={StyleSheet.absoluteFillObject} />}
-        <Ionicons name={icon} size={18} color={colors.text} />
-      </View>
-      <View style={styles.infoContent}>
-        <Text style={[styles.infoLabel, { color: colors.textTertiary }]}>{label}</Text>
-        <Text style={[styles.infoValue, { color: colors.text }]}>{value}</Text>
-      </View>
-      {onPress && <Ionicons name="open-outline" size={16} color={colors.textTertiary} />}
-    </View>
-  );
-
-  if (onPress) {
-    return (
-      <TouchableOpacity activeOpacity={0.7} onPress={onPress}>
-        {content}
-      </TouchableOpacity>
-    );
-  }
-  return content;
-}
-
-export default function VenueInfoScreen() {
+export default function EditVenueInfoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
+  const { showSuccess, showError } = useToast();
+  const queryClient = useQueryClient();
 
   const venueId = id ? Number(id) : undefined;
   const { data: venue, isLoading } = useVenue(venueId);
+  const updateVenue = useUpdateVenue();
+
+  const [formData, setFormData] = React.useState<FormData>({
+    name: '',
+    description: '',
+    address: '',
+    phoneNumber: '',
+    email: '',
+    website: '',
+  });
+  const [hasChanges, setHasChanges] = React.useState(false);
+  const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = React.useState(false);
+
+  React.useEffect(() => {
+    if (venue) {
+      setFormData({
+        name: venue.name || '',
+        description: venue.description || '',
+        address: venue.address || '',
+        phoneNumber: venue.phoneNumber || '',
+        email: venue.email || '',
+        website: venue.website || '',
+      });
+    }
+  }, [venue]);
+
+  const updateField = (field: keyof FormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setHasChanges(true);
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setSelectedImage(asset.uri);
+        setHasChanges(true);
+        // Image will be uploaded when the backend supports POST /api/venues/:id/image
+        // For now, just show the preview locally
+      }
+    } catch (error) {
+      console.error('Image picker error:', error);
+      showError('Failed to pick image');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!hasChanges || !venueId) {
+      router.back();
+      return;
+    }
+
+    try {
+      await updateVenue.mutateAsync({ id: venueId, data: formData });
+      showSuccess('Venue updated');
+      router.back();
+    } catch (error: any) {
+      console.error('Update venue error:', error);
+      showError(error?.message || 'Failed to update venue');
+    }
+  };
 
   if (isLoading || !venue) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {isDark && <DarkGradientBg />}
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Venue Info</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Profile</Text>
           <View style={styles.headerButton} />
         </View>
         <View style={styles.loadingContainer}>
@@ -79,131 +128,156 @@ export default function VenueInfoScreen() {
     );
   }
 
-  const location = [venue.city, venue.state].filter(Boolean).join(', ') || venue.address;
+  const imageUrl = selectedImage || venue.imageUrl;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {isDark && <DarkGradientBg />}
-
-      {/* Header */}
-      <Animated.View
-        entering={FadeIn.duration(300)}
-        style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
-      >
-        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Venue Info</Text>
-        <View style={styles.headerButton} />
-      </Animated.View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Venue Name Header */}
-        <Animated.View entering={FadeInDown.duration(300)}>
-          <View style={styles.nameSection}>
-            <View style={[styles.logoPlaceholder, { backgroundColor: isDark ? undefined : colors.backgroundSecondary, overflow: 'hidden' as const }]}>
-              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={20} style={StyleSheet.absoluteFillObject} />}
-              <Ionicons name="business" size={36} color={colors.textTertiary} />
-            </View>
-            <Text style={[styles.venueName, { color: colors.text }]}>{venue.name}</Text>
-            {venue.description ? (
-              <Text style={[styles.venueDescription, { color: colors.textSecondary }]}>
-                {venue.description}
-              </Text>
-            ) : null}
-          </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Header */}
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: colors.border }]}
+        >
+          <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Edit Profile</Text>
+          <View style={styles.headerButton} />
         </Animated.View>
 
-        {/* Details Card */}
-        <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-          <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.detailsCard}>
-            {venue.address ? (
-              <InfoRow
-                icon="location-outline"
-                label="Address"
-                value={venue.address}
-                onPress={
-                  venue.latitude && venue.longitude
-                    ? () => Linking.openURL(`maps:?ll=${Number(venue.latitude)},${Number(venue.longitude)}&q=${encodeURIComponent(venue.name)}`)
-                    : undefined
-                }
-                colors={colors}
-                isDark={isDark}
-              />
-            ) : null}
-
-            {venue.phoneNumber ? (
-              <InfoRow
-                icon="call-outline"
-                label="Phone"
-                value={venue.phoneNumber}
-                onPress={() => Linking.openURL(`tel:${venue.phoneNumber}`)}
-                colors={colors}
-                isDark={isDark}
-              />
-            ) : null}
-
-            {venue.email ? (
-              <InfoRow
-                icon="mail-outline"
-                label="Email"
-                value={venue.email}
-                onPress={() => Linking.openURL(`mailto:${venue.email}`)}
-                colors={colors}
-                isDark={isDark}
-              />
-            ) : null}
-
-            {venue.website ? (
-              <InfoRow
-                icon="globe-outline"
-                label="Website"
-                value={venue.website}
-                onPress={() => Linking.openURL(venue.website!)}
-                colors={colors}
-                isDark={isDark}
-              />
-            ) : null}
-
-            {location && !venue.address ? (
-              <InfoRow
-                icon="navigate-outline"
-                label="Location"
-                value={location}
-                colors={colors}
-                isDark={isDark}
-              />
-            ) : null}
-          </GlassSurface>
-        </Animated.View>
-
-        {/* Coordinates */}
-        {venue.latitude != null && venue.longitude != null && (
-          <Animated.View entering={FadeInDown.delay(200).duration(300)}>
-            <GlassSurface fill="subtle" border="subtle" cornerRadius="lg" style={styles.detailsCard}>
-              <InfoRow
-                icon="pin-outline"
-                label="Coordinates"
-                value={`${Number(venue.latitude).toFixed(6)}, ${Number(venue.longitude).toFixed(6)}`}
-                colors={colors}
-                isDark={isDark}
-              />
-            </GlassSurface>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Profile Image */}
+          <Animated.View entering={FadeInDown.duration(300)}>
+            <TouchableOpacity style={styles.imageSection} onPress={handlePickImage} activeOpacity={0.7}>
+              <View style={[styles.imageContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                {imageUrl ? (
+                  <Image source={{ uri: imageUrl }} style={styles.venueImage} />
+                ) : (
+                  <Ionicons name="business" size={40} color={colors.textTertiary} />
+                )}
+                {isUploadingImage && (
+                  <View style={styles.imageOverlay}>
+                    <ActivityIndicator color="#fff" />
+                  </View>
+                )}
+              </View>
+              <Text style={[styles.changePhotoText, { color: colors.text }]}>Change Photo</Text>
+            </TouchableOpacity>
           </Animated.View>
-        )}
-      </ScrollView>
-    </View>
+
+          {/* Form Fields */}
+          <Animated.View entering={FadeInDown.delay(100).duration(300)}>
+            <View style={[styles.fieldCard, { backgroundColor: colors.backgroundSecondary }]}>
+              <View style={styles.field}>
+                <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>NAME</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.text }]}
+                  value={formData.name}
+                  onChangeText={(v) => updateField('name', v)}
+                  placeholder="Venue name"
+                  placeholderTextColor={colors.textTertiary}
+                />
+              </View>
+              <View style={[styles.separator, { backgroundColor: colors.border }]} />
+
+              <View style={styles.field}>
+                <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>DESCRIPTION</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.text }]}
+                  value={formData.description}
+                  onChangeText={(v) => updateField('description', v)}
+                  placeholder="Add a description"
+                  placeholderTextColor={colors.textTertiary}
+                  multiline
+                />
+              </View>
+              <View style={[styles.separator, { backgroundColor: colors.border }]} />
+
+              <View style={styles.field}>
+                <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>ADDRESS</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.text }]}
+                  value={formData.address}
+                  onChangeText={(v) => updateField('address', v)}
+                  placeholder="Street address"
+                  placeholderTextColor={colors.textTertiary}
+                />
+              </View>
+              <View style={[styles.separator, { backgroundColor: colors.border }]} />
+
+              <View style={styles.field}>
+                <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>PHONE</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.text }]}
+                  value={formData.phoneNumber}
+                  onChangeText={(v) => updateField('phoneNumber', v)}
+                  placeholder="Phone number"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="phone-pad"
+                />
+              </View>
+              <View style={[styles.separator, { backgroundColor: colors.border }]} />
+
+              <View style={styles.field}>
+                <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>EMAIL</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.text }]}
+                  value={formData.email}
+                  onChangeText={(v) => updateField('email', v)}
+                  placeholder="Email address"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+              <View style={[styles.separator, { backgroundColor: colors.border }]} />
+
+              <View style={styles.field}>
+                <Text style={[styles.fieldLabel, { color: colors.textTertiary }]}>WEBSITE</Text>
+                <TextInput
+                  style={[styles.fieldInput, { color: colors.text }]}
+                  value={formData.website}
+                  onChangeText={(v) => updateField('website', v)}
+                  placeholder="https://"
+                  placeholderTextColor={colors.textTertiary}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                />
+              </View>
+            </View>
+          </Animated.View>
+        </ScrollView>
+
+        {/* Save Button — fixed at bottom */}
+        <View style={[styles.saveContainer, { paddingBottom: insets.bottom + 16 }]}>
+          <TouchableOpacity
+            style={[styles.saveButton, !hasChanges && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            activeOpacity={0.8}
+            disabled={updateVenue.isPending}
+          >
+            {updateVenue.isPending ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>Save Changes</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -212,82 +286,47 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: 1,
   },
-  headerButton: {
-    width: 40,
-    height: 40,
+  headerButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontFamily: 'Lato_700Bold' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scrollView: { flex: 1 },
+  scrollContent: { padding: 16 },
+  imageSection: { alignItems: 'center', marginBottom: 24, paddingTop: 8 },
+  imageContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  venueImage: { width: 100, height: 100, borderRadius: 50 },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: 'Lato_700Bold',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  nameSection: {
-    alignItems: 'center',
-    marginBottom: 24,
-    paddingTop: 8,
-  },
-  logoPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  venueName: {
-    fontSize: 24,
-    fontFamily: 'Lato_700Bold',
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  venueDescription: {
-    fontSize: 14,
-    fontFamily: 'Lato_400Regular',
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 16,
-  },
-  detailsCard: {
-    padding: 4,
-    marginBottom: 12,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    gap: 12,
-  },
-  infoIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  infoContent: {
-    flex: 1,
-  },
-  infoLabel: {
+  changePhotoText: { fontSize: 15, fontFamily: 'Lato_700Bold' },
+  fieldCard: { borderRadius: 16, overflow: 'hidden' },
+  field: { paddingHorizontal: 16, paddingVertical: 14 },
+  fieldLabel: {
     fontSize: 11,
     fontFamily: 'Lato_400Regular',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  infoValue: {
-    fontSize: 15,
-    fontFamily: 'Lato_400Regular',
+  fieldInput: { fontSize: 16, fontFamily: 'Lato_400Regular', padding: 0 },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: 16 },
+  saveContainer: { paddingHorizontal: 16, paddingTop: 12 },
+  saveButton: {
+    backgroundColor: '#000',
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
   },
+  saveButtonDisabled: { opacity: 0.4 },
+  saveButtonText: { color: '#fff', fontSize: 16, fontFamily: 'Lato_700Bold' },
 });
