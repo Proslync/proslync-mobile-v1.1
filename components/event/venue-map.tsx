@@ -56,7 +56,7 @@ export function openRideShare(lat: number, lng: number, label?: string) {
 export function VenueMap({ latitude, longitude, venueName, address }: VenueMapProps) {
   const { colors, isDark } = useAppTheme();
   const glassColor = isDark ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
-  const styleURL = isDark ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
+  const styleURL = 'mapbox://styles/mapbox/dark-v11';
 
   if (isExpoGo || !MapView) {
     return (
@@ -98,8 +98,8 @@ export function VenueMap({ latitude, longitude, venueName, address }: VenueMapPr
             }}
           />
           <MarkerView coordinate={[longitude, latitude]}>
-            <View style={[styles.marker, { borderColor: `${glassColor}0.3)`, backgroundColor: `${glassColor}0.2)` }]}>
-              <Ionicons name="location" size={28} color={colors.text} />
+            <View style={[styles.marker, { borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+              <Ionicons name="location" size={28} color="#fff" />
             </View>
           </MarkerView>
         </MapView>

@@ -12,11 +12,15 @@ import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { useUserFollowers, useUserFollowing } from "@/hooks/use-user-follows";
 import { useMyVenues } from "@/hooks/use-venues-query";
+import { eventsApi } from "@/lib/api/events";
+import { useQuery } from "@tanstack/react-query";
+import type { Event } from "@/lib/types/events.types";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { useTabNavigation } from "@/lib/providers/tab-navigation-provider";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GlassView } from "expo-glass-effect";
+import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
 import { LinearGradient } from "expo-linear-gradient";
 import * as SecureStore from "expo-secure-store";
 import * as React from "react";
@@ -52,14 +56,14 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const POST_GAP = 2;
+const POST_GAP = 1;
 const GRID_COLS = 3;
 const CARD_H_PAD = 16; // postsSection paddingHorizontal
 const CARD_INNER_PAD = 10; // postsCard padding
 // Card inner width = screen - outer padding*2 - inner padding*2 - hairline borders
 const CARD_INNER_WIDTH = SCREEN_WIDTH - CARD_H_PAD * 2 - CARD_INNER_PAD * 2;
 const GRID_POST_SIZE = Math.floor(
-  (CARD_INNER_WIDTH - POST_GAP * (GRID_COLS - 1)) / GRID_COLS
+  (SCREEN_WIDTH - POST_GAP * (GRID_COLS - 1)) / GRID_COLS
 );
 
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
@@ -339,6 +343,13 @@ export default function ProfileScreen() {
   >("followers");
   const [savedAccounts, setSavedAccounts] = React.useState<SavedAccount[]>([]);
   const [showCreateMenu, setShowCreateMenu] = React.useState(false);
+  const [profileTab, setProfileTab] = React.useState<'posts' | 'events'>('posts');
+  const { data: userEvents = [], isLoading: eventsLoading } = useQuery<Event[]>({
+    queryKey: ['userEvents', user?.id],
+    queryFn: () => eventsApi.getUserEvents(user!.id, { sortBy: 'date', sortOrder: 'desc' }),
+    enabled: !!user?.id && profileTab === 'events',
+    staleTime: 1000 * 60 * 2,
+  });
   const [showAvatarViewer, setShowAvatarViewer] = React.useState(false);
   const lastTapRef = React.useRef<number>(0);
 
@@ -589,171 +600,102 @@ export default function ProfileScreen() {
 
   return (
     <SwipeableTabView>
-      <View style={s.container}>
-        <DarkGradientBg />
+      <View style={[s.container, { backgroundColor: '#f2f2f2' }]}>
 
-        {/* Floating Header — stays fixed on scroll */}
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          style={[s.floatingHeader, { paddingTop: insets.top + 8 }]}
-        >
-          <LinearGradient
-            colors={[...HERO_GRADIENT]}
-            locations={[0, 0.35, 0.7, 1]}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <TouchableOpacity
-            style={s.glassCircle}
-            activeOpacity={0.7}
-            onPress={() => setShowCreateMenu(true)}
-          >
-            <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
-            <Ionicons name="add" size={22} color="rgba(0,0,0,0.7)" />
+        {/* Top bar — plus (left), username (center), hamburger (right) */}
+        <View style={[s.topBar, { paddingTop: insets.top + 8 }]}>
+          <TouchableOpacity style={s.topBarGlassCircle} activeOpacity={0.7} onPress={() => setShowCreateMenu(true)}>
+            {isLiquidGlassSupported ? (
+              <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+            ) : (
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 19 }]} />
+            )}
+            <Ionicons name="add" size={22} color="#000" />
           </TouchableOpacity>
-
-          <View style={s.usernameCenter}>
-            <View style={s.usernameSpacer}>
-              {user?.isVerified && <View style={{ width: 16 + 5 }} />}
-              <View style={{ width: 13 + 3 }} />
-            </View>
-            <Text style={s.heroUsername}>@{username}</Text>
-            <View style={s.usernameBadges}>
-              {user?.isVerified && (
-                <MaterialCommunityIcons
-                  name="check-decagram"
-                  size={16}
-                  color="#3897F0"
-                />
-              )}
-            </View>
+          <View style={s.topBarCenter}>
+            <Text style={s.topBarUsername}>{username}</Text>
+            {user?.isVerified && <MaterialCommunityIcons name="check-decagram" size={18} color="#3897F0" />}
           </View>
-
-          <TouchableOpacity
-            style={s.glassCircle}
-            activeOpacity={0.7}
-            onPress={() => router.push("/settings")}
-          >
-            <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
-            <Ionicons name="settings-outline" size={20} color="rgba(0,0,0,0.7)" />
+          <TouchableOpacity style={s.topBarGlassCircle} activeOpacity={0.7} onPress={() => router.push("/settings")}>
+            {isLiquidGlassSupported ? (
+              <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+            ) : (
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.06)', borderRadius: 19 }]} />
+            )}
+            <Ionicons name="menu" size={22} color="#000" />
           </TouchableOpacity>
-        </Animated.View>
+        </View>
+
+        <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={s.topFade} pointerEvents="none" />
 
         <ScrollView
-          style={{ flex: 1, backgroundColor: "rgba(160,160,168,0.35)" }}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 100, backgroundColor: "#f2f2f2" }}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingTop: insets.top + 56, paddingBottom: insets.bottom + 100 }}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
         >
-          {/* ── Hero Section ── */}
-          <View style={[s.hero, { paddingTop: insets.top + 56 }]}>
-            <LinearGradient
-              colors={[...HERO_GRADIENT]}
-              locations={[0, 0.35, 0.7, 1]}
-              style={StyleSheet.absoluteFillObject}
-            />
+          {/* Profile info row — avatar left, name + stats right */}
+          <View style={s.profileRow}>
+            <TouchableOpacity onPress={handleAvatarTap} activeOpacity={0.9}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={s.igAvatar} />
+              ) : (
+                <View style={[s.igAvatar, { backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' }]}>
+                  <Text style={{ fontSize: 32, fontWeight: '700', color: 'rgba(0,0,0,0.3)' }}>{initial}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
 
-            {/* Avatar */}
-            <Animated.View
-              entering={FadeInDown.delay(100).duration(500).springify()}
-              style={s.avatarContainer}
-            >
-              <TouchableOpacity onPress={handleAvatarTap} activeOpacity={0.9}>
-                {avatarUrl ? (
-                  <Image source={{ uri: avatarUrl }} style={s.avatarImage} />
-                ) : (
-                  <View style={s.avatarSquare}>
-                    <GlassView {...liquidGlass.surface} borderRadius={24} style={StyleSheet.absoluteFill} />
-                    <Text style={s.avatarInitial}>{initial}</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
-
-            {/* Display name */}
-            <Animated.View
-              entering={FadeInDown.delay(130).duration(500).springify()}
-            >
-              <Text style={s.heroDisplayName}>{displayName}</Text>
-            </Animated.View>
-
-            {/* Stats */}
-            <Animated.View
-              entering={FadeInDown.delay(150).duration(500).springify()}
-              style={s.heroStats}
-            >
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  setFollowersSheetTab("followers");
-                  setFollowersSheetVisible(true);
-                }}
-              >
-                <Text style={s.heroStatText}>
-                  {followerCount} {followerCount === 1 ? "follower" : "followers"}
-                </Text>
-              </TouchableOpacity>
-              <Text style={s.heroStatDot}> · </Text>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  setFollowersSheetTab("following");
-                  setFollowersSheetVisible(true);
-                }}
-              >
-                <Text style={s.heroStatText}>{followingCount} following</Text>
-              </TouchableOpacity>
-            </Animated.View>
-
-            {/* Bio */}
-            {bio ? (
-              <Animated.View
-                entering={FadeInDown.delay(170).duration(500).springify()}
-                style={s.heroBioWrap}
-              >
-                <LinkifiedText style={s.heroBio as any}>{bio}</LinkifiedText>
-              </Animated.View>
-            ) : null}
+            <View style={s.rightCol}>
+              <Text style={s.igName}>{displayName}</Text>
+              <View style={s.statsRow}>
+                <View style={s.statCol}>
+                  <Text style={s.statNum}>{userPosts.length}</Text>
+                  <Text style={s.statLabel}>posts</Text>
+                </View>
+                <TouchableOpacity style={s.statCol} activeOpacity={0.7} onPress={() => { setFollowersSheetTab("followers"); setFollowersSheetVisible(true); }}>
+                  <Text style={s.statNum}>{followerCount}</Text>
+                  <Text style={s.statLabel}>followers</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={s.statCol} activeOpacity={0.7} onPress={() => { setFollowersSheetTab("following"); setFollowersSheetVisible(true); }}>
+                  <Text style={s.statNum}>{followingCount}</Text>
+                  <Text style={s.statLabel}>following</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
 
-          {/* ── Content Section ── */}
+          {/* Bio */}
+          {bio ? (
+            <View style={s.bioSection}>
+              <LinkifiedText style={s.igBio as any}>{bio}</LinkifiedText>
+            </View>
+          ) : null}
 
-          {/* Edit Profile / Share Profile */}
-          <Animated.View
-            entering={FadeInDown.delay(300).duration(500).springify()}
-            style={s.actionRow}
-          >
-            <TouchableOpacity
-              style={[s.glassBtn, { flex: 1 }]}
-              activeOpacity={0.7}
-              onPress={() => router.push("/edit-profile")}
-            >
-              <GlassView {...liquidGlass.surface} borderRadius={14} style={StyleSheet.absoluteFill} />
-              <Text style={s.glassBtnText}>Edit Profile</Text>
+          {/* Action buttons */}
+          <View style={s.igActionRow}>
+            <TouchableOpacity style={[s.igBtn, { flex: 1 }]} activeOpacity={0.7} onPress={() => router.push("/edit-profile")}>
+              <Text style={s.igBtnText}>Edit profile</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.glassBtn, { flex: 1 }]}
-              activeOpacity={0.7}
-              onPress={handleShareProfile}
-            >
-              <GlassView {...liquidGlass.surface} borderRadius={14} style={StyleSheet.absoluteFill} />
-              <Text style={s.glassBtnText}>Share Profile</Text>
+            <TouchableOpacity style={[s.igBtn, { flex: 1 }]} activeOpacity={0.7} onPress={handleShareProfile}>
+              <Text style={s.igBtnText}>Share profile</Text>
             </TouchableOpacity>
-          </Animated.View>
+          </View>
 
-          {/* Posts Card */}
-          <Animated.View
-            entering={FadeInDown.delay(350).duration(500).springify()}
-            style={s.postsSection}
-          >
-            <View style={s.postsCard}>
-              <GlassView {...liquidGlass.surface} borderRadius={20} style={StyleSheet.absoluteFill} />
-              {/* Letterhead header */}
-              <View style={s.postsHeader}>
-                <Text style={s.postsHeaderText}>Posts</Text>
-              </View>
-              <View style={s.postsDivider} />
+          {/* Grid tab icons */}
+          <View style={s.gridTabs}>
+            <TouchableOpacity style={profileTab === 'posts' ? s.gridTabActive : s.gridTab} onPress={() => setProfileTab('posts')} activeOpacity={0.7}>
+              <Ionicons name="grid-outline" size={22} color={profileTab === 'posts' ? '#000' : 'rgba(0,0,0,0.3)'} />
+            </TouchableOpacity>
+            <TouchableOpacity style={profileTab === 'events' ? s.gridTabActive : s.gridTab} onPress={() => setProfileTab('events')} activeOpacity={0.7}>
+              <Ionicons name="calendar-outline" size={22} color={profileTab === 'events' ? '#000' : 'rgba(0,0,0,0.3)'} />
+            </TouchableOpacity>
+          </View>
 
-              {postsLoading ? (
+          {/* Grid content */}
+          <View style={s.igGridSection}>
+            {profileTab === 'posts' ? (
+              postsLoading ? (
                 <View style={s.postsLoading}>
                   <ActivityIndicator color={colors.textTertiary} size="small" />
                 </View>
@@ -820,13 +762,43 @@ export default function ProfileScreen() {
                   <Ionicons
                     name="images-outline"
                     size={40}
-                    color={colors.textTertiary}
+                    color="rgba(0,0,0,0.15)"
                   />
                   <Text style={s.noPostsText}>No posts yet</Text>
                 </View>
-              )}
-            </View>
-          </Animated.View>
+              )
+            ) : (
+              eventsLoading ? (
+                <View style={s.postsLoading}>
+                  <ActivityIndicator color={colors.textTertiary} size="small" />
+                </View>
+              ) : userEvents.length > 0 ? (
+                <View style={s.postsGrid}>
+                  {userEvents.map((event) => (
+                    <TouchableOpacity
+                      key={event.id}
+                      activeOpacity={0.9}
+                      style={s.postContainer}
+                      onPress={() => router.push({ pathname: "/event/[id]", params: { id: String(event.id) } })}
+                    >
+                      {event.flyerUrl ? (
+                        <Image source={{ uri: event.flyerUrl }} style={s.postImage} />
+                      ) : (
+                        <View style={[s.postImage, s.postPlaceholder]}>
+                          <Ionicons name="calendar-outline" size={22} color={colors.textTertiary} />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              ) : (
+                <View style={s.noPosts}>
+                  <Ionicons name="calendar-outline" size={40} color="rgba(0,0,0,0.15)" />
+                  <Text style={s.noPostsText}>No events yet</Text>
+                </View>
+              )
+            )}
+          </View>
         </ScrollView>
 
         {/* Followers Sheet */}
@@ -890,8 +862,31 @@ const AVATAR_RADIUS = 24;
 const s = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f2f2f7",
+    backgroundColor: "#f2f2f2",
   },
+  // Instagram-style layout
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingBottom: 10, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 140, zIndex: 9 },
+  topBarGlassCircle: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  topBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  topBarUsername: { fontSize: 20, fontWeight: '700', color: '#000' },
+  profileRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  igAvatar: { width: 86, height: 86, borderRadius: 43 },
+  rightCol: { flex: 1, marginLeft: 16 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 6 },
+  statCol: { alignItems: 'center' },
+  statNum: { fontSize: 18, fontWeight: '700', color: '#000' },
+  statLabel: { fontSize: 13, color: 'rgba(0,0,0,0.5)', marginTop: 2 },
+  bioSection: { paddingHorizontal: 16, paddingBottom: 12 },
+  igName: { fontSize: 14, fontWeight: '700', color: '#000' },
+  igBio: { fontSize: 14, color: '#000', lineHeight: 20, marginTop: 2 },
+  igActionRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 16 },
+  igBtn: { height: 36, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
+  igBtnText: { fontSize: 14, fontWeight: '600', color: '#000' },
+  gridTabs: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(0,0,0,0.1)', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.1)' },
+  gridTab: { flex: 1, alignItems: 'center', paddingVertical: 10 },
+  gridTabActive: { flex: 1, alignItems: 'center', paddingVertical: 10, borderBottomWidth: 2, borderBottomColor: '#000' },
+  igGridSection: { },
   centerContent: {
     flex: 1,
     justifyContent: "center",
@@ -1095,14 +1090,12 @@ const s = StyleSheet.create({
   postsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
     gap: POST_GAP,
   },
   postContainer: {
     position: "relative",
     width: GRID_POST_SIZE,
     height: GRID_POST_SIZE,
-    borderRadius: 8,
     overflow: "hidden",
   },
   postImage: {

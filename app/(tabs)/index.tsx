@@ -136,12 +136,28 @@ function buildCards(items: FeedItem[], venueBackgrounds: Record<number, string> 
         organizerVerified: first.verified,
         backgroundImageUrl: bgUrl || eventImage(first),
         videoUrl: videoItem?.videoUrl,
-        events: orgItems.map((it) => ({
-          id: String(it.eventId ?? it.id),
-          flyerUrl: eventImage(it),
-          price: it.isPaid && it.price != null && it.price > 0 ? `$${Math.round(it.price)}` : 'Free',
-          isSaved: false,
-        })),
+        events: orgItems.map((it) => {
+          // Smart date label: day of week if this week, otherwise "Mon DD"
+          const eventDate = it.eventDate ? new Date(it.eventDate) : null;
+          const now = new Date();
+          const diffDays = eventDate ? Math.round((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 99;
+          const dayLabel = eventDate
+            ? (diffDays >= 0 && diffDays < 7
+              ? eventDate.toLocaleDateString('en-US', { weekday: 'short' })
+              : eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
+            : '';
+          const ctaLabel = it.isPaid && it.price != null && it.price > 0
+            ? `$${Math.round(it.price)}`
+            : 'RSVP';
+          return {
+            id: String(it.eventId ?? it.id),
+            flyerUrl: eventImage(it),
+            price: ctaLabel,
+            day: dayLabel,
+            ctaLabel,
+            isSaved: false,
+          };
+        }),
       },
     });
   }

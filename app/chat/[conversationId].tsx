@@ -3159,7 +3159,7 @@ const styles = StyleSheet.create({
   scrollToBottom: {
     position: "absolute",
     right: 16,
-    bottom: 100,
+    bottom: 140,
   },
   scrollToBottomButton: {
     width: 36,

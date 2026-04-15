@@ -417,7 +417,7 @@ export default function EventPage() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: '#e8e8e8' }]}>
       {/* Blurred background */}
       <View style={styles.backgroundWrapper}>
         {flyerImage && (
@@ -561,8 +561,8 @@ export default function EventPage() {
       </ScrollView>
 
       {/* Top & bottom fades */}
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
-      <LinearGradient colors={['rgba(242,242,242,0)', '#f2f2f2']} style={styles.bottomFade} pointerEvents="none" />
+      <LinearGradient colors={['#e8e8e8', 'rgba(232,232,232,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['rgba(232,232,232,0)', '#e8e8e8']} style={styles.bottomFade} pointerEvents="none" />
 
       {/* Bottom action bar */}
       <View style={[styles.rsvpWrapper, { paddingBottom: insets.bottom + 16 }]}>

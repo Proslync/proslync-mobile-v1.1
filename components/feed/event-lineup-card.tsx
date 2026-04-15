@@ -1,6 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { GlassView } from "expo-glass-effect";
+import { liquidGlass } from "@/constants/glass/liquid-glass";
 import { useVideoPlayer, VideoView } from "expo-video";
 import * as React from "react";
 import {
@@ -27,6 +29,8 @@ export interface EventLineupCardData {
     id: string;
     flyerUrl: string;
     price: string;
+    day?: string;
+    ctaLabel?: string;
     isSaved: boolean;
   }[];
   promoText?: string;
@@ -211,9 +215,15 @@ export const EventLineupCard = React.memo(function EventLineupCard({
                   <Ionicons name="image-outline" size={32} color="rgba(255,255,255,0.3)" />
                 </View>
               )}
-              {/* Price badge */}
-              <View style={styles.priceBadge}>
-                <Text style={styles.priceBadgeText}>{event.price}</Text>
+              {/* Day badge — top left */}
+              <View style={styles.dayBadge}>
+                <Text style={styles.dayBadgeText}>{event.day || 'TBD'}</Text>
+              </View>
+              {/* CTA — bottom center */}
+              <View style={styles.ctaWrapper}>
+                <View style={styles.ctaBtn}>
+                  <Text style={styles.ctaText}>{event.ctaLabel || event.price}</Text>
+                </View>
               </View>
             </TouchableOpacity>
           ))}
@@ -348,6 +358,38 @@ const styles = StyleSheet.create({
   },
   priceBadgeText: {
     color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  dayBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  dayBadgeText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  ctaWrapper: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    right: 8,
+    alignItems: "center",
+  },
+  ctaBtn: {
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    backgroundColor: "rgba(255,255,255,0.9)",
+  },
+  ctaText: {
+    color: "#1a1a1a",
     fontWeight: "700",
     fontSize: 13,
   },
