@@ -29,28 +29,23 @@ export interface VenueWeekCardData {
     flyerUrl: string;
     day: string;
     ctaLabel: string;
-    isSaved: boolean;
   }[];
 }
 
 interface VenueWeekCardProps {
   data: VenueWeekCardData;
   isVisible: boolean;
-  onSaveToggle: (eventId: string) => void;
   onEventPress?: (eventId: string) => void;
   onVenuePress?: (venueId: string) => void;
   onShopAll: () => void;
-  onMore: () => void;
 }
 
 export const VenueWeekCard = React.memo(function VenueWeekCard({
   data,
   isVisible,
-  onSaveToggle,
   onEventPress,
   onVenuePress,
   onShopAll,
-  onMore,
 }: VenueWeekCardProps) {
   const hasVideo = !!data.videoUrl;
 
@@ -153,13 +148,6 @@ export const VenueWeekCard = React.memo(function VenueWeekCard({
             <MaterialCommunityIcons name="check-decagram" size={18} color="#3897F0" />
           )}
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={onMore}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="ellipsis-horizontal" size={22} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       {/* Bottom section */}
@@ -259,13 +247,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     gap: 8,
-  },
-  venueLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#fff",
   },
   venueAvatar: {
     width: 28,

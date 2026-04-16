@@ -3,20 +3,19 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  Animated,
+  FlatList,
   StyleSheet,
   RefreshControl,
-  ActionSheetIOS,
-  Share,
   ViewToken,
   Dimensions,
+  TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const PEEK = 103;
-const PAGE_HEIGHT = SCREEN_HEIGHT - PEEK;
+const PAGE_HEIGHT = SCREEN_HEIGHT;
 import { useRouter } from 'expo-router';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { FeedLoadingSkeleton } from '@/components/feed';
@@ -64,6 +63,9 @@ function eventImage(item: FeedItem): string {
 function buildCards(items: FeedItem[], venueBackgrounds: Record<number, string> = {}): CardItem[] {
   if (items.length === 0) return [];
 
+  const now = new Date();
+  const nowMs = now.getTime();
+
   // Group events by venue (2+ events = venue-week card)
   const venueGroups = new Map<string, FeedItem[]>();
   const remaining: FeedItem[] = [];
@@ -101,7 +103,6 @@ function buildCards(items: FeedItem[], venueBackgrounds: Record<number, string> 
             flyerUrl: eventImage(it),
             day: eventDay(it),
             ctaLabel: eventCtaLabel(it),
-            isSaved: false,
           })),
         },
       });
@@ -139,8 +140,7 @@ function buildCards(items: FeedItem[], venueBackgrounds: Record<number, string> 
         events: orgItems.map((it) => {
           // Smart date label: day of week if this week, otherwise "Mon DD"
           const eventDate = it.eventDate ? new Date(it.eventDate) : null;
-          const now = new Date();
-          const diffDays = eventDate ? Math.round((eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : 99;
+          const diffDays = eventDate ? Math.round((eventDate.getTime() - nowMs) / (1000 * 60 * 60 * 24)) : 99;
           const dayLabel = eventDate
             ? (diffDays >= 0 && diffDays < 7
               ? eventDate.toLocaleDateString('en-US', { weekday: 'short' })
@@ -155,7 +155,6 @@ function buildCards(items: FeedItem[], venueBackgrounds: Record<number, string> 
             price: ctaLabel,
             day: dayLabel,
             ctaLabel,
-            isSaved: false,
           };
         }),
       },
@@ -181,10 +180,7 @@ export default function FeedScreen() {
   const [activeFilter, setActiveFilter] = useState('For You');
   const activeTab: FeedTab = activeFilter === 'Following' ? 'following' : 'foryou';
   const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
-  const [savedItems, setSavedItems] = useState<Set<string>>(new Set());
   const [purchaseItem, setPurchaseItem] = useState<FeedItem | null>(null);
-  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
-  const scrollY = useRef(new Animated.Value(0)).current;
 
   useEffect(() => { trackScreen('feed', 'index'); }, []);
 
@@ -197,12 +193,10 @@ export default function FeedScreen() {
     isFetchingNextPage,
   } = useFeed({ feedType: activeTab, enabled: isAuthenticated });
 
-  const visibleItems = feedItems.filter((item) => !blockedUserIds.has(String(item.userId)));
-
   // Enrich feed items with flyer images from event details
   const [enrichedImages, setEnrichedImages] = useState<Record<number, string>>({});
   useEffect(() => {
-    const needsEnrich = visibleItems.filter(
+    const needsEnrich = feedItems.filter(
       (it) => it.eventId && !enrichedImages[it.eventId]
     );
     if (needsEnrich.length === 0) return;
@@ -221,10 +215,10 @@ export default function FeedScreen() {
         setEnrichedImages((prev) => ({ ...prev, ...map }));
       }
     }).catch(() => {});
-  }, [visibleItems]);
+  }, [feedItems]);
 
   const enrichedItems = React.useMemo(() =>
-    visibleItems.map((item) => {
+    feedItems.map((item) => {
       const enrichedUrl = item.eventId ? enrichedImages[item.eventId] : undefined;
       const bestImage = enrichedUrl || item.imageUrl || item.thumbnail || '';
       if (bestImage !== item.imageUrl) {
@@ -232,7 +226,7 @@ export default function FeedScreen() {
       }
       return item;
     }),
-    [visibleItems, enrichedImages],
+    [feedItems, enrichedImages],
   );
 
   // Fetch venue feed backgrounds
@@ -248,23 +242,10 @@ export default function FeedScreen() {
       if (Object.keys(map).length > 0) {
         setVenueBackgrounds((prev) => ({ ...prev, ...map }));
       }
-    });
+    }).catch(() => {});
   }, [enrichedItems]);
 
-  const baseCards = React.useMemo(() => buildCards(enrichedItems, venueBackgrounds), [enrichedItems, venueBackgrounds]);
-
-  // Infinite loop: pre-populate enough copies so the feed never ends
-  const LOOP_COUNT = 50;
-  const cards = React.useMemo(() => {
-    if (baseCards.length === 0) return [];
-    const result: CardItem[] = [];
-    for (let i = 0; i < LOOP_COUNT; i++) {
-      for (const c of baseCards) {
-        result.push({ ...c, id: `${c.id}-${i}` });
-      }
-    }
-    return result;
-  }, [baseCards]);
+  const cards = React.useMemo(() => buildCards(enrichedItems, venueBackgrounds), [enrichedItems, venueBackgrounds]);
 
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -279,55 +260,31 @@ export default function FeedScreen() {
   // Video autoplay — track visible cards
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     const ids = new Set(viewableItems.map((v) => v.item?.id).filter(Boolean));
-    setVisibleIds(ids);
+    setVisibleIds((prev) => {
+      if (prev.size === ids.size) {
+        let same = true;
+        for (const id of ids) if (!prev.has(id)) { same = false; break; }
+        if (same) return prev;
+      }
+      return ids;
+    });
   }).current;
 
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 }).current;
 
-  const toggleSave = useCallback((itemId: string) => {
-    setSavedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
-  }, []);
-
-  const handleMore = useCallback(() => {
-    ActionSheetIOS.showActionSheetWithOptions(
-      { options: ['Save', 'Share', 'Not Interested', 'Report', 'Cancel'], cancelButtonIndex: 4, destructiveButtonIndex: 3 },
-      (index) => {
-        if (index === 1) Share.share({ message: 'Check this out on Status!' });
-      },
-    );
+  // Force-snap to nearest card if the user releases without momentum
+  const flatListRef = useRef<FlatList<CardItem>>(null);
+  const onScrollSettle = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
+    const offset = e.nativeEvent.contentOffset.y;
+    const snappedIndex = Math.round(offset / PAGE_HEIGHT);
+    const target = snappedIndex * PAGE_HEIGHT;
+    if (Math.abs(offset - target) > 1) {
+      flatListRef.current?.scrollToOffset({ offset: target, animated: true });
+    }
   }, []);
 
   const handleVenuePress = useCallback((venueId: string) => {
     router.push({ pathname: '/venue-profile/[venueId]', params: { venueId } });
-  }, [router]);
-
-  const handleEventPress = useCallback((item: FeedItem) => {
-    track('event_view', { event_id: item.eventId ?? Number(item.id), source: 'feed' });
-    router.push({
-      pathname: '/event/[id]',
-      params: {
-        id: item.eventId?.toString() || item.id,
-        title: item.eventTitle || item.description,
-        date: item.eventDate || '',
-        imageUrl: item.imageUrl || item.thumbnail,
-        videoUrl: item.videoUrl || '',
-        mediaType: item.mediaType || 'image',
-        thumbnail: item.thumbnail || '',
-        venueName: item.venueName || '',
-        username: item.username || '',
-        userAvatar: item.userAvatar || '',
-        userId: item.userId || '',
-        isPaid: item.isPaid ? 'true' : 'false',
-        price: item.price != null ? item.price.toString() : '',
-        isOrganizerVerified: item.verified ? 'true' : 'false',
-        isUserRegistered: item.isUserRegistered ? 'true' : 'false',
-      },
-    });
   }, [router]);
 
   const handleCardEventPress = useCallback((eventId: string) => {
@@ -355,11 +312,9 @@ export default function FeedScreen() {
           <VenueWeekCard
             data={item.data}
             isVisible={isVisible}
-            onSaveToggle={toggleSave}
             onEventPress={handleCardEventPress}
             onVenuePress={handleVenuePress}
             onShopAll={() => handleVenuePress(item.data.id)}
-            onMore={handleMore}
           />
         );
         break;
@@ -368,40 +323,26 @@ export default function FeedScreen() {
           <EventLineupCard
             data={item.data}
             isVisible={isVisible}
-            onSaveToggle={toggleSave}
             onEventPress={handleCardEventPress}
             onShopAll={() => {
-              const d = item.data as any;
-              if (d.venueId) handleVenuePress(d.venueId);
-              else if (d.userId) router.push({ pathname: '/user/[username]', params: { username: d.organizerName, userId: d.userId } });
+              if (item.data.venueId) handleVenuePress(item.data.venueId);
+              else if (item.data.userId) router.push({ pathname: '/user/[username]', params: { username: item.data.organizerName, userId: item.data.userId } });
             }}
             onOrganizerPress={() => {
-              const d = item.data as any;
-              if (d.venueId) handleVenuePress(d.venueId);
-              else if (d.userId) router.push({ pathname: '/user/[username]', params: { username: d.organizerName, userId: d.userId } });
+              if (item.data.venueId) handleVenuePress(item.data.venueId);
+              else if (item.data.userId) router.push({ pathname: '/user/[username]', params: { username: item.data.organizerName, userId: item.data.userId } });
             }}
-            onMore={handleMore}
           />
         );
         break;
     }
 
-    const opacity = scrollY.interpolate({
-      inputRange: [
-        (index - 1) * PAGE_HEIGHT,
-        index * PAGE_HEIGHT,
-        index * PAGE_HEIGHT + PAGE_HEIGHT * 0.5,
-      ],
-      outputRange: [1, 1, 0],
-      extrapolate: 'clamp',
-    });
-
     return (
-      <Animated.View style={[styles.page, { opacity }]}>
+      <View style={styles.page}>
         {card}
-      </Animated.View>
+      </View>
     );
-  }, [visibleIds, toggleSave, handleMore, handleCardEventPress, handleVenuePress]);
+  }, [visibleIds, handleCardEventPress, handleVenuePress, router]);
 
   if (isLoading && cards.length === 0) {
     return <FeedLoadingSkeleton />;
@@ -413,33 +354,56 @@ export default function FeedScreen() {
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyTitle}>Something went wrong</Text>
           <Text style={styles.emptySubtitle}>Unable to load feed. Please try again.</Text>
+          <TouchableOpacity
+            style={{ marginTop: 16, backgroundColor: '#000', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}
+            onPress={() => refetch()}
+            activeOpacity={0.8}
+            accessibilityLabel="Retry loading feed"
+            accessibilityRole="button"
+          >
+            <Text style={{ color: '#fff', fontSize: 15, fontFamily: 'Lato_700Bold' }}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
   }
 
-  const avatarInitial = user?.firstName?.[0] || user?.userName?.[0]?.toUpperCase() || 'A';
+  const avatarInitial = user?.firstName?.[0] || user?.userName?.[0]?.toUpperCase() || '?';
 
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
       <DarkGradientBg />
-      <Animated.FlatList
+      <FlatList
+        ref={flatListRef}
         data={cards}
         renderItem={renderCard}
         keyExtractor={(item: CardItem) => item.id}
         showsVerticalScrollIndicator={false}
-        snapToInterval={PAGE_HEIGHT}
+        snapToInterval={cards.length > 0 ? PAGE_HEIGHT : undefined}
         snapToAlignment="start"
-        decelerationRate="fast"
-        getItemLayout={(_, index) => ({ length: PAGE_HEIGHT, offset: PAGE_HEIGHT * index, index })}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+        decelerationRate="normal"
+        onMomentumScrollEnd={onScrollSettle}
+        getItemLayout={cards.length > 0 ? (_, index) => ({ length: PAGE_HEIGHT, offset: PAGE_HEIGHT * index, index }) : undefined}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#888" />
+        }
+        ListEmptyComponent={
+          <View style={[styles.emptyContainer, { height: PAGE_HEIGHT }]}>
+            <Text style={styles.emptyTitle}>No events yet</Text>
+            <Text style={styles.emptySubtitle}>Pull down to refresh, or check back later for events in your area.</Text>
+          </View>
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+              <ActivityIndicator color="rgba(0,0,0,0.4)" />
+            </View>
+          ) : null
         }
         scrollEventThrottle={16}
         windowSize={5}
@@ -457,7 +421,6 @@ export default function FeedScreen() {
       <FeedNavBar
         activeFilter={activeFilter}
         onFilterChange={(f) => setActiveFilter(f)}
-        onAvatarPress={() => router.navigate('/(tabs)/profile')}
         onSearchPress={() => setSearchVisible(true)}
         avatarInitial={avatarInitial}
         isSearchActive={isSearchActive}
@@ -468,15 +431,17 @@ export default function FeedScreen() {
 
       <SearchSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
 
-      <PurchaseTicketSheet
-        visible={!!purchaseItem}
-        onClose={() => setPurchaseItem(null)}
-        onSuccess={handlePurchaseSuccess}
-        eventId={purchaseItem?.eventId ?? 0}
-        eventTitle={purchaseItem?.eventTitle || purchaseItem?.description || 'Event'}
-        eventDate={purchaseItem?.eventDate}
-        eventImage={purchaseItem?.imageUrl || purchaseItem?.thumbnail}
-      />
+      {purchaseItem?.eventId != null && (
+        <PurchaseTicketSheet
+          visible
+          onClose={() => setPurchaseItem(null)}
+          onSuccess={handlePurchaseSuccess}
+          eventId={purchaseItem.eventId}
+          eventTitle={purchaseItem.eventTitle || purchaseItem.description || 'Event'}
+          eventDate={purchaseItem.eventDate}
+          eventImage={purchaseItem.imageUrl || purchaseItem.thumbnail}
+        />
+      )}
     </View>
   );
 }
@@ -497,6 +462,7 @@ const styles = StyleSheet.create({
   page: {
     height: PAGE_HEIGHT,
     paddingTop: 140,
+    paddingBottom: 100,
   },
   emptyContainer: {
     flex: 1,
@@ -507,12 +473,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
+    color: 'rgba(0,0,0,0.8)',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.5)',
     textAlign: 'center',
   },
 });

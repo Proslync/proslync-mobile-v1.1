@@ -173,6 +173,14 @@ function formatShortLocation(event: {
     formattedAddress?: string;
   };
 }): string {
+  if (event.location) {
+    return event.location
+      .replace(/,?\s*\d{5}(-\d{4})?\s*/g, "")
+      .replace(/,?\s*(United States|USA|US)\s*$/i, "")
+      .replace(/,\s*$/, "")
+      .trim();
+  }
+
   const venue = event.venue;
   const loc = event.locationDetails;
 
@@ -186,14 +194,6 @@ function formatShortLocation(event: {
   if (state) parts.push(abbreviateState(state));
 
   if (parts.length > 0) return parts.join(", ");
-
-  if (event.location) {
-    return event.location
-      .replace(/,?\s*\d{5}(-\d{4})?\s*/g, "")
-      .replace(/,?\s*(United States|USA|US)\s*$/i, "")
-      .replace(/,\s*$/, "")
-      .trim();
-  }
 
   return "Location TBA";
 }

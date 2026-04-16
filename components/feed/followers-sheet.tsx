@@ -11,8 +11,6 @@ import {
   FlatList,
   TextInput,
 } from "react-native";
-import { GlassView } from "expo-glass-effect";
-import { liquidGlass, glassTint, glassText, glassBorder } from "@/constants/glass/liquid-glass";
 import { SegmentedControl } from "@/components/shared/segmented-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -21,10 +19,6 @@ import { useUserFollowers, useUserFollowing } from "@/hooks/use-user-follows";
 import type { FollowUser, FollowVenue } from "@/hooks/use-user-follows";
 
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
-
-// Always use light theme for this sheet
-const t = glassText.light;
-const border = glassBorder.light;
 
 type SheetTab = "followers" | "following";
 
@@ -78,52 +72,44 @@ const UserRow = React.memo(function UserRow({
   };
 
   return (
-    <View style={styles.cardShadow}>
-      <TouchableOpacity
-        style={styles.userRow}
-        activeOpacity={0.7}
-        onPress={handlePress}
-      >
-        <GlassView
-          {...liquidGlass.surface}
-          borderRadius={16}
-          style={StyleSheet.absoluteFill}
-        />
-        <Image
-          source={user.avatar ? { uri: user.avatar } : DefaultAvatarImage}
-          style={styles.userAvatar}
-        />
-        <View style={styles.userInfo}>
-          <Text style={[styles.userName, { color: t.primary }]} numberOfLines={1}>
-            {user.userName}
-          </Text>
-          <Text style={[styles.userFullName, { color: t.tertiary }]} numberOfLines={1}>
-            {[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"}
-          </Text>
-        </View>
-        {!isSelf && (
-          <TouchableOpacity
-            style={styles.followBtn}
-            activeOpacity={0.8}
-            onPress={handleFollowPress}
-            disabled={followLoading || isActionInProgress}
-          >
-            <GlassView
-              {...liquidGlass.fillMedium}
-              borderRadius={12}
-              style={StyleSheet.absoluteFill}
-            />
-            {isActionInProgress ? (
-              <ActivityIndicator size="small" color={t.primary} />
-            ) : (
-              <Text style={[styles.followBtnText, { color: t.primary }]}>
-                {isFollowing ? "Following" : "Follow"}
-              </Text>
-            )}
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity
+      style={styles.userRow}
+      activeOpacity={0.7}
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`Open profile for ${user.userName}`}
+    >
+      <Image
+        source={user.avatar ? { uri: user.avatar } : DefaultAvatarImage}
+        style={styles.userAvatar}
+      />
+      <View style={styles.userInfo}>
+        <Text style={styles.userName} numberOfLines={1}>
+          {user.userName}
+        </Text>
+        <Text style={styles.userFullName} numberOfLines={1}>
+          {[user.firstName, user.lastName].filter(Boolean).join(" ") || "User"}
+        </Text>
+      </View>
+      {!isSelf && (
+        <TouchableOpacity
+          style={[styles.followBtn, isFollowing && styles.followBtnFollowing]}
+          activeOpacity={0.8}
+          onPress={handleFollowPress}
+          disabled={followLoading || isActionInProgress}
+          accessibilityRole="button"
+          accessibilityLabel={isFollowing ? `Unfollow ${user.userName}` : `Follow ${user.userName}`}
+        >
+          {isActionInProgress ? (
+            <ActivityIndicator size="small" color={isFollowing ? "#1a1a1a" : "#fff"} />
+          ) : (
+            <Text style={[styles.followBtnText, isFollowing && styles.followBtnTextFollowing]}>
+              {isFollowing ? "Following" : "Follow"}
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
+    </TouchableOpacity>
   );
 });
 
@@ -145,31 +131,26 @@ const VenueRow = React.memo(function VenueRow({
   };
 
   return (
-    <View style={styles.cardShadow}>
-      <TouchableOpacity
-        style={styles.userRow}
-        activeOpacity={0.7}
-        onPress={handlePress}
-      >
-        <GlassView
-          {...liquidGlass.surface}
-          borderRadius={16}
-          style={StyleSheet.absoluteFill}
-        />
-        <Image
-          source={venue.logo ? { uri: venue.logo } : DefaultAvatarImage}
-          style={styles.userAvatar}
-        />
-        <View style={styles.userInfo}>
-          <Text style={[styles.userName, { color: t.primary }]} numberOfLines={1}>
-            {venue.name}
-          </Text>
-          <Text style={[styles.userFullName, { color: t.tertiary }]} numberOfLines={1}>
-            Venue
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity
+      style={styles.userRow}
+      activeOpacity={0.7}
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`Open venue ${venue.name}`}
+    >
+      <Image
+        source={venue.logo ? { uri: venue.logo } : DefaultAvatarImage}
+        style={styles.userAvatar}
+      />
+      <View style={styles.userInfo}>
+        <Text style={styles.userName} numberOfLines={1}>
+          {venue.name}
+        </Text>
+        <Text style={styles.userFullName} numberOfLines={1}>
+          Venue
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 });
 
@@ -185,6 +166,8 @@ export function FollowersSheet({
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = React.useState<SheetTab>(initialTab);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [isSearchActive, setIsSearchActive] = React.useState(false);
+  const searchInputRef = React.useRef<TextInput>(null);
 
   React.useEffect(() => {
     setActiveTab(initialTab);
@@ -193,7 +176,18 @@ export function FollowersSheet({
   // Clear search when switching tabs or closing
   React.useEffect(() => {
     setSearchQuery("");
+    setIsSearchActive(false);
   }, [activeTab, visible]);
+
+  const openSearch = React.useCallback(() => {
+    setIsSearchActive(true);
+    setTimeout(() => searchInputRef.current?.focus(), 50);
+  }, []);
+
+  const closeSearch = React.useCallback(() => {
+    setIsSearchActive(false);
+    setSearchQuery("");
+  }, []);
 
   const {
     followers,
@@ -272,60 +266,81 @@ export function FollowersSheet({
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-            <GlassView
-              {...liquidGlass.fillMedium}
-              borderRadius={16}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name="close" size={18} color={t.primary} />
-          </TouchableOpacity>
           <Text style={styles.headerTitle}>
             {activeTab === "followers" ? "Followers" : "Following"}
           </Text>
-          <View style={styles.headerSpacer} />
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.closeBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <Ionicons name="close" size={20} color="#1a1a1a" />
+          </TouchableOpacity>
         </View>
 
-        {/* Segmented Tabs */}
-        <View style={styles.tabBar}>
-          <SegmentedControl
-            segments={[`${followersCount} Followers`, `${followingCount} Following`]}
-            selectedIndex={activeTab === "followers" ? 0 : 1}
-            onSelect={(index) => setActiveTab(index === 0 ? "followers" : "following")}
-          />
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <GlassView
-              {...liquidGlass.surface}
-              borderRadius={14}
-              style={StyleSheet.absoluteFill}
-            />
-            <Ionicons name="search" size={16} color={t.muted} style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search"
-              placeholderTextColor={t.muted}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery("")} style={styles.clearBtn}>
-                <Ionicons name="close-circle" size={16} color={t.muted} />
+        {/* Tabs + search row (or full-width search bar when active) */}
+        <View style={styles.tabRow}>
+          {isSearchActive ? (
+            <>
+              <View style={styles.searchBar}>
+                <Ionicons name="search" size={16} color="rgba(0,0,0,0.4)" style={styles.searchIcon} />
+                <TextInput
+                  ref={searchInputRef}
+                  style={styles.searchInput}
+                  placeholder="Search"
+                  placeholderTextColor="rgba(0,0,0,0.35)"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => setSearchQuery("")}
+                    style={styles.clearBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear search"
+                  >
+                    <Ionicons name="close-circle" size={16} color="rgba(0,0,0,0.3)" />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <TouchableOpacity
+                onPress={closeSearch}
+                style={styles.cancelBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel search"
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
-            )}
-          </View>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                onPress={openSearch}
+                style={styles.searchIconBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Search"
+              >
+                <Ionicons name="search" size={18} color="#1a1a1a" />
+              </TouchableOpacity>
+              <View style={styles.tabBar}>
+                <SegmentedControl
+                  segments={[`${followersCount} Followers`, `${followingCount} Following`]}
+                  selectedIndex={activeTab === "followers" ? 0 : 1}
+                  onSelect={(index) => setActiveTab(index === 0 ? "followers" : "following")}
+                />
+              </View>
+            </>
+          )}
         </View>
 
         {/* List */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={t.muted} />
+            <ActivityIndicator size="large" color="rgba(0,0,0,0.35)" />
           </View>
         ) : activeTab === "followers" && filteredFollowers.length > 0 ? (
           <FlatList
@@ -351,7 +366,7 @@ export function FollowersSheet({
           />
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: t.muted }]}>
+            <Text style={styles.emptyText}>
               {searchQuery.trim()
                 ? "No results"
                 : activeTab === "followers"
@@ -368,17 +383,22 @@ export function FollowersSheet({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f2f2f7",
+    backgroundColor: "#f2f2f2",
   },
 
-  // Header
+  // Header — title left, close right
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontFamily: "Lato_700Bold",
+    color: "#1A1A1A",
   },
   closeBtn: {
     width: 32,
@@ -386,41 +406,38 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: "Lato_700Bold",
-    color: "#1A1A1A",
-  },
-  headerSpacer: {
-    width: 32,
+    backgroundColor: "rgba(0,0,0,0.06)",
   },
 
-  // Tabs
-  tabBar: {
-    paddingBottom: 4,
-  },
-
-  // Search
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    // Elevated shadow
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-  },
-  searchBar: {
+  // Tabs + search row
+  tabRow: {
     flexDirection: "row",
     alignItems: "center",
-    height: 40,
-    borderRadius: 14,
-    overflow: "hidden",
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  searchIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.06)",
+  },
+  tabBar: {
+    flex: 1,
+  },
+
+  // Search bar (active state)
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    height: 36,
+    borderRadius: 18,
     paddingHorizontal: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.5)",
+    backgroundColor: "rgba(0,0,0,0.06)",
   },
   searchIcon: {
     marginRight: 6,
@@ -435,64 +452,72 @@ const styles = StyleSheet.create({
   clearBtn: {
     padding: 4,
   },
-
-  // Card shadow wrapper — gives each row a 3D elevated feel
-  cardShadow: {
-    marginHorizontal: 16,
-    marginVertical: 5,
-    borderRadius: 16,
-    // iOS shadow for depth
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    // Android elevation
-    elevation: 4,
+  cancelBtn: {
+    paddingHorizontal: 4,
+    height: 36,
+    justifyContent: "center",
+  },
+  cancelBtnText: {
+    fontSize: 15,
+    fontFamily: "Lato_700Bold",
+    color: "#1a1a1a",
   },
 
-  // User row — now a glass card
+  // User row — solid white card with shadow (same pattern as ticket-list)
   userRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 16,
-    overflow: "hidden",
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: "rgba(255,255,255,0.5)",
+    marginHorizontal: 16,
+    marginVertical: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
   },
   userAvatar: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.6)",
+    backgroundColor: "rgba(0,0,0,0.05)",
   },
   userInfo: {
     flex: 1,
     marginLeft: 12,
   },
   userName: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: "Lato_700Bold",
+    color: "#1A1A1A",
   },
   userFullName: {
     fontSize: 13,
     fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.5)",
     marginTop: 2,
   },
   followBtn: {
-    borderRadius: 12,
-    paddingHorizontal: 18,
+    borderRadius: 10,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     minWidth: 88,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
+    backgroundColor: "#1a1a1a",
+  },
+  followBtnFollowing: {
+    backgroundColor: "rgba(0,0,0,0.06)",
   },
   followBtnText: {
     fontSize: 13,
     fontFamily: "Lato_700Bold",
+    color: "#fff",
+  },
+  followBtnTextFollowing: {
+    color: "#1a1a1a",
   },
 
   // States
@@ -509,5 +534,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontFamily: "Lato_400Regular",
+    color: "rgba(0,0,0,0.45)",
   },
 });

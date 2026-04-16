@@ -24,7 +24,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
   runOnJS,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -47,7 +46,7 @@ import { useTabNavigation } from '@/lib/providers/tab-navigation-provider';
 
 
 // Check if running in Expo Go (native modules not available)
-const isExpoGo = Constants.appOwnership === 'expo';
+const isExpoGo = Constants.executionEnvironment === 'storeClient' ? false : Constants.appOwnership === 'expo';
 
 // Initialize Mapbox with token from environment
 const MAPBOX_TOKEN = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
@@ -83,6 +82,7 @@ interface MapEvent {
   isLive: boolean;
   popularity: number;
   type: 'event' | 'venue' | 'hotspot';
+  isUserRegistered: boolean;
 }
 
 // Transform API Event to MapEvent
@@ -166,8 +166,8 @@ function transformEventToMapEvent(event: Event): MapEvent {
     id: event.id.toString(),
     title: event.name,
     venue: event.venue?.name || event.location || 'TBA',
-    latitude: Number(event.venue?.latitude) || 40.7580, // Default to NYC
-    longitude: Number(event.venue?.longitude) || -73.9855,
+    latitude: event.locationDetails?.coordinates?.lat || Number(event.venue?.latitude) || (event as any).latitude || 0,
+    longitude: event.locationDetails?.coordinates?.lng || Number(event.venue?.longitude) || (event as any).longitude || 0,
     imageUrl: event.flyer?.url || event.imageUrl || '',
     date: dateStr,
     time: timeStr,
@@ -176,6 +176,7 @@ function transformEventToMapEvent(event: Event): MapEvent {
     isLive,
     popularity: Math.min(100, attendeeCount > 0 ? Math.floor(attendeeCount / 5) : 0),
     type: 'event',
+    isUserRegistered: event.isUserRegistered ?? false,
   };
 }
 
@@ -327,19 +328,33 @@ function FullMapScreen() {
       setError(null);
       const apiEvents = await eventsApi.getEvents({ limit: 50 });
       const mapEvents = apiEvents.map(transformEventToMapEvent);
-      // Mock event for UI testing
-      mapEvents.push({
-        id: 'mock-1',
-        title: 'Friday Night at Ultrabar',
-        venue: 'Ultrabar',
-        imageUrl: 'https://storage.googleapis.com/status_social_flyers_dev/flyer/49408c91-1fac-49c7-ac7d-35e687766eff.jpg',
-        latitude: 38.9005,
-        longitude: -77.0230,
-        date: 'Tonight',
-        time: '10:00 PM',
-        isLive: true,
-      });
-      setEvents(mapEvents);
+
+      // Geocode events that have a custom location text (overrides venue coordinates)
+      const token = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+      if (token) {
+        const needsGeocode = mapEvents.filter(e => {
+          const original = apiEvents.find(a => a.id.toString() === e.id);
+          // Geocode if: no coordinates, OR has custom location text different from venue
+          return (e.latitude === 0 && e.longitude === 0) || (original?.location && original.location !== original.venue?.address);
+        });
+        for (const evt of needsGeocode) {
+          // Find the original event's location text
+          const original = apiEvents.find(a => a.id.toString() === evt.id);
+          const locationText = original?.location || original?.venue?.address;
+          if (!locationText) continue;
+          try {
+            const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(locationText)}.json?access_token=${token}&limit=1`);
+            const data = await res.json();
+            if (data.features?.[0]?.center) {
+              evt.longitude = data.features[0].center[0];
+              evt.latitude = data.features[0].center[1];
+            }
+          } catch {}
+        }
+      }
+
+      // Filter out events that still have no coordinates
+      setEvents(mapEvents.filter(e => e.latitude !== 0 && e.longitude !== 0));
     } catch (err) {
       console.error('Failed to fetch events:', err);
       setError('Failed to load events');
@@ -430,7 +445,7 @@ function FullMapScreen() {
 
   const handleEventPress = useCallback((event: MapEvent) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push({ pathname: '/event/[id]', params: { id: event.id, title: event.title, date: event.rawDate, imageUrl: event.imageUrl, venueName: event.venue, isPaid: 'false', isUserRegistered: 'false' } });
+    router.push({ pathname: '/event/[id]', params: { id: event.id } });
   }, [router]);
 
   const handleMarkerPress = useCallback((event: MapEvent) => {
@@ -659,22 +674,23 @@ function FullMapScreen() {
         >
           <GestureDetector gesture={cardPanGesture}>
           <Animated.View style={[styles.eventPreviewCard, { height: 155 }, cardAnimatedStyle]}>
-            <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.7)" borderRadius={20} style={StyleSheet.absoluteFill} />
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => { const ev = selectedEvent; setSelectedEvent(null); handleEventPress(ev); }} />
+            <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.7)" borderRadius={20} style={StyleSheet.absoluteFill} pointerEvents="none" />
             {/* Grab handle */}
-            <View style={{ position: 'absolute', top: 6, left: 0, right: 0, alignItems: 'center', zIndex: 10 }}>
+            <View style={{ position: 'absolute', top: 6, left: 0, right: 0, alignItems: 'center', zIndex: 10 }} pointerEvents="none">
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
             </View>
             {/* Flyer — left */}
             {selectedEvent.imageUrl ? (
-              <Image source={{ uri: selectedEvent.imageUrl }} style={styles.eventPreviewFlyer} />
+              <Image source={{ uri: selectedEvent.imageUrl }} style={styles.eventPreviewFlyer} pointerEvents="none" />
             ) : (
-              <View style={[styles.eventPreviewFlyer, { backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }]}>
+              <View style={[styles.eventPreviewFlyer, { backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }]} pointerEvents="none">
                 <Ionicons name="calendar" size={28} color="rgba(255,255,255,0.3)" />
               </View>
             )}
             {/* Details — right */}
-            <View style={styles.eventPreviewInfo}>
-              <View style={{ flex: 1, justifyContent: 'center', gap: 2 }}>
+            <View style={styles.eventPreviewInfo} pointerEvents="box-none">
+              <View style={{ flex: 1, justifyContent: 'center', gap: 2 }} pointerEvents="none">
                 <Text style={[styles.eventPreviewTitle, { fontSize: 18 }]} numberOfLines={2}>{selectedEvent.title}</Text>
                 <Text style={[styles.eventPreviewVenue, { fontSize: 15, fontWeight: '700' }]} numberOfLines={1}>{selectedEvent.venue}</Text>
                 <Text style={[styles.eventPreviewMeta, { fontSize: 13, fontWeight: '700' }]}>{selectedEvent.date} · {selectedEvent.time}</Text>
@@ -683,7 +699,7 @@ function FullMapScreen() {
                 <TouchableOpacity
                   style={styles.eventPreviewRsvp}
                   activeOpacity={0.8}
-                  accessibilityLabel="RSVP to event"
+                  accessibilityLabel={selectedEvent.isUserRegistered ? "Open RSVP'd event" : "RSVP to event"}
                   accessibilityRole="button"
                   onPress={() => {
                     const ev = selectedEvent;
@@ -691,7 +707,14 @@ function FullMapScreen() {
                     handleEventPress(ev);
                   }}
                 >
-                  <Text style={styles.eventPreviewRsvpText}>RSVP</Text>
+                  <Text
+                    style={[
+                      styles.eventPreviewRsvpText,
+                      selectedEvent.isUserRegistered && { color: 'rgba(0,0,0,0.55)' },
+                    ]}
+                  >
+                    {selectedEvent.isUserRegistered ? "RSVP'd" : "RSVP"}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={{ borderRadius: 14, overflow: 'hidden', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, gap: 2 }}

@@ -29,11 +29,10 @@ import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
+import { LiquidGlassView } from "@callstack/liquid-glass";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { GlassView } from "expo-glass-effect";
-import { liquidGlass, glassTint, glassText, glassBorder, glassSurfaceTint } from "@/constants/glass/liquid-glass";
-import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
+import { liquidGlass, glassSurfaceTint } from "@/constants/glass/liquid-glass";
 import {
   useConversations,
   usePinConversation,
@@ -55,6 +54,7 @@ import { usersApi } from "@/lib/api/users";
 import { ConfirmSheet } from "@/components/ui/confirm-sheet";
 import { ConversationActionSheet } from "@/components/messages/action-sheet";
 import { useAppTheme } from "@/hooks/use-app-theme";
+import { useToast } from "@/components/shared/toast";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { useTabNavigation } from "@/lib/providers/tab-navigation-provider";
 import { formatTimestamp } from "@/lib/utils/date";
@@ -94,19 +94,7 @@ function ConversationAvatar({
         />
       </View>
       {hasUnread && (
-        <View style={styles.unreadRing}>
-          <LinearGradient
-            colors={["rgba(255,255,255,0.8)", "rgba(255,255,255,0.8)"]}
-            style={[
-              styles.unreadRingGradient,
-              {
-                width: size + 4,
-                height: size + 4,
-                borderRadius: (size + 4) / 2,
-              },
-            ]}
-          />
-        </View>
+        <View style={[styles.unreadRing, { borderRadius: (size + 4) / 2, borderWidth: 2, borderColor: '#3897F0' }]} />
       )}
       {isOnline && (
         <View style={styles.onlineIndicator}>
@@ -126,7 +114,7 @@ function ConciergeAvatar({ size = 56 }: { size?: number }) {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: "#1a1a2e",
+          backgroundColor: "#1c1c1e",
           borderWidth: 1.5,
           borderColor: "rgba(255,255,255,0.15)",
         },
@@ -505,13 +493,11 @@ export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { colors: _colors, isDark: _isDark } = useAppTheme();
+  const { showError } = useToast();
   const colors = { ..._colors, text: '#000', textSecondary: 'rgba(0,0,0,0.6)', textTertiary: 'rgba(0,0,0,0.4)', background: '#f2f2f2', border: 'rgba(0,0,0,0.08)' };
   const isDark = false;
-  const themeKey = 'light' as const;
-  const t = glassText[themeKey];
-  const border = glassBorder[themeKey];
   const { user } = useAuth();
-  const { openAccountSwitcher, tabBarTopOffset } = useTabNavigation();
+  const { tabBarTopOffset } = useTabNavigation();
   const { channelData, isLoading, refetch, deleteChannel } = useConversations(
     user?.id,
   );
@@ -537,7 +523,23 @@ export default function MessagesScreen() {
 
   // Compose new DM state
   const [showCompose, setShowCompose] = useState(false);
-  const { notifications, fetchNextPage, hasNextPage, isLoading: notifsLoading } = useNotifications();
+  const { notifications, fetchNextPage, hasNextPage, isLoading: notifsLoading, refetch: refetchNotifs } = useNotifications();
+  const [notifsRefreshing, setNotifsRefreshing] = useState(false);
+  const filteredNotifications = useMemo(() => {
+    const seen = new Set<string>();
+    return notifications.filter((n) => {
+      if (n.type === 'chat') return false;
+      if (n.type === 'follow') {
+        const actorId = n.metadata?.actorId;
+        if (actorId) {
+          const key = `follow-${actorId}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+        }
+      }
+      return true;
+    });
+  }, [notifications]);
   const markRead = useMarkNotificationRead();
   const [composeKeyboardHeight, setComposeKeyboardHeight] = useState(0);
 
@@ -652,10 +654,6 @@ export default function MessagesScreen() {
     [router],
   );
 
-  const handleNotificationsPress = useCallback(() => {
-    router.push("/notifications");
-  }, [router]);
-
   const handleSearchPress = useCallback(() => {
     setIsSearchActive(true);
     setTimeout(() => searchInputRef.current?.focus(), 100);
@@ -667,16 +665,6 @@ export default function MessagesScreen() {
     Keyboard.dismiss();
   }, []);
 
-  // Close search when keyboard hides
-  useEffect(() => {
-    const sub = Keyboard.addListener("keyboardWillHide", () => {
-      if (isSearchActive) {
-        setSearchQuery("");
-        setIsSearchActive(false);
-      }
-    });
-    return () => sub.remove();
-  }, [isSearchActive]);
 
   // Compose handlers
   const handleOpenCompose = useCallback(() => {
@@ -723,6 +711,7 @@ export default function MessagesScreen() {
         })
         .catch((err) => {
           console.error("Create conversation error:", err);
+          showError(err?.message || 'Failed to create conversation');
         })
         .finally(() => {
           setIsCreating(false);
@@ -756,6 +745,7 @@ export default function MessagesScreen() {
       });
     } catch (err) {
       console.error("Create group error:", err);
+      showError((err as any)?.message || 'Failed to create group');
     } finally {
       setIsCreating(false);
     }
@@ -838,7 +828,7 @@ export default function MessagesScreen() {
         index={index}
         searchMatch={searchResults.get(item.id)}
         colors={colors}
-        surfaceTint={glassSurfaceTint[themeKey]}
+        surfaceTint={glassSurfaceTint.light}
       />
     ),
     [
@@ -883,7 +873,7 @@ export default function MessagesScreen() {
         style={styles.headerScrollFixed}
       >
           {/* Search icon pill */}
-          <Pressable style={styles.iconPill} onPress={handleSearchPress}>
+          <Pressable style={styles.iconPill} onPress={handleSearchPress} accessibilityLabel="Search messages" accessibilityRole="button">
             <View style={styles.glassLayer} pointerEvents="none">
               <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={19} style={StyleSheet.absoluteFill} />
             </View>
@@ -899,6 +889,9 @@ export default function MessagesScreen() {
                 key={label}
                 style={styles.filterPill}
                 onPress={() => setActiveTab(label as 'Messages' | 'Notifications' | 'Channels')}
+                accessibilityLabel={`${label} tab`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
               >
                 <View style={styles.glassLayer} pointerEvents="none">
                   <GlassView
@@ -943,11 +936,11 @@ export default function MessagesScreen() {
                 keyboardAppearance="light"
               />
               <View style={styles.searchSheetActions}>
-                <TouchableOpacity style={styles.searchSheetPlusBtn} onPress={handleSearchCancel} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.searchSheetPlusBtn} onPress={handleSearchCancel} activeOpacity={0.7} accessibilityLabel="Close search" accessibilityRole="button">
                   <Ionicons name="close" size={18} color="#666" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }} />
-                <TouchableOpacity style={searchQuery.length > 0 ? styles.searchSheetArrowBtn : styles.searchSheetArrowBtnInactive} activeOpacity={0.7}>
+                <TouchableOpacity style={searchQuery.length > 0 ? styles.searchSheetArrowBtn : styles.searchSheetArrowBtnInactive} activeOpacity={0.7} onPress={() => Keyboard.dismiss()} accessibilityLabel="Dismiss keyboard" accessibilityRole="button">
                   <Ionicons name="arrow-forward" size={18} color={searchQuery.length > 0 ? "#fff" : "#ccc"} />
                 </TouchableOpacity>
               </View>
@@ -963,12 +956,7 @@ export default function MessagesScreen() {
       >
         {activeTab === 'Notifications' ? (
           <FlatList
-            data={notifications.filter((n) => n.type !== 'chat').filter((n, i, arr) => {
-              if (n.type !== 'follow') return true;
-              const actorId = n.metadata?.actorId;
-              if (!actorId) return true;
-              return arr.findIndex((x) => x.type === 'follow' && x.metadata?.actorId === actorId) === i;
-            })}
+            data={filteredNotifications}
             keyExtractor={(item) => String(item.id)}
             renderItem={({ item }) => (
               <NotificationRow
@@ -997,6 +985,17 @@ export default function MessagesScreen() {
             showsVerticalScrollIndicator={false}
             onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
             onEndReachedThreshold={0.3}
+            refreshControl={
+              <RefreshControl
+                refreshing={notifsRefreshing}
+                onRefresh={async () => {
+                  setNotifsRefreshing(true);
+                  await refetchNotifs();
+                  setNotifsRefreshing(false);
+                }}
+                tintColor="#000"
+              />
+            }
           />
         ) : activeTab === 'Messages' ? (
           <FlatList
@@ -1167,7 +1166,6 @@ export default function MessagesScreen() {
                   <PersonSearchRow
                     item={item}
                     isSelected={selectedIds.has(item.id)}
-                    onPress={() => handlePersonPress(item)}
                     colors={colors}
                   />
                 </TouchableOpacity>
@@ -1337,9 +1335,11 @@ export default function MessagesScreen() {
         icon="alert-circle-outline"
       />
 
-      {/* New conversation FAB */}
-      <Pressable
+      {/* New conversation FAB — hidden on Notifications tab */}
+      {activeTab !== 'Notifications' && <Pressable
         style={[styles.composeFab, { bottom: tabBarTopOffset + 105, right: 20 }]}
+        accessibilityLabel="New message"
+        accessibilityRole="button"
         onPress={() => {
           if (activeTab === 'Channels') {
             router.push('/create-channel' as any);
@@ -1350,7 +1350,7 @@ export default function MessagesScreen() {
       >
         <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
         <Ionicons name="add" size={30} color="#000" />
-      </Pressable>
+      </Pressable>}
 
     </View>
   );
@@ -1361,35 +1361,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   // Profile-style header
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-  },
-  headerTitleButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontFamily: "Lato_700Bold",
-  },
-  headerIcon: {
-    padding: 4,
-    width: 40,
-    alignItems: "center",
-  },
-  headerCircleBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.05)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
   headerScrollFixed: {
     position: 'absolute',
     top: 0,
@@ -1407,7 +1378,7 @@ const styles = StyleSheet.create({
   notifText: { fontSize: 14, fontFamily: 'Lato_400Regular', lineHeight: 20, color: 'rgba(0,0,0,0.6)' },
   notifTitle: { fontFamily: 'Lato_700Bold', color: '#000' },
   notifTime: { fontSize: 12, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.35)', marginTop: 4 },
-  notifUnreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF3B30' },
+  notifUnreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#3897F0' },
   topFade: {
     position: 'absolute',
     top: 0,
@@ -1453,7 +1424,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    bottom: 0,
+    bottom: 90,
     zIndex: 999,
   },
   searchSheetContent: {
@@ -1504,40 +1475,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   // Search bar
-  searchBarContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    gap: 10,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    height: 36,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    gap: 6,
-  },
-  searchBarInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: "Lato_400Regular",
-    height: 36,
-    paddingVertical: 0,
-  },
-  searchBarPlaceholder: {
-    fontSize: 16,
-    fontFamily: "Lato_400Regular",
-  },
-  searchCancelBtn: {
-    paddingVertical: 4,
-  },
-  searchCancelText: {
-    fontSize: 15,
-    fontFamily: "Lato_400Regular",
-  },
   // List
   listContainer: {
     flex: 1,
@@ -1576,10 +1513,6 @@ const styles = StyleSheet.create({
     left: -2,
     right: -2,
     bottom: -2,
-  },
-  unreadRingGradient: {
-    position: "absolute",
-    opacity: 0,
   },
   onlineIndicator: {
     position: "absolute",
@@ -1698,74 +1631,6 @@ const styles = StyleSheet.create({
     fontFamily: "Lato_400Regular",
   },
   // Action sheet (account-switcher style)
-  actionOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
-  actionSheet: {
-    paddingHorizontal: 0,
-  },
-  actionSheetContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: "rgba(128,128,128,0.12)",
-  },
-  actionSheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(128,128,128,0.3)",
-    alignSelf: "center",
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  actionSheetHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(128,128,128,0.12)",
-  },
-  actionSheetClose: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionTitle: {
-    fontSize: 17,
-    fontFamily: "Lato_700Bold",
-    flex: 1,
-  },
-  actionList: {
-  },
-  actionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(128,128,128,0.1)",
-  },
-  actionItemIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  actionText: {
-    fontSize: 16,
-    fontFamily: "Lato_400Regular",
-    color: "#fff",
-  },
   // Compose modal
   composeContainer: {
     flex: 1,
@@ -1800,7 +1665,7 @@ const styles = StyleSheet.create({
   },
   composeTitle: {
     fontSize: 24,
-    fontWeight: "800",
+    fontFamily: "Lato_700Bold",
     color: "#1a1a1a",
   },
   composeBottomInput: {
@@ -1809,7 +1674,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 20,
     marginHorizontal: 16,
-    marginBottom: 200,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 8,
@@ -1877,24 +1741,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Lato_700Bold",
     color: "#fff",
-  },
-  composeSearchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  toLabel: {
-    fontSize: 16,
-    fontFamily: "Lato_400Regular",
-    marginRight: 12,
-  },
-  composeSearchInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: "Lato_400Regular",
-    paddingVertical: 0,
   },
   sectionHeader: {
     paddingHorizontal: 16,

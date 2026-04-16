@@ -86,8 +86,6 @@ export default function EditVenueInfoScreen() {
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
         setHasChanges(true);
-        // Image will be uploaded when the backend supports POST /api/venues/:id/image
-        // For now, just show the preview locally
       }
     } catch (error) {
       console.error('Image picker error:', error);
@@ -102,7 +100,14 @@ export default function EditVenueInfoScreen() {
     }
 
     try {
+      // Upload new image first (if user picked one) so the server has the fresh URL
+      if (selectedImage && selectedImage.startsWith('file://')) {
+        await venuesApi.uploadVenueImage(venueId, selectedImage);
+      }
       await updateVenue.mutateAsync({ id: venueId, data: formData });
+      // Invalidate to force re-fetch of the image URL in downstream views
+      queryClient.invalidateQueries({ queryKey: ['venue', venueId] });
+      queryClient.invalidateQueries({ queryKey: ['my-venues'] });
       showSuccess('Venue updated');
       router.back();
     } catch (error: any) {

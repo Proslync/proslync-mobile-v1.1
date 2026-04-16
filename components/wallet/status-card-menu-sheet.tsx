@@ -54,7 +54,7 @@ export function StatusCardMenuSheet({
       <NativeSheet
         isPresented={visible}
         onDismiss={onClose}
-        detents={[{ fraction: 0.7 }, "large"]}
+        detents={[{ fraction: 0.738 }]}
         rnContent
       >
         <ScrollView
@@ -107,8 +107,8 @@ function StatusCardMenuContent({
 
   const iconColor = isDark ? "#ffffff" : "#1a1a1a";
   const buttonBorderColor = isDark
-    ? "rgba(255, 255, 255, 0.1)"
-    : "rgba(0, 0, 0, 0.08)";
+    ? "rgba(255, 255, 255, 0.12)"
+    : "rgba(0, 0, 0, 0.04)";
   const qrContainerBorder = isDark
     ? "rgba(255, 255, 255, 0.10)"
     : "rgba(0, 0, 0, 0.06)";
@@ -199,7 +199,7 @@ function StatusCardMenuContent({
                 { backgroundColor: perksIconBg, borderColor: perksIconBorder },
               ]}
             >
-              <Ionicons name="star-outline" size={14} color="#FFD700" />
+              <Ionicons name="star-outline" size={14} color={iconColor} />
             </View>
             <GlassText weight="bold" size={15}>
               {user.statusTier} Perks
@@ -242,7 +242,7 @@ function StatusCardMenuContent({
             activeOpacity={0.7}
           >
             <GlassView
-              {...liquidGlass.fill}
+              {...liquidGlass.interactive}
               borderRadius={radius.md}
               style={StyleSheet.absoluteFillObject}
             />
@@ -259,7 +259,7 @@ function StatusCardMenuContent({
           activeOpacity={0.7}
         >
           <GlassView
-            {...liquidGlass.surface}
+            {...liquidGlass.interactive}
             borderRadius={radius.md}
             style={StyleSheet.absoluteFillObject}
           />
@@ -276,7 +276,7 @@ function StatusCardMenuContent({
           disabled={isAddingToWallet}
         >
           <GlassView
-            {...liquidGlass.surface}
+            {...liquidGlass.interactive}
             borderRadius={radius.md}
             style={StyleSheet.absoluteFillObject}
           />
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#34c759",
+    backgroundColor: "#1a1a1a",
     justifyContent: "center",
     alignItems: "center",
   },

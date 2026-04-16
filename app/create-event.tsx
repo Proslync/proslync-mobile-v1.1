@@ -125,6 +125,7 @@ export default function CreateEventScreen() {
   const [editingField, setEditingField] = React.useState<'start' | 'end'>('start');
   const [showEndTime, setShowEndTime] = React.useState(true);
   const [hasChosenTime, setHasChosenTime] = React.useState(false);
+  const [selectedCoords, setSelectedCoords] = React.useState<{ lat: number; lng: number } | null>(null);
 
   // Drag-to-dismiss for date modal
   const dateSlideY = React.useRef(new RNAnimated.Value(Dimensions.get('window').height)).current;
@@ -206,8 +207,13 @@ export default function CreateEventScreen() {
   const onSubmit = async (data: EventFormData) => {
     try {
       const parsedData = parseEventFormData(data);
+      delete (parsedData as any).locationDetails;
       if (orgIdParam) parsedData.organizationId = parseInt(orgIdParam, 10);
       if (venueIdParam) parsedData.venueId = parseInt(venueIdParam, 10);
+      if (selectedCoords) {
+        (parsedData as any).latitude = selectedCoords.lat;
+        (parsedData as any).longitude = selectedCoords.lng;
+      }
 
       // Create event first (don't publish yet — publish may fail if flyer upload has issues)
       const { event } = await createEvent.mutateAsync(
@@ -316,7 +322,7 @@ export default function CreateEventScreen() {
               style={s.locationSuggestionRow}
               onPress={() => {
                 form.setValue('location', item.place_name);
-                form.setValue('locationDetails', { latitude: item.lat, longitude: item.lng } as any);
+                setSelectedCoords({ lat: item.lat, lng: item.lng });
                 setLocationSuggestions([]);
               }}
               activeOpacity={0.7}

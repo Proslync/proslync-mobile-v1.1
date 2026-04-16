@@ -13,13 +13,11 @@ import {
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const FILTERS = ["For You", "Following", "Nearby", "Tables"];
+const FILTERS = ["For You", "Following"];
 
 export interface FeedNavBarProps {
   activeFilter: string;
   onFilterChange: (filter: string) => void;
-  onAvatarPress: () => void;
-  onNotificationPress: () => void;
   onSearchPress: () => void;
   avatarInitial: string;
   /** Inline search mode */
@@ -32,8 +30,6 @@ export interface FeedNavBarProps {
 export function FeedNavBar({
   activeFilter,
   onFilterChange,
-  onAvatarPress,
-  onNotificationPress,
   onSearchPress,
   avatarInitial,
   isSearchActive,
@@ -92,7 +88,7 @@ export function FeedNavBar({
           contentContainerStyle={styles.scrollContent}
         >
           {/* Search pill */}
-          <Pressable style={styles.pill} onPress={onSearchPress}>
+          <Pressable style={styles.pill} onPress={onSearchPress} accessibilityLabel="Search" accessibilityRole="button">
             <View style={styles.glassLayer} pointerEvents="none">
               <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={20} style={StyleSheet.absoluteFill} />
             </View>
@@ -107,6 +103,9 @@ export function FeedNavBar({
                 key={filter}
                 style={[styles.filterPill, isActive && styles.filterPillActive]}
                 onPress={() => onFilterChange(filter)}
+                accessibilityLabel={`${filter} feed`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
               >
                 <View style={styles.glassLayer} pointerEvents="none">
                   <GlassView

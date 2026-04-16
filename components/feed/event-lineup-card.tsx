@@ -7,7 +7,6 @@ import { useVideoPlayer, VideoView } from "expo-video";
 import * as React from "react";
 import {
   AppState,
-  Animated,
   Dimensions,
   ScrollView,
   StyleSheet,
@@ -25,13 +24,14 @@ export interface EventLineupCardData {
   organizerVerified?: boolean;
   backgroundImageUrl?: string;
   videoUrl?: string;
+  venueId?: string;
+  userId?: string;
   events: {
     id: string;
     flyerUrl: string;
     price: string;
     day?: string;
     ctaLabel?: string;
-    isSaved: boolean;
   }[];
   promoText?: string;
   promoBadge?: string;
@@ -41,64 +41,16 @@ export interface EventLineupCardData {
 interface EventLineupCardProps {
   data: EventLineupCardData;
   isVisible?: boolean;
-  onSaveToggle: (eventId: string) => void;
   onEventPress?: (eventId: string) => void;
   onShopAll: () => void;
-  onMore: () => void;
   onOrganizerPress?: () => void;
-}
-
-function HeartButton({
-  isSaved,
-  onPress,
-}: {
-  isSaved: boolean;
-  onPress: () => void;
-}) {
-  const scale = React.useRef(new Animated.Value(1)).current;
-
-  const handlePress = () => {
-    Animated.sequence([
-      Animated.spring(scale, {
-        toValue: 1.3,
-        useNativeDriver: true,
-        speed: 50,
-        bounciness: 12,
-      }),
-      Animated.spring(scale, {
-        toValue: 1,
-        useNativeDriver: true,
-        speed: 50,
-        bounciness: 12,
-      }),
-    ]).start();
-    onPress();
-  };
-
-  return (
-    <TouchableOpacity
-      style={styles.heartButton}
-      onPress={handlePress}
-      activeOpacity={0.7}
-    >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <Ionicons
-          name={isSaved ? "heart" : "heart-outline"}
-          size={18}
-          color="#fff"
-        />
-      </Animated.View>
-    </TouchableOpacity>
-  );
 }
 
 export const EventLineupCard = React.memo(function EventLineupCard({
   data,
   isVisible = true,
-  onSaveToggle,
   onEventPress,
   onShopAll,
-  onMore,
   onOrganizerPress,
 }: EventLineupCardProps) {
   const hasPromo = !!(data.promoBadge || data.promoDetail);
@@ -179,13 +131,6 @@ export const EventLineupCard = React.memo(function EventLineupCard({
           {data.organizerVerified && (
             <MaterialCommunityIcons name="check-decagram" size={18} color="#3897F0" />
           )}
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={onMore}
-          activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="ellipsis-horizontal" size={22} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -341,20 +286,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  priceBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  priceBadgeText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 13,
-  },
   dayBadge: {
     position: "absolute",
     top: 8,
@@ -368,35 +299,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 12,
-  },
-  ctaWrapper: {
-    position: "absolute",
-    bottom: 8,
-    left: 8,
-    right: 8,
-    alignItems: "center",
-  },
-  ctaBtn: {
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    backgroundColor: "rgba(255,255,255,0.9)",
-  },
-  ctaText: {
-    color: "#1a1a1a",
-    fontWeight: "700",
-    fontSize: 13,
-  },
-  heartButton: {
-    position: "absolute",
-    bottom: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    justifyContent: "center",
-    alignItems: "center",
   },
   shopAllRow: {
     flexDirection: "row",

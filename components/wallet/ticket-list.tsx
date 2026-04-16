@@ -24,6 +24,7 @@ import { liquidGlass, glassTint, glassText, glassBorder, glassSurfaceTint } from
 interface TicketListProps {
   rsvpEvents: WalletEventCard[];
   onViewEvent: (eventId: string) => void;
+  onWalletPress: () => void;
   onActionComplete?: () => void;
 }
 
@@ -31,6 +32,7 @@ interface TicketCardProps {
   event: WalletEventCard;
   onView: () => void;
   onActions: () => void;
+  onWalletPress: () => void;
   t: (typeof glassText)['dark'] | (typeof glassText)['light'];
   border: string;
   surfaceTint: string;
@@ -63,7 +65,7 @@ function ticketToCard(t: UserTicket): WalletEventCard {
   };
 }
 
-function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, dimmed }: TicketCardProps) {
+function TicketCard({ event, onView, onActions, onWalletPress, t, border, surfaceTint, isDark, dimmed }: TicketCardProps) {
   const hasActions = !event.ticketStatus || event.ticketStatus === 'active';
 
   return (
@@ -98,8 +100,11 @@ function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, 
           onPress={(e) => {
             e.stopPropagation();
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onWalletPress();
           }}
           activeOpacity={0.7}
+          accessibilityLabel="Open wallet card"
+          accessibilityRole="button"
         >
           <Ionicons name="wallet-outline" size={20} color="#000" />
         </TouchableOpacity>
@@ -108,7 +113,7 @@ function TicketCard({ event, onView, onActions, t, border, surfaceTint, isDark, 
   );
 }
 
-export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: TicketListProps) {
+export function TicketList({ rsvpEvents, onViewEvent, onWalletPress, onActionComplete }: TicketListProps) {
   const { colors, isDark } = useAppTheme();
   const theme = isDark ? 'dark' : 'light';
   const t = glassText[theme];
@@ -147,6 +152,7 @@ export function TicketList({ rsvpEvents, onViewEvent, onActionComplete }: Ticket
                 event={event}
                 onView={() => onViewEvent(event.id)}
                 onActions={() => setSelectedEvent(event)}
+                onWalletPress={onWalletPress}
                 t={t}
                 border={border}
                 surfaceTint={surfaceTint}

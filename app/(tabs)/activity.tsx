@@ -1,7 +1,8 @@
 // Wallet Screen - Membership card, offers, and events
-import React, { useRef, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Text, Image, ActivityIndicator, FlatList, TextInput } from 'react-native';
+import type { Href } from 'expo-router';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Text, Image, ActivityIndicator, FlatList, TextInput, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { BlurView } from 'expo-blur';
@@ -11,7 +12,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useWallet } from '@/lib/providers/wallet-provider';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { UserRole } from '@/lib/types/auth.types';
-import { useAppTheme } from '@/hooks/use-app-theme';
 import { useMembershipCard } from '@/hooks/use-membership-card';
 import { useMyVenues } from '@/hooks/use-venues-query';
 import { useVenue } from '@/hooks/use-venue-query';
@@ -40,8 +40,6 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import {
-  MembershipCard,
-  IncompleteMembershipCard,
   StatusCardMenuSheet,
   TicketList,
   OfferCarousel,
@@ -50,6 +48,16 @@ import {
 import { FeedMediaPlayer } from '@/components/feed/feed-media-player';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
+
+// Top inset beneath the fixed pill header (avatar pill + tab row)
+const HEADER_OFFSET = 140;
+// Base page background (matches styles.container.backgroundColor)
+const PAGE_BG = '#f2f2f2';
+
+// Pick the best image URL for an event (flyer takes precedence over thumbnail imageUrl)
+function getEventImageUrl(event: Pick<StatusEvent, 'flyer' | 'imageUrl'>): string {
+  return event.flyer?.url || event.imageUrl || '';
+}
 
 // ─── Mock Data ──────────────────────────────────────────────────
 const MOCK_TICKETS = [
@@ -362,7 +370,7 @@ function VenueDashboardContent({ venueId, venueName, organizationId, activeSecti
   const { data: venueData } = useVenue(venueId || undefined);
 
   const handleNav = useCallback(
-    (route: string) => router.push(route as any),
+    (route: string) => router.push(route as Href),
     [router],
   );
 
@@ -428,7 +436,12 @@ function VenueDashboardContent({ venueId, venueName, organizationId, activeSecti
 // Inline event list shown on the Overview tab
 function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?: number; insetsBottom: number }) {
   const router = useStableRouter();
-  const { data: events = [], isLoading } = useMyEvents(organizationId);
+  const { data: events = [], isLoading, refetch } = useMyEvents(organizationId);
+  const { refreshControl } = useRefreshControl({
+    onRefresh: async () => {
+      await refetch();
+    },
+  });
 
   if (isLoading) {
     return (
@@ -452,12 +465,13 @@ function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?:
       style={dashStyles.scrollView}
       contentContainerStyle={[dashStyles.overviewListContent, { paddingBottom: insetsBottom + 180 }]}
       showsVerticalScrollIndicator={false}
+      refreshControl={refreshControl}
     >
-      {events.filter((e) => e.flyer?.url || e.imageUrl).map((event) => (
+      {events.filter((e) => getEventImageUrl(e)).map((event) => (
         <OverviewEventCard
           key={event.id}
           event={event}
-          onPress={() => router.push({ pathname: '/manage-event/[id]', params: { id: event.id } } as any)}
+          onPress={() => router.push({ pathname: '/manage-event/[id]', params: { id: String(event.id) } })}
         />
       ))}
     </ScrollView>
@@ -465,16 +479,19 @@ function OverviewEventsList({ organizationId, insetsBottom }: { organizationId?:
 }
 
 function OverviewEventCard({ event, onPress }: { event: StatusEvent; onPress: () => void }) {
-  const flyerUrl = event.flyer?.url || event.imageUrl || '';
+  const flyerUrl = getEventImageUrl(event);
   const isVideo = event.flyer?.mimeType?.startsWith('video/') || false;
 
-  const dateStr = new Date(event.startDate).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-  const statusLabel =
-    event.status === EventStatus.DRAFT
+  const dateStr = useMemo(
+    () => new Date(event.startDate).toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    }),
+    [event.startDate],
+  );
+  const statusLabel = useMemo(
+    () => event.status === EventStatus.DRAFT
       ? 'Draft'
       : event.status === EventStatus.PUBLISHED
         ? 'Published'
@@ -482,10 +499,18 @@ function OverviewEventCard({ event, onPress }: { event: StatusEvent; onPress: ()
           ? 'Live'
           : event.status === EventStatus.FINISHED
             ? 'Ended'
-            : 'Cancelled';
+            : 'Cancelled',
+    [event.status],
+  );
 
   return (
-    <TouchableOpacity style={dashStyles.eventCard} onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={dashStyles.eventCard}
+      onPress={onPress}
+      activeOpacity={0.85}
+      accessibilityLabel={`Manage event ${event.name}`}
+      accessibilityRole="button"
+    >
       {/* Blurred backdrop */}
       {flyerUrl ? (
         <>
@@ -618,7 +643,7 @@ function AudienceContent({ organizationId, insetsBottom }: { organizationId?: nu
     router.push({
       pathname: '/text-blast-compose',
       params: { count: String(selectedIds.size) },
-    } as any);
+    });
   }, [selectedIds.size, router]);
 
   return (
@@ -635,6 +660,8 @@ function AudienceContent({ organizationId, insetsBottom }: { organizationId?: nu
             placeholderTextColor="rgba(0,0,0,0.35)"
             autoCapitalize="none"
             autoCorrect={false}
+            returnKeyType="search"
+            onSubmitEditing={Keyboard.dismiss}
           />
           {searchText.length > 0 && (
             <TouchableOpacity onPress={() => setSearchText('')}>
@@ -644,7 +671,10 @@ function AudienceContent({ organizationId, insetsBottom }: { organizationId?: nu
         </View>
         <TouchableOpacity
           style={[audStyles.filterButton, filterCount > 0 && audStyles.filterButtonActive]}
-          onPress={() => setFilterModalVisible(true)}
+          onPress={() => {
+            Keyboard.dismiss();
+            setFilterModalVisible(true);
+          }}
           activeOpacity={0.7}
         >
           <Ionicons name="funnel-outline" size={16} color={filterCount > 0 ? '#fff' : '#000'} />
@@ -652,7 +682,14 @@ function AudienceContent({ organizationId, insetsBottom }: { organizationId?: nu
             <Text style={[audStyles.filterButtonText, audStyles.filterButtonTextActive]} numberOfLines={1}>{filterLabel}</Text>
           ) : null}
         </TouchableOpacity>
-        <TouchableOpacity style={audStyles.selectAllPill} onPress={handleSelectAll} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={audStyles.selectAllPill}
+          onPress={() => {
+            Keyboard.dismiss();
+            handleSelectAll();
+          }}
+          activeOpacity={0.7}
+        >
           <Text style={audStyles.selectAllText}>{allSelected ? 'Deselect' : 'Select All'}</Text>
         </TouchableOpacity>
       </View>
@@ -776,7 +813,14 @@ function AudienceRow({
   const subtitle = contact.userName ? `@${contact.userName}` : contact.phoneNumber || '';
 
   return (
-    <TouchableOpacity style={audStyles.row} onPress={onToggle} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={audStyles.row}
+      onPress={onToggle}
+      activeOpacity={0.7}
+      accessibilityLabel={`${displayName}${subtitle ? `, ${subtitle}` : ''}`}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+    >
       <Image
         source={contact.avatar ? { uri: contact.avatar } : DefaultAvatarImage}
         style={audStyles.rowAvatar}
@@ -803,7 +847,7 @@ function PersonalAdminContent() {
   const insets = useSafeAreaInsets();
 
   const handleNav = useCallback(
-    (route: string) => router.push(route as any),
+    (route: string) => router.push(route as Href),
     [router],
   );
 
@@ -825,8 +869,6 @@ function PersonalAdminContent() {
 export default function WalletScreen() {
   const router = useStableRouter();
   const insets = useSafeAreaInsets();
-  const scrollRef = useRef<ScrollView>(null);
-  const { colors, isDark } = useAppTheme();
   const { user: authUser } = useAuth();
   const {
     user,
@@ -861,6 +903,37 @@ export default function WalletScreen() {
     }
   }, [membershipCard, router]);
 
+  // Profile selector handlers (stable — setState setters don't need deps)
+  const handleSelectPersonal = useCallback(() => {
+    setSelectedVenue(null);
+    setSelectedOrg(null);
+    setActiveTab('Tickets');
+    setProfileSelectorVisible(false);
+  }, []);
+
+  const handleSelectVenue = useCallback((venue: { id: number; name: string }) => {
+    setSelectedVenue(venue);
+    setSelectedOrg(null);
+    setActiveTab('Overview');
+    setProfileSelectorVisible(false);
+  }, []);
+
+  const handleSelectOrg = useCallback((org: { id: number; name: string }) => {
+    setSelectedOrg(org);
+    setSelectedVenue(null);
+    setActiveTab('Overview');
+    setProfileSelectorVisible(false);
+  }, []);
+
+  const handleCreateOrg = useCallback(() => {
+    setProfileSelectorVisible(false);
+    router.push('/create-organization');
+  }, [router]);
+
+  const handleCloseProfileSelector = useCallback(() => {
+    setProfileSelectorVisible(false);
+  }, []);
+
   // RSVP-only events (no ticketId) that haven't ended yet — passed to TicketList separately
   const rsvpEvents = useMemo(() => {
     const now = Date.now();
@@ -879,9 +952,7 @@ export default function WalletScreen() {
     onRefresh: refreshWallet,
   });
 
-  if (isLoading || !user) {
-    return <WalletSkeleton />;
-  }
+  const showSkeleton = isLoading || !user;
 
   return (
     <View style={styles.container}>
@@ -893,7 +964,12 @@ export default function WalletScreen() {
         contentContainerStyle={[styles.headerScrollContent, { paddingTop: insets.top + 16 }]}
         style={styles.headerScrollFixed}
       >
-        <Pressable style={styles.headerPill} onPress={() => setProfileSelectorVisible(true)}>
+        <Pressable
+          style={styles.headerPill}
+          onPress={() => setProfileSelectorVisible(true)}
+          accessibilityLabel="Switch profile"
+          accessibilityRole="button"
+        >
           <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
           <ExpoImage
             source={
@@ -922,6 +998,9 @@ export default function WalletScreen() {
               key={label}
               style={styles.tabPill}
               onPress={() => setActiveTab(label)}
+              accessibilityLabel={`${label} tab`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
             >
               {isLiquidGlassSupported ? (
                 <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
@@ -943,21 +1022,29 @@ export default function WalletScreen() {
 
       {/* Top fade — dims content as it scrolls behind the pill row */}
       <LinearGradient
-        colors={['#f2f2f2', 'rgba(242,242,242,0)']}
+        colors={[PAGE_BG, 'rgba(242,242,242,0)']}
         style={styles.topFade}
         pointerEvents="none"
       />
 
-      {(selectedVenue || selectedOrg) ? (
+      {showSkeleton ? (
+        <WalletSkeleton topOffset={HEADER_OFFSET} />
+      ) : (selectedVenue || selectedOrg) ? (
         <VenueDashboardContent venueId={selectedVenue?.id ?? 0} venueName={selectedVenue?.name} organizationId={selectedOrg?.id} activeSection={activeTab} />
       ) : activeTab === 'Admin' ? (
         <PersonalAdminContent />
       ) : (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 120, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingTop: 120, paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        >
           {activeTab === 'Tickets' ? (
             <TicketList
               rsvpEvents={MOCK_TICKETS}
               onViewEvent={(eventId) => router.push({ pathname: '/event/[id]', params: { id: eventId } })}
+              onWalletPress={() => setCardMenuVisible(true)}
             />
           ) : activeTab === 'Tables' ? (
             <View style={{ padding: 16, gap: 12 }}>
@@ -970,8 +1057,22 @@ export default function WalletScreen() {
                   </View>
                   <View style={styles.tableCardRight}>
                     <Text style={styles.tableSeats}>{table.seatCount} seats</Text>
-                    <View style={[styles.tableStatusBadge, { backgroundColor: table.status === 'confirmed' ? '#22c55e' : '#f59e0b' }]}>
-                      <Text style={styles.tableStatusText}>{table.status === 'confirmed' ? 'Confirmed' : 'Pending'}</Text>
+                    <View
+                      style={[
+                        styles.tableStatusBadge,
+                        table.status === 'confirmed'
+                          ? { backgroundColor: '#1a1a1a' }
+                          : { backgroundColor: 'rgba(0,0,0,0.08)' },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.tableStatusText,
+                          { color: table.status === 'confirmed' ? '#fff' : '#1a1a1a' },
+                        ]}
+                      >
+                        {table.status === 'confirmed' ? 'Confirmed' : 'Pending'}
+                      </Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -1000,29 +1101,23 @@ export default function WalletScreen() {
           organizations={(authUser?.organizations ?? []).map((o) => ({ id: o.id, name: o.name, logo: o.logo }))}
           selectedVenueId={selectedVenue?.id ?? null}
           selectedOrgId={selectedOrg?.id ?? null}
-          onClose={() => setProfileSelectorVisible(false)}
-          onSelectPersonal={() => {
-            setSelectedVenue(null);
-            setSelectedOrg(null);
-            setActiveTab('Tickets');
-            setProfileSelectorVisible(false);
-          }}
-          onSelectVenue={(venue) => {
-            setSelectedVenue(venue);
-            setSelectedOrg(null);
-            setActiveTab('Overview');
-            setProfileSelectorVisible(false);
-          }}
-          onSelectOrg={(org) => {
-            setSelectedOrg(org);
-            setSelectedVenue(null);
-            setActiveTab('Overview');
-            setProfileSelectorVisible(false);
-          }}
-          onCreateOrg={() => {
-            setProfileSelectorVisible(false);
-            router.push('/create-organization');
-          }}
+          onClose={handleCloseProfileSelector}
+          onSelectPersonal={handleSelectPersonal}
+          onSelectVenue={handleSelectVenue}
+          onSelectOrg={handleSelectOrg}
+          onCreateOrg={handleCreateOrg}
+        />
+      )}
+
+      {user && (
+        <StatusCardMenuSheet
+          visible={cardMenuVisible}
+          onClose={() => setCardMenuVisible(false)}
+          onExpandQR={handleExpandQR}
+          user={user}
+          pdf417Payload={membershipCard?.pdf417Payload}
+          cardNumber={membershipCard?.cardNumber ?? undefined}
+          isLoadingCard={isLoadingCard}
         />
       )}
     </View>
@@ -1032,7 +1127,7 @@ export default function WalletScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: PAGE_BG,
   },
   scrollView: {
     flex: 1,
@@ -1150,7 +1245,6 @@ const styles = StyleSheet.create({
   tableStatusText: {
     fontSize: 12,
     fontFamily: 'Lato_700Bold',
-    color: '#fff',
   },
 });
 
@@ -1276,7 +1370,7 @@ const dashStyles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingTop: 140,
+    paddingTop: HEADER_OFFSET,
   },
   createEventFab: {
     position: 'absolute',
@@ -1308,7 +1402,7 @@ const dashStyles = StyleSheet.create({
   },
   overviewListContent: {
     padding: 16,
-    paddingTop: 140,
+    paddingTop: HEADER_OFFSET,
     gap: 14,
   },
   eventCard: {
@@ -1437,7 +1531,7 @@ const audStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 16,
-    paddingTop: 140,
+    paddingTop: HEADER_OFFSET,
     paddingBottom: 8,
   },
   searchBar: {
@@ -1494,7 +1588,7 @@ const audStyles = StyleSheet.create({
   // Filter modal
   filterModal: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: PAGE_BG,
     paddingTop: 16,
   },
   filterModalHeader: {
@@ -1725,7 +1819,7 @@ const audStyles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(0,0,0,0.08)',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: PAGE_BG,
   },
   composeInputWrapper: {
     flex: 1,

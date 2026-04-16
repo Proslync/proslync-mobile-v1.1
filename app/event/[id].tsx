@@ -100,6 +100,13 @@ export default function EventPage() {
   const numericEventId = eventId ? parseInt(eventId, 10) : undefined;
   const { data: eventData, isLoading: isFetchingEvent } = useEvent(numericEventId);
 
+  // Keep local RSVP state in sync with server data (URL param only seeds the initial value)
+  React.useEffect(() => {
+    if (eventData?.isUserRegistered !== undefined) {
+      setIsRsvpd(eventData.isUserRegistered);
+    }
+  }, [eventData?.isUserRegistered]);
+
   const eventTitle = eventData?.name || params.title || 'Event';
   const eventDate = params.date || eventData?.startDate;
   const venueName = params.venueName || eventData?.venue?.name;
@@ -211,9 +218,9 @@ export default function EventPage() {
   }, [eventData]);
 
   const displayAddress =
+    eventData?.location ||
     eventData?.locationDetails?.formattedAddress ||
     eventData?.venue?.address ||
-    eventData?.location ||
     null;
 
   // Extend event with detail fields (dressCode/doorTime not yet on backend)
@@ -271,6 +278,8 @@ export default function EventPage() {
         const response = await eventsApi.cancelRegistration(numId);
         if (response.success) {
           setIsRsvpd(false);
+          queryClient.invalidateQueries({ queryKey: ['event', numericEventId] });
+          queryClient.invalidateQueries({ queryKey: ['userEvents'] });
           showSuccess(response.message || 'RSVP cancelled');
         } else {
           showError(response.message || 'Could not cancel RSVP');
@@ -279,6 +288,8 @@ export default function EventPage() {
         const response = await eventsApi.registerForEvent(numId);
         if (response.success) {
           setIsRsvpd(true);
+          queryClient.invalidateQueries({ queryKey: ['event', numericEventId] });
+          queryClient.invalidateQueries({ queryKey: ['userEvents'] });
           showSuccess(response.message || "You have successfully RSVP'd to this event!");
         } else {
           showError(response.message || 'Could not complete RSVP');
@@ -934,6 +945,6 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   rsvpButtonTextDone: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(0,0,0,0.55)',
   },
 });

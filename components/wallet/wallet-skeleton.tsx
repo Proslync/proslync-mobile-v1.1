@@ -51,12 +51,12 @@ function ShimmerBlock({ width, height, borderRadius, style, isDark }: ShimmerBlo
   );
 }
 
-export function WalletSkeleton() {
+export function WalletSkeleton({ topOffset }: { topOffset?: number } = {}) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: topOffset ?? insets.top }]}>
       {/* Card Skeleton */}
       <ShimmerBlock
         width={SCREEN_WIDTH - 32}

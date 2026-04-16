@@ -1,6 +1,4 @@
-import { useAppTheme } from "@/hooks/use-app-theme";
 import { useStableRouter } from "@/hooks/use-stable-router";
-import { useDashboard } from "@/hooks/use-dashboard";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { useWallet } from "@/lib/providers/wallet-provider";
 import { UserRole } from "@/lib/types/auth.types";
@@ -16,7 +14,6 @@ import {
 import * as React from "react";
 import {
   ActivityIndicator,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -39,25 +36,18 @@ function MenuItem({
   isLast,
   t,
   border,
-  isDark,
   onPress,
 }: {
   item: MenuItemData;
   isLast: boolean;
-  t: (typeof glassText)["dark"];
+  t: (typeof glassText)[keyof typeof glassText];
   border: string;
-  isDark: boolean;
   onPress: () => void;
 }) {
   return (
     <>
       <TouchableOpacity style={styles.menuItem} onPress={onPress} activeOpacity={0.7}>
-        <View
-          style={[
-            styles.menuItemIcon,
-            { backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)" },
-          ]}
-        >
+        <View style={[styles.menuItemIcon, { backgroundColor: "rgba(0,0,0,0.05)" }]}>
           <Ionicons name={item.icon} size={18} color={t.primary} />
         </View>
         <View style={styles.menuItemContent}>
@@ -77,17 +67,13 @@ function MenuGroup({
   delay,
   t,
   border,
-  surfaceTint,
-  isDark,
   onItemPress,
 }: {
   title: string;
   items: MenuItemData[];
   delay: number;
-  t: (typeof glassText)["dark"];
+  t: (typeof glassText)[keyof typeof glassText];
   border: string;
-  surfaceTint: string;
-  isDark: boolean;
   onItemPress: (route: string) => void;
 }) {
   return (
@@ -104,7 +90,6 @@ function MenuGroup({
             isLast={index === items.length - 1}
             t={t}
             border={border}
-            isDark={isDark}
             onPress={() => onItemPress(item.route)}
           />
         ))}
@@ -116,24 +101,13 @@ function MenuGroup({
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { user, isLoading: authLoading } = useAuth();
-  const { stats, isLoading: statsLoading, error, refetch } = useDashboard();
-  const { isDark } = useAppTheme();
+  const { user, isLoading } = useAuth();
   const { user: walletUser } = useWallet();
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
-  const [refreshing, setRefreshing] = React.useState(false);
 
   const t = glassText["light"];
   const border = glassBorder["light"];
   const surfaceTint = glassSurfaceTint["light"];
-
-  const onRefresh = React.useCallback(async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  }, [refetch]);
-
-  const isLoading = authLoading || statsLoading;
 
   const handleNav = React.useCallback(
     (route: string) => router.push(route as any),
@@ -162,7 +136,7 @@ export default function DashboardScreen() {
     ? [{ title: "Admin Panel", subtitle: "Manage users, events, and posts", icon: "shield-checkmark-outline", route: "/admin" }]
     : [];
 
-  if (isLoading && !refreshing) {
+  if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: "#f2f2f2" }]}>
         <View style={styles.loadingContainer}>
@@ -183,7 +157,10 @@ export default function DashboardScreen() {
       >
         <TouchableOpacity
           style={[styles.backButton, { borderColor: border }]}
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/');
+          }}
           activeOpacity={0.7}
         >
           <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
@@ -197,13 +174,6 @@ export default function DashboardScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={t.primary}
-          />
-        }
       >
         {/* Status Card */}
         {walletUser && (
@@ -212,23 +182,12 @@ export default function DashboardScreen() {
           </Animated.View>
         )}
 
-        {/* Error Banner */}
-        {error && (
-          <Animated.View entering={FadeInDown.duration(300)} style={styles.errorBanner}>
-            <Ionicons name="warning-outline" size={20} color="#f87171" />
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity onPress={refetch} activeOpacity={0.7}>
-              <Text style={[styles.retryText, { color: t.secondary }]}>Retry</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-
         {/* Menu Groups */}
-        <MenuGroup title="MANAGE" items={manageItems} delay={100} t={t} border={border} surfaceTint={surfaceTint} isDark={isDark} onItemPress={handleNav} />
-        <MenuGroup title="INSIGHTS" items={insightsItems} delay={200} t={t} border={border} surfaceTint={surfaceTint} isDark={isDark} onItemPress={handleNav} />
-        <MenuGroup title="TOOLS" items={toolsItems} delay={300} t={t} border={border} surfaceTint={surfaceTint} isDark={isDark} onItemPress={handleNav} />
+        <MenuGroup title="MANAGE" items={manageItems} delay={100} t={t} border={border} onItemPress={handleNav} />
+        <MenuGroup title="INSIGHTS" items={insightsItems} delay={200} t={t} border={border} onItemPress={handleNav} />
+        <MenuGroup title="TOOLS" items={toolsItems} delay={300} t={t} border={border} onItemPress={handleNav} />
         {adminItems.length > 0 && (
-          <MenuGroup title="ADMIN" items={adminItems} delay={400} t={t} border={border} surfaceTint={surfaceTint} isDark={isDark} onItemPress={handleNav} />
+          <MenuGroup title="ADMIN" items={adminItems} delay={400} t={t} border={border} onItemPress={handleNav} />
         )}
 
         <View style={{ height: insets.bottom + 40 }} />
@@ -258,25 +217,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     fontFamily: "Lato_400Regular",
-  },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(248, 113, 113, 0.1)",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    gap: 8,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: "Lato_400Regular",
-    color: "#ef4444",
-  },
-  retryText: {
-    fontSize: 13,
-    fontFamily: "Lato_700Bold",
   },
   header: {
     flexDirection: "row",
