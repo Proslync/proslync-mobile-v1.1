@@ -643,17 +643,14 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     lineHeight: 20,
   },
   eventDate: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   eventVenue: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   divider: {
@@ -681,11 +678,9 @@ const styles = StyleSheet.create({
   },
   optionTitle: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   optionDesc: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   formContainer: {
@@ -699,16 +694,13 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
   },
   formTitle: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     marginBottom: 6,
   },
   formDesc: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -724,7 +716,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 18,
-    fontFamily: "Lato_400Regular",
   },
   actionBtn: {
     height: 50,
@@ -735,7 +726,6 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   successContainer: {
     alignItems: "center",
@@ -753,12 +743,10 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     fontSize: 22,
-    fontFamily: "Lato_700Bold",
     marginBottom: 4,
   },
   successSub: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
     marginBottom: 24,
   },
@@ -793,11 +781,9 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   userHandle: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   emptyState: {
@@ -807,7 +793,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   // Confirm screen
   confirmUserCard: {
@@ -825,11 +810,9 @@ const styles = StyleSheet.create({
   },
   confirmName: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
   },
   confirmHandle: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   confirmEventRow: {
@@ -849,11 +832,9 @@ const styles = StyleSheet.create({
   },
   confirmEventTitle: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
   },
   confirmEventDate: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   warningRow: {
@@ -865,7 +846,6 @@ const styles = StyleSheet.create({
   warningText: {
     flex: 1,
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(255,180,0,0.8)",
     lineHeight: 18,
   },
@@ -875,6 +855,5 @@ const styles = StyleSheet.create({
   },
   cancelTextBtnLabel: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
   },
 });

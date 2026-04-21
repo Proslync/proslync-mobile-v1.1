@@ -32,6 +32,7 @@ export function ChannelsSocketProvider({ children }: { children: React.ReactNode
     let cancelled = false;
 
     const initSocket = async () => {
+      if (!config.websocket.enabled) return;
       const token = await apiClient.getAccessToken();
       if (!token || cancelled) return;
 

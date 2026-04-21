@@ -49,13 +49,16 @@ function NativeActionSheet({
       detents={[{ fraction: 0.09 + options.length * 0.06 + (title ? 0.04 : 0) }]}
       rnContent
       dragIndicator="visible"
+      colorScheme="dark"
     >
       <View style={styles.container}>
         <GlassContainer spacing={8} style={styles.glassContainer}>
           {/* Title area */}
           {title && (
             <GlassView
-              {...liquidGlass.fillFaint}
+              glassEffectStyle="regular"
+              colorScheme="dark"
+              tintColor="rgba(255,255,255,0.06)"
               borderRadius={24}
               style={styles.titleGlass}
             >
@@ -65,7 +68,9 @@ function NativeActionSheet({
 
           {/* Options group */}
           <GlassView
-            {...liquidGlass.surface}
+            glassEffectStyle="regular"
+            colorScheme="dark"
+            tintColor="rgba(255,255,255,0.06)"
             borderRadius={24}
             style={styles.optionsGlass}
           >
@@ -80,14 +85,16 @@ function NativeActionSheet({
                   {option.icon && (
                     <View style={styles.iconCircle}>
                       <GlassView
-                        {...liquidGlass.fillMedium}
+                        glassEffectStyle="regular"
+                        colorScheme="dark"
+                        tintColor="rgba(255,255,255,0.10)"
                         borderRadius={16}
                         style={StyleSheet.absoluteFill}
                       />
                       <Ionicons
                         name={option.icon}
                         size={18}
-                        color={option.destructive ? "#FF3B30" : "#000"}
+                        color={option.destructive ? "#FF3B30" : "#FFF"}
                       />
                     </View>
                   )}
@@ -125,8 +132,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
-    color: "rgba(0,0,0,0.45)",
+    color: "rgba(255,255,255,0.55)",
     textAlign: "center",
   },
   optionsGlass: {
@@ -135,7 +141,7 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "rgba(0,0,0,0.06)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     marginHorizontal: 16,
   },
   optionRow: {
@@ -155,8 +161,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
-    color: "#1A1A1A",
+    color: "#FFF",
   },
   optionDestructive: {
     color: "#FF3B30",

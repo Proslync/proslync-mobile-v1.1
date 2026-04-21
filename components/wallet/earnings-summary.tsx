@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 16,
@@ -96,12 +95,10 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 6,
   },
   balanceAmount: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     color: '#34c759',
   },
   pendingAmount: {
@@ -120,7 +117,6 @@ const styles = StyleSheet.create({
   withdrawButtonDisabled: {},
   withdrawButtonText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   helperTexts: {
@@ -129,12 +125,10 @@ const styles = StyleSheet.create({
   },
   minCashoutText: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   helperText: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
 });

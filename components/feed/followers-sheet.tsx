@@ -397,7 +397,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   closeBtn: {
@@ -445,7 +444,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     color: "#1A1A1A",
     paddingVertical: 0,
   },
@@ -459,7 +457,6 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "#1a1a1a",
   },
 
@@ -490,12 +487,10 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   userFullName: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.5)",
     marginTop: 2,
   },
@@ -513,7 +508,6 @@ const styles = StyleSheet.create({
   },
   followBtnText: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
   },
   followBtnTextFollowing: {
@@ -533,7 +527,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.45)",
   },
 });

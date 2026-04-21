@@ -465,7 +465,6 @@ export function PurchaseTicketSheet({
               height: "100%",
               paddingHorizontal: 14,
               fontSize: 14,
-              fontFamily: "Lato_400Regular",
               color: colors.text,
             }}
             editable={!appliedPromoCode}
@@ -888,12 +887,10 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
     lineHeight: 22,
   },
   eventDate: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   divider: {
@@ -910,7 +907,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   emptyContainer: {
     alignItems: "center",
@@ -920,7 +916,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
   },
   // Section
@@ -929,7 +924,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     marginBottom: 10,
   },
   // Tier Selection
@@ -949,20 +943,16 @@ const styles = StyleSheet.create({
   },
   tierName: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   tierDescription: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     marginBottom: 6,
   },
   tierPrice: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   soldOutText: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     marginTop: 4,
   },
   // Pricing Options
@@ -986,11 +976,9 @@ const styles = StyleSheet.create({
   },
   pricingName: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
   },
   pricingPrice: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   // Promo Code
   promoRow: {
@@ -1004,7 +992,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 14,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   promoButton: {
     height: 44,
@@ -1016,7 +1003,6 @@ const styles = StyleSheet.create({
   },
   promoButtonText: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
   },
   promoApplied: {
     flexDirection: "row",
@@ -1026,7 +1012,6 @@ const styles = StyleSheet.create({
   },
   promoAppliedText: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     color: "#22c55e",
   },
   // Quantity
@@ -1050,11 +1035,9 @@ const styles = StyleSheet.create({
   },
   quantityText: {
     fontSize: 22,
-    fontFamily: "Lato_700Bold",
   },
   availableText: {
     fontSize: 11,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   // Summary
@@ -1072,11 +1055,9 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   summaryValue: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
   },
   totalRow: {
     flexDirection: "row",
@@ -1088,11 +1069,9 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   totalValue: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
   },
   // Error
   errorContainer: {
@@ -1104,7 +1083,6 @@ const styles = StyleSheet.create({
   errorText: {
     color: "#ef4444",
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
   },
   // Buy Button
@@ -1119,7 +1097,6 @@ const styles = StyleSheet.create({
   },
   buyButtonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     letterSpacing: 0.3,
   },
   // Status States
@@ -1138,19 +1115,16 @@ const styles = StyleSheet.create({
   },
   statusTitle: {
     fontSize: 22,
-    fontFamily: "Lato_700Bold",
     marginBottom: 8,
     textAlign: "center",
   },
   statusSubtitle: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
     lineHeight: 22,
   },
   statusHint: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 12,
     marginBottom: 24,
   },
@@ -1164,7 +1138,6 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   retryButton: {
     width: "100%",
@@ -1177,6 +1150,5 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
 });

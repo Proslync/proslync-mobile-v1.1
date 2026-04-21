@@ -392,7 +392,6 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     letterSpacing: 0.5,
   },
 });

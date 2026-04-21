@@ -314,12 +314,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 4,
   },
   sectionDescription: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 20,
   },
   tierCard: {
@@ -336,12 +334,10 @@ const styles = StyleSheet.create({
   },
   tierName: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   tierDescription: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   tierActions: {
     flexDirection: 'row',
@@ -369,11 +365,9 @@ const styles = StyleSheet.create({
   },
   pricingName: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   pricingDetail: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   pricingActions: {
@@ -399,7 +393,6 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: '#f59e0b',
   },
   addPricingButton: {
@@ -414,7 +407,6 @@ const styles = StyleSheet.create({
   },
   addPricingText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   addTierButton: {
     marginTop: 4,
@@ -428,6 +420,5 @@ const styles = StyleSheet.create({
   },
   addTierText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
 });

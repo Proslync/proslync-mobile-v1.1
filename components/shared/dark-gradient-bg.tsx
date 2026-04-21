@@ -27,7 +27,7 @@ export function DarkGradientBg() {
 const styles = StyleSheet.create({
   bg: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   topGradient: {
     position: 'absolute',

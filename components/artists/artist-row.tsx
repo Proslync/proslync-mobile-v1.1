@@ -158,14 +158,12 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   info: {
     flex: 1,
   },
   name: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   timeRow: {
@@ -176,11 +174,9 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   description: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 18,
     marginTop: 2,
   },
@@ -196,7 +192,6 @@ const styles = StyleSheet.create({
   },
   playlistText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
   },
   menuButton: {
     width: 28,

@@ -163,7 +163,7 @@ export default function CreateChannelScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
@@ -183,7 +183,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
     textAlign: 'center',
   },
@@ -201,7 +200,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -222,7 +220,6 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
   },
   inputMultiline: {
@@ -247,7 +244,6 @@ const styles = StyleSheet.create({
   },
   visibilityTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.5)',
   },
   visibilityTitleActive: {
@@ -255,7 +251,6 @@ const styles = StyleSheet.create({
   },
   visibilityDescription: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
   },
   submitButton: {
@@ -271,7 +266,6 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
 });

@@ -992,7 +992,6 @@ export function WithdrawalSheet({
 const styles = StyleSheet.create({
   title: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     textAlign: "center",
     marginBottom: 20,
   },
@@ -1002,11 +1001,9 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   balanceAmount: {
     fontSize: 32,
-    fontFamily: "Lato_700Bold",
     color: "#34c759",
     marginTop: 4,
   },
@@ -1015,7 +1012,6 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     textTransform: "uppercase",
     marginBottom: 8,
   },
@@ -1027,13 +1023,11 @@ const styles = StyleSheet.create({
   },
   currencySymbol: {
     fontSize: 24,
-    fontFamily: "Lato_400Regular",
     marginRight: 4,
   },
   amountInput: {
     flex: 1,
     fontSize: 24,
-    fontFamily: "Lato_700Bold",
     paddingVertical: 16,
   },
   quickAmounts: {
@@ -1051,7 +1045,6 @@ const styles = StyleSheet.create({
   },
   quickAmountText: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   methodSection: {
@@ -1075,15 +1068,12 @@ const styles = StyleSheet.create({
   },
   selectedMethodLabel: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
   },
   selectedMethodLast4: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
   },
   addMethodText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   arrivalSection: {
     flexDirection: "row",
@@ -1094,7 +1084,6 @@ const styles = StyleSheet.create({
   },
   arrivalText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   withdrawButton: {
     paddingVertical: 16,
@@ -1106,7 +1095,6 @@ const styles = StyleSheet.create({
   },
   withdrawButtonText: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   // View header
@@ -1118,7 +1106,6 @@ const styles = StyleSheet.create({
   },
   viewTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   backButton: {
     width: 44,
@@ -1157,7 +1144,6 @@ const styles = StyleSheet.create({
   },
   methodOptionLabel: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   defaultBadge: {
     backgroundColor: "rgba(255, 255, 255, 0.1)",
@@ -1167,12 +1153,10 @@ const styles = StyleSheet.create({
   },
   defaultBadgeText: {
     fontSize: 11,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   methodOptionLast4: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
   },
   methodActions: {
     flexDirection: "row",
@@ -1185,7 +1169,6 @@ const styles = StyleSheet.create({
   },
   methodActionText: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   addMethodOption: {
@@ -1200,7 +1183,6 @@ const styles = StyleSheet.create({
   },
   addMethodOptionText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   // Method choices
@@ -1226,11 +1208,9 @@ const styles = StyleSheet.create({
   },
   choiceTitle: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   choiceSubtitle: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   // Forms
@@ -1242,12 +1222,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
   },
   errorText: {
     color: "#ef4444",
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     marginTop: 4,
   },
   submitButton: {
@@ -1260,7 +1238,6 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   cardField: {
     height: 50,
@@ -1268,7 +1245,6 @@ const styles = StyleSheet.create({
   },
   cardNote: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     lineHeight: 18,
     marginTop: 8,
   },
@@ -1283,11 +1259,9 @@ const styles = StyleSheet.create({
   },
   confirmTitle: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
   },
   confirmAmount: {
     fontSize: 36,
-    fontFamily: "Lato_700Bold",
     color: "#22c55e",
     marginVertical: 4,
   },
@@ -1299,11 +1273,9 @@ const styles = StyleSheet.create({
   },
   confirmDestText: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
   },
   confirmArrival: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 4,
   },
   confirmButtons: {
@@ -1321,7 +1293,6 @@ const styles = StyleSheet.create({
   },
   confirmCancelText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   confirmWithdrawButton: {
     flex: 1,
@@ -1333,7 +1304,6 @@ const styles = StyleSheet.create({
   },
   confirmWithdrawText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
 });

@@ -29,7 +29,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     textTransform: 'uppercase',
   },

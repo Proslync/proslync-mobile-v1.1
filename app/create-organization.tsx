@@ -142,7 +142,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   headerSpacer: {
     width: 36,
@@ -156,7 +155,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   inputWrapper: {
     height: 48,
@@ -169,7 +167,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
   },
   submitButton: {
     height: 50,
@@ -184,6 +181,5 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
 });

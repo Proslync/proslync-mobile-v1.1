@@ -108,11 +108,9 @@ const styles = StyleSheet.create({
   },
   venueName: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
   },
   venueAddress: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 20,
   },
   noMap: {
@@ -125,7 +123,6 @@ const styles = StyleSheet.create({
   },
   noMapText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   actions: {
     flexDirection: 'row',
@@ -141,7 +138,6 @@ const styles = StyleSheet.create({
   },
   transportTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   transportRow: {
     flexDirection: 'row',
@@ -151,7 +147,6 @@ const styles = StyleSheet.create({
   transportText: {
     flex: 1,
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 18,
   },
 });

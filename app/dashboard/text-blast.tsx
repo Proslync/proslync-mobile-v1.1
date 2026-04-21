@@ -247,8 +247,8 @@ const styles = StyleSheet.create({
   },
   headerButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
   headerCenter: { alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontFamily: 'Lato_700Bold' },
-  headerSubtitle: { fontSize: 12, fontFamily: 'Lato_400Regular', marginTop: 1 },
+  headerTitle: { fontSize: 17, },
+  headerSubtitle: { fontSize: 12, marginTop: 1 },
   content: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
@@ -256,8 +256,8 @@ const styles = StyleSheet.create({
   messagesList: { padding: 16, paddingBottom: 8 },
   emptyList: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptySection: { alignItems: 'center', gap: 8 },
-  emptyText: { fontSize: 15, fontFamily: 'Lato_700Bold' },
-  emptySubtext: { fontSize: 13, fontFamily: 'Lato_400Regular' },
+  emptyText: { fontSize: 15, },
+  emptySubtext: { fontSize: 13, },
 
   // Message bubble
   bubbleRow: {
@@ -278,7 +278,6 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#fff',
     lineHeight: 21,
   },
@@ -298,16 +297,13 @@ const styles = StyleSheet.create({
   },
   audienceBadgeText: {
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(255,255,255,0.5)',
   },
   timeText: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
   },
   statText: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
   },
 
   // Composer
@@ -330,7 +326,6 @@ const styles = StyleSheet.create({
   },
   audiencePillText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.6)',
   },
   variableChipsRow: {
@@ -348,7 +343,6 @@ const styles = StyleSheet.create({
   },
   variableChipText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.7)',
   },
   inputRow: {
@@ -368,14 +362,12 @@ const styles = StyleSheet.create({
   },
   textInput: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     maxHeight: 80,
     paddingTop: 0,
     paddingBottom: 0,
   },
   charCount: {
     fontSize: 10,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'right',
     marginTop: 2,
   },

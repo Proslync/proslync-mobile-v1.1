@@ -147,11 +147,9 @@ const styles = StyleSheet.create({
   },
   destLabel: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
   },
   rowDate: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   rowRight: {
@@ -160,7 +158,6 @@ const styles = StyleSheet.create({
   },
   payoutAmount: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   badge: {
     paddingHorizontal: 8,
@@ -169,7 +166,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -178,11 +174,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   emptyHint: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
 });

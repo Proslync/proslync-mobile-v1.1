@@ -110,14 +110,12 @@ const styles = StyleSheet.create({
   },
   callerName: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     marginBottom: 8,
     textAlign: 'center',
   },
   callType: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.6)',
   },
   controls: {

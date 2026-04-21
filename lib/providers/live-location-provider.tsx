@@ -331,7 +331,7 @@ export function LiveLocationProvider({ children }: LiveLocationProviderProps) {
         foregroundService: Platform.OS === 'android' ? {
           notificationTitle: 'Status',
           notificationBody: 'Sharing your location',
-          notificationColor: '#3897F0',
+          notificationColor: '#FF6F3C',
         } : undefined,
         pausesUpdatesAutomatically: false,
         activityType: Location.ActivityType.Other,

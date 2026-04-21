@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.06)',
   },
-  title: { fontSize: 18, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
+  title: { fontSize: 18, color: '#1A1A1A' },
   closeButton: {
     width: 32,
     height: 32,
@@ -255,7 +255,6 @@ const styles = StyleSheet.create({
   form: { padding: 20 },
   label: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.6)',
     marginTop: 12,
     marginBottom: 6,
@@ -270,11 +269,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#1A1A1A',
   },
   codeInput: {
-    fontFamily: 'Lato_700Bold',
     letterSpacing: 1,
   },
   typeToggle: {
@@ -295,12 +292,10 @@ const styles = StyleSheet.create({
   },
   typeText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
   },
   typeTextActive: {
     color: '#1A1A1A',
-    fontFamily: 'Lato_700Bold',
   },
   switchRow: {
     flexDirection: 'row',
@@ -310,12 +305,10 @@ const styles = StyleSheet.create({
   },
   switchLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.6)',
   },
   switchHint: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.35)',
     marginTop: 2,
   },
@@ -329,5 +322,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitDisabled: { opacity: 0.4 },
-  submitText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
+  submitText: { fontSize: 16, color: '#1A1A1A' },
 });

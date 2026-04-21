@@ -55,21 +55,21 @@ export function FeedNavBar({
             <View style={styles.glassLayer} pointerEvents="none">
               <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
             </View>
-            <Ionicons name="search" size={18} color="rgba(0,0,0,0.4)" />
+            <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
             <TextInput
               ref={inputRef}
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={onSearchChange}
               placeholder="Search events, venues..."
-              placeholderTextColor="rgba(0,0,0,0.35)"
+              placeholderTextColor="rgba(255,255,255,0.45)"
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="search"
             />
             {searchQuery.length > 0 && (
               <Pressable onPress={() => onSearchChange?.("")}>
-                <Ionicons name="close-circle" size={18} color="rgba(0,0,0,0.3)" />
+                <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
               </Pressable>
             )}
           </View>
@@ -77,7 +77,7 @@ export function FeedNavBar({
             <View style={styles.glassLayer} pointerEvents="none">
               <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
             </View>
-            <Ionicons name="close" size={18} color="rgba(0,0,0,0.7)" />
+            <Ionicons name="close" size={18} color="#FFF" />
           </Pressable>
         </Animated.View>
       ) : (
@@ -92,7 +92,7 @@ export function FeedNavBar({
             <View style={styles.glassLayer} pointerEvents="none">
               <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={20} style={StyleSheet.absoluteFill} />
             </View>
-            <Ionicons name="search-outline" size={18} color="#000" />
+            <Ionicons name="search-outline" size={18} color="#FFF" />
           </Pressable>
 
           {/* Filter pills */}
@@ -110,7 +110,7 @@ export function FeedNavBar({
                 <View style={styles.glassLayer} pointerEvents="none">
                   <GlassView
                     {...liquidGlass.surface}
-                    tintColor={isActive ? "rgba(0,0,0,0.12)" : "transparent"}
+                    tintColor={isActive ? "rgba(255,255,255,0.18)" : "transparent"}
                     borderRadius={20}
                     style={StyleSheet.absoluteFill}
                   />
@@ -160,13 +160,13 @@ const styles = StyleSheet.create({
   },
   filterPillActive: {},
   filterText: {
-    color: "rgba(0,0,0,0.5)",
+    color: "rgba(255,255,255,0.6)",
     fontSize: 14,
     fontWeight: "500",
   },
   filterTextActive: {
-    color: "rgba(0,0,0,0.8)",
-    fontWeight: "500",
+    color: "#FFF",
+    fontWeight: "700",
   },
   // Search mode
   searchRow: {
@@ -187,8 +187,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
-    color: "#1A1A1A",
+    color: "#FFF",
     paddingVertical: 0,
   },
 });

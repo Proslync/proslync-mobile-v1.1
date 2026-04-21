@@ -671,7 +671,7 @@ export default function CreateEventScreen() {
 
   return (
     <FormProvider {...form}>
-      <View style={[s.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[s.container, { backgroundColor: '#000000' }]}>
         {/* Fixed pill tab row */}
         <View style={[s.pillRowContainer, { top: insets.top + 16 }]}>
           <View style={s.pillRowContent}>
@@ -730,7 +730,7 @@ export default function CreateEventScreen() {
             {createEvent.isPending ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'Lato_700Bold' }}>Create Event</Text>
+              <Text style={{ color: '#fff', fontSize: 16, }}>Create Event</Text>
             )}
           </Pressable>
         </View>
@@ -764,21 +764,21 @@ const s = StyleSheet.create({
   glassCard: { borderRadius: 16, marginBottom: 10, overflow: 'hidden' },
   organizerInner: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   organizerAvatar: { width: 36, height: 36, borderRadius: 18 },
-  organizerName: { fontSize: 15, fontFamily: 'Lato_700Bold' },
-  organizerRole: { fontSize: 12, fontFamily: 'Lato_400Regular', marginTop: 1 },
+  organizerName: { fontSize: 15, },
+  organizerRole: { fontSize: 12, marginTop: 1 },
 
   // Flyer
   flyerCard: { borderRadius: 16, marginBottom: 10, overflow: 'hidden' },
   flyerTouch: { width: '100%' },
   flyerImage: { width: '100%', aspectRatio: 4 / 3 },
   flyerPlaceholder: { width: '100%', aspectRatio: 4 / 3, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.03)' },
-  flyerPlaceholderText: { fontSize: 14, fontFamily: 'Lato_700Bold', color: 'rgba(0,0,0,0.35)', marginTop: 8 },
+  flyerPlaceholderText: { fontSize: 14, color: 'rgba(0,0,0,0.35)', marginTop: 8 },
 
   // Details
   detailsCard: { borderRadius: 16, marginBottom: 10, paddingHorizontal: 14, paddingVertical: 14, overflow: 'hidden', gap: 8 },
-  eventNameInput: { fontSize: 20, fontFamily: 'Lato_700Bold', padding: 0 },
+  eventNameInput: { fontSize: 20, padding: 0 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dateText: { fontSize: 14, fontFamily: 'Lato_700Bold' },
+  dateText: { fontSize: 14, },
   dateModalContainer: { backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 12, padding: 8, overflow: 'hidden' },
   dateModalTabs: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   dateModalTab: { flex: 1, padding: 12, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)' },
@@ -789,45 +789,45 @@ const s = StyleSheet.create({
   dateModalTabSubActive: { color: 'rgba(255,255,255,0.7)' },
   dateModalConfirm: { backgroundColor: '#007AFF', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 12 },
   dateModalConfirmText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  locationInput: { flex: 1, fontSize: 14, fontFamily: 'Lato_400Regular', padding: 0 },
+  locationInput: { flex: 1, fontSize: 14, padding: 0 },
   locationSuggestions: { marginTop: -4, marginBottom: 8, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
   locationSuggestionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(0,0,0,0.06)' },
-  locationSuggestionText: { flex: 1, fontSize: 13, fontFamily: 'Lato_400Regular', color: '#333' },
+  locationSuggestionText: { flex: 1, fontSize: 13, color: '#333' },
 
   // Grid
   gridRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   gridCell: { flex: 1, borderRadius: 14, padding: 14, overflow: 'hidden', alignItems: 'center', gap: 6 },
-  gridLabel: { fontSize: 10, fontFamily: 'Lato_700Bold', color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: 0.5 },
-  gridValue: { fontSize: 16, fontFamily: 'Lato_700Bold', textAlign: 'center' },
+  gridLabel: { fontSize: 10, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  gridValue: { fontSize: 16, textAlign: 'center' },
   gridInput: { padding: 0, minWidth: 50, textAlign: 'center' },
 
   // Description
   descriptionCard: { borderRadius: 16, marginBottom: 10, padding: 14, overflow: 'hidden' },
-  descriptionInput: { fontSize: 15, fontFamily: 'Lato_400Regular', minHeight: 80, padding: 0, textAlignVertical: 'top' },
+  descriptionInput: { fontSize: 15, minHeight: 80, padding: 0, textAlignVertical: 'top' },
 
   // Toggles
   toggleRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   pricingContainer: { borderRadius: 16, padding: 14, overflow: 'hidden', marginBottom: 10 },
   toggleCard: { flex: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toggleLabel: { fontSize: 14, fontFamily: 'Lato_700Bold' },
+  toggleLabel: { fontSize: 14, },
 
   // Tab sections
   tabSection: { paddingTop: 8 },
   emptyTab: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
-  emptyTabText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.4)', textAlign: 'center' },
+  emptyTabText: { fontSize: 14, color: 'rgba(0,0,0,0.4)', textAlign: 'center' },
 
   // Artists
   artistCard: { borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
   artistInner: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
-  artistName: { fontSize: 15, fontFamily: 'Lato_700Bold' },
-  artistDesc: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)', marginTop: 2 },
+  artistName: { fontSize: 15, },
+  artistDesc: { fontSize: 13, color: 'rgba(0,0,0,0.5)', marginTop: 2 },
   addArtistBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(0,0,0,0.2)', paddingVertical: 14, marginBottom: 8 },
-  addArtistText: { fontSize: 14, fontFamily: 'Lato_700Bold', color: '#000' },
+  addArtistText: { fontSize: 14, color: '#000' },
 
   // Map
   mapCard: { borderRadius: 16, overflow: 'hidden', padding: 14 },
   mapInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  mapInput: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
+  mapInput: { flex: 1, fontSize: 15, color: '#000', padding: 0 },
 
   // Bottom bar
   bottomBar: { paddingHorizontal: 16 },
@@ -835,5 +835,5 @@ const s = StyleSheet.create({
   bottomIcon: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   createButton: { flex: 1, height: 48, borderRadius: 28, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
   createButtonDisabled: { opacity: 0.4 },
-  createButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
+  createButtonText: { fontSize: 16, color: '#fff' },
 });

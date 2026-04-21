@@ -157,7 +157,7 @@ export default function ManageVenueScreen() {
 
   if (isLoading || !venue) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
         <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
           <Pressable style={styles.pillIcon} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={20} color="#000" />
@@ -174,7 +174,7 @@ export default function ManageVenueScreen() {
     [venue.city, venue.state].filter(Boolean).join(", ") || venue.address;
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
       <ConfirmSheet
         visible={!!errorAlert}
         onClose={() => setErrorAlert(null)}
@@ -210,7 +210,7 @@ export default function ManageVenueScreen() {
         })}
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       <ScrollView
         style={styles.scrollView}
@@ -353,19 +353,16 @@ const styles = StyleSheet.create({
   },
   venueName: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
     color: '#000',
     marginBottom: 4,
   },
   venueAddress: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: 'rgba(0,0,0,0.55)',
     marginBottom: 2,
   },
   venuePhone: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: 'rgba(0,0,0,0.4)',
     marginBottom: 8,
   },
@@ -381,7 +378,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
     textTransform: "uppercase",
   },
@@ -390,7 +386,6 @@ const styles = StyleSheet.create({
   },
   groupTitle: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     color: "rgba(0,0,0,0.5)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -427,12 +422,10 @@ const styles = StyleSheet.create({
   },
   menuItemTitle: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: '#000',
   },
   menuItemSubtitle: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: 'rgba(0,0,0,0.5)',
     marginTop: 2,
   },
@@ -449,6 +442,5 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
 });

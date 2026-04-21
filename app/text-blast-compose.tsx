@@ -126,7 +126,7 @@ export default function TextBlastComposeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   flex: {
     flex: 1,
@@ -152,12 +152,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   headerSubtitle: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
     marginTop: 1,
   },
@@ -187,13 +185,11 @@ const styles = StyleSheet.create({
   },
   bubbleText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
     lineHeight: 22,
   },
   bubbleLabel: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.35)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -207,7 +203,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.4)',
   },
   inputBar: {
@@ -218,7 +213,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(0,0,0,0.08)',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   inputWrapper: {
     flex: 1,
@@ -234,7 +229,6 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
     padding: 0,
     margin: 0,

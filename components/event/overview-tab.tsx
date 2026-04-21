@@ -82,7 +82,6 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 22,
   },
   goingContainer: {
@@ -97,7 +96,6 @@ const styles = StyleSheet.create({
   },
   goingText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   dealsContainer: {
     borderRadius: 16,

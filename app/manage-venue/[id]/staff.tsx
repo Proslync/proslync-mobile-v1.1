@@ -134,7 +134,7 @@ export default function VenueStaffScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
         <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
           <Pressable style={styles.pillIcon} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={20} color="#000" />
@@ -148,7 +148,7 @@ export default function VenueStaffScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Pill row header */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -165,7 +165,7 @@ export default function VenueStaffScreen() {
         </View>
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       <ScrollView
         contentContainerStyle={[
@@ -373,13 +373,12 @@ const styles = StyleSheet.create({
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   pillLabelText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.8)' },
-  headerTitle: { fontSize: 18, fontFamily: "Lato_700Bold" },
+  headerTitle: { fontSize: 18, },
   scrollContent: { paddingHorizontal: 16, gap: 8 },
   emptyContainer: { alignItems: "center", paddingTop: 80, gap: 8 },
-  emptyTitle: { fontSize: 20, fontFamily: "Lato_700Bold" },
+  emptyTitle: { fontSize: 20, },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
   },
   staffCard: { borderRadius: 14, overflow: "hidden", backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 8 },
@@ -396,22 +395,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   staffInfo: { flex: 1, gap: 4 },
-  staffName: { fontSize: 15, fontFamily: "Lato_700Bold" },
+  staffName: { fontSize: 15, },
   roleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   roleBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 },
-  roleBadgeText: { fontSize: 11, fontFamily: "Lato_700Bold", color: "rgba(0,0,0,0.6)" },
-  statusText: { fontSize: 12, fontFamily: "Lato_400Regular" },
+  roleBadgeText: { fontSize: 11, color: "rgba(0,0,0,0.6)" },
+  statusText: { fontSize: 12, },
   removeButton: { padding: 4 },
   fab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', zIndex: 20 },
   sheetContent: { paddingHorizontal: 16, paddingBottom: 20, gap: 12 },
   sheetTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
     textAlign: "center",
     paddingTop: 20,
     marginBottom: 4,
   },
-  inputLabel: { fontSize: 13, fontFamily: "Lato_700Bold" },
+  inputLabel: { fontSize: 13, },
   inputWrapper: {
     overflow: "hidden" as const,
     borderRadius: 10,
@@ -422,7 +420,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
   },
   roleGrid: { gap: 8 },
   roleOption: {
@@ -438,13 +435,11 @@ const styles = StyleSheet.create({
   },
   roleOptionLabel: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     color: "rgba(0,0,0,0.7)",
   },
   roleOptionLabelSelected: { color: "#000" },
   roleOptionDesc: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.4)",
     marginTop: 2,
   },

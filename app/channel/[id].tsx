@@ -354,7 +354,7 @@ export default function ChannelDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   loadingContainer: {
     flex: 1,
@@ -391,12 +391,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   headerSubtitle: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
     marginTop: 1,
   },
@@ -435,18 +433,15 @@ const styles = StyleSheet.create({
   },
   postAuthorName: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   postTime: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.4)',
     marginTop: 1,
   },
   postText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
     lineHeight: 21,
     marginBottom: 8,
@@ -500,7 +495,6 @@ const styles = StyleSheet.create({
   },
   reactionCount: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.6)',
   },
   reactionCountActive: {
@@ -544,7 +538,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.4)',
   },
   loadMoreContainer: {
@@ -562,7 +555,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(0,0,0,0.08)',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   attachButton: {
     width: 38,
@@ -586,7 +579,6 @@ const styles = StyleSheet.create({
   },
   composerInput: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
     padding: 0,
     margin: 0,

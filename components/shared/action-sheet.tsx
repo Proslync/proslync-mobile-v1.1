@@ -158,7 +158,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
     textAlign: 'center',
   },
@@ -188,7 +187,6 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#1A1A1A',
   },
   optionDestructive: {

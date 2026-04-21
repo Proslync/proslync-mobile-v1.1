@@ -143,7 +143,7 @@ export default function StripeDocumentUploadScreen() {
   // Success state
   if (isComplete) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
                 <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
           <Animated.View entering={FadeIn.duration(400)} style={styles.successIcon}>
             <View style={styles.successCircle}>
@@ -182,7 +182,7 @@ export default function StripeDocumentUploadScreen() {
   // No documents needed
   if (requiredTypes.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
                 <View style={[styles.successContent, { paddingTop: insets.top + 60 }]}>
           <Ionicons name="checkmark-circle" size={64} color={colors.textTertiary} />
           <Text style={[styles.successTitle, { marginTop: 16, color: colors.text }]}>
@@ -200,7 +200,7 @@ export default function StripeDocumentUploadScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
       
       {/* Pill row header */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -347,19 +347,16 @@ const styles = StyleSheet.create({
   },
   infoTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 8,
     textAlign: 'center',
   },
   infoDescription: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 20,
   },
   progressText: {
     fontSize: 13,
-    fontFamily: 'Lato_600SemiBold',
     marginTop: 12,
   },
   previewCard: {
@@ -399,7 +396,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
   },
   // Success state
   successContent: {
@@ -423,13 +419,11 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     fontSize: 24,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
     textAlign: 'center',
   },
   successDescription: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 22,
   },

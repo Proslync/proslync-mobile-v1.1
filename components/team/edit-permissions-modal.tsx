@@ -372,10 +372,9 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(0,0,0,0.06)",
   },
   headerLeft: { flex: 1 },
-  title: { fontSize: 18, fontFamily: "Lato_700Bold", color: "#1A1A1A" },
+  title: { fontSize: 18, color: "#1A1A1A" },
   roleName: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.45)",
     marginTop: 2,
   },
@@ -399,7 +398,6 @@ const styles = StyleSheet.create({
   },
   toggleAllText: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     color: "rgba(0,0,0,0.6)",
   },
   scrollView: { flex: 1 },
@@ -415,12 +413,10 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   categoryCount: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.35)",
   },
   permRow: {
@@ -439,12 +435,10 @@ const styles = StyleSheet.create({
   },
   permLabel: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.6)",
   },
   permDescription: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.35)",
     marginTop: 2,
   },
@@ -465,5 +459,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     overflow: "hidden",
   },
-  submitText: { fontSize: 16, fontFamily: "Lato_700Bold", color: "#1A1A1A" },
+  submitText: { fontSize: 16, color: "#1A1A1A" },
 });

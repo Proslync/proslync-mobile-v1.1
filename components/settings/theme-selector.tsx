@@ -134,12 +134,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 16,
   },
   options: {
@@ -159,7 +157,6 @@ const styles = StyleSheet.create({
   },
   optionLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
   },
   toggle: {
     width: 40,

@@ -151,7 +151,7 @@ export default function AdminUsersScreen() {
   const users = data?.users ?? [];
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Top row — back, search, filter pills (fixed) */}
       {isSearchActive ? (
@@ -216,7 +216,7 @@ export default function AdminUsersScreen() {
       )}
 
       {/* Top fade */}
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* User List */}
       {isLoading ? (
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   filterPillText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.5)' },
   filterPillTextActive: { color: 'rgba(0,0,0,0.8)' },
   searchBarInline: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: 38, borderRadius: 19, backgroundColor: '#fff', paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
-  searchInputInline: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
+  searchInputInline: { flex: 1, fontSize: 15, color: '#000', padding: 0 },
   searchContainer: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBar: {
     flexDirection: 'row',
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     height: 40,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: 'Lato_400Regular' },
+  searchInput: { flex: 1, fontSize: 14, },
   filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
   filterChip: {
     height: 36,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a1a1a',
     borderColor: '#1a1a1a',
   },
-  filterText: { fontSize: 14, fontFamily: 'Lato_700Bold', color: '#1a1a1a' },
+  filterText: { fontSize: 14, color: '#1a1a1a' },
   filterTextActive: { color: '#ffffff' },
   row: {
     flexDirection: 'row',
@@ -332,12 +332,12 @@ const styles = StyleSheet.create({
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center' },
   rowContent: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  name: { fontSize: 14, fontFamily: 'Lato_700Bold', flexShrink: 1 },
-  username: { fontSize: 12, fontFamily: 'Lato_400Regular', marginTop: 1 },
+  name: { fontSize: 14, flexShrink: 1 },
+  username: { fontSize: 12, marginTop: 1 },
   badges: { flexDirection: 'row', gap: 6 },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  badgeText: { fontSize: 11, fontFamily: 'Lato_700Bold', textTransform: 'capitalize' },
-  emptyText: { fontSize: 14, fontFamily: 'Lato_400Regular' },
+  badgeText: { fontSize: 11, textTransform: 'capitalize' },
+  emptyText: { fontSize: 14, },
   loadMore: { alignItems: 'center', paddingVertical: 16 },
-  loadMoreText: { fontSize: 14, fontFamily: 'Lato_700Bold' },
+  loadMoreText: { fontSize: 14, },
 });

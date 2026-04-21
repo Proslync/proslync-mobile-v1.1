@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   headerSpacer: {
     width: 40,
@@ -163,7 +162,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   emptyContainer: {
     flex: 1,
@@ -173,12 +171,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginTop: 8,
     textAlign: 'center',
   },
@@ -208,7 +204,6 @@ const styles = StyleSheet.create({
   },
   venueName: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   venueLocationRow: {
     flexDirection: 'row',
@@ -219,6 +214,5 @@ const styles = StyleSheet.create({
   venueLocation: {
     flex: 1,
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
 });

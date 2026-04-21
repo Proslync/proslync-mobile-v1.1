@@ -41,8 +41,8 @@ function NativeGlassSegmented({ segments, selectedIndex, onSelect }: SegmentedCo
         onChange={(e) => onSelect(e.nativeEvent.selectedSegmentIndex)}
         appearance={isDark ? 'dark' : 'light'}
         style={nativeStyles.control}
-        fontStyle={{ fontFamily: 'Lato_400Regular', fontSize: 13 }}
-        activeFontStyle={{ fontFamily: 'Lato_700Bold', fontSize: 13 }}
+        fontStyle={{ fontSize: 13 }}
+        activeFontStyle={{ fontSize: 13 }}
       />
     </View>
   );
@@ -191,9 +191,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   labelActive: {
-    fontFamily: 'Lato_700Bold',
   },
 });

@@ -451,12 +451,10 @@ const styles = StyleSheet.create({
   },
   organizerName: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     flexShrink: 1,
   },
   followButtonText: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
   },
   flyerContainer: {
@@ -476,12 +474,10 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     lineHeight: 26,
     lineHeight: 32,
   },
   eventDate: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
 });

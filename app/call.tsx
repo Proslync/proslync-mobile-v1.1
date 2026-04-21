@@ -425,14 +425,12 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     marginBottom: 8,
     textAlign: 'center',
   },
   status: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.6)',
   },
   videoStatusOverlay: {
@@ -442,12 +440,10 @@ const styles = StyleSheet.create({
   },
   videoStatusName: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   videoStatusTime: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
   },
@@ -472,7 +468,6 @@ const styles = StyleSheet.create({
   },
   controlLabel: {
     fontSize: 10,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.7)',
     marginTop: 4,
     position: 'absolute',

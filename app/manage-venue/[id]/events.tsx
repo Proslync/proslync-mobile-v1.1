@@ -160,7 +160,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   emptyContainer: {
     flex: 1,
@@ -171,12 +170,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     marginTop: 8,
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   listContent: {
@@ -205,11 +202,9 @@ const styles = StyleSheet.create({
   },
   eventName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   eventDate: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   statusBadge: {
     alignSelf: 'flex-start',
@@ -220,7 +215,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     textTransform: 'uppercase',
   },

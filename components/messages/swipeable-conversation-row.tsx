@@ -238,12 +238,10 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
     color: "#ffffff",
     flexShrink: 1,
   },
   nameUnread: {
-    fontFamily: "Lato_700Bold",
   },
   verifiedIcon: {
     marginLeft: 4,
@@ -253,7 +251,6 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(255, 255, 255, 0.4)",
   },
   bottomRow: {
@@ -263,7 +260,6 @@ const styles = StyleSheet.create({
   },
   preview: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "#ffffff",
     flex: 1,
     marginRight: 8,
@@ -283,7 +279,6 @@ const styles = StyleSheet.create({
   unreadText: {
     color: "#000",
     fontSize: 11,
-    fontFamily: "Lato_700Bold",
   },
   chevron: {
     marginLeft: 4,

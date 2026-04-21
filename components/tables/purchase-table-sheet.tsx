@@ -230,24 +230,20 @@ const styles = StyleSheet.create({
   },
   sectionName: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   tableLabel: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 6,
   },
   seatCount: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 16,
   },
   price: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
   },
   buttonContainer: {
     width: '100%',
@@ -281,13 +277,11 @@ const styles = StyleSheet.create({
   },
   statusTitle: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 8,
     textAlign: 'center',
   },
   statusSubtitle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,

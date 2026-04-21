@@ -459,7 +459,6 @@ export function HeroLineChart({
                   x={yAxisWidth - 6}
                   y={y + 3.5}
                   fontSize={10}
-                  fontFamily="Lato_400Regular"
                   fill={labelColor}
                   textAnchor="end"
                 >
@@ -523,7 +522,6 @@ export function HeroLineChart({
                 x={x}
                 y={chartHeight + 16}
                 fontSize={10}
-                fontFamily="Lato_400Regular"
                 fill={labelColor}
                 textAnchor="middle"
               >
@@ -555,11 +553,11 @@ export function HeroLineChart({
                 alignItems: 'center',
               }}
             >
-              <Text style={{ color: '#fff', fontSize: 14, fontFamily: 'Lato_700Bold' }}>
+              <Text style={{ color: '#fff', fontSize: 14, }}>
                 {tooltipValue}
               </Text>
               {tooltipDateStr ? (
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontFamily: 'Lato_400Regular', marginTop: 2 }}>
+                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginTop: 2 }}>
                   {tooltipDateStr}
                 </Text>
               ) : null}
@@ -762,7 +760,7 @@ export function AnalyticsScreenShell({
 
   if (isLoading && !refreshing) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
         <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
           <TouchableOpacity
             style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}
@@ -783,7 +781,7 @@ export function AnalyticsScreenShell({
 
   if (!heroMetric) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
         <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
           <TouchableOpacity
             style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}
@@ -805,7 +803,7 @@ export function AnalyticsScreenShell({
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
       <View style={[styles.topNav, { paddingTop: insets.top + 4 }]}>
         <TouchableOpacity
           style={[styles.navBackBtn, { overflow: 'hidden' as const, backgroundColor: isDark ? undefined : 'rgba(0,0,0,0.06)' }]}
@@ -908,12 +906,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     marginTop: 8,
   },
   emptySub: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   heroHeader: {
@@ -923,18 +919,15 @@ const styles = StyleSheet.create({
   },
   heroLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 4,
   },
   heroValue: {
     fontSize: 38,
-    fontFamily: 'Lato_700Bold',
     letterSpacing: -0.5,
     marginBottom: 4,
   },
   heroDelta: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     letterSpacing: 0.2,
   },
   rangeRow: {
@@ -954,7 +947,6 @@ const styles = StyleSheet.create({
   },
   rangeText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
   },
   rangeTextActive: {
     color: '#FFFFFF',
@@ -981,17 +973,14 @@ const styles = StyleSheet.create({
   },
   metricTileLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 3,
   },
   metricTileValue: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   metricTileDelta: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
   metricTileRight: {
     alignItems: 'flex-end',

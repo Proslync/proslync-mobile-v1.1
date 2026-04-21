@@ -215,12 +215,10 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     flexShrink: 1,
   },
   fullName: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
   },
   followButton: {
     borderRadius: 8,
@@ -236,7 +234,6 @@ const styles = StyleSheet.create({
   },
   followText: {
     fontSize: 12,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
   },
   followTextDone: {

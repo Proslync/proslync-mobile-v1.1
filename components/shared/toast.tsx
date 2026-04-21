@@ -181,6 +181,5 @@ const styles = StyleSheet.create({
   toastText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
 });

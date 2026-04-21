@@ -70,7 +70,7 @@ export default function EventPaymentsScreen() {
   const earnings = data?.earnings ?? [];
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Fixed pill row */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -85,7 +85,7 @@ export default function EventPaymentsScreen() {
         </View>
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -171,7 +171,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   loadingContainer: {
     flex: 1,
@@ -201,21 +200,17 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 4,
   },
   summaryGross: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
   },
   summaryFees: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     color: '#ef4444',
   },
   summaryNet: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     color: '#22c55e',
   },
   pendingRow: {
@@ -229,7 +224,6 @@ const styles = StyleSheet.create({
   },
   pendingText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: '#f59e0b',
   },
   // Earnings rows
@@ -245,11 +239,9 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
   },
   rowDate: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   rowRight: {
@@ -258,16 +250,13 @@ const styles = StyleSheet.create({
   },
   grossAmount: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   feeAmount: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(239, 68, 68, 0.8)',
   },
   netAmount: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(34, 197, 94, 0.8)',
   },
   badge: {
@@ -278,7 +267,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
   },
   // Empty state
   emptyContainer: {
@@ -288,11 +276,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   emptyHint: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     paddingHorizontal: 32,
   },

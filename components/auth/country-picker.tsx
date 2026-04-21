@@ -244,7 +244,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   closeButtonWrapper: {
     borderRadius: 16,
@@ -271,7 +270,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
   },
   listContent: {
     paddingHorizontal: 20,
@@ -293,16 +291,13 @@ const styles = StyleSheet.create({
   },
   countryName: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   countryDialCode: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   checkmark: {
     fontSize: 18,
     color: '#34C759',
-    fontFamily: 'Lato_700Bold',
   },
 });

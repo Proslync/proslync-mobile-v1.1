@@ -76,12 +76,10 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   statLabel: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.45)',
   },
 });

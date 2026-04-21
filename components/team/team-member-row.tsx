@@ -91,7 +91,6 @@ const styles = StyleSheet.create({
   },
   avatarInitials: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   info: {
@@ -99,11 +98,9 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   subtext: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   roleBadge: {
@@ -113,7 +110,6 @@ const styles = StyleSheet.create({
   },
   roleText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
     textTransform: 'uppercase',
   },
   menuButton: {

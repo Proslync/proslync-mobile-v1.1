@@ -304,7 +304,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   countBadge: {
     borderRadius: 10,
@@ -313,7 +312,6 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
   },
   searchSection: {
     paddingHorizontal: 16,
@@ -332,7 +330,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     padding: 0,
   },
   loadingContainer: {
@@ -348,12 +345,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     marginTop: 12,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginTop: 6,
     textAlign: 'center',
   },
@@ -381,18 +376,15 @@ const styles = StyleSheet.create({
   },
   avatarInitials: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
   contactInfo: {
     flex: 1,
   },
   contactName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   contactSubtext: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   eventCountBadge: {
@@ -402,7 +394,6 @@ const styles = StyleSheet.create({
   },
   eventCountText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
   },
   tagsRow: {
     flexDirection: 'row',

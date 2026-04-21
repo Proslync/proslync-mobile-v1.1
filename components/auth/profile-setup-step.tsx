@@ -453,13 +453,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: "Lato_700Bold",
     textAlign: "center",
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
     marginBottom: 20,
   },
@@ -493,7 +491,6 @@ const styles = StyleSheet.create({
   },
   avatarLabel: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     marginTop: 8,
   },
   glassFormCard: {
@@ -513,12 +510,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 54,
     fontSize: 17,
-    fontFamily: "Lato_400Regular",
     paddingHorizontal: 16,
   },
   atPrefix: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
     paddingLeft: 16,
     marginRight: 4,
   },
@@ -528,31 +523,26 @@ const styles = StyleSheet.create({
   availableIcon: {
     color: "#34C759",
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   takenIcon: {
     color: "#ff6b6b",
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   usernameError: {
     color: "#ff6b6b",
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 8,
     paddingLeft: 4,
   },
   usernameAvailable: {
     color: "#34C759",
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 8,
     paddingLeft: 4,
   },
   errorText: {
     color: "#ff6b6b",
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
     marginTop: 16,
   },

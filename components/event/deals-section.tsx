@@ -42,7 +42,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
   },
   dealRow: {
     flexDirection: 'row',
@@ -58,7 +57,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -68,15 +66,12 @@ const styles = StyleSheet.create({
   },
   dealTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   dealDesc: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   dealTime: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
 });

@@ -252,7 +252,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   scroll: {
@@ -263,7 +262,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.35)',
     textAlign: 'center',
     paddingVertical: 32,
@@ -273,7 +271,6 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.45)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -292,18 +289,15 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#1A1A1A',
   },
   itemDescription: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.35)',
     marginTop: 2,
   },
   itemPrice: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.45)',
     marginTop: 2,
   },
@@ -322,7 +316,6 @@ const styles = StyleSheet.create({
   },
   qtyText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     minWidth: 20,
     textAlign: 'center',
@@ -348,7 +341,6 @@ const styles = StyleSheet.create({
   },
   confirmText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
 });

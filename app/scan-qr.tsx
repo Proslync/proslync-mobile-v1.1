@@ -800,7 +800,7 @@ export default function ScannerScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   centered: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 48 },
-  loadingText: { marginTop: 16, fontSize: 15, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)' },
+  loadingText: { marginTop: 16, fontSize: 15, color: 'rgba(255,255,255,0.5)' },
 
   topGradient: { position: 'absolute', top: 0, left: 0, right: 0, height: SCREEN_HEIGHT * 0.25 },
   bottomGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: SCREEN_HEIGHT * 0.35 },
@@ -816,7 +816,7 @@ const styles = StyleSheet.create({
   header: { position: 'absolute', top: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
   headerButton: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)' },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#fff', letterSpacing: 0.3 },
+  headerTitle: { fontSize: 17, color: '#fff', letterSpacing: 0.3 },
 
   // Step indicator dots
   stepIndicator: { flexDirection: 'row', gap: 6, marginTop: 6 },
@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
 
   instructionsContainer: { position: 'absolute', top: SCREEN_HEIGHT * 0.22, left: 0, right: 0, alignItems: 'center' },
   instructionsPill: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 24 },
-  instructionText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.8)' },
+  instructionText: { fontSize: 14, color: 'rgba(255,255,255,0.8)' },
   nfcButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -838,13 +838,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 24,
   },
-  nfcButtonText: { fontSize: 14, fontFamily: 'Lato_600SemiBold', color: '#fff' },
+  nfcButtonText: { fontSize: 14, color: '#fff' },
 
   bottomBar: { position: 'absolute', left: 24, right: 24, gap: 12 },
 
   checkedInCounter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: 'rgba(16,185,129,0.2)', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)' },
   checkedInDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' },
-  checkedInText: { fontSize: 14, fontFamily: 'Lato_700Bold', color: '#fff', flex: 1 },
+  checkedInText: { fontSize: 14, color: '#fff', flex: 1 },
 
   // Skip button (glass style)
   skipButton: {
@@ -858,18 +858,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
   },
-  skipButtonText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)' },
+  skipButtonText: { fontSize: 14, color: 'rgba(255,255,255,0.5)' },
 
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 16 },
-  listCount: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  listCount: { fontSize: 13, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
   guestRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)', gap: 12 },
   guestStatusDot: { width: 10, height: 10, borderRadius: 5 },
   guestAvatar: { width: 36, height: 36, borderRadius: 18 },
   guestAvatarPlaceholder: { width: 36, height: 36, borderRadius: 18, alignItems: 'center' as const, justifyContent: 'center' as const },
-  guestAvatarInitials: { fontSize: 13, fontFamily: 'Lato_700Bold', color: 'rgba(255,255,255,0.6)' },
-  guestName: { fontSize: 15, fontFamily: 'Lato_600SemiBold', color: '#fff' },
-  guestMeta: { fontSize: 12, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.4)', marginTop: 2 },
-  guestStatusText: { fontSize: 13, fontFamily: 'Lato_700Bold', textTransform: 'uppercase', letterSpacing: 0.5 },
+  guestAvatarInitials: { fontSize: 13, color: 'rgba(255,255,255,0.6)' },
+  guestName: { fontSize: 15, color: '#fff' },
+  guestMeta: { fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 },
+  guestStatusText: { fontSize: 13, textTransform: 'uppercase', letterSpacing: 0.5 },
 
   // Charge button (glass style)
   chargeButton: {
@@ -883,7 +883,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
   },
-  chargeButtonText: { fontSize: 13, fontFamily: 'Lato_700Bold', color: '#fff' },
+  chargeButtonText: { fontSize: 13, color: '#fff' },
 
   // Paid badge
   paidBadge: {
@@ -895,14 +895,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(16,185,129,0.15)',
   },
-  paidBadgeText: { fontSize: 13, fontFamily: 'Lato_700Bold', color: '#10b981' },
+  paidBadgeText: { fontSize: 13, color: '#10b981' },
 
   emptyList: { alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
-  emptyListText: { fontSize: 15, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.3)' },
+  emptyListText: { fontSize: 15, color: 'rgba(255,255,255,0.3)' },
 
   permissionIcon: { width: 96, height: 96, borderRadius: 48, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
-  permissionTitle: { fontSize: 24, fontFamily: 'Lato_700Bold', color: '#fff', marginBottom: 12 },
-  permissionText: { fontSize: 15, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 22 },
+  permissionTitle: { fontSize: 24, color: '#fff', marginBottom: 12 },
+  permissionText: { fontSize: 15, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 22 },
   permissionButton: {
     paddingVertical: 16,
     paddingHorizontal: 40,
@@ -912,8 +912,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
   },
-  permissionButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
+  permissionButtonText: { fontSize: 16, color: '#fff' },
   settingsLink: { marginTop: 16, padding: 12 },
-  settingsLinkText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(255,255,255,0.4)' },
+  settingsLinkText: { fontSize: 14, color: 'rgba(255,255,255,0.4)' },
 });
 

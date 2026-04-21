@@ -114,8 +114,10 @@ function TicketCard({ event, onView, onActions, onWalletPress, t, border, surfac
 }
 
 export function TicketList({ rsvpEvents, onViewEvent, onWalletPress, onActionComplete }: TicketListProps) {
-  const { colors, isDark } = useAppTheme();
-  const theme = isDark ? 'dark' : 'light';
+  const { colors: _colors } = useAppTheme();
+  const colors = { ..._colors, textTertiary: 'rgba(255,255,255,0.4)', border: 'rgba(255,255,255,0.10)' };
+  const isDark = true;
+  const theme = 'dark' as const;
   const t = glassText[theme];
   const border = glassBorder[theme];
   const surfaceTint = glassSurfaceTint[theme];
@@ -173,7 +175,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingHorizontal: 16,
@@ -196,7 +197,6 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   loadingContainer: {
     alignItems: 'center',
@@ -210,11 +210,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   flyerWrapper: {
     padding: 8,
@@ -238,7 +236,6 @@ const styles = StyleSheet.create({
   },
   ticketTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     lineHeight: 21,
     flexShrink: 1,
   },
@@ -253,11 +250,9 @@ const styles = StyleSheet.create({
   },
   transferredText: {
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
   },
   ticketDate: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     marginTop: 2,
   },
   ticketMeta: {
@@ -267,7 +262,6 @@ const styles = StyleSheet.create({
   },
   ticketVenue: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
   },
   walletBtn: {
     width: 36,
@@ -285,7 +279,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginTop: 12,
   },
 });

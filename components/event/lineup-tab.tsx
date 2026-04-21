@@ -80,7 +80,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
   },
   empty: {
     paddingVertical: 40,
@@ -88,6 +87,5 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
   },
 });

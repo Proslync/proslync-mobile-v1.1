@@ -481,7 +481,7 @@ export default function PostDetailScreen() {
           <View style={[styles.commentInput, { borderColor: border, overflow: 'hidden' as const }]}>
             <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={20} style={StyleSheet.absoluteFillObject} />
             <TextInput
-              style={{ flex: 1, height: '100%', paddingHorizontal: 16, fontSize: 14, fontFamily: 'Lato_400Regular', color: t.primary }}
+              style={{ flex: 1, height: '100%', paddingHorizontal: 16, fontSize: 14, color: t.primary }}
               placeholder={
                 replyingToUsername
                   ? `Reply to @${replyingToUsername}...`
@@ -661,7 +661,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   menuButton: {
     width: 44,
@@ -705,11 +704,9 @@ const styles = StyleSheet.create({
   },
   authorUsername: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
   authorTime: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   mediaSection: {
@@ -736,7 +733,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
   descriptionSection: {
     paddingHorizontal: 16,
@@ -745,11 +741,9 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 20,
   },
   descriptionUsername: {
-    fontFamily: 'Lato_700Bold',
   },
   viewCommentsButton: {
     flexDirection: 'row',
@@ -761,7 +755,6 @@ const styles = StyleSheet.create({
   },
   viewCommentsText: {
     fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
   },
   commentsSection: {
     paddingHorizontal: 16,
@@ -769,7 +762,6 @@ const styles = StyleSheet.create({
   },
   commentsTitle: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
   },
   commentsLoading: {
@@ -777,7 +769,6 @@ const styles = StyleSheet.create({
   },
   noCommentsText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     paddingVertical: 20,
   },
@@ -814,15 +805,12 @@ const styles = StyleSheet.create({
   },
   commentUsername: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
   },
   commentTime: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
   },
   commentText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 18,
     marginTop: 2,
   },
@@ -853,14 +841,11 @@ const styles = StyleSheet.create({
   },
   replyIndicatorText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
   replyIndicatorUsername: {
-    fontFamily: 'Lato_700Bold',
   },
   cancelReplyText: {
     fontSize: 12,
-    fontFamily: 'Lato_600SemiBold',
   },
   commentInputRow: {
     flexDirection: 'row',
@@ -911,7 +896,6 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#fff',
   },
   menuDivider: {
@@ -931,7 +915,6 @@ const styles = StyleSheet.create({
   },
   menuCancelText: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   // Delete confirmation
@@ -963,13 +946,11 @@ const styles = StyleSheet.create({
   },
   deleteConfirmTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     marginBottom: 8,
   },
   deleteConfirmMessage: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
     lineHeight: 20,
@@ -988,7 +969,6 @@ const styles = StyleSheet.create({
   },
   deleteConfirmCancelText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#fff',
   },
   deleteConfirmDeleteBtn: {
@@ -999,7 +979,6 @@ const styles = StyleSheet.create({
   },
   deleteConfirmDeleteText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#ff3b30',
   },
 });

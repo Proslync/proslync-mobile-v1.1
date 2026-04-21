@@ -139,7 +139,6 @@ const styles = StyleSheet.create({
   },
   callerName: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     marginBottom: 8,
   },

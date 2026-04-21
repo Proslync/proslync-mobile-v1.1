@@ -328,7 +328,7 @@ export default function DashboardRevenueScreen() {
   // Loading
   if (isLoading && !refreshing) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color="#000" />
@@ -349,7 +349,7 @@ export default function DashboardRevenueScreen() {
   // Empty state
   if (!heroMetric || !data) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
         <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color="#000" />
@@ -372,7 +372,7 @@ export default function DashboardRevenueScreen() {
   const totals = data.totals;
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Header */}
       <View style={[styles.stickyHeader, { paddingTop: insets.top }]}>
@@ -476,13 +476,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  fixedTicker: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#f2f2f2', zIndex: 1000 },
+  fixedTicker: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#000000', zIndex: 1000 },
   rangeRow: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 16, paddingVertical: 12 },
   rangeChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   rangeChipActive: { backgroundColor: 'rgba(0,0,0,0.08)' },
   rangeText: { fontSize: 15, fontWeight: '600', color: 'rgba(0,0,0,0.4)' },
   rangeTextActive: { color: '#1A1A1A' },
-  stickyHeader: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: '#f2f2f2' },
+  stickyHeader: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100, backgroundColor: '#000000' },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   headerCenter: { flex: 1, alignItems: 'center' },
@@ -501,13 +501,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0, 0, 0, 0.5)',
     marginTop: 8,
   },
   emptyHint: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0, 0, 0, 0.3)',
     textAlign: 'center',
   },
@@ -536,23 +534,19 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0, 0, 0, 0.5)',
     marginBottom: 4,
   },
   summaryGross: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   summaryFees: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     color: '#ef4444',
   },
   summaryNet: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     color: '#22c55e',
   },
   // Chart area

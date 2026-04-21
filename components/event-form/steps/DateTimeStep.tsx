@@ -161,7 +161,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
   },
   inputWrapper: {
@@ -179,11 +178,9 @@ const styles = StyleSheet.create({
   },
   dateButtonText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
   },
   errorText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: '#ef4444',
     marginTop: 4,
   },

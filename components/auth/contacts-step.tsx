@@ -265,7 +265,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     marginTop: 8,
   },
   header: {
@@ -280,12 +279,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 6,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   followAllContainer: {
@@ -314,11 +311,9 @@ const styles = StyleSheet.create({
   },
   contactName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   contactUsername: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   emptyIconContainer: {
@@ -330,12 +325,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 22,
   },

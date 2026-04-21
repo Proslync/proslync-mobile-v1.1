@@ -81,17 +81,14 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 4,
   },
   availableAmount: {
     fontSize: 24,
-    fontFamily: 'Lato_700Bold',
     color: '#22c55e',
   },
   pendingAmount: {
     fontSize: 24,
-    fontFamily: 'Lato_700Bold',
     color: '#f59e0b',
   },
   buttonRow: {
@@ -108,11 +105,9 @@ const styles = StyleSheet.create({
   },
   lifetimeLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     flex: 1,
   },
   lifetimeAmount: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
 });

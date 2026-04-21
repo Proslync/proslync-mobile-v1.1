@@ -66,7 +66,7 @@ export function ContactRow({ user, onPress, isSelected }: ContactRowProps) {
             <MaterialCommunityIcons
               name="check-decagram"
               size={14}
-              color="#3897F0"
+              color="#FF6F3C"
               style={styles.verifiedIcon}
             />
           )}
@@ -121,7 +121,6 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     flexShrink: 1,
   },
   verifiedIcon: {
@@ -129,7 +128,6 @@ const styles = StyleSheet.create({
   },
   role: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   checkmark: {

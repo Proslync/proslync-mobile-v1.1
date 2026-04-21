@@ -215,7 +215,7 @@ export function CreateTierModal({
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f2' },
+  container: { flex: 1, backgroundColor: '#000000' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,9 +225,9 @@ const s = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.08)',
   },
-  headerTitle: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#000' },
-  cancelText: { fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000' },
-  doneText: { fontSize: 15, fontFamily: 'Lato_700Bold', color: 'rgba(0,0,0,0.4)' },
+  headerTitle: { fontSize: 16, color: '#000' },
+  cancelText: { fontSize: 15, color: '#000' },
+  doneText: { fontSize: 15, color: 'rgba(0,0,0,0.4)' },
   doneTextDisabled: { opacity: 0.3 },
   scroll: { flex: 1 },
   scrollContent: { padding: 16, gap: 12 },
@@ -243,8 +243,8 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     justifyContent: 'center',
   },
-  cellInput: { fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
-  cellLabel: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)' },
+  cellInput: { fontSize: 15, color: '#000', padding: 0 },
+  cellLabel: { fontSize: 14, color: 'rgba(0,0,0,0.5)' },
   descriptionCell: { minHeight: 120 },
 
   toggleRow: {
@@ -254,8 +254,8 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   toggleInfo: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  toggleLabel: { fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000' },
-  toggleHint: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.45)', marginTop: -4 },
+  toggleLabel: { fontSize: 15, color: '#000' },
+  toggleHint: { fontSize: 13, color: 'rgba(0,0,0,0.45)', marginTop: -4 },
 
   optionsSection: {
     marginTop: 12,
@@ -274,5 +274,5 @@ const s = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(0,0,0,0.06)',
   },
-  optionText: { fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000' },
+  optionText: { fontSize: 15, color: '#000' },
 });

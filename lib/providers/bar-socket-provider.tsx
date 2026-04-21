@@ -40,6 +40,7 @@ export function BarSocketProvider({ children }: { children: React.ReactNode }) {
     let summaryFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
     const initSocket = async () => {
+      if (!config.websocket.enabled) return;
       const token = await apiClient.getAccessToken();
       if (!token || cancelled) return;
 

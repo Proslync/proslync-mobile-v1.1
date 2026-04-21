@@ -136,11 +136,9 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   fallbackLink: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     textDecorationLine: 'underline',
   },
 });

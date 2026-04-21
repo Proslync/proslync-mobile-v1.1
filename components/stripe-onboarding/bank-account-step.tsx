@@ -108,7 +108,7 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
         >
           {isDark && <GlassView {...(isBank ? liquidGlass.fill : liquidGlass.fillFaint)} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           <Ionicons name="business-outline" size={18} color={colors.text} style={styles.toggleIcon} />
-          <Text style={[styles.toggleText, { color: colors.textTertiary }, isBank && { color: colors.text, fontFamily: 'Lato_700Bold' }]}>
+          <Text style={[styles.toggleText, { color: colors.textTertiary }, isBank && { color: colors.text, }]}>
             Bank Account
           </Text>
         </TouchableOpacity>
@@ -123,7 +123,7 @@ export function BankAccountStep({ onSubmit, onBack, isSubmitting }: BankAccountS
         >
           {isDark && <GlassView {...(!isBank ? liquidGlass.fill : liquidGlass.fillFaint)} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
           <Ionicons name="card-outline" size={18} color={colors.text} style={styles.toggleIcon} />
-          <Text style={[styles.toggleText, { color: colors.textTertiary }, !isBank && { color: colors.text, fontFamily: 'Lato_700Bold' }]}>
+          <Text style={[styles.toggleText, { color: colors.textTertiary }, !isBank && { color: colors.text, }]}>
             Debit Card
           </Text>
         </TouchableOpacity>
@@ -286,11 +286,9 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
   },
   stepDescription: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 20,
     marginBottom: 4,
   },
@@ -312,11 +310,9 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   label: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 6,
   },
   inputWrapper: {
@@ -328,12 +324,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     borderWidth: 1,
   },
   cardNote: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 18,
     marginBottom: 8,
   },
@@ -348,7 +342,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: '#ef4444',
     marginTop: 4,
   },
@@ -370,7 +363,6 @@ const styles = StyleSheet.create({
   tosText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 20,
   },
   tosLink: {

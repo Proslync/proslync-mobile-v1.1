@@ -193,9 +193,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   tabTextActive: {
-    fontFamily: "Lato_700Bold",
   },
 });

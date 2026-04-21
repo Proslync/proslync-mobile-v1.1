@@ -139,7 +139,6 @@ export function AddressAutocomplete({
 const styles = StyleSheet.create({
   label: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
   },
   inputWrapper: {
@@ -152,7 +151,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingRight: 44,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     borderWidth: 1,
   },
   inputSpinner: {
@@ -164,7 +162,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: '#ef4444',
     marginTop: 4,
   },
@@ -180,11 +177,9 @@ const styles = StyleSheet.create({
   },
   suggestionName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   suggestionAddress: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
 });

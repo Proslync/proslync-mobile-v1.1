@@ -174,7 +174,7 @@ export default function ChannelComposeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
@@ -194,7 +194,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
     textAlign: 'center',
   },
@@ -212,7 +211,6 @@ const styles = StyleSheet.create({
   },
   postButtonText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   keyboardView: {
@@ -227,7 +225,6 @@ const styles = StyleSheet.create({
   textInput: {
     minHeight: 120,
     fontSize: 17,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
     lineHeight: 24,
     textAlignVertical: 'top',
@@ -261,7 +258,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(0,0,0,0.08)',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
     gap: 12,
   },
   toolbarButton: {
@@ -275,7 +272,6 @@ const styles = StyleSheet.create({
   charCount: {
     flex: 1,
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.4)',
     textAlign: 'right',
   },

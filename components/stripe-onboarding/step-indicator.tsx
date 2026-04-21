@@ -67,7 +67,6 @@ const styles = StyleSheet.create({
   },
   stepLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
   progressTrack: {
     height: 3,

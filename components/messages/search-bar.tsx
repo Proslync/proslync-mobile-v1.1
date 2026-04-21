@@ -79,7 +79,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#1A1A1A',
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     padding: 0,
   },
   clearButton: {

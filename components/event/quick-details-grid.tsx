@@ -54,12 +54,10 @@ const styles = StyleSheet.create({
   },
   cellLabel: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   cellValue: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
 });

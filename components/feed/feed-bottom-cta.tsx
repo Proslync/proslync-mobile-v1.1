@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     letterSpacing: 0.5,
     color: "#1A1A1A",
   },

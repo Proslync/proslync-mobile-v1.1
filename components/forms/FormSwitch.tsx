@@ -62,11 +62,9 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   description: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
 });

@@ -156,7 +156,7 @@ export default function DiscoverChannelsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   header: {
     flexDirection: 'row',
@@ -176,7 +176,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
     textAlign: 'center',
   },
@@ -198,7 +197,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
   },
   listContent: {
@@ -225,12 +223,10 @@ const styles = StyleSheet.create({
   },
   rowName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   rowMeta: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
     marginTop: 2,
   },
@@ -244,7 +240,6 @@ const styles = StyleSheet.create({
   },
   joinButtonText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   emptyState: {
@@ -256,7 +251,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.4)',
   },
 });

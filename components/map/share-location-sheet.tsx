@@ -1328,7 +1328,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
   },
   selectedCount: {
     marginBottom: spacing.sm,

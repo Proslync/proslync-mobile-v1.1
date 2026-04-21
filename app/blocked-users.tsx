@@ -103,7 +103,7 @@ export default function BlockedUsersScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: border }]}>
@@ -195,7 +195,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
   },
   headerRight: {
     width: 36,
@@ -209,11 +208,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 17,
-    fontFamily: 'Lato_600SemiBold',
   },
   emptySubtext: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -244,11 +241,9 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
   },
   userHandle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
 });

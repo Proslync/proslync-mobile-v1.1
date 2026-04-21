@@ -129,7 +129,7 @@ export default function PricingScreen() {
   const isLoading = tiersLoading || promosLoading;
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Pill row header */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -309,7 +309,6 @@ const styles = StyleSheet.create({
   },
   bottomButtonText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   pillRow: {
@@ -368,7 +367,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   addButton: {
     flexDirection: 'row',
@@ -382,7 +380,6 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   emptySection: {
     alignItems: 'center',
@@ -391,11 +388,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   emptySubtext: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   promoSection: {
     marginTop: 0,

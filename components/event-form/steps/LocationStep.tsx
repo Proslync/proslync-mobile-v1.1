@@ -168,7 +168,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
   },
   inputWrapper: {
@@ -186,7 +185,6 @@ const styles = StyleSheet.create({
   venueSelectorText: {
     flex: 1,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
   },
   chevron: {
     fontSize: 10,
@@ -194,7 +192,6 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 8,
   },
   mapContainer: {

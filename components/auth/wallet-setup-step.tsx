@@ -146,13 +146,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontFamily: "Lato_700Bold",
     textAlign: "center",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
     lineHeight: 22,
   },
@@ -176,7 +174,6 @@ const styles = StyleSheet.create({
   bulletText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   bottomActions: {
     paddingHorizontal: 24,
@@ -191,7 +188,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
   },
   skipButton: {
     alignItems: "center",
@@ -199,7 +195,6 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
 });
 

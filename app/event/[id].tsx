@@ -740,7 +740,6 @@ const styles = StyleSheet.create({
   },
   organizerName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     flexShrink: 1,
   },
   flyerCard: {
@@ -758,7 +757,6 @@ const styles = StyleSheet.create({
   },
   flyerPlaceholderText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.3)',
   },
   mediaLoading: {
@@ -775,12 +773,10 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     lineHeight: 26,
   },
   eventDate: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   tabContent: {
     marginTop: 8,
@@ -845,7 +841,6 @@ const styles = StyleSheet.create({
   },
   tablesEmptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   tableRow: {
     flexDirection: 'row',
@@ -864,11 +859,9 @@ const styles = StyleSheet.create({
   },
   tableRowLabel: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   tableRowSubtitle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   tableRowRight: {
@@ -878,11 +871,9 @@ const styles = StyleSheet.create({
   },
   tableRowPrice: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   tableRowStatus: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.4)',
     textTransform: 'uppercase',
   },
@@ -940,7 +931,6 @@ const styles = StyleSheet.create({
   },
   rsvpButtonText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     letterSpacing: 0.5,
     color: '#000',
   },

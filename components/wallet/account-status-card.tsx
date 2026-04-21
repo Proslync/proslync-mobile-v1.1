@@ -204,11 +204,9 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
   },
   statusText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   details: {
@@ -225,11 +223,9 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   detailValue: {
     fontSize: 13,
-    fontFamily: 'Lato_600SemiBold',
   },
   setupButton: {
     flexDirection: 'row',
@@ -246,7 +242,6 @@ const styles = StyleSheet.create({
   reasonText: {
     flex: 1,
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 17,
   },
 });

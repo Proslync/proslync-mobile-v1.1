@@ -284,17 +284,14 @@ const styles = StyleSheet.create({
   },
   profileInitials: {
     fontSize: 26,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   profileName: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   profileSubname: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
     color: "rgba(0,0,0,0.45)",
   },
@@ -310,7 +307,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontFamily: "Lato_700Bold",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -327,7 +323,6 @@ const styles = StyleSheet.create({
   },
   tagChipText: {
     fontSize: 11,
-    fontFamily: "Lato_700Bold",
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
@@ -358,7 +353,6 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 11,
-    fontFamily: "Lato_400Regular",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -366,7 +360,6 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     color: "#1A1A1A",
   },
   closeButton: {
@@ -377,7 +370,6 @@ const styles = StyleSheet.create({
   },
   closeText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
 });

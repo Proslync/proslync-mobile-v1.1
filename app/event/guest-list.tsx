@@ -176,12 +176,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   headerSubtitle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
     marginTop: 2,
   },
@@ -197,7 +195,6 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
     color: 'rgba(255,255,255,0.5)',
   },
   listContent: {
@@ -230,7 +227,6 @@ const styles = StyleSheet.create({
   },
   guestAvatarText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   guestInfo: {
@@ -238,12 +234,10 @@ const styles = StyleSheet.create({
   },
   guestName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   guestUsername: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
@@ -258,7 +252,6 @@ const styles = StyleSheet.create({
   },
   viewProfileText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   separator: {
@@ -278,13 +271,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_600SemiBold',
     color: 'rgba(255,255,255,0.4)',
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.3)',
     marginTop: 8,
   },

@@ -202,7 +202,6 @@ const styles = StyleSheet.create({
   },
   venueName: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     lineHeight: 18,
   },
   addressRow: {
@@ -212,7 +211,6 @@ const styles = StyleSheet.create({
   },
   addressText: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     flex: 1,
   },
   followButton: {
@@ -229,7 +227,6 @@ const styles = StyleSheet.create({
   },
   followText: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
   },
   followTextDone: {

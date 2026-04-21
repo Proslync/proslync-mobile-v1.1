@@ -288,7 +288,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   keyboardAvoid: {
     flex: 1,
@@ -324,13 +323,11 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     fontSize: 24,
-    fontFamily: "Lato_700Bold",
     marginBottom: 12,
     textAlign: "center",
   },
   successDescription: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 32,

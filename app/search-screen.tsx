@@ -566,7 +566,7 @@ export default function SearchScreen() {
   const mutualSuggestions = suggestions?.mutualFollowSuggestions ?? [];
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: '#000' }]}>
       <DarkGradientBg />
 
       {/* Header */}
@@ -748,7 +748,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
   },
   listContent: {
     paddingHorizontal: 16,
@@ -781,17 +780,14 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
     flexShrink: 1,
   },
   resultSubtitle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   mutualText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   metaRow: {
@@ -813,7 +809,6 @@ const styles = StyleSheet.create({
   },
   followButtonText: {
     fontSize: 13,
-    fontFamily: 'Lato_600SemiBold',
     color: '#fff',
   },
   followButtonTextFollowing: {
@@ -859,11 +854,9 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   clearText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   // Frequent avatars horizontal row
   frequentRow: {
@@ -883,7 +876,6 @@ const styles = StyleSheet.create({
   },
   frequentName: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   // States
@@ -898,7 +890,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginTop: 12,
     textAlign: 'center',
     paddingHorizontal: 40,

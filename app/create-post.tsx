@@ -248,7 +248,7 @@ export default function CreatePostScreen() {
                     {location ? location.name : 'Add location'}
                   </Text>
                   {location && (
-                    <Text style={{ fontSize: 12, fontFamily: 'Lato_400Regular', color: colors.textTertiary }} numberOfLines={1}>
+                    <Text style={{ fontSize: 12, color: colors.textTertiary }} numberOfLines={1}>
                       {location.address}
                     </Text>
                   )}
@@ -281,7 +281,7 @@ export default function CreatePostScreen() {
                     {spotifyTrack ? spotifyTrack.name : 'Add music'}
                   </Text>
                   {spotifyTrack && (
-                    <Text style={{ fontSize: 12, fontFamily: 'Lato_400Regular', color: colors.textTertiary }} numberOfLines={1}>
+                    <Text style={{ fontSize: 12, color: colors.textTertiary }} numberOfLines={1}>
                       {spotifyTrack.artistName}
                     </Text>
                   )}
@@ -337,7 +337,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   postButton: {
     paddingHorizontal: 16,
@@ -351,7 +350,6 @@ const styles = StyleSheet.create({
   },
   postButtonText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   scrollView: {
@@ -380,12 +378,10 @@ const styles = StyleSheet.create({
   },
   mediaPickerTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 4,
   },
   mediaPickerSubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   // Preview
   previewContainer: {
@@ -403,7 +399,6 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   mediaPreviewWrapper: {
     position: 'relative',
@@ -435,7 +430,6 @@ const styles = StyleSheet.create({
   },
   captionInput: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     minHeight: 80,
     textAlignVertical: 'top',
   },
@@ -453,6 +447,5 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
   },
 });

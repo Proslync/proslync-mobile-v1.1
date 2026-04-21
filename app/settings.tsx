@@ -5,8 +5,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  Pressable,
+  Image,
 } from 'react-native';
 import Animated, {
+  FadeIn,
+  FadeInDown,
   useAnimatedStyle,
   withTiming,
   Easing,
@@ -14,13 +19,72 @@ import Animated, {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { GlassView } from 'expo-glass-effect';
-import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { liquidGlass, glassBorder, glassText, glassSurfaceTint } from '@/constants/glass/liquid-glass';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { useAppTheme, type ThemeMode } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
-import { AnimatedCollapsible } from '@/components/ui/animated-collapsible';
+import { useRole, type ProfileRole } from '@/lib/providers/role-provider';
+
+const ACCENT = '#FF6F3C';
+
+type RoleMeta = {
+  label: string;
+  description: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+  name: string;
+  handle: string;
+  avatarSource?: any;
+};
+
+const ROLE_META: Record<ProfileRole, RoleMeta> = {
+  player: {
+    label: 'Player',
+    description: 'Athlete · stats, deals, fans',
+    icon: 'basketball-outline',
+    color: '#FF6F3C',
+    name: 'Kiyan Anthony',
+    handle: '@kiyan',
+    avatarSource: require('@/assets/images/kiyan-avatar.png'),
+  },
+  coach: {
+    label: 'Coach',
+    description: 'Roster, film, practice plans',
+    icon: 'megaphone-outline',
+    color: '#FF6F3C',
+    name: 'Coach Glenn Farello',
+    handle: '@coachfarello',
+    avatarSource: require('@/assets/images/coach-avatar.png'),
+  },
+  scorekeeper: {
+    label: 'Scorekeeper',
+    description: 'Live scoring · box scores',
+    icon: 'clipboard-outline',
+    color: '#3B82F6',
+    name: 'Alex Carter',
+    handle: '@alex.scorekeeper',
+  },
+  brand: {
+    label: 'Brand',
+    description: 'Sponsor deals · athlete discovery',
+    icon: 'briefcase-outline',
+    color: '#00C6B0',
+    name: 'PUMA Hoops',
+    handle: '@pumahoops',
+  },
+  fan: {
+    label: 'Fan',
+    description: 'Follow athletes · claim perks',
+    icon: 'heart-outline',
+    color: '#A855F7',
+    name: 'Marcus Delgado',
+    handle: '@marcdelgado',
+  },
+};
+
+const ROLES: ProfileRole[] = ['player', 'coach', 'scorekeeper', 'brand', 'fan'];
 
 function AnimatedChevron({ expanded, color }: { expanded: boolean; color: string }) {
   const style = useAnimatedStyle(() => ({
@@ -46,233 +110,616 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { isDark, themeMode, setThemeMode } = useAppTheme();
   const { logout } = useAuth();
-  const [appearanceExpanded, setAppearanceExpanded] = React.useState(false);
+  const { role: activeProfile, setRole: setActiveProfile } = useRole();
+  const [switchProfileVisible, setSwitchProfileVisible] = React.useState(false);
+  const [logoutConfirmVisible, setLogoutConfirmVisible] = React.useState(false);
 
-  const theme = isDark ? 'dark' : 'light';
-  const t = glassText[theme];
-  const border = glassBorder[theme];
-  const surfaceTint = glassSurfaceTint[theme];
+  const roleMeta = ROLE_META[activeProfile];
+  const initials = roleMeta.name
+    .split(' ')
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('');
 
-  const themeOptions: { mode: ThemeMode; label: string; description: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { mode: 'light', label: 'Light', description: 'Always use light theme', icon: 'sunny-outline' },
-    { mode: 'dark', label: 'Dark', description: 'Always use dark theme', icon: 'moon-outline' },
-    { mode: 'system', label: 'System', description: 'Follow system settings', icon: 'phone-portrait-outline' },
+  const themeOptions: { mode: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { mode: 'light', label: 'Light', icon: 'sunny-outline' },
+    { mode: 'dark', label: 'Dark', icon: 'moon-outline' },
+    { mode: 'system', label: 'Auto', icon: 'phone-portrait-outline' },
   ];
 
+  const handleSwitch = (role: ProfileRole) => {
+    setActiveProfile(role);
+    setSwitchProfileVisible(false);
+    setTimeout(() => router.replace('/(tabs)/profile' as any), 120);
+  };
+
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+    <View style={styles.container}>
+      <StatusBar style="light" />
+
+      {/* Ambient top tint matched to active role */}
+      <LinearGradient
+        colors={[`${roleMeta.color}33`, 'transparent']}
+        style={[styles.ambientGlow, { height: insets.top + 180 }]}
+        pointerEvents="none"
+      />
 
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: border }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
           onPress={() => router.back()}
-          style={[styles.backButton, { borderColor: border }]}
+          style={styles.backButton}
+          activeOpacity={0.7}
         >
-          <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
-          <Ionicons name="chevron-back" size={20} color={t.primary} />
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 19 }]} />
+          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: t.primary }]}>Settings</Text>
+        <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerRight} />
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Preferences Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: t.muted }]}>PREFERENCES</Text>
-
-          <View style={[styles.sectionCard, { borderColor: border }]}>
-            <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
-
-            <TouchableOpacity
-              style={styles.row}
-              activeOpacity={0.7}
-              onPress={() => setAppearanceExpanded((prev) => !prev)}
+        {/* Identity hero card */}
+        <Animated.View entering={FadeInDown.duration(450)} style={styles.identityCard}>
+          <LinearGradient
+            colors={[`${roleMeta.color}26`, `${roleMeta.color}08`]}
+            style={StyleSheet.absoluteFill}
+          />
+          {roleMeta.avatarSource ? (
+            <Image
+              source={roleMeta.avatarSource}
+              style={[
+                styles.identityAvatarImage,
+                { borderColor: `${roleMeta.color}66` },
+              ]}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[
+                styles.identityAvatar,
+                {
+                  backgroundColor: `${roleMeta.color}24`,
+                  borderColor: `${roleMeta.color}66`,
+                },
+              ]}
             >
-              <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
-                  <Ionicons name={isDark ? 'moon' : 'sunny'} size={18} color={t.primary} />
-                </View>
-                <View>
-                  <Text style={[styles.rowLabel, { color: t.primary }]}>Appearance</Text>
-                  <Text style={[styles.rowSub, { color: t.tertiary }]}>
-                    {themeMode === 'system'
-                      ? `System (${isDark ? 'Dark' : 'Light'})`
-                      : themeMode === 'dark'
-                      ? 'Dark theme enabled'
-                      : 'Light theme enabled'}
-                  </Text>
-                </View>
-              </View>
-              <AnimatedChevron expanded={appearanceExpanded} color={t.muted} />
-            </TouchableOpacity>
+              <Text style={[styles.identityInitials, { color: roleMeta.color }]}>
+                {initials}
+              </Text>
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.identityName}>{roleMeta.name}</Text>
+            <Text style={styles.identityHandle}>{roleMeta.handle}</Text>
+            <View style={[styles.roleBadge, { borderColor: `${roleMeta.color}80`, backgroundColor: `${roleMeta.color}22` }]}>
+              <Ionicons name={roleMeta.icon} size={11} color={roleMeta.color} />
+              <Text style={[styles.roleBadgeText, { color: roleMeta.color }]}>
+                {roleMeta.label.toUpperCase()}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.editBtn}
+            activeOpacity={0.7}
+            onPress={() => router.push('/edit-profile' as any)}
+          >
+            <Ionicons name="pencil" size={14} color="#FFFFFF" />
+          </TouchableOpacity>
+        </Animated.View>
 
-            <AnimatedCollapsible expanded={appearanceExpanded}>
-              <View style={[styles.divider, { backgroundColor: border }]} />
-              {themeOptions.map((option, index) => (
-                <React.Fragment key={option.mode}>
-                  <TouchableOpacity
-                    style={styles.themeOption}
-                    onPress={() => setThemeMode(option.mode)}
-                    activeOpacity={0.7}
+        {/* Switch Profile — inline pill row */}
+        <Animated.View entering={FadeInDown.delay(80).duration(450)}>
+          <SectionLabel>MODE</SectionLabel>
+          <View style={styles.roleRow}>
+            {ROLES.map((r) => {
+              const meta = ROLE_META[r];
+              const active = r === activeProfile;
+              return (
+                <TouchableOpacity
+                  key={r}
+                  activeOpacity={0.75}
+                  onPress={() => handleSwitch(r)}
+                  style={[
+                    styles.rolePill,
+                    active && {
+                      borderColor: `${meta.color}80`,
+                      backgroundColor: `${meta.color}18`,
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={meta.icon}
+                    size={17}
+                    color={active ? meta.color : 'rgba(255,255,255,0.55)'}
+                  />
+                  <Text
+                    style={[
+                      styles.rolePillText,
+                      active && { color: '#FFFFFF', fontWeight: '700' },
+                    ]}
                   >
-                    <View style={styles.themeOptionLeft}>
-                      <Ionicons name={option.icon} size={20} color={t.tertiary} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.rowLabel, { color: t.primary }]}>{option.label}</Text>
-                        <Text style={[styles.rowSub, { color: t.muted }]}>{option.description}</Text>
-                      </View>
-                    </View>
-                    <View style={[styles.radioOuter, { borderColor: themeMode === option.mode ? '#fff' : border }]}>
-                      {themeMode === option.mode && (
-                        <View style={[styles.radioInner, { backgroundColor: '#fff' }]} />
-                      )}
-                    </View>
+                    {meta.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Animated.View>
+
+        {/* Preferences */}
+        <Animated.View entering={FadeInDown.delay(140).duration(450)}>
+          <SectionLabel>PREFERENCES</SectionLabel>
+
+          <View style={styles.card}>
+            <View style={styles.appearanceTop}>
+              <View style={[styles.iconBox, { backgroundColor: 'rgba(255,180,0,0.12)' }]}>
+                <Ionicons name={isDark ? 'moon' : 'sunny'} size={17} color="#FFB400" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowLabel}>Appearance</Text>
+                <Text style={styles.rowSub}>
+                  {themeMode === 'system'
+                    ? `Auto · ${isDark ? 'Dark' : 'Light'} right now`
+                    : themeMode === 'dark'
+                      ? 'Dark mode'
+                      : 'Light mode'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.themeSegment}>
+              {themeOptions.map((opt) => {
+                const active = themeMode === opt.mode;
+                return (
+                  <TouchableOpacity
+                    key={opt.mode}
+                    activeOpacity={0.7}
+                    onPress={() => setThemeMode(opt.mode)}
+                    style={[
+                      styles.themeSegmentItem,
+                      active && styles.themeSegmentItemActive,
+                    ]}
+                  >
+                    <Ionicons
+                      name={opt.icon}
+                      size={15}
+                      color={active ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
+                    />
+                    <Text
+                      style={[
+                        styles.themeSegmentText,
+                        active && { color: '#FFFFFF', fontWeight: '700' },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
                   </TouchableOpacity>
-                  {index < themeOptions.length - 1 && (
-                    <View style={[styles.optionDivider, { backgroundColor: border }]} />
-                  )}
-                </React.Fragment>
-              ))}
-            </AnimatedCollapsible>
+                );
+              })}
+            </View>
           </View>
-        </View>
 
-        {/* Account Section */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: t.muted }]}>ACCOUNT</Text>
-          <View style={[styles.sectionCard, { borderColor: border }]}>
-            <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={14} style={styles.cardGlass} />
-
-            <TouchableOpacity
-              style={styles.row}
-              activeOpacity={0.7}
+          <View style={styles.card}>
+            <SettingRow
+              icon="notifications-outline"
+              iconBg="rgba(255,111,60,0.15)"
+              iconColor={ACCENT}
+              label="Notifications"
+              sub="Push, email, and in-app alerts"
               onPress={() => router.push('/notification-settings')}
-            >
-              <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
-                  <Ionicons name="notifications-outline" size={18} color={t.primary} />
-                </View>
-                <Text style={[styles.rowLabel, { color: t.primary }]}>Notifications</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={t.muted} />
-            </TouchableOpacity>
-
-            <View style={[styles.divider, { backgroundColor: border }]} />
-
-            <TouchableOpacity
-              style={styles.row}
-              activeOpacity={0.7}
-              onPress={() => router.push('/blocked-users')}
-            >
-              <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
-                  <Ionicons name="ban-outline" size={18} color={t.primary} />
-                </View>
-                <Text style={[styles.rowLabel, { color: t.primary }]}>Blocked Users</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={t.muted} />
-            </TouchableOpacity>
-
-            <View style={[styles.divider, { backgroundColor: border }]} />
-
-            <TouchableOpacity
-              style={styles.row}
-              activeOpacity={0.7}
+            />
+            <Divider />
+            <SettingRow
+              icon="lock-closed-outline"
+              iconBg="rgba(52,199,89,0.12)"
+              iconColor="#34C759"
+              label="Privacy"
+              sub="Who can see your profile and deals"
               onPress={() => router.push('/privacy-settings')}
-            >
-              <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)' }]}>
-                  <Ionicons name="lock-closed-outline" size={18} color={t.primary} />
-                </View>
-                <Text style={[styles.rowLabel, { color: t.primary }]}>Privacy</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={t.muted} />
-            </TouchableOpacity>
+            />
+            <Divider />
+            <SettingRow
+              icon="ban-outline"
+              iconBg="rgba(255,68,68,0.10)"
+              iconColor="#FF4444"
+              label="Blocked Users"
+              sub="Accounts you've hidden"
+              onPress={() => router.push('/blocked-users')}
+            />
+          </View>
+        </Animated.View>
 
-            <View style={[styles.divider, { backgroundColor: border }]} />
+        {/* Account */}
+        <Animated.View entering={FadeInDown.delay(200).duration(450)}>
+          <SectionLabel>ACCOUNT</SectionLabel>
+          <View style={styles.card}>
+            <SettingRow
+              icon="person-circle-outline"
+              iconBg="rgba(59,130,246,0.14)"
+              iconColor="#3B82F6"
+              label="Edit profile"
+              sub="Name, bio, photo"
+              onPress={() => router.push('/edit-profile' as any)}
+            />
+            <Divider />
+            <SettingRow
+              icon="card-outline"
+              iconBg="rgba(168,85,247,0.14)"
+              iconColor="#A855F7"
+              label="Payouts & wallet"
+              sub="Stripe Connect · tax forms"
+              onPress={() => router.push('/dashboard/payments' as any)}
+            />
+            <Divider />
+            <SettingRow
+              icon="key-outline"
+              iconBg="rgba(255,255,255,0.08)"
+              iconColor="#FFFFFF"
+              label="Security"
+              sub="Passkey, 2FA, connected devices"
+              onPress={() => {}}
+            />
+          </View>
+        </Animated.View>
+
+        {/* Support */}
+        <Animated.View entering={FadeInDown.delay(260).duration(450)}>
+          <SectionLabel>SUPPORT</SectionLabel>
+          <View style={styles.card}>
+            <SettingRow
+              icon="help-circle-outline"
+              iconBg="rgba(0,198,176,0.14)"
+              iconColor="#00C6B0"
+              label="Help Center"
+              onPress={() => {}}
+            />
+            <Divider />
+            <SettingRow
+              icon="chatbubbles-outline"
+              iconBg="rgba(255,111,60,0.12)"
+              iconColor={ACCENT}
+              label="Contact Proslync"
+              sub="Typical reply under 4 hours"
+              onPress={() => {}}
+            />
+            <Divider />
+            <SettingRow
+              icon="star-outline"
+              iconBg="rgba(245,180,0,0.14)"
+              iconColor="#F5B400"
+              label="Rate Proslync"
+              onPress={() => {}}
+            />
+          </View>
+        </Animated.View>
+
+        {/* Legal */}
+        <Animated.View entering={FadeInDown.delay(320).duration(450)}>
+          <SectionLabel>LEGAL</SectionLabel>
+          <View style={styles.card}>
+            <SettingRow
+              icon="document-text-outline"
+              iconBg="rgba(255,255,255,0.08)"
+              iconColor="rgba(255,255,255,0.9)"
+              label="Terms of Service"
+              onPress={() => {}}
+            />
+            <Divider />
+            <SettingRow
+              icon="shield-outline"
+              iconBg="rgba(255,255,255,0.08)"
+              iconColor="rgba(255,255,255,0.9)"
+              label="Privacy Policy"
+              onPress={() => {}}
+            />
+            <Divider />
+            <SettingRow
+              icon="reader-outline"
+              iconBg="rgba(255,255,255,0.08)"
+              iconColor="rgba(255,255,255,0.9)"
+              label="Open-source licenses"
+              onPress={() => {}}
+            />
+          </View>
+        </Animated.View>
+
+        {/* Log out */}
+        <Animated.View entering={FadeInDown.delay(380).duration(450)}>
+          <TouchableOpacity
+            style={styles.logoutBtn}
+            activeOpacity={0.75}
+            onPress={() => setLogoutConfirmVisible(true)}
+          >
+            <Ionicons name="log-out-outline" size={18} color="#FF4444" />
+            <Text style={styles.logoutText}>Log out</Text>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Version */}
+        <Animated.View entering={FadeIn.delay(440).duration(450)} style={styles.versionWrap}>
+          <Text style={styles.versionText}>Proslync · v1.0.0 (build 24)</Text>
+          <Text style={styles.versionSub}>Made in Brooklyn</Text>
+        </Animated.View>
+      </ScrollView>
+
+      {/* Switch profile modal (still accessible if needed, but pills are primary) */}
+      <Modal
+        visible={switchProfileVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSwitchProfileVisible(false)}
+        statusBarTranslucent
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setSwitchProfileVisible(false)}>
+          <Pressable style={styles.modalCard} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Switch Profile</Text>
+              <Text style={styles.modalSubtitle}>Choose how you want to use Proslync</Text>
+            </View>
+
+            <View style={styles.modalList}>
+              {ROLES.map((r, index) => {
+                const meta = ROLE_META[r];
+                const selected = activeProfile === r;
+                return (
+                  <React.Fragment key={r}>
+                    <TouchableOpacity
+                      style={styles.profileRow}
+                      activeOpacity={0.7}
+                      onPress={() => handleSwitch(r)}
+                    >
+                      <View
+                        style={[
+                          styles.profileIcon,
+                          selected && { backgroundColor: `${meta.color}22`, borderColor: `${meta.color}60` },
+                        ]}
+                      >
+                        <Ionicons
+                          name={meta.icon}
+                          size={20}
+                          color={selected ? meta.color : 'rgba(255,255,255,0.85)'}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.profileLabel}>{meta.label}</Text>
+                        <Text style={styles.profileDesc}>{meta.description}</Text>
+                      </View>
+                      {selected && <Ionicons name="checkmark-circle" size={22} color={meta.color} />}
+                    </TouchableOpacity>
+                    {index < ROLES.length - 1 && <View style={styles.profileDivider} />}
+                  </React.Fragment>
+                );
+              })}
+            </View>
 
             <TouchableOpacity
-              style={styles.row}
+              style={styles.modalCancel}
               activeOpacity={0.7}
-              onPress={logout}
+              onPress={() => setSwitchProfileVisible(false)}
             >
-              <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 59, 48, 0.08)' }]}>
-                  <Ionicons name="log-out-outline" size={18} color="#ff3b30" />
-                </View>
-                <Text style={[styles.rowLabel, { color: '#ff3b30' }]}>Log Out</Text>
-              </View>
+              <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Logout confirm */}
+      <Modal
+        visible={logoutConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutConfirmVisible(false)}
+        statusBarTranslucent
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setLogoutConfirmVisible(false)}>
+          <Pressable style={styles.confirmCard} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.confirmIcon}>
+              <Ionicons name="log-out-outline" size={26} color="#FF4444" />
+            </View>
+            <Text style={styles.confirmTitle}>Log out?</Text>
+            <Text style={styles.confirmSub}>
+              You'll need to sign back in with your Proslync account to continue.
+            </Text>
+            <View style={styles.confirmRow}>
+              <TouchableOpacity
+                style={styles.confirmBtn}
+                activeOpacity={0.7}
+                onPress={() => setLogoutConfirmVisible(false)}
+              >
+                <Text style={styles.confirmBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmBtn, styles.confirmBtnDanger]}
+                activeOpacity={0.7}
+                onPress={() => {
+                  setLogoutConfirmVisible(false);
+                  logout();
+                }}
+              >
+                <Text style={[styles.confirmBtnText, { color: '#FF4444', fontWeight: '700' }]}>
+                  Log out
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <Text style={styles.sectionLabel}>{children}</Text>;
+}
+
+function SettingRow({
+  icon,
+  iconBg,
+  iconColor,
+  label,
+  sub,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconBg: string;
+  iconColor: string;
+  label: string;
+  sub?: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
+      <View style={styles.rowLeft}>
+        <View style={[styles.iconBox, { backgroundColor: iconBg }]}>
+          <Ionicons name={icon} size={17} color={iconColor} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.rowLabel}>{label}</Text>
+          {sub && <Text style={styles.rowSub}>{sub}</Text>}
+        </View>
+      </View>
+      <Ionicons name="chevron-forward" size={17} color="rgba(255,255,255,0.3)" />
+    </TouchableOpacity>
+  );
+}
+
+function Divider() {
+  return <View style={styles.divider} />;
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#000000' },
+  ambientGlow: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 0 },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    zIndex: 2,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+  },
+  headerTitle: { fontSize: 18, color: '#FFFFFF', fontWeight: '700' },
+  headerRight: { width: 38 },
+
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 8 },
+
+  // Identity hero
+  identityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+    borderRadius: 18,
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    overflow: 'hidden',
+    marginBottom: 20,
   },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: 'Lato_700Bold',
+  identityAvatar: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  headerRight: {
+  identityAvatarImage: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 2,
+    backgroundColor: '#1a1c22',
+  },
+  identityInitials: { fontSize: 18, fontWeight: '800' },
+  identityName: { fontSize: 16, color: '#FFFFFF', fontWeight: '700' },
+  identityHandle: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 7,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  roleBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
+  editBtn: {
     width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-  },
-  section: {
-    marginBottom: 28,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontFamily: 'Lato_700Bold',
-    letterSpacing: 0.5,
-    marginBottom: 8,
+
+  sectionLabel: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.45)',
+    letterSpacing: 1,
+    fontWeight: '700',
+    marginBottom: 10,
     marginLeft: 4,
   },
-  sectionCard: {
+
+  // Role pills row
+  roleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+  },
+  rolePill: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
     borderRadius: 14,
     borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center',
+    gap: 5,
+  },
+  rolePillText: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.55)',
+    fontWeight: '500',
+  },
+
+  // Generic card
+  card: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.09)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     overflow: 'hidden',
+    marginBottom: 20,
   },
-  cardGlass: {
-    ...StyleSheet.absoluteFillObject,
-  },
+
+  // Row
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
   },
   rowLeft: {
     flexDirection: 'row',
@@ -281,53 +728,177 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   iconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rowLabel: {
-    fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
-  },
-  rowSub: {
-    fontSize: 12,
-    fontFamily: 'Lato_400Regular',
-    marginTop: 2,
-  },
+  rowLabel: { fontSize: 14.5, color: '#FFFFFF', fontWeight: '600' },
+  rowSub: { fontSize: 11.5, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
   divider: {
     height: 1,
-    marginHorizontal: 14,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginLeft: 62,
   },
-  themeOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-  },
-  themeOptionLeft: {
+
+  // Appearance (inline theme segment)
+  appearanceTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  themeSegment: {
+    flexDirection: 'row',
+    gap: 4,
+    padding: 4,
+    marginHorizontal: 14,
+    marginBottom: 14,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  themeSegmentItem: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+    borderRadius: 9,
   },
-  optionDivider: {
-    height: 1,
-    marginLeft: 48,
+  themeSegmentItemActive: {
+    backgroundColor: 'rgba(255,255,255,0.09)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  radioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
+  themeSegmentText: { fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: '500' },
+
+  // Logout
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,68,68,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,68,68,0.3)',
+    marginTop: 6,
+  },
+  logoutText: { color: '#FF4444', fontSize: 14, fontWeight: '700' },
+
+  versionWrap: { alignItems: 'center', marginTop: 22 },
+  versionText: { color: 'rgba(255,255,255,0.35)', fontSize: 11, fontWeight: '600' },
+  versionSub: { color: 'rgba(255,255,255,0.25)', fontSize: 10, marginTop: 3, fontStyle: 'italic' },
+
+  // Switch modal (kept for safety — not used as primary UI anymore)
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.72)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: '#0F1012',
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
   },
+  modalHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 22,
+    paddingBottom: 14,
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
+  modalSubtitle: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+  modalList: { paddingHorizontal: 12, paddingBottom: 8 },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+  },
+  profileIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  profileLabel: { fontSize: 15, color: '#FFFFFF', fontWeight: '600' },
+  profileDesc: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  profileDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginLeft: 64,
+  },
+  modalCancel: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  modalCancelText: { fontSize: 15, color: 'rgba(255,255,255,0.7)' },
+
+  // Logout confirm
+  confirmCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: '#0F1012',
+    borderRadius: 22,
+    paddingTop: 24,
+    paddingHorizontal: 22,
+    paddingBottom: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  confirmIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,68,68,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,68,68,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  confirmTitle: { fontSize: 18, color: '#FFFFFF', fontWeight: '700' },
+  confirmSub: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
+  },
+  confirmRow: { flexDirection: 'row', gap: 8, marginTop: 18, width: '100%' },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+  },
+  confirmBtnDanger: {
+    backgroundColor: 'rgba(255,68,68,0.1)',
+    borderColor: 'rgba(255,68,68,0.35)',
+  },
+  confirmBtnText: { fontSize: 14, color: '#FFFFFF', fontWeight: '600' },
 });

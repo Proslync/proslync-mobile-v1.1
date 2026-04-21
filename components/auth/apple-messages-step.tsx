@@ -228,7 +228,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     marginTop: 8,
   },
   header: {
@@ -243,12 +242,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -263,16 +260,13 @@ const styles = StyleSheet.create({
   },
   codeLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   codeText: {
     fontSize: 40,
-    fontFamily: 'Lato_700Bold',
     letterSpacing: 8,
   },
   timerText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   actionsSection: {
     paddingHorizontal: 24,
@@ -280,7 +274,6 @@ const styles = StyleSheet.create({
   },
   helpText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: 8,
@@ -294,12 +287,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 22,
   },

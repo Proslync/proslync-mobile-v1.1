@@ -196,7 +196,6 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontWeight: '700',
-    fontFamily: 'Lato_700Bold',
   },
   username: {
     fontSize: 14,

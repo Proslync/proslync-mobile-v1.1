@@ -460,7 +460,7 @@ export default function ManageEventScreen() {
                 }
               }}
             >
-              <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'Lato_700Bold' }}>Publish Event</Text>
+              <Text style={{ color: '#fff', fontSize: 16, }}>Publish Event</Text>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -580,7 +580,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
     color: "#000",
   },
   loadingContainer: {
@@ -616,7 +615,6 @@ const styles = StyleSheet.create({
   },
   eventName: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     lineHeight: 26,
     marginBottom: 2,
     color: "#fff",
@@ -628,12 +626,10 @@ const styles = StyleSheet.create({
   },
   eventDate: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(255,255,255,0.7)",
   },
   eventLocation: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(255,255,255,0.7)",
   },
   eventMeta: {
@@ -649,7 +645,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
     textTransform: "uppercase",
   },
@@ -660,7 +655,6 @@ const styles = StyleSheet.create({
   },
   attendeeText: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     color: "rgba(255,255,255,0.6)",
   },
   menuSection: {
@@ -668,7 +662,6 @@ const styles = StyleSheet.create({
   },
   groupTitle: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     color: "rgba(0,0,0,0.5)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -703,12 +696,10 @@ const styles = StyleSheet.create({
   },
   menuItemTitle: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "#000",
   },
   menuItemSubtitle: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
     color: "rgba(0,0,0,0.5)",
   },

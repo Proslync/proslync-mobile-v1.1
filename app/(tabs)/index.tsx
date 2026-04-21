@@ -1,419 +1,500 @@
 import * as React from 'react';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
   RefreshControl,
-  ViewToken,
-  Dimensions,
   TouchableOpacity,
-  ActivityIndicator,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const PAGE_HEIGHT = SCREEN_HEIGHT;
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-import { FeedLoadingSkeleton } from '@/components/feed';
 import { FeedNavBar } from '@/components/feed/feed-nav-bar';
-import { VenueWeekCard, type VenueWeekCardData } from '@/components/feed/venue-week-card';
-import { EventLineupCard, type EventLineupCardData } from '@/components/feed/event-lineup-card';
-import { useQueryClient } from '@tanstack/react-query';
-import { useFeed } from '@/hooks/use-feed';
-import { useAuth } from '@/lib/providers/auth-provider';
-import { eventsApi } from '@/lib/api/events';
-import { venuesApi } from '@/lib/api/venues';
-import { useToast } from '@/components/shared/toast';
-import { PurchaseTicketSheet } from '@/components/tickets/purchase-ticket-sheet';
 import { SearchSheet } from '@/components/shared/search-sheet';
-import { track, trackScreen } from '@/lib/analytics';
-import type { FeedItem, FeedTab } from '@/lib/types/feed.types';
+import { trackScreen } from '@/lib/analytics';
 
-// ── Card type discriminated union ──
-type CardItem =
-  | { type: 'venue-week'; id: string; data: VenueWeekCardData }
-  | { type: 'lineup'; id: string; data: EventLineupCardData };
+const { width: SCREEN_W } = Dimensions.get('window');
 
-// Helper: format event CTA label
-function eventCtaLabel(item: FeedItem): string {
-  if (item.isPaid && item.price != null && item.price > 0) {
-    return `Tickets from $${Math.round(item.price)}`;
-  }
-  return 'RSVP';
-}
+// ───── Card types ─────
 
-// Helper: get day abbreviation from event date
-function eventDay(item: FeedItem): string {
-  if (item.eventDate) {
-    return new Date(item.eventDate).toLocaleDateString('en-US', { weekday: 'short' });
-  }
-  return '';
-}
+type ScoreLine = { team: string; score: number };
+type GameCardData = {
+  kind: 'game';
+  id: string;
+  away: ScoreLine;
+  home: ScoreLine;
+  status: 'LIVE' | 'FINAL' | 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'HALF' | 'OT';
+  clock?: string;
+  venue: string;
+  leader?: { name: string; line: string };
+  featured?: boolean; // Kiyan is in it
+};
 
-// Helper: get flyer/image URL
-function eventImage(item: FeedItem): string {
-  return item.imageUrl || item.thumbnail || '';
-}
+type DealCardData = {
+  kind: 'deal';
+  id: string;
+  brand: string;
+  brandLogoColor: string;
+  brandInitial: string;
+  dealType: string;
+  category: string;
+  compLine: string;
+  deadline: string;
+  network: 'open' | 'invite';
+  matchScore: number; // 0-100
+};
 
-// ── Transform FeedItems into card data ──
-function buildCards(items: FeedItem[], venueBackgrounds: Record<number, string> = {}): CardItem[] {
-  if (items.length === 0) return [];
+type PersonCardData = {
+  kind: 'person';
+  id: string;
+  name: string;
+  handle: string;
+  sport: string;
+  school: string;
+  avatarColor: string;
+  initial: string;
+  followers: string;
+  tag?: string; // "Top 3 PG nationally" etc.
+  mutualCount?: number;
+  verified?: boolean;
+};
 
-  const now = new Date();
-  const nowMs = now.getTime();
+type DiscoveryItem = GameCardData | DealCardData | PersonCardData;
 
-  // Group events by venue (2+ events = venue-week card)
-  const venueGroups = new Map<string, FeedItem[]>();
-  const remaining: FeedItem[] = [];
+// ───── Mock data ─────
 
-  for (const item of items) {
-    if (item.venueId && item.venueName) {
-      const key = String(item.venueId);
-      const group = venueGroups.get(key) || [];
-      group.push(item);
-      venueGroups.set(key, group);
-    } else {
-      remaining.push(item);
-    }
-  }
+const GAMES: GameCardData[] = [
+  {
+    kind: 'game',
+    id: 'g-cuse-duke',
+    away: { team: 'DUKE', score: 54 },
+    home: { team: 'CUSE', score: 62 },
+    status: 'Q4',
+    clock: '4:32',
+    venue: 'JMA Wireless Dome',
+    leader: { name: 'Kiyan Anthony', line: '21 PTS · 4 REB · 3 AST · FG 7-13' },
+    featured: true,
+  },
+  {
+    kind: 'game',
+    id: 'g-cameron',
+    away: { team: 'UNC', score: 68 },
+    home: { team: 'DUKE', score: 71 },
+    status: 'FINAL',
+    venue: 'Cameron Indoor Stadium',
+    leader: { name: 'Cooper Flagg', line: '29 PTS · 10 REB · 3 BLK · FG 11-18' },
+  },
+  {
+    kind: 'game',
+    id: 'g-chase',
+    away: { team: 'LAL', score: 88 },
+    home: { team: 'GSW', score: 94 },
+    status: 'Q3',
+    clock: '5:08',
+    venue: 'Chase Center',
+    leader: { name: 'Stephen Curry', line: '28 PTS · 6 AST · 4-8 3P' },
+  },
+  {
+    kind: 'game',
+    id: 'g-watsco',
+    away: { team: 'CUSE', score: 38 },
+    home: { team: 'MIA', score: 33 },
+    status: 'Q2',
+    clock: '6:14',
+    venue: 'Watsco Center',
+    leader: { name: 'Kiyan Anthony', line: '12 PTS · 2 REB · FG 4-7' },
+    featured: true,
+  },
+  {
+    kind: 'game',
+    id: 'g-jpj',
+    away: { team: 'ND', score: 59 },
+    home: { team: 'UVA', score: 64 },
+    status: 'Q4',
+    clock: '1:42',
+    venue: 'John Paul Jones Arena',
+    leader: { name: 'M. Trimble', line: '20 PTS · 5 AST' },
+  },
+];
 
-  // Venues with 2+ events become VenueWeekCards; single-event venues go to remaining
-  const venueCards: CardItem[] = [];
-  for (const [venueId, venueItems] of venueGroups) {
-    if (venueItems.length >= 2) {
-      const first = venueItems[0];
-      const videoItem = venueItems.find((it) => it.mediaType === 'video' && it.videoUrl);
-      const bgUrl = first.venueId ? venueBackgrounds[first.venueId] : undefined;
-      venueCards.push({
-        type: 'venue-week',
-        id: `vw-${venueId}`,
-        data: {
-          id: venueId,
-          venueName: first.venueName || 'Venue',
-          venueLogoUrl: first.userAvatar || '',
-          venueVerified: first.verified,
-          backgroundImageUrl: bgUrl,
-          videoUrl: videoItem?.videoUrl,
-          events: venueItems.map((it) => ({
-            id: String(it.eventId ?? it.id),
-            flyerUrl: eventImage(it),
-            day: eventDay(it),
-            ctaLabel: eventCtaLabel(it),
-          })),
-        },
-      });
-    } else {
-      remaining.push(...venueItems);
-    }
-  }
+const DEALS: DealCardData[] = [
+  {
+    kind: 'deal',
+    id: 'd-puma',
+    brand: 'PUMA Hoops',
+    brandLogoColor: '#E11E2B',
+    brandInitial: 'P',
+    dealType: 'Signature line · MB.04 NY Edition',
+    category: 'Footwear · Apparel',
+    compLine: '$85k + 4% royalty',
+    deadline: 'Offer expires Friday',
+    network: 'invite',
+    matchScore: 97,
+  },
+  {
+    kind: 'deal',
+    id: 'd-celsius',
+    brand: 'Celsius',
+    brandLogoColor: '#00C2A8',
+    brandInitial: 'C',
+    dealType: 'Gameday Series · 3 posts + tunnel cut',
+    category: 'Beverage',
+    compLine: '$12k – $18k',
+    deadline: 'Apply by Apr 28',
+    network: 'open',
+    matchScore: 89,
+  },
+  {
+    kind: 'deal',
+    id: 'd-jordan',
+    brand: 'Jordan Brand',
+    brandLogoColor: '#111',
+    brandInitial: 'J',
+    dealType: 'Capsule drop · 500 units',
+    category: 'Apparel',
+    compLine: '$65k + sample tier',
+    deadline: 'Decision by EOD',
+    network: 'invite',
+    matchScore: 94,
+  },
+  {
+    kind: 'deal',
+    id: 'd-beats',
+    brand: 'Beats by Dre',
+    brandLogoColor: '#E52321',
+    brandInitial: 'B',
+    dealType: 'Studio session + social reel',
+    category: 'Audio',
+    compLine: '$8k flat + product',
+    deadline: 'Slot open Tue',
+    network: 'invite',
+    matchScore: 84,
+  },
+  {
+    kind: 'deal',
+    id: 'd-bodyarmor',
+    brand: 'BODYARMOR',
+    brandLogoColor: '#0A2342',
+    brandInitial: 'B',
+    dealType: 'Postseason campaign · 4 deliverables',
+    category: 'Sports Drink',
+    compLine: '$22k – $38k',
+    deadline: 'Apply by May 3',
+    network: 'open',
+    matchScore: 78,
+  },
+];
 
-  // Group remaining items by organizer (userId) for lineup cards
-  const organizerGroups = new Map<string, FeedItem[]>();
-  for (const item of remaining) {
-    const key = item.userId || item.username || item.id;
-    const group = organizerGroups.get(key) || [];
-    group.push(item);
-    organizerGroups.set(key, group);
-  }
+const PEOPLE: PersonCardData[] = [
+  {
+    kind: 'person',
+    id: 'p-coop',
+    name: 'Cooper Flagg',
+    handle: 'coopflagg',
+    sport: 'Basketball',
+    school: 'Duke',
+    avatarColor: '#001A57',
+    initial: 'C',
+    followers: '2.4M',
+    tag: 'Wooden Award Watch',
+    mutualCount: 3,
+    verified: true,
+  },
+  {
+    kind: 'person',
+    id: 'p-dylan',
+    name: 'Dylan Harper',
+    handle: 'dylanharper',
+    sport: 'Basketball',
+    school: 'Rutgers',
+    avatarColor: '#CC0033',
+    initial: 'D',
+    followers: '812K',
+    tag: 'Top 5 PG · Class of 2024',
+    mutualCount: 4,
+    verified: true,
+  },
+  {
+    kind: 'person',
+    id: 'p-ace',
+    name: 'Ace Bailey',
+    handle: 'acebailey',
+    sport: 'Basketball',
+    school: 'Rutgers',
+    avatarColor: '#CC0033',
+    initial: 'A',
+    followers: '640K',
+    tag: '5★ prospect',
+    mutualCount: 2,
+    verified: true,
+  },
+  {
+    kind: 'person',
+    id: 'p-maya',
+    name: 'Maya Chen',
+    handle: 'mayachen',
+    sport: 'Soccer',
+    school: 'UCLA',
+    avatarColor: '#2774AE',
+    initial: 'M',
+    followers: '318K',
+    tag: 'Hermann Trophy nominee',
+    mutualCount: 1,
+  },
+  {
+    kind: 'person',
+    id: 'p-jalen',
+    name: 'Jalen Ortiz',
+    handle: 'jortiz',
+    sport: 'Football',
+    school: 'Michigan',
+    avatarColor: '#00274C',
+    initial: 'J',
+    followers: '1.1M',
+    tag: 'Big Ten OPOTY',
+    verified: true,
+  },
+  {
+    kind: 'person',
+    id: 'p-jj',
+    name: 'JJ Starling',
+    handle: 'jj_starling',
+    sport: 'Basketball',
+    school: 'Syracuse',
+    avatarColor: '#F76900',
+    initial: 'J',
+    followers: '244K',
+    tag: 'Cuse backcourt',
+    mutualCount: 9,
+  },
+];
 
-  const lineupCards: CardItem[] = [];
-  for (const [, orgItems] of organizerGroups) {
-    const first = orgItems[0];
-    const bgUrl = first.venueId ? venueBackgrounds[first.venueId] : undefined;
-    const videoItem = orgItems.find((it) => it.mediaType === 'video' && it.videoUrl);
-    lineupCards.push({
-      type: 'lineup',
-      id: `el-${first.id}`,
-      data: {
-        id: first.id,
-        venueId: first.venueId ? String(first.venueId) : undefined,
-        userId: first.userId,
-        organizerName: first.username || first.venueName || 'Organizer',
-        organizerLogoUrl: first.userAvatar || '',
-        organizerVerified: first.verified,
-        backgroundImageUrl: bgUrl || eventImage(first),
-        videoUrl: videoItem?.videoUrl,
-        events: orgItems.map((it) => {
-          // Smart date label: day of week if this week, otherwise "Mon DD"
-          const eventDate = it.eventDate ? new Date(it.eventDate) : null;
-          const diffDays = eventDate ? Math.round((eventDate.getTime() - nowMs) / (1000 * 60 * 60 * 24)) : 99;
-          const dayLabel = eventDate
-            ? (diffDays >= 0 && diffDays < 7
-              ? eventDate.toLocaleDateString('en-US', { weekday: 'short' })
-              : eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
-            : '';
-          const ctaLabel = it.isPaid && it.price != null && it.price > 0
-            ? `$${Math.round(it.price)}`
-            : 'RSVP';
-          return {
-            id: String(it.eventId ?? it.id),
-            flyerUrl: eventImage(it),
-            price: ctaLabel,
-            day: dayLabel,
-            ctaLabel,
-          };
-        }),
-      },
-    });
-  }
-
-  // Interleave: venue-week cards first, then lineup cards
-  const cards: CardItem[] = [];
-  const maxLen = Math.max(venueCards.length, lineupCards.length);
+// Interleave the three stacks so the feed reads like a mixed discovery view
+function buildFeed(): DiscoveryItem[] {
+  const feed: DiscoveryItem[] = [];
+  const maxLen = Math.max(GAMES.length, DEALS.length, PEOPLE.length);
   for (let i = 0; i < maxLen; i++) {
-    if (i < venueCards.length) cards.push(venueCards[i]);
-    if (i < lineupCards.length) cards.push(lineupCards[i]);
+    if (GAMES[i]) feed.push(GAMES[i]);
+    if (DEALS[i]) feed.push(DEALS[i]);
+    if (PEOPLE[i]) feed.push(PEOPLE[i]);
   }
-
-  return cards;
+  return feed;
 }
 
-export default function FeedScreen() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const { user, isAuthenticated } = useAuth();
-  const { showSuccess, showError } = useToast();
-  const [activeFilter, setActiveFilter] = useState('For You');
-  const activeTab: FeedTab = activeFilter === 'Following' ? 'following' : 'foryou';
-  const [visibleIds, setVisibleIds] = useState<Set<string>>(new Set());
-  const [purchaseItem, setPurchaseItem] = useState<FeedItem | null>(null);
+// ───── Card components ─────
 
-  useEffect(() => { trackScreen('feed', 'index'); }, []);
-
-  const {
-    items: feedItems,
-    isLoading,
-    isError,
-    refetch,
-    loadMore,
-    isFetchingNextPage,
-  } = useFeed({ feedType: activeTab, enabled: isAuthenticated });
-
-  // Enrich feed items with flyer images from event details
-  const [enrichedImages, setEnrichedImages] = useState<Record<number, string>>({});
-  useEffect(() => {
-    const needsEnrich = feedItems.filter(
-      (it) => it.eventId && !enrichedImages[it.eventId]
-    );
-    if (needsEnrich.length === 0) return;
-    const ids = [...new Set(needsEnrich.map((it) => it.eventId!))];
-    eventsApi.getEventsByIds(ids).then((events) => {
-      const VIDEO_EXT = /\.(mp4|mov|webm|m4v)(\?|$)/i;
-      const map: Record<number, string> = {};
-      for (const ev of events) {
-        // Prefer imageUrl (always a static image) over flyer URL (might be a video)
-        const flyerUrl = ev.flyer?.url || '';
-        const isVideoFlyer = VIDEO_EXT.test(flyerUrl) || ev.flyer?.mimeType?.startsWith('video/');
-        const url = ev.imageUrl || (!isVideoFlyer ? flyerUrl : '') || '';
-        if (url) map[ev.id] = url;
-      }
-      if (Object.keys(map).length > 0) {
-        setEnrichedImages((prev) => ({ ...prev, ...map }));
-      }
-    }).catch(() => {});
-  }, [feedItems]);
-
-  const enrichedItems = React.useMemo(() =>
-    feedItems.map((item) => {
-      const enrichedUrl = item.eventId ? enrichedImages[item.eventId] : undefined;
-      const bestImage = enrichedUrl || item.imageUrl || item.thumbnail || '';
-      if (bestImage !== item.imageUrl) {
-        return { ...item, imageUrl: bestImage };
-      }
-      return item;
-    }),
-    [feedItems, enrichedImages],
-  );
-
-  // Fetch venue feed backgrounds
-  const [venueBackgrounds, setVenueBackgrounds] = useState<Record<number, string>>({});
-  useEffect(() => {
-    const venueIds = [...new Set(enrichedItems.filter((it) => it.venueId && !venueBackgrounds[it.venueId]).map((it) => it.venueId!))];
-    if (venueIds.length === 0) return;
-    Promise.all(venueIds.map((id) => venuesApi.getVenue(id).catch(() => null))).then((venues) => {
-      const map: Record<number, string> = {};
-      for (const v of venues) {
-        if (v?.feedBackground?.url) map[v.id] = v.feedBackground.url;
-      }
-      if (Object.keys(map).length > 0) {
-        setVenueBackgrounds((prev) => ({ ...prev, ...map }));
-      }
-    }).catch(() => {});
-  }, [enrichedItems]);
-
-  const cards = React.useMemo(() => buildCards(enrichedItems, venueBackgrounds), [enrichedItems, venueBackgrounds]);
-
-  const [isSearchActive, setIsSearchActive] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchVisible, setSearchVisible] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-  }, [refetch]);
-
-  // Video autoplay — track visible cards
-  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
-    const ids = new Set(viewableItems.map((v) => v.item?.id).filter(Boolean));
-    setVisibleIds((prev) => {
-      if (prev.size === ids.size) {
-        let same = true;
-        for (const id of ids) if (!prev.has(id)) { same = false; break; }
-        if (same) return prev;
-      }
-      return ids;
-    });
-  }).current;
-
-  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 }).current;
-
-  // Force-snap to nearest card if the user releases without momentum
-  const flatListRef = useRef<FlatList<CardItem>>(null);
-  const onScrollSettle = useCallback((e: { nativeEvent: { contentOffset: { y: number } } }) => {
-    const offset = e.nativeEvent.contentOffset.y;
-    const snappedIndex = Math.round(offset / PAGE_HEIGHT);
-    const target = snappedIndex * PAGE_HEIGHT;
-    if (Math.abs(offset - target) > 1) {
-      flatListRef.current?.scrollToOffset({ offset: target, animated: true });
-    }
-  }, []);
-
-  const handleVenuePress = useCallback((venueId: string) => {
-    router.push({ pathname: '/venue-profile/[venueId]', params: { venueId } });
-  }, [router]);
-
-  const handleCardEventPress = useCallback((eventId: string) => {
-    track('event_view', { event_id: Number(eventId), source: 'feed' });
-    router.push({
-      pathname: '/event/[id]',
-      params: { id: eventId },
-    });
-  }, [router]);
-
-  const handlePurchaseSuccess = useCallback((ticketCount: number) => {
-    if (purchaseItem) {
-      showSuccess(`${ticketCount} ticket${ticketCount > 1 ? 's' : ''} purchased!`);
-      queryClient.invalidateQueries({ queryKey: ['my-tickets'] });
-    }
-  }, [purchaseItem, showSuccess, queryClient]);
-
-  const renderCard = useCallback(({ item, index }: { item: CardItem; index: number }) => {
-    const isVisible = visibleIds.has(item.id);
-
-    let card: React.ReactNode;
-    switch (item.type) {
-      case 'venue-week':
-        card = (
-          <VenueWeekCard
-            data={item.data}
-            isVisible={isVisible}
-            onEventPress={handleCardEventPress}
-            onVenuePress={handleVenuePress}
-            onShopAll={() => handleVenuePress(item.data.id)}
-          />
-        );
-        break;
-      case 'lineup':
-        card = (
-          <EventLineupCard
-            data={item.data}
-            isVisible={isVisible}
-            onEventPress={handleCardEventPress}
-            onShopAll={() => {
-              if (item.data.venueId) handleVenuePress(item.data.venueId);
-              else if (item.data.userId) router.push({ pathname: '/user/[username]', params: { username: item.data.organizerName, userId: item.data.userId } });
-            }}
-            onOrganizerPress={() => {
-              if (item.data.venueId) handleVenuePress(item.data.venueId);
-              else if (item.data.userId) router.push({ pathname: '/user/[username]', params: { username: item.data.organizerName, userId: item.data.userId } });
-            }}
-          />
-        );
-        break;
-    }
-
-    return (
-      <View style={styles.page}>
-        {card}
+function SectionKicker({ icon, label, color }: { icon: keyof typeof Ionicons.glyphMap; label: string; color: string }) {
+  return (
+    <View style={styles.kickerRow}>
+      <View style={[styles.kickerIcon, { backgroundColor: `${color}22`, borderColor: `${color}55` }]}>
+        <Ionicons name={icon} size={11} color={color} />
       </View>
-    );
-  }, [visibleIds, handleCardEventPress, handleVenuePress, router]);
+      <Text style={[styles.kickerText, { color }]}>{label}</Text>
+    </View>
+  );
+}
 
-  if (isLoading && cards.length === 0) {
-    return <FeedLoadingSkeleton />;
-  }
+function GameCard({ data, onPress }: { data: GameCardData; onPress: () => void }) {
+  const isLive = data.status !== 'FINAL';
+  const leaderIsAway = data.away.score > data.home.score;
+  const leaderIsHome = data.home.score > data.away.score;
+  return (
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
+      <SectionKicker icon={isLive ? 'radio' : 'checkmark-circle'} label={isLive ? 'LIVE GAME' : 'FINAL'} color={isLive ? '#FF6F3C' : 'rgba(255,255,255,0.55)'} />
+      <View style={styles.gameHeader}>
+        <Text style={styles.gameVenue} numberOfLines={1}>{data.venue}</Text>
+        <View style={[styles.gameStatusPill, isLive && styles.gameStatusPillLive]}>
+          {isLive && <View style={styles.gameStatusDot} />}
+          <Text style={styles.gameStatusText}>{isLive && data.clock ? `${data.status} · ${data.clock}` : data.status}</Text>
+        </View>
+      </View>
 
-  if (isError) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>Something went wrong</Text>
-          <Text style={styles.emptySubtitle}>Unable to load feed. Please try again.</Text>
-          <TouchableOpacity
-            style={{ marginTop: 16, backgroundColor: '#000', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 }}
-            onPress={() => refetch()}
-            activeOpacity={0.8}
-            accessibilityLabel="Retry loading feed"
-            accessibilityRole="button"
-          >
-            <Text style={{ color: '#fff', fontSize: 15, fontFamily: 'Lato_700Bold' }}>Retry</Text>
+      <View style={styles.gameScoreboard}>
+        <View style={styles.gameTeamRow}>
+          <Text style={[styles.gameTeam, !leaderIsAway && styles.gameTeamDim]}>{data.away.team}</Text>
+          <Text style={[styles.gameScore, !leaderIsAway && styles.gameScoreDim]}>{data.away.score}</Text>
+        </View>
+        <View style={styles.gameTeamRow}>
+          <Text style={[styles.gameTeam, !leaderIsHome && styles.gameTeamDim]}>{data.home.team}</Text>
+          <Text style={[styles.gameScore, !leaderIsHome && styles.gameScoreDim]}>{data.home.score}</Text>
+        </View>
+      </View>
+
+      {data.leader && (
+        <View style={[styles.gameLeaderRow, data.featured && styles.gameLeaderRowFeatured]}>
+          <Ionicons name={data.featured ? 'flame' : 'trophy-outline'} size={14} color={data.featured ? '#FF6F3C' : 'rgba(255,255,255,0.7)'} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.gameLeaderName, data.featured && { color: '#FF6F3C' }]}>{data.leader.name}</Text>
+            <Text style={styles.gameLeaderLine}>{data.leader.line}</Text>
+          </View>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+}
+
+function DealCard({ data, onPress }: { data: DealCardData; onPress: () => void }) {
+  return (
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
+      <SectionKicker icon="flash" label="NIL DEAL" color="#FF6F3C" />
+      <View style={styles.dealHeader}>
+        <View style={[styles.dealLogo, { backgroundColor: data.brandLogoColor }]}>
+          <Text style={styles.dealLogoInitial}>{data.brandInitial}</Text>
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={styles.dealBrand} numberOfLines={1}>{data.brand}</Text>
+          <Text style={styles.dealType} numberOfLines={1}>{data.dealType}</Text>
+          <Text style={styles.dealCategory} numberOfLines={1}>{data.category}</Text>
+        </View>
+        <View style={styles.dealMatchPill}>
+          <Text style={styles.dealMatchLabel}>MATCH</Text>
+          <Text style={styles.dealMatchScore}>{data.matchScore}</Text>
+        </View>
+      </View>
+
+      <View style={styles.dealMetaRow}>
+        <View style={styles.dealMetaChip}>
+          <Text style={styles.dealMetaLabel}>Comp</Text>
+          <Text style={styles.dealMetaValue}>{data.compLine}</Text>
+        </View>
+        <View style={styles.dealMetaChip}>
+          <Text style={styles.dealMetaLabel}>Deadline</Text>
+          <Text style={styles.dealMetaValue}>{data.deadline}</Text>
+        </View>
+      </View>
+
+      <View style={styles.cardFooter}>
+        <View style={[styles.dealNetworkPill, data.network === 'open' ? styles.dealNetworkOpen : styles.dealNetworkInvite]}>
+          <View style={[styles.dealNetworkDot, { backgroundColor: data.network === 'open' ? '#34C759' : '#FF6F3C' }]} />
+          <Text style={styles.dealNetworkText}>{data.network === 'open' ? 'Open' : 'Invite Only'}</Text>
+        </View>
+        <View style={styles.dealCtaRow}>
+          <TouchableOpacity style={styles.ghostBtn} activeOpacity={0.7}>
+            <Text style={styles.ghostBtnText}>View</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.primaryGhostBtn} activeOpacity={0.85}>
+            <Ionicons name="flash" size={13} color="#FF6F3C" />
+            <Text style={styles.primaryGhostBtnText}>Interested</Text>
           </TouchableOpacity>
         </View>
       </View>
-    );
-  }
+    </TouchableOpacity>
+  );
+}
 
-  const avatarInitial = user?.firstName?.[0] || user?.userName?.[0]?.toUpperCase() || '?';
+function PersonCard({ data, onPress }: { data: PersonCardData; onPress: () => void }) {
+  const [following, setFollowing] = useState(false);
+  return (
+    <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
+      <SectionKicker icon="people" label="ATHLETE TO FOLLOW" color="#3897F0" />
+      <View style={styles.personRow}>
+        <View style={[styles.personAvatar, { backgroundColor: data.avatarColor }]}>
+          <Text style={styles.personAvatarInitial}>{data.initial}</Text>
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <View style={styles.personNameRow}>
+            <Text style={styles.personName} numberOfLines={1}>{data.name}</Text>
+            {data.verified && <MaterialCommunityIcons name="check-decagram" size={14} color="#FF6F3C" />}
+          </View>
+          <Text style={styles.personMeta} numberOfLines={1}>
+            {data.sport}  ·  {data.school}  ·  {data.followers} followers
+          </Text>
+          {data.tag && <Text style={styles.personTag} numberOfLines={1}>{data.tag}</Text>}
+          {data.mutualCount != null && data.mutualCount > 0 && (
+            <Text style={styles.personMutual}>{data.mutualCount} mutual{data.mutualCount === 1 ? '' : 's'}</Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[styles.followBtn, following && styles.followBtnActive]}
+          activeOpacity={0.8}
+          onPress={(e) => { e.stopPropagation?.(); setFollowing((v) => !v); }}
+        >
+          <Text style={[styles.followBtnText, following && styles.followBtnTextActive]}>
+            {following ? 'Following' : 'Follow'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ───── Screen ─────
+
+export default function FeedScreen() {
+  const router = useRouter();
+  const [activeFilter, setActiveFilter] = useState('For You');
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => { trackScreen('feed', 'discovery'); }, []);
+
+  const feed = React.useMemo(() => buildFeed(), []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await new Promise((r) => setTimeout(r, 600));
+    setRefreshing(false);
+  }, []);
+
+  const handleGamePress = useCallback((g: GameCardData) => {
+    router.push('/(tabs)/search' as any);
+  }, [router]);
+
+  const handleDealPress = useCallback((d: DealCardData) => {
+    // Placeholder — link to deals screen when it exists
+    router.push('/(tabs)/profile' as any);
+  }, [router]);
+
+  const handlePersonPress = useCallback((p: PersonCardData) => {
+    router.push({ pathname: '/user/[username]', params: { username: p.handle } } as any);
+  }, [router]);
+
+  const renderItem = useCallback(({ item }: { item: DiscoveryItem }) => {
+    switch (item.kind) {
+      case 'game':
+        return <GameCard data={item} onPress={() => handleGamePress(item)} />;
+      case 'deal':
+        return <DealCard data={item} onPress={() => handleDealPress(item)} />;
+      case 'person':
+        return <PersonCard data={item} onPress={() => handlePersonPress(item)} />;
+    }
+  }, [handleGamePress, handleDealPress, handlePersonPress]);
 
   return (
     <View style={styles.container}>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <DarkGradientBg />
       <FlatList
-        ref={flatListRef}
-        data={cards}
-        renderItem={renderCard}
-        keyExtractor={(item: CardItem) => item.id}
+        data={feed}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        snapToInterval={cards.length > 0 ? PAGE_HEIGHT : undefined}
-        snapToAlignment="start"
-        decelerationRate="normal"
-        onMomentumScrollEnd={onScrollSettle}
-        getItemLayout={cards.length > 0 ? (_, index) => ({ length: PAGE_HEIGHT, offset: PAGE_HEIGHT * index, index }) : undefined}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#888" />
-        }
-        ListEmptyComponent={
-          <View style={[styles.emptyContainer, { height: PAGE_HEIGHT }]}>
-            <Text style={styles.emptyTitle}>No events yet</Text>
-            <Text style={styles.emptySubtitle}>Pull down to refresh, or check back later for events in your area.</Text>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#888" />}
+        ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+        ListHeaderComponent={
+          <View style={styles.listHeader}>
+            <Text style={styles.listHeaderTitle}>Discover</Text>
+            <Text style={styles.listHeaderSub}>Games, deals, and athletes tailored to your profile</Text>
           </View>
         }
-        ListFooterComponent={
-          isFetchingNextPage ? (
-            <View style={{ paddingVertical: 24, alignItems: 'center' }}>
-              <ActivityIndicator color="rgba(0,0,0,0.4)" />
-            </View>
-          ) : null
-        }
-        scrollEventThrottle={16}
-        windowSize={5}
-        maxToRenderPerBatch={3}
-        removeClippedSubviews
-        updateCellsBatchingPeriod={50}
       />
 
       <LinearGradient
-        colors={['transparent', 'rgba(242,242,242,0.3)', 'rgba(242,242,242,0.5)']}
+        colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.55)', 'transparent']}
+        locations={[0, 0.6, 1]}
+        style={styles.topFade}
+        pointerEvents="none"
+      />
+
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.9)']}
         style={styles.bottomFade}
         pointerEvents="none"
       />
@@ -422,63 +503,104 @@ export default function FeedScreen() {
         activeFilter={activeFilter}
         onFilterChange={(f) => setActiveFilter(f)}
         onSearchPress={() => setSearchVisible(true)}
-        avatarInitial={avatarInitial}
-        isSearchActive={isSearchActive}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onSearchCancel={() => { setIsSearchActive(false); setSearchQuery(""); }}
+        avatarInitial={'K'}
+        isSearchActive={false}
+        searchQuery={''}
+        onSearchChange={() => {}}
+        onSearchCancel={() => {}}
       />
 
       <SearchSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
-
-      {purchaseItem?.eventId != null && (
-        <PurchaseTicketSheet
-          visible
-          onClose={() => setPurchaseItem(null)}
-          onSuccess={handlePurchaseSuccess}
-          eventId={purchaseItem.eventId}
-          eventTitle={purchaseItem.eventTitle || purchaseItem.description || 'Event'}
-          eventDate={purchaseItem.eventDate}
-          eventImage={purchaseItem.imageUrl || purchaseItem.thumbnail}
-        />
-      )}
     </View>
   );
 }
 
+// ───── Styles ─────
+
+const CARD_PAD = 14;
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f2f2f2',
+  container: { flex: 1, backgroundColor: '#000' },
+  bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, zIndex: 10 },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 130, zIndex: 5 },
+  listContent: { paddingTop: 120, paddingBottom: 140, paddingHorizontal: 14 },
+  listHeader: { paddingHorizontal: 2, paddingBottom: 14 },
+  listHeaderTitle: { fontSize: 24, fontWeight: '800', color: '#FFF', letterSpacing: -0.4 },
+  listHeaderSub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4, letterSpacing: -0.1 },
+
+  card: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 18,
+    padding: CARD_PAD,
+    gap: 12,
   },
-  bottomFade: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 120,
-    zIndex: 10,
+
+  kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  kickerIcon: {
+    width: 20, height: 20, borderRadius: 10,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  page: {
-    height: PAGE_HEIGHT,
-    paddingTop: 140,
-    paddingBottom: 100,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: 'rgba(0,0,0,0.8)',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: 'rgba(0,0,0,0.5)',
-    textAlign: 'center',
-  },
+  kickerText: { fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' },
+
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+
+  // Game card
+  gameHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  gameVenue: { flex: 1, fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.85)', letterSpacing: -0.1 },
+  gameStatusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.10)' },
+  gameStatusPillLive: { backgroundColor: '#FF6F3C' },
+  gameStatusDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#FFF' },
+  gameStatusText: { fontSize: 10, fontWeight: '800', color: '#FFF', letterSpacing: 0.5 },
+  gameScoreboard: { backgroundColor: 'rgba(0,0,0,0.25)', borderRadius: 12, padding: 12, gap: 8 },
+  gameTeamRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  gameTeam: { fontSize: 17, fontWeight: '800', color: '#FFF', letterSpacing: 0.4 },
+  gameTeamDim: { color: 'rgba(255,255,255,0.55)' },
+  gameScore: { fontSize: 28, fontWeight: '900', color: '#FFF', fontVariant: ['tabular-nums'], letterSpacing: -0.6 },
+  gameScoreDim: { color: 'rgba(255,255,255,0.55)' },
+  gameLeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 },
+  gameLeaderRowFeatured: { backgroundColor: 'rgba(255,111,60,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,111,60,0.35)' },
+  gameLeaderName: { fontSize: 13, fontWeight: '700', color: '#FFF', letterSpacing: -0.1 },
+  gameLeaderLine: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1, letterSpacing: -0.1 },
+
+  // Deal card
+  dealHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  dealLogo: { width: 46, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  dealLogoInitial: { fontSize: 20, fontWeight: '900', color: '#FFF', letterSpacing: -0.4 },
+  dealBrand: { fontSize: 15, fontWeight: '700', color: '#FFF', letterSpacing: -0.2 },
+  dealType: { fontSize: 13, color: 'rgba(255,255,255,0.75)', letterSpacing: -0.1 },
+  dealCategory: { fontSize: 11, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.2, textTransform: 'uppercase' },
+  dealMatchPill: { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: 'rgba(255,111,60,0.14)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,111,60,0.45)' },
+  dealMatchLabel: { fontSize: 8, fontWeight: '800', letterSpacing: 0.8, color: 'rgba(255,111,60,0.85)' },
+  dealMatchScore: { fontSize: 16, fontWeight: '900', color: '#FF6F3C', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
+  dealMetaRow: { flexDirection: 'row', gap: 8 },
+  dealMetaChip: { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, gap: 2 },
+  dealMetaLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' },
+  dealMetaValue: { fontSize: 13, color: '#FFF', fontWeight: '700', letterSpacing: -0.1 },
+  dealNetworkPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth },
+  dealNetworkOpen: { borderColor: 'rgba(52,199,89,0.4)' },
+  dealNetworkInvite: { borderColor: 'rgba(255,111,60,0.4)' },
+  dealNetworkDot: { width: 6, height: 6, borderRadius: 3 },
+  dealNetworkText: { fontSize: 11, fontWeight: '700', color: '#FFF', letterSpacing: 0.2 },
+  dealCtaRow: { flexDirection: 'row', gap: 6 },
+  ghostBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.15)', backgroundColor: 'rgba(255,255,255,0.06)' },
+  ghostBtnText: { fontSize: 12, fontWeight: '700', color: '#FFF', letterSpacing: -0.1 },
+  primaryGhostBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,111,60,0.45)', backgroundColor: 'rgba(255,111,60,0.12)' },
+  primaryGhostBtnText: { fontSize: 12, fontWeight: '700', color: '#FF6F3C', letterSpacing: -0.1 },
+
+  // Person card
+  personRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  personAvatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+  personAvatarInitial: { fontSize: 22, fontWeight: '800', color: '#FFF', letterSpacing: -0.3 },
+  personNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  personName: { fontSize: 15, fontWeight: '700', color: '#FFF', letterSpacing: -0.2 },
+  personMeta: { fontSize: 12, color: 'rgba(255,255,255,0.55)', letterSpacing: -0.1 },
+  personTag: { fontSize: 12, color: '#FF6F3C', fontWeight: '700', letterSpacing: -0.1, marginTop: 2 },
+  personMutual: { fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 1 },
+  followBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: '#FFF' },
+  followBtnActive: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.2)' },
+  followBtnText: { fontSize: 13, fontWeight: '800', color: '#000', letterSpacing: -0.1 },
+  followBtnTextActive: { color: '#FFF' },
 });

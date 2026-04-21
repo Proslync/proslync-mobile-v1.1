@@ -224,7 +224,7 @@ export default function ModerationRulesScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, styles.center, { backgroundColor: '#000000' }]}>
         <ActivityIndicator size="large" color="rgba(0,0,0,0.5)" />
       </View>
     );
@@ -232,7 +232,7 @@ export default function ModerationRulesScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: '#f2f2f2' }]}
+      style={[styles.container, { backgroundColor: '#000000' }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
 
@@ -253,7 +253,7 @@ export default function ModerationRulesScreen() {
         </TouchableOpacity>
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Form */}
       {showForm && (
@@ -382,8 +382,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  statNum: { fontSize: 22, fontFamily: 'Lato_700Bold' },
-  statLabel: { fontSize: 11, fontFamily: 'Lato_400Regular' },
+  statNum: { fontSize: 22, },
+  statLabel: { fontSize: 11, },
   formCard: {
     marginHorizontal: 16,
     borderRadius: 12,
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  formTitle: { fontSize: 16, fontFamily: 'Lato_700Bold' },
+  formTitle: { fontSize: 16, },
   formActions: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   input: {
     borderWidth: 1,
@@ -404,10 +404,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
-  fieldLabel: { fontSize: 13, fontFamily: 'Lato_700Bold' },
+  fieldLabel: { fontSize: 13, },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: {
     paddingHorizontal: 12,
@@ -415,7 +414,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
   },
-  tagText: { fontSize: 12, fontFamily: 'Lato_400Regular' },
+  tagText: { fontSize: 12, },
   saveBtn: {
     borderRadius: 10,
     borderWidth: 1,
@@ -423,7 +422,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  saveBtnText: { fontSize: 14, fontFamily: 'Lato_700Bold' },
+  saveBtnText: { fontSize: 14, },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16 },
   ruleRow: {
@@ -434,11 +433,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   ruleContent: { flex: 1, gap: 4 },
-  ruleName: { fontSize: 15, fontFamily: 'Lato_700Bold' },
-  ruleDesc: { fontSize: 13, fontFamily: 'Lato_400Regular' },
+  ruleName: { fontSize: 15, },
+  ruleDesc: { fontSize: 13, },
   miniTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  miniTagText: { fontSize: 10, fontFamily: 'Lato_400Regular' },
+  miniTagText: { fontSize: 10, },
   empty: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyText: { fontSize: 16, fontFamily: 'Lato_700Bold' },
-  emptySubtext: { fontSize: 13, fontFamily: 'Lato_400Regular' },
+  emptyText: { fontSize: 16, },
+  emptySubtext: { fontSize: 13, },
 });

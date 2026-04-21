@@ -283,7 +283,7 @@ export function InviteModal(props: InviteModalProps) {
         alertOnly
         icon="alert-circle-outline"
       />
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#000000' }]}>
         {/* X button — top right */}
         <View style={styles.topBar}>
           <View style={{ flex: 1 }} />
@@ -497,7 +497,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#1A1A1A',
     padding: 0,
   },
@@ -514,12 +513,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.25)',
   },
   sectionLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.45)',
     paddingHorizontal: 20,
     paddingTop: 16,
@@ -558,19 +555,16 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     flexShrink: 1,
   },
   userHandle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
     marginTop: 1,
   },
   mutualText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.3)',
     marginTop: 2,
   },
@@ -603,7 +597,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.6)',
     marginBottom: 10,
   },
@@ -624,7 +617,6 @@ const styles = StyleSheet.create({
   },
   roleChipText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
   },
   roleChipTextSelected: {
@@ -641,7 +633,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   sendDisabled: { opacity: 0.4 },
-  sendText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
+  sendText: { fontSize: 16, color: '#1A1A1A' },
   successContainer: {
     flex: 1,
     alignItems: 'center',
@@ -651,12 +643,10 @@ const styles = StyleSheet.create({
   },
   successTitle: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   successSubtitle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
     textAlign: 'center',
     lineHeight: 22,
@@ -672,7 +662,6 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
 });

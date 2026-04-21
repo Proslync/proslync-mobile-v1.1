@@ -160,7 +160,7 @@ export default function AdminEventsScreen() {
   const events = data?.events ?? [];
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Top row */}
       {isSearchActive ? (
@@ -224,7 +224,7 @@ export default function AdminEventsScreen() {
         </ScrollView>
       )}
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {isLoading ? (
         <View style={styles.center}>
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   filterPillText: { fontSize: 14, fontWeight: '500', color: 'rgba(0,0,0,0.5)' },
   filterPillTextActive: { color: 'rgba(0,0,0,0.8)' },
   searchBarInline: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: 38, borderRadius: 19, backgroundColor: '#fff', paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
-  searchInputInline: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
+  searchInputInline: { flex: 1, fontSize: 15, color: '#000', padding: 0 },
   searchContainer: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBar: {
     flexDirection: 'row',
@@ -302,15 +302,15 @@ const styles = StyleSheet.create({
     height: 40,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: 'Lato_400Regular' },
+  searchInput: { flex: 1, fontSize: 14, },
   filterRow: { paddingHorizontal: 16, paddingBottom: 10, gap: 8 },
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
   },
-  filterText: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)' },
-  filterTextActive: { color: 'rgba(0,0,0,0.8)', fontFamily: 'Lato_700Bold' },
+  filterText: { fontSize: 13, color: 'rgba(0,0,0,0.5)' },
+  filterTextActive: { color: 'rgba(0,0,0,0.8)', },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -321,12 +321,12 @@ const styles = StyleSheet.create({
   },
   eventImage: { width: 52, height: 52, borderRadius: 10 },
   rowContent: { flex: 1 },
-  eventName: { fontSize: 14, fontFamily: 'Lato_700Bold' },
-  eventMeta: { fontSize: 12, fontFamily: 'Lato_400Regular', marginTop: 2 },
-  eventVenue: { fontSize: 11, fontFamily: 'Lato_400Regular', marginTop: 1 },
+  eventName: { fontSize: 14, },
+  eventMeta: { fontSize: 12, marginTop: 2 },
+  eventVenue: { fontSize: 11, marginTop: 1 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  statusText: { fontSize: 11, fontFamily: 'Lato_700Bold', textTransform: 'capitalize' },
-  emptyText: { fontSize: 14, fontFamily: 'Lato_400Regular' },
+  statusText: { fontSize: 11, textTransform: 'capitalize' },
+  emptyText: { fontSize: 14, },
   loadMore: { alignItems: 'center', paddingVertical: 16 },
-  loadMoreText: { fontSize: 14, fontFamily: 'Lato_700Bold' },
+  loadMoreText: { fontSize: 14, },
 });

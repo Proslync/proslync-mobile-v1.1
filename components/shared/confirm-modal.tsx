@@ -217,13 +217,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     marginBottom: 8,
   },
   message: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0, 0, 0, 0.45)',
     textAlign: 'center',
     lineHeight: 20,
@@ -253,12 +251,10 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#1A1A1A',
   },
   confirmText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
 });

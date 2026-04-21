@@ -349,7 +349,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   countBadge: {
     borderRadius: 10,
@@ -358,7 +357,6 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
   },
   searchSection: {
     paddingHorizontal: 16,
@@ -377,7 +375,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     padding: 0,
   },
   filtersRow: {
@@ -395,7 +392,6 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   loadingContainer: {
     flex: 1,
@@ -410,12 +406,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     marginTop: 12,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginTop: 6,
     textAlign: 'center',
   },
@@ -443,18 +437,15 @@ const styles = StyleSheet.create({
   },
   avatarInitials: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
   attendeeInfo: {
     flex: 1,
   },
   attendeeName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   attendeeSubtext: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   statusBadge: {
@@ -464,7 +455,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     textTransform: 'uppercase',
   },
@@ -485,6 +475,5 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 9,
-    fontFamily: 'Lato_700Bold',
   },
 });

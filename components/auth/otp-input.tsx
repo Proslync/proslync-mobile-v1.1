@@ -265,7 +265,6 @@ const styles = StyleSheet.create({
   },
   digit: {
     fontSize: 26,
-    fontFamily: "Lato_700Bold",
   },
   cursor: {
     width: 2,

@@ -115,7 +115,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(255, 255, 255, 0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -132,7 +131,6 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.7)',
   },
   emptyState: {
@@ -141,7 +139,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.4)',
     marginTop: 12,
   },
@@ -179,7 +176,6 @@ const styles = StyleSheet.create({
   },
   earningTagText: {
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
     color: '#34c759',
   },
   perkTag: {
@@ -190,23 +186,19 @@ const styles = StyleSheet.create({
   },
   perkTagText: {
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   eventTitle: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     marginBottom: 2,
   },
   eventMeta: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.6)',
   },
   eventVenue: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.4)',
   },
   recommendedBadge: {
@@ -217,7 +209,6 @@ const styles = StyleSheet.create({
   },
   recommendedText: {
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
     color: '#f59e0b',
   },
   viewButton: {
@@ -228,7 +219,6 @@ const styles = StyleSheet.create({
   },
   viewButtonText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
 });

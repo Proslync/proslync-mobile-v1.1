@@ -91,17 +91,17 @@ export function LocationPickerSheet({ visible, onClose, onSelect }: LocationPick
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32, minHeight: 300 },
-  title: { fontSize: 17, fontFamily: 'Lato_700Bold', color: '#1A1A1A', textAlign: 'center', marginBottom: 16 },
+  title: { fontSize: 17, color: '#1A1A1A', textAlign: 'center', marginBottom: 16 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 8,
   },
-  searchInput: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular' },
+  searchInput: { flex: 1, fontSize: 15, },
   loader: { marginVertical: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
   iconCircle: { width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   rowText: { flex: 1 },
-  rowName: { fontSize: 15, fontFamily: 'Lato_600SemiBold' },
-  rowAddress: { fontSize: 13, fontFamily: 'Lato_400Regular', marginTop: 2 },
-  emptyText: { textAlign: 'center', marginTop: 24, fontSize: 14, fontFamily: 'Lato_400Regular' },
+  rowName: { fontSize: 15, },
+  rowAddress: { fontSize: 13, marginTop: 2 },
+  emptyText: { textAlign: 'center', marginTop: 24, fontSize: 14, },
 });

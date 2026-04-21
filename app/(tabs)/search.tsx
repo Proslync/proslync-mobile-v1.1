@@ -15,7 +15,7 @@ import {
   Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import Constants from 'expo-constants';
@@ -34,7 +34,7 @@ import { eventsApi } from '@/lib/api/events';
 import { locationsApi, HeatmapPoint } from '@/lib/api/locations';
 import type { Event } from '@/lib/types/events.types';
 import { EventStatus } from '@/lib/types/events.types';
-import Mapbox, { MapView, Camera, MarkerView, LocationPuck, SymbolLayer, ShapeSource, HeatmapLayer } from '@rnmapbox/maps';
+import Mapbox, { MapView, Camera, MarkerView, LocationPuck, SymbolLayer, ShapeSource, HeatmapLayer, FillExtrusionLayer, VectorSource } from '@rnmapbox/maps';
 import { useLiveLocation } from '@/lib/providers/live-location-provider';
 import { ShareLocationSheet } from '@/components/map/share-location-sheet';
 import { NativeShareLocationSheet, canUseNativeSheet } from '@/components/map/share-location-native-sheet';
@@ -193,6 +193,235 @@ const EventMarker = React.memo(function EventMarker({ event, onPress }: { event:
   );
 });
 
+// Fake scores per mock venue id — parsed from event.title into two team rows
+type ScoreRow = { team: string; score: number };
+type MockScore = { away: ScoreRow; home: ScoreRow; status: 'LIVE' | 'FINAL' | 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'OT' | 'HALF' };
+
+// Extended game stats for the preview card (Kiyan line + team splits)
+type GameStats = {
+  clock?: string;             // "4:32 · Q4"
+  kiyan?: { pts: number; reb: number; ast: number; stl?: number; blk?: number; fg: string; threes: string; ft: string; min: number };
+  teamLeaders?: { name: string; line: string }[]; // when Kiyan isn't playing
+  teamStats?: { label: string; away: string; home: string }[];
+};
+
+const MOCK_GAME_STATS: Record<string, GameStats> = {
+  'mock-venue-cuse': {
+    clock: '4:32 · Q4',
+    kiyan: { pts: 21, reb: 4, ast: 3, stl: 1, fg: '7-13', threes: '4-7', ft: '3-3', min: 31 },
+    teamStats: [
+      { label: 'FG %', away: '44.2%', home: '48.1%' },
+      { label: '3PT %', away: '36.0%', home: '41.7%' },
+      { label: 'REB', away: '28', home: '33' },
+      { label: 'AST', away: '12', home: '15' },
+      { label: 'TO', away: '11', home: '8' },
+    ],
+  },
+  'mock-venue-cameron': {
+    clock: 'Final',
+    teamLeaders: [
+      { name: 'T. Brown (UNC)', line: '24 PTS · 7 REB · 5 AST' },
+      { name: 'C. Flagg (DUKE)', line: '29 PTS · 10 REB · 3 BLK' },
+    ],
+    teamStats: [
+      { label: 'FG %', away: '46.8%', home: '49.3%' },
+      { label: '3PT %', away: '35.7%', home: '39.1%' },
+      { label: 'REB', away: '32', home: '38' },
+    ],
+  },
+  'mock-venue-dean': {
+    clock: 'Halftime',
+    teamLeaders: [
+      { name: 'R. Newell (UVA)', line: '14 PTS · 3 REB' },
+      { name: 'T. Brown (UNC)', line: '17 PTS · 4 REB · 2 AST' },
+    ],
+    teamStats: [
+      { label: 'FG %', away: '41.9%', home: '47.2%' },
+      { label: '3PT %', away: '30.0%', home: '38.5%' },
+    ],
+  },
+  'mock-venue-watsco': {
+    clock: '6:14 · Q2',
+    kiyan: { pts: 12, reb: 2, ast: 2, fg: '4-7', threes: '2-3', ft: '2-2', min: 14 },
+    teamStats: [
+      { label: 'FG %', away: '45.0%', home: '39.3%' },
+      { label: '3PT %', away: '38.9%', home: '28.6%' },
+      { label: 'REB', away: '14', home: '17' },
+    ],
+  },
+  'mock-venue-msg': {
+    clock: 'Tip-off Sun 6:30 PM',
+    teamLeaders: [
+      { name: 'K. Anthony (CUSE)', line: 'Season avg · 14.2 PPG' },
+      { name: 'S. Castle (UCONN)', line: 'Season avg · 13.8 PPG' },
+    ],
+  },
+  'mock-venue-barclays': {
+    clock: 'Sun · 2:00 PM',
+    teamLeaders: [
+      { name: 'Kiyan Anthony', line: 'HS alum · Class of 2024' },
+    ],
+  },
+  'mock-venue-louisville': {
+    clock: 'Final',
+    teamLeaders: [
+      { name: 'B. Jennings (SMU)', line: '22 PTS · 6 AST' },
+      { name: 'T. Edwards (LOU)', line: '19 PTS · 9 REB' },
+    ],
+    teamStats: [
+      { label: 'FG %', away: '47.2%', home: '44.8%' },
+      { label: '3PT %', away: '38.5%', home: '33.3%' },
+    ],
+  },
+  'mock-venue-petersen': {
+    clock: '3:18 · Q3',
+    teamLeaders: [
+      { name: 'B. Horne (PITT)', line: '18 PTS · 4 AST' },
+      { name: 'M. Poole Jr. (NCST)', line: '16 PTS · 5 REB' },
+    ],
+  },
+  'mock-venue-jpj': {
+    clock: '1:42 · Q4',
+    teamLeaders: [
+      { name: 'M. Trimble (UVA)', line: '20 PTS · 5 AST' },
+      { name: 'M. Burton (ND)', line: '17 PTS · 4 REB' },
+    ],
+  },
+  'mock-venue-chase': {
+    clock: '5:08 · Q3',
+    teamLeaders: [
+      { name: 'S. Curry (GSW)', line: '28 PTS · 6 AST · 4-8 3P' },
+      { name: 'L. James (LAL)', line: '22 PTS · 7 REB · 5 AST' },
+    ],
+    teamStats: [
+      { label: 'FG %', away: '45.3%', home: '49.1%' },
+      { label: '3PT %', away: '33.3%', home: '42.9%' },
+      { label: 'REB', away: '31', home: '34' },
+    ],
+  },
+  'mock-venue-haas': {
+    clock: '2:45 · Q4',
+    teamLeaders: [
+      { name: 'F. Cissoko (CAL)', line: '18 PTS · 6 REB' },
+      { name: 'M. Raynaud (STAN)', line: '21 PTS · 8 REB' },
+    ],
+  },
+  'mock-venue-maples': {
+    clock: 'Halftime',
+    teamLeaders: [
+      { name: 'M. Raynaud (STAN)', line: '14 PTS · 5 REB' },
+      { name: 'I. Collier (USC)', line: '12 PTS · 3 AST' },
+    ],
+  },
+  'mock-venue-pauley': {
+    clock: '6:50 · Q4',
+    teamLeaders: [
+      { name: 'D. Bona (UCLA)', line: '24 PTS · 5 REB · 2 BLK' },
+      { name: 'C. Love (ARIZ)', line: '19 PTS · 4 AST' },
+    ],
+  },
+  'mock-venue-mckale': {
+    clock: '1:24 · Q3',
+    teamLeaders: [
+      { name: 'C. Love (ARIZ)', line: '15 PTS · 6 AST' },
+      { name: 'J. Richardson (ORE)', line: '13 PTS · 5 REB' },
+    ],
+  },
+  'mock-venue-sf-billgraham': {
+    clock: '7:12 · Q3',
+    kiyan: { pts: 15, reb: 3, ast: 2, fg: '5-9', threes: '3-5', ft: '2-2', min: 22 },
+    teamStats: [
+      { label: 'FG %', away: '42.5%', home: '46.9%' },
+      { label: '3PT %', away: '33.3%', home: '40.0%' },
+    ],
+  },
+  'mock-venue-sf-warfield': {
+    clock: 'Today · 7:00 PM',
+    teamLeaders: [
+      { name: 'Kiyan Anthony', line: 'Appearance + signing' },
+    ],
+  },
+  'mock-venue-sf-union': {
+    clock: 'Tomorrow · 12:00 PM',
+    teamLeaders: [
+      { name: 'PUMA Hoops × Kiyan', line: 'Pop-up · MB.04 NY Edition' },
+    ],
+  },
+  'mock-venue-sf-oracle': {
+    clock: 'Sat · 10:00 AM',
+    teamLeaders: [
+      { name: 'NIL x Athletes Summit', line: 'Panels · workshops · brand deals' },
+    ],
+  },
+  'mock-venue-sf-mission': {
+    clock: '4:21 · Q2',
+    teamLeaders: [
+      { name: 'J. Rivera (NORTH)', line: '11 PTS · 4 AST' },
+      { name: 'D. Chen (SOUTH)', line: '9 PTS · 3 REB' },
+    ],
+  },
+};
+
+const MOCK_SCORES: Record<string, MockScore> = {
+  'mock-venue-cuse': { away: { team: 'DUKE', score: 54 }, home: { team: 'CUSE', score: 62 }, status: 'Q4' },
+  'mock-venue-cameron': { away: { team: 'UNC', score: 68 }, home: { team: 'DUKE', score: 71 }, status: 'FINAL' },
+  'mock-venue-dean': { away: { team: 'UVA', score: 44 }, home: { team: 'UNC', score: 51 }, status: 'HALF' },
+  'mock-venue-watsco': { away: { team: 'CUSE', score: 38 }, home: { team: 'MIA', score: 33 }, status: 'Q2' },
+  'mock-venue-msg': { away: { team: 'UCONN', score: 0 }, home: { team: 'CUSE', score: 0 }, status: 'FINAL' },
+  'mock-venue-barclays': { away: { team: 'TEAM A', score: 0 }, home: { team: 'TEAM B', score: 0 }, status: 'FINAL' },
+  'mock-venue-louisville': { away: { team: 'SMU', score: 72 }, home: { team: 'LOU', score: 65 }, status: 'FINAL' },
+  'mock-venue-petersen': { away: { team: 'NCST', score: 47 }, home: { team: 'PITT', score: 52 }, status: 'Q3' },
+  'mock-venue-jpj': { away: { team: 'ND', score: 59 }, home: { team: 'UVA', score: 64 }, status: 'Q4' },
+  'mock-venue-chase': { away: { team: 'LAL', score: 88 }, home: { team: 'GSW', score: 94 }, status: 'Q3' },
+  'mock-venue-haas': { away: { team: 'STAN', score: 61 }, home: { team: 'CAL', score: 58 }, status: 'Q4' },
+  'mock-venue-maples': { away: { team: 'USC', score: 42 }, home: { team: 'STAN', score: 49 }, status: 'HALF' },
+  'mock-venue-pauley': { away: { team: 'ARIZ', score: 66 }, home: { team: 'UCLA', score: 71 }, status: 'Q4' },
+  'mock-venue-mckale': { away: { team: 'ORE', score: 53 }, home: { team: 'ARIZ', score: 56 }, status: 'Q3' },
+  'mock-venue-sf-billgraham': { away: { team: 'DUKE', score: 48 }, home: { team: 'CUSE', score: 51 }, status: 'Q3' },
+  'mock-venue-sf-warfield': { away: { team: 'POP', score: 0 }, home: { team: 'KA7', score: 0 }, status: 'FINAL' },
+  'mock-venue-sf-union': { away: { team: 'PUMA', score: 0 }, home: { team: 'HOOP', score: 0 }, status: 'FINAL' },
+  'mock-venue-sf-oracle': { away: { team: 'WST', score: 0 }, home: { team: 'EAST', score: 0 }, status: 'FINAL' },
+  'mock-venue-sf-mission': { away: { team: 'NORTH', score: 21 }, home: { team: 'SOUTH', score: 18 }, status: 'Q2' },
+};
+
+// Live score card — replaces the stadium illustration at each mock venue
+const StadiumMarker = React.memo(function StadiumMarker({ event, onPress }: { event: MapEvent; onPress: () => void }) {
+  const score = MOCK_SCORES[event.id];
+  if (!score) return null;
+
+  const isLive = score.status !== 'FINAL';
+  const leaderIsAway = score.away.score > score.home.score;
+  const leaderIsHome = score.home.score > score.away.score;
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      style={styles.scoreMarkerContainer}
+      accessibilityLabel={`${event.title} · ${score.away.team} ${score.away.score}, ${score.home.team} ${score.home.score}`}
+      accessibilityRole="button"
+    >
+      <View style={styles.scoreCard}>
+        {/* Status pill */}
+        <View style={[styles.scoreStatusPill, isLive && styles.scoreStatusPillLive]}>
+          {isLive && <View style={styles.scoreStatusDot} />}
+          <Text style={styles.scoreStatusText}>{score.status}</Text>
+        </View>
+        {/* Away row */}
+        <View style={styles.scoreRow}>
+          <Text style={[styles.scoreTeam, !leaderIsAway && styles.scoreTeamDim]} numberOfLines={1}>{score.away.team}</Text>
+          <Text style={[styles.scoreNum, !leaderIsAway && styles.scoreNumDim]}>{score.away.score}</Text>
+        </View>
+        {/* Home row */}
+        <View style={styles.scoreRow}>
+          <Text style={[styles.scoreTeam, !leaderIsHome && styles.scoreTeamDim]} numberOfLines={1}>{score.home.team}</Text>
+          <Text style={[styles.scoreNum, !leaderIsHome && styles.scoreNumDim]}>{score.home.score}</Text>
+        </View>
+      </View>
+      <View style={styles.scoreMarkerPointer} />
+    </TouchableOpacity>
+  );
+});
+
 // Friend profile marker for map (circular profile photo)
 const FriendMarkerView = React.memo(function FriendMarkerView({ friend, onPress }: { friend: FriendMarker; onPress: () => void }) {
   return (
@@ -217,12 +446,304 @@ const MyLocationMarker = React.memo(function MyLocationMarker({ imageUrl }: { im
   );
 });
 
+// Mock stadiums + games — college basketball venues with upcoming games
+const MOCK_STADIUM_GAMES: MapEvent[] = (() => {
+  const now = Date.now();
+  const days = (n: number) => new Date(now + n * 86400000);
+  const hrs = (n: number) => new Date(now + n * 3600000);
+  const fmtDate = (d: Date) => {
+    const todayStart = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    const daysUntil = Math.floor((d.getTime() - todayStart.getTime()) / 86400000);
+    if (daysUntil === 0) return d.getHours() >= 18 ? 'Tonight' : 'Today';
+    if (daysUntil === 1) return 'Tomorrow';
+    if (daysUntil <= 7) return d.toLocaleDateString([], { weekday: 'long' });
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+  const fmtTime = (d: Date) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  const make = (base: Omit<MapEvent, 'date' | 'time' | 'rawDate'> & { when: Date }): MapEvent => ({
+    ...base,
+    date: fmtDate(base.when),
+    time: fmtTime(base.when),
+    rawDate: base.when.toISOString(),
+  });
+  return [
+    make({
+      id: 'mock-venue-cuse',
+      title: 'Syracuse vs. Duke',
+      venue: 'JMA Wireless Dome',
+      latitude: 43.0361,
+      longitude: -76.1369,
+      imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80',
+      when: hrs(3),
+      attendees: 32400,
+      isLive: false,
+      popularity: 98,
+      type: 'event',
+      isUserRegistered: true,
+    }),
+    make({
+      id: 'mock-venue-cameron',
+      title: 'Duke vs. North Carolina',
+      venue: 'Cameron Indoor Stadium',
+      latitude: 36.0022,
+      longitude: -78.9436,
+      imageUrl: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200&q=80',
+      when: days(2),
+      attendees: 9314,
+      isLive: false,
+      popularity: 96,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-dean',
+      title: 'UNC vs. Virginia',
+      venue: 'Dean E. Smith Center',
+      latitude: 35.9033,
+      longitude: -79.0428,
+      imageUrl: 'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?w=1200&q=80',
+      when: days(4),
+      attendees: 21750,
+      isLive: false,
+      popularity: 88,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-watsco',
+      title: 'Miami vs. Syracuse',
+      venue: 'Watsco Center',
+      latitude: 25.7191,
+      longitude: -80.2778,
+      imageUrl: 'https://images.unsplash.com/photo-1577471489098-30e59e04d9cf?w=1200&q=80',
+      when: days(6),
+      attendees: 7972,
+      isLive: false,
+      popularity: 82,
+      type: 'event',
+      isUserRegistered: true,
+    }),
+    make({
+      id: 'mock-venue-msg',
+      title: 'Big East Tip-Off · Cuse vs. UConn',
+      venue: 'Madison Square Garden',
+      latitude: 40.7505,
+      longitude: -73.9934,
+      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200&q=80',
+      when: days(9),
+      attendees: 19812,
+      isLive: false,
+      popularity: 99,
+      type: 'event',
+      isUserRegistered: true,
+    }),
+    make({
+      id: 'mock-venue-barclays',
+      title: 'Kiyan Anthony HS Showcase',
+      venue: 'Barclays Center',
+      latitude: 40.6826,
+      longitude: -73.9754,
+      imageUrl: 'https://images.unsplash.com/photo-1509027572446-af8401acfdc3?w=1200&q=80',
+      when: days(12),
+      attendees: 17732,
+      isLive: false,
+      popularity: 91,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-louisville',
+      title: 'Louisville vs. SMU',
+      venue: 'KFC Yum! Center',
+      latitude: 38.2462,
+      longitude: -85.7527,
+      imageUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&q=80',
+      when: days(3),
+      attendees: 22090,
+      isLive: false,
+      popularity: 75,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-petersen',
+      title: 'Pitt vs. NC State',
+      venue: 'Petersen Events Center',
+      latitude: 40.4436,
+      longitude: -79.9626,
+      imageUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1200&q=80',
+      when: days(5),
+      attendees: 12508,
+      isLive: false,
+      popularity: 71,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-jpj',
+      title: 'Virginia vs. Notre Dame',
+      venue: 'John Paul Jones Arena',
+      latitude: 38.0368,
+      longitude: -78.5234,
+      imageUrl: 'https://images.unsplash.com/photo-1505666287802-931dc83a0fe4?w=1200&q=80',
+      when: days(7),
+      attendees: 14593,
+      isLive: false,
+      popularity: 78,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    // ── West coast (so the SF-default sim sees pins immediately) ──
+    make({
+      id: 'mock-venue-chase',
+      title: 'Warriors vs. Lakers',
+      venue: 'Chase Center',
+      latitude: 37.7680,
+      longitude: -122.3878,
+      imageUrl: 'https://images.unsplash.com/photo-1577471489098-30e59e04d9cf?w=1200&q=80',
+      when: hrs(6),
+      attendees: 18064,
+      isLive: false,
+      popularity: 99,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-haas',
+      title: 'Cal vs. Stanford',
+      venue: 'Haas Pavilion',
+      latitude: 37.8726,
+      longitude: -122.2601,
+      imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80',
+      when: days(1),
+      attendees: 11858,
+      isLive: false,
+      popularity: 82,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-maples',
+      title: 'Stanford vs. USC',
+      venue: 'Maples Pavilion',
+      latitude: 37.4318,
+      longitude: -122.1718,
+      imageUrl: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200&q=80',
+      when: days(3),
+      attendees: 7233,
+      isLive: false,
+      popularity: 74,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-pauley',
+      title: 'UCLA vs. Arizona',
+      venue: 'Pauley Pavilion',
+      latitude: 34.0708,
+      longitude: -118.4452,
+      imageUrl: 'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?w=1200&q=80',
+      when: days(4),
+      attendees: 13800,
+      isLive: false,
+      popularity: 88,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-mckale',
+      title: 'Arizona vs. Oregon',
+      venue: 'McKale Center',
+      latitude: 32.2315,
+      longitude: -110.9501,
+      imageUrl: 'https://images.unsplash.com/photo-1509027572446-af8401acfdc3?w=1200&q=80',
+      when: days(5),
+      attendees: 14655,
+      isLive: false,
+      popularity: 80,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    // ── Right around central SF (visible at sim default zoom) ──
+    make({
+      id: 'mock-venue-sf-billgraham',
+      title: 'ACC Hoops Tour Stop · SF',
+      venue: 'Bill Graham Civic Auditorium',
+      latitude: 37.7784,
+      longitude: -122.4186,
+      imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=1200&q=80',
+      when: hrs(2),
+      attendees: 7000,
+      isLive: true,
+      popularity: 94,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-sf-warfield',
+      title: 'Kiyan Anthony Brand Pop-Up',
+      venue: 'The Warfield',
+      latitude: 37.7828,
+      longitude: -122.4099,
+      imageUrl: 'https://images.unsplash.com/photo-1577471489098-30e59e04d9cf?w=1200&q=80',
+      when: hrs(5),
+      attendees: 2200,
+      isLive: false,
+      popularity: 88,
+      type: 'event',
+      isUserRegistered: true,
+    }),
+    make({
+      id: 'mock-venue-sf-union',
+      title: 'Hoop Culture x PUMA · SF',
+      venue: 'Union Square',
+      latitude: 37.7880,
+      longitude: -122.4076,
+      imageUrl: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=1200&q=80',
+      when: days(1),
+      attendees: 3400,
+      isLive: false,
+      popularity: 90,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-sf-oracle',
+      title: 'NIL x Athletes Summit',
+      venue: 'Oracle Park',
+      latitude: 37.7786,
+      longitude: -122.3893,
+      imageUrl: 'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?w=1200&q=80',
+      when: days(2),
+      attendees: 41915,
+      isLive: false,
+      popularity: 92,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+    make({
+      id: 'mock-venue-sf-mission',
+      title: 'Mission District Streetball Finals',
+      venue: 'Dolores Park Courts',
+      latitude: 37.7596,
+      longitude: -122.4269,
+      imageUrl: 'https://images.unsplash.com/photo-1509027572446-af8401acfdc3?w=1200&q=80',
+      when: days(3),
+      attendees: 1200,
+      isLive: false,
+      popularity: 76,
+      type: 'event',
+      isUserRegistered: false,
+    }),
+  ];
+})();
+
 // Full Mapbox Map Screen
 function FullMapScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const cameraRef = useRef<Camera>(null);
-  const [events, setEvents] = useState<MapEvent[]>([]);
+  const [events, setEvents] = useState<MapEvent[]>(MOCK_STADIUM_GAMES);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -308,6 +829,7 @@ function FullMapScreen() {
           cameraRef.current?.setCamera({
             centerCoordinate: coords,
             zoomLevel: 13,
+            pitch: 60,
             animationDuration: 800,
           });
 
@@ -353,8 +875,9 @@ function FullMapScreen() {
         }
       }
 
-      // Filter out events that still have no coordinates
-      setEvents(mapEvents.filter(e => e.latitude !== 0 && e.longitude !== 0));
+      // Filter out events that still have no coordinates, merge with mock stadium games
+      const real = mapEvents.filter(e => e.latitude !== 0 && e.longitude !== 0);
+      setEvents([...MOCK_STADIUM_GAMES, ...real]);
     } catch (err) {
       console.error('Failed to fetch events:', err);
       setError('Failed to load events');
@@ -452,17 +975,23 @@ function FullMapScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedEvent(event);
     showCard();
-    cameraRef.current?.setCamera({ centerCoordinate: [event.longitude, event.latitude], zoomLevel: 14, animationDuration: 500 });
+    cameraRef.current?.setCamera({ centerCoordinate: [event.longitude, event.latitude], zoomLevel: 14, pitch: 60, animationDuration: 500 });
   }, [showCard]);
 
   const handleFriendMarkerPress = useCallback((friend: FriendMarker) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedFriend(friend);
     showCard();
-    cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, animationDuration: 500 });
+    cameraRef.current?.setCamera({ centerCoordinate: [friend.longitude, friend.latitude], zoomLevel: 15, pitch: 60, animationDuration: 500 });
   }, [showCard]);
 
-  const handleRecenter = useCallback(() => { if (userLocation) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setIsCentered(true); cameraRef.current?.setCamera({ centerCoordinate: userLocation, zoomLevel: 13, animationDuration: 500 }); } }, [userLocation]);
+  const handleRecenter = useCallback(() => {
+    if (userLocation) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setIsCentered(true);
+      cameraRef.current?.setCamera({ centerCoordinate: userLocation, zoomLevel: 13, pitch: 60, animationDuration: 500 });
+    }
+  }, [userLocation]);
 
   const liveCount = useMemo(() => events.filter(e => e.isLive).length, [events]);
   const defaultCenter: [number, number] = userLocation || [-73.9855, 40.7580];
@@ -498,9 +1027,33 @@ function FullMapScreen() {
           }, 1000);
         }}
       >
-        <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12 }} minZoomLevel={2} maxZoomLevel={20} />
+        <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12, pitch: 60 }} minZoomLevel={2} maxZoomLevel={20} />
         {/* Override POI/business label colors to white */}
         <SymbolLayer id="poi-label" existing={true} style={{ textColor: '#ffffff' }} />
+        {/* 3D extruded buildings — fades in from zoom 14 so flat view stays clean */}
+        <VectorSource id="composite-buildings" url="mapbox://mapbox.mapbox-streets-v8">
+          <FillExtrusionLayer
+            id="3d-buildings"
+            sourceID="composite-buildings"
+            sourceLayerID="building"
+            filter={['==', ['get', 'extrude'], 'true']}
+            minZoomLevel={14}
+            style={{
+              fillExtrusionColor: '#1e2028',
+              fillExtrusionHeight: [
+                'interpolate', ['linear'], ['zoom'],
+                14, 0,
+                15.05, ['get', 'height'],
+              ],
+              fillExtrusionBase: [
+                'interpolate', ['linear'], ['zoom'],
+                14, 0,
+                15.05, ['get', 'min_height'],
+              ],
+              fillExtrusionOpacity: 0.85,
+            }}
+          />
+        </VectorSource>
         {/* Heatmap layer — Snapmap-style activity density */}
         {heatmapGeoJSON.features.length > 0 && (
           <ShapeSource id="heatmap-source" shape={heatmapGeoJSON as any}>
@@ -550,11 +1103,18 @@ function FullMapScreen() {
         {!sharingState.isSharing && (
           <LocationPuck puckBearing="heading" puckBearingEnabled={true} pulsing={{ isEnabled: true, color: '#34c759' }} />
         )}
-        {filteredEvents.map((event) => (
-          <MarkerView key={event.id} coordinate={[event.longitude, event.latitude]} anchor={{ x: 0.5, y: 1 }} allowOverlap={true} allowOverlapWithPuck={true}>
-            <EventMarker event={event} onPress={() => handleMarkerPress(event)} />
-          </MarkerView>
-        ))}
+        {filteredEvents.map((event) => {
+          const isStadium = event.id.startsWith('mock-venue-');
+          return (
+            <MarkerView key={event.id} coordinate={[event.longitude, event.latitude]} anchor={{ x: 0.5, y: 1 }} allowOverlap={true} allowOverlapWithPuck={true}>
+              {isStadium ? (
+                <StadiumMarker event={event} onPress={() => handleMarkerPress(event)} />
+              ) : (
+                <EventMarker event={event} onPress={() => handleMarkerPress(event)} />
+              )}
+            </MarkerView>
+          );
+        })}
         {allNearbyFriends.map((friend) => (
           <MarkerView key={`friend-${friend.id}`} coordinate={[friend.longitude, friend.latitude]} anchor={{ x: 0.5, y: 1 }} allowOverlap={true} allowOverlapWithPuck={true}>
             <FriendMarkerView friend={friend} onPress={() => handleFriendMarkerPress(friend)} />
@@ -578,7 +1138,7 @@ function FullMapScreen() {
       {/* Weather pill — top left */}
       {weather && (
         <View style={[styles.weatherPill, { top: insets.top + 12 }]} accessibilityLabel={`Weather: ${weather?.temp || ''}°`}>
-          <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 20 }]} />
           <Image source={{ uri: weather.icon }} style={styles.weatherIcon} />
           <Text style={styles.weatherTemp}>{weather.temp}°</Text>
         </View>
@@ -652,6 +1212,7 @@ function FullMapScreen() {
             cameraRef.current?.setCamera({
               centerCoordinate: [friend.longitude, friend.latitude],
               zoomLevel: 15,
+              pitch: 60,
               animationDuration: 500,
             });
           }}
@@ -667,78 +1228,169 @@ function FullMapScreen() {
       )}
 
       {/* Event Preview Card */}
-      {selectedEvent && !showNearbySheet && (
-        <View
-          style={styles.eventPreviewOverlay}
-          pointerEvents="box-none"
-        >
-          <GestureDetector gesture={cardPanGesture}>
-          <Animated.View style={[styles.eventPreviewCard, { height: 155 }, cardAnimatedStyle]}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => { const ev = selectedEvent; setSelectedEvent(null); handleEventPress(ev); }} />
-            <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.7)" borderRadius={20} style={StyleSheet.absoluteFill} pointerEvents="none" />
-            {/* Grab handle */}
-            <View style={{ position: 'absolute', top: 6, left: 0, right: 0, alignItems: 'center', zIndex: 10 }} pointerEvents="none">
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+      {selectedEvent && !showNearbySheet && (() => {
+        const isStadium = selectedEvent.id.startsWith('mock-venue-');
+        const score = isStadium ? MOCK_SCORES[selectedEvent.id] : undefined;
+        const stats = isStadium ? MOCK_GAME_STATS[selectedEvent.id] : undefined;
+
+        if (isStadium && score) {
+          const leaderIsAway = score.away.score > score.home.score;
+          const leaderIsHome = score.home.score > score.away.score;
+          const isLive = score.status !== 'FINAL';
+          return (
+            <View style={styles.eventPreviewOverlay} pointerEvents="box-none">
+              <GestureDetector gesture={cardPanGesture}>
+                <Animated.View style={[styles.gameStatsCard, cardAnimatedStyle]}>
+                  <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.75)" borderRadius={20} style={StyleSheet.absoluteFill} pointerEvents="none" />
+                  {/* Grab handle */}
+                  <View style={{ alignItems: 'center', marginBottom: 6 }} pointerEvents="none">
+                    <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+                  </View>
+
+                  {/* Header: status + venue + clock */}
+                  <View style={styles.gameStatsHeader}>
+                    <View style={[styles.gameStatsStatusPill, isLive && styles.gameStatsStatusPillLive]}>
+                      {isLive && <View style={styles.gameStatsStatusDot} />}
+                      <Text style={styles.gameStatsStatusText}>{score.status}</Text>
+                    </View>
+                    <Text style={styles.gameStatsVenue} numberOfLines={1}>{selectedEvent.venue}</Text>
+                    {stats?.clock && <Text style={styles.gameStatsClock}>{stats.clock}</Text>}
+                  </View>
+
+                  {/* Scoreboard */}
+                  <View style={styles.gameStatsScoreboard}>
+                    <View style={styles.gameStatsTeamRow}>
+                      <Text style={[styles.gameStatsTeamName, !leaderIsAway && styles.gameStatsTeamNameDim]}>{score.away.team}</Text>
+                      <Text style={[styles.gameStatsTeamScore, !leaderIsAway && styles.gameStatsTeamScoreDim]}>{score.away.score}</Text>
+                    </View>
+                    <View style={styles.gameStatsTeamRow}>
+                      <Text style={[styles.gameStatsTeamName, !leaderIsHome && styles.gameStatsTeamNameDim]}>{score.home.team}</Text>
+                      <Text style={[styles.gameStatsTeamScore, !leaderIsHome && styles.gameStatsTeamScoreDim]}>{score.home.score}</Text>
+                    </View>
+                  </View>
+
+                  {/* Kiyan line (if playing) */}
+                  {stats?.kiyan && (
+                    <View style={styles.gameStatsKiyanBlock}>
+                      <Text style={styles.gameStatsKiyanLabel}>KIYAN ANTHONY · {stats.kiyan.min} MIN</Text>
+                      <Text style={styles.gameStatsKiyanLine}>
+                        {stats.kiyan.pts} PTS · {stats.kiyan.reb} REB · {stats.kiyan.ast} AST
+                        {stats.kiyan.stl ? ` · ${stats.kiyan.stl} STL` : ''}
+                      </Text>
+                      <Text style={styles.gameStatsKiyanSplits}>
+                        FG {stats.kiyan.fg}  ·  3P {stats.kiyan.threes}  ·  FT {stats.kiyan.ft}
+                      </Text>
+                    </View>
+                  )}
+
+                  {/* Team leaders fallback */}
+                  {!stats?.kiyan && stats?.teamLeaders && (
+                    <View style={styles.gameStatsLeadersBlock}>
+                      {stats.teamLeaders.map((l, i) => (
+                        <View key={i} style={{ gap: 1 }}>
+                          <Text style={styles.gameStatsLeaderName}>{l.name}</Text>
+                          <Text style={styles.gameStatsLeaderLine}>{l.line}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  {/* Team stat splits */}
+                  {stats?.teamStats && stats.teamStats.length > 0 && (
+                    <View style={styles.gameStatsTable}>
+                      <View style={styles.gameStatsTableHeader}>
+                        <Text style={[styles.gameStatsTableCell, styles.gameStatsTableHead, { textAlign: 'left' }]}>STAT</Text>
+                        <Text style={[styles.gameStatsTableCell, styles.gameStatsTableHead]}>{score.away.team}</Text>
+                        <Text style={[styles.gameStatsTableCell, styles.gameStatsTableHead]}>{score.home.team}</Text>
+                      </View>
+                      {stats.teamStats.map((row) => (
+                        <View key={row.label} style={styles.gameStatsTableRow}>
+                          <Text style={[styles.gameStatsTableCell, styles.gameStatsTableLabel, { textAlign: 'left' }]}>{row.label}</Text>
+                          <Text style={styles.gameStatsTableCell}>{row.away}</Text>
+                          <Text style={styles.gameStatsTableCell}>{row.home}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </Animated.View>
+              </GestureDetector>
             </View>
-            {/* Flyer — left */}
-            {selectedEvent.imageUrl ? (
-              <Image source={{ uri: selectedEvent.imageUrl }} style={styles.eventPreviewFlyer} pointerEvents="none" />
-            ) : (
-              <View style={[styles.eventPreviewFlyer, { backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }]} pointerEvents="none">
-                <Ionicons name="calendar" size={28} color="rgba(255,255,255,0.3)" />
+          );
+        }
+
+        return (
+          <View
+            style={styles.eventPreviewOverlay}
+            pointerEvents="box-none"
+          >
+            <GestureDetector gesture={cardPanGesture}>
+            <Animated.View style={[styles.eventPreviewCard, { height: 155 }, cardAnimatedStyle]}>
+              <Pressable style={StyleSheet.absoluteFill} onPress={() => { const ev = selectedEvent; setSelectedEvent(null); handleEventPress(ev); }} />
+              <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(10,10,10,0.7)" borderRadius={20} style={StyleSheet.absoluteFill} pointerEvents="none" />
+              {/* Grab handle */}
+              <View style={{ position: 'absolute', top: 6, left: 0, right: 0, alignItems: 'center', zIndex: 10 }} pointerEvents="none">
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' }} />
               </View>
-            )}
-            {/* Details — right */}
-            <View style={styles.eventPreviewInfo} pointerEvents="box-none">
-              <View style={{ flex: 1, justifyContent: 'center', gap: 2 }} pointerEvents="none">
-                <Text style={[styles.eventPreviewTitle, { fontSize: 18 }]} numberOfLines={2}>{selectedEvent.title}</Text>
-                <Text style={[styles.eventPreviewVenue, { fontSize: 15, fontWeight: '700' }]} numberOfLines={1}>{selectedEvent.venue}</Text>
-                <Text style={[styles.eventPreviewMeta, { fontSize: 13, fontWeight: '700' }]}>{selectedEvent.date} · {selectedEvent.time}</Text>
-              </View>
-              <View style={styles.eventPreviewActions}>
-                <TouchableOpacity
-                  style={styles.eventPreviewRsvp}
-                  activeOpacity={0.8}
-                  accessibilityLabel={selectedEvent.isUserRegistered ? "Open RSVP'd event" : "RSVP to event"}
-                  accessibilityRole="button"
-                  onPress={() => {
-                    const ev = selectedEvent;
-                    setSelectedEvent(null);
-                    handleEventPress(ev);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.eventPreviewRsvpText,
-                      selectedEvent.isUserRegistered && { color: 'rgba(0,0,0,0.55)' },
-                    ]}
+              {/* Flyer — left */}
+              {selectedEvent.imageUrl ? (
+                <Image source={{ uri: selectedEvent.imageUrl }} style={styles.eventPreviewFlyer} pointerEvents="none" />
+              ) : (
+                <View style={[styles.eventPreviewFlyer, { backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center' }]} pointerEvents="none">
+                  <Ionicons name="calendar" size={28} color="rgba(255,255,255,0.3)" />
+                </View>
+              )}
+              {/* Details — right */}
+              <View style={styles.eventPreviewInfo} pointerEvents="box-none">
+                <View style={{ flex: 1, justifyContent: 'center', gap: 2 }} pointerEvents="none">
+                  <Text style={[styles.eventPreviewTitle, { fontSize: 18 }]} numberOfLines={2}>{selectedEvent.title}</Text>
+                  <Text style={[styles.eventPreviewVenue, { fontSize: 15, fontWeight: '700' }]} numberOfLines={1}>{selectedEvent.venue}</Text>
+                  <Text style={[styles.eventPreviewMeta, { fontSize: 13, fontWeight: '700' }]}>{selectedEvent.date} · {selectedEvent.time}</Text>
+                </View>
+                <View style={styles.eventPreviewActions}>
+                  <TouchableOpacity
+                    style={styles.eventPreviewRsvp}
+                    activeOpacity={0.8}
+                    accessibilityLabel={selectedEvent.isUserRegistered ? "Open RSVP'd event" : "RSVP to event"}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      const ev = selectedEvent;
+                      setSelectedEvent(null);
+                      handleEventPress(ev);
+                    }}
                   >
-                    {selectedEvent.isUserRegistered ? "RSVP'd" : "RSVP"}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{ borderRadius: 14, overflow: 'hidden', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, gap: 2 }}
-                  activeOpacity={0.7}
-                  accessibilityLabel="Share event"
-                  accessibilityRole="button"
-                  onPress={() => {
-                    if (!selectedEvent) return;
-                    Share.share({
-                      message: `Check out ${selectedEvent.title} at ${selectedEvent.venue}! ${selectedEvent.date} · ${selectedEvent.time}`,
-                      url: `https://status.app/event/${selectedEvent.id}`,
-                    });
-                  }}
-                >
-                  <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(255,255,255,0.12)" borderRadius={14} style={StyleSheet.absoluteFill} />
-                  <Ionicons name="share-outline" size={18} color="#fff" />
-                  <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Share</Text>
-                </TouchableOpacity>
+                    <Text
+                      style={[
+                        styles.eventPreviewRsvpText,
+                        selectedEvent.isUserRegistered && { color: 'rgba(0,0,0,0.55)' },
+                      ]}
+                    >
+                      {selectedEvent.isUserRegistered ? "RSVP'd" : "RSVP"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ borderRadius: 14, overflow: 'hidden', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, paddingHorizontal: 14, gap: 2 }}
+                    activeOpacity={0.7}
+                    accessibilityLabel="Share event"
+                    accessibilityRole="button"
+                    onPress={() => {
+                      if (!selectedEvent) return;
+                      Share.share({
+                        message: `Check out ${selectedEvent.title} at ${selectedEvent.venue}! ${selectedEvent.date} · ${selectedEvent.time}`,
+                        url: `https://status.app/event/${selectedEvent.id}`,
+                      });
+                    }}
+                  >
+                    <GlassView glassEffectStyle="clear" colorScheme="dark" tintColor="rgba(255,255,255,0.12)" borderRadius={14} style={StyleSheet.absoluteFill} />
+                    <Ionicons name="share-outline" size={18} color="#fff" />
+                    <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Share</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          </Animated.View>
-          </GestureDetector>
-        </View>
-      )}
+            </Animated.View>
+            </GestureDetector>
+          </View>
+        );
+      })()}
 
       {/* Share Location Sheet — native SwiftUI on iOS 26+, fallback otherwise */}
       {canUseNativeSheet() ? (
@@ -840,6 +1492,121 @@ const styles = StyleSheet.create({
   eventMarkerContainer: {
     alignItems: 'center',
   },
+  stadiumMarkerContainer: {
+    alignItems: 'center',
+  },
+  stadiumLiveTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: '#FF6F3C',
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    zIndex: 3,
+  },
+  stadiumLiveDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#FFF',
+  },
+  stadiumLiveText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: 0.8,
+  },
+  stadiumIsoImage: {
+    width: 96,
+    height: 68,
+  },
+  // ── Live score card markers ──
+  scoreMarkerContainer: {
+    alignItems: 'center',
+  },
+  scoreCard: {
+    minWidth: 88,
+    paddingHorizontal: 10,
+    paddingTop: 6,
+    paddingBottom: 8,
+    borderRadius: 10,
+    backgroundColor: '#0F1114',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    gap: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.45,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  scoreStatusPill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    marginBottom: 2,
+  },
+  scoreStatusPillLive: {
+    backgroundColor: '#FF6F3C',
+  },
+  scoreStatusDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#FFF',
+  },
+  scoreStatusText: {
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+    color: '#FFF',
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  scoreTeam: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFF',
+    letterSpacing: 0.2,
+  },
+  scoreTeamDim: {
+    color: 'rgba(255,255,255,0.55)',
+  },
+  scoreNum: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#FFF',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
+  },
+  scoreNumDim: {
+    color: 'rgba(255,255,255,0.55)',
+  },
+  scoreMarkerPointer: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderTopColor: '#0F1114',
+    marginTop: -0.5,
+  },
   eventMarker: {
     width: 70,
     height: 100,
@@ -877,7 +1644,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#ffffff',
     overflow: 'hidden',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   friendMarkerImage: {
     width: '100%',
@@ -902,7 +1669,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#34c759',
     overflow: 'hidden',
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   myLocationPointer: {
     width: 0,
@@ -916,6 +1683,178 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
   eventPreviewOverlay: { ...StyleSheet.absoluteFillObject, zIndex: 50, justifyContent: 'flex-end', paddingBottom: 100, paddingHorizontal: 16 },
+  // ── Game stats card (replaces preview for mock venues) ──
+  gameStatsCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.15)',
+    padding: 14,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+  },
+  gameStatsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  gameStatsStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+  },
+  gameStatsStatusPillLive: {
+    backgroundColor: '#FF6F3C',
+  },
+  gameStatsStatusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: '#FFF',
+  },
+  gameStatsStatusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: '#FFF',
+  },
+  gameStatsVenue: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.85)',
+    letterSpacing: -0.1,
+  },
+  gameStatsClock: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 0.2,
+  },
+  gameStatsScoreboard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 10,
+    gap: 6,
+  },
+  gameStatsTeamRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  gameStatsTeamName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
+    letterSpacing: 0.3,
+  },
+  gameStatsTeamNameDim: {
+    color: 'rgba(255,255,255,0.55)',
+  },
+  gameStatsTeamScore: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFF',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.5,
+  },
+  gameStatsTeamScoreDim: {
+    color: 'rgba(255,255,255,0.55)',
+  },
+  gameStatsKiyanBlock: {
+    backgroundColor: 'rgba(255,111,60,0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,111,60,0.4)',
+    borderRadius: 12,
+    padding: 10,
+    gap: 3,
+  },
+  gameStatsKiyanLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: '#FF6F3C',
+  },
+  gameStatsKiyanLine: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
+    letterSpacing: -0.1,
+  },
+  gameStatsKiyanSplits: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.7)',
+    letterSpacing: -0.1,
+    marginTop: 2,
+  },
+  gameStatsLeadersBlock: {
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    padding: 10,
+  },
+  gameStatsLeaderName: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    color: 'rgba(255,255,255,0.55)',
+    textTransform: 'uppercase',
+  },
+  gameStatsLeaderLine: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFF',
+    letterSpacing: -0.1,
+  },
+  gameStatsTable: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  gameStatsTableHeader: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    gap: 8,
+  },
+  gameStatsTableRow: {
+    flexDirection: 'row',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    gap: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.07)',
+  },
+  gameStatsTableCell: {
+    flex: 1,
+    fontSize: 12,
+    color: '#FFF',
+    fontWeight: '600',
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+  gameStatsTableHead: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    color: 'rgba(255,255,255,0.55)',
+    textTransform: 'uppercase',
+  },
+  gameStatsTableLabel: {
+    color: 'rgba(255,255,255,0.65)',
+    fontWeight: '700',
+    fontSize: 11,
+    letterSpacing: 0.4,
+  },
   eventPreviewCard: { flexDirection: 'row', borderRadius: 20, overflow: 'hidden', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.15)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 },
   eventPreviewFlyer: { width: 110, height: 139, borderRadius: 12, margin: 8 },
   eventPreviewInfo: { flex: 1, paddingVertical: 12, paddingRight: 12, justifyContent: 'flex-end', gap: 3 },

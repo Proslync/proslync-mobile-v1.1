@@ -434,7 +434,7 @@ export default BarTabDetailScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   loadingContainer: {
     flex: 1,
@@ -463,7 +463,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     maxWidth: 200,
   },
@@ -483,7 +482,6 @@ const styles = StyleSheet.create({
   },
   paymentStatusText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.6)',
   },
   listContent: {
@@ -501,12 +499,10 @@ const styles = StyleSheet.create({
   },
   addItemsText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(255,255,255,0.7)',
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
     paddingVertical: 32,
@@ -524,18 +520,15 @@ const styles = StyleSheet.create({
   },
   orderItemName: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#fff',
   },
   orderItemNotes: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.4)',
     marginTop: 2,
   },
   orderItemQty: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
     marginRight: 12,
     minWidth: 24,
@@ -543,7 +536,6 @@ const styles = StyleSheet.create({
   },
   orderItemPrice: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     minWidth: 60,
     textAlign: 'right',
@@ -565,12 +557,10 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
   },
   totalValue: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   totalFinal: {
@@ -587,12 +577,10 @@ const styles = StyleSheet.create({
   },
   chargeButtonText: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   readerHint: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
     marginTop: 8,
@@ -607,7 +595,6 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: '#FF3B30',
   },
 });

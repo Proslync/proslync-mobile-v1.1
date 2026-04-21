@@ -114,22 +114,33 @@ export default function DashboardScreen() {
     [router],
   );
 
-  // Grouped menu items
-  const manageItems: MenuItemData[] = [
-    { title: "Create Event", subtitle: "Set up a new event", icon: "add-circle-outline", route: "/create-event" },
-    { title: "My Events", subtitle: "View and edit your events", icon: "calendar-outline", route: "/my-events" },
-    { title: "My Venues", subtitle: "Manage your venues", icon: "business-outline", route: "/my-venues" },
-    { title: "My List", subtitle: "Everyone who RSVP'd", icon: "list-outline", route: "/dashboard/attendees" },
+  // Grouped menu items — NIL athlete-focused
+  const dealItems: MenuItemData[] = [
+    { title: "My Deals", subtitle: "Active contracts and deliverables", icon: "flash-outline", route: "/dashboard/my-deals" },
+    { title: "Offer Inbox", subtitle: "New brand offers waiting for review", icon: "mail-unread-outline", route: "/dashboard/offers" },
+    { title: "Brand Matches", subtitle: "Open deals matched to your profile", icon: "sparkles-outline", route: "/dashboard/matches" },
+    { title: "Contracts & Docs", subtitle: "Signed agreements, W-9s, disclosures", icon: "document-text-outline", route: "/dashboard/documents" },
   ];
 
-  const insightsItems: MenuItemData[] = [
-    { title: "Analytics", subtitle: "View detailed insights", icon: "bar-chart-outline", route: "/dashboard/analytics" },
-    { title: "Revenue", subtitle: "Track earnings and trends", icon: "trending-up-outline", route: "/dashboard/revenue" },
-    { title: "Wallet", subtitle: "View earnings and payouts", icon: "wallet-outline", route: "/dashboard/payments" },
+  const performanceItems: MenuItemData[] = [
+    { title: "Brand Impact Score", subtitle: "Live valuation · sentiment · reach", icon: "analytics-outline", route: "/dashboard/impact" },
+    { title: "Audience Insights", subtitle: "Followers, demographics, top cities", icon: "people-outline", route: "/dashboard/audience" },
+    { title: "On-Court Stats", subtitle: "Season averages vs ACC frosh guards", icon: "basketball-outline", route: "/dashboard/stats" },
+    { title: "Award Watch", subtitle: "ACC FOY, Wayman Tisdale, Jerry West", icon: "trophy-outline", route: "/dashboard/awards" },
+  ];
+
+  const businessItems: MenuItemData[] = [
+    { title: "Earnings", subtitle: "YTD payouts + upcoming invoices", icon: "trending-up-outline", route: "/dashboard/earnings" },
+    { title: "Payouts & Wallet", subtitle: "Stripe Connect · tax forms", icon: "wallet-outline", route: "/dashboard/payments" },
+    { title: "Merch Storefront", subtitle: "Drops, inventory, fulfillment", icon: "shirt-outline", route: "/dashboard/merch" },
+    { title: "Appearance Calendar", subtitle: "Bookings, cameos, signings", icon: "calendar-outline", route: "/dashboard/calendar" },
   ];
 
   const toolsItems: MenuItemData[] = [
-    { title: "Text Blast", subtitle: "SMS to all your contacts", icon: "chatbubble-outline", route: "/dashboard/text-blast" },
+    { title: "Content Manager", subtitle: "Schedule posts across IG / TikTok / X", icon: "images-outline", route: "/dashboard/content" },
+    { title: "Fan Messaging", subtitle: "Broadcast SMS + premium subscribers", icon: "chatbubble-outline", route: "/dashboard/text-blast" },
+    { title: "Compliance Center", subtitle: "NCAA + school pre-approvals", icon: "shield-checkmark-outline", route: "/dashboard/compliance" },
+    { title: "Agent & Team", subtitle: "Rich Paul · Klutch · legal", icon: "briefcase-outline", route: "/dashboard/team" },
   ];
 
   const adminItems: MenuItemData[] = user?.role === UserRole.ADMIN
@@ -183,11 +194,12 @@ export default function DashboardScreen() {
         )}
 
         {/* Menu Groups */}
-        <MenuGroup title="MANAGE" items={manageItems} delay={100} t={t} border={border} onItemPress={handleNav} />
-        <MenuGroup title="INSIGHTS" items={insightsItems} delay={200} t={t} border={border} onItemPress={handleNav} />
-        <MenuGroup title="TOOLS" items={toolsItems} delay={300} t={t} border={border} onItemPress={handleNav} />
+        <MenuGroup title="DEALS" items={dealItems} delay={100} t={t} border={border} onItemPress={handleNav} />
+        <MenuGroup title="PERFORMANCE" items={performanceItems} delay={200} t={t} border={border} onItemPress={handleNav} />
+        <MenuGroup title="BUSINESS" items={businessItems} delay={300} t={t} border={border} onItemPress={handleNav} />
+        <MenuGroup title="TOOLS" items={toolsItems} delay={400} t={t} border={border} onItemPress={handleNav} />
         {adminItems.length > 0 && (
-          <MenuGroup title="ADMIN" items={adminItems} delay={400} t={t} border={border} onItemPress={handleNav} />
+          <MenuGroup title="ADMIN" items={adminItems} delay={500} t={t} border={border} onItemPress={handleNav} />
         )}
 
         <View style={{ height: insets.bottom + 40 }} />
@@ -216,7 +228,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   header: {
     flexDirection: "row",
@@ -236,7 +247,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   headerSpacer: {
     width: 36,
@@ -256,7 +266,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 4,
@@ -287,11 +296,9 @@ const styles = StyleSheet.create({
   },
   menuItemTitle: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   menuItemSubtitle: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   divider: {

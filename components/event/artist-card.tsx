@@ -93,11 +93,9 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   time: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   playButton: {
     width: 38,
@@ -108,7 +106,6 @@ const styles = StyleSheet.create({
   },
   bio: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 18,
   },
   progressRow: {

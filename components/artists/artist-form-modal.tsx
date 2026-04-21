@@ -445,7 +445,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   closeButton: {
     width: 32,
@@ -465,7 +464,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 8,
   },
   input: {
@@ -473,12 +471,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     borderWidth: 1,
   },
   inputInner: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
   },
   textArea: {
     minHeight: 80,
@@ -492,14 +488,12 @@ const styles = StyleSheet.create({
   },
   dialCode: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     paddingRight: 4,
   },
   phoneInput: {
     flex: 1,
     height: 50,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     paddingRight: 16,
   },
   dateButton: {
@@ -513,11 +507,9 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
   },
   errorText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: '#ef4444',
     textAlign: 'center',
     marginBottom: 16,
@@ -536,7 +528,6 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   embedPreview: {
@@ -544,7 +535,6 @@ const styles = StyleSheet.create({
   },
   embedLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 8,
   },
   embedContainer: {

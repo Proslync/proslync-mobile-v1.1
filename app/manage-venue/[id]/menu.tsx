@@ -158,7 +158,7 @@ export default function VenueMenuScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Fixed pill row */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -173,7 +173,7 @@ export default function VenueMenuScreen() {
         </View>
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       <ScrollView
         style={styles.scrollView}
@@ -645,7 +645,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   loadingContainer: {
     flex: 1,
@@ -666,12 +665,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
     marginTop: 4,
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
   },
   categoryWrapper: {},
@@ -699,7 +696,6 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     flex: 1,
   },
   deleteButton: {
@@ -718,7 +714,6 @@ const styles = StyleSheet.create({
   },
   noItemsText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   itemDivider: {
     height: 1,
@@ -736,16 +731,13 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
   },
   itemDesc: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   itemPrice: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     marginRight: 4,
   },
   addItemRow: {
@@ -762,7 +754,6 @@ const styles = StyleSheet.create({
   },
   addItemText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   addCategoryRow: {
     marginTop: 4,
@@ -773,26 +764,22 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     textAlign: "center",
     paddingTop: 20,
     marginBottom: 4,
   },
   sheetSubtitle: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginBottom: 20,
     lineHeight: 18,
   },
   fieldLabel: {
     fontSize: 12,
-    fontFamily: "Lato_700Bold",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   fieldLabelOptional: {
-    fontFamily: "Lato_400Regular",
     textTransform: "none",
     letterSpacing: 0,
     fontSize: 12,
@@ -804,7 +791,6 @@ const styles = StyleSheet.create({
   },
   cleanInput: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
     backgroundColor: 'rgba(0,0,0,0.04)',
     borderRadius: 10,
@@ -819,7 +805,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
   },
   sheetActions: {
     marginTop: 4,

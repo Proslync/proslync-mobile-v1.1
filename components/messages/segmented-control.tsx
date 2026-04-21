@@ -114,12 +114,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.6)',
   },
   labelActive: {
     color: '#fff',
-    fontFamily: 'Lato_700Bold',
   },
   badge: {
     marginLeft: 4,
@@ -134,6 +132,5 @@ const styles = StyleSheet.create({
   badgeText: {
     color: '#fff',
     fontSize: 10,
-    fontFamily: 'Lato_700Bold',
   },
 });

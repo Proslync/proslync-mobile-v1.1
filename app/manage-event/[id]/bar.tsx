@@ -290,7 +290,7 @@ export default function BarQuickOrderScreen() {
         })}
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {menuLoading ? (
         <View style={styles.emptyContainer}>

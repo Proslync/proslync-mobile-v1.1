@@ -360,7 +360,7 @@ function CheckInsContent() {
 
   if (!eventId) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000000' }]}>
                 <Text style={[styles.errorText, { color: colors.textSecondary }]}>
           No event selected
         </Text>
@@ -369,7 +369,7 @@ function CheckInsContent() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
             <ConfirmSheet
         visible={!!paymentFailedAlert}
         onClose={() => setPaymentFailedAlert(null)}
@@ -415,7 +415,7 @@ function CheckInsContent() {
         })}
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Content */}
       {isLoading ? (
@@ -506,7 +506,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
   },
   headerStatusRow: {
     flexDirection: "row",
@@ -521,7 +520,6 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   centerContent: {
     flex: 1,
@@ -532,21 +530,17 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
     marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
   },
   errorText: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
     marginTop: 100,
   },
@@ -620,7 +614,6 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 15,
-    fontFamily: "Lato_600SemiBold",
   },
   tabBadge: {
     borderRadius: 10,
@@ -629,6 +622,5 @@ const styles = StyleSheet.create({
   },
   tabBadgeText: {
     fontSize: 12,
-    fontFamily: "Lato_700Bold",
   },
 });

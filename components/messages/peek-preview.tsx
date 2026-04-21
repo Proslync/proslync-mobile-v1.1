@@ -240,12 +240,10 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     maxWidth: 150,
   },
   peekLabel: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   headerRight: {
@@ -255,7 +253,6 @@ const styles = StyleSheet.create({
   },
   releaseText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
   messagesContainer: {
     flex: 1,
@@ -267,7 +264,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     paddingVertical: 40,
   },
@@ -287,12 +283,10 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 18,
   },
   messageTime: {
     fontSize: 10,
-    fontFamily: 'Lato_400Regular',
     marginTop: 4,
     alignSelf: 'flex-end',
   },
@@ -303,7 +297,6 @@ const styles = StyleSheet.create({
   },
   imagePreviewText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   systemMessage: {
     alignSelf: 'center',
@@ -311,7 +304,6 @@ const styles = StyleSheet.create({
   },
   systemText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   footer: {
@@ -322,6 +314,5 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
   },
 });

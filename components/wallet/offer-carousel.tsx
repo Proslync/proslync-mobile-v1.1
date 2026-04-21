@@ -86,7 +86,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingHorizontal: 16,
@@ -113,18 +112,15 @@ const styles = StyleSheet.create({
   },
   offerTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     lineHeight: 22,
   },
   offerSubtitle: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 16,
     height: 32,
   },
   offerCode: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
     letterSpacing: 1,
     opacity: 0.7,
   },
@@ -149,7 +145,6 @@ const styles = StyleSheet.create({
   },
   claimButtonText: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   claimButtonTextClaimed: {
@@ -161,7 +156,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginTop: 12,
   },
 });

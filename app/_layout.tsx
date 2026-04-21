@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
+import { Appearance } from "react-native";
 import {
   DarkTheme,
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
+
+// Force dark appearance app-wide so the iOS 26 native tab bar (which
+// inherits system appearance) stays dark on a Light-mode simulator/device.
+Appearance.setColorScheme("dark");
 import { Stack, router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
@@ -29,11 +34,13 @@ import { TabNavigationProvider } from "@/lib/providers/tab-navigation-provider";
 import { TabBarSheetProvider } from "@/lib/providers/tab-bar-sheet-provider";
 import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
-import { TerminalProvider } from "@/lib/providers/terminal-provider";
+// StripeTerminal removed for free-signing build (needs paid proximity-reader entitlement)
+// import { TerminalProvider } from "@/lib/providers/terminal-provider";
 import { ChatSocketProvider } from "@/lib/providers/chat-socket-provider";
 import { ChannelsSocketProvider } from "@/lib/providers/channels-socket-provider";
 import { BarSocketProvider } from "@/lib/providers/bar-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
+import { RoleProvider } from "@/lib/providers/role-provider";
 
 SplashScreen.preventAutoHideAsync();
 SystemUI.setBackgroundColorAsync("#000000");
@@ -94,10 +101,9 @@ function RootLayoutNav() {
         <Stack.Screen
           name="signin"
           options={{
-            presentation: "modal",
-            animation: "slide_from_bottom",
-            gestureEnabled: true,
-            fullScreenGestureEnabled: false,
+            presentation: "fullScreenModal",
+            animation: "fade",
+            gestureEnabled: false,
           }}
         />
         <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
@@ -178,7 +184,7 @@ function RootLayoutNav() {
           }}
         />
       </Stack>
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar style="light" />
     </NavigationThemeProvider>
   );
 }
@@ -189,12 +195,25 @@ export default function RootLayout() {
   useEffect(() => {
     async function loadFonts() {
       try {
+        const { Orbitron_700Bold, Orbitron_900Black } = await import(
+          "@expo-google-fonts/orbitron"
+        );
+        const {
+          Montserrat_400Regular,
+          Montserrat_500Medium,
+          Montserrat_700Bold,
+        } = await import("@expo-google-fonts/montserrat");
         await Font.loadAsync({
           ...Ionicons.font,
           Lato_300Light: require("../assets/fonts/Lato_300Light.ttf"),
           Lato_400Regular: require("../assets/fonts/Lato_400Regular.ttf"),
           Lato_700Bold: require("../assets/fonts/Lato_700Bold.ttf"),
           Lato_900Black: require("../assets/fonts/Lato_900Black.ttf"),
+          Orbitron_700Bold,
+          Orbitron_900Black,
+          Montserrat_400Regular,
+          Montserrat_500Medium,
+          Montserrat_700Bold,
         });
         setFontsLoaded(true);
       } catch (e) {
@@ -222,11 +241,11 @@ export default function RootLayout() {
           <StripeProvider>
             <ToastProvider>
               <AuthProvider>
+                <RoleProvider>
                 <ChatSocketProvider>
                   <ChannelsSocketProvider>
                   <BarSocketProvider>
                   <CallProvider>
-                    <TerminalProvider>
                       <LiveLocationProvider>
                         <TabNavigationProvider>
                           <TabBarSheetProvider>
@@ -238,11 +257,11 @@ export default function RootLayout() {
                           </TabBarSheetProvider>
                         </TabNavigationProvider>
                       </LiveLocationProvider>
-                    </TerminalProvider>
                   </CallProvider>
                   </BarSocketProvider>
                   </ChannelsSocketProvider>
                 </ChatSocketProvider>
+                </RoleProvider>
               </AuthProvider>
             </ToastProvider>
           </StripeProvider>

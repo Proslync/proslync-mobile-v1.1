@@ -251,13 +251,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     marginBottom: 40,
   },
@@ -277,20 +275,17 @@ const styles = StyleSheet.create({
   },
   dialCode: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     paddingHorizontal: 8,
   },
   phoneInput: {
     flex: 1,
     height: 58,
     fontSize: 17,
-    fontFamily: 'Lato_400Regular',
     paddingRight: 16,
   },
   errorText: {
     color: '#ef4444',
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     marginTop: 16,
   },
@@ -306,7 +301,6 @@ const styles = StyleSheet.create({
   },
   termsText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 20,
   },

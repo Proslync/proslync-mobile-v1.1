@@ -249,8 +249,8 @@ export default function EventRevenueScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f2' },
-  fixedTicker: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#f2f2f2', zIndex: 1000 },
+  container: { flex: 1, backgroundColor: '#000000' },
+  fixedTicker: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#000000', zIndex: 1000 },
   stickyHeader: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },

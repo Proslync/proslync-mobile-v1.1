@@ -236,7 +236,7 @@ export default function PaymentsScreen() {
         style={[
           styles.container,
           styles.loadingContainer,
-          { backgroundColor: '#f2f2f2' },
+          { backgroundColor: '#000000' },
         ]}
       >
         <ActivityIndicator size="large" color="#000" />
@@ -246,7 +246,7 @@ export default function PaymentsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Pill row header */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -274,7 +274,7 @@ export default function PaymentsScreen() {
         })}
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Setup result banner */}
       {setupResult && (
@@ -595,12 +595,10 @@ const styles = StyleSheet.create({
   setupBannerText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   docBanner: {
     flexDirection: "row",
@@ -617,7 +615,6 @@ const styles = StyleSheet.create({
   docBannerText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: "Lato_600SemiBold",
   },
   statusContainer: { marginHorizontal: 16, marginTop: 8, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
   onboardingContainer: { marginHorizontal: 16, marginTop: 8, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
@@ -630,7 +627,6 @@ const styles = StyleSheet.create({
   pillTextActive: { color: 'rgba(0,0,0,0.8)' },
   headerTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   scrollView: {
     flex: 1,
@@ -645,7 +641,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     marginBottom: 10,
   },
   // Activity
@@ -677,16 +672,13 @@ const styles = StyleSheet.create({
   },
   activityTitle: {
     fontSize: 14,
-    fontFamily: "Lato_600SemiBold",
   },
   activityDate: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     marginTop: 2,
   },
   activityAmount: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   positiveAmount: {
     color: "#22c55e",
@@ -700,12 +692,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     marginTop: 12,
   },
   emptyHint: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 4,
     textAlign: "center",
   },
@@ -722,7 +712,6 @@ const styles = StyleSheet.create({
   },
   futureReqTitle: {
     fontSize: 14,
-    fontFamily: "Lato_600SemiBold",
   },
   futureReqItem: {
     flexDirection: "row",
@@ -735,6 +724,5 @@ const styles = StyleSheet.create({
   },
   futureReqText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
 });

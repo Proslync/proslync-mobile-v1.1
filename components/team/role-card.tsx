@@ -87,7 +87,6 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     flexShrink: 1,
   },
   systemBadge: {
@@ -97,7 +96,6 @@ const styles = StyleSheet.create({
   },
   systemText: {
     fontSize: 9,
-    fontFamily: 'Lato_700Bold',
     letterSpacing: 0.5,
   },
   actions: {
@@ -107,10 +105,8 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   permCount: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
 });

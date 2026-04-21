@@ -85,12 +85,10 @@ const styles = StyleSheet.create({
   },
   guestName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   meta: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.45)',
     marginTop: 2,
   },
@@ -100,7 +98,6 @@ const styles = StyleSheet.create({
   },
   total: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   chevron: {

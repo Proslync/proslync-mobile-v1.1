@@ -208,7 +208,7 @@ function TapToChargeContent() {
         </View>
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Reader Status Bar */}
       <View style={styles.statusBar}>
@@ -324,7 +324,7 @@ export default function TapToChargeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   pillRow: {
     flexDirection: 'row',
@@ -378,12 +378,10 @@ const styles = StyleSheet.create({
   statusText: {
     flex: 1,
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.5)",
   },
   retryText: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     color: "#000",
   },
   amountSection: {
@@ -394,7 +392,6 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 56,
-    fontFamily: "Lato_700Bold",
     color: "#000",
     letterSpacing: -1,
   },
@@ -403,13 +400,11 @@ const styles = StyleSheet.create({
   },
   successLabel: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     color: "#34d399",
     marginTop: 8,
   },
   errorText: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.4)",
     textAlign: "center",
     marginTop: 100,
@@ -429,7 +424,6 @@ const styles = StyleSheet.create({
   },
   keypadKeyText: {
     fontSize: 28,
-    fontFamily: "Lato_400Regular",
     color: "#000",
   },
   chargeButton: {
@@ -447,7 +441,6 @@ const styles = StyleSheet.create({
   },
   chargeButtonText: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
     color: "#000",
   },
 });

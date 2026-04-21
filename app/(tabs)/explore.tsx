@@ -63,19 +63,36 @@ import type { UnifiedSearchItem } from "@/lib/types/search.types";
 // Local default avatar with white background
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
 
+// Local-asset overrides for specific mock contacts
+const LOCAL_AVATAR_BY_ID: Record<string, any> = {
+  "mock-agent-rich": require("@/assets/images/contact-rich-paul.png"),
+  "mock-deal-desk": require("@/assets/images/contact-proslync.png"),
+  "mock-celsius": require("@/assets/images/contact-celsius.png"),
+  "mock-puma": require("@/assets/images/contact-puma.png"),
+  "mock-beats": require("@/assets/images/contact-beats.png"),
+  "mock-cuse-gc": require("@/assets/images/contact-cuse.png"),
+};
+
 // Avatar with online indicator
 function ConversationAvatar({
   imageUrl,
+  localImage,
   isOnline,
   hasUnread,
   size = 56,
 }: {
   imageUrl?: string;
+  localImage?: any;
   isOnline?: boolean;
   hasUnread?: boolean;
   size?: number;
 }) {
   const hasCustomAvatar = imageUrl && imageUrl.length > 0;
+  const source = localImage
+    ? localImage
+    : hasCustomAvatar
+      ? { uri: imageUrl }
+      : DefaultAvatarImage;
 
   return (
     <View style={[styles.avatarContainer, { width: size, height: size }]}>
@@ -86,21 +103,13 @@ function ConversationAvatar({
         ]}
       >
         <Image
-          source={hasCustomAvatar ? { uri: imageUrl } : DefaultAvatarImage}
+          source={source}
           style={[
             styles.avatarImage,
             { width: size, height: size, borderRadius: size / 2 },
           ]}
         />
       </View>
-      {hasUnread && (
-        <View style={[styles.unreadRing, { borderRadius: (size + 4) / 2, borderWidth: 2, borderColor: '#3897F0' }]} />
-      )}
-      {isOnline && (
-        <View style={styles.onlineIndicator}>
-          <View style={styles.onlineDot} />
-        </View>
-      )}
     </View>
   );
 }
@@ -209,6 +218,7 @@ function ConversationRow({
         ) : (
           <ConversationAvatar
             imageUrl={channel.imageUrl}
+            localImage={LOCAL_AVATAR_BY_ID[channel.id]}
             isOnline={channel.isOnline}
             hasUnread={hasUnread}
           />
@@ -231,7 +241,7 @@ function ConversationRow({
                 <MaterialCommunityIcons
                   name="check-decagram"
                   size={14}
-                  color="#3897F0"
+                  color="#FF6F3C"
                   style={{ marginLeft: 4 }}
                 />
               )}
@@ -265,7 +275,6 @@ function ConversationRow({
                 { color: colors.textSecondary },
                 hasUnread && {
                   color: colors.text,
-                  fontFamily: "Lato_700Bold",
                 },
               ]}
               numberOfLines={1}
@@ -479,7 +488,7 @@ function NotificationRow({ item, onPress }: { item: AppNotification; onPress: ()
         <Text style={styles.notifText} numberOfLines={2}>
           <Text style={styles.notifTitle}>{item.title}</Text>
           {actorUser?.isVerified && ' '}
-          {actorUser?.isVerified && <MaterialCommunityIcons name="check-decagram" size={14} color="#3897F0" />}
+          {actorUser?.isVerified && <MaterialCommunityIcons name="check-decagram" size={14} color="#FF6F3C" />}
           {'  '}{item.body}
         </Text>
         <Text style={styles.notifTime}>{formatTimeAgo(item.createdAt)}</Text>
@@ -489,13 +498,111 @@ function NotificationRow({ item, onPress }: { item: AppNotification; onPress: ()
   );
 }
 
+const MOCK_CONVERSATIONS: ChannelData[] = (() => {
+  const now = Date.now();
+  const ago = (mins: number) => new Date(now - mins * 60 * 1000).toISOString();
+  return [
+    {
+      id: 'mock-agent-rich',
+      name: 'Rich Paul · Klutch',
+      imageUrl: 'https://images.unsplash.com/photo-1557862921-37829c790f19?w=200&q=80',
+      lastMessage: { text: 'Talked to the league scout — feedback was 🔥. Call me tonight.', createdAt: ago(8), userId: 'rp', attachmentType: null },
+      unreadCount: 1,
+      memberCount: 2,
+      isOnline: true,
+      updatedAt: ago(8),
+      isPinned: false,
+      isConcierge: false,
+      isVerified: true,
+    },
+    {
+      id: 'mock-agent-marketing',
+      name: 'Marcus · Klutch Marketing',
+      imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
+      lastMessage: { text: 'Locking PUMA numbers EOD. Need your call on the royalty split.', createdAt: ago(32), userId: 'mk', attachmentType: null },
+      unreadCount: 1,
+      memberCount: 2,
+      isOnline: true,
+      updatedAt: ago(32),
+      isPinned: false,
+      isConcierge: false,
+      isVerified: true,
+    },
+    {
+      id: 'mock-deal-desk',
+      name: 'Proslync Deal Desk',
+      imageUrl: 'https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?w=200&q=80',
+      lastMessage: { text: 'PUMA upped to $85k + 4% royalty. Pitch deck attached.', createdAt: ago(65), userId: 'desk', attachmentType: 'image' },
+      unreadCount: 1,
+      memberCount: 2,
+      isOnline: true,
+      updatedAt: ago(65),
+      isPinned: false,
+      isConcierge: false,
+      isVerified: true,
+    },
+    {
+      id: 'mock-puma',
+      name: 'PUMA Hoops · Tosan',
+      imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&q=80',
+      lastMessage: { text: 'You: Loved the MB.04 colorway — let\'s do a NY edition', createdAt: ago(280), userId: 'me', attachmentType: null },
+      unreadCount: 0,
+      memberCount: 2,
+      isOnline: false,
+      updatedAt: ago(280),
+      lastMessageReadByOther: true,
+      isPinned: false,
+      isConcierge: false,
+      isVerified: true,
+    },
+    {
+      id: 'mock-celsius',
+      name: 'Celsius · Partnerships',
+      imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=200&q=80',
+      lastMessage: { text: 'Content brief for the gameday series dropping tomorrow.', createdAt: ago(410), userId: 'cs', attachmentType: null },
+      unreadCount: 0,
+      memberCount: 2,
+      isOnline: false,
+      updatedAt: ago(410),
+      isPinned: false,
+      isConcierge: false,
+      isVerified: true,
+    },
+    {
+      id: 'mock-beats',
+      name: 'Beats by Dre · Claire',
+      imageUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=200&q=80',
+      lastMessage: { text: 'Studio session in NYC next Tues — you in?', createdAt: ago(620), userId: 'beats', attachmentType: null },
+      unreadCount: 0,
+      memberCount: 2,
+      isOnline: false,
+      updatedAt: ago(620),
+      isPinned: false,
+      isConcierge: false,
+      isVerified: true,
+    },
+    {
+      id: 'mock-cuse-gc',
+      name: 'Cuse Hoops 🧡',
+      imageUrl: 'https://images.unsplash.com/photo-1577471489098-30e59e04d9cf?w=200&q=80',
+      lastMessage: { text: 'J: bus leaves 4:45 sharp fellas. Don\'t be late 🏀', createdAt: ago(720), userId: 'teammate', attachmentType: null },
+      unreadCount: 3,
+      memberCount: 13,
+      isOnline: false,
+      updatedAt: ago(720),
+      isPinned: false,
+      isConcierge: false,
+    },
+  ];
+})();
+
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { colors: _colors, isDark: _isDark } = useAppTheme();
   const { showError } = useToast();
-  const colors = { ..._colors, text: '#000', textSecondary: 'rgba(0,0,0,0.6)', textTertiary: 'rgba(0,0,0,0.4)', background: '#f2f2f2', border: 'rgba(0,0,0,0.08)' };
-  const isDark = false;
+  const colors = { ..._colors, text: '#FFF', textSecondary: 'rgba(255,255,255,0.65)', textTertiary: 'rgba(255,255,255,0.4)', background: '#000', border: 'rgba(255,255,255,0.10)' };
+  const isDark = true;
   const { user } = useAuth();
   const { tabBarTopOffset } = useTabNavigation();
   const { channelData, isLoading, refetch, deleteChannel } = useConversations(
@@ -629,20 +736,17 @@ export default function MessagesScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery, performLocalSearch]);
 
-  // Filter channels by search
+  // Filter channels by search (mock data for demo pitch)
   const filteredChannels = useMemo(() => {
-    // Hide conversations with no messages (created but never used)
-    const withMessages = channelData.filter((channel) => !!channel.lastMessage);
-
-    if (!searchQuery.trim()) return withMessages;
-
-    return withMessages.filter((channel) => {
-      if (searchResults.has(channel.id)) return true;
-      const lowerQuery = searchQuery.toLowerCase();
-      if (channel.name.toLowerCase().includes(lowerQuery)) return true;
-      return false;
-    });
-  }, [channelData, searchQuery, searchResults]);
+    const base = MOCK_CONVERSATIONS;
+    if (!searchQuery.trim()) return base;
+    const lowerQuery = searchQuery.toLowerCase();
+    return base.filter(
+      (channel) =>
+        channel.name.toLowerCase().includes(lowerQuery) ||
+        channel.lastMessage?.text.toLowerCase().includes(lowerQuery),
+    );
+  }, [searchQuery]);
 
   const handleConversationPress = useCallback(
     (channel: ChannelData) => {
@@ -850,7 +954,7 @@ export default function MessagesScreen() {
   // Loading state
   if (isLoading && channelData.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[styles.container, { backgroundColor: '#000' }]}>
         <View style={{ paddingTop: insets.top + 16, height: insets.top + 54 }} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.text} />
@@ -863,53 +967,49 @@ export default function MessagesScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000' }]}>
 
-      {/* Floating header pills */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.headerScrollContent, { paddingTop: insets.top + 16 }]}
-        style={styles.headerScrollFixed}
-      >
-          {/* Search icon pill */}
-          <Pressable style={styles.iconPill} onPress={handleSearchPress} accessibilityLabel="Search messages" accessibilityRole="button">
-            <View style={styles.glassLayer} pointerEvents="none">
-              <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={19} style={StyleSheet.absoluteFill} />
-            </View>
-            <Ionicons name="search" size={18} color="#000" />
-          </Pressable>
+      {/* Floating header — profile-style (icon · title · icon) */}
+      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable
+          style={styles.topBarGlassCircle}
+          onPress={handleSearchPress}
+          accessibilityLabel="Search messages"
+          accessibilityRole="button"
+        >
+          <GlassView
+            glassEffectStyle="regular"
+            style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
+          />
+          <Ionicons name="search-outline" size={18} color="#FFF" />
+        </Pressable>
 
-          {/* New convo / new channel icon pill */}
-          {/* Filter pills */}
-          {((features.channels ? ['Messages', 'Notifications', 'Channels'] : ['Messages', 'Notifications']) as const).map((label) => {
-            const isActive = activeTab === label;
-            return (
-              <Pressable
-                key={label}
-                style={styles.filterPill}
-                onPress={() => setActiveTab(label as 'Messages' | 'Notifications' | 'Channels')}
-                accessibilityLabel={`${label} tab`}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-              >
-                <View style={styles.glassLayer} pointerEvents="none">
-                  <GlassView
-                    {...liquidGlass.surface}
-                    tintColor={isActive ? 'rgba(0,0,0,0.12)' : 'transparent'}
-                    borderRadius={19}
-                    style={StyleSheet.absoluteFill}
-                  />
-                </View>
-                <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>{label}</Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <View style={styles.topBarCenter}>
+          <Text style={styles.topBarTitle}>
+            {activeTab === 'Notifications' ? 'Notifications' : activeTab === 'Channels' ? 'Channels' : 'Messages'}
+          </Text>
+        </View>
+
+        <Pressable
+          style={styles.topBarGlassCircle}
+          onPress={() =>
+            setActiveTab(activeTab === 'Notifications' ? 'Messages' : 'Notifications')
+          }
+          accessibilityLabel="Notifications"
+          accessibilityRole="button"
+          accessibilityState={{ selected: activeTab === 'Notifications' }}
+        >
+          <GlassView
+            glassEffectStyle="regular"
+            style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
+          />
+          <Ionicons name="notifications-outline" size={18} color="#FFF" />
+        </Pressable>
+      </View>
 
       {/* Top fade */}
       <LinearGradient
-        colors={['#f2f2f2', 'rgba(242,242,242,0)']}
+        colors={['#000', 'rgba(0,0,0,0)']}
         style={styles.topFade}
         pointerEvents="none"
       />
@@ -1054,7 +1154,7 @@ export default function MessagesScreen() {
         presentationStyle="pageSheet"
         onRequestClose={handleCloseCompose}
       >
-        <View style={[styles.composeContainer, { backgroundColor: '#f2f2f2' }]}>
+        <View style={[styles.composeContainer, { backgroundColor: '#000' }]}>
 
           {/* Creating overlay */}
           {isCreating && (
@@ -1335,22 +1435,6 @@ export default function MessagesScreen() {
         icon="alert-circle-outline"
       />
 
-      {/* New conversation FAB — hidden on Notifications tab */}
-      {activeTab !== 'Notifications' && <Pressable
-        style={[styles.composeFab, { bottom: tabBarTopOffset + 105, right: 20 }]}
-        accessibilityLabel="New message"
-        accessibilityRole="button"
-        onPress={() => {
-          if (activeTab === 'Channels') {
-            router.push('/create-channel' as any);
-          } else {
-            handleOpenCompose();
-          }
-        }}
-      >
-        <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
-        <Ionicons name="add" size={30} color="#000" />
-      </Pressable>}
 
     </View>
   );
@@ -1360,6 +1444,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  // Profile-style top bar (search · Messages · notifications)
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  topBarGlassCircle: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  topBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  topBarTitle: { fontSize: 20, fontWeight: '700', color: '#FFF' },
   // Profile-style header
   headerScrollFixed: {
     position: 'absolute',
@@ -1370,15 +1470,15 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   composeFab: { position: 'absolute', width: 56, height: 56, borderRadius: 28, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', zIndex: 50 },
-  notifRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, marginHorizontal: 16, marginBottom: 8, gap: 12, backgroundColor: '#fff', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  notifRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, marginHorizontal: 16, marginBottom: 8, gap: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
   notifRowUnread: { borderColor: 'rgba(0,0,0,0.12)' },
   notifActorAvatar: { width: 40, height: 40, borderRadius: 20 },
   notifIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center' },
   notifContent: { flex: 1 },
-  notifText: { fontSize: 14, fontFamily: 'Lato_400Regular', lineHeight: 20, color: 'rgba(0,0,0,0.6)' },
-  notifTitle: { fontFamily: 'Lato_700Bold', color: '#000' },
-  notifTime: { fontSize: 12, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.35)', marginTop: 4 },
-  notifUnreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#3897F0' },
+  notifText: { fontSize: 14, lineHeight: 20, color: 'rgba(0,0,0,0.6)' },
+  notifTitle: { color: '#000' },
+  notifTime: { fontSize: 12, color: 'rgba(0,0,0,0.35)', marginTop: 4 },
+  notifUnreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF6F3C' },
   topFade: {
     position: 'absolute',
     top: 0,
@@ -1388,37 +1488,40 @@ const styles = StyleSheet.create({
     zIndex: 99,
   },
   headerScrollContent: {
-    paddingHorizontal: 12,
-    gap: 8,
+    flexDirection: "row",
+    paddingHorizontal: 24,
     alignItems: "center",
+    justifyContent: "space-between",
     paddingBottom: 8,
   },
   iconPill: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   filterPill: {
-    height: 38,
-    paddingHorizontal: 16,
-    borderRadius: 19,
+    height: 44,
+    paddingHorizontal: 18,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   filterPillText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "500",
-    color: "rgba(0,0,0,0.5)",
+    color: "rgba(255,255,255,0.55)",
   },
   filterPillTextActive: {
-    color: "rgba(0,0,0,0.8)",
+    color: "#FFF",
   },
   glassLayer: {
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
-    borderRadius: 19,
+    borderRadius: 22,
   },
   searchSheet: {
     position: "absolute",
@@ -1489,10 +1592,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginHorizontal: 10,
     marginVertical: 3,
-    borderRadius: 16,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "rgba(128,128,128,0.12)",
+    backgroundColor: "transparent",
   },
   avatarContainer: {
     position: "relative",
@@ -1549,15 +1649,12 @@ const styles = StyleSheet.create({
   },
   conversationTitle: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     flexShrink: 1,
   },
   conversationTitleUnread: {
-    fontFamily: "Lato_700Bold",
   },
   timestamp: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   conversationFooter: {
     flexDirection: "row",
@@ -1566,13 +1663,12 @@ const styles = StyleSheet.create({
   lastMessage: {
     flex: 1,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#3897F0",
+    backgroundColor: "#FF6F3C",
     marginLeft: 8,
   },
   emptyListContainer: {
@@ -1599,12 +1695,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     marginBottom: 6,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
     lineHeight: 20,
   },
@@ -1618,7 +1712,6 @@ const styles = StyleSheet.create({
   },
   sendMessageButtonText: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
   },
   loadingContainer: {
     flex: 1,
@@ -1628,7 +1721,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
   },
   // Action sheet (account-switcher style)
   // Compose modal
@@ -1645,7 +1737,6 @@ const styles = StyleSheet.create({
   composeOverlayText: {
     marginTop: 16,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "#fff",
   },
   composeHeader: {
@@ -1665,13 +1756,12 @@ const styles = StyleSheet.create({
   },
   composeTitle: {
     fontSize: 24,
-    fontFamily: "Lato_700Bold",
     color: "#1a1a1a",
   },
   composeBottomInput: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 20,
     marginHorizontal: 16,
     paddingHorizontal: 16,
@@ -1712,7 +1802,6 @@ const styles = StyleSheet.create({
   },
   chipName: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
   },
   groupRow: {
     flexDirection: "row",
@@ -1724,7 +1813,6 @@ const styles = StyleSheet.create({
   groupInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -1739,7 +1827,6 @@ const styles = StyleSheet.create({
   },
   createGroupText: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
   },
   sectionHeader: {
@@ -1748,7 +1835,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -1774,11 +1860,9 @@ const styles = StyleSheet.create({
   },
   personName: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   personUsername: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   composeEmpty: {
@@ -1788,7 +1872,6 @@ const styles = StyleSheet.create({
   },
   composeEmptyText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
   },
 });

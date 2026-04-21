@@ -492,7 +492,7 @@ export default function UserProfileScreen() {
                   </View>
                   <Text style={styles.mutualsText} numberOfLines={2}>
                     Followed by{" "}
-                    <Text style={{ fontFamily: "Lato_700Bold" }}>
+                    <Text style={{ }}>
                       {mutuals
                         .slice(0, 2)
                         .map((m) => m.userName || m.firstName || "User")
@@ -788,7 +788,6 @@ const styles = StyleSheet.create({
   },
   followPillText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "rgba(0,0,0,0.7)",
   },
 
@@ -824,7 +823,6 @@ const styles = StyleSheet.create({
   },
   avatarInitial: {
     fontSize: 38,
-    fontFamily: "Lato_700Bold",
     color: "rgba(0,0,0,0.5)",
   },
 
@@ -837,7 +835,6 @@ const styles = StyleSheet.create({
   },
   heroStatText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.45)",
   },
   heroStatDot: {
@@ -856,14 +853,12 @@ const styles = StyleSheet.create({
   // ── Hero name (used in blocked states) ──
   heroName: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
     color: "rgba(0,0,0,0.75)",
     marginTop: 12,
     textAlign: "center",
   },
   heroSub: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.45)",
     marginTop: 4,
     textAlign: "center",
@@ -883,18 +878,15 @@ const styles = StyleSheet.create({
   },
   usernameText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.45)",
   },
   displayName: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
     marginBottom: 4,
   },
   bio: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.55)",
     lineHeight: 20,
   },
@@ -924,7 +916,6 @@ const styles = StyleSheet.create({
   mutualsText: {
     flex: 1,
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.45)",
     lineHeight: 16,
   },
@@ -946,7 +937,6 @@ const styles = StyleSheet.create({
   },
   messageBtnText: {
     fontSize: 15,
-    fontFamily: "Lato_600SemiBold",
     color: "#1A1A1A",
   },
 
@@ -968,7 +958,6 @@ const styles = StyleSheet.create({
   },
   postsSectionTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
     marginBottom: 12,
     marginLeft: 4,
@@ -1014,7 +1003,6 @@ const styles = StyleSheet.create({
   },
   noPostsText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.35)",
   },
 
@@ -1035,13 +1023,11 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 22,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
     marginBottom: 8,
   },
   errorSubtitle: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.4)",
     textAlign: "center",
     marginBottom: 24,
@@ -1055,7 +1041,6 @@ const styles = StyleSheet.create({
   },
   goBackButtonText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
 

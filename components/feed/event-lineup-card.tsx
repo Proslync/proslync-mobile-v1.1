@@ -129,7 +129,7 @@ export const EventLineupCard = React.memo(function EventLineupCard({
             {data.organizerName}
           </Text>
           {data.organizerVerified && (
-            <MaterialCommunityIcons name="check-decagram" size={18} color="#3897F0" />
+            <MaterialCommunityIcons name="check-decagram" size={18} color="#FF6F3C" />
           )}
         </TouchableOpacity>
       </View>

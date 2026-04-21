@@ -176,7 +176,6 @@ const styles = StyleSheet.create({
   },
   tierName: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   activeBadge: {
     paddingHorizontal: 6,
@@ -185,18 +184,15 @@ const styles = StyleSheet.create({
   },
   activeBadgeText: {
     fontSize: 9,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     textTransform: 'uppercase',
   },
   tierDescription: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 4,
   },
   tierStats: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
   tierActions: {
     flexDirection: 'row',
@@ -224,11 +220,9 @@ const styles = StyleSheet.create({
   },
   pricingName: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   pricingPrice: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   unavailableBadge: {
@@ -240,7 +234,6 @@ const styles = StyleSheet.create({
   },
   unavailableText: {
     fontSize: 9,
-    fontFamily: 'Lato_700Bold',
     color: '#ef4444',
     textTransform: 'uppercase',
   },
@@ -267,6 +260,5 @@ const styles = StyleSheet.create({
   },
   addPricingText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
 });

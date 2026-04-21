@@ -177,17 +177,14 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
   },
   stepDescription: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 20,
     marginBottom: 4,
   },
   label: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 6,
   },
   inputWrapper: {
@@ -199,7 +196,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     borderWidth: 1,
   },
   row: {
@@ -211,7 +207,6 @@ const styles = StyleSheet.create({
   },
   error: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: '#ef4444',
     marginTop: 4,
   },

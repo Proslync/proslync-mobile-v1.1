@@ -3,7 +3,7 @@ import { useRouter, useSegments } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/auth';
 import { apiClient } from '../api/client';
-import type { User, UserRole } from '../types/auth.types';
+import type { AthleteProfile, User, UserRole } from '../types/auth.types';
 
 // Partial user returned from verify-otp (doesn't include full profile fields)
 interface PartialUser {
@@ -30,6 +30,7 @@ interface AuthContextType {
   hasRole: (role: UserRole) => boolean;
   refreshUser: () => Promise<void>;
   skipAppleMessagesLinking: () => void;
+  completeAthleteRegistration: (data: AthleteProfile) => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
@@ -101,13 +102,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuth = async () => {
     try {
-      const token = await apiClient.getAccessToken();      if (token) {
-        // Fetch full user data directly from /api/auth/me
-        const userData = await authApi.getCurrentUser();        if (userData) {
-          setUser(userData);
-        }
-      }
-    } catch (error) {    } finally {
+      // MOCK MODE: skip backend check, hydrate a fake logged-in user.
+      const userData = await authApi.getCurrentUser();
+      if (userData) setUser(userData);
+    } catch {
+      // swallow
+    } finally {
       setIsLoading(false);
     }
   };
@@ -158,6 +158,39 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAppleMessagesLinkingSkipped(true);
   }, []);
 
+  const completeAthleteRegistration = React.useCallback(
+    async (data: AthleteProfile) => {
+      setUser((prev) => {
+        if (!prev) {
+          // Registration finished before the mock user hydrated — synthesize one.
+          return {
+            id: Date.now(),
+            phoneNumber: "",
+            role: "user" as UserRole,
+            status: "active",
+            isProfileComplete: true,
+            firstName: data.legalName.split(" ")[0],
+            lastName: data.legalName.split(" ").slice(1).join(" "),
+            userName: data.displayName,
+            bio: data.bio,
+            athleteProfile: data,
+          } as User;
+        }
+        return {
+          ...prev,
+          firstName: prev.firstName ?? data.legalName.split(" ")[0],
+          lastName:
+            prev.lastName ?? data.legalName.split(" ").slice(1).join(" "),
+          userName: prev.userName ?? data.displayName,
+          bio: prev.bio ?? data.bio,
+          isProfileComplete: true,
+          athleteProfile: data,
+        };
+      });
+    },
+    []
+  );
+
   const switchAccount = React.useCallback(async (accessToken: string, refreshToken?: string): Promise<boolean> => {
     try {
       // Clear previous user's cached data
@@ -191,8 +224,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       hasRole,
       refreshUser,
       skipAppleMessagesLinking,
+      completeAthleteRegistration,
     }),
-    [user, isAuthenticated, isLoading, login, logout, switchAccount, hasRole, refreshUser, skipAppleMessagesLinking],
+    [user, isAuthenticated, isLoading, login, logout, switchAccount, hasRole, refreshUser, skipAppleMessagesLinking, completeAthleteRegistration],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

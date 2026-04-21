@@ -69,7 +69,7 @@ export function MembershipCard({ user, onPress, enlarged = false }: MembershipCa
               <View style={styles.handleRow}>
                 <Text style={styles.handle} numberOfLines={1}>@{user.userName}</Text>
                 {user.isVerified && (
-                  <MaterialCommunityIcons name="check-decagram" size={15} color="#3897F0" />
+                  <MaterialCommunityIcons name="check-decagram" size={15} color="#FF6F3C" />
                 )}
               </View>
             ) : null}
@@ -151,7 +151,6 @@ const incompleteStyles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.45)',
     textAlign: 'center',
     marginTop: 6,
@@ -169,7 +168,6 @@ const incompleteStyles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     textAlign: 'center',
   },
@@ -228,7 +226,6 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     letterSpacing: 0.3,
     textAlign: 'center',
@@ -242,7 +239,6 @@ const styles = StyleSheet.create({
   },
   handle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: '#fff',
     textAlign: 'center',
   },
@@ -255,7 +251,6 @@ const styles = StyleSheet.create({
   },
   memberSince: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.6)',
   },
 });

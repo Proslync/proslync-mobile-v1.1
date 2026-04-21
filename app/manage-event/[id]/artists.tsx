@@ -245,7 +245,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   countBadge: {
     borderRadius: 10,
@@ -254,7 +253,6 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
   },
   loadingContainer: {
     flex: 1,
@@ -269,12 +267,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     marginTop: 12,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     marginTop: 6,
     textAlign: 'center',
   },
@@ -291,7 +287,6 @@ const styles = StyleSheet.create({
   },
   emptyCtaText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
   scrollView: {
     flex: 1,

@@ -27,7 +27,7 @@ export const config = {
   },
   websocket: {
     url: USE_LOCAL_BACKEND ? `ws://${LOCAL_IP}:5000` : PROD_WS_URL,
-    enabled: true,
+    enabled: false,
   },
   auth: {
     tokenKey: "accessToken",

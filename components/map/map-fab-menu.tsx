@@ -3,7 +3,7 @@
 import * as React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
+import { GlassView } from "expo-glass-effect";
 
 interface MapFabMenuProps {
   onShareLocation: () => void;
@@ -23,11 +23,7 @@ export function MapFabMenu({
 }: MapFabMenuProps) {
   return (
     <View style={[styles.pill, { top: topInset }]}>
-      {isLiquidGlassSupported ? (
-        <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
-      ) : (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 28 }]} />
-      )}
+      <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 28 }]} />
       <TouchableOpacity style={styles.iconBtn} onPress={onRecenter} activeOpacity={0.7}>
         <Ionicons name={isCentered ? "navigate" : "navigate-outline"} size={22} color="#fff" />
       </TouchableOpacity>

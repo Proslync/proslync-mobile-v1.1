@@ -81,14 +81,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
     lineHeight: 22,

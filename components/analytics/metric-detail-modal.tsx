@@ -406,7 +406,7 @@ export function MetricDetailModal({
 }
 
 const ms = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, zIndex: 998, backgroundColor: '#f2f2f2' },
+  backdrop: { ...StyleSheet.absoluteFillObject, zIndex: 998, backgroundColor: '#000000' },
   fullScreen: { ...StyleSheet.absoluteFillObject, zIndex: 999 },
   card: { flex: 1, backgroundColor: '#e5e5e5', borderTopLeftRadius: 38, borderTopRightRadius: 38, overflow: 'hidden' },
   dragHandleArea: { paddingTop: 8, paddingBottom: 4, alignItems: 'center' },

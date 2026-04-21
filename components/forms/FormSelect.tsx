@@ -119,12 +119,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 4,
   },
   description: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 12,
   },
   chipRow: {
@@ -140,6 +138,5 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
 });

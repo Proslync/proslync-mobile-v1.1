@@ -262,7 +262,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
   },
   deleteText: {
     color: "#ff3b30",

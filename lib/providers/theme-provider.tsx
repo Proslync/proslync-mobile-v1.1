@@ -76,8 +76,8 @@ export function ThemeProvider({
     setThemeMode(currentTheme === 'dark' ? 'light' : 'dark');
   }, [themeMode, systemColorScheme, setThemeMode]);
 
-  // Force light theme — app uses light backgrounds
-  const theme = 'light' as const;
+  // Force dark theme — Proslync is dark-first app-wide.
+  const theme = 'dark' as const;
 
   // Get colors for current theme
   const colors = React.useMemo((): ThemeColors => {

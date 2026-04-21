@@ -197,12 +197,10 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
   },
   description: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -219,7 +217,6 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   buttonContainer: {
     alignSelf: 'stretch',
@@ -231,7 +228,6 @@ const styles = StyleSheet.create({
   },
   hint: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 16,
     textAlign: 'center',
   },
@@ -253,6 +249,5 @@ const styles = StyleSheet.create({
   remediationText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
 });

@@ -444,7 +444,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   addButton: {
     width: 36,
@@ -472,12 +471,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     marginTop: 8,
     textAlign: "center",
   },
@@ -512,7 +509,6 @@ const styles = StyleSheet.create({
   eventName: {
     flex: 1,
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -521,18 +517,15 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 10,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
     textTransform: "uppercase",
   },
   eventDate: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 4,
   },
   eventLocation: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   eventBottomRow: {
     flexDirection: "row",
@@ -547,7 +540,6 @@ const styles = StyleSheet.create({
   },
   eventStatText: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
   },
   dashboardChip: {
     flexDirection: "row",
@@ -559,6 +551,5 @@ const styles = StyleSheet.create({
   },
   dashboardChipText: {
     fontSize: 11,
-    fontFamily: "Lato_600SemiBold",
   },
 });

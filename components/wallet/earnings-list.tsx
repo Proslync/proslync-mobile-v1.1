@@ -138,10 +138,8 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   filterTextActive: {
-    fontFamily: 'Lato_700Bold',
   },
   loadingContainer: {
     flex: 1,
@@ -165,11 +163,9 @@ const styles = StyleSheet.create({
   },
   eventName: {
     fontSize: 15,
-    fontFamily: 'Lato_600SemiBold',
   },
   rowDate: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   rowRight: {
@@ -181,11 +177,9 @@ const styles = StyleSheet.create({
   },
   grossAmount: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   netAmount: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
   },
   badge: {
     paddingHorizontal: 8,
@@ -194,7 +188,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
   },
   emptyContainer: {
     alignItems: 'center',
@@ -203,11 +196,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   emptyHint: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
 });

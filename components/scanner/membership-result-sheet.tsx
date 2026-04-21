@@ -98,7 +98,7 @@ export function MembershipResultSheet({
                 @{memberProfile?.userName || `user${membershipData.memberId}`}
               </Text>
               {memberProfile?.isVerified && (
-                <MaterialCommunityIcons name="check-decagram" size={15} color="#3897F0" />
+                <MaterialCommunityIcons name="check-decagram" size={15} color="#FF6F3C" />
               )}
             </View>
           )}
@@ -205,7 +205,6 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 22,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     letterSpacing: 0.3,
     textAlign: 'center',
@@ -219,7 +218,6 @@ const styles = StyleSheet.create({
   },
   handle: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.6)',
     textAlign: 'center',
   },
@@ -232,7 +230,6 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
   },
   statusBadge: {
@@ -247,7 +244,6 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
     color: '#10b981',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -291,7 +287,6 @@ const styles = StyleSheet.create({
   },
   continueButtonText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   rescanLink: {
@@ -300,7 +295,6 @@ const styles = StyleSheet.create({
   },
   rescanLinkText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.35)',
   },
 });

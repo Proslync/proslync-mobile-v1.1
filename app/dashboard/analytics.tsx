@@ -482,10 +482,10 @@ export default function DashboardAnalyticsScreen() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f2' },
+  container: { flex: 1, backgroundColor: '#000000' },
 
   // Fixed ticker
-  fixedTicker: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#f2f2f2', zIndex: 1000 },
+  fixedTicker: { position: 'absolute', top: 0, left: 0, right: 0, backgroundColor: '#000000', zIndex: 1000 },
 
   // Header
   stickyHeader: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100 },

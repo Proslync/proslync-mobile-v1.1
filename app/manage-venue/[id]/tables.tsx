@@ -187,7 +187,7 @@ export default function VenueTablesScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Fixed pill row */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -202,7 +202,7 @@ export default function VenueTablesScreen() {
         </View>
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       <ScrollView
         style={styles.scrollView}
@@ -602,7 +602,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   loadingContainer: {
     flex: 1,
@@ -623,12 +622,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     marginTop: 4,
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   sectionWrapper: {},
@@ -659,11 +656,9 @@ const styles = StyleSheet.create({
   },
   sectionName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   sectionDesc: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   deleteButton: {
@@ -682,7 +677,6 @@ const styles = StyleSheet.create({
   },
   noTablesText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   tableDivider: {
     height: 1,
@@ -712,16 +706,13 @@ const styles = StyleSheet.create({
   },
   tableLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
   tableSeatCount: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   tablePriceTag: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     marginRight: 4,
   },
   addTableRow: {
@@ -738,7 +729,6 @@ const styles = StyleSheet.create({
   },
   addTableText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   addSectionRow: {
     marginTop: 4,
@@ -750,24 +740,20 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: 20,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 4,
   },
   sheetSubtitle: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 20,
     lineHeight: 18,
   },
   fieldLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_700Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
   },
   fieldLabelOptional: {
-    fontFamily: 'Lato_400Regular',
     textTransform: 'none',
     letterSpacing: 0,
     fontSize: 12,
@@ -783,7 +769,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 12,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
   },
   sheetActions: {
     marginTop: 4,
@@ -815,6 +800,5 @@ const styles = StyleSheet.create({
   },
   imagePlaceholderText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
 });

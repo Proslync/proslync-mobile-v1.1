@@ -32,7 +32,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.5)',
     marginHorizontal: 12,
     textTransform: 'uppercase',

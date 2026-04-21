@@ -153,7 +153,7 @@ export default function TeamScreen() {
   const isLoading = membersQuery.isLoading || rolesQuery.isLoading;
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Pill row header */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -513,7 +513,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
   },
   countBadge: {
     borderRadius: 10,
@@ -522,7 +521,6 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 12,
-    fontFamily: "Lato_700Bold",
   },
   loadingContainer: {
     flex: 1,
@@ -552,15 +550,12 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   statValue: {
     fontSize: 28,
-    fontFamily: "Lato_700Bold",
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     marginBottom: 12,
   },
   sectionHeader: {
@@ -584,7 +579,6 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   membersList: {
     gap: 8,
@@ -599,11 +593,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   emptySubtext: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     textAlign: "center",
   },
   emptyCta: {
@@ -619,7 +611,6 @@ const styles = StyleSheet.create({
   },
   emptyCtaText: {
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
   },
   addMemberButton: {
     flexDirection: "row",
@@ -637,7 +628,6 @@ const styles = StyleSheet.create({
   },
   addMemberButtonText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     color: "#fff",
   },
 });

@@ -130,7 +130,7 @@ export default function AdminPostsScreen() {
   const posts = data?.posts ?? [];
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Top row */}
       {isSearchActive ? (
@@ -176,7 +176,7 @@ export default function AdminPostsScreen() {
         </View>
       )}
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {isLoading ? (
         <View style={styles.center}>
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
   pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8 },
   searchBarInline: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: 38, borderRadius: 19, backgroundColor: '#fff', paddingHorizontal: 14, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
-  searchInputInline: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
+  searchInputInline: { flex: 1, fontSize: 15, color: '#000', padding: 0 },
   pillIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center' },
   pillLabel: { height: 38, borderRadius: 19, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 9 },
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
     height: 40,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 14, fontFamily: 'Lato_400Regular' },
+  searchInput: { flex: 1, fontSize: 14, },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -252,15 +252,15 @@ const styles = StyleSheet.create({
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center' },
   rowContent: { flex: 1 },
   postHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  authorName: { fontSize: 13, fontFamily: 'Lato_700Bold' },
-  postDate: { fontSize: 11, fontFamily: 'Lato_400Regular' },
-  postText: { fontSize: 13, fontFamily: 'Lato_400Regular', marginTop: 3, lineHeight: 18 },
+  authorName: { fontSize: 13, },
+  postDate: { fontSize: 11, },
+  postText: { fontSize: 13, marginTop: 3, lineHeight: 18 },
   postStats: { flexDirection: 'row', gap: 12, marginTop: 6 },
   stat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  statText: { fontSize: 11, fontFamily: 'Lato_400Regular' },
+  statText: { fontSize: 11, },
   mediaThumb: { width: 44, height: 44, borderRadius: 8 },
   deleteBtn: { padding: 8, marginTop: 4 },
-  emptyText: { fontSize: 14, fontFamily: 'Lato_400Regular' },
+  emptyText: { fontSize: 14, },
   loadMore: { alignItems: 'center', paddingVertical: 16 },
-  loadMoreText: { fontSize: 14, fontFamily: 'Lato_700Bold' },
+  loadMoreText: { fontSize: 14, },
 });

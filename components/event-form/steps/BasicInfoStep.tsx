@@ -172,7 +172,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
   },
   flyerPickerWrapper: {
@@ -189,12 +188,10 @@ const styles = StyleSheet.create({
   },
   flyerPickerText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginTop: 8,
   },
   flyerPickerHint: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 4,
   },
   flyerPreviewContainer: {
@@ -228,7 +225,6 @@ const styles = StyleSheet.create({
   },
   flyerChangeText: {
     fontSize: 14,
-    fontFamily: 'Lato_600SemiBold',
     color: '#1A1A1A',
   },
   required: {
@@ -236,7 +232,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: '#ff3b30',
     marginTop: 8,
   },

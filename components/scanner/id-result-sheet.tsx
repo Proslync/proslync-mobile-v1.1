@@ -286,7 +286,6 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -304,12 +303,10 @@ const styles = StyleSheet.create({
   },
   ticketBadgeText: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
     letterSpacing: 0.3,
   },
   ticketBadgeDetail: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     opacity: 0.7,
   },
   separator: {
@@ -351,12 +348,10 @@ const styles = StyleSheet.create({
   },
   validatingText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.35)",
   },
   resultName: {
     fontSize: 26,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
     textAlign: "center",
     marginBottom: 24,
@@ -379,7 +374,6 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 11,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.35)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -387,7 +381,6 @@ const styles = StyleSheet.create({
   },
   fieldValue: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   resultActions: {
@@ -407,7 +400,6 @@ const styles = StyleSheet.create({
   },
   approveButtonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
   denyButton: {
@@ -422,7 +414,6 @@ const styles = StyleSheet.create({
   },
   denyButtonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     color: "#ef4444",
   },
   scanNextButton: {
@@ -438,7 +429,6 @@ const styles = StyleSheet.create({
   },
   scanNextButtonText: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
 });

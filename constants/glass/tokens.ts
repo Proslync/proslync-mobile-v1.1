@@ -104,6 +104,16 @@ export const fontFamily: Record<FontWeight, string> = {
   black: 'Lato_900Black',
 };
 
+// Proslync brand typography tokens.
+// Display = Orbitron (headings, brand wordmark). Body = Montserrat.
+export const brandFont = {
+  display: 'Orbitron_700Bold',
+  displayBold: 'Orbitron_900Black',
+  body: 'Montserrat_400Regular',
+  bodyMedium: 'Montserrat_500Medium',
+  bodyBold: 'Montserrat_700Bold',
+} as const;
+
 export const spacing: Record<SpacingScale, number> = {
   xs: 4,
   sm: 8,

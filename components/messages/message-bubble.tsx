@@ -283,7 +283,6 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
     lineHeight: 22,
   },
@@ -312,19 +311,16 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     marginBottom: 4,
   },
   eventMeta: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 2,
   },
   eventVenue: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.5)',
     marginBottom: 10,
   },
@@ -336,7 +332,6 @@ const styles = StyleSheet.create({
   },
   eventButtonText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   reactionsContainer: {
@@ -366,7 +361,6 @@ const styles = StyleSheet.create({
   },
   reactionCount: {
     fontSize: 10,
-    fontFamily: 'Lato_400Regular',
     color: '#fff',
     marginLeft: 2,
   },
@@ -383,7 +377,6 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.5)',
   },
   statusContainer: {
@@ -396,13 +389,11 @@ const styles = StyleSheet.create({
   },
   systemText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.5)',
     textAlign: 'center',
   },
   systemTime: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.4)',
     marginTop: 4,
   },

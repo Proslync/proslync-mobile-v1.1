@@ -63,7 +63,6 @@ export function FormTextInput<T extends FieldValues>({
 const styles = StyleSheet.create({
   label: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
   },
   inputWrapper: {
@@ -75,7 +74,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     borderWidth: 1,
   },
   textArea: {
@@ -84,7 +82,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: '#ef4444',
     marginTop: 4,
   },

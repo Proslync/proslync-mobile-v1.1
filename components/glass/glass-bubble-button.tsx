@@ -164,7 +164,6 @@ const styles = StyleSheet.create({
   text: {
     position: "absolute",
     fontSize: 14,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
   },
 });

@@ -162,7 +162,7 @@ export default function MyTabScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   loadingContainer: {
     flex: 1,
@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   emptyContainer: {
@@ -203,12 +202,10 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(255,255,255,0.5)',
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
   },
@@ -217,7 +214,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.35)',
     textAlign: 'center',
     paddingVertical: 32,
@@ -235,18 +231,15 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#fff',
   },
   itemNotes: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.4)',
     marginTop: 2,
   },
   itemQty: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
     marginRight: 12,
     minWidth: 24,
@@ -254,7 +247,6 @@ const styles = StyleSheet.create({
   },
   itemPrice: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
     minWidth: 60,
     textAlign: 'right',
@@ -272,12 +264,10 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.5)',
   },
   totalValue: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   totalFinalRow: {
@@ -288,17 +278,14 @@ const styles = StyleSheet.create({
   },
   totalFinalLabel: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   totalFinalValue: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   tabHint: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255,255,255,0.3)',
     textAlign: 'center',
     marginTop: 12,

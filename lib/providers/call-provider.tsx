@@ -204,6 +204,7 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     const initSocket = async () => {
+      if (!config.websocket.enabled) return;
       const token = await SecureStore.getItemAsync('accessToken');
       if (!token || cancelled) return;
 

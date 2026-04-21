@@ -301,7 +301,6 @@ const styles = StyleSheet.create({
   },
   profileName: {
     fontSize: 17,
-    fontFamily: "Lato_700Bold",
     color: "#1A1A1A",
     marginBottom: 2,
   },
@@ -312,7 +311,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.45)",
   },
   actionsList: {
@@ -341,7 +339,6 @@ const styles = StyleSheet.create({
   actionText: {
     flex: 1,
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     color: "#1A1A1A",
   },
 });

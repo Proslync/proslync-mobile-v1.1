@@ -89,7 +89,7 @@ export function ConversationRow({
               <MaterialCommunityIcons
                 name="check-decagram"
                 size={14}
-                color="#3897F0"
+                color="#FF6F3C"
                 style={styles.verifiedIcon}
               />
             )}
@@ -182,11 +182,9 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
     flexShrink: 1,
   },
   nameUnread: {
-    fontFamily: "Lato_700Bold",
   },
   verifiedIcon: {
     marginLeft: 4,
@@ -196,7 +194,6 @@ const styles = StyleSheet.create({
   },
   timestamp: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   bottomRow: {
     flexDirection: "row",
@@ -205,7 +202,6 @@ const styles = StyleSheet.create({
   },
   preview: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     flex: 1,
     marginRight: 8,
   },
@@ -219,7 +215,6 @@ const styles = StyleSheet.create({
   },
   unreadText: {
     fontSize: 11,
-    fontFamily: "Lato_700Bold",
   },
   chevron: {
     marginLeft: 4,

@@ -162,7 +162,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   closeButton: {
@@ -195,18 +194,15 @@ const styles = StyleSheet.create({
   venueName: {
     fontSize: 17,
     color: '#1A1A1A',
-    fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   venueAddress: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0, 0, 0, 0.4)',
   },
   checkmark: {
     fontSize: 18,
     color: '#1A1A1A',
-    fontFamily: 'Lato_700Bold',
   },
   centered: {
     flex: 1,
@@ -215,7 +211,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0, 0, 0, 0.4)',
   },
 });

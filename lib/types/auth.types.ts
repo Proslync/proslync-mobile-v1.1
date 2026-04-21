@@ -65,6 +65,53 @@ export interface User {
   organizations?: Organization[];
   createdAt?: string;
   updatedAt?: string;
+  athleteProfile?: AthleteProfile;
+}
+
+// ─── Proslync Athlete Registration ─────────────────────────────────
+
+export interface AthleteProfile {
+  // Section A — Athletic Identity
+  legalName: string;
+  displayName: string;
+  profilePhotoUri?: string;
+  sports: string[];               // sport ids from lib/data/athlete-data
+  schoolId: string;
+  conference: string;             // auto from schoolId
+  division: string;
+  position?: string;
+  hometown: string;               // "City, ST"
+  jerseyNumber?: string;
+
+  // Section B — Professional Profile
+  agentName?: string;
+  agentEmail?: string;
+  currentBrands: string[];
+  charities: string[];
+  extracurriculars: string[];
+  interests: string[];
+  bio: string;
+
+  // Section C — Deal Preferences
+  minDealAmountCents: number;
+  dealTypes: string[];
+  contentCategories: string[];
+  availability?: {
+    weekdays: string[];           // e.g. ["mon","tue","fri"]
+    blackouts: string[];          // ISO dates
+  };
+
+  // Verification metadata
+  verification?: {
+    method: "face-id" | "id-upload";
+    verifiedAt: string;           // ISO
+  };
+  legalConsent?: {
+    biometricDisclosure: boolean;
+    ncaaCompliance: boolean;
+    termsAccepted: boolean;
+    acceptedAt: string;
+  };
 }
 
 // Request OTP

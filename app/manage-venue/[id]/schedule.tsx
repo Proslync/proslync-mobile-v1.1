@@ -194,7 +194,7 @@ export default function VenueScheduleScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Fixed pill row */}
       <View style={[styles.pillRow, { paddingTop: insets.top + 16 }]}>
@@ -211,7 +211,7 @@ export default function VenueScheduleScreen() {
         </View>
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* Scrollable content */}
       <ScrollView
@@ -583,7 +583,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  headerTitle: { fontSize: 18, fontFamily: "Lato_700Bold" },
+  headerTitle: { fontSize: 18, },
   weekNav: {
     flexDirection: "row",
     alignItems: "center",
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
-  weekLabel: { fontSize: 15, fontFamily: "Lato_700Bold" },
+  weekLabel: { fontSize: 15, },
   daySelector: {
     flexDirection: "row",
     paddingHorizontal: 8,
@@ -609,8 +609,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "rgba(0,0,0,0.08)",
   },
-  dayName: { fontSize: 11, fontFamily: "Lato_400Regular" },
-  dayNumber: { fontSize: 16, fontFamily: "Lato_700Bold" },
+  dayName: { fontSize: 11, },
+  dayNumber: { fontSize: 16, },
   dayDot: {
     width: 4,
     height: 4,
@@ -621,12 +621,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: { paddingHorizontal: 16, gap: 8 },
   emptyDay: { alignItems: "center", paddingTop: 60, gap: 8 },
-  emptyText: { fontSize: 14, fontFamily: "Lato_400Regular" },
+  emptyText: { fontSize: 14, },
   shiftCard: { borderRadius: 12, overflow: "hidden", padding: 12, gap: 8 },
   shiftHeader: { flexDirection: "row", justifyContent: "space-between" },
   shiftInfo: { flex: 1, gap: 2 },
-  shiftLabel: { fontSize: 15, fontFamily: "Lato_700Bold" },
-  shiftTime: { fontSize: 13, fontFamily: "Lato_400Regular" },
+  shiftLabel: { fontSize: 15, },
+  shiftTime: { fontSize: 13, },
   shiftActions: { flexDirection: "row", gap: 8 },
   shiftActionButton: { padding: 4 },
   assignedList: { gap: 6, paddingTop: 4 },
@@ -637,17 +637,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  assignedName: { fontSize: 13, fontFamily: "Lato_400Regular" },
-  noAssigned: { fontSize: 12, fontFamily: "Lato_400Regular", paddingTop: 4 },
+  assignedName: { fontSize: 13, },
+  noAssigned: { fontSize: 12, paddingTop: 4 },
   fab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(0,0,0,0.06)', justifyContent: 'center', alignItems: 'center', zIndex: 20 },
   sheetContent: { paddingHorizontal: 16, paddingBottom: 20, gap: 12 },
   sheetTitle: {
     fontSize: 18,
-    fontFamily: "Lato_700Bold",
     textAlign: "center",
     marginBottom: 4,
   },
-  inputLabel: { fontSize: 13, fontFamily: "Lato_700Bold" },
+  inputLabel: { fontSize: 13, },
   inputWrapper: {
     overflow: "hidden" as const,
     borderRadius: 10,
@@ -658,7 +657,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
   },
   timeRow: { flexDirection: "row", gap: 12 },
   timeField: { flex: 1, gap: 4 },
@@ -678,6 +676,6 @@ const styles = StyleSheet.create({
   },
   optionAvatar: { width: 36, height: 36, borderRadius: 18 },
   optionInfo: { flex: 1, gap: 2 },
-  optionName: { fontSize: 14, fontFamily: "Lato_700Bold" },
-  optionRole: { fontSize: 12, fontFamily: "Lato_400Regular" },
+  optionName: { fontSize: 14, },
+  optionRole: { fontSize: 12, },
 });

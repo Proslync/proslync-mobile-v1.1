@@ -103,12 +103,10 @@ const styles = StyleSheet.create({
   },
   code: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     letterSpacing: 1,
   },
   discount: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   detailsRow: {
@@ -117,7 +115,6 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -134,6 +131,5 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
 });

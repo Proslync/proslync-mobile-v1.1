@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.06)',
   },
-  title: { fontSize: 18, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
+  title: { fontSize: 18, color: '#1A1A1A' },
   closeButton: {
     width: 32,
     height: 32,
@@ -141,7 +141,6 @@ const styles = StyleSheet.create({
   closeText: { fontSize: 16, color: '#1A1A1A' },
   subtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
     paddingHorizontal: 20,
     paddingTop: 12,
@@ -165,12 +164,10 @@ const styles = StyleSheet.create({
   roleInfo: { flex: 1 },
   roleName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
   },
   roleDescription: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.45)',
     marginTop: 2,
   },
@@ -184,5 +181,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   submitDisabled: { opacity: 0.4 },
-  submitText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#1A1A1A' },
+  submitText: { fontSize: 16, color: '#1A1A1A' },
 });

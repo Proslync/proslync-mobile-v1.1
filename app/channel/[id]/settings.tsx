@@ -546,7 +546,7 @@ export default function ChannelSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   loadingContainer: {
     flex: 1,
@@ -571,7 +571,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
     textAlign: 'center',
   },
@@ -589,7 +588,6 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   scrollView: {
@@ -603,7 +601,6 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -624,7 +621,6 @@ const styles = StyleSheet.create({
   },
   input: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
   },
   inputMultiline: {
@@ -649,7 +645,6 @@ const styles = StyleSheet.create({
   },
   visibilityTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.5)',
   },
   visibilityTitleActive: {
@@ -680,12 +675,10 @@ const styles = StyleSheet.create({
   },
   memberName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   memberRole: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
     marginTop: 1,
   },
@@ -711,7 +704,6 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#ef4444',
   },
   membersHeader: {
@@ -731,13 +723,12 @@ const styles = StyleSheet.create({
   },
   inviteHeaderButtonText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   // Modal
   modalContainer: {
     flex: 1,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -758,7 +749,6 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   searchWrapper: {
@@ -776,7 +766,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#000',
   },
   searchRow: {
@@ -797,12 +786,10 @@ const styles = StyleSheet.create({
   },
   searchName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   searchUsername: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
     marginTop: 2,
   },
@@ -820,7 +807,6 @@ const styles = StyleSheet.create({
   },
   inviteButtonText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   searchEmpty: {
@@ -829,7 +815,6 @@ const styles = StyleSheet.create({
   },
   searchEmptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.4)',
   },
 });

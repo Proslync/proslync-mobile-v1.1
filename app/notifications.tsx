@@ -247,7 +247,7 @@ function ActivityRow({
         <Text style={[styles.activityText, { color: colors.textSecondary }]} numberOfLines={2}>
           <Text style={[styles.activityTitle, { color: colors.text }]}>{item.title}</Text>
           {actorUser?.isVerified && ' '}
-          {actorUser?.isVerified && <MaterialCommunityIcons name="check-decagram" size={14} color="#3897F0" />}
+          {actorUser?.isVerified && <MaterialCommunityIcons name="check-decagram" size={14} color="#FF6F3C" />}
           {'  '}
           {item.body}
         </Text>
@@ -575,7 +575,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
   },
 
   // Tabs
@@ -601,7 +600,6 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   tabBadge: {
     backgroundColor: '#FF3B30',
@@ -614,7 +612,6 @@ const styles = StyleSheet.create({
   },
   tabBadgeText: {
     fontSize: 11,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
 
@@ -658,15 +655,12 @@ const styles = StyleSheet.create({
   },
   eventName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   roleLine: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   fromLine: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
   invitationActions: {
     flexDirection: 'row',
@@ -690,7 +684,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
   },
 
   statusBadgeRow: {
@@ -706,7 +699,6 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
   },
 
   // Empty state
@@ -718,11 +710,9 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -748,15 +738,12 @@ const styles = StyleSheet.create({
   },
   activityText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     lineHeight: 20,
   },
   activityTitle: {
-    fontFamily: 'Lato_700Bold',
   },
   activityTime: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     marginTop: 4,
   },
   unreadDot: {

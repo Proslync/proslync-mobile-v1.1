@@ -324,7 +324,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
   },
   scrollView: {
     flex: 1,
@@ -334,7 +333,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 12,
     marginTop: 8,
   },
@@ -364,11 +362,9 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
   },
   statValue: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
   },
   actions: {
     gap: 10,
@@ -383,16 +379,13 @@ const styles = StyleSheet.create({
   actionLabel: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
   },
   venueLabel: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 2,
   },
   venueAddress: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginBottom: 12,
   },
   mapContainer: {
@@ -414,7 +407,6 @@ const styles = StyleSheet.create({
   },
   mapHint: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     marginTop: 8,
   },

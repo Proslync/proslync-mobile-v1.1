@@ -181,14 +181,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(255, 255, 255, 0.5)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   seeAllText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: '#1A1A1A',
   },
   filterRow: {
@@ -207,12 +205,10 @@ const styles = StyleSheet.create({
   filterButtonActive: {},
   filterText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.6)',
   },
   filterTextActive: {
     color: '#1A1A1A',
-    fontFamily: 'Lato_700Bold',
   },
   emptyState: {
     alignItems: 'center',
@@ -220,7 +216,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.4)',
     marginTop: 12,
   },
@@ -253,7 +248,6 @@ const styles = StyleSheet.create({
   },
   txTitle: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     color: '#1A1A1A',
     flexShrink: 1,
   },
@@ -265,12 +259,10 @@ const styles = StyleSheet.create({
   },
   pendingChipText: {
     fontSize: 9,
-    fontFamily: 'Lato_700Bold',
     color: '#f59e0b',
   },
   txSubtitle: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 2,
   },
@@ -280,11 +272,9 @@ const styles = StyleSheet.create({
   },
   txAmount: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   txDate: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(255, 255, 255, 0.4)',
     marginTop: 2,
   },

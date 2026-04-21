@@ -107,7 +107,11 @@ export const LightColors = {
   iconSecondary: 'rgba(0, 0, 0, 0.4)',
 
   // Verified badge
-  verified: '#3897F0',
+  verified: '#FF6F3C',
+
+  // Proslync brand
+  accent: '#FF6F3C',
+  grayNeutral: '#A9A9A9',
 
   // Map
   mapOverlay: 'rgba(255, 255, 255, 0.9)',
@@ -174,7 +178,11 @@ export const DarkColors = {
   iconSecondary: 'rgba(255, 255, 255, 0.5)',
 
   // Verified badge
-  verified: '#3897F0',
+  verified: '#FF6F3C',
+
+  // Proslync brand
+  accent: '#FF6F3C',
+  grayNeutral: '#A9A9A9',
 
   // Map
   mapOverlay: 'rgba(15, 9, 12, 0.8)',

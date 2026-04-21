@@ -98,7 +98,7 @@ function ActivityRow({ item, onPress }: { item: AppNotification; onPress: (n: Ap
         <Text style={styles.activityText} numberOfLines={2}>
           <Text style={styles.activityTitle}>{item.title}</Text>
           {actorUser?.isVerified && ' '}
-          {actorUser?.isVerified && <MaterialCommunityIcons name="check-decagram" size={14} color="#3897F0" />}
+          {actorUser?.isVerified && <MaterialCommunityIcons name="check-decagram" size={14} color="#FF6F3C" />}
           {'  '}{item.body}
         </Text>
         <Text style={styles.activityTime}>{timeAgo(item.createdAt)}</Text>

@@ -14,6 +14,12 @@ import {
   type ChatMessage,
 } from "@/hooks/use-conversation";
 import {
+  isMockConversation,
+  getMockChannelInfo,
+  getMockMessages,
+  getLocalAvatar,
+} from "@/lib/data/mock-chats";
+import {
   useLeaveConversation,
   useRemoveMember,
   useUpdateConversation,
@@ -169,6 +175,7 @@ function MessageBubble({
   readAt,
   isGroupChat,
   isConciergeChat,
+  otherLocalAvatar,
 }: {
   message: ChatMessage;
   isGroupStart?: boolean;
@@ -181,6 +188,7 @@ function MessageBubble({
   readAt?: Date | null;
   isGroupChat?: boolean;
   isConciergeChat?: boolean;
+  otherLocalAvatar?: any;
 }) {
   // System messages render as centered rows, not bubbles
   if (message.isSystem) {
@@ -253,7 +261,7 @@ function MessageBubble({
     <View style={[styles.messageRow, isOwn && styles.messageRowOwn]}>
       {/* Avatar for other user */}
       {!isOwn && isGroupStart && (
-        <Avatar uri={message.userImage} size={28} colors={colors} />
+        <Avatar uri={message.userImage} localImage={otherLocalAvatar} size={28} colors={colors} />
       )}
       {!isOwn && !isGroupStart && (
         <View style={styles.messageAvatarPlaceholder} />
@@ -556,14 +564,21 @@ function TypingIndicator({
 // Avatar component with white background for default avatar
 function Avatar({
   uri,
+  localImage,
   size = 28,
   colors,
 }: {
   uri?: string;
+  localImage?: any;
   size?: number;
   colors: ThemeColors;
 }) {
   const hasCustomAvatar = uri && uri.length > 0;
+  const source = localImage
+    ? localImage
+    : hasCustomAvatar
+      ? { uri }
+      : DefaultAvatarImage;
 
   return (
     <View
@@ -578,7 +593,7 @@ function Avatar({
       ]}
     >
       <Image
-        source={hasCustomAvatar ? { uri } : DefaultAvatarImage}
+        source={source}
         style={{ width: size, height: size, borderRadius: size / 2 }}
       />
     </View>
@@ -1153,10 +1168,10 @@ function Composer({
                 value={text}
                 onChangeText={handleChangeText}
                 placeholder={placeholder || "Message..."}
-                placeholderTextColor="rgba(0,0,0,0.35)"
+                placeholderTextColor="rgba(255,255,255,0.40)"
                 multiline
                 maxLength={1000}
-                keyboardAppearance="light"
+                keyboardAppearance="dark"
               />
               <View style={styles.composerBoxActions}>
                 <TouchableOpacity
@@ -1164,11 +1179,11 @@ function Composer({
                   activeOpacity={0.7}
                   style={styles.composerBoxBtn}
                 >
-                  <Ionicons name="add" size={24} color="#000" />
+                  <Ionicons name="add" size={24} color="#FFF" />
                 </TouchableOpacity>
                 <View style={{ flex: 1 }} />
                 <TouchableOpacity onPress={handleMicPress} activeOpacity={0.7} style={styles.composerBoxBtn}>
-                  <Ionicons name="mic-outline" size={22} color="#000" />
+                  <Ionicons name="mic-outline" size={22} color="#FFF" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1391,9 +1406,9 @@ export default function ChatThreadScreen() {
   const updateConversationMutation = useUpdateConversation();
 
   const {
-    messages,
-    channelInfo,
-    isLoading,
+    messages: liveMessages,
+    channelInfo: liveChannelInfo,
+    isLoading: liveIsLoading,
     error,
     isTyping,
     currentUserId,
@@ -1403,6 +1418,13 @@ export default function ChatThreadScreen() {
     sendTypingStart,
     deleteMessage,
   } = useConversation(conversationId);
+
+  const useMock = isMockConversation(conversationId);
+  const messages = useMock ? getMockMessages(conversationId) : liveMessages;
+  const channelInfo = useMock
+    ? getMockChannelInfo(conversationId) ?? liveChannelInfo
+    : liveChannelInfo;
+  const isLoading = useMock ? false : liveIsLoading;
 
   const isConcierge = channelInfo?.type === "system";
 
@@ -1782,6 +1804,7 @@ export default function ChatThreadScreen() {
             readAt={otherReadAt}
             isGroupChat={isGroupChat}
             isConciergeChat={isConcierge}
+            otherLocalAvatar={!isGroupChat ? getLocalAvatar(conversationId) : undefined}
           />
         );
       }
@@ -1837,20 +1860,19 @@ export default function ChatThreadScreen() {
       <View style={[styles.headerFixed, { paddingTop: insets.top + 6 }]}>
         <TouchableOpacity style={styles.headerGlassBtn} onPress={() => router.back()} activeOpacity={0.7}>
           {isLiquidGlassSupported ? (
-            <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+            <LiquidGlassView effect="regular" style={[StyleSheet.absoluteFill, { borderRadius: 22 }]} />
           ) : (
-            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={19} style={StyleSheet.absoluteFill} />
+            <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={22} style={StyleSheet.absoluteFill} />
           )}
-          <Ionicons name="chevron-back" size={24} color="#000" />
+          <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerCenterColumn} onPress={isConcierge ? undefined : handleHeaderPress} activeOpacity={isConcierge ? 1 : 0.7} disabled={isConcierge}>
           <View style={styles.headerAvatarContainer}>
             {isConcierge ? (
               <View style={styles.conciergeHeaderAvatar}><Ionicons name="sparkles" size={24} color="#fff" /></View>
             ) : (
-              <Avatar uri={channelInfo?.otherMember?.image} size={62} colors={colors} />
+              <Avatar uri={channelInfo?.otherMember?.image} localImage={getLocalAvatar(conversationId)} size={62} colors={colors} />
             )}
-            {!isConcierge && channelInfo?.isOnline && <View style={[styles.onlineIndicator, { borderColor: colors.background }]} />}
           </View>
           <View style={styles.headerNameGlass}>
             {isLiquidGlassSupported ? (
@@ -1862,9 +1884,9 @@ export default function ChatThreadScreen() {
               <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>{channelInfo?.name || "Chat"}</Text>
               {channelInfo?.otherMember?.isVerified && <MaterialCommunityIcons name="check-decagram" size={16} color={colors.verified} />}
             </View>
-            {(!isConcierge && (channelInfo?.type === "group" || channelInfo?.isOnline)) && (
+            {!isConcierge && channelInfo?.type === "group" && (
               <Text style={[styles.headerStatus, { color: colors.textSecondary }]}>
-                {channelInfo?.type === "group" ? `${channelInfo.memberCount} members` : "Active now"}
+                {channelInfo.memberCount} members
               </Text>
             )}
           </View>
@@ -1872,25 +1894,25 @@ export default function ChatThreadScreen() {
         {!isConcierge ? (
           <TouchableOpacity style={styles.headerGlassBtn} onPress={() => setShowCallPicker(true)} activeOpacity={0.7}>
             {isLiquidGlassSupported ? (
-              <LiquidGlassView effect="regular" style={StyleSheet.absoluteFill} />
+              <LiquidGlassView effect="regular" style={[StyleSheet.absoluteFill, { borderRadius: 22 }]} />
             ) : (
               <GlassView {...liquidGlass.surface} tintColor="rgba(0,0,0,0.06)" borderRadius={22} style={StyleSheet.absoluteFill} />
             )}
-            <Ionicons name="call-outline" size={22} color="#000" />
+            <Ionicons name="call-outline" size={22} color="#FFF" />
           </TouchableOpacity>
         ) : <View style={{ width: 44 }} />}
       </View>
 
       {/* Top fade */}
       <LinearGradient
-        colors={['#e8e8e8', 'rgba(232,232,232,0)']}
+        colors={['#000', 'rgba(0,0,0,0)']}
         style={styles.topFade}
         pointerEvents="none"
       />
 
       {/* Bottom fade */}
       <LinearGradient
-        colors={['rgba(232,232,232,0)', '#e8e8e8']}
+        colors={['rgba(0,0,0,0)', '#000']}
         style={styles.bottomFade}
         pointerEvents="none"
       />
@@ -1905,7 +1927,7 @@ export default function ChatThreadScreen() {
               onPress={() => { setShowCallPicker(false); handleStartCall(false); }}
               activeOpacity={0.7}
             >
-              <Ionicons name="call-outline" size={22} color="#000" />
+              <Ionicons name="call-outline" size={22} color="#FFF" />
               <Text style={styles.callPickerText}>Voice Call</Text>
             </TouchableOpacity>
             <View style={styles.callPickerDivider} />
@@ -2531,7 +2553,7 @@ export default function ChatThreadScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#e8e8e8",
+    backgroundColor: "#000",
   },
   // Header
   header: {
@@ -2574,7 +2596,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.06)',
   },
   headerCenterColumn: {
     flex: 1,
@@ -2627,12 +2648,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
-    fontFamily: "Lato_700Bold",
     color: "#1a1a1a",
   },
   headerStatus: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0, 0, 0, 0.5)",
     marginTop: 1,
   },
@@ -2656,7 +2675,6 @@ const styles = StyleSheet.create({
   },
   callPickerText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#000',
   },
   callPickerDivider: {
@@ -2684,7 +2702,6 @@ const styles = StyleSheet.create({
   },
   daySeparatorText: {
     fontSize: 12,
-    fontFamily: "Lato_600SemiBold",
     color: "rgba(0, 0, 0, 0.45)",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -2701,15 +2718,12 @@ const styles = StyleSheet.create({
   },
   systemMessageText: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
   },
   systemMessageTime: {
     fontSize: 11,
-    fontFamily: "Lato_400Regular",
   },
   senderName: {
     fontSize: 12,
-    fontFamily: "Lato_600SemiBold",
     marginBottom: 2,
     marginLeft: 4,
   },
@@ -2771,19 +2785,16 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     color: "#1a1a1a",
     lineHeight: 20,
   },
   messageTextOwn: {
     fontSize: 15,
-    fontFamily: "Lato_400Regular",
     color: "#fff",
     lineHeight: 20,
   },
   messageTime: {
     fontSize: 11,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0, 0, 0, 0.45)",
     marginTop: 4,
     marginLeft: 4,
@@ -2807,7 +2818,6 @@ const styles = StyleSheet.create({
   },
   readReceiptText: {
     fontSize: 11,
-    fontFamily: "Lato_400Regular",
     color: "#fff",
   },
   // Attachments
@@ -2892,7 +2902,6 @@ const styles = StyleSheet.create({
   },
   voiceDuration: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0, 0, 0, 0.6)",
     marginTop: 4,
   },
@@ -2992,8 +3001,7 @@ const styles = StyleSheet.create({
   },
   composerBoxInput: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
-    color: '#000',
+    color: '#FFF',
     maxHeight: 100,
     paddingVertical: 0,
     marginBottom: 8,
@@ -3021,7 +3029,6 @@ const styles = StyleSheet.create({
   composerInput: {
     flex: 1,
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
     maxHeight: 100,
     paddingVertical: 4,
   },
@@ -3071,7 +3078,6 @@ const styles = StyleSheet.create({
   recordingText: {
     flex: 1,
     fontSize: 14,
-    fontFamily: "Lato_600SemiBold",
     color: "#ff3b30",
   },
   cancelRecordingButton: {
@@ -3080,7 +3086,6 @@ const styles = StyleSheet.create({
   },
   cancelRecordingText: {
     fontSize: 14,
-    fontFamily: "Lato_600SemiBold",
     color: "rgba(0, 0, 0, 0.6)",
   },
   // Audio review bar
@@ -3128,7 +3133,6 @@ const styles = StyleSheet.create({
   },
   reviewDuration: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
     minWidth: 32,
     textAlign: "center",
   },
@@ -3152,7 +3156,6 @@ const styles = StyleSheet.create({
   },
   recordingInputText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0, 0, 0, 0.5)",
   },
   // Scroll to bottom
@@ -3190,13 +3193,11 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: "Lato_700Bold",
     color: "#1a1a1a",
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.5)",
     textAlign: "center",
   },
@@ -3209,7 +3210,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(0,0,0,0.5)",
   },
   // Image viewer
@@ -3258,7 +3258,6 @@ const styles = StyleSheet.create({
   },
   contextTimestamp: {
     fontSize: 11,
-    fontFamily: "Lato_400Regular",
     marginTop: 4,
     paddingHorizontal: 4,
   },
@@ -3279,7 +3278,6 @@ const styles = StyleSheet.create({
   },
   actionMenuText: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
   },
   // Chat Info Screen
   chatInfoContainer: {
@@ -3305,7 +3303,6 @@ const styles = StyleSheet.create({
   },
   chatInfoName: {
     fontSize: 22,
-    fontFamily: "Lato_700Bold",
   },
   chatInfoActions: {
     flexDirection: "row",
@@ -3326,7 +3323,6 @@ const styles = StyleSheet.create({
   },
   chatInfoActionLabel: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
   },
   chatInfoGroupAvatar: {
     width: 100,
@@ -3341,7 +3337,6 @@ const styles = StyleSheet.create({
   },
   chatInfoSubtitle: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     marginTop: 4,
   },
   chatInfoEditNameRow: {
@@ -3353,7 +3348,6 @@ const styles = StyleSheet.create({
   chatInfoEditNameInput: {
     flex: 1,
     fontSize: 18,
-    fontFamily: "Lato_400Regular",
     borderWidth: 1,
     borderRadius: 10,
     paddingHorizontal: 14,
@@ -3370,7 +3364,6 @@ const styles = StyleSheet.create({
   },
   chatInfoSectionTitle: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 12,
@@ -3390,12 +3383,10 @@ const styles = StyleSheet.create({
   },
   chatInfoMemberName: {
     fontSize: 15,
-    fontFamily: "Lato_600SemiBold",
     flexShrink: 1,
   },
   chatInfoMemberUsername: {
     fontSize: 13,
-    fontFamily: "Lato_400Regular",
     marginTop: 1,
   },
   chatInfoMemberAction: {
@@ -3409,7 +3400,6 @@ const styles = StyleSheet.create({
   },
   chatInfoDangerText: {
     fontSize: 16,
-    fontFamily: "Lato_400Regular",
     color: "#FF3B30",
   },
   blockedBar: {
@@ -3423,7 +3413,6 @@ const styles = StyleSheet.create({
   },
   blockedBarText: {
     fontSize: 14,
-    fontFamily: "Lato_400Regular",
     color: "rgba(255,255,255,0.5)",
   },
   unblockButton: {
@@ -3434,7 +3423,6 @@ const styles = StyleSheet.create({
   },
   unblockButtonText: {
     fontSize: 14,
-    fontFamily: "Lato_600SemiBold",
     color: "#0A84FF",
   },
 });

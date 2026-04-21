@@ -411,7 +411,7 @@ export default function NewMessageScreen() {
               <View style={[styles.groupNameInput, { borderColor: colors.border, backgroundColor: isDark ? undefined : colors.input, overflow: 'hidden' as const }]}>
                 {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={8} style={StyleSheet.absoluteFillObject} />}
                 <TextInput
-                  style={{ flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', paddingHorizontal: 12, paddingVertical: 8, color: colors.text }}
+                  style={{ flex: 1, fontSize: 15, paddingHorizontal: 12, paddingVertical: 8, color: colors.text }}
                   value={groupName}
                   onChangeText={setGroupName}
                   placeholder="Group name (optional)"
@@ -530,16 +530,13 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 17,
-    fontFamily: 'Lato_400Regular',
   },
   headerActionText: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     textAlign: 'right',
   },
   title: {
     fontSize: 17,
-    fontFamily: 'Lato_700Bold',
     color: '#1a1a1a',
   },
   searchContainer: {
@@ -553,7 +550,6 @@ const styles = StyleSheet.create({
   },
   toLabel: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0, 0, 0, 0.5)',
     marginRight: 12,
   },
@@ -565,7 +561,6 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     color: '#1a1a1a',
     paddingVertical: 0,
   },
@@ -575,7 +570,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0, 0, 0, 0.45)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -611,12 +605,10 @@ const styles = StyleSheet.create({
   },
   contactName: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#1a1a1a',
   },
   contactUsername: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
   separator: {
@@ -636,14 +628,12 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: 'Lato_700Bold',
     color: '#1a1a1a',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
     textAlign: 'center',
   },
@@ -656,7 +646,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
   },
   newGroupRow: {
@@ -697,7 +686,6 @@ const styles = StyleSheet.create({
   },
   chipName: {
     fontSize: 13,
-    fontFamily: 'Lato_600SemiBold',
   },
   groupNameRow: {
     flexDirection: 'row',
@@ -709,7 +697,6 @@ const styles = StyleSheet.create({
   groupNameInput: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -725,7 +712,6 @@ const styles = StyleSheet.create({
   overlayText: {
     marginTop: 16,
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     color: '#1a1a1a',
   },
 });

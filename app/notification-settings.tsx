@@ -146,7 +146,7 @@ export default function NotificationSettingsScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <View style={[styles.header, { paddingTop: insets.top + 8, borderBottomColor: border }]}>
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
   },
-  headerTitle: { fontSize: 17, fontFamily: 'Lato_700Bold' },
+  headerTitle: { fontSize: 17, },
   headerRight: { width: 36 },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollView: { flex: 1 },
@@ -207,7 +207,6 @@ const styles = StyleSheet.create({
   section: { marginBottom: 28 },
   sectionTitle: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 4,
@@ -240,7 +239,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   toggleText: { flex: 1 },
-  toggleLabel: { fontSize: 15, fontFamily: 'Lato_600SemiBold' },
-  toggleDesc: { fontSize: 12, fontFamily: 'Lato_400Regular', marginTop: 2 },
+  toggleLabel: { fontSize: 15, },
+  toggleDesc: { fontSize: 12, marginTop: 2 },
   divider: { height: 1, marginLeft: 58 },
 });

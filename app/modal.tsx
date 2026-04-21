@@ -20,11 +20,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: '#000000',
   },
   title: {
     fontSize: 32,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   link: {

@@ -171,12 +171,10 @@ const styles = StyleSheet.create({
   },
   eventName: {
     fontSize: 14,
-    fontFamily: 'Lato_700Bold',
     lineHeight: 18,
   },
   eventDate: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
   },
   venueRow: {
     flexDirection: 'row',
@@ -185,7 +183,6 @@ const styles = StyleSheet.create({
   },
   venueName: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     flex: 1,
   },
   rsvpButton: {
@@ -203,7 +200,6 @@ const styles = StyleSheet.create({
   },
   rsvpText: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
   rsvpTextDone: {

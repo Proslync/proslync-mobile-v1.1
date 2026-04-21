@@ -214,7 +214,7 @@ export function OtpStep({ phoneNumber, redirectUrl, onBack, onProfileSetupNeeded
           style={[styles.subtitle, { color: colors.textSecondary }]}
         >
           We sent a 6-digit code to{'\n'}
-          <Text style={{ color: colors.text, fontFamily: 'Lato_700Bold' }}>{maskedPhone}</Text>
+          <Text style={{ color: colors.text, }}>{maskedPhone}</Text>
         </Animated.Text>
 
         {/* OTP Input */}
@@ -336,13 +336,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontFamily: 'Lato_700Bold',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
     marginBottom: 40,
     lineHeight: 24,
@@ -369,12 +367,10 @@ const styles = StyleSheet.create({
   successIcon: {
     color: '#34C759',
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
   },
   successText: {
     color: '#34C759',
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -383,12 +379,10 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    fontFamily: 'Lato_400Regular',
   },
   errorText: {
     color: '#ef4444',
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
     textAlign: 'center',
   },
   spacer: {
@@ -404,11 +398,9 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
   },
   resendLink: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     textDecorationLine: 'underline',
   },
 });

@@ -1,25 +1,20 @@
 {
   "expo": {
-    "name": "status",
+    "name": "Proslync",
     "slug": "status",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "status",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.statusdigitalinc.status",
-      "entitlements": {
-        "com.apple.developer.in-app-payments": [
-          "merchant.statusdigitalinc.status"
-        ],
-        "com.apple.developer.proximity-reader.payment.acceptance": true,
-        "aps-environment": "production"
-      },
+      "bundleIdentifier": "com.arshiarahnavard.proslync",
+      "entitlements": {},
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "Proslync uses Face ID to verify your identity during athlete registration.",
         "NSLocationWhenInUseUsageDescription": "Status uses your location to show nearby events and share your live location with friends",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Status uses your location to keep your location on the map updated, even when the app is closed",
         "NSCameraUsageDescription": "Status needs camera access for video calls and scanning IDs",
@@ -38,7 +33,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -88,12 +83,6 @@
         {
           "merchantIdentifier": "merchant.statusdigitalinc.status",
           "enableGooglePay": true
-        }
-      ],
-      [
-        "@stripe/stripe-terminal-react-native",
-        {
-          "tapToPayCheck": true
         }
       ],
       "expo-secure-store",

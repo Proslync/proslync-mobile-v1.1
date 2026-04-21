@@ -108,7 +108,7 @@ export default function ModerationScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: '#f2f2f2' }]}>
+    <View style={[styles.container, { backgroundColor: '#000000' }]}>
 
       {/* Pill row — back + filters */}
       <ScrollView
@@ -143,7 +143,7 @@ export default function ModerationScreen() {
         })}
       </ScrollView>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={styles.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={styles.topFade} pointerEvents="none" />
 
       {/* List */}
       {isLoading ? (
@@ -197,12 +197,10 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontSize: 24,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.8)',
   },
   statLabel: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.5)',
     marginTop: 4,
   },
@@ -225,7 +223,6 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 13,
-    fontFamily: 'Lato_600SemiBold',
     color: 'rgba(0,0,0,0.5)',
   },
   filterTextActive: {
@@ -239,7 +236,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.35)',
   },
   listContent: {
@@ -276,18 +272,15 @@ const styles = StyleSheet.create({
   },
   logEventName: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
     color: 'rgba(0,0,0,0.8)',
   },
   logDate: {
     fontSize: 12,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.35)',
     marginTop: 2,
   },
   logReason: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     color: 'rgba(0,0,0,0.6)',
     marginTop: 6,
   },
@@ -305,12 +298,10 @@ const styles = StyleSheet.create({
   },
   violationText: {
     fontSize: 11,
-    fontFamily: 'Lato_600SemiBold',
     color: '#f87171',
   },
   reviewedBy: {
     fontSize: 11,
-    fontFamily: 'Lato_600SemiBold',
     color: 'rgba(0,0,0,0.3)',
     marginTop: 2,
   },

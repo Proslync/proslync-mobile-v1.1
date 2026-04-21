@@ -230,7 +230,7 @@ export default function EditEventScreen() {
           <TextInput style={s.eventNameInput} value={value} onChangeText={onChange} placeholder="Event name" placeholderTextColor="rgba(0,0,0,0.35)" maxLength={100} />
         )} />
         <TouchableOpacity style={s.dateRow} onPress={() => { setEditingField('start'); setShowDateModal(true); }}>
-          <Text style={[s.dateText, { fontFamily: 'Lato_700Bold' }]}>{formatDateDisplay(startDate)}</Text>
+          <Text style={[s.dateText, { }]}>{formatDateDisplay(startDate)}</Text>
         </TouchableOpacity>
         <Controller control={form.control} name="location" render={({ field: { value, onChange } }) => (
           <View style={s.dateRow}>
@@ -255,7 +255,7 @@ export default function EditEventScreen() {
               activeOpacity={0.7}
             >
               <Ionicons name="location" size={14} color="rgba(0,0,0,0.4)" />
-              <Text style={{ flex: 1, fontSize: 13, fontFamily: 'Lato_400Regular', color: '#333' }} numberOfLines={2}>{item.place_name}</Text>
+              <Text style={{ flex: 1, fontSize: 13, color: '#333' }} numberOfLines={2}>{item.place_name}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -445,14 +445,14 @@ export default function EditEventScreen() {
 
   return (
     <FormProvider {...form}>
-      <View style={[s.container, { backgroundColor: '#f2f2f2' }]}>
+      <View style={[s.container, { backgroundColor: '#000000' }]}>
         {/* Full-screen blurred flyer backdrop */}
         {displayFlyer && (
           <View style={StyleSheet.absoluteFill}>
             <Image source={{ uri: displayFlyer }} style={StyleSheet.absoluteFill} resizeMode="cover" />
             <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFill} />
             <LinearGradient
-              colors={['transparent', 'rgba(242,242,242,0.6)', 'rgba(242,242,242,0.9)', '#f2f2f2']}
+              colors={['transparent', 'rgba(242,242,242,0.6)', 'rgba(242,242,242,0.9)', '#000000']}
               locations={[0, 0.4, 0.6, 0.8]}
               style={StyleSheet.absoluteFill}
             />
@@ -492,8 +492,8 @@ export default function EditEventScreen() {
         </KeyboardAvoidingView>
 
         {/* Top & bottom fades */}
-        <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={s.topFade} pointerEvents="none" />
-        <LinearGradient colors={['rgba(242,242,242,0)', '#f2f2f2']} style={s.bottomFade} pointerEvents="none" />
+        <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={s.topFade} pointerEvents="none" />
+        <LinearGradient colors={['rgba(0,0,0,0)', '#000000']} style={s.bottomFade} pointerEvents="none" />
 
         {/* Bottom bar */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingBottom: insets.bottom + 16 }}>
@@ -512,7 +512,7 @@ export default function EditEventScreen() {
               }
             }}
           >
-            {updateEvent.isPending ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontSize: 16, fontFamily: 'Lato_700Bold' }}>Save Changes</Text>}
+            {updateEvent.isPending ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontSize: 16, }}>Save Changes</Text>}
           </Pressable>
         </View>
       </View>
@@ -523,8 +523,8 @@ export default function EditEventScreen() {
 const s = StyleSheet.create({
   container: { flex: 1 },
   flex: { flex: 1 },
-  loadingContainer: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f2f2f2' },
-  loadingText: { marginTop: 16, fontSize: 16, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)' },
+  loadingContainer: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#000000' },
+  loadingText: { marginTop: 16, fontSize: 16, color: 'rgba(0,0,0,0.5)' },
 
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
   bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, zIndex: 99 },
@@ -540,51 +540,51 @@ const s = StyleSheet.create({
   glassCard: { borderRadius: 16, marginBottom: 10, overflow: 'hidden' },
   organizerInner: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   organizerAvatar: { width: 36, height: 36, borderRadius: 18 },
-  organizerName: { fontSize: 15, fontFamily: 'Lato_700Bold', color: '#000' },
-  organizerRole: { fontSize: 12, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)', marginTop: 1 },
+  organizerName: { fontSize: 15, color: '#000' },
+  organizerRole: { fontSize: 12, color: 'rgba(0,0,0,0.5)', marginTop: 1 },
 
   flyerCard: { borderRadius: 16, marginBottom: 10, overflow: 'hidden' },
   flyerTouch: { width: '100%' },
   flyerImage: { width: '100%', aspectRatio: 4 / 3 },
   flyerPlaceholder: { width: '100%', aspectRatio: 4 / 3, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.03)' },
-  flyerPlaceholderText: { fontSize: 14, fontFamily: 'Lato_700Bold', color: 'rgba(0,0,0,0.35)', marginTop: 8 },
+  flyerPlaceholderText: { fontSize: 14, color: 'rgba(0,0,0,0.35)', marginTop: 8 },
 
   detailsCard: { borderRadius: 16, marginBottom: 10, paddingHorizontal: 14, paddingVertical: 14, overflow: 'hidden', gap: 8 },
-  eventNameInput: { fontSize: 20, fontFamily: 'Lato_700Bold', color: '#000', padding: 0 },
+  eventNameInput: { fontSize: 20, color: '#000', padding: 0 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dateText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.55)' },
-  locationInput: { flex: 1, fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.55)', padding: 0 },
+  dateText: { fontSize: 14, color: 'rgba(0,0,0,0.55)' },
+  locationInput: { flex: 1, fontSize: 14, color: 'rgba(0,0,0,0.55)', padding: 0 },
 
   gridRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   gridCell: { flex: 1, borderRadius: 14, padding: 14, overflow: 'hidden', alignItems: 'center', gap: 6 },
-  gridLabel: { fontSize: 10, fontFamily: 'Lato_700Bold', color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: 0.5 },
-  gridValue: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#000', textAlign: 'center' },
+  gridLabel: { fontSize: 10, color: 'rgba(0,0,0,0.45)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  gridValue: { fontSize: 16, color: '#000', textAlign: 'center' },
   gridInput: { padding: 0, minWidth: 50, textAlign: 'center' },
 
   descriptionCard: { borderRadius: 16, marginBottom: 10, padding: 14, overflow: 'hidden' },
-  descriptionInput: { fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', minHeight: 80, padding: 0, textAlignVertical: 'top' },
+  descriptionInput: { fontSize: 15, color: '#000', minHeight: 80, padding: 0, textAlignVertical: 'top' },
 
   toggleRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
   pricingContainer: { borderRadius: 16, padding: 14, overflow: 'hidden', marginBottom: 10 },
-  promoTitle: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#000', marginBottom: 8 },
-  promoEmpty: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.4)', marginBottom: 12 },
+  promoTitle: { fontSize: 16, color: '#000', marginBottom: 8 },
+  promoEmpty: { fontSize: 14, color: 'rgba(0,0,0,0.4)', marginBottom: 12 },
   addPromoBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(0,0,0,0.2)', paddingVertical: 12, marginTop: 8 },
-  addPromoBtnText: { fontSize: 14, fontFamily: 'Lato_700Bold', color: '#000' },
+  addPromoBtnText: { fontSize: 14, color: '#000' },
   toggleCard: { flex: 1, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toggleLabel: { fontSize: 14, fontFamily: 'Lato_700Bold', color: '#000' },
+  toggleLabel: { fontSize: 14, color: '#000' },
 
   tabSection: { paddingTop: 8 },
   emptyTab: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
-  emptyTabText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.4)', textAlign: 'center' },
+  emptyTabText: { fontSize: 14, color: 'rgba(0,0,0,0.4)', textAlign: 'center' },
 
   mapCard: { borderRadius: 16, overflow: 'hidden', padding: 14 },
   mapInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  mapInput: { flex: 1, fontSize: 15, fontFamily: 'Lato_400Regular', color: '#000', padding: 0 },
+  mapInput: { flex: 1, fontSize: 15, color: '#000', padding: 0 },
 
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16 },
   bottomRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   bottomIcon: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   saveButton: { flex: 1, height: 48, borderRadius: 28, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
   saveButtonDisabled: { opacity: 0.4 },
-  saveButtonText: { fontSize: 16, fontFamily: 'Lato_700Bold', color: '#fff' },
+  saveButtonText: { fontSize: 16, color: '#fff' },
 });

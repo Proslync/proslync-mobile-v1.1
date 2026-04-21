@@ -202,7 +202,6 @@ const styles = StyleSheet.create({
   },
   avatarInitials: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   guestInfo: {
     flex: 1,
@@ -210,7 +209,6 @@ const styles = StyleSheet.create({
   },
   guestName: {
     fontSize: 15,
-    fontFamily: "Lato_700Bold",
   },
   guestMeta: {
     flexDirection: "row",
@@ -219,7 +217,6 @@ const styles = StyleSheet.create({
   },
   guestMetaText: {
     fontSize: 12,
-    fontFamily: "Lato_400Regular",
   },
   tagsRow: {
     flexDirection: "row",
@@ -234,7 +231,6 @@ const styles = StyleSheet.create({
   },
   tagBadgeText: {
     fontSize: 9,
-    fontFamily: "Lato_700Bold",
   },
   chargeButton: {
     flexDirection: "row",
@@ -247,7 +243,6 @@ const styles = StyleSheet.create({
   },
   chargeButtonText: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
   },
   paidBadge: {
     flexDirection: "row",
@@ -260,7 +255,6 @@ const styles = StyleSheet.create({
   },
   paidBadgeText: {
     fontSize: 13,
-    fontFamily: "Lato_700Bold",
     color: "#10b981",
   },
 });

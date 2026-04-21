@@ -66,11 +66,9 @@ const styles = StyleSheet.create({
   },
   roleLabel: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   timeText: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 1,
   },
 });

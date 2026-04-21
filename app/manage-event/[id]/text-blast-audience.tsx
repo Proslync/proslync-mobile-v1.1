@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontFamily: 'Lato_700Bold' },
+  headerTitle: { fontSize: 18, },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16 },
   previewSection: {
@@ -215,7 +215,6 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 13,
-    fontFamily: 'Lato_700Bold',
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -231,13 +230,11 @@ const styles = StyleSheet.create({
   },
   previewText: {
     fontSize: 15,
-    fontFamily: 'Lato_400Regular',
     color: '#fff',
     lineHeight: 21,
   },
   mockLabel: {
     fontSize: 11,
-    fontFamily: 'Lato_400Regular',
     marginTop: 10,
     marginBottom: 6,
     alignSelf: 'flex-end',
@@ -266,11 +263,9 @@ const styles = StyleSheet.create({
   },
   audienceTitle: {
     fontSize: 15,
-    fontFamily: 'Lato_700Bold',
   },
   audienceDesc: {
     fontSize: 13,
-    fontFamily: 'Lato_400Regular',
     marginTop: 2,
   },
   recipientRow: {
@@ -281,7 +276,6 @@ const styles = StyleSheet.create({
   },
   recipientText: {
     fontSize: 14,
-    fontFamily: 'Lato_400Regular',
   },
   bottomBar: {
     paddingHorizontal: 16,
@@ -302,7 +296,6 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     fontSize: 16,
-    fontFamily: 'Lato_700Bold',
     color: '#fff',
   },
 });

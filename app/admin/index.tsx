@@ -84,7 +84,7 @@ export default function AdminDashboard() {
         })}
       </View>
 
-      <LinearGradient colors={['#f2f2f2', 'rgba(242,242,242,0)']} style={s.topFade} pointerEvents="none" />
+      <LinearGradient colors={['#000000', 'rgba(0,0,0,0)']} style={s.topFade} pointerEvents="none" />
 
       <ScrollView
         style={s.scroll}
@@ -180,7 +180,7 @@ export default function AdminDashboard() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f2' },
+  container: { flex: 1, backgroundColor: '#000000' },
   center: { justifyContent: 'center', alignItems: 'center' },
 
   pillRow: { flexDirection: 'row', paddingHorizontal: 12, gap: 8, alignItems: 'center', paddingBottom: 8, position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10 },
@@ -196,25 +196,25 @@ const s = StyleSheet.create({
 
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
   statCard: { width: '31%' as any, flexGrow: 1, borderRadius: 14, padding: 14, alignItems: 'center', gap: 6, backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
-  statValue: { fontSize: 22, fontFamily: 'Lato_700Bold', color: '#000' },
-  statLabel: { fontSize: 11, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)' },
+  statValue: { fontSize: 22, color: '#000' },
+  statLabel: { fontSize: 11, color: 'rgba(0,0,0,0.5)' },
 
   menuList: { borderRadius: 14, backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
   menuItem: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   menuItemBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
   menuItemIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12, backgroundColor: 'rgba(0,0,0,0.05)' },
   menuItemContent: { flex: 1 },
-  menuItemTitle: { fontSize: 15, fontFamily: 'Lato_700Bold', color: '#000' },
-  menuItemSubtitle: { fontSize: 13, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)', marginTop: 2 },
+  menuItemTitle: { fontSize: 15, color: '#000' },
+  menuItemSubtitle: { fontSize: 13, color: 'rgba(0,0,0,0.5)', marginTop: 2 },
 
   activityList: { borderRadius: 14, backgroundColor: '#fff', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', overflow: 'hidden' },
   activityRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
   activityRowBorder: { borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
   activityContent: { flex: 1 },
-  activityTitle: { fontSize: 14, fontFamily: 'Lato_700Bold', color: '#000' },
-  activitySub: { fontSize: 12, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.5)', marginTop: 1 },
-  activityTime: { fontSize: 12, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.4)' },
+  activityTitle: { fontSize: 14, color: '#000' },
+  activitySub: { fontSize: 12, color: 'rgba(0,0,0,0.5)', marginTop: 1 },
+  activityTime: { fontSize: 12, color: 'rgba(0,0,0,0.4)' },
 
   empty: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 12 },
-  emptyText: { fontSize: 14, fontFamily: 'Lato_400Regular', color: 'rgba(0,0,0,0.4)' },
+  emptyText: { fontSize: 14, color: 'rgba(0,0,0,0.4)' },
 });
