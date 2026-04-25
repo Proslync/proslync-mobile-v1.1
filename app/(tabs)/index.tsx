@@ -13,6 +13,7 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import { useRouter } from 'expo-router';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { FeedNavBar } from '@/components/feed/feed-nav-bar';
@@ -306,12 +307,16 @@ function GameCard({ data, onPress }: { data: GameCardData; onPress: () => void }
   const leaderIsHome = data.home.score > data.away.score;
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
-      <SectionKicker icon={isLive ? 'radio' : 'checkmark-circle'} label={isLive ? 'LIVE GAME' : 'FINAL'} color={isLive ? '#FF6F3C' : 'rgba(255,255,255,0.55)'} />
+      <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 18 }]} />
       <View style={styles.gameHeader}>
-        <Text style={styles.gameVenue} numberOfLines={1}>{data.venue}</Text>
-        <View style={[styles.gameStatusPill, isLive && styles.gameStatusPillLive]}>
-          {isLive && <View style={styles.gameStatusDot} />}
-          <Text style={styles.gameStatusText}>{isLive && data.clock ? `${data.status} · ${data.clock}` : data.status}</Text>
+        <View style={{ flex: 1 }}>
+          <View style={styles.gameClockRow}>
+            {isLive && <View style={styles.gameLiveDot} />}
+            <Text style={styles.gameClock}>
+              {isLive && data.clock ? `${data.status} · ${data.clock}` : data.status}
+            </Text>
+          </View>
+          <Text style={styles.gameVenue} numberOfLines={1}>{data.venue}</Text>
         </View>
       </View>
 
@@ -327,8 +332,11 @@ function GameCard({ data, onPress }: { data: GameCardData; onPress: () => void }
       </View>
 
       {data.leader && (
-        <View style={[styles.gameLeaderRow, data.featured && styles.gameLeaderRowFeatured]}>
-          <Ionicons name={data.featured ? 'flame' : 'trophy-outline'} size={14} color={data.featured ? '#FF6F3C' : 'rgba(255,255,255,0.7)'} />
+        <View style={styles.gameLeaderRow}>
+          <Image
+            source={require('@/assets/images/kiyan-avatar.png')}
+            style={styles.gameLeaderAvatar}
+          />
           <View style={{ flex: 1 }}>
             <Text style={[styles.gameLeaderName, data.featured && { color: '#FF6F3C' }]}>{data.leader.name}</Text>
             <Text style={styles.gameLeaderLine}>{data.leader.line}</Text>
@@ -339,22 +347,46 @@ function GameCard({ data, onPress }: { data: GameCardData; onPress: () => void }
   );
 }
 
+function matchColor(score: number) {
+  // 0 → red (255,68,68); 100 → green (52,199,89). Linearly interpolate.
+  const t = Math.max(0, Math.min(100, score)) / 100;
+  const r = Math.round(255 + (52 - 255) * t);
+  const g = Math.round(68 + (199 - 68) * t);
+  const b = Math.round(68 + (89 - 68) * t);
+  return `rgb(${r},${g},${b})`;
+}
+
 function DealCard({ data, onPress }: { data: DealCardData; onPress: () => void }) {
+  const matchC = matchColor(data.matchScore);
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
-      <SectionKicker icon="flash" label="NIL DEAL" color="#FF6F3C" />
-      <View style={styles.dealHeader}>
-        <View style={[styles.dealLogo, { backgroundColor: data.brandLogoColor }]}>
-          <Text style={styles.dealLogoInitial}>{data.brandInitial}</Text>
-        </View>
+      <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 18 }]} />
+      <View
+        style={[
+          styles.dealMatchCircle,
+          { borderColor: matchC, backgroundColor: 'transparent' },
+        ]}
+      >
+        <Text style={[styles.dealMatchCircleScore, { color: matchC }]}>
+          {data.matchScore}
+        </Text>
+      </View>
+
+      <View style={[styles.dealHeader, { paddingRight: 60 }]}>
+        {data.brand === 'PUMA Hoops' ? (
+          <Image
+            source={require('@/assets/images/contact-puma.png')}
+            style={styles.dealLogo}
+          />
+        ) : (
+          <View style={[styles.dealLogo, { backgroundColor: data.brandLogoColor }]}>
+            <Text style={styles.dealLogoInitial}>{data.brandInitial}</Text>
+          </View>
+        )}
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={styles.dealBrand} numberOfLines={1}>{data.brand}</Text>
           <Text style={styles.dealType} numberOfLines={1}>{data.dealType}</Text>
           <Text style={styles.dealCategory} numberOfLines={1}>{data.category}</Text>
-        </View>
-        <View style={styles.dealMatchPill}>
-          <Text style={styles.dealMatchLabel}>MATCH</Text>
-          <Text style={styles.dealMatchScore}>{data.matchScore}</Text>
         </View>
       </View>
 
@@ -369,21 +401,9 @@ function DealCard({ data, onPress }: { data: DealCardData; onPress: () => void }
         </View>
       </View>
 
-      <View style={styles.cardFooter}>
-        <View style={[styles.dealNetworkPill, data.network === 'open' ? styles.dealNetworkOpen : styles.dealNetworkInvite]}>
-          <View style={[styles.dealNetworkDot, { backgroundColor: data.network === 'open' ? '#34C759' : '#FF6F3C' }]} />
-          <Text style={styles.dealNetworkText}>{data.network === 'open' ? 'Open' : 'Invite Only'}</Text>
-        </View>
-        <View style={styles.dealCtaRow}>
-          <TouchableOpacity style={styles.ghostBtn} activeOpacity={0.7}>
-            <Text style={styles.ghostBtnText}>View</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.primaryGhostBtn} activeOpacity={0.85}>
-            <Ionicons name="flash" size={13} color="#FF6F3C" />
-            <Text style={styles.primaryGhostBtnText}>Interested</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <TouchableOpacity style={styles.applyBtn} activeOpacity={0.85}>
+        <Text style={styles.applyBtnText}>Apply</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -392,7 +412,7 @@ function PersonCard({ data, onPress }: { data: PersonCardData; onPress: () => vo
   const [following, setFollowing] = useState(false);
   return (
     <TouchableOpacity activeOpacity={0.85} onPress={onPress} style={styles.card}>
-      <SectionKicker icon="people" label="ATHLETE TO FOLLOW" color="#3897F0" />
+      <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 18 }]} />
       <View style={styles.personRow}>
         <View style={[styles.personAvatar, { backgroundColor: data.avatarColor }]}>
           <Text style={styles.personAvatarInitial}>{data.initial}</Text>
@@ -469,7 +489,6 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <DarkGradientBg />
       <FlatList
         data={feed}
         renderItem={renderItem}
@@ -478,19 +497,6 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#888" />}
         ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-        ListHeaderComponent={
-          <View style={styles.listHeader}>
-            <Text style={styles.listHeaderTitle}>Discover</Text>
-            <Text style={styles.listHeaderSub}>Games, deals, and athletes tailored to your profile</Text>
-          </View>
-        }
-      />
-
-      <LinearGradient
-        colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.55)', 'transparent']}
-        locations={[0, 0.6, 1]}
-        style={styles.topFade}
-        pointerEvents="none"
       />
 
       <LinearGradient
@@ -503,11 +509,7 @@ export default function FeedScreen() {
         activeFilter={activeFilter}
         onFilterChange={(f) => setActiveFilter(f)}
         onSearchPress={() => setSearchVisible(true)}
-        avatarInitial={'K'}
-        isSearchActive={false}
-        searchQuery={''}
-        onSearchChange={() => {}}
-        onSearchCancel={() => {}}
+        onSharePress={() => {}}
       />
 
       <SearchSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
@@ -523,18 +525,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, zIndex: 10 },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 130, zIndex: 5 },
-  listContent: { paddingTop: 120, paddingBottom: 140, paddingHorizontal: 14 },
+  listContent: { paddingTop: 60, paddingBottom: 160, paddingHorizontal: 14 },
   listHeader: { paddingHorizontal: 2, paddingBottom: 14 },
   listHeaderTitle: { fontSize: 24, fontWeight: '800', color: '#FFF', letterSpacing: -0.4 },
   listHeaderSub: { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginTop: 4, letterSpacing: -0.1 },
 
   card: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.10)',
     borderRadius: 18,
     padding: CARD_PAD,
     gap: 12,
+    overflow: 'hidden',
   },
 
   kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -549,7 +549,10 @@ const styles = StyleSheet.create({
 
   // Game card
   gameHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  gameVenue: { flex: 1, fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.85)', letterSpacing: -0.1 },
+  gameClockRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4 },
+  gameLiveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#FF4444' },
+  gameClock: { fontSize: 12, fontWeight: '800', color: '#FF6F3C', letterSpacing: 0.6, textTransform: 'uppercase' },
+  gameVenue: { flex: 1, fontSize: 20, fontWeight: '800', color: '#FFF', letterSpacing: -0.3 },
   gameStatusPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.10)' },
   gameStatusPillLive: { backgroundColor: '#FF6F3C' },
   gameStatusDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#FFF' },
@@ -560,8 +563,8 @@ const styles = StyleSheet.create({
   gameTeamDim: { color: 'rgba(255,255,255,0.55)' },
   gameScore: { fontSize: 28, fontWeight: '900', color: '#FFF', fontVariant: ['tabular-nums'], letterSpacing: -0.6 },
   gameScoreDim: { color: 'rgba(255,255,255,0.55)' },
-  gameLeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 },
-  gameLeaderRowFeatured: { backgroundColor: 'rgba(255,111,60,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,111,60,0.35)' },
+  gameLeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  gameLeaderAvatar: { width: 36, height: 36, borderRadius: 18 },
   gameLeaderName: { fontSize: 13, fontWeight: '700', color: '#FFF', letterSpacing: -0.1 },
   gameLeaderLine: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 1, letterSpacing: -0.1 },
 
@@ -570,13 +573,26 @@ const styles = StyleSheet.create({
   dealLogo: { width: 46, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dealLogoInitial: { fontSize: 20, fontWeight: '900', color: '#FFF', letterSpacing: -0.4 },
   dealBrand: { fontSize: 15, fontWeight: '700', color: '#FFF', letterSpacing: -0.2 },
-  dealType: { fontSize: 13, color: 'rgba(255,255,255,0.75)', letterSpacing: -0.1 },
+  dealType: { fontSize: 14, color: 'rgba(255,255,255,0.85)', letterSpacing: -0.1 },
   dealCategory: { fontSize: 11, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.2, textTransform: 'uppercase' },
   dealMatchPill: { alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: 'rgba(255,111,60,0.14)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,111,60,0.45)' },
   dealMatchLabel: { fontSize: 8, fontWeight: '800', letterSpacing: 0.8, color: 'rgba(255,111,60,0.85)' },
   dealMatchScore: { fontSize: 16, fontWeight: '900', color: '#FF6F3C', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
   dealMetaRow: { flexDirection: 'row', gap: 8 },
-  dealMetaChip: { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, gap: 2 },
+  dealMetaChip: { flex: 1, paddingVertical: 4, gap: 2 },
+  dealMatchCircle: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  dealMatchCircleScore: { fontSize: 14, fontWeight: '800', lineHeight: 18 },
   dealMetaLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' },
   dealMetaValue: { fontSize: 13, color: '#FFF', fontWeight: '700', letterSpacing: -0.1 },
   dealNetworkPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth },
@@ -589,6 +605,14 @@ const styles = StyleSheet.create({
   ghostBtnText: { fontSize: 12, fontWeight: '700', color: '#FFF', letterSpacing: -0.1 },
   primaryGhostBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,111,60,0.45)', backgroundColor: 'rgba(255,111,60,0.12)' },
   primaryGhostBtnText: { fontSize: 12, fontWeight: '700', color: '#FF6F3C', letterSpacing: -0.1 },
+  applyBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+  },
+  applyBtnText: { fontSize: 14, fontWeight: '700', color: '#000', letterSpacing: 0.2 },
 
   // Person card
   personRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },

@@ -62,6 +62,7 @@ import type { UnifiedSearchItem } from "@/lib/types/search.types";
 
 // Local default avatar with white background
 const DefaultAvatarImage = require("@/assets/images/default-avatar.png");
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom
 
 // Local-asset overrides for specific mock contacts
 const LOCAL_AVATAR_BY_ID: Record<string, any> = {
@@ -481,7 +482,7 @@ function NotificationRow({ item, onPress }: { item: AppNotification; onPress: ()
         <Image source={{ uri: actorUser.avatar.url }} style={styles.notifActorAvatar} />
       ) : (
         <View style={styles.notifIcon}>
-          <Ionicons name={iconName} size={18} color="rgba(0,0,0,0.4)" />
+          <Ionicons name={iconName} size={18} color="rgba(255,255,255,0.7)" />
         </View>
       )}
       <View style={styles.notifContent}>
@@ -969,8 +970,8 @@ export default function MessagesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: '#000' }]}>
 
-      {/* Floating header — profile-style (icon · title · icon) */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+      {/* Floating bottom bar — search · split pill · compose */}
+      <View style={styles.topBar}>
         <Pressable
           style={styles.topBarGlassCircle}
           onPress={handleSearchPress}
@@ -979,40 +980,50 @@ export default function MessagesScreen() {
         >
           <GlassView
             glassEffectStyle="regular"
-            style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
           />
-          <Ionicons name="search-outline" size={18} color="#FFF" />
+          <Ionicons name="search-outline" size={22} color="#FFF" />
         </Pressable>
 
-        <View style={styles.topBarCenter}>
-          <Text style={styles.topBarTitle}>
-            {activeTab === 'Notifications' ? 'Notifications' : activeTab === 'Channels' ? 'Channels' : 'Messages'}
-          </Text>
+        <View style={styles.toolbarPill}>
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Pressable
+            style={styles.pillSegment}
+            onPress={() => setActiveTab('Messages')}
+            accessibilityLabel="Messages"
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeTab === 'Messages' }}
+          >
+            <Text style={[styles.pillSegmentText, activeTab === 'Messages' && styles.pillSegmentTextActive]}>
+              Messages
+            </Text>
+          </Pressable>
+          <Pressable
+            style={styles.pillSegment}
+            onPress={() => setActiveTab('Notifications')}
+            accessibilityLabel="Notifications"
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeTab === 'Notifications' }}
+          >
+            <Text style={[styles.pillSegmentText, activeTab === 'Notifications' && styles.pillSegmentTextActive]}>
+              Notifications
+            </Text>
+          </Pressable>
         </View>
 
         <Pressable
           style={styles.topBarGlassCircle}
-          onPress={() =>
-            setActiveTab(activeTab === 'Notifications' ? 'Messages' : 'Notifications')
-          }
-          accessibilityLabel="Notifications"
+          onPress={handleOpenCompose}
+          accessibilityLabel="New message"
           accessibilityRole="button"
-          accessibilityState={{ selected: activeTab === 'Notifications' }}
         >
           <GlassView
             glassEffectStyle="regular"
-            style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
+            style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
           />
-          <Ionicons name="notifications-outline" size={18} color="#FFF" />
+          <Ionicons name="add" size={26} color="#FFF" />
         </Pressable>
       </View>
-
-      {/* Top fade */}
-      <LinearGradient
-        colors={['#000', 'rgba(0,0,0,0)']}
-        style={styles.topFade}
-        pointerEvents="none"
-      />
 
       {/* Search input above keyboard */}
       {isSearchActive && (
@@ -1444,22 +1455,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // Profile-style top bar (search · Messages · notifications)
+  // Floating bottom bar (search · split pill · compose)
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingBottom: 10,
+    paddingHorizontal: 16,
+    gap: 12,
     position: 'absolute',
-    top: 0,
+    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
     left: 0,
     right: 0,
     zIndex: 100,
   },
-  topBarGlassCircle: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  topBarGlassCircle: { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   topBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   topBarTitle: { fontSize: 20, fontWeight: '700', color: '#FFF' },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillSegment: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillSegmentText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  pillSegmentTextActive: {
+    color: '#FFF',
+    fontWeight: '700',
+  },
   // Profile-style header
   headerScrollFixed: {
     position: 'absolute',
@@ -1470,14 +1504,14 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   composeFab: { position: 'absolute', width: 56, height: 56, borderRadius: 28, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', zIndex: 50 },
-  notifRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, marginHorizontal: 16, marginBottom: 8, gap: 12, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' },
+  notifRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
   notifRowUnread: { borderColor: 'rgba(0,0,0,0.12)' },
   notifActorAvatar: { width: 40, height: 40, borderRadius: 20 },
-  notifIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(0,0,0,0.06)', alignItems: 'center', justifyContent: 'center' },
+  notifIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   notifContent: { flex: 1 },
-  notifText: { fontSize: 14, lineHeight: 20, color: 'rgba(0,0,0,0.6)' },
-  notifTitle: { color: '#000' },
-  notifTime: { fontSize: 12, color: 'rgba(0,0,0,0.35)', marginTop: 4 },
+  notifText: { fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.7)' },
+  notifTitle: { color: '#FFF', fontWeight: '600' },
+  notifTime: { fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 4 },
   notifUnreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF6F3C' },
   topFade: {
     position: 'absolute',
@@ -1583,7 +1617,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingTop: 130,
+    paddingTop: 70,
+    paddingBottom: 160,
   },
   conversationRow: {
     flexDirection: "row",

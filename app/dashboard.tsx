@@ -4,16 +4,13 @@ import { useWallet } from "@/lib/providers/wallet-provider";
 import { UserRole } from "@/lib/types/auth.types";
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
+import { LinearGradient } from "expo-linear-gradient";
 import { DarkGradientBg } from "@/components/shared/dark-gradient-bg";
-import {
-  liquidGlass,
-  glassBorder,
-  glassText,
-  glassSurfaceTint,
-} from "@/constants/glass/liquid-glass";
+import { glassBorder, glassText } from "@/constants/glass/liquid-glass";
 import * as React from "react";
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +20,8 @@ import {
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MembershipCard, StatusCardMenuSheet } from "@/components/wallet";
+
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 interface MenuItemData {
   title: string;
@@ -107,7 +106,6 @@ export default function DashboardScreen() {
 
   const t = glassText["light"];
   const border = glassBorder["light"];
-  const surfaceTint = glassSurfaceTint["light"];
 
   const handleNav = React.useCallback(
     (route: string) => router.push(route as any),
@@ -161,24 +159,12 @@ export default function DashboardScreen() {
   return (
     <View style={[styles.container, { backgroundColor: "#f2f2f2" }]}>
 
-      {/* Header */}
+      {/* Header — centered title; back action moved to floating bottom toolbar */}
       <Animated.View
         entering={FadeIn.duration(400)}
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
-        <TouchableOpacity
-          style={[styles.backButton, { borderColor: border }]}
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace('/');
-          }}
-          activeOpacity={0.7}
-        >
-          <GlassView {...liquidGlass.surface} tintColor={surfaceTint} borderRadius={18} style={StyleSheet.absoluteFill} />
-          <Ionicons name="chevron-back" size={22} color={t.primary} />
-        </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: t.primary }]}>Dashboard</Text>
-        <View style={styles.headerSpacer} />
       </Animated.View>
 
       <ScrollView
@@ -202,8 +188,50 @@ export default function DashboardScreen() {
           <MenuGroup title="ADMIN" items={adminItems} delay={500} t={t} border={border} onItemPress={handleNav} />
         )}
 
-        <View style={{ height: insets.bottom + 40 }} />
+        <View style={{ height: insets.bottom + 100 }} />
       </ScrollView>
+
+      {/* Floating bottom toolbar — back | dashboard | live */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        pointerEvents="none"
+      />
+      <View style={[styles.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
+        <Pressable
+          style={styles.toolbarCircle}
+          onPress={() => {
+            if (router.canGoBack()) router.back();
+            else router.replace('/');
+          }}
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Ionicons name="chevron-back" size={20} color="#FFF" />
+        </Pressable>
+
+        <Pressable
+          style={styles.toolbarPill}
+          onPress={() => {}}
+          accessibilityLabel="Dashboard"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Text style={styles.toolbarPillText}>Dashboard</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.toolbarCircle}
+          onPress={() => {}}
+          accessibilityLabel="Go live"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Ionicons name="radio" size={22} color="#FF4444" />
+        </Pressable>
+      </View>
 
       {walletUser && (
         <StatusCardMenuSheet
@@ -232,24 +260,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     paddingHorizontal: 16,
     paddingBottom: 16,
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-  },
   headerTitle: {
     fontSize: 18,
-  },
-  headerSpacer: {
-    width: 36,
   },
   scrollView: {
     flex: 1,
@@ -305,4 +321,40 @@ const styles = StyleSheet.create({
     height: 1,
     marginLeft: 62,
   },
+
+  bottomToolbar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 100,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 99,
+  },
+  toolbarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 });

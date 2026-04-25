@@ -20,6 +20,7 @@ import Animated, {
   LinearTransition,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useStableRouter } from '@/hooks/use-stable-router';
 import Svg, {
   Circle,
   Defs,
@@ -44,6 +45,7 @@ import { liquidGlass } from '@/constants/glass/liquid-glass';
 const ACCENT = '#FF6F3C';
 const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 type TabKey = 'live' | 'patterns' | 'scout' | 'trends';
 
@@ -56,22 +58,11 @@ const TABS: { key: TabKey; label: string }[] = [
 
 export function CoachView() {
   const insets = useSafeAreaInsets();
+  const router = useStableRouter();
   const [activeTab, setActiveTab] = React.useState<TabKey>('live');
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 4 }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Coach Dashboard</Text>
-          <Text style={styles.headerSubtitle}>{DEMO_META.team} · {DEMO_META.season}</Text>
-        </View>
-        <View style={styles.demoPill}>
-          <View style={styles.demoDot} />
-          <Text style={styles.demoPillText}>DEMO MODE</Text>
-        </View>
-      </View>
-
       {/* Tab row */}
       <ScrollView
         horizontal
@@ -100,6 +91,25 @@ export function CoachView() {
       {activeTab === 'patterns' && <PatternsTab insets={insets.bottom} />}
       {activeTab === 'scout' && <ScoutTab insets={insets.bottom} />}
       {activeTab === 'trends' && <TrendsTab insets={insets.bottom} />}
+
+      {/* Floating bottom toolbar — back | dashboard | live */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        pointerEvents="none"
+      />
+      <View style={[styles.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
+        <Pressable
+          style={styles.toolbarPill}
+          onPress={() => {}}
+          accessibilityLabel="Dashboard"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Text style={styles.toolbarPillText}>Dashboard</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -1105,4 +1115,40 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.14)',
   },
   discussBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
+
+  bottomToolbar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 100,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 99,
+  },
+  toolbarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 });

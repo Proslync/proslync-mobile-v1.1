@@ -42,6 +42,7 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -58,6 +59,7 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeOut,
+  useAnimatedKeyboard,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -1017,9 +1019,7 @@ function Composer({
     <View
       style={[
         styles.composerContainer,
-        {
-          paddingBottom: Math.max(insets.bottom, 8),
-        },
+        { paddingBottom: Math.max(insets.bottom, 8) },
       ]}
     >
       {/* Recording indicator */}
@@ -2576,7 +2576,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 160,
-    zIndex: 9,
+    zIndex: 0,
   },
   headerFixed: {
     position: 'absolute',
@@ -2688,7 +2688,7 @@ const styles = StyleSheet.create({
   },
   messagesList: {
     paddingTop: 140,
-    paddingBottom: 130,
+    paddingBottom: 8,
     paddingHorizontal: 12,
   },
   emptyList: {
@@ -2943,13 +2943,9 @@ const styles = StyleSheet.create({
   },
   // Composer
   composerContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     paddingTop: 8,
     paddingHorizontal: 16,
-    zIndex: 10,
+    backgroundColor: '#000',
   },
   pendingMediaContainer: {
     flexDirection: "row",

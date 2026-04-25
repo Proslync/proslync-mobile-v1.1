@@ -17,6 +17,7 @@ import CoachProfile from "@/components/coach/coach-profile";
 import ScorekeeperProfile from "@/components/scorekeeper/scorekeeper-profile";
 import BrandProfile from "@/components/brand/brand-profile";
 import FanProfile from "@/components/fan/fan-profile";
+import { RoleSwitcherSheet } from "@/components/shared/role-switcher-menu";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,10 +31,12 @@ import {
   Dimensions,
   Image,
   Modal,
+  Pressable,
   ScrollView,
   Share,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -41,6 +44,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView } from "expo-glass-effect";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — measured top edge from screen bottom (incl. safe area)
 const POST_GAP = 1;
 const GRID_COLS = 3;
 const CARD_H_PAD = 16; // postsSection paddingHorizontal
@@ -875,7 +879,7 @@ export default function ProfileScreen() {
 function PlayerProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const { colors: _colors } = useAppTheme();
   const colors = { ..._colors, text: '#FFF', textSecondary: 'rgba(255,255,255,0.65)', textTertiary: 'rgba(255,255,255,0.4)', background: '#000', border: 'rgba(255,255,255,0.10)' };
   const [followersSheetVisible, setFollowersSheetVisible] =
@@ -980,16 +984,22 @@ function PlayerProfileScreen() {
     tintColor: "#1a1a1a",
   });
 
-  const { displayName, username, bio, avatarUrl, initial } = React.useMemo(
+  const { username, avatarUrl, initial } = React.useMemo(
     () => ({
-      displayName: "Kiyan Anthony",
       username: "kiyan",
-      bio: user?.bio || "",
       avatarUrl: user?.avatar?.url,
       initial: "K",
     }),
     [user],
   );
+
+  // Inline-editable identity fields. Defaults are the Kiyan persona.
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
+  const [displayName, setDisplayName] = React.useState("Kiyan Anthony");
+  const [metaPrimary, setMetaPrimary] = React.useState("Freshman Guard at Syracuse");
+  const [metaSecondary, setMetaSecondary] = React.useState("Brooklyn, New York");
+  const bio = user?.bio || "";
 
   const avatarTapTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   React.useEffect(() => {
@@ -1035,47 +1045,6 @@ function PlayerProfileScreen() {
     <SwipeableTabView>
       <View style={[s.container, { backgroundColor: '#000' }]}>
 
-        {/* Top bar — plus (left), username (center), hamburger (right) */}
-        <View style={[s.topBar, { paddingTop: insets.top + 8 }]}>
-          <TouchableOpacity
-            style={s.topBarGlassCircle}
-            activeOpacity={0.7}
-            onPress={() => setShowCreateMenu(true)}
-            accessibilityLabel="Create post or event"
-            accessibilityRole="button"
-          >
-            <GlassView
-              glassEffectStyle="regular"
-              style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
-            />
-            <Ionicons name="add" size={22} color="#FFF" />
-          </TouchableOpacity>
-          <View style={s.topBarCenter}>
-            <Text style={s.topBarUsername}>{username}</Text>
-            {user?.isVerified && <MaterialCommunityIcons name="check-decagram" size={18} color="#FF6F3C" />}
-          </View>
-          <TouchableOpacity
-            style={s.topBarGlassCircle}
-            activeOpacity={0.7}
-            onPress={() => router.push("/settings")}
-            accessibilityLabel="Settings"
-            accessibilityRole="button"
-          >
-            <GlassView
-              glassEffectStyle="regular"
-              style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
-            />
-            <Ionicons name="menu" size={22} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Scroll dim — fixed fade at the top so content scrolling up reads as dimmed */}
-        <LinearGradient
-          colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0)']}
-          locations={[0, 0.55, 1]}
-          style={[s.scrollDim, { height: insets.top + 72 }]}
-          pointerEvents="none"
-        />
 
         <ScrollView
           style={{ flex: 1 }}
@@ -1084,14 +1053,14 @@ function PlayerProfileScreen() {
           refreshControl={refreshControl}
         >
           {/* Banner — cover image that fades into the page bg, now scrolls with the content */}
-          <View style={[s.bannerWrap, { height: insets.top + 190 }]} pointerEvents="none">
+          <View style={[s.bannerWrap, { height: insets.top + 140 }]} pointerEvents="none">
             <Image
               source={require('@/assets/images/kiyan-banner.png')}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 269 }}
+              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 249 }}
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['rgba(0,0,0,0.12)', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.85)', '#000']}
+              colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.85)', '#000']}
               locations={[0, 0.5, 0.9, 1]}
               style={StyleSheet.absoluteFill}
               pointerEvents="none"
@@ -1113,13 +1082,47 @@ function PlayerProfileScreen() {
             </TouchableOpacity>
 
             <View style={s.rightCol}>
-              <Text style={s.igName}>{displayName}</Text>
-              <Text style={[s.metaLine, s.metaLinePrimary]} numberOfLines={1}>
-                Freshman Guard at Syracuse
-              </Text>
-              <Text style={s.metaLine} numberOfLines={1}>
-                Brooklyn, New York
-              </Text>
+              {isEditing ? (
+                <>
+                  <TextInput
+                    style={[s.igName, s.editableField]}
+                    value={displayName}
+                    onChangeText={setDisplayName}
+                    placeholder="Display name"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    keyboardAppearance="dark"
+                  />
+                  <TextInput
+                    style={[s.metaLine, s.metaLinePrimary, s.editableField, { marginTop: 6 }]}
+                    value={metaPrimary}
+                    onChangeText={setMetaPrimary}
+                    placeholder="Headline"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    keyboardAppearance="dark"
+                  />
+                  <TextInput
+                    style={[s.metaLine, s.editableField, { marginTop: 6 }]}
+                    value={metaSecondary}
+                    onChangeText={setMetaSecondary}
+                    placeholder="Location"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    keyboardAppearance="dark"
+                  />
+                </>
+              ) : (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <Text style={s.igName}>{displayName}</Text>
+                    <MaterialCommunityIcons name="check-decagram" size={16} color="#FF6F3C" />
+                  </View>
+                  <Text style={[s.metaLine, s.metaLinePrimary]} numberOfLines={1}>
+                    {metaPrimary}
+                  </Text>
+                  <Text style={s.metaLine} numberOfLines={1}>
+                    {metaSecondary}
+                  </Text>
+                </>
+              )}
             </View>
           </View>
 
@@ -1302,7 +1305,60 @@ function PlayerProfileScreen() {
             </TouchableOpacity>
           </TouchableOpacity>
         </Modal>
+
+        {/* Bottom fade — gives the toolbar glass something to refract */}
+        <LinearGradient
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+          locations={[0, 0.5, 1]}
+          style={[s.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+          pointerEvents="none"
+        />
+
+        {/* Floating bottom toolbar — role switcher | edit profile | go live */}
+        <View style={[s.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
+          <Pressable
+            style={s.toolbarCircle}
+            onPress={() => setRoleSheetVisible(true)}
+            accessibilityLabel="Switch role"
+            accessibilityRole="button"
+          >
+            <LiquidGlassView
+              effect="regular"
+              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+            />
+            <Ionicons name="menu" size={22} color="#FFF" />
+          </Pressable>
+
+          <Pressable
+            style={[s.toolbarPill, isEditing && s.toolbarPillActive]}
+            onPress={() => setIsEditing((v) => !v)}
+            accessibilityLabel={isEditing ? 'Save profile changes' : 'Edit profile'}
+            accessibilityRole="button"
+          >
+            <LiquidGlassView
+              effect="regular"
+              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+            />
+            <Text style={s.toolbarPillText}>
+              {isEditing ? 'Save' : 'Edit Profile'}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={s.toolbarCircle}
+            onPress={() => setShowCreateMenu(true)}
+            accessibilityLabel="Create"
+            accessibilityRole="button"
+          >
+            <LiquidGlassView
+              effect="regular"
+              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+            />
+            <Ionicons name="radio" size={22} color="#FF4444" />
+          </Pressable>
+        </View>
       </View>
+      <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
     </SwipeableTabView>
   );
 }
@@ -1324,7 +1380,7 @@ const s = StyleSheet.create({
   topBarGlassCircle: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   topBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   topBarUsername: { fontSize: 20, fontWeight: '700', color: '#FFF' },
-  profileRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, marginTop: -120 },
+  profileRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, marginTop: -140, marginBottom: 5 },
   bannerWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#111' },
   igAvatar: { width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: '#000' },
   rightCol: { flex: 1, marginLeft: 16 },
@@ -1345,6 +1401,61 @@ const s = StyleSheet.create({
   tabLabelActive: { color: '#FFF', fontWeight: '700' },
   metaLine: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.55)', marginTop: 4, letterSpacing: -0.1, lineHeight: 18 },
   metaLinePrimary: { color: '#FFF', fontWeight: '700' },
+  editableField: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,111,60,0.6)',
+    paddingVertical: 2,
+    paddingHorizontal: 0,
+  },
+  bottomToolbar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 100,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 99,
+  },
+  toolbarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarLive: {},
+  toolbarLiveDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: '#FF4444',
+    borderWidth: 1.5,
+    borderColor: '#000',
+  },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  toolbarPillActive: {},
+  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
   // Aggregated social feed
   feedList: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 4, gap: 14 },
   socialCard: { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 14, overflow: 'hidden' },

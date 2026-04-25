@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GlassView } from 'expo-glass-effect';
 import * as React from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +17,7 @@ import Animated, {
   LinearTransition,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useStableRouter } from '@/hooks/use-stable-router';
 
 import {
   SK_ASSIGNMENTS,
@@ -29,6 +32,7 @@ import {
 const ACCENT = '#FF6F3C';
 const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 type TabKey = 'scoreboard' | 'games' | 'roster' | 'log';
 
@@ -48,6 +52,7 @@ function formatClock(total: number) {
 
 export function ScorekeeperView() {
   const insets = useSafeAreaInsets();
+  const router = useStableRouter();
   const [activeTab, setActiveTab] = React.useState<TabKey>('scoreboard');
 
   return (
@@ -95,6 +100,25 @@ export function ScorekeeperView() {
       {activeTab === 'games' && <GamesTab insets={insets.bottom} />}
       {activeTab === 'roster' && <RosterTab insets={insets.bottom} />}
       {activeTab === 'log' && <LogTab insets={insets.bottom} />}
+
+      {/* Floating bottom toolbar — back | dashboard | live */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        pointerEvents="none"
+      />
+      <View style={[styles.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
+        <Pressable
+          style={styles.toolbarPill}
+          onPress={() => {}}
+          accessibilityLabel="Dashboard"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Text style={styles.toolbarPillText}>Dashboard</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -1069,4 +1093,40 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(52,199,89,0.25)',
   },
   logFooterText: { fontSize: 11.5, color: '#34C759', fontWeight: '700' },
+
+  bottomToolbar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 100,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 99,
+  },
+  toolbarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 });

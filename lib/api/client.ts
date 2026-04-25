@@ -175,11 +175,13 @@ const MOCK_FEED = MOCK_EVENTS.map((e, i) => ({
 
 // ── Notifications ────────────────────────────────────────
 const MOCK_NOTIFICATIONS = [
-  { id: 1, type: 'event_reminder', title: 'Tonight at Audio', body: 'Doors open in 2 hours', imageUrl: FLYER_IMGS[0], isRead: false, createdAt: ago(30), data: { eventId: 1001 } },
-  { id: 2, type: 'follow', title: 'Maya Chen started following you', body: null, imageUrl: 'https://i.pravatar.cc/200?img=47', isRead: false, createdAt: ago(120), data: { userId: 2 } },
-  { id: 3, type: 'ticket', title: 'Ticket confirmed', body: 'Great Northern: Techno Night', imageUrl: FLYER_IMGS[1], isRead: true, createdAt: ago(60 * 5), data: { eventId: 1002 } },
-  { id: 4, type: 'mention', title: 'Devonte tagged you in a post', body: null, imageUrl: 'https://i.pravatar.cc/200?img=12', isRead: true, createdAt: ago(60 * 24), data: { postId: 'post-1' } },
-  { id: 5, type: 'system', title: 'Welcome to Status', body: 'Start following venues to see events', imageUrl: null, isRead: true, createdAt: ago(60 * 48), data: {} },
+  { id: 1, type: 'event_reminder', title: 'Tip-off in 2 hours', body: 'Syracuse vs Duke · JMA Wireless Dome', imageUrl: null, isRead: false, createdAt: ago(30), data: { eventId: 1001 } },
+  { id: 2, type: 'follow', title: 'Coach Glenn Farello started following you', body: null, imageUrl: 'https://i.pravatar.cc/200?img=15', isRead: false, createdAt: ago(120), data: { userId: 2 } },
+  { id: 3, type: 'like', title: 'Coach Diggs liked your highlight reel', body: '19-pt debut vs Delaware State', imageUrl: 'https://i.pravatar.cc/200?img=33', isRead: false, createdAt: ago(60 * 3), data: { postId: 'post-1' } },
+  { id: 4, type: 'mention', title: 'Marcus Reid tagged you in a clip', body: 'Pick-and-roll breakdown · vs UNC', imageUrl: 'https://i.pravatar.cc/200?img=12', isRead: true, createdAt: ago(60 * 24), data: { postId: 'post-2' } },
+  { id: 5, type: 'payment', title: 'NIL deal payout · $4,200', body: 'PUMA Hoops · campaign 03', imageUrl: null, isRead: true, createdAt: ago(60 * 36), data: {} },
+  { id: 6, type: 'rsvp', title: '12 friends are going to your game', body: 'Saturday · Syracuse vs Miami', imageUrl: null, isRead: true, createdAt: ago(60 * 48), data: { eventId: 1003 } },
+  { id: 7, type: 'team_invitation', title: 'Welcome to Proslync', body: 'Follow athletes and coaches to see games and stats', imageUrl: null, isRead: true, createdAt: ago(60 * 72), data: {} },
 ];
 
 // ── Tickets ──────────────────────────────────────────────

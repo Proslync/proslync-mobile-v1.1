@@ -66,10 +66,8 @@ export default function TabLayout() {
         <NativeTabs.Trigger name="profile">
           <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
-            sf={{
-              default: "person.crop.circle",
-              selected: "person.crop.circle.fill",
-            }}
+            src={require("@/assets/images/kiyan-avatar-tab.png")}
+            renderingMode="original"
           />
         </NativeTabs.Trigger>
       </NativeTabs>

@@ -41,6 +41,7 @@ import Animated, {
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
@@ -58,6 +59,7 @@ const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 const HEADER_OFFSET = 140;
 // Base page background (matches styles.container.backgroundColor)
 const PAGE_BG = '#000';
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 // Pick the best image URL for an event (flyer takes precedence over thumbnail imageUrl)
 function getEventImageUrl(event: Pick<StatusEvent, 'flyer' | 'imageUrl'>): string {
@@ -1325,6 +1327,16 @@ function PlayerActivityScreen() {
   const [isProfessionalMode, setIsProfessionalMode] = React.useState<boolean>(false);
   const [activeTab, setActiveTab] = React.useState<string>('Stats');
 
+  const tabs = React.useMemo(
+    () =>
+      (isProfessionalMode
+        ? venueTabs
+        : authUser?.role === UserRole.ADMIN
+          ? personalAdminTabs
+          : personalTabs) as readonly string[],
+    [isProfessionalMode, authUser?.role],
+  );
+
   const { data: membershipCard, isLoading: isLoadingCard } = useMembershipCard(
     !!user?.isProfileComplete
   );
@@ -1408,12 +1420,7 @@ function PlayerActivityScreen() {
     <View style={styles.container}>
 
       {/* Floating pill row */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.headerScrollContent, { paddingTop: insets.top + 16 }]}
-        style={styles.headerScrollFixed}
-      >
+      <View style={[styles.headerScrollFixed, styles.headerScrollContent]}>
         <Pressable
           style={styles.headerPill}
           onPress={() => setProfileSelectorVisible(true)}
@@ -1422,10 +1429,8 @@ function PlayerActivityScreen() {
         >
           <View style={styles.glassLayer} pointerEvents="none">
             <GlassView
-              {...liquidGlass.surface}
-              tintColor="transparent"
-              borderRadius={20}
-              style={StyleSheet.absoluteFill}
+              glassEffectStyle="regular"
+              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
             />
           </View>
           <ExpoImage
@@ -1438,48 +1443,37 @@ function PlayerActivityScreen() {
                   ? (authUser?.organizations?.find((o) => o.id === selectedOrg.id)?.logo?.url
                       ? { uri: authUser!.organizations!.find((o) => o.id === selectedOrg.id)!.logo!.url }
                       : DefaultAvatarImage)
-                  : (authUser?.avatar?.url ? { uri: authUser.avatar.url } : DefaultAvatarImage)
+                  : require('@/assets/images/kiyan-avatar.png')
             }
             style={styles.headerPillAvatar}
           />
           <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
         </Pressable>
 
-        {(isProfessionalMode
-          ? venueTabs
-          : authUser?.role === UserRole.ADMIN ? personalAdminTabs : personalTabs
-        ).map((label) => {
-          const isActive = activeTab === label;
-          return (
-            <Pressable
-              key={label}
-              style={styles.tabPill}
-              onPress={() => setActiveTab(label)}
-              accessibilityLabel={`${label} tab`}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <View style={styles.glassLayer} pointerEvents="none">
-                <GlassView
-                  {...liquidGlass.surface}
-                  tintColor="transparent"
-                  borderRadius={20}
-                  style={StyleSheet.absoluteFill}
-                />
-              </View>
-              <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>{label}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {/* Top fade — dims content as it scrolls behind the pill row */}
-      <LinearGradient
-        colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.55)', 'transparent']}
-        locations={[0, 0.6, 1]}
-        style={styles.topFade}
-        pointerEvents="none"
-      />
+        <View style={styles.tabSegmentedPill}>
+          <View style={styles.glassLayer} pointerEvents="none">
+            <GlassView
+              glassEffectStyle="regular"
+              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+            />
+          </View>
+          {tabs.map((label) => {
+            const isActive = activeTab === label;
+            return (
+              <Pressable
+                key={label}
+                style={styles.tabSegment}
+                onPress={() => setActiveTab(label)}
+                accessibilityLabel={`${label} tab`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+              >
+                <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>{label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
 
       {showSkeleton ? (
         <WalletSkeleton topOffset={HEADER_OFFSET} />
@@ -1488,7 +1482,7 @@ function PlayerActivityScreen() {
       ) : (
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingTop: 120, paddingBottom: 100, paddingHorizontal: 16, gap: 16 }}
+          contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
         >
@@ -1531,6 +1525,14 @@ function PlayerActivityScreen() {
           isLoadingCard={isLoadingCard}
         />
       )}
+
+      {/* Floating bottom toolbar — back | dashboard | live */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        pointerEvents="none"
+      />
     </View>
   );
 }
@@ -1545,7 +1547,7 @@ const styles = StyleSheet.create({
   },
   headerScrollFixed: {
     position: 'absolute',
-    top: 0,
+    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
     left: 0,
     right: 0,
     zIndex: 100,
@@ -1560,23 +1562,38 @@ const styles = StyleSheet.create({
     zIndex: 99,
   },
   headerScrollContent: {
-    paddingHorizontal: 12,
+    flexDirection: 'row',
+    paddingHorizontal: 20,
     gap: 8,
     alignItems: 'center',
+  },
+  tabSegmentedPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
+  tabSegment: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 38,
-    borderRadius: 19,
+    height: 46,
+    borderRadius: 23,
     paddingLeft: 3,
     paddingRight: 12,
     overflow: 'hidden',
   },
   headerPillAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   headerPillIcon: {
     marginLeft: 8,
@@ -1584,7 +1601,7 @@ const styles = StyleSheet.create({
   glassLayer: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
-    borderRadius: 19,
+    borderRadius: 23,
   },
   tabPill: {
     height: 38,
@@ -1651,6 +1668,56 @@ const styles = StyleSheet.create({
   },
   tableStatusText: {
     fontSize: 12,
+  },
+
+  bottomToolbar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 100,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 99,
+  },
+  toolbarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+  pillSegment: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillSegmentText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  pillSegmentTextActive: {
+    color: '#FFF',
+    fontWeight: '700',
   },
 });
 

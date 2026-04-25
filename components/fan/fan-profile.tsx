@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as React from 'react';
 import {
   Image,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +15,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStableRouter } from '@/hooks/use-stable-router';
+import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import {
   FAN_FOLLOWING,
   FAN_PERKS,
@@ -22,6 +24,7 @@ import {
 
 const ACCENT = '#FF6F3C';
 const PURPLE = '#A855F7';
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 type TabKey = 'about' | 'following' | 'activity' | 'perks';
 
@@ -53,6 +56,8 @@ export default function FanProfile() {
   const router = useStableRouter();
   const [tab, setTab] = React.useState<TabKey>('about');
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set(['origin']));
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
   const toggle = (key: string) => {
     setExpanded((prev) => {
@@ -67,23 +72,6 @@ export default function FanProfile() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity style={styles.topBarCircle} activeOpacity={0.7}>
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 19 }]} />
-          <Ionicons name="add" size={22} color="#FFF" />
-        </TouchableOpacity>
-        <View style={styles.topBarCenter}>
-          <Text style={styles.topBarUsername}>{FAN_PROFILE.username}</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.topBarCircle}
-          activeOpacity={0.7}
-          onPress={() => router.push('/settings')}
-        >
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 19 }]} />
-          <Ionicons name="menu" size={22} color="#FFF" />
-        </TouchableOpacity>
-      </View>
 
       <LinearGradient
         colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0)']}
@@ -355,6 +343,46 @@ export default function FanProfile() {
           )}
         </View>
       </ScrollView>
+
+      {/* Floating bottom toolbar — settings | edit profile | create */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        pointerEvents="none"
+      />
+      <View style={[styles.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
+        <Pressable
+          style={styles.toolbarCircle}
+          onPress={() => setRoleSheetVisible(true)}
+          accessibilityLabel="Switch role"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Ionicons name="menu" size={22} color="#FFF" />
+        </Pressable>
+
+        <Pressable
+          style={[styles.toolbarPill, isEditing && styles.toolbarPillActive]}
+          onPress={() => setIsEditing((v) => !v)}
+          accessibilityLabel={isEditing ? 'Save profile changes' : 'Edit profile'}
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Text style={styles.toolbarPillText}>{isEditing ? 'Save' : 'Edit Profile'}</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.toolbarCircle}
+          onPress={() => {}}
+          accessibilityLabel="Create"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Ionicons name="radio" size={22} color="#FF4444" />
+        </Pressable>
+      </View>
+      <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
     </View>
   );
 }
@@ -365,7 +393,7 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingBottom: 10,
     position: 'absolute',
@@ -632,4 +660,42 @@ const styles = StyleSheet.create({
   },
   balanceValue: { color: '#FFF', fontSize: 20, fontWeight: '800' },
   balanceMeta: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 3 },
+
+  bottomToolbar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 100,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 99,
+  },
+  toolbarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  toolbarPillActive: {},
+  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 });

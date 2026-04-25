@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GlassView } from 'expo-glass-effect';
 import * as React from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,6 +12,7 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useStableRouter } from '@/hooks/use-stable-router';
 
 import {
   FAN_FEED,
@@ -28,6 +31,7 @@ const ACCENT = '#FF6F3C';
 const PURPLE = '#A855F7';
 const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 type TabKey = 'feed' | 'games' | 'pickem' | 'perks';
 
@@ -40,6 +44,7 @@ const TABS: { key: TabKey; label: string }[] = [
 
 export function FanView() {
   const insets = useSafeAreaInsets();
+  const router = useStableRouter();
   const [activeTab, setActiveTab] = React.useState<TabKey>('feed');
 
   return (
@@ -83,6 +88,25 @@ export function FanView() {
       {activeTab === 'games' && <GamesTab insets={insets.bottom} />}
       {activeTab === 'pickem' && <PickemTab insets={insets.bottom} />}
       {activeTab === 'perks' && <PerksTab insets={insets.bottom} />}
+
+      {/* Floating bottom toolbar — back | dashboard | live */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        pointerEvents="none"
+      />
+      <View style={[styles.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
+        <Pressable
+          style={styles.toolbarPill}
+          onPress={() => {}}
+          accessibilityLabel="Dashboard"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Text style={styles.toolbarPillText}>Dashboard</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -1033,4 +1057,40 @@ const styles = StyleSheet.create({
   },
   claimBtnText: { flex: 1, color: '#FFFFFF', fontSize: 12.5, fontWeight: '700' },
   claimBtnCost: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '800' },
+
+  bottomToolbar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 100,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 99,
+  },
+  toolbarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 });

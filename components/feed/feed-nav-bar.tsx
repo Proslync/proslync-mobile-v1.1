@@ -1,193 +1,132 @@
 import { Ionicons } from "@expo/vector-icons";
 import { GlassView } from "expo-glass-effect";
-import { liquidGlass } from "@/constants/glass/liquid-glass";
 import * as React from "react";
 import {
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const FILTERS = ["For You", "Following"];
+const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom
+
+const FILTERS = ["For You", "Following"] as const;
 
 export interface FeedNavBarProps {
   activeFilter: string;
   onFilterChange: (filter: string) => void;
   onSearchPress: () => void;
-  avatarInitial: string;
-  /** Inline search mode */
-  isSearchActive?: boolean;
-  searchQuery?: string;
-  onSearchChange?: (query: string) => void;
-  onSearchCancel?: () => void;
+  onSharePress?: () => void;
 }
 
 export function FeedNavBar({
   activeFilter,
   onFilterChange,
   onSearchPress,
-  avatarInitial,
-  isSearchActive,
-  searchQuery = "",
-  onSearchChange,
-  onSearchCancel,
+  onSharePress,
 }: FeedNavBarProps) {
-  const insets = useSafeAreaInsets();
-  const inputRef = React.useRef<TextInput>(null);
-
-  React.useEffect(() => {
-    if (isSearchActive) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [isSearchActive]);
-
   return (
-    <View style={[styles.container, { top: insets.top + 16 }]}>
-      {isSearchActive ? (
-        /* Search mode — input bar + close */
-        <Animated.View entering={FadeIn.duration(200)} style={styles.searchRow}>
-          <View style={styles.searchBar}>
-            <View style={styles.glassLayer} pointerEvents="none">
-              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
-            </View>
-            <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
-            <TextInput
-              ref={inputRef}
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={onSearchChange}
-              placeholder="Search events, venues..."
-              placeholderTextColor="rgba(255,255,255,0.45)"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-            {searchQuery.length > 0 && (
-              <Pressable onPress={() => onSearchChange?.("")}>
-                <Ionicons name="close-circle" size={18} color="rgba(255,255,255,0.4)" />
-              </Pressable>
-            )}
-          </View>
-          <Pressable style={styles.pill} onPress={onSearchCancel}>
-            <View style={styles.glassLayer} pointerEvents="none">
-              <GlassView {...liquidGlass.fillMedium} borderRadius={20} style={StyleSheet.absoluteFill} />
-            </View>
-            <Ionicons name="close" size={18} color="#FFF" />
-          </Pressable>
-        </Animated.View>
-      ) : (
-        /* Normal mode — pills */
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* Search pill */}
-          <Pressable style={styles.pill} onPress={onSearchPress} accessibilityLabel="Search" accessibilityRole="button">
-            <View style={styles.glassLayer} pointerEvents="none">
-              <GlassView {...liquidGlass.surface} tintColor="transparent" borderRadius={20} style={StyleSheet.absoluteFill} />
-            </View>
-            <Ionicons name="search-outline" size={18} color="#FFF" />
-          </Pressable>
+    <View style={styles.bottomBar}>
+      <Pressable
+        style={styles.circle}
+        onPress={onSearchPress}
+        accessibilityLabel="Search"
+        accessibilityRole="button"
+      >
+        <GlassView
+          glassEffectStyle="regular"
+          style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+        />
+        <Ionicons name="search-outline" size={22} color="#FFF" />
+      </Pressable>
 
-          {/* Filter pills */}
-          {FILTERS.map((filter) => {
-            const isActive = filter === activeFilter;
-            return (
-              <Pressable
-                key={filter}
-                style={[styles.filterPill, isActive && styles.filterPillActive]}
-                onPress={() => onFilterChange(filter)}
-                accessibilityLabel={`${filter} feed`}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
+      <View style={styles.pill}>
+        <GlassView
+          glassEffectStyle="regular"
+          style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+        />
+        {FILTERS.map((filter) => {
+          const isActive = filter === activeFilter;
+          return (
+            <Pressable
+              key={filter}
+              style={styles.segment}
+              onPress={() => onFilterChange(filter)}
+              accessibilityLabel={`${filter} feed`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text
+                style={[
+                  styles.segmentText,
+                  isActive && styles.segmentTextActive,
+                ]}
               >
-                <View style={styles.glassLayer} pointerEvents="none">
-                  <GlassView
-                    {...liquidGlass.surface}
-                    tintColor={isActive ? "rgba(255,255,255,0.18)" : "transparent"}
-                    borderRadius={20}
-                    style={StyleSheet.absoluteFill}
-                  />
-                </View>
-                <Text style={[styles.filterText, isActive && styles.filterTextActive]}>
-                  {filter}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      )}
+                {filter}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Pressable
+        style={styles.circle}
+        onPress={onSharePress}
+        accessibilityLabel="Share"
+        accessibilityRole="button"
+      >
+        <GlassView
+          glassEffectStyle="regular"
+          style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+        />
+        <Ionicons name="share-outline" size={22} color="#FFF" />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  bottomBar: {
     position: "absolute",
+    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
     left: 0,
     right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    gap: 12,
     zIndex: 100,
   },
-  scrollContent: {
-    paddingHorizontal: 12,
-    gap: 8,
+  circle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: "hidden",
+    justifyContent: "center",
     alignItems: "center",
   },
   pill: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  filterPill: {
-    height: 38,
-    borderRadius: 19,
-    paddingHorizontal: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  glassLayer: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
     overflow: "hidden",
-    borderRadius: 19,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  filterPillActive: {},
-  filterText: {
-    color: "rgba(255,255,255,0.6)",
+  segment: {
+    flex: 1,
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  segmentText: {
+    color: "rgba(255,255,255,0.5)",
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  filterTextActive: {
+  segmentTextActive: {
     color: "#FFF",
     fontWeight: "700",
-  },
-  // Search mode
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    height: 38,
-    borderRadius: 19,
-    paddingHorizontal: 14,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: "#FFF",
-    paddingVertical: 0,
   },
 });

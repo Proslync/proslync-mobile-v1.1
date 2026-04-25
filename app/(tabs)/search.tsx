@@ -848,7 +848,9 @@ function FullMapScreen() {
     try {
       setIsLoading(true);
       setError(null);
-      const apiEvents = await eventsApi.getEvents({ limit: 50 });
+      const apiEvents = (await eventsApi.getEvents({ limit: 50 })).filter(
+        (e) => (e.eventType || '').toLowerCase() !== 'club'
+      );
       const mapEvents = apiEvents.map(transformEventToMapEvent);
 
       // Geocode events that have a custom location text (overrides venue coordinates)
@@ -954,17 +956,7 @@ function FullMapScreen() {
     return `${mins} min`;
   }, [userLocation, selectedFriend]);
 
-  const allNearbyFriends = useMemo<FriendMarker[]>(() => [
-    ...nearbyFriends,
-    {
-      id: 'mock-friend-1',
-      name: 'Alex Chen',
-      imageUrl: 'https://i.pravatar.cc/150?img=12',
-      latitude: 38.9015,
-      longitude: -77.0210,
-      updatedAt: Date.now(),
-    },
-  ], [nearbyFriends]);
+  const allNearbyFriends = useMemo<FriendMarker[]>(() => [...nearbyFriends], [nearbyFriends]);
 
   const handleEventPress = useCallback((event: MapEvent) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

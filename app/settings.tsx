@@ -7,23 +7,14 @@ import {
   ScrollView,
   Modal,
   Pressable,
-  Image,
 } from 'react-native';
-import Animated, {
-  FadeIn,
-  FadeInDown,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { GlassView } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
-import { useAppTheme, type ThemeMode } from '@/hooks/use-app-theme';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useRole, type ProfileRole } from '@/lib/providers/role-provider';
 
@@ -86,46 +77,13 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
 
 const ROLES: ProfileRole[] = ['player', 'coach', 'scorekeeper', 'brand', 'fan'];
 
-function AnimatedChevron({ expanded, color }: { expanded: boolean; color: string }) {
-  const style = useAnimatedStyle(() => ({
-    transform: [
-      {
-        rotate: withTiming(expanded ? '180deg' : '0deg', {
-          duration: 250,
-          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
-        }),
-      },
-    ],
-  }));
-
-  return (
-    <Animated.View style={style}>
-      <Ionicons name="chevron-down" size={18} color={color} />
-    </Animated.View>
-  );
-}
-
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { isDark, themeMode, setThemeMode } = useAppTheme();
   const { logout } = useAuth();
   const { role: activeProfile, setRole: setActiveProfile } = useRole();
   const [switchProfileVisible, setSwitchProfileVisible] = React.useState(false);
   const [logoutConfirmVisible, setLogoutConfirmVisible] = React.useState(false);
-
-  const roleMeta = ROLE_META[activeProfile];
-  const initials = roleMeta.name
-    .split(' ')
-    .slice(0, 2)
-    .map((p) => p[0])
-    .join('');
-
-  const themeOptions: { mode: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { mode: 'light', label: 'Light', icon: 'sunny-outline' },
-    { mode: 'dark', label: 'Dark', icon: 'moon-outline' },
-    { mode: 'system', label: 'Auto', icon: 'phone-portrait-outline' },
-  ];
 
   const handleSwitch = (role: ProfileRole) => {
     setActiveProfile(role);
@@ -137,215 +95,20 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Ambient top tint matched to active role */}
-      <LinearGradient
-        colors={[`${roleMeta.color}33`, 'transparent']}
-        style={[styles.ambientGlow, { height: insets.top + 180 }]}
-        pointerEvents="none"
-      />
-
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={styles.backButton}
-          activeOpacity={0.7}
-        >
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 19 }]} />
-          <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
-        <View style={styles.headerRight} />
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 40 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Identity hero card */}
-        <Animated.View entering={FadeInDown.duration(450)} style={styles.identityCard}>
-          <LinearGradient
-            colors={[`${roleMeta.color}26`, `${roleMeta.color}08`]}
-            style={StyleSheet.absoluteFill}
-          />
-          {roleMeta.avatarSource ? (
-            <Image
-              source={roleMeta.avatarSource}
-              style={[
-                styles.identityAvatarImage,
-                { borderColor: `${roleMeta.color}66` },
-              ]}
-              resizeMode="cover"
-            />
-          ) : (
-            <View
-              style={[
-                styles.identityAvatar,
-                {
-                  backgroundColor: `${roleMeta.color}24`,
-                  borderColor: `${roleMeta.color}66`,
-                },
-              ]}
-            >
-              <Text style={[styles.identityInitials, { color: roleMeta.color }]}>
-                {initials}
-              </Text>
-            </View>
-          )}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.identityName}>{roleMeta.name}</Text>
-            <Text style={styles.identityHandle}>{roleMeta.handle}</Text>
-            <View style={[styles.roleBadge, { borderColor: `${roleMeta.color}80`, backgroundColor: `${roleMeta.color}22` }]}>
-              <Ionicons name={roleMeta.icon} size={11} color={roleMeta.color} />
-              <Text style={[styles.roleBadgeText, { color: roleMeta.color }]}>
-                {roleMeta.label.toUpperCase()}
-              </Text>
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.editBtn}
-            activeOpacity={0.7}
-            onPress={() => router.push('/edit-profile' as any)}
-          >
-            <Ionicons name="pencil" size={14} color="#FFFFFF" />
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Switch Profile — inline pill row */}
-        <Animated.View entering={FadeInDown.delay(80).duration(450)}>
-          <SectionLabel>MODE</SectionLabel>
-          <View style={styles.roleRow}>
-            {ROLES.map((r) => {
-              const meta = ROLE_META[r];
-              const active = r === activeProfile;
-              return (
-                <TouchableOpacity
-                  key={r}
-                  activeOpacity={0.75}
-                  onPress={() => handleSwitch(r)}
-                  style={[
-                    styles.rolePill,
-                    active && {
-                      borderColor: `${meta.color}80`,
-                      backgroundColor: `${meta.color}18`,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={meta.icon}
-                    size={17}
-                    color={active ? meta.color : 'rgba(255,255,255,0.55)'}
-                  />
-                  <Text
-                    style={[
-                      styles.rolePillText,
-                      active && { color: '#FFFFFF', fontWeight: '700' },
-                    ]}
-                  >
-                    {meta.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </Animated.View>
-
-        {/* Preferences */}
-        <Animated.View entering={FadeInDown.delay(140).duration(450)}>
-          <SectionLabel>PREFERENCES</SectionLabel>
-
-          <View style={styles.card}>
-            <View style={styles.appearanceTop}>
-              <View style={[styles.iconBox, { backgroundColor: 'rgba(255,180,0,0.12)' }]}>
-                <Ionicons name={isDark ? 'moon' : 'sunny'} size={17} color="#FFB400" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.rowLabel}>Appearance</Text>
-                <Text style={styles.rowSub}>
-                  {themeMode === 'system'
-                    ? `Auto · ${isDark ? 'Dark' : 'Light'} right now`
-                    : themeMode === 'dark'
-                      ? 'Dark mode'
-                      : 'Light mode'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.themeSegment}>
-              {themeOptions.map((opt) => {
-                const active = themeMode === opt.mode;
-                return (
-                  <TouchableOpacity
-                    key={opt.mode}
-                    activeOpacity={0.7}
-                    onPress={() => setThemeMode(opt.mode)}
-                    style={[
-                      styles.themeSegmentItem,
-                      active && styles.themeSegmentItemActive,
-                    ]}
-                  >
-                    <Ionicons
-                      name={opt.icon}
-                      size={15}
-                      color={active ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
-                    />
-                    <Text
-                      style={[
-                        styles.themeSegmentText,
-                        active && { color: '#FFFFFF', fontWeight: '700' },
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          <View style={styles.card}>
-            <SettingRow
-              icon="notifications-outline"
-              iconBg="rgba(255,111,60,0.15)"
-              iconColor={ACCENT}
-              label="Notifications"
-              sub="Push, email, and in-app alerts"
-              onPress={() => router.push('/notification-settings')}
-            />
-            <Divider />
-            <SettingRow
-              icon="lock-closed-outline"
-              iconBg="rgba(52,199,89,0.12)"
-              iconColor="#34C759"
-              label="Privacy"
-              sub="Who can see your profile and deals"
-              onPress={() => router.push('/privacy-settings')}
-            />
-            <Divider />
-            <SettingRow
-              icon="ban-outline"
-              iconBg="rgba(255,68,68,0.10)"
-              iconColor="#FF4444"
-              label="Blocked Users"
-              sub="Accounts you've hidden"
-              onPress={() => router.push('/blocked-users')}
-            />
-          </View>
-        </Animated.View>
-
         {/* Account */}
         <Animated.View entering={FadeInDown.delay(200).duration(450)}>
           <SectionLabel>ACCOUNT</SectionLabel>
           <View style={styles.card}>
-            <SettingRow
-              icon="person-circle-outline"
-              iconBg="rgba(59,130,246,0.14)"
-              iconColor="#3B82F6"
-              label="Edit profile"
-              sub="Name, bio, photo"
-              onPress={() => router.push('/edit-profile' as any)}
-            />
-            <Divider />
             <SettingRow
               icon="card-outline"
               iconBg="rgba(168,85,247,0.14)"
@@ -366,85 +129,51 @@ export default function SettingsScreen() {
           </View>
         </Animated.View>
 
-        {/* Support */}
-        <Animated.View entering={FadeInDown.delay(260).duration(450)}>
-          <SectionLabel>SUPPORT</SectionLabel>
-          <View style={styles.card}>
-            <SettingRow
-              icon="help-circle-outline"
-              iconBg="rgba(0,198,176,0.14)"
-              iconColor="#00C6B0"
-              label="Help Center"
-              onPress={() => {}}
-            />
-            <Divider />
-            <SettingRow
-              icon="chatbubbles-outline"
-              iconBg="rgba(255,111,60,0.12)"
-              iconColor={ACCENT}
-              label="Contact Proslync"
-              sub="Typical reply under 4 hours"
-              onPress={() => {}}
-            />
-            <Divider />
-            <SettingRow
-              icon="star-outline"
-              iconBg="rgba(245,180,0,0.14)"
-              iconColor="#F5B400"
-              label="Rate Proslync"
-              onPress={() => {}}
-            />
-          </View>
-        </Animated.View>
-
-        {/* Legal */}
-        <Animated.View entering={FadeInDown.delay(320).duration(450)}>
-          <SectionLabel>LEGAL</SectionLabel>
-          <View style={styles.card}>
-            <SettingRow
-              icon="document-text-outline"
-              iconBg="rgba(255,255,255,0.08)"
-              iconColor="rgba(255,255,255,0.9)"
-              label="Terms of Service"
-              onPress={() => {}}
-            />
-            <Divider />
-            <SettingRow
-              icon="shield-outline"
-              iconBg="rgba(255,255,255,0.08)"
-              iconColor="rgba(255,255,255,0.9)"
-              label="Privacy Policy"
-              onPress={() => {}}
-            />
-            <Divider />
-            <SettingRow
-              icon="reader-outline"
-              iconBg="rgba(255,255,255,0.08)"
-              iconColor="rgba(255,255,255,0.9)"
-              label="Open-source licenses"
-              onPress={() => {}}
-            />
-          </View>
-        </Animated.View>
-
-        {/* Log out */}
-        <Animated.View entering={FadeInDown.delay(380).duration(450)}>
-          <TouchableOpacity
-            style={styles.logoutBtn}
-            activeOpacity={0.75}
-            onPress={() => setLogoutConfirmVisible(true)}
-          >
-            <Ionicons name="log-out-outline" size={18} color="#FF4444" />
-            <Text style={styles.logoutText}>Log out</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
         {/* Version */}
         <Animated.View entering={FadeIn.delay(440).duration(450)} style={styles.versionWrap}>
           <Text style={styles.versionText}>Proslync · v1.0.0 (build 24)</Text>
           <Text style={styles.versionSub}>Made in Brooklyn</Text>
         </Animated.View>
       </ScrollView>
+
+      {/* Floating bottom toolbar — back | contact | logout */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: insets.bottom + 90 }]}
+        pointerEvents="none"
+      />
+      <View style={[styles.bottomToolbar, { bottom: insets.bottom + 10 }]}>
+        <Pressable
+          style={styles.toolbarCircle}
+          onPress={() => router.back()}
+          accessibilityLabel="Back"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Ionicons name="chevron-back" size={20} color="#FFF" />
+        </Pressable>
+
+        <Pressable
+          style={styles.toolbarPill}
+          onPress={() => {}}
+          accessibilityLabel="Contact Proslync"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Text style={styles.toolbarPillText}>Contact Proslync</Text>
+        </Pressable>
+
+        <Pressable
+          style={styles.toolbarCircle}
+          onPress={() => setLogoutConfirmVisible(true)}
+          accessibilityLabel="Log out"
+          accessibilityRole="button"
+        >
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Ionicons name="log-out-outline" size={20} color="#FF4444" />
+        </Pressable>
+      </View>
 
       {/* Switch profile modal (still accessible if needed, but pills are primary) */}
       <Modal
@@ -593,83 +322,19 @@ function Divider() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000000' },
-  ambientGlow: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 0 },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: 12,
     paddingBottom: 10,
     zIndex: 2,
   },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
   headerTitle: { fontSize: 18, color: '#FFFFFF', fontWeight: '700' },
-  headerRight: { width: 38 },
 
   scrollView: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 8 },
-
-  // Identity hero
-  identityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    padding: 16,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    overflow: 'hidden',
-    marginBottom: 20,
-  },
-  identityAvatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  identityAvatarImage: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 2,
-    backgroundColor: '#1a1c22',
-  },
-  identityInitials: { fontSize: 18, fontWeight: '800' },
-  identityName: { fontSize: 16, color: '#FFFFFF', fontWeight: '700' },
-  identityHandle: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
-  roleBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 7,
-    borderWidth: 1,
-    alignSelf: 'flex-start',
-    marginTop: 8,
-  },
-  roleBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.6 },
-  editBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
   sectionLabel: {
     fontSize: 11,
@@ -678,29 +343,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 10,
     marginLeft: 4,
-  },
-
-  // Role pills row
-  roleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  rolePill: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    alignItems: 'center',
-    gap: 5,
-  },
-  rolePillText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.55)',
-    fontWeight: '500',
   },
 
   // Generic card
@@ -741,57 +383,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     marginLeft: 62,
   },
-
-  // Appearance (inline theme segment)
-  appearanceTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 10,
-  },
-  themeSegment: {
-    flexDirection: 'row',
-    gap: 4,
-    padding: 4,
-    marginHorizontal: 14,
-    marginBottom: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  themeSegmentItem: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 8,
-    borderRadius: 9,
-  },
-  themeSegmentItemActive: {
-    backgroundColor: 'rgba(255,255,255,0.09)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  themeSegmentText: { fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: '500' },
-
-  // Logout
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,68,68,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,68,68,0.3)',
-    marginTop: 6,
-  },
-  logoutText: { color: '#FF4444', fontSize: 14, fontWeight: '700' },
 
   versionWrap: { alignItems: 'center', marginTop: 22 },
   versionText: { color: 'rgba(255,255,255,0.35)', fontSize: 11, fontWeight: '600' },
@@ -901,4 +492,41 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,68,68,0.35)',
   },
   confirmBtnText: { fontSize: 14, color: '#FFFFFF', fontWeight: '600' },
+
+  // Floating bottom toolbar
+  bottomToolbar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 100,
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 99,
+  },
+  toolbarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarPill: {
+    flex: 1,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
 });
