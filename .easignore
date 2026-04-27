@@ -1,0 +1,29 @@
+# EAS Build ignore — overrides .gitignore for the upload tarball.
+# Asset files (PNG/JPG/etc.) are tracked in git but globally ignored in
+# .gitignore, which causes EAS to drop them from its upload tarball and
+# fail prebuild ("ENOENT: ./assets/images/icon.png"). This file fixes
+# that by excluding only the heavy/regenerable stuff, leaving assets in.
+
+node_modules/
+ios/
+android/
+backend/
+dist/
+build/
+
+# Expo
+.expo/
+expo-env.d.ts
+
+# Environment
+.env
+.env.local
+
+# OS / Editor junk
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Lock file
+package-lock.json
