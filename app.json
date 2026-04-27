@@ -81,7 +81,6 @@
       [
         "@stripe/stripe-react-native",
         {
-          "merchantIdentifier": "merchant.statusdigitalinc.status",
           "enableGooglePay": true
         }
       ],
