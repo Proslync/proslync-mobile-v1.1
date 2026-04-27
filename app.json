@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "Proslync",
-    "slug": "status",
+    "slug": "proslync",
+    "owner": "arshiar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -114,10 +115,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "b70b86f6-b123-4736-840a-5a427656be43"
-      }
+      "router": {}
     }
   }
 }
