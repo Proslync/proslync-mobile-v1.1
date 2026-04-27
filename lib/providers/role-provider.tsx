@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as React from 'react';
 
-export type ProfileRole = 'player' | 'coach' | 'scorekeeper' | 'brand' | 'fan';
+export type ProfileRole = 'player' | 'coach' | 'scorekeeper' | 'brand' | 'fan' | 'school';
 
 const STORAGE_KEY = '@proslync/profile-role';
 
@@ -21,7 +21,7 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
-        if (stored && ['player', 'coach', 'scorekeeper', 'brand', 'fan'].includes(stored)) {
+        if (stored && ['player', 'coach', 'scorekeeper', 'brand', 'fan', 'school'].includes(stored)) {
           setRoleState(stored as ProfileRole);
         }
       } catch {

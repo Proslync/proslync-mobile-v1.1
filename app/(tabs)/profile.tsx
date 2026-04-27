@@ -17,6 +17,7 @@ import CoachProfile from "@/components/coach/coach-profile";
 import ScorekeeperProfile from "@/components/scorekeeper/scorekeeper-profile";
 import BrandProfile from "@/components/brand/brand-profile";
 import FanProfile from "@/components/fan/fan-profile";
+import SchoolProfile from "@/components/school/school-profile";
 import { RoleSwitcherSheet } from "@/components/shared/role-switcher-menu";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
@@ -873,6 +874,7 @@ export default function ProfileScreen() {
   if (role === 'scorekeeper') return <ScorekeeperProfile />;
   if (role === 'brand') return <BrandProfile />;
   if (role === 'fan') return <FanProfile />;
+  if (role === 'school') return <SchoolProfile />;
   return <PlayerProfileScreen />;
 }
 
@@ -1308,9 +1310,9 @@ function PlayerProfileScreen() {
 
         {/* Bottom fade — gives the toolbar glass something to refract */}
         <LinearGradient
-          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+          colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
           locations={[0, 0.5, 1]}
-          style={[s.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+          style={[s.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
           pointerEvents="none"
         />
 
@@ -1398,7 +1400,7 @@ const s = StyleSheet.create({
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   tabActive: { borderBottomColor: '#FF6F3C' },
   tabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)', letterSpacing: -0.1 },
-  tabLabelActive: { color: '#FFF', fontWeight: '700' },
+  tabLabelActive: { color: '#FF6F3C', fontWeight: '700' },
   metaLine: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.55)', marginTop: 4, letterSpacing: -0.1, lineHeight: 18 },
   metaLinePrimary: { color: '#FFF', fontWeight: '700' },
   editableField: {

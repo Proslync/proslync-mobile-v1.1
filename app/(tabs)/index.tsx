@@ -523,7 +523,7 @@ const CARD_PAD = 14;
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, zIndex: 10 },
+  bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 260, zIndex: 10 },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 130, zIndex: 5 },
   listContent: { paddingTop: 60, paddingBottom: 160, paddingHorizontal: 14 },
   listHeader: { paddingHorizontal: 2, paddingBottom: 14 },

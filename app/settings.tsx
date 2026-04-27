@@ -73,9 +73,17 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
     name: 'Marcus Delgado',
     handle: '@marcdelgado',
   },
+  school: {
+    label: 'School',
+    description: 'Athletics dept · roster · compliance',
+    icon: 'school-outline',
+    color: '#3B82F6',
+    name: 'Syracuse University',
+    handle: '@syracuse',
+  },
 };
 
-const ROLES: ProfileRole[] = ['player', 'coach', 'scorekeeper', 'brand', 'fan'];
+const ROLES: ProfileRole[] = ['player', 'coach', 'scorekeeper', 'brand', 'fan', 'school'];
 
 export default function SettingsScreen() {
   const router = useRouter();

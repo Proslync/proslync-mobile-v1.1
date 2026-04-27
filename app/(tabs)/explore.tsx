@@ -30,7 +30,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { LiquidGlassView } from "@callstack/liquid-glass";
-import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { GlassView } from "expo-glass-effect";
 import { liquidGlass, glassSurfaceTint } from "@/constants/glass/liquid-glass";
 import {
@@ -620,6 +620,20 @@ export default function MessagesScreen() {
   const [activeTab, setActiveTab] = useState<'Messages' | 'Notifications' | 'Channels'>(
     tabParam === 'channels' ? 'Channels' : 'Messages',
   );
+  const activeBottomIndex = activeTab === 'Notifications' ? 1 : 0;
+  const bottomPillWidth = useSharedValue(0);
+  const animatedBottomIndex = useSharedValue(activeBottomIndex);
+  React.useEffect(() => {
+    animatedBottomIndex.value = withTiming(activeBottomIndex, { duration: 180 });
+  }, [activeBottomIndex, animatedBottomIndex]);
+  const bottomKnobStyle = useAnimatedStyle(() => {
+    const segW = bottomPillWidth.value / 2;
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedBottomIndex.value * segW + inset }],
+    };
+  });
   // Sync to param when it changes (e.g. navigated from create-channel)
   React.useEffect(() => {
     if (tabParam === 'channels') setActiveTab('Channels');
@@ -970,6 +984,14 @@ export default function MessagesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: '#000' }]}>
 
+      {/* Bottom darken gradient (under tab bar + bottom row) */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={styles.bottomDimGradient}
+        pointerEvents="none"
+      />
+
       {/* Floating bottom bar — search · split pill · compose */}
       <View style={styles.topBar}>
         <Pressable
@@ -985,8 +1007,14 @@ export default function MessagesScreen() {
           <Ionicons name="search-outline" size={22} color="#FFF" />
         </Pressable>
 
-        <View style={styles.toolbarPill}>
+        <View
+          style={styles.toolbarPill}
+          onLayout={(e) => {
+            bottomPillWidth.value = e.nativeEvent.layout.width;
+          }}
+        >
           <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          <Animated.View style={[styles.bottomKnob, bottomKnobStyle]} pointerEvents="none" />
           <Pressable
             style={styles.pillSegment}
             onPress={() => setActiveTab('Messages')}
@@ -1486,13 +1514,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pillSegmentText: {
-    color: 'rgba(255,255,255,0.5)',
+    color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
   },
   pillSegmentTextActive: {
-    color: '#FFF',
+    color: '#FF6F3C',
     fontWeight: '700',
+  },
+  bottomKnob: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    left: 0,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  bottomDimGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 260,
+    zIndex: 99,
   },
   // Profile-style header
   headerScrollFixed: {

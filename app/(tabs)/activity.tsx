@@ -16,6 +16,7 @@ import { CoachView } from '@/components/coach/coach-view';
 import { ScorekeeperView } from '@/components/scorekeeper/scorekeeper-view';
 import { BrandView } from '@/components/brand/brand-view';
 import { FanView } from '@/components/fan/fan-view';
+import { SchoolView } from '@/components/school/school-view';
 import { UserRole } from '@/lib/types/auth.types';
 import { useMembershipCard } from '@/hooks/use-membership-card';
 import { useMyVenues } from '@/hooks/use-venues-query';
@@ -41,7 +42,6 @@ import Animated, {
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
@@ -300,56 +300,95 @@ function BrandBadge({ color, initial, size = 36 }: { color: string; initial: str
 
 // ── PERSONAL ── Stats tab ──
 function StatsTabContent() {
+  const [subTab, setSubTab] = React.useState<'stats' | 'log' | 'peers'>('stats');
+  const SUB_TABS: { key: 'stats' | 'log' | 'peers'; label: string }[] = [
+    { key: 'stats', label: 'Stats' },
+    { key: 'log', label: 'Game Log' },
+    { key: 'peers', label: 'vs ACC' },
+  ];
+
   return (
     <View style={{ gap: 16 }}>
-      <SectionHeader label="SEASON AVERAGES" accent="#FF6F3C" />
-      <View style={tabStyles.statGrid}>
-        <StatTile value={SEASON_AVG.ppg.toFixed(1)} label="PTS" big />
-        <StatTile value={SEASON_AVG.rpg.toFixed(1)} label="REB" />
-        <StatTile value={SEASON_AVG.apg.toFixed(1)} label="AST" />
-        <StatTile value={SEASON_AVG.spg.toFixed(1)} label="STL" />
-        <StatTile value={`${SEASON_AVG.fgPct.toFixed(1)}%`} label="FG" />
-        <StatTile value={`${SEASON_AVG.threePct.toFixed(1)}%`} label="3P" />
-        <StatTile value={`${SEASON_AVG.ftPct.toFixed(1)}%`} label="FT" />
-        <StatTile value={SEASON_AVG.mpg.toFixed(1)} label="MIN" />
+      <View style={tabStyles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <SectionHeader label="GAME LOG" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        {GAME_LOG.map((g, i) => (
-          <View key={g.id} style={[tabStyles.logRow, i !== GAME_LOG.length - 1 && tabStyles.logRowDivider]}>
-            <View style={{ flex: 1 }}>
-              <View style={tabStyles.logRowTop}>
-                <Text style={tabStyles.logOpponent}>{g.opponent}</Text>
-                <Text style={[tabStyles.logResult, { color: g.result.startsWith('W') ? '#34C759' : '#FF4444' }]}>{g.result}</Text>
+      {subTab === 'stats' && (
+        <>
+          <SectionHeader label="SEASON AVERAGES" accent="#FF6F3C" />
+          <View style={tabStyles.statGrid}>
+            <StatTile value={SEASON_AVG.ppg.toFixed(1)} label="PTS" big />
+            <StatTile value={SEASON_AVG.rpg.toFixed(1)} label="REB" />
+            <StatTile value={SEASON_AVG.apg.toFixed(1)} label="AST" />
+            <StatTile value={SEASON_AVG.spg.toFixed(1)} label="STL" />
+            <StatTile value={`${SEASON_AVG.fgPct.toFixed(1)}%`} label="FG" />
+            <StatTile value={`${SEASON_AVG.threePct.toFixed(1)}%`} label="3P" />
+            <StatTile value={`${SEASON_AVG.ftPct.toFixed(1)}%`} label="FT" />
+            <StatTile value={SEASON_AVG.mpg.toFixed(1)} label="MIN" />
+          </View>
+        </>
+      )}
+
+      {subTab === 'log' && (
+        <>
+          <SectionHeader label="GAME LOG" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            {GAME_LOG.map((g, i) => (
+              <View key={g.id} style={[tabStyles.logRow, i !== GAME_LOG.length - 1 && tabStyles.logRowDivider]}>
+                <View style={{ flex: 1 }}>
+                  <View style={tabStyles.logRowTop}>
+                    <Text style={tabStyles.logOpponent}>{g.opponent}</Text>
+                    <Text style={[tabStyles.logResult, { color: g.result.startsWith('W') ? '#34C759' : '#FF4444' }]}>{g.result}</Text>
+                  </View>
+                  <Text style={tabStyles.logLine}>{g.line}</Text>
+                </View>
+                <Text style={tabStyles.logDate}>{g.date}</Text>
               </View>
-              <Text style={tabStyles.logLine}>{g.line}</Text>
-            </View>
-            <Text style={tabStyles.logDate}>{g.date}</Text>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
 
-      <SectionHeader label="VS ACC FRESHMEN GUARDS" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        <View style={tabStyles.peerHeader}>
-          <Text style={[tabStyles.peerCell, tabStyles.peerHead, { flex: 2, textAlign: 'left' }]}>STAT</Text>
-          <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>YOU</Text>
-          <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>AVG</Text>
-          <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>BEST</Text>
-        </View>
-        {PEER_COMP.map((s, i) => (
-          <View key={s.label} style={[tabStyles.peerRow, i !== PEER_COMP.length - 1 && tabStyles.logRowDivider]}>
-            <View style={{ flex: 2 }}>
-              <Text style={tabStyles.peerLabel}>{s.label}</Text>
-              <Text style={[tabStyles.peerDelta, { color: s.positive ? '#34C759' : 'rgba(255,255,255,0.55)' }]}>{s.delta} vs avg</Text>
+      {subTab === 'peers' && (
+        <>
+          <SectionHeader label="VS ACC FRESHMEN GUARDS" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            <View style={tabStyles.peerHeader}>
+              <Text style={[tabStyles.peerCell, tabStyles.peerHead, { flex: 2, textAlign: 'left' }]}>STAT</Text>
+              <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>YOU</Text>
+              <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>AVG</Text>
+              <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>BEST</Text>
             </View>
-            <Text style={[tabStyles.peerCell, tabStyles.peerValSelf]}>{s.you}</Text>
-            <Text style={tabStyles.peerCell}>{s.avg}</Text>
-            <Text style={tabStyles.peerCell}>{s.best}</Text>
+            {PEER_COMP.map((s, i) => (
+              <View key={s.label} style={[tabStyles.peerRow, i !== PEER_COMP.length - 1 && tabStyles.logRowDivider]}>
+                <View style={{ flex: 2 }}>
+                  <Text style={tabStyles.peerLabel}>{s.label}</Text>
+                  <Text style={[tabStyles.peerDelta, { color: s.positive ? '#34C759' : 'rgba(255,255,255,0.55)' }]}>{s.delta} vs avg</Text>
+                </View>
+                <Text style={[tabStyles.peerCell, tabStyles.peerValSelf]}>{s.you}</Text>
+                <Text style={tabStyles.peerCell}>{s.avg}</Text>
+                <Text style={tabStyles.peerCell}>{s.best}</Text>
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
     </View>
   );
 }
@@ -365,86 +404,157 @@ function StatTile({ value, label, big }: { value: string; label: string; big?: b
 
 // ── PERSONAL ── Team tab ──
 function TeamTabContent() {
+  const [subTab, setSubTab] = React.useState<'record' | 'staff' | 'roster'>('record');
+  const SUB_TABS: { key: 'record' | 'staff' | 'roster'; label: string }[] = [
+    { key: 'record', label: 'Record' },
+    { key: 'staff', label: 'Staff' },
+    { key: 'roster', label: 'Roster' },
+  ];
+
   return (
     <View style={{ gap: 16 }}>
-      <View style={[tabStyles.card, { padding: 16, gap: 4 }]}>
-        <Text style={tabStyles.teamSummaryLabel}>RECORD</Text>
-        <Text style={tabStyles.teamSummaryBig}>18–8  ·  10–4 ACC</Text>
-        <Text style={tabStyles.teamSummarySub}>T-4th ACC · Kenpom #31 · NET #28</Text>
+      <View style={tabStyles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <SectionHeader label="COACHING STAFF" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        {COACHING_STAFF.map((m, i) => (
-          <View key={m.id} style={[tabStyles.memberRow, i !== COACHING_STAFF.length - 1 && tabStyles.logRowDivider]}>
-            <BrandBadge color={m.color} initial={m.initial} size={38} />
-            <View style={{ flex: 1 }}>
-              <Text style={tabStyles.memberName}>{m.name}</Text>
-              <Text style={tabStyles.memberRole}>{m.role}{m.tag ? ` · ${m.tag}` : ''}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
-          </View>
-        ))}
-      </View>
+      {subTab === 'record' && (
+        <View style={[tabStyles.card, { padding: 16, gap: 4 }]}>
+          <Text style={tabStyles.teamSummaryLabel}>RECORD</Text>
+          <Text style={tabStyles.teamSummaryBig}>18–8  ·  10–4 ACC</Text>
+          <Text style={tabStyles.teamSummarySub}>T-4th ACC · Kenpom #31 · NET #28</Text>
+        </View>
+      )}
 
-      <SectionHeader label="ROSTER" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        {ROSTER.map((m, i) => (
-          <View key={m.id} style={[tabStyles.memberRow, i !== ROSTER.length - 1 && tabStyles.logRowDivider]}>
-            <BrandBadge color={m.color} initial={m.initial} size={38} />
-            <View style={{ flex: 1 }}>
-              <Text style={tabStyles.memberName}>{m.name}</Text>
-              <Text style={tabStyles.memberRole}>{m.role}</Text>
-            </View>
-            {m.tag && <Text style={tabStyles.memberJersey}>{m.tag}</Text>}
+      {subTab === 'staff' && (
+        <>
+          <SectionHeader label="COACHING STAFF" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            {COACHING_STAFF.map((m, i) => (
+              <View key={m.id} style={[tabStyles.memberRow, i !== COACHING_STAFF.length - 1 && tabStyles.logRowDivider]}>
+                <BrandBadge color={m.color} initial={m.initial} size={38} />
+                <View style={{ flex: 1 }}>
+                  <Text style={tabStyles.memberName}>{m.name}</Text>
+                  <Text style={tabStyles.memberRole}>{m.role}{m.tag ? ` · ${m.tag}` : ''}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
+
+      {subTab === 'roster' && (
+        <>
+          <SectionHeader label="ROSTER" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            {ROSTER.map((m, i) => (
+              <View key={m.id} style={[tabStyles.memberRow, i !== ROSTER.length - 1 && tabStyles.logRowDivider]}>
+                <BrandBadge color={m.color} initial={m.initial} size={38} />
+                <View style={{ flex: 1 }}>
+                  <Text style={tabStyles.memberName}>{m.name}</Text>
+                  <Text style={tabStyles.memberRole}>{m.role}</Text>
+                </View>
+                {m.tag && <Text style={tabStyles.memberJersey}>{m.tag}</Text>}
+              </View>
+            ))}
+          </View>
+        </>
+      )}
     </View>
   );
 }
 
 // ── PERSONAL ── Schedule tab ──
 function ScheduleTabContent() {
+  const [subTab, setSubTab] = React.useState<'upcoming' | 'recent'>('upcoming');
+  const SUB_TABS: { key: 'upcoming' | 'recent'; label: string }[] = [
+    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'recent', label: 'Recent' },
+  ];
   const upcoming = SCHEDULE.filter((g) => g.status === 'upcoming');
   const past = SCHEDULE.filter((g) => g.status === 'final');
+
   return (
     <View style={{ gap: 16 }}>
-      <SectionHeader label="UPCOMING" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        {upcoming.map((g, i) => (
-          <View key={g.id} style={[tabStyles.scheduleRow, i !== upcoming.length - 1 && tabStyles.logRowDivider]}>
-            <View style={tabStyles.scheduleDateCol}>
-              <Text style={tabStyles.scheduleDay}>{g.date.split(' · ')[0]}</Text>
-              <Text style={tabStyles.scheduleDate}>{g.date.split(' · ')[1]}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={tabStyles.scheduleOpponent}>{g.home ? 'vs' : '@'} {g.opponent}</Text>
-              <Text style={tabStyles.scheduleVenue}>{g.venue}</Text>
-            </View>
-            <View style={[tabStyles.schedulePill, g.home ? tabStyles.pillHome : tabStyles.pillAway]}>
-              <Text style={[tabStyles.schedulePillText, { color: g.home ? '#FF6F3C' : 'rgba(255,255,255,0.85)' }]}>{g.home ? 'HOME' : 'AWAY'}</Text>
-            </View>
-          </View>
-        ))}
+      <View style={tabStyles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <SectionHeader label="RECENT RESULTS" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        {past.map((g, i) => (
-          <View key={g.id} style={[tabStyles.scheduleRow, i !== past.length - 1 && tabStyles.logRowDivider]}>
-            <View style={tabStyles.scheduleDateCol}>
-              <Text style={tabStyles.scheduleDay}>{g.date.split(' · ')[0]}</Text>
-              <Text style={tabStyles.scheduleDate}>{g.date.split(' · ')[1]}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={tabStyles.scheduleOpponent}>{g.home ? 'vs' : '@'} {g.opponent}</Text>
-              <Text style={tabStyles.scheduleVenue}>{g.venue}</Text>
-            </View>
-            <Text style={[tabStyles.scheduleResult, { color: g.result?.startsWith('W') ? '#34C759' : '#FF4444' }]}>{g.result}</Text>
+      {subTab === 'upcoming' && (
+        <>
+          <SectionHeader label="UPCOMING" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            {upcoming.map((g, i) => (
+              <View key={g.id} style={[tabStyles.scheduleRow, i !== upcoming.length - 1 && tabStyles.logRowDivider]}>
+                <View style={tabStyles.scheduleDateCol}>
+                  <Text style={tabStyles.scheduleDay}>{g.date.split(' · ')[0]}</Text>
+                  <Text style={tabStyles.scheduleDate}>{g.date.split(' · ')[1]}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={tabStyles.scheduleOpponent}>{g.home ? 'vs' : '@'} {g.opponent}</Text>
+                  <Text style={tabStyles.scheduleVenue}>{g.venue}</Text>
+                </View>
+                <View style={[tabStyles.schedulePill, g.home ? tabStyles.pillHome : tabStyles.pillAway]}>
+                  <Text style={[tabStyles.schedulePillText, { color: g.home ? '#FF6F3C' : 'rgba(255,255,255,0.85)' }]}>{g.home ? 'HOME' : 'AWAY'}</Text>
+                </View>
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
+
+      {subTab === 'recent' && (
+        <>
+          <SectionHeader label="RECENT RESULTS" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            {past.map((g, i) => (
+              <View key={g.id} style={[tabStyles.scheduleRow, i !== past.length - 1 && tabStyles.logRowDivider]}>
+                <View style={tabStyles.scheduleDateCol}>
+                  <Text style={tabStyles.scheduleDay}>{g.date.split(' · ')[0]}</Text>
+                  <Text style={tabStyles.scheduleDate}>{g.date.split(' · ')[1]}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={tabStyles.scheduleOpponent}>{g.home ? 'vs' : '@'} {g.opponent}</Text>
+                  <Text style={tabStyles.scheduleVenue}>{g.venue}</Text>
+                </View>
+                <Text style={[tabStyles.scheduleResult, { color: g.result?.startsWith('W') ? '#34C759' : '#FF4444' }]}>{g.result}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -1303,6 +1413,7 @@ export default function WalletScreen() {
   if (role === 'scorekeeper') return <ScorekeeperView />;
   if (role === 'brand') return <BrandView />;
   if (role === 'fan') return <FanView />;
+  if (role === 'school') return <SchoolView />;
   return <PlayerActivityScreen />;
 }
 
@@ -1336,6 +1447,20 @@ function PlayerActivityScreen() {
           : personalTabs) as readonly string[],
     [isProfessionalMode, authUser?.role],
   );
+  const activeTabIndex = Math.max(0, tabs.indexOf(activeTab));
+  const tabPillWidth = useSharedValue(0);
+  const animatedTabIndex = useSharedValue(activeTabIndex);
+  React.useEffect(() => {
+    animatedTabIndex.value = withTiming(activeTabIndex, { duration: 180 });
+  }, [activeTabIndex, animatedTabIndex]);
+  const tabKnobStyle = useAnimatedStyle(() => {
+    const segW = tabPillWidth.value / Math.max(tabs.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedTabIndex.value * segW + inset }],
+    };
+  });
 
   const { data: membershipCard, isLoading: isLoadingCard } = useMembershipCard(
     !!user?.isProfileComplete
@@ -1450,13 +1575,19 @@ function PlayerActivityScreen() {
           <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
         </Pressable>
 
-        <View style={styles.tabSegmentedPill}>
+        <View
+          style={styles.tabSegmentedPill}
+          onLayout={(e) => {
+            tabPillWidth.value = e.nativeEvent.layout.width;
+          }}
+        >
           <View style={styles.glassLayer} pointerEvents="none">
             <GlassView
               glassEffectStyle="regular"
               style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
             />
           </View>
+          <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none" />
           {tabs.map((label) => {
             const isActive = activeTab === label;
             return (
@@ -1528,9 +1659,9 @@ function PlayerActivityScreen() {
 
       {/* Floating bottom toolbar — back | dashboard | live */}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
-        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
         pointerEvents="none"
       />
     </View>
@@ -1581,6 +1712,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabKnob: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    left: 0,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
   headerPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1614,10 +1753,11 @@ const styles = StyleSheet.create({
   tabPillText: {
     fontSize: 14,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.55)',
+    color: '#FFF',
   },
   tabPillTextActive: {
-    color: '#FFF',
+    color: '#FF6F3C',
+    fontWeight: '700',
   },
   emptyState: {
     flex: 1,
@@ -1902,6 +2042,13 @@ const tabStyles = StyleSheet.create({
   walletBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.15)', backgroundColor: 'rgba(255,255,255,0.08)' },
   walletBtnPrimary: { backgroundColor: '#FFF', borderColor: '#FFF' },
   walletBtnText: { fontSize: 12, fontWeight: '800', color: '#FFF', letterSpacing: -0.1 },
+
+  // Sub-tabs (Stats / Game Log / vs ACC) — profile-style underline
+  subTabsRow: { flexDirection: 'row', paddingHorizontal: 4 },
+  subTab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  subTabActive: { borderBottomColor: '#FF6F3C' },
+  subTabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)', letterSpacing: -0.1 },
+  subTabLabelActive: { color: '#FFF', fontWeight: '700' },
 });
 
 const dashStyles = StyleSheet.create({

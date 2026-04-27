@@ -7,6 +7,11 @@ import {
   Text,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom
 
@@ -25,6 +30,21 @@ export function FeedNavBar({
   onSearchPress,
   onSharePress,
 }: FeedNavBarProps) {
+  const activeIndex = Math.max(0, FILTERS.indexOf(activeFilter as (typeof FILTERS)[number]));
+  const pillWidth = useSharedValue(0);
+  const animatedIndex = useSharedValue(activeIndex);
+  React.useEffect(() => {
+    animatedIndex.value = withTiming(activeIndex, { duration: 180 });
+  }, [activeIndex, animatedIndex]);
+  const knobStyle = useAnimatedStyle(() => {
+    const segW = pillWidth.value / Math.max(FILTERS.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedIndex.value * segW + inset }],
+    };
+  });
+
   return (
     <View style={styles.bottomBar}>
       <Pressable
@@ -40,11 +60,17 @@ export function FeedNavBar({
         <Ionicons name="search-outline" size={22} color="#FFF" />
       </Pressable>
 
-      <View style={styles.pill}>
+      <View
+        style={styles.pill}
+        onLayout={(e) => {
+          pillWidth.value = e.nativeEvent.layout.width;
+        }}
+      >
         <GlassView
           glassEffectStyle="regular"
           style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
         />
+        <Animated.View style={[styles.knob, knobStyle]} pointerEvents="none" />
         {FILTERS.map((filter) => {
           const isActive = filter === activeFilter;
           return (
@@ -120,13 +146,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  knob: {
+    position: "absolute",
+    top: 4,
+    bottom: 4,
+    left: 0,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
   segmentText: {
-    color: "rgba(255,255,255,0.5)",
+    color: "#FFF",
     fontSize: 14,
     fontWeight: "600",
   },
   segmentTextActive: {
-    color: "#FFF",
+    color: "#FF6F3C",
     fontWeight: "700",
   },
 });

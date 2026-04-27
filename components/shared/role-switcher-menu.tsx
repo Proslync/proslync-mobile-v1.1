@@ -57,6 +57,13 @@ const ROLES: {
     icon: 'heart-outline',
     color: '#A855F7',
   },
+  {
+    role: 'school',
+    label: 'School',
+    description: 'Athletics dept · roster · compliance',
+    icon: 'school-outline',
+    color: '#3B82F6',
+  },
 ];
 
 export function RoleSwitcherSheet({

@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { GlassView } from 'expo-glass-effect';
 import * as React from 'react';
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,9 +16,13 @@ import Animated, {
   FadeInDown,
   FadeInUp,
   LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
+import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 
 import {
   SK_ASSIGNMENTS,
@@ -37,10 +42,10 @@ const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edg
 type TabKey = 'scoreboard' | 'games' | 'roster' | 'log';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'scoreboard', label: 'Scoreboard' },
-  { key: 'games', label: 'My Games' },
-  { key: 'roster', label: 'Roster & Fouls' },
-  { key: 'log', label: 'Play Log' },
+  { key: 'scoreboard', label: 'Score' },
+  { key: 'games', label: 'Games' },
+  { key: 'roster', label: 'Roster' },
+  { key: 'log', label: 'Log' },
 ];
 
 function formatClock(total: number) {
@@ -54,6 +59,22 @@ export function ScorekeeperView() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const [activeTab, setActiveTab] = React.useState<TabKey>('scoreboard');
+  const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
+
+  const activeTabIndex = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
+  const tabPillWidth = useSharedValue(0);
+  const animatedTabIndex = useSharedValue(activeTabIndex);
+  React.useEffect(() => {
+    animatedTabIndex.value = withTiming(activeTabIndex, { duration: 180 });
+  }, [activeTabIndex, animatedTabIndex]);
+  const tabKnobStyle = useAnimatedStyle(() => {
+    const segW = tabPillWidth.value / Math.max(TABS.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedTabIndex.value * segW + inset }],
+    };
+  });
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 4 }]}>
@@ -71,54 +92,65 @@ export function ScorekeeperView() {
         </View>
       </View>
 
-      {/* Tab row */}
-      <View style={styles.tabRowWrap}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabRow}
-        >
-          {TABS.map((tab) => {
-            const active = activeTab === tab.key;
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                activeOpacity={0.7}
-                onPress={() => setActiveTab(tab.key)}
-                style={[styles.tabPill, active && styles.tabPillActive]}
-              >
-                <Text style={[styles.tabPillText, active && styles.tabPillTextActive]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-
       {activeTab === 'scoreboard' && <ScoreboardTab insets={insets.bottom} />}
       {activeTab === 'games' && <GamesTab insets={insets.bottom} />}
       {activeTab === 'roster' && <RosterTab insets={insets.bottom} />}
       {activeTab === 'log' && <LogTab insets={insets.bottom} />}
 
-      {/* Floating bottom toolbar — back | dashboard | live */}
+      {/* Bottom darken gradient */}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
-        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
         pointerEvents="none"
       />
-      <View style={[styles.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
+
+      {/* Floating bottom row — profile pill + segmented tabs */}
+      <View style={[styles.headerScrollFixed, styles.headerScrollContent]}>
         <Pressable
-          style={styles.toolbarPill}
-          onPress={() => {}}
-          accessibilityLabel="Dashboard"
+          style={styles.headerPill}
+          onPress={() => setRoleSheetVisible(true)}
+          accessibilityLabel="Switch role"
           accessibilityRole="button"
         >
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          <Text style={styles.toolbarPillText}>Dashboard</Text>
+          <View style={styles.glassLayer} pointerEvents="none">
+            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          </View>
+          <Image source={require('@/assets/images/default-avatar.png')} style={styles.headerPillAvatar} />
+          <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
         </Pressable>
+
+        <View
+          style={styles.tabSegmentedPill}
+          onLayout={(e) => {
+            tabPillWidth.value = e.nativeEvent.layout.width;
+          }}
+        >
+          <View style={styles.glassLayer} pointerEvents="none">
+            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          </View>
+          <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none" />
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <Pressable
+                key={tab.key}
+                style={styles.tabSegment}
+                onPress={() => setActiveTab(tab.key)}
+                accessibilityLabel={`${tab.label} tab`}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+              >
+                <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>
+                  {tab.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
       </View>
+
+      <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
     </View>
   );
 }
@@ -705,12 +737,70 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,111,60,0.4)',
   },
   tabPillText: {
-    fontSize: 13,
-    lineHeight: 16,
-    color: 'rgba(255,255,255,0.55)',
+    fontSize: 14,
+    color: '#FFF',
     fontWeight: '500',
   },
-  tabPillTextActive: { color: '#FFFFFF', fontWeight: '700' },
+  tabPillTextActive: { color: '#FF6F3C', fontWeight: '700' },
+
+  // Floating bottom row — profile pill + segmented tabs (matches player activity)
+  headerScrollFixed: {
+    position: 'absolute',
+    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  headerScrollContent: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 8,
+    alignItems: 'center',
+  },
+  headerPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    borderRadius: 23,
+    paddingLeft: 3,
+    paddingRight: 12,
+    overflow: 'hidden',
+  },
+  headerPillAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  headerPillIcon: {
+    marginLeft: 8,
+  },
+  glassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    borderRadius: 23,
+  },
+  tabSegmentedPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
+  tabSegment: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabKnob: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    left: 0,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
 

@@ -159,7 +159,7 @@ export default function CoachProfile() {
         <View
           style={[
             styles.bannerWrap,
-            { height: insets.top + 190, backgroundColor: '#E7D8AC' },
+            { height: insets.top + 140, backgroundColor: '#E7D8AC' },
           ]}
           pointerEvents="none"
         >
@@ -455,7 +455,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    marginTop: -120,
+    marginTop: -140,
+    marginBottom: 5,
   },
   avatar: {
     width: 86,
