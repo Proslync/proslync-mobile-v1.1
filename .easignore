@@ -25,5 +25,5 @@ expo-env.d.ts
 *.swo
 *~
 
-# Lock file
-package-lock.json
+# package-lock.json IS uploaded so EAS resolves the same versions we have
+# locally (Reanimated 4 needs an exact-match worklets version).
