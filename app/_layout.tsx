@@ -41,6 +41,7 @@ import { ChannelsSocketProvider } from "@/lib/providers/channels-socket-provider
 import { BarSocketProvider } from "@/lib/providers/bar-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
 import { RoleProvider } from "@/lib/providers/role-provider";
+import { RootErrorBoundary } from "@/components/shared/error-boundary";
 
 SplashScreen.preventAutoHideAsync();
 SystemUI.setBackgroundColorAsync("#000000");
@@ -235,6 +236,7 @@ export default function RootLayout() {
   }
 
   return (
+    <RootErrorBoundary>
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider defaultTheme="light">
         <QueryProvider>
@@ -268,5 +270,6 @@ export default function RootLayout() {
         </QueryProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
+    </RootErrorBoundary>
   );
 }

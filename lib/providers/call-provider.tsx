@@ -179,20 +179,26 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
   // Register VoIP push when user is authenticated (real device only)
   React.useEffect(() => {
     if (!user?.id || !useCallKit) return;
-    voipPushService.register();
+    try {
+      voipPushService.register();
+    } catch (err) {
+      console.warn('[VoipPush] register() failed:', err);
+    }
 
     return () => {
-      voipPushService.unregister();
+      try { voipPushService.unregister(); } catch {}
     };
   }, [user?.id]);
 
   // Register for standard push notifications when user is authenticated
   React.useEffect(() => {
     if (!user?.id) return;
-    pushNotificationService.register();
+    pushNotificationService.register().catch((err) => {
+      console.warn('[PushNotification] register() rejected:', err);
+    });
 
     return () => {
-      pushNotificationService.unregister();
+      pushNotificationService.unregister().catch(() => {});
     };
   }, [user?.id]);
 

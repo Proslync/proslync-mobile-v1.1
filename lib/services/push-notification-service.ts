@@ -22,54 +22,51 @@ class PushNotificationService {
   async register() {
     if (Platform.OS !== 'ios' || this.registered) return;
 
-    const { status: existingStatus } =
-      await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync({
-        ios: {
-          allowAlert: true,
-          allowBadge: true,
-          allowSound: true,
-        },
-      });
-      finalStatus = status;
-    }
-
-    if (finalStatus !== 'granted') {
-      console.warn('[PushNotification] Permission not granted');
-      return;
-    }
-
-    // Get the native APNs device token (NOT Expo push token).
-    // Dev builds without push capability throw "no valid aps-environment
-    // entitlement" — swallow it so the app doesn't surface an unhandled error.
-    let tokenData: Notifications.DevicePushToken;
     try {
-      tokenData = await Notifications.getDevicePushTokenAsync();
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          },
+        });
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        console.warn('[PushNotification] Permission not granted');
+        return;
+      }
+
+      let tokenData: Notifications.DevicePushToken;
+      try {
+        tokenData = await Notifications.getDevicePushTokenAsync();
+      } catch (err) {
+        console.warn('[PushNotification] Device token unavailable:', err);
+        return;
+      }
+      this.registerTokenWithBackend(tokenData.data as string);
+
+      this.tokenRefreshSubscription =
+        Notifications.addPushTokenListener((newToken) => {
+          const token = newToken.data as string;
+          if (token === this.currentToken) return;
+          this.registerTokenWithBackend(token);
+        });
+
+      this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
+
+      Notifications.setBadgeCountAsync(0).catch(() => {});
+
+      this.registered = true;
     } catch (err) {
-      console.warn('[PushNotification] Device token unavailable (missing aps-environment?):', err);
-      return;
+      console.warn('[PushNotification] register() failed:', err);
     }
-    this.registerTokenWithBackend(tokenData.data as string);
-
-    // Listen for token changes (OS update, restore from backup, etc.)
-    this.tokenRefreshSubscription =
-      Notifications.addPushTokenListener((newToken) => {
-        const token = newToken.data as string;
-        // Skip if same token already registered (avoids duplicate calls on login)
-        if (token === this.currentToken) return;
-        this.registerTokenWithBackend(token);
-      });
-
-    // Clear badge when app comes to foreground
-    this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange);
-
-    // Clear badge on initial register (app just opened)
-    Notifications.setBadgeCountAsync(0).catch(() => {});
-
-    this.registered = true;
   }
 
   private registerTokenWithBackend(token: string) {
