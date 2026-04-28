@@ -4,8 +4,20 @@ export type { Subscription } from 'expo-modules-core';
 
 const isIOS = Platform.OS === 'ios';
 
-const VoipPush = isIOS ? requireNativeModule('VoipPush') : null;
-const emitter = isIOS && VoipPush ? new EventEmitter(VoipPush) : null;
+// requireNativeModule THROWS synchronously if the native module isn't registered
+// (e.g., signed prod builds where entitlements / push capability differ from
+// the dev binary). That throw at module-load time would crash the entire app
+// before React mounts, so wrap it.
+const VoipPush: any = (() => {
+  if (!isIOS) return null;
+  try {
+    return requireNativeModule('VoipPush');
+  } catch (err) {
+    console.warn('[VoipPush] native module unavailable:', err);
+    return null;
+  }
+})();
+const emitter = VoipPush ? new EventEmitter(VoipPush) : null;
 
 export function addTokenListener(
   listener: (token: string) => void,

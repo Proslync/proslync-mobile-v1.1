@@ -23,7 +23,11 @@ import { registerGlobals } from "@livekit/react-native";
 
 enableFreeze(true);
 
-registerGlobals();
+try {
+  registerGlobals();
+} catch (err) {
+  console.warn('[LiveKit] registerGlobals failed:', err);
+}
 
 import { ThemeProvider, useAppTheme } from "@/lib/providers/theme-provider";
 import { AuthProvider } from "@/lib/providers/auth-provider";
