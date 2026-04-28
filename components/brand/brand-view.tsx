@@ -39,19 +39,18 @@ const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
-type TabKey = 'campaigns' | 'athletes' | 'deals' | 'insights';
+type TabKey = 'pipeline' | 'athletes' | 'insights';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'campaigns', label: 'Campaigns' },
+  { key: 'pipeline', label: 'Pipeline' },
   { key: 'athletes', label: 'Athletes' },
-  { key: 'deals', label: 'Deals' },
   { key: 'insights', label: 'Insights' },
 ];
 
 export function BrandView() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const [activeTab, setActiveTab] = React.useState<TabKey>('campaigns');
+  const [activeTab, setActiveTab] = React.useState<TabKey>('pipeline');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
   const activeTabIndex = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
@@ -84,9 +83,8 @@ export function BrandView() {
         </View>
       </View>
 
-      {activeTab === 'campaigns' && <CampaignsTab insets={insets.bottom} />}
+      {activeTab === 'pipeline' && <PipelineTab insets={insets.bottom} />}
       {activeTab === 'athletes' && <AthletesTab insets={insets.bottom} />}
-      {activeTab === 'deals' && <DealsTab insets={insets.bottom} />}
       {activeTab === 'insights' && <InsightsTab insets={insets.bottom} />}
 
       {/* Bottom darken gradient */}
@@ -148,7 +146,46 @@ export function BrandView() {
 }
 
 // ============================================================
-// Tab 1 — Campaigns
+// Tab 1 — Pipeline (Campaigns + Deals combined)
+// ============================================================
+
+function PipelineTab({ insets }: { insets: number }) {
+  const [subTab, setSubTab] = React.useState<'campaigns' | 'deals'>('campaigns');
+  const SUB_TABS: { key: 'campaigns' | 'deals'; label: string }[] = [
+    { key: 'campaigns', label: 'Campaigns' },
+    { key: 'deals', label: 'Deals' },
+  ];
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={styles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[styles.subTab, isActive && styles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[styles.subTabLabel, isActive && styles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {subTab === 'campaigns' && <CampaignsTab insets={insets} />}
+      {subTab === 'deals' && <DealsTab insets={insets} />}
+    </View>
+  );
+}
+
+// ============================================================
+// Tab 1a — Campaigns
 // ============================================================
 
 function CampaignsTab({ insets }: { insets: number }) {
@@ -477,7 +514,25 @@ function InsightsTab({ insets }: { insets: number }) {
 // ============================================================
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000000' },
+  container: { flex: 1, backgroundColor: '#000' },
+
+  // Sub-tab pill switcher (Campaigns | Deals inside Pipeline tab)
+  subTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  subTab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    alignItems: 'center',
+  },
+  subTabActive: { borderBottomColor: ACCENT },
+  subTabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
+  subTabLabelActive: { color: '#FFF', fontWeight: '700' },
 
   header: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import Animated, {
@@ -63,18 +64,17 @@ const NEWS = [
   { id: 'n-4', headline: 'Athletics dept reports record FY25 revenue', time: '2d ago' },
 ];
 
-type TabKey = 'roster' | 'schedule' | 'compliance' | 'news';
+type TabKey = 'team' | 'compliance' | 'news';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'roster', label: 'Roster' },
-  { key: 'schedule', label: 'Schedule' },
+  { key: 'team', label: 'Team' },
   { key: 'compliance', label: 'Compliance' },
   { key: 'news', label: 'News' },
 ];
 
 export function SchoolView() {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = React.useState<TabKey>('roster');
+  const [activeTab, setActiveTab] = React.useState<TabKey>('team');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
   const activeTabIndex = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
@@ -107,8 +107,7 @@ export function SchoolView() {
         </View>
       </View>
 
-      {activeTab === 'roster' && <RosterTab insets={insets.bottom} />}
-      {activeTab === 'schedule' && <ScheduleTab insets={insets.bottom} />}
+      {activeTab === 'team' && <TeamTab insets={insets.bottom} />}
       {activeTab === 'compliance' && <ComplianceTab insets={insets.bottom} />}
       {activeTab === 'news' && <NewsTab insets={insets.bottom} />}
 
@@ -170,6 +169,41 @@ export function SchoolView() {
 
 function SectionHeader({ label }: { label: string }) {
   return <Text style={styles.sectionHeader}>{label}</Text>;
+}
+
+function TeamTab({ insets }: { insets: number }) {
+  const [subTab, setSubTab] = React.useState<'roster' | 'schedule'>('roster');
+  const SUB_TABS: { key: 'roster' | 'schedule'; label: string }[] = [
+    { key: 'roster', label: 'Roster' },
+    { key: 'schedule', label: 'Schedule' },
+  ];
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={styles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[styles.subTab, isActive && styles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[styles.subTabLabel, isActive && styles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {subTab === 'roster' && <RosterTab insets={insets} />}
+      {subTab === 'schedule' && <ScheduleTab insets={insets} />}
+    </View>
+  );
 }
 
 function RosterTab({ insets }: { insets: number }) {
@@ -284,6 +318,25 @@ function NewsTab({ insets }: { insets: number }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
+
+  // Sub-tab pill switcher (Roster | Schedule inside Team tab)
+  subTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  subTab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    alignItems: 'center',
+  },
+  subTabActive: { borderBottomColor: ACCENT },
+  subTabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
+  subTabLabelActive: { color: '#FFF', fontWeight: '700' },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -18,7 +18,7 @@
         "NSFaceIDUsageDescription": "Proslync uses Face ID to verify your identity during athlete registration.",
         "NSLocationWhenInUseUsageDescription": "Status uses your location to show nearby events and share your live location with friends",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Status uses your location to keep your location on the map updated, even when the app is closed",
-        "NSCameraUsageDescription": "Status needs camera access for video calls and scanning IDs",
+        "NSCameraUsageDescription": "Status needs camera access to scan IDs and membership cards",
         "NSMicrophoneUsageDescription": "Status needs microphone access for voice and video calls",
         "NSBluetoothPeripheralUsageDescription": "Status uses Bluetooth to connect to card readers for in-person payments",
         "NSBluetoothAlwaysUsageDescription": "Status uses Bluetooth to connect to card readers for in-person payments",
@@ -30,7 +30,8 @@
           "remote-notification",
           "bluetooth-central"
         ]
-      }
+      },
+      "bitcode": false
     },
     "android": {
       "adaptiveIcon": {
@@ -41,7 +42,19 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.statusdigitalinc.status"
+      "package": "com.statusdigitalinc.status",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.INTERNET",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -115,7 +128,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "542af625-2fef-4d02-b38e-8ff2512bf64f"
+      }
     }
   }
 }

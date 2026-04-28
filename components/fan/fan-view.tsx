@@ -41,11 +41,10 @@ const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
-type TabKey = 'feed' | 'games' | 'pickem' | 'perks';
+type TabKey = 'home' | 'pickem' | 'perks';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'feed', label: 'Following' },
-  { key: 'games', label: 'Games' },
+  { key: 'home', label: 'Home' },
   { key: 'pickem', label: "Pick'em" },
   { key: 'perks', label: 'Perks' },
 ];
@@ -53,7 +52,7 @@ const TABS: { key: TabKey; label: string }[] = [
 export function FanView() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const [activeTab, setActiveTab] = React.useState<TabKey>('feed');
+  const [activeTab, setActiveTab] = React.useState<TabKey>('home');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
   const activeTabIndex = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
@@ -86,8 +85,7 @@ export function FanView() {
         </View>
       </View>
 
-      {activeTab === 'feed' && <FeedTab insets={insets.bottom} />}
-      {activeTab === 'games' && <GamesTab insets={insets.bottom} />}
+      {activeTab === 'home' && <HomeTab insets={insets.bottom} />}
       {activeTab === 'pickem' && <PickemTab insets={insets.bottom} />}
       {activeTab === 'perks' && <PerksTab insets={insets.bottom} />}
 
@@ -152,6 +150,41 @@ export function FanView() {
 // ============================================================
 // Tab 1 — Following Feed
 // ============================================================
+
+function HomeTab({ insets }: { insets: number }) {
+  const [subTab, setSubTab] = React.useState<'following' | 'games'>('following');
+  const SUB_TABS: { key: 'following' | 'games'; label: string }[] = [
+    { key: 'following', label: 'Following' },
+    { key: 'games', label: 'Games' },
+  ];
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={styles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[styles.subTab, isActive && styles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[styles.subTabLabel, isActive && styles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {subTab === 'following' && <FeedTab insets={insets} />}
+      {subTab === 'games' && <GamesTab insets={insets} />}
+    </View>
+  );
+}
 
 function FeedTab({ insets }: { insets: number }) {
   return (
@@ -646,7 +679,25 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
 // ============================================================
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000000' },
+  container: { flex: 1, backgroundColor: '#000' },
+
+  // Sub-tab pill switcher (Following | Games inside Home tab)
+  subTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  subTab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    alignItems: 'center',
+  },
+  subTabActive: { borderBottomColor: ACCENT },
+  subTabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
+  subTabLabelActive: { color: '#FFF', fontWeight: '700' },
 
   header: {
     flexDirection: 'row',

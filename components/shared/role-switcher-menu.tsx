@@ -9,9 +9,18 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import { useRole, type ProfileRole } from '@/lib/providers/role-provider';
+
+const SHEET_TRAVEL = 600;
 
 const ACCENT = '#FF6F3C';
 
@@ -76,27 +85,72 @@ export function RoleSwitcherSheet({
   const router = useRouter();
   const { role: activeRole, setRole } = useRole();
 
+  const translateY = useSharedValue(SHEET_TRAVEL);
+  const backdropOpacity = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (visible) {
+      backdropOpacity.value = 1;
+      translateY.value = withTiming(0, { duration: 320 });
+    }
+  }, [visible]);
+
+  const dismiss = React.useCallback(() => {
+    translateY.value = withTiming(SHEET_TRAVEL, { duration: 220 });
+    backdropOpacity.value = withTiming(0, { duration: 220 });
+    setTimeout(onClose, 220);
+  }, [onClose]);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetY(10)
+    .onUpdate((e) => {
+      if (e.translationY > 0) {
+        translateY.value = e.translationY;
+        backdropOpacity.value = 1 - Math.min(e.translationY / SHEET_TRAVEL, 1);
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > 80 || e.velocityY > 500) {
+        translateY.value = withTiming(SHEET_TRAVEL, { duration: 220 });
+        backdropOpacity.value = withTiming(0, { duration: 220 });
+        runOnJS(onClose)();
+      } else {
+        translateY.value = withTiming(0, { duration: 200 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
+      }
+    });
+
+  const sheetAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(0,0,0,${0.72 * backdropOpacity.value})`,
+  }));
+
   const handlePick = (next: ProfileRole) => {
     setRole(next);
-    onClose();
-    setTimeout(() => router.replace('/(tabs)/profile' as any), 120);
+    dismiss();
+    setTimeout(() => router.replace('/(tabs)/profile' as any), 240);
   };
 
   const handleSettings = () => {
-    onClose();
-    setTimeout(() => router.push('/settings' as any), 120);
+    dismiss();
+    setTimeout(() => router.push('/settings' as any), 240);
   };
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
-      onRequestClose={onClose}
+      animationType="none"
+      onRequestClose={dismiss}
       statusBarTranslucent
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+      <Animated.View style={[styles.backdrop, backdropAnimStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={[styles.sheet, sheetAnimStyle]}>
           <View style={styles.handle} />
           <View style={styles.sheetHeader}>
             <Text style={styles.sheetTitle}>Switch Role</Text>
@@ -169,8 +223,9 @@ export function RoleSwitcherSheet({
               <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
             </TouchableOpacity>
           </View>
-        </Pressable>
-      </Pressable>
+          </Animated.View>
+        </GestureDetector>
+      </Animated.View>
     </Modal>
   );
 }
@@ -178,7 +233,6 @@ export function RoleSwitcherSheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.72)',
     justifyContent: 'flex-end',
   },
   sheet: {

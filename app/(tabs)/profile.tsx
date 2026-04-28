@@ -1055,15 +1055,35 @@ function PlayerProfileScreen() {
           refreshControl={refreshControl}
         >
           {/* Banner — cover image that fades into the page bg, now scrolls with the content */}
-          <View style={[s.bannerWrap, { height: insets.top + 140 }]} pointerEvents="none">
+          <View style={[s.bannerWrap, { height: insets.top + 180, backgroundColor: '#000' }]} pointerEvents="none">
             <Image
               source={require('@/assets/images/kiyan-banner.png')}
               style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 249 }}
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.85)', '#000']}
-              locations={[0, 0.5, 0.9, 1]}
+              colors={[
+                'rgba(0,0,0,0)',
+                'rgba(0,0,0,0.03)',
+                'rgba(0,0,0,0.07)',
+                'rgba(0,0,0,0.13)',
+                'rgba(0,0,0,0.20)',
+                'rgba(0,0,0,0.29)',
+                'rgba(0,0,0,0.39)',
+                'rgba(0,0,0,0.50)',
+                'rgba(0,0,0,0.62)',
+                'rgba(0,0,0,0.73)',
+                'rgba(0,0,0,0.83)',
+                'rgba(0,0,0,0.91)',
+                'rgba(0,0,0,0.96)',
+                'rgba(0,0,0,0.99)',
+                '#000',
+                '#000',
+              ]}
+              locations={[
+                0, 0.07, 0.14, 0.21, 0.28, 0.35, 0.42, 0.49, 0.56, 0.63, 0.7,
+                0.77, 0.83, 0.88, 0.92, 1,
+              ]}
               style={StyleSheet.absoluteFill}
               pointerEvents="none"
             />
@@ -1382,7 +1402,7 @@ const s = StyleSheet.create({
   topBarGlassCircle: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   topBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   topBarUsername: { fontSize: 20, fontWeight: '700', color: '#FFF' },
-  profileRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, marginTop: -140, marginBottom: 5 },
+  profileRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, marginTop: -180, marginBottom: 5 },
   bannerWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#111' },
   igAvatar: { width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: '#000' },
   rightCol: { flex: 1, marginLeft: 16 },

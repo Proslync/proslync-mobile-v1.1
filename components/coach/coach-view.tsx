@@ -52,13 +52,12 @@ const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
-type TabKey = 'live' | 'patterns' | 'scout' | 'trends';
+type TabKey = 'live' | 'insights' | 'scout';
 
 const TABS: { key: TabKey; label: string }[] = [
   { key: 'live', label: 'Live' },
-  { key: 'patterns', label: 'Patterns' },
+  { key: 'insights', label: 'Insights' },
   { key: 'scout', label: 'Scout' },
-  { key: 'trends', label: 'Trends' },
 ];
 
 export function CoachView() {
@@ -86,9 +85,8 @@ export function CoachView() {
     <View style={[styles.container, { paddingTop: insets.top + 4 }]}>
       {/* Tab content */}
       {activeTab === 'live' && <LiveGameTab insets={insets.bottom} />}
-      {activeTab === 'patterns' && <PatternsTab insets={insets.bottom} />}
+      {activeTab === 'insights' && <InsightsTab insets={insets.bottom} />}
       {activeTab === 'scout' && <ScoutTab insets={insets.bottom} />}
-      {activeTab === 'trends' && <TrendsTab insets={insets.bottom} />}
 
       {/* Bottom darken gradient */}
       <LinearGradient
@@ -307,7 +305,46 @@ function InsightCard({ insight, isTop }: { insight: AIInsight; isTop: boolean })
 }
 
 // ============================================================
-// Tab 2 — Patterns
+// Tab 2 — Insights (Patterns + Trends combined)
+// ============================================================
+
+function InsightsTab({ insets }: { insets: number }) {
+  const [subTab, setSubTab] = React.useState<'patterns' | 'trends'>('patterns');
+  const SUB_TABS: { key: 'patterns' | 'trends'; label: string }[] = [
+    { key: 'patterns', label: 'Patterns' },
+    { key: 'trends', label: 'Trends' },
+  ];
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={styles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[styles.subTab, isActive && styles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[styles.subTabLabel, isActive && styles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {subTab === 'patterns' && <PatternsTab insets={insets} />}
+      {subTab === 'trends' && <TrendsTab insets={insets} />}
+    </View>
+  );
+}
+
+// ============================================================
+// Tab 2a — Patterns
 // ============================================================
 
 function PatternsTab({ insets }: { insets: number }) {
@@ -649,7 +686,25 @@ function LineChart({ data, color }: { data: number[]; color: string }) {
 // ============================================================
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000000' },
+  container: { flex: 1, backgroundColor: '#000' },
+
+  // Sub-tab pill switcher (Patterns | Trends inside Insights tab)
+  subTabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    paddingBottom: 8,
+  },
+  subTab: {
+    flex: 1,
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    alignItems: 'center',
+  },
+  subTabActive: { borderBottomColor: ACCENT },
+  subTabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
+  subTabLabelActive: { color: '#FFF', fontWeight: '700' },
 
   header: {
     flexDirection: 'row',

@@ -33,7 +33,7 @@ export default function TabLayout() {
 
   return (
     <View style={styles.container}>
-    <NativeTabs tintColor="#FF6F3C" minimizeBehavior="onScrollDown" screenOptions={{ contentStyle: { backgroundColor: '#000000' } }}>
+    <NativeTabs tintColor="#FF6F3C" minimizeBehavior="onScrollDown" screenOptions={{ contentStyle: { backgroundColor: '#000' } }}>
         <NativeTabs.Trigger name="search">
           <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
@@ -78,6 +78,6 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#000',
   },
 });

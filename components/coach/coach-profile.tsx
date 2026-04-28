@@ -137,17 +137,6 @@ export default function CoachProfile() {
   return (
     <View style={styles.container}>
 
-      <Animated.View
-        style={[styles.scrollDim, { height: insets.top + 72 }, dimStyle]}
-        pointerEvents="none"
-      >
-        <LinearGradient
-          colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0)']}
-          locations={[0, 0.55, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-      </Animated.View>
-
       <Animated.ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
@@ -159,7 +148,7 @@ export default function CoachProfile() {
         <View
           style={[
             styles.bannerWrap,
-            { height: insets.top + 140, backgroundColor: '#E7D8AC' },
+            { height: insets.top + 180, backgroundColor: '#E7D8AC' },
           ]}
           pointerEvents="none"
         >
@@ -171,15 +160,29 @@ export default function CoachProfile() {
             ]}
             resizeMode="contain"
           />
-          {/* dark vignette — overall dimmer so the logo reads softer behind content */}
           <LinearGradient
             colors={[
-              'rgba(0,0,0,0.45)',
-              'rgba(0,0,0,0.6)',
-              'rgba(0,0,0,0.88)',
+              'rgba(0,0,0,0)',
+              'rgba(0,0,0,0.03)',
+              'rgba(0,0,0,0.07)',
+              'rgba(0,0,0,0.13)',
+              'rgba(0,0,0,0.20)',
+              'rgba(0,0,0,0.29)',
+              'rgba(0,0,0,0.39)',
+              'rgba(0,0,0,0.50)',
+              'rgba(0,0,0,0.62)',
+              'rgba(0,0,0,0.73)',
+              'rgba(0,0,0,0.83)',
+              'rgba(0,0,0,0.91)',
+              'rgba(0,0,0,0.96)',
+              'rgba(0,0,0,0.99)',
+              '#000',
               '#000',
             ]}
-            locations={[0, 0.5, 0.88, 1]}
+            locations={[
+              0, 0.07, 0.14, 0.21, 0.28, 0.35, 0.42, 0.49, 0.56, 0.63, 0.7,
+              0.77, 0.83, 0.88, 0.92, 1,
+            ]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -379,7 +382,7 @@ export default function CoachProfile() {
 
       {/* Floating bottom toolbar — settings | edit profile | create */}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
         style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
         pointerEvents="none"
@@ -447,7 +450,7 @@ const styles = StyleSheet.create({
   topBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   topBarUsername: { fontSize: 20, fontWeight: '700', color: '#FFF' },
 
-  bannerWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#111' },
+  bannerWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#000' },
 
   profileRow: {
     flexDirection: 'row',
@@ -455,7 +458,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    marginTop: -140,
+    marginTop: -180,
     marginBottom: 5,
   },
   avatar: {

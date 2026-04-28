@@ -42,8 +42,16 @@ class PushNotificationService {
       return;
     }
 
-    // Get the native APNs device token (NOT Expo push token)
-    const tokenData = await Notifications.getDevicePushTokenAsync();
+    // Get the native APNs device token (NOT Expo push token).
+    // Dev builds without push capability throw "no valid aps-environment
+    // entitlement" — swallow it so the app doesn't surface an unhandled error.
+    let tokenData: Notifications.DevicePushToken;
+    try {
+      tokenData = await Notifications.getDevicePushTokenAsync();
+    } catch (err) {
+      console.warn('[PushNotification] Device token unavailable (missing aps-environment?):', err);
+      return;
+    }
     this.registerTokenWithBackend(tokenData.data as string);
 
     // Listen for token changes (OS update, restore from backup, etc.)

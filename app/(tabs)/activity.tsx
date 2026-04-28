@@ -404,12 +404,27 @@ function StatTile({ value, label, big }: { value: string; label: string; big?: b
 
 // ── PERSONAL ── Team tab ──
 function TeamTabContent() {
-  const [subTab, setSubTab] = React.useState<'record' | 'staff' | 'roster'>('record');
-  const SUB_TABS: { key: 'record' | 'staff' | 'roster'; label: string }[] = [
-    { key: 'record', label: 'Record' },
+  const router = useStableRouter();
+  const [subTab, setSubTab] = React.useState<'staff' | 'roster'>('staff');
+  const SUB_TABS: { key: 'staff' | 'roster'; label: string }[] = [
     { key: 'staff', label: 'Staff' },
     { key: 'roster', label: 'Roster' },
   ];
+
+  const openMember = (m: TeamMember, kind: 'staff' | 'roster') => {
+    router.push({
+      pathname: '/team-member/[id]',
+      params: {
+        id: m.id,
+        name: m.name,
+        role: m.role,
+        tag: m.tag ?? '',
+        color: m.color,
+        initial: m.initial,
+        kind,
+      },
+    });
+  };
 
   return (
     <View style={{ gap: 16 }}>
@@ -433,27 +448,28 @@ function TeamTabContent() {
         })}
       </View>
 
-      {subTab === 'record' && (
-        <View style={[tabStyles.card, { padding: 16, gap: 4 }]}>
-          <Text style={tabStyles.teamSummaryLabel}>RECORD</Text>
-          <Text style={tabStyles.teamSummaryBig}>18–8  ·  10–4 ACC</Text>
-          <Text style={tabStyles.teamSummarySub}>T-4th ACC · Kenpom #31 · NET #28</Text>
-        </View>
-      )}
-
       {subTab === 'staff' && (
         <>
           <SectionHeader label="COACHING STAFF" accent="#FF6F3C" />
           <View style={tabStyles.card}>
             {COACHING_STAFF.map((m, i) => (
-              <View key={m.id} style={[tabStyles.memberRow, i !== COACHING_STAFF.length - 1 && tabStyles.logRowDivider]}>
+              <Pressable
+                key={m.id}
+                onPress={() => openMember(m, 'staff')}
+                style={({ pressed }) => [
+                  tabStyles.memberRow,
+                  i !== COACHING_STAFF.length - 1 && tabStyles.logRowDivider,
+                  pressed && { opacity: 0.6 },
+                ]}
+                accessibilityRole="button"
+              >
                 <BrandBadge color={m.color} initial={m.initial} size={38} />
                 <View style={{ flex: 1 }}>
                   <Text style={tabStyles.memberName}>{m.name}</Text>
                   <Text style={tabStyles.memberRole}>{m.role}{m.tag ? ` · ${m.tag}` : ''}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
-              </View>
+              </Pressable>
             ))}
           </View>
         </>
@@ -464,14 +480,24 @@ function TeamTabContent() {
           <SectionHeader label="ROSTER" accent="#FF6F3C" />
           <View style={tabStyles.card}>
             {ROSTER.map((m, i) => (
-              <View key={m.id} style={[tabStyles.memberRow, i !== ROSTER.length - 1 && tabStyles.logRowDivider]}>
+              <Pressable
+                key={m.id}
+                onPress={() => openMember(m, 'roster')}
+                style={({ pressed }) => [
+                  tabStyles.memberRow,
+                  i !== ROSTER.length - 1 && tabStyles.logRowDivider,
+                  pressed && { opacity: 0.6 },
+                ]}
+                accessibilityRole="button"
+              >
                 <BrandBadge color={m.color} initial={m.initial} size={38} />
                 <View style={{ flex: 1 }}>
                   <Text style={tabStyles.memberName}>{m.name}</Text>
                   <Text style={tabStyles.memberRole}>{m.role}</Text>
                 </View>
                 {m.tag && <Text style={tabStyles.memberJersey}>{m.tag}</Text>}
-              </View>
+                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+              </Pressable>
             ))}
           </View>
         </>
@@ -492,6 +518,12 @@ function ScheduleTabContent() {
 
   return (
     <View style={{ gap: 16 }}>
+      <View style={[tabStyles.card, { padding: 16, gap: 4 }]}>
+        <Text style={tabStyles.teamSummaryLabel}>RECORD</Text>
+        <Text style={tabStyles.teamSummaryBig}>18–8  ·  10–4 ACC</Text>
+        <Text style={tabStyles.teamSummarySub}>T-4th ACC · Kenpom #31 · NET #28</Text>
+      </View>
+
       <View style={tabStyles.subTabsRow}>
         {SUB_TABS.map(({ key, label }) => {
           const isActive = subTab === key;
@@ -561,55 +593,89 @@ function ScheduleTabContent() {
 
 // ── PROFESSIONAL ── Deals tab ──
 function DealsTabContent() {
+  const [subTab, setSubTab] = React.useState<'active' | 'offers'>('active');
+  const SUB_TABS: { key: 'active' | 'offers'; label: string }[] = [
+    { key: 'active', label: 'Active' },
+    { key: 'offers', label: 'Offers' },
+  ];
+
   return (
     <View style={{ gap: 16 }}>
-      <SectionHeader label="ACTIVE CONTRACTS" accent="#FF6F3C" />
-      <View style={{ gap: 10 }}>
-        {ACTIVE_DEALS.map((d) => (
-          <View key={d.id} style={[tabStyles.card, { padding: 14, gap: 10 }]}>
-            <View style={tabStyles.dealRow}>
-              <BrandBadge color={d.color} initial={d.initial} size={40} />
-              <View style={{ flex: 1 }}>
-                <Text style={tabStyles.memberName}>{d.brand}</Text>
-                <Text style={tabStyles.memberRole}>{d.contract}</Text>
-              </View>
-              <View style={[tabStyles.statusPill, d.status === 'Active' && tabStyles.statusActive, d.status === 'Pending' && tabStyles.statusPending, d.status === 'Signed' && tabStyles.statusSigned]}>
-                <Text style={[tabStyles.statusText, { color: d.status === 'Active' ? '#34C759' : d.status === 'Pending' ? '#FF6F3C' : '#FFF' }]}>{d.status}</Text>
-              </View>
-            </View>
-            <View style={tabStyles.dealMeta}>
-              <View style={{ flex: 1 }}>
-                <Text style={tabStyles.dealMetaLabel}>Value</Text>
-                <Text style={tabStyles.dealMetaValue}>{d.amount}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={tabStyles.dealMetaLabel}>Next deliverable</Text>
-                <Text style={tabStyles.dealMetaValue}>{d.due}</Text>
-              </View>
-            </View>
-          </View>
-        ))}
+      <View style={tabStyles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <SectionHeader label="OFFER INBOX" accent="#FF6F3C" />
-      <View style={{ gap: 10 }}>
-        {OFFER_INBOX.map((o) => (
-          <View key={o.id} style={[tabStyles.card, { padding: 14 }]}>
-            <View style={tabStyles.dealRow}>
-              <BrandBadge color={o.color} initial={o.initial} size={40} />
-              <View style={{ flex: 1 }}>
-                <Text style={tabStyles.memberName}>{o.brand}</Text>
-                <Text style={tabStyles.memberRole}>{o.summary}</Text>
-                <Text style={tabStyles.dealMetaValue}>{o.amount}  ·  {o.received}</Text>
+      {subTab === 'active' && (
+        <>
+          <SectionHeader label="ACTIVE CONTRACTS" accent="#FF6F3C" />
+          <View style={{ gap: 10 }}>
+            {ACTIVE_DEALS.map((d) => (
+              <View key={d.id} style={[tabStyles.card, { padding: 14, gap: 10 }]}>
+                <View style={tabStyles.dealRow}>
+                  <BrandBadge color={d.color} initial={d.initial} size={40} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={tabStyles.memberName}>{d.brand}</Text>
+                    <Text style={tabStyles.memberRole}>{d.contract}</Text>
+                  </View>
+                  <View style={[tabStyles.statusPill, d.status === 'Active' && tabStyles.statusActive, d.status === 'Pending' && tabStyles.statusPending, d.status === 'Signed' && tabStyles.statusSigned]}>
+                    <Text style={[tabStyles.statusText, { color: d.status === 'Active' ? '#34C759' : d.status === 'Pending' ? '#FF6F3C' : '#FFF' }]}>{d.status}</Text>
+                  </View>
+                </View>
+                <View style={tabStyles.dealMeta}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={tabStyles.dealMetaLabel}>Value</Text>
+                    <Text style={tabStyles.dealMetaValue}>{d.amount}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={tabStyles.dealMetaLabel}>Next deliverable</Text>
+                    <Text style={tabStyles.dealMetaValue}>{d.due}</Text>
+                  </View>
+                </View>
               </View>
-              <View style={tabStyles.matchPill}>
-                <Text style={tabStyles.matchLabel}>MATCH</Text>
-                <Text style={tabStyles.matchScore}>{o.matchScore}</Text>
-              </View>
-            </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
+
+      {subTab === 'offers' && (
+        <>
+          <SectionHeader label="OFFER INBOX" accent="#FF6F3C" />
+          <View style={{ gap: 10 }}>
+            {OFFER_INBOX.map((o) => (
+              <View key={o.id} style={[tabStyles.card, { padding: 14 }]}>
+                <View style={tabStyles.dealRow}>
+                  <BrandBadge color={o.color} initial={o.initial} size={40} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={tabStyles.memberName}>{o.brand}</Text>
+                    <Text style={tabStyles.memberRole}>{o.summary}</Text>
+                    <Text style={tabStyles.dealMetaValue}>{o.amount}  ·  {o.received}</Text>
+                  </View>
+                  <View style={tabStyles.matchPill}>
+                    <Text style={tabStyles.matchLabel}>MATCH</Text>
+                    <Text style={tabStyles.matchScore}>{o.matchScore}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -617,6 +683,12 @@ function DealsTabContent() {
 // ── PROFESSIONAL ── Earnings tab ──
 function EarningsTabContent() {
   const total = EARNINGS_YTD.total + EARNINGS_YTD.pending;
+  const [subTab, setSubTab] = React.useState<'partners' | 'invoices'>('partners');
+  const SUB_TABS: { key: 'partners' | 'invoices'; label: string }[] = [
+    { key: 'partners', label: 'Partners' },
+    { key: 'invoices', label: 'Invoices' },
+  ];
+
   return (
     <View style={{ gap: 16 }}>
       <View style={[tabStyles.card, { padding: 18, gap: 6 }]}>
@@ -629,44 +701,78 @@ function EarningsTabContent() {
         <Text style={tabStyles.earningsMetaText}>Next payout · {EARNINGS_YTD.nextPayout}</Text>
       </View>
 
-      <SectionHeader label="REVENUE BY PARTNER" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        {REVENUE_BY_BRAND.map((r, i) => {
-          const pct = (r.amount / total) * 100;
+      <View style={tabStyles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
           return (
-            <View key={r.brand} style={[tabStyles.revenueRow, i !== REVENUE_BY_BRAND.length - 1 && tabStyles.logRowDivider]}>
-              <BrandBadge color={r.color} initial={r.initial} size={34} />
-              <View style={{ flex: 1 }}>
-                <Text style={tabStyles.memberName}>{r.brand}</Text>
-                <View style={tabStyles.revenueBarBg}>
-                  <View style={[tabStyles.revenueBarFill, { width: `${Math.min(100, pct * 2)}%`, backgroundColor: r.color }]} />
-                </View>
-              </View>
-              <Text style={tabStyles.revenueAmount}>${r.amount.toLocaleString()}</Text>
-            </View>
+            <TouchableOpacity
+              key={key}
+              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
           );
         })}
       </View>
 
-      <SectionHeader label="UPCOMING INVOICES" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        {UPCOMING_INVOICES.map((inv, i) => (
-          <View key={inv.id} style={[tabStyles.invoiceRow, i !== UPCOMING_INVOICES.length - 1 && tabStyles.logRowDivider]}>
-            <BrandBadge color={inv.color} initial={inv.initial} size={34} />
-            <View style={{ flex: 1 }}>
-              <Text style={tabStyles.memberName}>{inv.brand}</Text>
-              <Text style={[tabStyles.memberRole, inv.status === 'overdue' && { color: '#FF4444' }]}>{inv.dueDate}</Text>
-            </View>
-            <Text style={tabStyles.revenueAmount}>{inv.amount}</Text>
+      {subTab === 'partners' && (
+        <>
+          <SectionHeader label="REVENUE BY PARTNER" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            {REVENUE_BY_BRAND.map((r, i) => {
+              const pct = (r.amount / total) * 100;
+              return (
+                <View key={r.brand} style={[tabStyles.revenueRow, i !== REVENUE_BY_BRAND.length - 1 && tabStyles.logRowDivider]}>
+                  <BrandBadge color={r.color} initial={r.initial} size={34} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={tabStyles.memberName}>{r.brand}</Text>
+                    <View style={tabStyles.revenueBarBg}>
+                      <View style={[tabStyles.revenueBarFill, { width: `${Math.min(100, pct * 2)}%`, backgroundColor: r.color }]} />
+                    </View>
+                  </View>
+                  <Text style={tabStyles.revenueAmount}>${r.amount.toLocaleString()}</Text>
+                </View>
+              );
+            })}
           </View>
-        ))}
-      </View>
+        </>
+      )}
+
+      {subTab === 'invoices' && (
+        <>
+          <SectionHeader label="UPCOMING INVOICES" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            {UPCOMING_INVOICES.map((inv, i) => (
+              <View key={inv.id} style={[tabStyles.invoiceRow, i !== UPCOMING_INVOICES.length - 1 && tabStyles.logRowDivider]}>
+                <BrandBadge color={inv.color} initial={inv.initial} size={34} />
+                <View style={{ flex: 1 }}>
+                  <Text style={tabStyles.memberName}>{inv.brand}</Text>
+                  <Text style={[tabStyles.memberRole, inv.status === 'overdue' && { color: '#FF4444' }]}>{inv.dueDate}</Text>
+                </View>
+                <Text style={tabStyles.revenueAmount}>{inv.amount}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
     </View>
   );
 }
 
 // ── PROFESSIONAL ── Wallet tab ──
 function WalletTabContent() {
+  const [subTab, setSubTab] = React.useState<'payouts' | 'method'>('payouts');
+  const SUB_TABS: { key: 'payouts' | 'method'; label: string }[] = [
+    { key: 'payouts', label: 'Payouts' },
+    { key: 'method', label: 'Method' },
+  ];
+
   return (
     <View style={{ gap: 16 }}>
       <View style={[tabStyles.card, { padding: 18, gap: 6 }]}>
@@ -688,33 +794,61 @@ function WalletTabContent() {
         </View>
       </View>
 
-      <SectionHeader label="PAYOUT METHOD" accent="#FF6F3C" />
-      <View style={[tabStyles.card, { padding: 14 }]}>
-        <View style={tabStyles.dealRow}>
-          <View style={[tabStyles.brandBadge, { backgroundColor: '#635BFF', width: 40, height: 40, borderRadius: 12 }]}>
-            <Ionicons name="card" size={18} color="#FFF" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={tabStyles.memberName}>{PAYOUT_METHOD.type}</Text>
-            <Text style={tabStyles.memberRole}>{PAYOUT_METHOD.bank}  ·  {PAYOUT_METHOD.mask}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
-        </View>
+      <View style={tabStyles.subTabsRow}>
+        {SUB_TABS.map(({ key, label }) => {
+          const isActive = subTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
+              onPress={() => setSubTab(key)}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      <SectionHeader label="RECENT PAYOUTS" accent="#FF6F3C" />
-      <View style={tabStyles.card}>
-        {RECENT_PAYOUTS.map((p, i) => (
-          <View key={p.id} style={[tabStyles.revenueRow, i !== RECENT_PAYOUTS.length - 1 && tabStyles.logRowDivider]}>
-            <BrandBadge color={p.color} initial={p.initial} size={34} />
-            <View style={{ flex: 1 }}>
-              <Text style={tabStyles.memberName}>{p.brand}</Text>
-              <Text style={tabStyles.memberRole}>{p.date}</Text>
-            </View>
-            <Text style={[tabStyles.revenueAmount, { color: '#34C759' }]}>+{p.amount}</Text>
+      {subTab === 'payouts' && (
+        <>
+          <SectionHeader label="RECENT PAYOUTS" accent="#FF6F3C" />
+          <View style={tabStyles.card}>
+            {RECENT_PAYOUTS.map((p, i) => (
+              <View key={p.id} style={[tabStyles.revenueRow, i !== RECENT_PAYOUTS.length - 1 && tabStyles.logRowDivider]}>
+                <BrandBadge color={p.color} initial={p.initial} size={34} />
+                <View style={{ flex: 1 }}>
+                  <Text style={tabStyles.memberName}>{p.brand}</Text>
+                  <Text style={tabStyles.memberRole}>{p.date}</Text>
+                </View>
+                <Text style={[tabStyles.revenueAmount, { color: '#34C759' }]}>+{p.amount}</Text>
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      )}
+
+      {subTab === 'method' && (
+        <>
+          <SectionHeader label="PAYOUT METHOD" accent="#FF6F3C" />
+          <View style={[tabStyles.card, { padding: 14 }]}>
+            <View style={tabStyles.dealRow}>
+              <View style={[tabStyles.brandBadge, { backgroundColor: '#635BFF', width: 40, height: 40, borderRadius: 12 }]}>
+                <Ionicons name="card" size={18} color="#FFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={tabStyles.memberName}>{PAYOUT_METHOD.type}</Text>
+                <Text style={tabStyles.memberRole}>{PAYOUT_METHOD.bank}  ·  {PAYOUT_METHOD.mask}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -752,15 +886,19 @@ function ProfileSelectorModal({
 }) {
   const insets = useSafeAreaInsets();
   const translateY = useSharedValue(400);
+  const backdropOpacity = useSharedValue(0);
+  const SHEET_TRAVEL = 400;
 
   React.useEffect(() => {
     if (visible) {
+      backdropOpacity.value = 1;
       translateY.value = withTiming(0, { duration: 300 });
     }
   }, [visible]);
 
   const dismiss = React.useCallback(() => {
     translateY.value = withTiming(400, { duration: 200 });
+    backdropOpacity.value = withTiming(0, { duration: 200 });
     setTimeout(onClose, 200);
   }, [onClose]);
 
@@ -769,19 +907,26 @@ function ProfileSelectorModal({
     .onUpdate((e) => {
       if (e.translationY > 0) {
         translateY.value = e.translationY;
+        backdropOpacity.value = 1 - Math.min(e.translationY / SHEET_TRAVEL, 1);
       }
     })
     .onEnd((e) => {
       if (e.translationY > 80 || e.velocityY > 500) {
         translateY.value = withTiming(400, { duration: 200 });
+        backdropOpacity.value = withTiming(0, { duration: 200 });
         runOnJS(onClose)();
       } else {
         translateY.value = withTiming(0, { duration: 200 });
+        backdropOpacity.value = withTiming(1, { duration: 200 });
       }
     });
 
   const sheetAnimStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
+  }));
+
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(0,0,0,${0.6 * backdropOpacity.value})`,
   }));
 
   if (!visible) return null;
@@ -794,8 +939,8 @@ function ProfileSelectorModal({
   const isPersonal = !isProfessional;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={dismiss}>
-      <View style={selectorStyles.overlay}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss}>
+      <Animated.View style={[selectorStyles.overlay, backdropAnimStyle]}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={dismiss} />
 
         <GestureDetector gesture={panGesture}>
@@ -853,7 +998,7 @@ function ProfileSelectorModal({
             </View>
           </Animated.View>
         </GestureDetector>
-      </View>
+      </Animated.View>
     </Modal>
   );
 }
@@ -1865,7 +2010,6 @@ const selectorStyles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   sheet: {
     paddingHorizontal: 0,

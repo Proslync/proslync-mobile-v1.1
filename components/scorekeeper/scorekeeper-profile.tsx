@@ -57,41 +57,36 @@ export default function ScorekeeperProfile() {
   return (
     <View style={styles.container}>
 
-      <LinearGradient
-        colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0)']}
-        locations={[0, 0.55, 1]}
-        style={[styles.scrollDim, { height: insets.top + 72 }]}
-        pointerEvents="none"
-      />
-
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Banner */}
-        <View style={[styles.bannerWrap, { height: insets.top + 190 }]} pointerEvents="none">
-          <Image
-            source={require('@/assets/images/kiyan-banner.png')}
-            style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 269 }}
-            resizeMode="cover"
-          />
+        <View style={[styles.bannerWrap, { height: insets.top + 180 }]} pointerEvents="none">
           <LinearGradient
             colors={[
-              'rgba(0,0,0,0.45)',
-              'rgba(0,0,0,0.65)',
-              'rgba(0,0,0,0.92)',
+              'rgba(0,0,0,0)',
+              'rgba(0,0,0,0.03)',
+              'rgba(0,0,0,0.07)',
+              'rgba(0,0,0,0.13)',
+              'rgba(0,0,0,0.20)',
+              'rgba(0,0,0,0.29)',
+              'rgba(0,0,0,0.39)',
+              'rgba(0,0,0,0.50)',
+              'rgba(0,0,0,0.62)',
+              'rgba(0,0,0,0.73)',
+              'rgba(0,0,0,0.83)',
+              'rgba(0,0,0,0.91)',
+              'rgba(0,0,0,0.96)',
+              'rgba(0,0,0,0.99)',
+              '#000',
               '#000',
             ]}
-            locations={[0, 0.5, 0.9, 1]}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
-          <LinearGradient
-            colors={['rgba(59,130,246,0.18)', 'transparent']}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            locations={[0, 0.8]}
+            locations={[
+              0, 0.07, 0.14, 0.21, 0.28, 0.35, 0.42, 0.49, 0.56, 0.63, 0.7,
+              0.77, 0.83, 0.88, 0.92, 1,
+            ]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
@@ -278,7 +273,7 @@ export default function ScorekeeperProfile() {
 
       {/* Floating bottom toolbar — settings | edit profile | create */}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.95)']}
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
         style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
         pointerEvents="none"
@@ -363,7 +358,7 @@ const styles = StyleSheet.create({
   topBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   topBarUsername: { fontSize: 20, fontWeight: '700', color: '#FFF' },
 
-  bannerWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#111' },
+  bannerWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#000' },
 
   profileRow: {
     flexDirection: 'row',
@@ -371,7 +366,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    marginTop: -120,
+    marginTop: -180,
+    marginBottom: 5,
   },
   avatar: {
     width: 86,
