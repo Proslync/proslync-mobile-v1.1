@@ -13,7 +13,7 @@ import { useWallet } from '@/lib/providers/wallet-provider';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useRole } from '@/lib/providers/role-provider';
 import { CoachView } from '@/components/coach/coach-view';
-import { ScorekeeperView } from '@/components/scorekeeper/scorekeeper-view';
+import { AgentView } from '@/components/agent/agent-view';
 import { BrandView } from '@/components/brand/brand-view';
 import { FanView } from '@/components/fan/fan-view';
 import { SchoolView } from '@/components/school/school-view';
@@ -1555,7 +1555,7 @@ function PersonalAdminContent() {
 export default function WalletScreen() {
   const { role } = useRole();
   if (role === 'coach') return <CoachView />;
-  if (role === 'scorekeeper') return <ScorekeeperView />;
+  if (role === 'agent') return <AgentView />;
   if (role === 'brand') return <BrandView />;
   if (role === 'fan') return <FanView />;
   if (role === 'school') return <SchoolView />;

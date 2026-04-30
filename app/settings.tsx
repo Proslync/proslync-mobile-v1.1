@@ -49,13 +49,13 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
     handle: '@coachfarello',
     avatarSource: require('@/assets/images/coach-avatar.png'),
   },
-  scorekeeper: {
-    label: 'Scorekeeper',
-    description: 'Live scoring · box scores',
-    icon: 'clipboard-outline',
-    color: '#3B82F6',
-    name: 'Alex Carter',
-    handle: '@alex.scorekeeper',
+  agent: {
+    label: 'Agent',
+    description: 'Manage athletes · negotiate NIL deals',
+    icon: 'people-outline',
+    color: '#14B8A6',
+    name: 'Daniel Hayes',
+    handle: '@danielhayes',
   },
   brand: {
     label: 'Brand',
@@ -83,7 +83,7 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
   },
 };
 
-const ROLES: ProfileRole[] = ['player', 'coach', 'scorekeeper', 'brand', 'fan', 'school'];
+const ROLES: ProfileRole[] = ['player', 'coach', 'agent', 'brand', 'fan', 'school'];
 
 export default function SettingsScreen() {
   const router = useRouter();

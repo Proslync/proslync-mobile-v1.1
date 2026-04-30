@@ -14,7 +14,7 @@ import type { Event } from "@/lib/types/events.types";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { useRole } from "@/lib/providers/role-provider";
 import CoachProfile from "@/components/coach/coach-profile";
-import ScorekeeperProfile from "@/components/scorekeeper/scorekeeper-profile";
+import AgentProfile from "@/components/agent/agent-profile";
 import BrandProfile from "@/components/brand/brand-profile";
 import FanProfile from "@/components/fan/fan-profile";
 import SchoolProfile from "@/components/school/school-profile";
@@ -871,7 +871,7 @@ function AwardRow({ entry }: { entry: AwardEntry }) {
 export default function ProfileScreen() {
   const { role } = useRole();
   if (role === 'coach') return <CoachProfile />;
-  if (role === 'scorekeeper') return <ScorekeeperProfile />;
+  if (role === 'agent') return <AgentProfile />;
   if (role === 'brand') return <BrandProfile />;
   if (role === 'fan') return <FanProfile />;
   if (role === 'school') return <SchoolProfile />;

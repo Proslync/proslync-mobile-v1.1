@@ -46,11 +46,11 @@ const ROLES: {
     color: '#FF6F3C',
   },
   {
-    role: 'scorekeeper',
-    label: 'Scorekeeper',
-    description: 'Live scoring · box scores',
-    icon: 'clipboard-outline',
-    color: '#3B82F6',
+    role: 'agent',
+    label: 'Agent',
+    description: 'Manage athletes · negotiate NIL deals',
+    icon: 'people-outline',
+    color: '#14B8A6',
   },
   {
     role: 'brand',
