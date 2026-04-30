@@ -1,8 +1,6 @@
 // Native Tab Layout — uses Apple's UITabBarController for real liquid glass on iOS 26+
 // The native tab bar provides the draggable glass indicator bubble automatically
 
-import { useConversations } from "@/hooks/use-conversations";
-import { useAuth } from "@/lib/providers/auth-provider";
 import {
   TAB_ORDER,
   useTabNavigation,
@@ -10,12 +8,10 @@ import {
 import { usePathname } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import * as React from "react";
-import { View, StyleSheet, DynamicColorIOS } from "react-native";
+import { View, StyleSheet } from "react-native";
 
 export default function TabLayout() {
-  const { user } = useAuth();
   const { syncTabIndex } = useTabNavigation();
-  const { channelData } = useConversations(user?.id);
   const pathname = usePathname();
 
   React.useEffect(() => {
@@ -26,31 +22,9 @@ export default function TabLayout() {
     }
   }, [pathname, syncTabIndex]);
 
-  const unreadCount = React.useMemo(
-    () => channelData.reduce((sum, ch) => sum + ch.unreadCount, 0),
-    [channelData],
-  );
-
   return (
     <View style={styles.container}>
     <NativeTabs tintColor="#FF6F3C" minimizeBehavior="onScrollDown" screenOptions={{ contentStyle: { backgroundColor: '#000' } }}>
-        <NativeTabs.Trigger name="search">
-          <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon
-            sf={{ default: "map", selected: "map.fill" }}
-          />
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="explore">
-          <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
-          <NativeTabs.Trigger.Icon
-            sf={{ default: "paperplane", selected: "paperplane.fill" }}
-          />
-          {unreadCount > 0 && (
-            <NativeTabs.Trigger.Badge>
-              {String(unreadCount)}
-            </NativeTabs.Trigger.Badge>
-          )}
-        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="index">
           <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon

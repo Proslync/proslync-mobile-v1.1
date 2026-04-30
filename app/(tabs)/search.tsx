@@ -899,10 +899,8 @@ function FullMapScreen() {
   }, [userLocation]);
 
   useEffect(() => {
-    if (currentTab === 'search') {
-      fetchEvents();
-    }
-  }, [currentTab, fetchEvents]);
+    fetchEvents();
+  }, [fetchEvents]);
 
   // Cleanup weather debounce timer on unmount
   useEffect(() => {
@@ -1020,7 +1018,52 @@ function FullMapScreen() {
         }}
       >
         <Camera ref={cameraRef} defaultSettings={{ centerCoordinate: defaultCenter, zoomLevel: 12, pitch: 60 }} minZoomLevel={2} maxZoomLevel={20} />
-        {/* Override POI/business label colors to white */}
+        {/* Override label colors so cities/states/countries are readable at all zoom levels */}
+        <SymbolLayer
+          id="country-label"
+          existing={true}
+          style={{
+            textColor: '#ffffff',
+            textHaloColor: 'rgba(0,0,0,0.7)',
+            textHaloWidth: 1.4,
+          }}
+        />
+        <SymbolLayer
+          id="state-label"
+          existing={true}
+          style={{
+            textColor: 'rgba(255,255,255,0.95)',
+            textHaloColor: 'rgba(0,0,0,0.7)',
+            textHaloWidth: 1.2,
+          }}
+        />
+        <SymbolLayer
+          id="settlement-major-label"
+          existing={true}
+          style={{
+            textColor: '#ffffff',
+            textHaloColor: 'rgba(0,0,0,0.7)',
+            textHaloWidth: 1.2,
+          }}
+        />
+        <SymbolLayer
+          id="settlement-minor-label"
+          existing={true}
+          style={{
+            textColor: 'rgba(255,255,255,0.9)',
+            textHaloColor: 'rgba(0,0,0,0.7)',
+            textHaloWidth: 1.1,
+          }}
+        />
+        <SymbolLayer
+          id="settlement-subdivision-label"
+          existing={true}
+          style={{
+            textColor: 'rgba(255,255,255,0.75)',
+            textHaloColor: 'rgba(0,0,0,0.6)',
+            textHaloWidth: 1,
+          }}
+        />
         <SymbolLayer id="poi-label" existing={true} style={{ textColor: '#ffffff' }} />
         {/* 3D extruded buildings — fades in from zoom 14 so flat view stays clean */}
         <VectorSource id="composite-buildings" url="mapbox://mapbox.mapbox-streets-v8">

@@ -17,8 +17,6 @@ import { GlassView } from 'expo-glass-effect';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { FeedNavBar } from '@/components/feed/feed-nav-bar';
-import { SearchSheet } from '@/components/shared/search-sheet';
 import { trackScreen } from '@/lib/analytics';
 
 const ACTIVE_BLUE = '#3B82F6';
@@ -569,8 +567,6 @@ function PlaceholderTab({ subTab }: { subTab: string }) {
 export default function FeedScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [activeFilter, setActiveFilter] = useState('For You');
-  const [searchVisible, setSearchVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [activeGameId, setActiveGameId] = useState(GAMES[0].id);
   const [activeSubTab, setActiveSubTab] = useState('Feed');
@@ -601,7 +597,7 @@ export default function FeedScreen() {
     <View style={styles.container}>
       <StatusBar style="light" />
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 8 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 62 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#888" />
@@ -678,14 +674,38 @@ export default function FeedScreen() {
         pointerEvents="none"
       />
 
-      <FeedNavBar
-        activeFilter={activeFilter}
-        onFilterChange={(f) => setActiveFilter(f)}
-        onSearchPress={() => setSearchVisible(true)}
-        onSharePress={() => {}}
-      />
+      {/* Top-left floating icon — map */}
+      <Pressable
+        onPress={() => router.push('/(tabs)/search' as any)}
+        style={[styles.topLeftCircleWrap, { top: insets.top + 8 }]}
+        accessibilityLabel="Open map"
+        accessibilityRole="button"
+      >
+        <View style={styles.topRightGlassLayer} pointerEvents="none">
+          <GlassView
+            glassEffectStyle="regular"
+            style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+          />
+        </View>
+        <Ionicons name="map-outline" size={20} color="#FFF" />
+      </Pressable>
 
-      <SearchSheet visible={searchVisible} onClose={() => setSearchVisible(false)} />
+      {/* Top-right floating icon — messages */}
+      <Pressable
+        onPress={() => router.push('/(tabs)/explore' as any)}
+        style={[styles.topRightCircleWrap, { top: insets.top + 8 }]}
+        accessibilityLabel="Open messages"
+        accessibilityRole="button"
+      >
+        <View style={styles.topRightGlassLayer} pointerEvents="none">
+          <GlassView
+            glassEffectStyle="regular"
+            style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+          />
+        </View>
+        <Ionicons name="paper-plane-outline" size={20} color="#FFF" />
+      </Pressable>
+
     </View>
   );
 }
@@ -696,6 +716,36 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   scrollContent: { paddingBottom: 200 },
   bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 260, zIndex: 10 },
+
+  // Top-corner floating icons (map left, messages right)
+  topLeftCircleWrap: {
+    position: 'absolute',
+    left: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 200,
+  },
+  topRightCircleWrap: {
+    position: 'absolute',
+    right: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 200,
+  },
+  topRightGlassLayer: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
 
   // Game tabs (horizontal scroll)
   gameTabsScrollContent: { paddingHorizontal: 14, gap: 14, paddingVertical: 4 },

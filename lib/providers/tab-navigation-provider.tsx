@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as Haptics from 'expo-haptics';
 
 // Tab order must match the order in (tabs)/_layout.tsx
-export const TAB_ORDER = ['search', 'explore', 'index', 'activity', 'profile'] as const;
+export const TAB_ORDER = ['index', 'activity', 'profile'] as const;
 export type TabName = typeof TAB_ORDER[number];
 
 interface TabNavigationContextType {

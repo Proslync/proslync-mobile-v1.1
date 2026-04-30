@@ -3,7 +3,8 @@ import React, { useMemo, useCallback } from 'react';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import type { Href } from 'expo-router';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Text, Image, ActivityIndicator, FlatList, TextInput, Keyboard } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import Svg, { Circle, Rect, Line, G } from 'react-native-svg';
 import { useRefreshControl } from '@/hooks/use-refresh-control';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -298,97 +299,793 @@ function BrandBadge({ color, initial, size = 36 }: { color: string; initial: str
   );
 }
 
-// ── PERSONAL ── Stats tab ──
-function StatsTabContent() {
-  const [subTab, setSubTab] = React.useState<'stats' | 'log' | 'peers'>('stats');
-  const SUB_TABS: { key: 'stats' | 'log' | 'peers'; label: string }[] = [
-    { key: 'stats', label: 'Stats' },
-    { key: 'log', label: 'Game Log' },
-    { key: 'peers', label: 'vs ACC' },
-  ];
+// ── PERSONAL ── Stats analytics (matches the athlete-detail aesthetic) ──
+
+const STATS_YELLOW = '#FF6F3C';
+const STATS_CARD_BG = '#1C1C1E';
+const STATS_FEMALE_GREY = 'rgba(255,255,255,0.35)';
+
+function PlayerStatsAnalytics() {
+  const ppg = SEASON_AVG.ppg;
+  const fgPct = SEASON_AVG.fgPct;
+  // Composite "stat rating" 0-100 — back-of-envelope from PPG + FG% + AST
+  const score = Math.min(99, Math.round((ppg * 2.4) + (fgPct * 0.5) + (SEASON_AVG.apg * 3)));
 
   return (
-    <View style={{ gap: 16 }}>
-      <View style={tabStyles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
-          const isActive = subTab === key;
+    <View style={{ gap: 10 }}>
+      <PlayerHeroIdentityCard score={score} />
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flex: 1 }}>
+          <StatsMetricCard label="Points / Game" value={ppg.toFixed(1)} delta={+1.4} topPct={12} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <StatsMetricCard label="FG %" value={`${fgPct.toFixed(1)}%`} delta={+0.8} topPct={18} />
+        </View>
+      </View>
+      <RecentGamesCard />
+      <PeerComparisonChartCard />
+    </View>
+  );
+}
+
+function PlayerHeroIdentityCard({ score }: { score: number }) {
+  return (
+    <View style={statsCardStyles.heroCard}>
+      <View style={statsCardStyles.heroLeft}>
+        <View style={statsCardStyles.heroAvatarWrap}>
+          <Image
+            source={require('@/assets/images/kiyan-avatar.png')}
+            style={statsCardStyles.heroAvatar}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={statsCardStyles.heroName} numberOfLines={1}>Kiyan Anthony</Text>
+          <View style={statsCardStyles.sportRow}>
+            <MaterialCommunityIcons name="basketball" size={14} color={STATS_YELLOW} />
+            <Text style={statsCardStyles.heroSport}>Basketball · Syracuse</Text>
+          </View>
+        </View>
+      </View>
+      <StatScoreGauge score={score} />
+    </View>
+  );
+}
+
+function StatScoreGauge({ score }: { score: number }) {
+  const size = 64;
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const pct = Math.max(0, Math.min(100, score)) / 100;
+  const visible = 0.82;
+  const dash = c * pct * visible;
+  const gap = c - dash;
+  return (
+    <View style={statsCardStyles.gaugeWrap}>
+      <Svg width={size} height={size}>
+        <G rotation="-200" originX={size / 2} originY={size / 2}>
+          <Circle cx={size / 2} cy={size / 2} r={r} stroke="rgba(255,255,255,0.10)" strokeWidth={stroke} fill="none" />
+          <Circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            stroke={STATS_YELLOW}
+            strokeWidth={stroke}
+            strokeDasharray={`${dash} ${gap}`}
+            strokeLinecap="round"
+            fill="none"
+          />
+        </G>
+      </Svg>
+      <View style={statsCardStyles.gaugeCenter} pointerEvents="none">
+        <Text style={statsCardStyles.gaugeText}>{score}</Text>
+      </View>
+    </View>
+  );
+}
+
+function StatsMetricCard({
+  label,
+  value,
+  delta,
+  topPct,
+}: {
+  label: string;
+  value: string;
+  delta: number;
+  topPct: number;
+}) {
+  return (
+    <View style={statsCardStyles.metricCard}>
+      <View style={statsCardStyles.metricLabelRow}>
+        <Text style={statsCardStyles.metricLabel}>{label}</Text>
+        <Ionicons name="information-circle-outline" size={13} color="rgba(255,255,255,0.4)" />
+      </View>
+      <View style={statsCardStyles.metricValueRow}>
+        <Text style={statsCardStyles.metricValue}>{value}</Text>
+        <View style={statsCardStyles.deltaPill}>
+          <Ionicons name="arrow-up" size={10} color={STATS_YELLOW} style={{ transform: [{ rotate: '45deg' }] }} />
+          <Text style={statsCardStyles.deltaText}>{delta.toFixed(2)}</Text>
+        </View>
+      </View>
+      <View style={statsCardStyles.metricFooter}>
+        <Text style={statsCardStyles.metricFooterText}>TOP {topPct}%</Text>
+        <Ionicons name="chevron-down" size={12} color="rgba(255,255,255,0.4)" />
+      </View>
+    </View>
+  );
+}
+
+function RecentGamesCard() {
+  // Parse points from each GAME_LOG line (e.g., "21 PTS · ...")
+  const games = GAME_LOG.slice(0, 4).map((g) => {
+    const ptsMatch = g.line.match(/(\d+)\s*PTS/);
+    const pts = ptsMatch ? parseInt(ptsMatch[1], 10) : 0;
+    const win = g.result.startsWith('W');
+    return { id: g.id, opponent: g.opponent, pts, win, result: g.result };
+  });
+  const maxPts = games.reduce((m, x) => Math.max(m, x.pts), 0) || 1;
+
+  return (
+    <View style={statsCardStyles.bigCard}>
+      <Text style={statsCardStyles.bigCardLabel}>Recent Games</Text>
+      <View style={{ gap: 10, marginTop: 14 }}>
+        {games.map((g) => {
+          const widthPct = (g.pts / maxPts) * 100;
           return (
-            <TouchableOpacity
-              key={key}
-              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
-              onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
+            <View key={g.id} style={statsCardStyles.gameRow}>
+              <View style={statsCardStyles.gameHeaderRow}>
+                <Text style={statsCardStyles.gameOpponent}>{g.opponent}</Text>
+                <Text
+                  style={[
+                    statsCardStyles.gameResult,
+                    { color: g.win ? '#34C759' : '#FF4444' },
+                  ]}
+                >
+                  {g.result}
+                </Text>
+              </View>
+              <View style={statsCardStyles.gameBarRow}>
+                <View style={statsCardStyles.gameBarTrack}>
+                  <View style={[statsCardStyles.gameBarFill, { width: `${widthPct}%` }]} />
+                </View>
+                <Text style={statsCardStyles.gamePts}>{g.pts} PTS</Text>
+              </View>
+            </View>
           );
         })}
       </View>
+    </View>
+  );
+}
 
-      {subTab === 'stats' && (
-        <>
-          <SectionHeader label="SEASON AVERAGES" accent="#FF6F3C" />
-          <View style={tabStyles.statGrid}>
-            <StatTile value={SEASON_AVG.ppg.toFixed(1)} label="PTS" big />
-            <StatTile value={SEASON_AVG.rpg.toFixed(1)} label="REB" />
-            <StatTile value={SEASON_AVG.apg.toFixed(1)} label="AST" />
-            <StatTile value={SEASON_AVG.spg.toFixed(1)} label="STL" />
-            <StatTile value={`${SEASON_AVG.fgPct.toFixed(1)}%`} label="FG" />
-            <StatTile value={`${SEASON_AVG.threePct.toFixed(1)}%`} label="3P" />
-            <StatTile value={`${SEASON_AVG.ftPct.toFixed(1)}%`} label="FT" />
-            <StatTile value={SEASON_AVG.mpg.toFixed(1)} label="MIN" />
-          </View>
-        </>
-      )}
+function PeerComparisonChartCard() {
+  // Use first 5 PEER_COMP rows; parse values to numbers
+  const data = PEER_COMP.slice(0, 5).map((p) => ({
+    label: p.label.replace(' / game', '').replace('PTS', 'PTS'),
+    you: parseFloat(p.you.replace('%', '')),
+    avg: parseFloat(p.avg.replace('%', '')),
+  }));
 
-      {subTab === 'log' && (
-        <>
-          <SectionHeader label="GAME LOG" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            {GAME_LOG.map((g, i) => (
-              <View key={g.id} style={[tabStyles.logRow, i !== GAME_LOG.length - 1 && tabStyles.logRowDivider]}>
-                <View style={{ flex: 1 }}>
-                  <View style={tabStyles.logRowTop}>
-                    <Text style={tabStyles.logOpponent}>{g.opponent}</Text>
-                    <Text style={[tabStyles.logResult, { color: g.result.startsWith('W') ? '#34C759' : '#FF4444' }]}>{g.result}</Text>
-                  </View>
-                  <Text style={tabStyles.logLine}>{g.line}</Text>
-                </View>
-                <Text style={tabStyles.logDate}>{g.date}</Text>
+  const width = 320;
+  const height = 140;
+  const padLeft = 30;
+  const padRight = 8;
+  const padTop = 14;
+  const padBottom = 22;
+  const innerW = width - padLeft - padRight;
+  const innerH = height - padTop - padBottom;
+  const max = Math.max(...data.flatMap((d) => [d.you, d.avg])) * 1.2;
+  const groupW = innerW / data.length;
+  const barW = (groupW - 8) / 2;
+
+  return (
+    <View style={statsCardStyles.bigCard}>
+      <View style={statsCardStyles.headerRow}>
+        <Text style={statsCardStyles.bigCardLabel}>vs ACC Freshmen</Text>
+        <View style={statsCardStyles.legendRow}>
+          <View style={[statsCardStyles.legendDot, { backgroundColor: STATS_YELLOW }]} />
+          <Text style={statsCardStyles.legendText}>You</Text>
+          <View style={[statsCardStyles.legendDot, { backgroundColor: STATS_FEMALE_GREY, marginLeft: 8 }]} />
+          <Text style={statsCardStyles.legendText}>Avg</Text>
+        </View>
+      </View>
+      <View style={{ marginTop: 14 }}>
+        <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+          {[0, 0.5, 1].map((t) => {
+            const yPos = padTop + innerH * (1 - t);
+            return (
+              <Line
+                key={t}
+                x1={padLeft}
+                y1={yPos}
+                x2={width - padRight}
+                y2={yPos}
+                stroke="rgba(255,255,255,0.06)"
+                strokeWidth={1}
+              />
+            );
+          })}
+          {data.map((d, i) => {
+            const groupX = padLeft + i * groupW + 4;
+            const youH = (d.you / max) * innerH;
+            const avgH = (d.avg / max) * innerH;
+            return (
+              <G key={d.label}>
+                <Rect
+                  x={groupX}
+                  y={padTop + innerH - youH}
+                  width={barW}
+                  height={Math.max(youH, 1)}
+                  fill={STATS_YELLOW}
+                  rx={2}
+                />
+                <Rect
+                  x={groupX + barW + 2}
+                  y={padTop + innerH - avgH}
+                  width={barW}
+                  height={Math.max(avgH, 1)}
+                  fill={STATS_FEMALE_GREY}
+                  rx={2}
+                />
+              </G>
+            );
+          })}
+        </Svg>
+        <View style={statsCardStyles.barLabelsRow} pointerEvents="none">
+          {data.map((d) => (
+            <View key={d.label} style={statsCardStyles.bucketCol}>
+              <View style={statsCardStyles.bucketValuesRow}>
+                <Text style={statsCardStyles.bucketValue}>{d.you}</Text>
+                <Text style={[statsCardStyles.bucketValue, { color: 'rgba(255,255,255,0.55)' }]}>{d.avg}</Text>
               </View>
-            ))}
-          </View>
-        </>
-      )}
-
-      {subTab === 'peers' && (
-        <>
-          <SectionHeader label="VS ACC FRESHMEN GUARDS" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            <View style={tabStyles.peerHeader}>
-              <Text style={[tabStyles.peerCell, tabStyles.peerHead, { flex: 2, textAlign: 'left' }]}>STAT</Text>
-              <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>YOU</Text>
-              <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>AVG</Text>
-              <Text style={[tabStyles.peerCell, tabStyles.peerHead]}>BEST</Text>
+              <Text style={statsCardStyles.bucketLabel} numberOfLines={1}>{d.label}</Text>
             </View>
-            {PEER_COMP.map((s, i) => (
-              <View key={s.label} style={[tabStyles.peerRow, i !== PEER_COMP.length - 1 && tabStyles.logRowDivider]}>
-                <View style={{ flex: 2 }}>
-                  <Text style={tabStyles.peerLabel}>{s.label}</Text>
-                  <Text style={[tabStyles.peerDelta, { color: s.positive ? '#34C759' : 'rgba(255,255,255,0.55)' }]}>{s.delta} vs avg</Text>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const statsCardStyles = StyleSheet.create({
+  // Hero
+  heroCard: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  heroLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  heroAvatarWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,111,60,0.35)',
+  },
+  heroAvatar: { width: '100%', height: '100%' },
+  heroName: { color: '#FFF', fontSize: 22, fontWeight: '700', letterSpacing: -0.4 },
+  sportRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  heroSport: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '500' },
+
+  // Score gauge
+  gaugeWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
+  gaugeCenter: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
+  gaugeText: { color: '#FFF', fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
+
+  // Metric card
+  metricCard: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 16,
+    padding: 14,
+    gap: 8,
+    minHeight: 124,
+  },
+  metricLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metricLabel: { color: '#FFF', fontSize: 13, fontWeight: '500' },
+  metricValueRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  metricValue: { color: '#FFF', fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  deltaPill: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  deltaText: { color: STATS_YELLOW, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  metricFooter: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 'auto' },
+  metricFooterText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600', letterSpacing: 0.4 },
+
+  // Big cards
+  bigCard: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 16,
+    padding: 16,
+  },
+  bigCardLabel: { color: '#FFF', fontSize: 14, fontWeight: '600' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendDot: { width: 6, height: 6, borderRadius: 3 },
+  legendText: { color: 'rgba(255,255,255,0.55)', fontSize: 10 },
+
+  // Recent games
+  gameRow: { gap: 6 },
+  gameHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  gameOpponent: { color: '#FFF', fontSize: 12, fontWeight: '600' },
+  gameResult: { fontSize: 11, fontWeight: '700' },
+  gameBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  gameBarTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  gameBarFill: { height: '100%', backgroundColor: STATS_YELLOW, borderRadius: 3 },
+  gamePts: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '700', minWidth: 50, textAlign: 'right' },
+
+  // Bar chart labels
+  barLabelsRow: { flexDirection: 'row', paddingLeft: 30, paddingRight: 8, marginTop: 2 },
+  bucketCol: { flex: 1, alignItems: 'center' },
+  bucketValuesRow: { flexDirection: 'row', gap: 2, marginBottom: -2 },
+  bucketValue: { color: '#FFF', fontSize: 9, fontWeight: '600' },
+  bucketLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 9, marginTop: 4 },
+});
+
+// ── PERSONAL ── Game Log analytics (matches Stats tab aesthetic) ──
+
+function GameLogAnalytics() {
+  const wins = GAME_LOG.filter((g) => g.result.startsWith('W')).length;
+  const losses = GAME_LOG.length - wins;
+  const recentForm = GAME_LOG.slice(0, 5).map((g) => (g.result.startsWith('W') ? 'W' : 'L'));
+  const ptsList = GAME_LOG.map((g) => {
+    const m = g.line.match(/(\d+)\s*PTS/);
+    return m ? parseInt(m[1], 10) : 0;
+  });
+  const totalPts = ptsList.reduce((s, p) => s + p, 0);
+  const avgPts = ptsList.length ? totalPts / ptsList.length : 0;
+  const high = ptsList.length ? Math.max(...ptsList) : 0;
+  const maxPts = high || 1;
+
+  return (
+    <View style={{ gap: 10 }}>
+      {/* Hero summary */}
+      <View style={statsCardStyles.heroCard}>
+        <View style={{ flex: 1, gap: 6 }}>
+          <Text style={gameLogStyles.heroLabel}>SEASON RECORD</Text>
+          <Text style={gameLogStyles.heroRecord}>
+            {wins}–{losses}
+          </Text>
+          <View style={gameLogStyles.formRow}>
+            <Text style={gameLogStyles.formLabel}>Last 5</Text>
+            <View style={{ flexDirection: 'row', gap: 4 }}>
+              {recentForm.map((r, i) => (
+                <View
+                  key={i}
+                  style={[
+                    gameLogStyles.formBadge,
+                    {
+                      backgroundColor: r === 'W' ? 'rgba(52,199,89,0.18)' : 'rgba(255,68,68,0.18)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      gameLogStyles.formBadgeText,
+                      { color: r === 'W' ? '#34C759' : '#FF4444' },
+                    ]}
+                  >
+                    {r}
+                  </Text>
                 </View>
-                <Text style={[tabStyles.peerCell, tabStyles.peerValSelf]}>{s.you}</Text>
-                <Text style={tabStyles.peerCell}>{s.avg}</Text>
-                <Text style={tabStyles.peerCell}>{s.best}</Text>
-              </View>
-            ))}
+              ))}
+            </View>
           </View>
-        </>
-      )}
+        </View>
+        <View style={gameLogStyles.heroStatsCol}>
+          <View style={gameLogStyles.heroStatBlock}>
+            <Text style={gameLogStyles.heroStatValue}>{avgPts.toFixed(1)}</Text>
+            <Text style={gameLogStyles.heroStatLabel}>AVG PTS</Text>
+          </View>
+          <View style={gameLogStyles.heroStatBlock}>
+            <Text style={[gameLogStyles.heroStatValue, { color: STATS_YELLOW }]}>{high}</Text>
+            <Text style={gameLogStyles.heroStatLabel}>SEASON HIGH</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Per-game cards */}
+      {GAME_LOG.map((g, i) => {
+        const win = g.result.startsWith('W');
+        const pts = ptsList[i];
+        const widthPct = (pts / maxPts) * 100;
+        return (
+          <View key={g.id} style={gameLogStyles.gameCard}>
+            <View style={gameLogStyles.gameCardTop}>
+              <View style={gameLogStyles.dateChip}>
+                <Text style={gameLogStyles.dateChipText}>{g.date}</Text>
+              </View>
+              <Text style={gameLogStyles.gameOpponent} numberOfLines={1}>{g.opponent}</Text>
+              <View
+                style={[
+                  gameLogStyles.resultPill,
+                  {
+                    backgroundColor: win ? 'rgba(52,199,89,0.16)' : 'rgba(255,68,68,0.16)',
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    gameLogStyles.resultPillText,
+                    { color: win ? '#34C759' : '#FF4444' },
+                  ]}
+                >
+                  {g.result}
+                </Text>
+              </View>
+            </View>
+            <View style={gameLogStyles.gameBarRow}>
+              <View style={gameLogStyles.gameBarTrack}>
+                <View
+                  style={[
+                    gameLogStyles.gameBarFill,
+                    { width: `${widthPct}%` },
+                  ]}
+                />
+              </View>
+              <Text style={gameLogStyles.gamePts}>{pts} PTS</Text>
+            </View>
+            <Text style={gameLogStyles.gameLine}>{g.line}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+const gameLogStyles = StyleSheet.create({
+  heroLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  heroRecord: {
+    color: '#FFF',
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -0.6,
+    fontVariant: ['tabular-nums'],
+  },
+  formRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+  formLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  formBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  formBadgeText: { fontSize: 11, fontWeight: '900' },
+  heroStatsCol: { gap: 12, alignItems: 'flex-end' },
+  heroStatBlock: { alignItems: 'flex-end' },
+  heroStatValue: {
+    color: '#FFF',
+    fontSize: 22,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.4,
+  },
+  heroStatLabel: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginTop: 2,
+  },
+  gameCard: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 14,
+    padding: 12,
+    gap: 8,
+  },
+  gameCardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dateChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  dateChipText: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '700' },
+  gameOpponent: { flex: 1, color: '#FFF', fontSize: 14, fontWeight: '700', letterSpacing: -0.2 },
+  resultPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  resultPillText: { fontSize: 11, fontWeight: '900', letterSpacing: 0.4 },
+  gameBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  gameBarTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  gameBarFill: { height: '100%', backgroundColor: STATS_YELLOW, borderRadius: 3 },
+  gamePts: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '800',
+    minWidth: 50,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+  gameLine: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 12,
+    letterSpacing: -0.1,
+  },
+});
+
+// ── PERSONAL ── vs ACC analytics (matches Stats tab aesthetic) ──
+
+function PeerCompareAnalytics() {
+  const data = PEER_COMP.map((p) => {
+    const youNum = parseFloat(p.you.replace('%', ''));
+    const avgNum = parseFloat(p.avg.replace('%', ''));
+    const bestNum = parseFloat(p.best.replace('%', ''));
+    return {
+      label: p.label,
+      you: youNum,
+      avg: avgNum,
+      best: bestNum,
+      youStr: p.you,
+      avgStr: p.avg,
+      bestStr: p.best,
+      delta: p.delta,
+      positive: p.positive,
+    };
+  });
+
+  // Average percentile (you vs best across stats)
+  const percentile = Math.round(
+    (data.reduce((sum, d) => sum + (d.you / d.best), 0) / data.length) * 100,
+  );
+
+  return (
+    <View style={{ gap: 10 }}>
+      {/* Percentile hero card */}
+      <View style={statsCardStyles.heroCard}>
+        <View style={{ flex: 1, gap: 6 }}>
+          <Text style={gameLogStyles.heroLabel}>PERCENTILE · ACC FROSH</Text>
+          <Text style={gameLogStyles.heroRecord}>{percentile}%</Text>
+          <Text style={peerStyles.heroSub}>Among ACC freshmen guards</Text>
+        </View>
+        <StatScoreGauge score={percentile} />
+      </View>
+
+      {/* Bar chart card */}
+      <View style={statsCardStyles.bigCard}>
+        <View style={statsCardStyles.headerRow}>
+          <Text style={statsCardStyles.bigCardLabel}>Head-to-Head</Text>
+          <View style={statsCardStyles.legendRow}>
+            <View style={[statsCardStyles.legendDot, { backgroundColor: STATS_YELLOW }]} />
+            <Text style={statsCardStyles.legendText}>You</Text>
+            <View style={[statsCardStyles.legendDot, { backgroundColor: STATS_FEMALE_GREY, marginLeft: 8 }]} />
+            <Text style={statsCardStyles.legendText}>Avg</Text>
+          </View>
+        </View>
+        <PeerBarChart data={data} />
+      </View>
+
+      {/* Detailed comparison list */}
+      <View style={statsCardStyles.bigCard}>
+        <Text style={statsCardStyles.bigCardLabel}>Detailed Breakdown</Text>
+        <View style={{ marginTop: 12, gap: 14 }}>
+          {data.map((d) => {
+            const widthPct = Math.min(100, (d.you / d.best) * 100);
+            return (
+              <View key={d.label} style={peerStyles.statRow}>
+                <View style={peerStyles.statHeader}>
+                  <Text style={peerStyles.statLabel}>{d.label}</Text>
+                  <Text
+                    style={[
+                      peerStyles.statDelta,
+                      { color: d.positive ? '#34C759' : 'rgba(255,255,255,0.55)' },
+                    ]}
+                  >
+                    {d.delta} vs avg
+                  </Text>
+                </View>
+                <View style={peerStyles.statBarRow}>
+                  <View style={peerStyles.statBarTrack}>
+                    <View style={[peerStyles.statBarFill, { width: `${widthPct}%` }]} />
+                  </View>
+                  <Text style={peerStyles.statYou}>{d.youStr}</Text>
+                </View>
+                <View style={peerStyles.statRefRow}>
+                  <Text style={peerStyles.statRefText}>Avg {d.avgStr}</Text>
+                  <Text style={peerStyles.statRefText}>Best {d.bestStr}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function PeerBarChart({ data }: { data: { label: string; you: number; avg: number }[] }) {
+  const width = 320;
+  const height = 140;
+  const padLeft = 30;
+  const padRight = 8;
+  const padTop = 14;
+  const padBottom = 22;
+  const innerW = width - padLeft - padRight;
+  const innerH = height - padTop - padBottom;
+  const max = Math.max(...data.flatMap((d) => [d.you, d.avg])) * 1.2;
+  const groupW = innerW / data.length;
+  const barW = (groupW - 8) / 2;
+
+  return (
+    <View style={{ marginTop: 14 }}>
+      <Svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        {[0, 0.5, 1].map((t) => {
+          const yPos = padTop + innerH * (1 - t);
+          return (
+            <Line
+              key={t}
+              x1={padLeft}
+              y1={yPos}
+              x2={width - padRight}
+              y2={yPos}
+              stroke="rgba(255,255,255,0.06)"
+              strokeWidth={1}
+            />
+          );
+        })}
+        {data.map((d, i) => {
+          const groupX = padLeft + i * groupW + 4;
+          const youH = (d.you / max) * innerH;
+          const avgH = (d.avg / max) * innerH;
+          return (
+            <G key={d.label}>
+              <Rect
+                x={groupX}
+                y={padTop + innerH - youH}
+                width={barW}
+                height={Math.max(youH, 1)}
+                fill={STATS_YELLOW}
+                rx={2}
+              />
+              <Rect
+                x={groupX + barW + 2}
+                y={padTop + innerH - avgH}
+                width={barW}
+                height={Math.max(avgH, 1)}
+                fill={STATS_FEMALE_GREY}
+                rx={2}
+              />
+            </G>
+          );
+        })}
+      </Svg>
+      <View style={statsCardStyles.barLabelsRow} pointerEvents="none">
+        {data.map((d) => (
+          <View key={d.label} style={statsCardStyles.bucketCol}>
+            <View style={statsCardStyles.bucketValuesRow}>
+              <Text style={statsCardStyles.bucketValue}>{d.you}</Text>
+              <Text style={[statsCardStyles.bucketValue, { color: 'rgba(255,255,255,0.55)' }]}>{d.avg}</Text>
+            </View>
+            <Text style={statsCardStyles.bucketLabel} numberOfLines={1}>
+              {d.label.replace(' / game', '').replace(' %', '%')}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const peerStyles = StyleSheet.create({
+  heroSub: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  statRow: { gap: 6 },
+  statHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  statLabel: { color: '#FFF', fontSize: 13, fontWeight: '600' },
+  statDelta: { fontSize: 11, fontWeight: '700' },
+  statBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  statBarTrack: {
+    flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  statBarFill: { height: '100%', backgroundColor: STATS_YELLOW, borderRadius: 3 },
+  statYou: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '800',
+    minWidth: 60,
+    textAlign: 'right',
+    fontVariant: ['tabular-nums'],
+  },
+  statRefRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  statRefText: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+});
+
+const teamStyles = StyleSheet.create({
+  memberCard: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  memberAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarText: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: -0.4 },
+  memberName: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+  memberRole: { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
+  tagPill: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,111,60,0.16)',
+  },
+  tagPillText: {
+    color: '#FF6F3C',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+  },
+  jerseyPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,111,60,0.14)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,111,60,0.45)',
+  },
+  jerseyPillText: {
+    color: '#FF6F3C',
+    fontSize: 13,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 0.3,
+  },
+});
+
+// ── PERSONAL ── Stats tab ──
+function StatsTabContent() {
+  return (
+    <View style={{ gap: 16 }}>
+      <PlayerStatsAnalytics />
+      <GameLogAnalytics />
+      <PeerCompareAnalytics />
     </View>
   );
 }
@@ -405,11 +1102,6 @@ function StatTile({ value, label, big }: { value: string; label: string; big?: b
 // ── PERSONAL ── Team tab ──
 function TeamTabContent() {
   const router = useStableRouter();
-  const [subTab, setSubTab] = React.useState<'staff' | 'roster'>('staff');
-  const SUB_TABS: { key: 'staff' | 'roster'; label: string }[] = [
-    { key: 'staff', label: 'Staff' },
-    { key: 'roster', label: 'Roster' },
-  ];
 
   const openMember = (m: TeamMember, kind: 'staff' | 'roster') => {
     router.push({
@@ -428,430 +1120,710 @@ function TeamTabContent() {
 
   return (
     <View style={{ gap: 16 }}>
-      <View style={tabStyles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
-          const isActive = subTab === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
-              onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+      {/* Coaching Staff section */}
+      <View style={{ gap: 10 }}>
+        <View style={statsCardStyles.heroCard}>
+          <View style={statsCardStyles.heroLeft}>
+            <View style={[statsCardStyles.heroAvatarWrap, { backgroundColor: '#FF6F3C' }]}>
+              <MaterialCommunityIcons name="whistle-outline" size={26} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={statsCardStyles.heroName}>Coaching Staff</Text>
+              <View style={statsCardStyles.sportRow}>
+                <Ionicons name="people" size={14} color="#FF6F3C" />
+                <Text style={statsCardStyles.heroSport}>
+                  {COACHING_STAFF.length} coaches · Syracuse
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {COACHING_STAFF.map((m) => (
+          <Pressable
+            key={m.id}
+            onPress={() => openMember(m, 'staff')}
+            style={({ pressed }) => [
+              teamStyles.memberCard,
+              pressed && { opacity: 0.6 },
+            ]}
+            accessibilityRole="button"
+          >
+            <View style={[teamStyles.memberAvatar, { backgroundColor: m.color }]}>
+              <Text style={teamStyles.memberAvatarText}>{m.initial}</Text>
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={teamStyles.memberName}>{m.name}</Text>
+              <Text style={teamStyles.memberRole}>{m.role}</Text>
+              {m.tag ? (
+                <View style={teamStyles.tagPill}>
+                  <Text style={teamStyles.tagPillText}>{m.tag}</Text>
+                </View>
+              ) : null}
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+          </Pressable>
+        ))}
       </View>
 
-      {subTab === 'staff' && (
-        <>
-          <SectionHeader label="COACHING STAFF" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            {COACHING_STAFF.map((m, i) => (
-              <Pressable
-                key={m.id}
-                onPress={() => openMember(m, 'staff')}
-                style={({ pressed }) => [
-                  tabStyles.memberRow,
-                  i !== COACHING_STAFF.length - 1 && tabStyles.logRowDivider,
-                  pressed && { opacity: 0.6 },
-                ]}
-                accessibilityRole="button"
-              >
-                <BrandBadge color={m.color} initial={m.initial} size={38} />
-                <View style={{ flex: 1 }}>
-                  <Text style={tabStyles.memberName}>{m.name}</Text>
-                  <Text style={tabStyles.memberRole}>{m.role}{m.tag ? ` · ${m.tag}` : ''}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
-              </Pressable>
-            ))}
+      {/* Roster section */}
+      <View style={{ gap: 10 }}>
+        <View style={statsCardStyles.heroCard}>
+          <View style={statsCardStyles.heroLeft}>
+            <View style={[statsCardStyles.heroAvatarWrap, { backgroundColor: '#FF6F3C' }]}>
+              <MaterialCommunityIcons name="basketball" size={26} color="#FFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={statsCardStyles.heroName}>Roster</Text>
+              <View style={statsCardStyles.sportRow}>
+                <Ionicons name="people" size={14} color="#FF6F3C" />
+                <Text style={statsCardStyles.heroSport}>
+                  {ROSTER.length} players · Syracuse
+                </Text>
+              </View>
+            </View>
           </View>
-        </>
-      )}
+        </View>
 
-      {subTab === 'roster' && (
-        <>
-          <SectionHeader label="ROSTER" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            {ROSTER.map((m, i) => (
-              <Pressable
-                key={m.id}
-                onPress={() => openMember(m, 'roster')}
-                style={({ pressed }) => [
-                  tabStyles.memberRow,
-                  i !== ROSTER.length - 1 && tabStyles.logRowDivider,
-                  pressed && { opacity: 0.6 },
-                ]}
-                accessibilityRole="button"
-              >
-                <BrandBadge color={m.color} initial={m.initial} size={38} />
-                <View style={{ flex: 1 }}>
-                  <Text style={tabStyles.memberName}>{m.name}</Text>
-                  <Text style={tabStyles.memberRole}>{m.role}</Text>
-                </View>
-                {m.tag && <Text style={tabStyles.memberJersey}>{m.tag}</Text>}
-                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
-              </Pressable>
-            ))}
-          </View>
-        </>
-      )}
+        {ROSTER.map((m) => (
+          <Pressable
+            key={m.id}
+            onPress={() => openMember(m, 'roster')}
+            style={({ pressed }) => [
+              teamStyles.memberCard,
+              pressed && { opacity: 0.6 },
+            ]}
+            accessibilityRole="button"
+          >
+            <View style={[teamStyles.memberAvatar, { backgroundColor: m.color }]}>
+              <Text style={teamStyles.memberAvatarText}>{m.initial}</Text>
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={teamStyles.memberName}>{m.name}</Text>
+              <Text style={teamStyles.memberRole}>{m.role}</Text>
+            </View>
+            {m.tag ? (
+              <View style={teamStyles.jerseyPill}>
+                <Text style={teamStyles.jerseyPillText}>{m.tag}</Text>
+              </View>
+            ) : null}
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
 
 // ── PERSONAL ── Schedule tab ──
 function ScheduleTabContent() {
-  const [subTab, setSubTab] = React.useState<'upcoming' | 'recent'>('upcoming');
-  const SUB_TABS: { key: 'upcoming' | 'recent'; label: string }[] = [
-    { key: 'upcoming', label: 'Upcoming' },
-    { key: 'recent', label: 'Recent' },
-  ];
   const upcoming = SCHEDULE.filter((g) => g.status === 'upcoming');
   const past = SCHEDULE.filter((g) => g.status === 'final');
 
   return (
     <View style={{ gap: 16 }}>
-      <View style={[tabStyles.card, { padding: 16, gap: 4 }]}>
-        <Text style={tabStyles.teamSummaryLabel}>RECORD</Text>
-        <Text style={tabStyles.teamSummaryBig}>18–8  ·  10–4 ACC</Text>
-        <Text style={tabStyles.teamSummarySub}>T-4th ACC · Kenpom #31 · NET #28</Text>
-      </View>
-
-      <View style={tabStyles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
-          const isActive = subTab === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
-              onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {subTab === 'upcoming' && (
-        <>
-          <SectionHeader label="UPCOMING" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            {upcoming.map((g, i) => (
-              <View key={g.id} style={[tabStyles.scheduleRow, i !== upcoming.length - 1 && tabStyles.logRowDivider]}>
-                <View style={tabStyles.scheduleDateCol}>
-                  <Text style={tabStyles.scheduleDay}>{g.date.split(' · ')[0]}</Text>
-                  <Text style={tabStyles.scheduleDate}>{g.date.split(' · ')[1]}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={tabStyles.scheduleOpponent}>{g.home ? 'vs' : '@'} {g.opponent}</Text>
-                  <Text style={tabStyles.scheduleVenue}>{g.venue}</Text>
-                </View>
-                <View style={[tabStyles.schedulePill, g.home ? tabStyles.pillHome : tabStyles.pillAway]}>
-                  <Text style={[tabStyles.schedulePillText, { color: g.home ? '#FF6F3C' : 'rgba(255,255,255,0.85)' }]}>{g.home ? 'HOME' : 'AWAY'}</Text>
-                </View>
-              </View>
-            ))}
+      {/* Hero summary card */}
+      <View style={statsCardStyles.heroCard}>
+        <View style={statsCardStyles.heroLeft}>
+          <View style={[statsCardStyles.heroAvatarWrap, { backgroundColor: '#FF6F3C' }]}>
+            <MaterialCommunityIcons name="calendar-month" size={26} color="#FFF" />
           </View>
-        </>
+          <View style={{ flex: 1 }}>
+            <Text style={statsCardStyles.heroName}>18–8</Text>
+            <View style={statsCardStyles.sportRow}>
+              <Ionicons name="trophy" size={14} color="#FF6F3C" />
+              <Text style={statsCardStyles.heroSport}>10–4 ACC · T-4th in conference</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Upcoming section */}
+      {upcoming.length > 0 && (
+        <View style={{ gap: 10 }}>
+          <Text style={tabStyles.sectionLabel}>UPCOMING</Text>
+          {upcoming.map((g) => (
+            <View key={g.id} style={scheduleStyles.gameCard}>
+              <View style={scheduleStyles.dateCol}>
+                <Text style={scheduleStyles.dateDay}>{g.date.split(' · ')[0]}</Text>
+                <Text style={scheduleStyles.dateNum}>{g.date.split(' · ')[1]}</Text>
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={scheduleStyles.opponent}>
+                  {g.home ? 'vs' : '@'} {g.opponent}
+                </Text>
+                <Text style={scheduleStyles.venue} numberOfLines={1}>{g.venue}</Text>
+              </View>
+              <View
+                style={[
+                  scheduleStyles.locPill,
+                  g.home ? scheduleStyles.locPillHome : scheduleStyles.locPillAway,
+                ]}
+              >
+                <Text
+                  style={[
+                    scheduleStyles.locPillText,
+                    { color: g.home ? '#FF6F3C' : 'rgba(255,255,255,0.85)' },
+                  ]}
+                >
+                  {g.home ? 'HOME' : 'AWAY'}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
       )}
 
-      {subTab === 'recent' && (
-        <>
-          <SectionHeader label="RECENT RESULTS" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            {past.map((g, i) => (
-              <View key={g.id} style={[tabStyles.scheduleRow, i !== past.length - 1 && tabStyles.logRowDivider]}>
-                <View style={tabStyles.scheduleDateCol}>
-                  <Text style={tabStyles.scheduleDay}>{g.date.split(' · ')[0]}</Text>
-                  <Text style={tabStyles.scheduleDate}>{g.date.split(' · ')[1]}</Text>
+      {/* Recent section */}
+      {past.length > 0 && (
+        <View style={{ gap: 10 }}>
+          <Text style={tabStyles.sectionLabel}>RECENT</Text>
+          {past.map((g) => {
+            const win = g.result?.startsWith('W');
+            return (
+              <View key={g.id} style={scheduleStyles.gameCard}>
+                <View style={scheduleStyles.dateCol}>
+                  <Text style={scheduleStyles.dateDay}>{g.date.split(' · ')[0]}</Text>
+                  <Text style={scheduleStyles.dateNum}>{g.date.split(' · ')[1]}</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={tabStyles.scheduleOpponent}>{g.home ? 'vs' : '@'} {g.opponent}</Text>
-                  <Text style={tabStyles.scheduleVenue}>{g.venue}</Text>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={scheduleStyles.opponent}>
+                    {g.home ? 'vs' : '@'} {g.opponent}
+                  </Text>
+                  <Text style={scheduleStyles.venue} numberOfLines={1}>{g.venue}</Text>
                 </View>
-                <Text style={[tabStyles.scheduleResult, { color: g.result?.startsWith('W') ? '#34C759' : '#FF4444' }]}>{g.result}</Text>
+                <View
+                  style={[
+                    scheduleStyles.resultPill,
+                    {
+                      backgroundColor: win
+                        ? 'rgba(52,199,89,0.16)'
+                        : 'rgba(255,68,68,0.16)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      scheduleStyles.resultPillText,
+                      { color: win ? '#34C759' : '#FF4444' },
+                    ]}
+                  >
+                    {g.result}
+                  </Text>
+                </View>
               </View>
-            ))}
-          </View>
-        </>
+            );
+          })}
+        </View>
       )}
     </View>
   );
 }
+
+const scheduleStyles = StyleSheet.create({
+  gameCard: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  dateCol: {
+    width: 52,
+    alignItems: 'center',
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  dateDay: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  dateNum: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
+    marginTop: 2,
+  },
+  opponent: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  venue: { color: 'rgba(255,255,255,0.55)', fontSize: 12 },
+  locPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  locPillHome: {
+    backgroundColor: 'rgba(255,111,60,0.14)',
+    borderColor: 'rgba(255,111,60,0.45)',
+  },
+  locPillAway: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  locPillText: { fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
+  resultPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  resultPillText: { fontSize: 12, fontWeight: '900', letterSpacing: 0.4 },
+});
 
 // ── PROFESSIONAL ── Deals tab ──
 function DealsTabContent() {
-  const [subTab, setSubTab] = React.useState<'active' | 'offers'>('active');
-  const SUB_TABS: { key: 'active' | 'offers'; label: string }[] = [
-    { key: 'active', label: 'Active' },
-    { key: 'offers', label: 'Offers' },
-  ];
+  const activeCount = ACTIVE_DEALS.filter((d) => d.status === 'Active').length;
 
   return (
     <View style={{ gap: 16 }}>
-      <View style={tabStyles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
-          const isActive = subTab === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
-              onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
-                {label}
+      {/* Hero summary card */}
+      <View style={statsCardStyles.heroCard}>
+        <View style={statsCardStyles.heroLeft}>
+          <View style={[statsCardStyles.heroAvatarWrap, { backgroundColor: '#FF6F3C' }]}>
+            <Ionicons name="briefcase" size={24} color="#FFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={statsCardStyles.heroName}>Deals</Text>
+            <View style={statsCardStyles.sportRow}>
+              <Ionicons name="pulse" size={14} color="#FF6F3C" />
+              <Text style={statsCardStyles.heroSport}>
+                {activeCount} active · {OFFER_INBOX.length} new offers
               </Text>
-            </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Active Contracts section */}
+      <View style={{ gap: 10 }}>
+        <Text style={tabStyles.sectionLabel}>ACTIVE CONTRACTS</Text>
+        {ACTIVE_DEALS.map((d) => {
+          const statusColor =
+            d.status === 'Active' ? '#34C759' : d.status === 'Pending' ? '#FF6F3C' : 'rgba(255,255,255,0.85)';
+          const statusBg =
+            d.status === 'Active'
+              ? 'rgba(52,199,89,0.16)'
+              : d.status === 'Pending'
+                ? 'rgba(255,111,60,0.16)'
+                : 'rgba(255,255,255,0.06)';
+          return (
+            <View key={d.id} style={dealsStyles.card}>
+              <View style={dealsStyles.cardTop}>
+                <View style={[dealsStyles.brandBadge, { backgroundColor: d.color }]}>
+                  <Text style={dealsStyles.brandBadgeText}>{d.initial}</Text>
+                </View>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={dealsStyles.brandName}>{d.brand}</Text>
+                  <Text style={dealsStyles.contractLine}>{d.contract}</Text>
+                </View>
+                <View style={[dealsStyles.statusPill, { backgroundColor: statusBg }]}>
+                  <Text style={[dealsStyles.statusText, { color: statusColor }]}>
+                    {d.status.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+              <View style={dealsStyles.metaRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={dealsStyles.metaLabel}>VALUE</Text>
+                  <Text style={dealsStyles.metaValue}>{d.amount}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={dealsStyles.metaLabel}>NEXT</Text>
+                  <Text style={dealsStyles.metaValue}>{d.due}</Text>
+                </View>
+              </View>
+            </View>
           );
         })}
       </View>
 
-      {subTab === 'active' && (
-        <>
-          <SectionHeader label="ACTIVE CONTRACTS" accent="#FF6F3C" />
-          <View style={{ gap: 10 }}>
-            {ACTIVE_DEALS.map((d) => (
-              <View key={d.id} style={[tabStyles.card, { padding: 14, gap: 10 }]}>
-                <View style={tabStyles.dealRow}>
-                  <BrandBadge color={d.color} initial={d.initial} size={40} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={tabStyles.memberName}>{d.brand}</Text>
-                    <Text style={tabStyles.memberRole}>{d.contract}</Text>
-                  </View>
-                  <View style={[tabStyles.statusPill, d.status === 'Active' && tabStyles.statusActive, d.status === 'Pending' && tabStyles.statusPending, d.status === 'Signed' && tabStyles.statusSigned]}>
-                    <Text style={[tabStyles.statusText, { color: d.status === 'Active' ? '#34C759' : d.status === 'Pending' ? '#FF6F3C' : '#FFF' }]}>{d.status}</Text>
-                  </View>
-                </View>
-                <View style={tabStyles.dealMeta}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={tabStyles.dealMetaLabel}>Value</Text>
-                    <Text style={tabStyles.dealMetaValue}>{d.amount}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={tabStyles.dealMetaLabel}>Next deliverable</Text>
-                    <Text style={tabStyles.dealMetaValue}>{d.due}</Text>
-                  </View>
-                </View>
+      {/* Offer Inbox section */}
+      <View style={{ gap: 10 }}>
+        <Text style={tabStyles.sectionLabel}>OFFER INBOX</Text>
+        {OFFER_INBOX.map((o) => (
+          <View key={o.id} style={dealsStyles.card}>
+            <View style={dealsStyles.cardTop}>
+              <View style={[dealsStyles.brandBadge, { backgroundColor: o.color }]}>
+                <Text style={dealsStyles.brandBadgeText}>{o.initial}</Text>
               </View>
-            ))}
-          </View>
-        </>
-      )}
-
-      {subTab === 'offers' && (
-        <>
-          <SectionHeader label="OFFER INBOX" accent="#FF6F3C" />
-          <View style={{ gap: 10 }}>
-            {OFFER_INBOX.map((o) => (
-              <View key={o.id} style={[tabStyles.card, { padding: 14 }]}>
-                <View style={tabStyles.dealRow}>
-                  <BrandBadge color={o.color} initial={o.initial} size={40} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={tabStyles.memberName}>{o.brand}</Text>
-                    <Text style={tabStyles.memberRole}>{o.summary}</Text>
-                    <Text style={tabStyles.dealMetaValue}>{o.amount}  ·  {o.received}</Text>
-                  </View>
-                  <View style={tabStyles.matchPill}>
-                    <Text style={tabStyles.matchLabel}>MATCH</Text>
-                    <Text style={tabStyles.matchScore}>{o.matchScore}</Text>
-                  </View>
-                </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={dealsStyles.brandName}>{o.brand}</Text>
+                <Text style={dealsStyles.contractLine}>{o.summary}</Text>
+                <Text style={dealsStyles.offerAmount}>{o.amount} · {o.received}</Text>
               </View>
-            ))}
+              <View style={dealsStyles.matchPill}>
+                <Text style={dealsStyles.matchLabel}>MATCH</Text>
+                <Text style={dealsStyles.matchScore}>{o.matchScore}</Text>
+              </View>
+            </View>
           </View>
-        </>
-      )}
+        ))}
+      </View>
     </View>
   );
 }
+
+const dealsStyles = StyleSheet.create({
+  card: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 16,
+    padding: 14,
+    gap: 12,
+  },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  brandBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandBadgeText: { color: '#FFF', fontSize: 17, fontWeight: '900', letterSpacing: -0.4 },
+  brandName: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+  contractLine: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
+  offerAmount: { color: '#FF6F3C', fontSize: 12, fontWeight: '700', marginTop: 2 },
+  statusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  statusText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
+  metaRow: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+  },
+  metaLabel: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    color: 'rgba(255,255,255,0.45)',
+  },
+  metaValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFF',
+    letterSpacing: -0.1,
+    marginTop: 4,
+  },
+  matchPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,111,60,0.14)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,111,60,0.45)',
+    alignItems: 'center',
+  },
+  matchLabel: { color: '#FF6F3C', fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+  matchScore: {
+    color: '#FF6F3C',
+    fontSize: 16,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+  },
+});
 
 // ── PROFESSIONAL ── Earnings tab ──
 function EarningsTabContent() {
   const total = EARNINGS_YTD.total + EARNINGS_YTD.pending;
-  const [subTab, setSubTab] = React.useState<'partners' | 'invoices'>('partners');
-  const SUB_TABS: { key: 'partners' | 'invoices'; label: string }[] = [
-    { key: 'partners', label: 'Partners' },
-    { key: 'invoices', label: 'Invoices' },
-  ];
+  const maxRevenue = REVENUE_BY_BRAND.reduce((m, r) => Math.max(m, r.amount), 0) || 1;
 
   return (
     <View style={{ gap: 16 }}>
-      <View style={[tabStyles.card, { padding: 18, gap: 6 }]}>
-        <Text style={tabStyles.teamSummaryLabel}>YTD EARNINGS</Text>
-        <Text style={tabStyles.earningsBig}>${EARNINGS_YTD.total.toLocaleString()}</Text>
-        <View style={tabStyles.earningsMetaRow}>
-          <Text style={tabStyles.earningsMetaText}>Pending: ${EARNINGS_YTD.pending.toLocaleString()}</Text>
-          <Text style={[tabStyles.earningsMetaText, { color: '#34C759' }]}>{EARNINGS_YTD.monthDelta}</Text>
+      {/* Hero summary card */}
+      <View style={statsCardStyles.heroCard}>
+        <View style={statsCardStyles.heroLeft}>
+          <View style={[statsCardStyles.heroAvatarWrap, { backgroundColor: '#FF6F3C' }]}>
+            <Ionicons name="cash-outline" size={26} color="#FFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={statsCardStyles.heroName}>${EARNINGS_YTD.total.toLocaleString()}</Text>
+            <View style={statsCardStyles.sportRow}>
+              <Ionicons name="trending-up" size={14} color="#34C759" />
+              <Text style={statsCardStyles.heroSport}>
+                YTD · {EARNINGS_YTD.monthDelta}
+              </Text>
+            </View>
+          </View>
         </View>
-        <Text style={tabStyles.earningsMetaText}>Next payout · {EARNINGS_YTD.nextPayout}</Text>
       </View>
 
-      <View style={tabStyles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
-          const isActive = subTab === key;
+      {/* Snapshot tiles */}
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={[earningsStyles.tile, { flex: 1 }]}>
+          <Text style={earningsStyles.tileLabel}>Pending</Text>
+          <Text style={earningsStyles.tileValue}>${EARNINGS_YTD.pending.toLocaleString()}</Text>
+        </View>
+        <View style={[earningsStyles.tile, { flex: 1.4 }]}>
+          <Text style={earningsStyles.tileLabel}>Next payout</Text>
+          <Text style={earningsStyles.tileValue} numberOfLines={1}>{EARNINGS_YTD.nextPayout}</Text>
+        </View>
+      </View>
+
+      {/* Revenue by Partner section */}
+      <View style={{ gap: 10 }}>
+        <Text style={tabStyles.sectionLabel}>REVENUE BY PARTNER</Text>
+        {REVENUE_BY_BRAND.map((r) => {
+          const widthPct = (r.amount / maxRevenue) * 100;
+          const sharePct = (r.amount / total) * 100;
           return (
-            <TouchableOpacity
-              key={key}
-              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
-              onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
+            <View key={r.brand} style={earningsStyles.card}>
+              <View style={earningsStyles.cardTop}>
+                <View style={[earningsStyles.brandBadge, { backgroundColor: r.color }]}>
+                  <Text style={earningsStyles.brandBadgeText}>{r.initial}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={earningsStyles.brandName}>{r.brand}</Text>
+                  <Text style={earningsStyles.brandShare}>{sharePct.toFixed(1)}% of YTD</Text>
+                </View>
+                <Text style={earningsStyles.amount}>${r.amount.toLocaleString()}</Text>
+              </View>
+              <View style={earningsStyles.barTrack}>
+                <View style={[earningsStyles.barFill, { width: `${widthPct}%` }]} />
+              </View>
+            </View>
           );
         })}
       </View>
 
-      {subTab === 'partners' && (
-        <>
-          <SectionHeader label="REVENUE BY PARTNER" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            {REVENUE_BY_BRAND.map((r, i) => {
-              const pct = (r.amount / total) * 100;
-              return (
-                <View key={r.brand} style={[tabStyles.revenueRow, i !== REVENUE_BY_BRAND.length - 1 && tabStyles.logRowDivider]}>
-                  <BrandBadge color={r.color} initial={r.initial} size={34} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={tabStyles.memberName}>{r.brand}</Text>
-                    <View style={tabStyles.revenueBarBg}>
-                      <View style={[tabStyles.revenueBarFill, { width: `${Math.min(100, pct * 2)}%`, backgroundColor: r.color }]} />
-                    </View>
-                  </View>
-                  <Text style={tabStyles.revenueAmount}>${r.amount.toLocaleString()}</Text>
+      {/* Upcoming Invoices section */}
+      <View style={{ gap: 10 }}>
+        <Text style={tabStyles.sectionLabel}>UPCOMING INVOICES</Text>
+        {UPCOMING_INVOICES.map((inv) => {
+          const isOverdue = inv.status === 'overdue';
+          return (
+            <View key={inv.id} style={earningsStyles.card}>
+              <View style={earningsStyles.cardTop}>
+                <View style={[earningsStyles.brandBadge, { backgroundColor: inv.color }]}>
+                  <Text style={earningsStyles.brandBadgeText}>{inv.initial}</Text>
                 </View>
-              );
-            })}
-          </View>
-        </>
-      )}
-
-      {subTab === 'invoices' && (
-        <>
-          <SectionHeader label="UPCOMING INVOICES" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            {UPCOMING_INVOICES.map((inv, i) => (
-              <View key={inv.id} style={[tabStyles.invoiceRow, i !== UPCOMING_INVOICES.length - 1 && tabStyles.logRowDivider]}>
-                <BrandBadge color={inv.color} initial={inv.initial} size={34} />
-                <View style={{ flex: 1 }}>
-                  <Text style={tabStyles.memberName}>{inv.brand}</Text>
-                  <Text style={[tabStyles.memberRole, inv.status === 'overdue' && { color: '#FF4444' }]}>{inv.dueDate}</Text>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={earningsStyles.brandName}>{inv.brand}</Text>
+                  <Text style={[earningsStyles.brandShare, isOverdue && { color: '#FF4444' }]}>
+                    {inv.dueDate}
+                  </Text>
                 </View>
-                <Text style={tabStyles.revenueAmount}>{inv.amount}</Text>
+                <View
+                  style={[
+                    earningsStyles.statusPill,
+                    {
+                      backgroundColor: isOverdue
+                        ? 'rgba(255,68,68,0.16)'
+                        : 'rgba(255,111,60,0.16)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      earningsStyles.statusText,
+                      { color: isOverdue ? '#FF4444' : '#FF6F3C' },
+                    ]}
+                  >
+                    {inv.amount}
+                  </Text>
+                </View>
               </View>
-            ))}
-          </View>
-        </>
-      )}
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 }
+
+const earningsStyles = StyleSheet.create({
+  tile: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 14,
+    padding: 12,
+    gap: 4,
+  },
+  tileLabel: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  tileValue: {
+    color: '#FFF',
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  card: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+  },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  brandBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandBadgeText: { color: '#FFF', fontSize: 17, fontWeight: '900', letterSpacing: -0.4 },
+  brandName: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+  brandShare: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 },
+  amount: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
+  },
+  barTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+  },
+  barFill: { height: '100%', backgroundColor: '#FF6F3C', borderRadius: 3 },
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+    fontVariant: ['tabular-nums'],
+  },
+});
 
 // ── PROFESSIONAL ── Wallet tab ──
 function WalletTabContent() {
-  const [subTab, setSubTab] = React.useState<'payouts' | 'method'>('payouts');
-  const SUB_TABS: { key: 'payouts' | 'method'; label: string }[] = [
-    { key: 'payouts', label: 'Payouts' },
-    { key: 'method', label: 'Method' },
-  ];
-
   return (
     <View style={{ gap: 16 }}>
-      <View style={[tabStyles.card, { padding: 18, gap: 6 }]}>
-        <Text style={tabStyles.teamSummaryLabel}>AVAILABLE BALANCE</Text>
-        <Text style={tabStyles.earningsBig}>${WALLET_BALANCE.available.toLocaleString()}</Text>
-        <View style={tabStyles.earningsMetaRow}>
-          <Text style={tabStyles.earningsMetaText}>Pending · ${WALLET_BALANCE.pending.toLocaleString()}</Text>
-          <Text style={tabStyles.earningsMetaText}>Next · {WALLET_BALANCE.nextPayoutDate}</Text>
-        </View>
-        <View style={tabStyles.walletBtnRow}>
-          <TouchableOpacity style={[tabStyles.walletBtn, tabStyles.walletBtnPrimary]} activeOpacity={0.8}>
-            <Ionicons name="arrow-down" size={14} color="#000" />
-            <Text style={[tabStyles.walletBtnText, { color: '#000' }]}>Transfer out</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={tabStyles.walletBtn} activeOpacity={0.8}>
-            <Ionicons name="swap-vertical" size={14} color="#FFF" />
-            <Text style={tabStyles.walletBtnText}>Manage</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={tabStyles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
-          const isActive = subTab === key;
-          return (
-            <TouchableOpacity
-              key={key}
-              style={[tabStyles.subTab, isActive && tabStyles.subTabActive]}
-              onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text style={[tabStyles.subTabLabel, isActive && tabStyles.subTabLabelActive]}>
-                {label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {subTab === 'payouts' && (
-        <>
-          <SectionHeader label="RECENT PAYOUTS" accent="#FF6F3C" />
-          <View style={tabStyles.card}>
-            {RECENT_PAYOUTS.map((p, i) => (
-              <View key={p.id} style={[tabStyles.revenueRow, i !== RECENT_PAYOUTS.length - 1 && tabStyles.logRowDivider]}>
-                <BrandBadge color={p.color} initial={p.initial} size={34} />
-                <View style={{ flex: 1 }}>
-                  <Text style={tabStyles.memberName}>{p.brand}</Text>
-                  <Text style={tabStyles.memberRole}>{p.date}</Text>
-                </View>
-                <Text style={[tabStyles.revenueAmount, { color: '#34C759' }]}>+{p.amount}</Text>
-              </View>
-            ))}
+      {/* Hero balance card */}
+      <View style={statsCardStyles.heroCard}>
+        <View style={statsCardStyles.heroLeft}>
+          <View style={[statsCardStyles.heroAvatarWrap, { backgroundColor: '#FF6F3C' }]}>
+            <Ionicons name="wallet" size={24} color="#FFF" />
           </View>
-        </>
-      )}
-
-      {subTab === 'method' && (
-        <>
-          <SectionHeader label="PAYOUT METHOD" accent="#FF6F3C" />
-          <View style={[tabStyles.card, { padding: 14 }]}>
-            <View style={tabStyles.dealRow}>
-              <View style={[tabStyles.brandBadge, { backgroundColor: '#635BFF', width: 40, height: 40, borderRadius: 12 }]}>
-                <Ionicons name="card" size={18} color="#FFF" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={tabStyles.memberName}>{PAYOUT_METHOD.type}</Text>
-                <Text style={tabStyles.memberRole}>{PAYOUT_METHOD.bank}  ·  {PAYOUT_METHOD.mask}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+          <View style={{ flex: 1 }}>
+            <Text style={statsCardStyles.heroName}>${WALLET_BALANCE.available.toLocaleString()}</Text>
+            <View style={statsCardStyles.sportRow}>
+              <Ionicons name="checkmark-circle" size={14} color="#34C759" />
+              <Text style={statsCardStyles.heroSport}>Available now</Text>
             </View>
           </View>
-        </>
-      )}
+        </View>
+      </View>
+
+      {/* Snapshot tiles */}
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={[earningsStyles.tile, { flex: 1 }]}>
+          <Text style={earningsStyles.tileLabel}>Pending</Text>
+          <Text style={earningsStyles.tileValue}>
+            ${WALLET_BALANCE.pending.toLocaleString()}
+          </Text>
+        </View>
+        <View style={[earningsStyles.tile, { flex: 1 }]}>
+          <Text style={earningsStyles.tileLabel}>Next payout</Text>
+          <Text style={earningsStyles.tileValue} numberOfLines={1}>
+            {WALLET_BALANCE.nextPayoutDate}
+          </Text>
+        </View>
+      </View>
+
+      {/* Action buttons */}
+      <View style={walletStyles.actionRow}>
+        <TouchableOpacity style={walletStyles.primaryBtn} activeOpacity={0.85}>
+          <Ionicons name="arrow-down" size={15} color="#000" />
+          <Text style={walletStyles.primaryBtnText}>Transfer out</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={walletStyles.secondaryBtn} activeOpacity={0.7}>
+          <Ionicons name="swap-vertical" size={15} color="#FFF" />
+          <Text style={walletStyles.secondaryBtnText}>Manage</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Payout Method */}
+      <View style={{ gap: 10 }}>
+        <Text style={tabStyles.sectionLabel}>PAYOUT METHOD</Text>
+        <TouchableOpacity activeOpacity={0.7} style={earningsStyles.card}>
+          <View style={earningsStyles.cardTop}>
+            <View style={[earningsStyles.brandBadge, { backgroundColor: '#635BFF' }]}>
+              <Ionicons name="card" size={20} color="#FFF" />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={earningsStyles.brandName}>{PAYOUT_METHOD.type}</Text>
+              <Text style={earningsStyles.brandShare}>
+                {PAYOUT_METHOD.bank} · {PAYOUT_METHOD.mask}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.3)" />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Recent payouts */}
+      <View style={{ gap: 10 }}>
+        <Text style={tabStyles.sectionLabel}>RECENT PAYOUTS</Text>
+        {RECENT_PAYOUTS.map((p) => (
+          <View key={p.id} style={earningsStyles.card}>
+            <View style={earningsStyles.cardTop}>
+              <View style={[earningsStyles.brandBadge, { backgroundColor: p.color }]}>
+                <Text style={earningsStyles.brandBadgeText}>{p.initial}</Text>
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={earningsStyles.brandName}>{p.brand}</Text>
+                <Text style={earningsStyles.brandShare}>{p.date}</Text>
+              </View>
+              <View style={[earningsStyles.statusPill, { backgroundColor: 'rgba(52,199,89,0.16)' }]}>
+                <Text style={[earningsStyles.statusText, { color: '#34C759' }]}>+{p.amount}</Text>
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
+
+const walletStyles = StyleSheet.create({
+  actionRow: { flexDirection: 'row', gap: 8 },
+  primaryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: '#FFF',
+  },
+  primaryBtnText: { color: '#000', fontWeight: '800', fontSize: 13, letterSpacing: -0.1 },
+  secondaryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: STATS_CARD_BG,
+  },
+  secondaryBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13, letterSpacing: -0.1 },
+});
 
 // ─── Profile Selector Modal ────────────────────────────────────
 
@@ -948,8 +1920,6 @@ function ProfileSelectorModal({
             <View style={selectorStyles.content}>
               <View style={selectorStyles.handle} />
 
-              <Text style={selectorStyles.title}>Switch Account</Text>
-
               <View style={selectorStyles.listContainer}>
                 {/* Personal */}
                 <GHTouchableOpacity
@@ -959,13 +1929,18 @@ function ProfileSelectorModal({
                     if (!isPersonal) onSelectPersonal();
                   }}
                 >
-                  <View style={[selectorStyles.iconWrap, isPersonal && selectorStyles.iconWrapActive]}>
-                    <Ionicons name="person" size={20} color={isPersonal ? '#FFF' : 'rgba(255,255,255,0.75)'} />
-                  </View>
+                  <Image
+                    source={
+                      currentUser.avatar?.url
+                        ? { uri: currentUser.avatar.url }
+                        : require('@/assets/images/kiyan-avatar.png')
+                    }
+                    style={selectorStyles.avatarImage}
+                  />
                   <View style={selectorStyles.info}>
                     <Text style={selectorStyles.nameText}>Personal</Text>
                     <Text style={selectorStyles.subtitleText}>
-                      {displayName} · Tickets, tables, DMs
+                      Stats, schedule, team
                     </Text>
                   </View>
                   {isPersonal && <Ionicons name="checkmark-circle" size={22} color="#FF6F3C" />}
@@ -991,10 +1966,6 @@ function ProfileSelectorModal({
                   {isProfessional && <Ionicons name="checkmark-circle" size={22} color="#FF6F3C" />}
                 </GHTouchableOpacity>
               </View>
-
-              <Text style={selectorStyles.helperText}>
-                Your professional workspace surfaces brand offers, payouts, and compliance tools. Personal mode is your fan-facing account.
-              </Text>
             </View>
           </Animated.View>
         </GestureDetector>
@@ -1689,8 +2660,8 @@ function PlayerActivityScreen() {
   return (
     <View style={styles.container}>
 
-      {/* Floating pill row */}
-      <View style={[styles.headerScrollFixed, styles.headerScrollContent]}>
+      {/* Floating pill row — TOP */}
+      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
         <Pressable
           style={styles.headerPill}
           onPress={() => setProfileSelectorVisible(true)}
@@ -1703,20 +2674,26 @@ function PlayerActivityScreen() {
               style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
             />
           </View>
-          <ExpoImage
-            source={
-              selectedVenue
-                ? (myVenues.find((v) => v.id === selectedVenue.id)?.imageUrl
-                    ? { uri: myVenues.find((v) => v.id === selectedVenue.id)!.imageUrl }
-                    : DefaultAvatarImage)
-                : selectedOrg
-                  ? (authUser?.organizations?.find((o) => o.id === selectedOrg.id)?.logo?.url
-                      ? { uri: authUser!.organizations!.find((o) => o.id === selectedOrg.id)!.logo!.url }
+          {isProfessionalMode && !selectedVenue && !selectedOrg ? (
+            <View style={[styles.headerPillAvatar, styles.headerPillBriefcase]}>
+              <Ionicons name="briefcase" size={20} color="#FFF" />
+            </View>
+          ) : (
+            <ExpoImage
+              source={
+                selectedVenue
+                  ? (myVenues.find((v) => v.id === selectedVenue.id)?.imageUrl
+                      ? { uri: myVenues.find((v) => v.id === selectedVenue.id)!.imageUrl }
                       : DefaultAvatarImage)
-                  : require('@/assets/images/kiyan-avatar.png')
-            }
-            style={styles.headerPillAvatar}
-          />
+                  : selectedOrg
+                    ? (authUser?.organizations?.find((o) => o.id === selectedOrg.id)?.logo?.url
+                        ? { uri: authUser!.organizations!.find((o) => o.id === selectedOrg.id)!.logo!.url }
+                        : DefaultAvatarImage)
+                    : require('@/assets/images/kiyan-avatar.png')
+              }
+              style={styles.headerPillAvatar}
+            />
+          )}
           <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
         </Pressable>
 
@@ -1732,7 +2709,15 @@ function PlayerActivityScreen() {
               style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
             />
           </View>
-          <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none" />
+          <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none">
+            {isLiquidGlassSupported ? (
+              <LiquidGlassView
+                effect="regular"
+                tintColor="rgba(255,255,255,0.20)"
+                style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
+              />
+            ) : null}
+          </Animated.View>
           {tabs.map((label) => {
             const isActive = activeTab === label;
             return (
@@ -1758,7 +2743,7 @@ function PlayerActivityScreen() {
       ) : (
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
+          contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
         >
@@ -1802,13 +2787,22 @@ function PlayerActivityScreen() {
         />
       )}
 
-      {/* Floating bottom toolbar — back | dashboard | live */}
+      {/* Top fade — gives the floating top pill row visual depth */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.topFade, { height: insets.top + 90 }]}
+        pointerEvents="none"
+      />
+
+      {/* Bottom fade — keeps content fading into the floating native tab bar */}
       <LinearGradient
         colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
         style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
         pointerEvents="none"
       />
+
     </View>
   );
 }
@@ -1823,7 +2817,6 @@ const styles = StyleSheet.create({
   },
   headerScrollFixed: {
     position: 'absolute',
-    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
     left: 0,
     right: 0,
     zIndex: 100,
@@ -1878,6 +2871,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+  },
+  headerPillBriefcase: {
+    backgroundColor: '#FF6F3C',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerPillIcon: {
     marginLeft: 8,
@@ -2071,6 +3069,11 @@ const selectorStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  avatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
   iconWrapActive: {
     backgroundColor: '#FF6F3C',
     borderColor: 'rgba(255,111,60,0.6)',
@@ -2103,16 +3106,16 @@ const selectorStyles = StyleSheet.create({
 
 const tabStyles = StyleSheet.create({
   sectionLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: 'rgba(255,255,255,0.45)', paddingHorizontal: 4 },
-  card: { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 16, overflow: 'hidden' },
+  card: { backgroundColor: '#1C1C1E', borderRadius: 16, overflow: 'hidden' },
   brandBadge: { alignItems: 'center', justifyContent: 'center' },
   brandBadgeText: { color: '#FFF', fontWeight: '900', letterSpacing: -0.4 },
 
   // Stat tiles
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statTile: { flexBasis: '23%', flexGrow: 1, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 12, padding: 10, alignItems: 'center' },
-  statTileBig: { flexBasis: '48%', backgroundColor: 'rgba(255,111,60,0.10)', borderColor: 'rgba(255,111,60,0.35)' },
-  statValue: { fontSize: 18, fontWeight: '800', color: '#FFF', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
-  statValueBig: { fontSize: 28, color: '#FF6F3C' },
+  statTile: { flexBasis: '23%', flexGrow: 1, backgroundColor: '#1C1C1E', borderRadius: 14, padding: 12, alignItems: 'center' },
+  statTileBig: { flexBasis: '48%', backgroundColor: 'rgba(255,111,60,0.10)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,111,60,0.30)' },
+  statValue: { fontSize: 20, fontWeight: '800', color: '#FFF', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
+  statValueBig: { fontSize: 30, color: '#FF6F3C' },
   statLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.55)', letterSpacing: 0.8, marginTop: 2 },
 
   // Game log
