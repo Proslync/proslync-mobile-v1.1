@@ -45,7 +45,7 @@ export default function CreateChannelScreen() {
         onSuccess: (channel) => {
           showSuccess('Channel created!');
           // Navigate back to messages tab on the Channels view
-          router.replace('/(tabs)/explore?tab=channels' as any);
+          router.replace('/messages?tab=channels' as any);
         },
         onError: (error) => {
           showError(error.message || 'Failed to create channel');

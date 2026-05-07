@@ -48,7 +48,7 @@ export function MiniVenueCard({ venueId }: MiniVenueCardProps) {
   const handlePress = () => {
     if (!venue) return;
     router.push({
-      pathname: "/(tabs)/search",
+      pathname: "/map",
       params: { venueName: venue.name },
     });
   };

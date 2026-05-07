@@ -10,7 +10,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -40,6 +46,22 @@ export default function AgentProfile() {
   const [tab, setTab] = React.useState<TabKey>('about');
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set(['mission']));
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
+
+  // Segmented pill knob (matches Kiyan)
+  const tabIndex = Math.max(0, TABS.findIndex((t) => t.key === tab));
+  const tabPillWidth = useSharedValue(0);
+  const animatedTabIndex = useSharedValue(tabIndex);
+  React.useEffect(() => {
+    animatedTabIndex.value = withTiming(tabIndex, { duration: 180 });
+  }, [tabIndex, animatedTabIndex]);
+  const tabKnobStyle = useAnimatedStyle(() => {
+    const segW = tabPillWidth.value / Math.max(TABS.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedTabIndex.value * segW + inset }],
+    };
+  });
 
   const toggle = (key: string) => {
     setExpanded((prev) => {

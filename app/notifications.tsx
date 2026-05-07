@@ -394,9 +394,7 @@ export default function NotificationsScreen() {
 
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
-        </TouchableOpacity>
+        <View style={styles.backButton} />
         <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
         {activeTab === 'activity' && !!unreadCount && unreadCount > 0 ? (
           <TouchableOpacity style={styles.backButton} onPress={handleMarkAllRead}>
@@ -552,9 +550,42 @@ export default function NotificationsScreen() {
         onConfirm={handleConfirm}
         onClose={handleCancelConfirm}
       />
+
+      <TouchableOpacity
+        onPress={() => router.back()}
+        style={[backChevronStyles.btn, { bottom: insets.bottom + 30 }]}
+        accessibilityLabel="Go back"
+        accessibilityRole="button"
+        hitSlop={8}
+      >
+        <View style={backChevronStyles.glass} pointerEvents="none">
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+        </View>
+        <Ionicons name="chevron-back" size={22} color="#FFF" />
+      </TouchableOpacity>
     </View>
   );
 }
+
+const backChevronStyles = StyleSheet.create({
+  btn: {
+    position: 'absolute',
+    left: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+  },
+  glass: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -81,9 +81,17 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
     name: 'Syracuse University',
     handle: '@syracuse',
   },
+  nilManager: {
+    label: 'NIL Manager',
+    description: 'School compliance · view-only roster + deals',
+    icon: 'shield-checkmark-outline',
+    color: '#001A57',
+    name: 'Lauren Whitcombe',
+    handle: '@duke-nil',
+  },
 };
 
-const ROLES: ProfileRole[] = ['player', 'coach', 'agent', 'brand', 'fan', 'school'];
+const ROLES: ProfileRole[] = ['player', 'coach', 'agent', 'brand', 'fan', 'school', 'nilManager'];
 
 export default function SettingsScreen() {
   const router = useRouter();

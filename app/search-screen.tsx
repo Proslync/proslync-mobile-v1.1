@@ -29,6 +29,228 @@ import { format } from 'date-fns';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
 
+// ── Brand catalog (mock — wire to API later) ──
+
+type BrandItem = {
+  id: string;
+  name: string;
+  handle: string;
+  category: string;
+  initials: string;
+  color: string;
+  followers: string; // pre-formatted, e.g. "412k"
+};
+
+const BRAND_CATALOG: BrandItem[] = [
+  { id: 'br-nike',     name: 'Nike',          handle: '@nike',         category: 'Athleticwear',     initials: 'N',  color: '#000000', followers: '12.4M' },
+  { id: 'br-gatorade', name: 'Gatorade',      handle: '@gatorade',     category: 'Hydration',        initials: 'G',  color: '#FF6900', followers: '4.1M'  },
+  { id: 'br-adidas',   name: 'Adidas',        handle: '@adidas',       category: 'Athleticwear',     initials: 'A',  color: '#000000', followers: '11.2M' },
+  { id: 'br-puma',     name: 'PUMA Hoops',    handle: '@pumahoops',    category: 'Basketball',       initials: 'P',  color: '#000000', followers: '2.4M'  },
+  { id: 'br-spotify',  name: 'Spotify',       handle: '@spotify',      category: 'Music · Creator',  initials: 'S',  color: '#1DB954', followers: '8.6M'  },
+  { id: 'br-bww',      name: 'Buffalo Wild Wings', handle: '@bwwings', category: 'Food',             initials: 'B',  color: '#FFCA02', followers: '1.1M'  },
+  { id: 'br-bojangles',name: "Bojangles'",    handle: '@bojangles',    category: 'Food · Regional',  initials: 'B',  color: '#E03A3E', followers: '432k'  },
+  { id: 'br-att',      name: 'AT&T',          handle: '@att',          category: 'Tech · Telecom',   initials: 'A',  color: '#00A8E0', followers: '3.7M'  },
+  { id: 'br-ufa',      name: 'Under Armour',  handle: '@underarmour',  category: 'Athleticwear',     initials: 'UA', color: '#000000', followers: '5.9M'  },
+];
+
+// ── Athlete catalog (NIL athletes) ──
+
+type AthleteItem = {
+  id: string;
+  name: string;
+  handle: string;
+  sport: string;
+  school: string;
+  classYear: string;
+  initials: string;
+  color: string;
+  followers: string;
+  rank?: string;
+};
+
+const ATHLETE_CATALOG: AthleteItem[] = [
+  { id: 'at-flagg',     name: 'Cooper Flagg',     handle: '@cooperflagg',     sport: 'Basketball', school: 'Duke',     classYear: 'Fr', initials: 'CF', color: '#001A57', followers: '1.4M', rank: '#1 Wooden' },
+  { id: 'at-kiyan',     name: 'Kiyan Anthony',    handle: '@kiyananthony',    sport: 'Basketball', school: 'Syracuse', classYear: 'Fr', initials: 'KA', color: '#F76900', followers: '412K', rank: '#2 POY' },
+  { id: 'at-dybantsa',  name: 'AJ Dybantsa',      handle: '@ajdybantsa',      sport: 'Basketball', school: 'BYU',      classYear: 'Fr', initials: 'AD', color: '#002E5D', followers: '296K', rank: '#1 ROY' },
+  { id: 'at-davis',     name: 'RJ Davis',         handle: '@rjdavis',         sport: 'Basketball', school: 'UNC',      classYear: 'Sr', initials: 'RJ', color: '#7BAFD4', followers: '388K' },
+  { id: 'at-knueppel',  name: 'Kon Knueppel',     handle: '@konknueppel',     sport: 'Basketball', school: 'Duke',     classYear: 'Fr', initials: 'KK', color: '#001A57', followers: '184K' },
+  { id: 'at-lampkin',   name: 'Eddie Lampkin Jr.',handle: '@eddielampkin',    sport: 'Basketball', school: 'Syracuse', classYear: 'Sr', initials: 'EL', color: '#F76900', followers: '124K', rank: 'DPOY #1' },
+  { id: 'at-freeman',   name: 'Donnie Freeman',   handle: '@donniefreeman',   sport: 'Basketball', school: 'Syracuse', classYear: 'Fr', initials: 'DF', color: '#F76900', followers: '94K' },
+  { id: 'at-starling',  name: 'JJ Starling',      handle: '@jjstarling',      sport: 'Basketball', school: 'Syracuse', classYear: 'Jr', initials: 'JS', color: '#F76900', followers: '244K' },
+  { id: 'at-owusu',     name: 'Daniel Owusu',     handle: '@danowusu',        sport: 'Football',   school: 'Duke',     classYear: 'Jr', initials: 'DO', color: '#001A57', followers: '152K' },
+  { id: 'at-reyes',     name: 'Sienna Reyes',     handle: '@siennareyes',     sport: 'Soccer',     school: 'Duke',     classYear: 'So', initials: 'SR', color: '#000080', followers: '108K' },
+];
+
+// ── School catalog ──
+
+type SchoolItem = {
+  id: string;
+  name: string;
+  handle: string;
+  conference: string;
+  initials: string;
+  color: string;
+  athletes: string;  // e.g. "327 athletes"
+};
+
+const SCHOOL_CATALOG: SchoolItem[] = [
+  { id: 'sc-duke',     name: 'Duke University',         handle: '@dukembb',     conference: 'ACC',       initials: 'D',  color: '#001A57', athletes: '418 athletes' },
+  { id: 'sc-syracuse', name: 'Syracuse University',     handle: '@cuse_mbb',    conference: 'ACC',       initials: 'S',  color: '#F76900', athletes: '372 athletes' },
+  { id: 'sc-unc',      name: 'University of North Carolina', handle: '@uncbasketball', conference: 'ACC', initials: 'NC', color: '#7BAFD4', athletes: '402 athletes' },
+  { id: 'sc-uk',       name: 'University of Kentucky',  handle: '@kentuckymbb', conference: 'SEC',       initials: 'UK', color: '#0033A0', athletes: '388 athletes' },
+  { id: 'sc-uconn',    name: 'UConn',                   handle: '@uconnmbb',    conference: 'Big East',  initials: 'UC', color: '#000E2F', athletes: '294 athletes' },
+  { id: 'sc-ucla',     name: 'UCLA',                    handle: '@uclambb',     conference: 'Big Ten',   initials: 'LA', color: '#2D68C4', athletes: '364 athletes' },
+  { id: 'sc-byu',      name: 'BYU',                     handle: '@byubasketball', conference: 'Big 12',  initials: 'BY', color: '#002E5D', athletes: '256 athletes' },
+  { id: 'sc-michigan', name: 'University of Michigan',  handle: '@umichbball',  conference: 'Big Ten',   initials: 'M',  color: '#00274C', athletes: '442 athletes' },
+];
+
+function AthleteRow({
+  athlete,
+  isFollowing,
+  onToggleFollow,
+  onPress,
+  colors,
+}: {
+  athlete: AthleteItem;
+  isFollowing: boolean;
+  onToggleFollow: () => void;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  return (
+    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.brandAvatar, { backgroundColor: athlete.color, borderRadius: 24 }]}>
+        <Text style={styles.brandAvatarText}>{athlete.initials}</Text>
+      </View>
+      <View style={styles.resultInfo}>
+        <View style={styles.nameRow}>
+          <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+            {athlete.name}
+          </Text>
+          <MaterialCommunityIcons name="check-decagram" size={15} color="#1DA1F2" style={{ marginLeft: 4 }} />
+        </View>
+        <Text style={[styles.resultSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+          {athlete.handle} · {athlete.sport} · {athlete.school} · {athlete.classYear}
+        </Text>
+        <Text style={[styles.mutualText, { color: colors.textTertiary }]} numberOfLines={1}>
+          {athlete.followers} followers{athlete.rank ? ` · ${athlete.rank}` : ''}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={[
+          styles.brandFollowBtn,
+          isFollowing
+            ? { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' }
+            : { backgroundColor: '#FF6F3C', borderColor: '#FF6F3C' },
+        ]}
+        onPress={onToggleFollow}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.brandFollowText, isFollowing ? { color: 'rgba(255,255,255,0.85)' } : { color: '#FFF' }]}>
+          {isFollowing ? 'Following' : 'Follow'}
+        </Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+}
+
+function SchoolRow({
+  school,
+  isFollowing,
+  onToggleFollow,
+  onPress,
+  colors,
+}: {
+  school: SchoolItem;
+  isFollowing: boolean;
+  onToggleFollow: () => void;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  return (
+    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.brandAvatar, { backgroundColor: school.color }]}>
+        <Text style={styles.brandAvatarText}>{school.initials}</Text>
+      </View>
+      <View style={styles.resultInfo}>
+        <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+          {school.name}
+        </Text>
+        <Text style={[styles.resultSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+          {school.handle} · {school.conference}
+        </Text>
+        <Text style={[styles.mutualText, { color: colors.textTertiary }]} numberOfLines={1}>
+          {school.athletes}
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={[
+          styles.brandFollowBtn,
+          isFollowing
+            ? { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' }
+            : { backgroundColor: '#FF6F3C', borderColor: '#FF6F3C' },
+        ]}
+        onPress={onToggleFollow}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.brandFollowText, isFollowing ? { color: 'rgba(255,255,255,0.85)' } : { color: '#FFF' }]}>
+          {isFollowing ? 'Following' : 'Follow'}
+        </Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+}
+
+function BrandRow({
+  brand,
+  isFollowing,
+  onToggleFollow,
+  onPress,
+  colors,
+}: {
+  brand: BrandItem;
+  isFollowing: boolean;
+  onToggleFollow: () => void;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+}) {
+  return (
+    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+      <View style={[styles.brandAvatar, { backgroundColor: brand.color }]}>
+        <Text style={styles.brandAvatarText}>{brand.initials}</Text>
+      </View>
+      <View style={styles.resultInfo}>
+        <View style={styles.nameRow}>
+          <Text style={[styles.resultTitle, { color: colors.text }]} numberOfLines={1}>
+            {brand.name}
+          </Text>
+          <MaterialCommunityIcons name="check-decagram" size={15} color="#1DA1F2" style={{ marginLeft: 4 }} />
+        </View>
+        <Text style={[styles.resultSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+          {brand.handle} · {brand.category}
+        </Text>
+        <Text style={[styles.mutualText, { color: colors.textTertiary }]} numberOfLines={1}>
+          {brand.followers} followers
+        </Text>
+      </View>
+      <TouchableOpacity
+        style={[
+          styles.brandFollowBtn,
+          isFollowing
+            ? { backgroundColor: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.18)' }
+            : { backgroundColor: '#FF6F3C', borderColor: '#FF6F3C' },
+        ]}
+        onPress={onToggleFollow}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.brandFollowText, isFollowing ? { color: 'rgba(255,255,255,0.85)' } : { color: '#FFF' }]}>
+          {isFollowing ? 'Following' : 'Follow'}
+        </Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+}
+
 // ── Result row components ──
 
 function PersonRow({
@@ -450,7 +672,7 @@ export default function SearchScreen() {
           break;
         case 'venue':
           router.push({
-            pathname: '/(tabs)/search',
+            pathname: '/map',
             params: { venueName: item.name || '' },
           });
           break;
@@ -501,7 +723,7 @@ export default function SearchScreen() {
             return;
           case 'venue':
             router.push({
-              pathname: '/(tabs)/search',
+              pathname: '/map',
               params: { venueName: item.displayName || '' },
             });
             return;
@@ -565,10 +787,72 @@ export default function SearchScreen() {
   const frequentFriends = suggestions?.frequentFriends ?? [];
   const mutualSuggestions = suggestions?.mutualFollowSuggestions ?? [];
 
+  // Follow state — local for now; wire to API later.
+  const [followedBrands, setFollowedBrands] = useState<Set<string>>(new Set());
+  const [followedAthletes, setFollowedAthletes] = useState<Set<string>>(new Set());
+  const [followedSchools, setFollowedSchools] = useState<Set<string>>(new Set());
+
+  const toggleBrandFollow = useCallback((id: string) => {
+    setFollowedBrands((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const toggleAthleteFollow = useCallback((id: string) => {
+    setFollowedAthletes((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+  const toggleSchoolFollow = useCallback((id: string) => {
+    setFollowedSchools((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Filter catalogs by current query.
+  const matchingBrands = React.useMemo(() => {
+    if (!hasQuery) return [];
+    const q = debouncedQuery.toLowerCase();
+    return BRAND_CATALOG.filter(
+      (b) => b.name.toLowerCase().includes(q) || b.handle.toLowerCase().includes(q) || b.category.toLowerCase().includes(q),
+    );
+  }, [hasQuery, debouncedQuery]);
+
+  const matchingAthletes = React.useMemo(() => {
+    if (!hasQuery) return [];
+    const q = debouncedQuery.toLowerCase();
+    return ATHLETE_CATALOG.filter(
+      (a) => a.name.toLowerCase().includes(q) || a.handle.toLowerCase().includes(q) || a.sport.toLowerCase().includes(q) || a.school.toLowerCase().includes(q),
+    );
+  }, [hasQuery, debouncedQuery]);
+
+  const matchingSchools = React.useMemo(() => {
+    if (!hasQuery) return [];
+    const q = debouncedQuery.toLowerCase();
+    return SCHOOL_CATALOG.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.handle.toLowerCase().includes(q) || s.conference.toLowerCase().includes(q),
+    );
+  }, [hasQuery, debouncedQuery]);
+
+  const handleBrandPress = useCallback((brand: BrandItem) => {
+    recordSearch({ query: searchQuery, selectedType: 'venue', selectedId: undefined, displayName: brand.name });
+  }, [searchQuery, recordSearch]);
+
+  const handleAthletePress = useCallback((athlete: AthleteItem) => {
+    recordSearch({ query: searchQuery, selectedType: 'person', selectedId: undefined, displayName: athlete.name });
+  }, [searchQuery, recordSearch]);
+
+  const handleSchoolPress = useCallback((school: SchoolItem) => {
+    recordSearch({ query: searchQuery, selectedType: 'venue', selectedId: undefined, displayName: school.name });
+  }, [searchQuery, recordSearch]);
+
   return (
     <View style={[styles.container, { backgroundColor: '#000' }]}>
-      <DarkGradientBg />
-
       {/* Header */}
       <View
         style={[styles.header, { paddingTop: insets.top + 8 }]}
@@ -586,14 +870,14 @@ export default function SearchScreen() {
           <TextInput
             ref={inputRef}
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search people, events, venues..."
+            placeholder="Search athletes, schools, brands, deals..."
             placeholderTextColor={colors.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
             autoCorrect={false}
             autoFocus
-            keyboardAppearance="light"
+            keyboardAppearance="dark"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -614,7 +898,7 @@ export default function SearchScreen() {
           <View style={styles.loadingState}>
             <ActivityIndicator size="large" color={colors.text} />
           </View>
-        ) : results.length === 0 ? (
+        ) : results.length === 0 && matchingBrands.length === 0 && matchingAthletes.length === 0 && matchingSchools.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -627,6 +911,57 @@ export default function SearchScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {matchingAthletes.length > 0 && (
+              <View>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Athletes</Text>
+                </View>
+                {matchingAthletes.map((a) => (
+                  <AthleteRow
+                    key={a.id}
+                    athlete={a}
+                    isFollowing={followedAthletes.has(a.id)}
+                    onToggleFollow={() => toggleAthleteFollow(a.id)}
+                    onPress={() => handleAthletePress(a)}
+                    colors={colors}
+                  />
+                ))}
+              </View>
+            )}
+            {matchingSchools.length > 0 && (
+              <View>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Schools</Text>
+                </View>
+                {matchingSchools.map((sch) => (
+                  <SchoolRow
+                    key={sch.id}
+                    school={sch}
+                    isFollowing={followedSchools.has(sch.id)}
+                    onToggleFollow={() => toggleSchoolFollow(sch.id)}
+                    onPress={() => handleSchoolPress(sch)}
+                    colors={colors}
+                  />
+                ))}
+              </View>
+            )}
+            {matchingBrands.length > 0 && (
+              <View>
+                <View style={styles.sectionHeader}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Brands</Text>
+                </View>
+                {matchingBrands.map((b) => (
+                  <BrandRow
+                    key={b.id}
+                    brand={b}
+                    isFollowing={followedBrands.has(b.id)}
+                    onToggleFollow={() => toggleBrandFollow(b.id)}
+                    onPress={() => handleBrandPress(b)}
+                    colors={colors}
+                  />
+                ))}
+              </View>
+            )}
             {groupedSections.map((section) => (
               <View key={section.type}>
                 <View style={styles.sectionHeader}>
@@ -701,12 +1036,63 @@ export default function SearchScreen() {
             </Animated.View>
           )}
 
+          {/* Top NIL athletes */}
+          <Animated.View entering={FadeInDown.delay(120).duration(300)}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Top NIL athletes</Text>
+            </View>
+            {ATHLETE_CATALOG.slice(0, 6).map((a) => (
+              <AthleteRow
+                key={a.id}
+                athlete={a}
+                isFollowing={followedAthletes.has(a.id)}
+                onToggleFollow={() => toggleAthleteFollow(a.id)}
+                onPress={() => handleAthletePress(a)}
+                colors={colors}
+              />
+            ))}
+          </Animated.View>
+
+          {/* Schools */}
+          <Animated.View entering={FadeInDown.delay(150).duration(300)}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Schools</Text>
+            </View>
+            {SCHOOL_CATALOG.slice(0, 5).map((sch) => (
+              <SchoolRow
+                key={sch.id}
+                school={sch}
+                isFollowing={followedSchools.has(sch.id)}
+                onToggleFollow={() => toggleSchoolFollow(sch.id)}
+                onPress={() => handleSchoolPress(sch)}
+                colors={colors}
+              />
+            ))}
+          </Animated.View>
+
+          {/* Brands to follow */}
+          <Animated.View entering={FadeInDown.delay(180).duration(300)}>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Brands to follow</Text>
+            </View>
+            {BRAND_CATALOG.slice(0, 6).map((b) => (
+              <BrandRow
+                key={b.id}
+                brand={b}
+                isFollowing={followedBrands.has(b.id)}
+                onToggleFollow={() => toggleBrandFollow(b.id)}
+                onPress={() => handleBrandPress(b)}
+                colors={colors}
+              />
+            ))}
+          </Animated.View>
+
           {/* Empty suggestions state */}
           {recentSearches.length === 0 && frequentFriends.length === 0 && mutualSuggestions.length === 0 && (
             <View style={styles.emptyState}>
               <Ionicons name="search-outline" size={48} color={colors.textTertiary} />
               <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                Search for people, events, venues, and posts
+                Search for athletes, schools, brands, and NIL deals
               </Text>
             </View>
           )}
@@ -769,6 +1155,32 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     backgroundColor: '#E0E0E0',
+  },
+  brandAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  brandAvatarText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+  },
+  brandFollowBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  brandFollowText: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   resultInfo: {
     flex: 1,

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/action-sheet";
 import {
   ActivityIndicator,
+  Alert,
   Dimensions,
   Image,
   Modal,
@@ -41,8 +42,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system/legacy";
+import { useVideoPlayer, VideoView } from "expo-video";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView } from "expo-glass-effect";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — measured top edge from screen bottom (incl. safe area)
@@ -192,7 +204,10 @@ function SocialPostCard({ post, athleteName, athleteMeta }: { post: SocialPost; 
     <View style={s.socialCard}>
       {/* Header row */}
       <View style={s.socialHeader}>
-        <View style={[s.socialAvatar, { backgroundColor: '#FF6F3C' }]} />
+        <Image
+          source={require('@/assets/images/kiyan-avatar.png')}
+          style={s.socialAvatar}
+        />
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Text style={s.socialName} numberOfLines={1}>{athleteName}</Text>
@@ -275,6 +290,32 @@ type SharedDeal = {
   dealRange?: string;
   deadline: string;
   network: 'open' | 'invite';
+  // Extended detail (shown when "View Deal" tapped)
+  brandProfile: {
+    description: string;
+    foundedYear: number;
+    employees: string;
+    revenue: string;
+    headquarters: string;
+    products: string[];
+    recentNews: { headline: string; date: string; source: string }[];
+  };
+  breakdown: {
+    deliverables: { item: string; due: string }[];
+    compensation: { type: string; amount: string }[];
+    exclusivity: string;
+    usageRights: string;
+    contractLength: string;
+  };
+  stage: 'open' | 'applied' | 'reviewing' | 'negotiating' | 'committed';
+  commitments: string[];
+  aiReview: {
+    fitScore: number;
+    summary: string;
+    strengths: string[];
+    risks: string[];
+    recommendation: 'apply' | 'consider' | 'pass';
+  };
 };
 
 const MOCK_SHARED_DEALS: SharedDeal[] = [
@@ -290,6 +331,55 @@ const MOCK_SHARED_DEALS: SharedDeal[] = [
     dealRange: '$500 – $1,500',
     deadline: 'Apply by May 15',
     network: 'open',
+    brandProfile: {
+      description: 'Celsius is a fast-growing functional energy drink — zero sugar, zero artificial preservatives, formulated with green tea, ginger, and B-vitamins. Positioned around fitness and active lifestyles.',
+      foundedYear: 2004,
+      employees: '500-1,000',
+      revenue: '$1.3B (2023)',
+      headquarters: 'Boca Raton, FL',
+      products: ['Original Celsius', 'Celsius Heat', 'Celsius Essentials', 'Celsius On-the-Go (powder sticks)'],
+      recentNews: [
+        { headline: 'Celsius signs WNBA partnership for 2025 season', date: 'Apr 2', source: 'Sports Business Journal' },
+        { headline: 'Q4 revenue beats analyst expectations by 22%', date: 'Mar 18', source: 'Bloomberg' },
+        { headline: 'Pepsi distribution deal extended through 2030', date: 'Feb 12', source: 'Reuters' },
+      ],
+    },
+    breakdown: {
+      deliverables: [
+        { item: 'Instagram Reel (≥30s) featuring product', due: 'May 22' },
+        { item: 'Instagram Story slide ×3 (with swipe-up to brand)', due: 'May 25' },
+        { item: 'TikTok post (≥45s, organic-feel)', due: 'Jun 1' },
+      ],
+      compensation: [
+        { type: 'Flat cash', amount: '$1,000' },
+        { type: 'Free product (3 cases)', amount: '~$180 retail' },
+        { type: 'Performance bonus (>250k views)', amount: 'up to $500' },
+      ],
+      exclusivity: 'Non-exclusive · 30-day blackout from competing energy brands',
+      usageRights: 'Brand may re-use content on owned channels for 90 days · paid amplification not included',
+      contractLength: '6 weeks (apply → final post)',
+    },
+    stage: 'open',
+    commitments: [
+      'Disclose paid partnership per FTC #ad guidelines',
+      '24-hour exclusivity window before competing posts',
+      'Submit each post for brand approval ≥48h before publishing',
+      'Tag @celsiusofficial and use #LiveFit',
+    ],
+    aiReview: {
+      fitScore: 82,
+      summary: 'Strong audience-brand alignment. Your engagement rate (7.9%) is 1.7× the typical Celsius athlete-creator. Compensation is fair-to-favorable for the deliverable load.',
+      strengths: [
+        'Audience age skews 18-34, exact match for Celsius core demo.',
+        'Comp range above the median for tier-2 creators with your reach.',
+        'Brand has paid on time across 14 prior Proslync deals.',
+      ],
+      risks: [
+        '30-day blackout limits competing energy/hydration deals.',
+        'Performance bonus is steep — 250k views is your top-quartile threshold.',
+      ],
+      recommendation: 'apply',
+    },
   },
   {
     id: 'd-2',
@@ -303,6 +393,54 @@ const MOCK_SHARED_DEALS: SharedDeal[] = [
     dealRange: '$3,000 – $6,000',
     deadline: 'Apply by Apr 30',
     network: 'open',
+    brandProfile: {
+      description: 'Gymshark is a UK-born performance-apparel brand with one of the largest creator-driven athletic communities. Cult-followed for technical fits, drop culture, and a massive ambassador program.',
+      foundedYear: 2012,
+      employees: '900+',
+      revenue: '£500M+ (FY24)',
+      headquarters: 'Solihull, UK',
+      products: ['Vital Seamless', 'Apex Performance', 'Power Joggers', 'GS Recovery line'],
+      recentNews: [
+        { headline: 'Gymshark opens flagship store in London Westfield', date: 'Apr 15', source: 'Drapers' },
+        { headline: 'Adds NCAA D1 athlete tier to ambassador program', date: 'Mar 28', source: 'Front Office Sports' },
+      ],
+    },
+    breakdown: {
+      deliverables: [
+        { item: '4 Instagram posts (1/month + launch)', due: 'rolling' },
+        { item: '8 Stories + 4 Reels per month', due: 'monthly' },
+        { item: 'Wear Gymshark in any practice/game footage shared publicly', due: 'always-on' },
+      ],
+      compensation: [
+        { type: 'Monthly retainer', amount: '$1,500/mo × 3' },
+        { type: 'Quarterly product allowance', amount: '$1,000 retail' },
+        { type: 'Drop priority + 30% off code', amount: '—' },
+      ],
+      exclusivity: 'Exclusive — no competing performance apparel for the 90-day term',
+      usageRights: 'Brand may re-use across all owned + paid channels in perpetuity',
+      contractLength: '90 days, auto-renew option',
+    },
+    stage: 'reviewing',
+    commitments: [
+      'Wear Gymshark in published athletic content',
+      'Attend 1 virtual creator brief per month',
+      'Approval workflow on all paid content before posting',
+      'Maintain US shipping address for product allotments',
+    ],
+    aiReview: {
+      fitScore: 71,
+      summary: 'Solid retainer for a 3-month commitment. Exclusivity clause is broad — would lock you out of competing apparel deals during a peak NIL window.',
+      strengths: [
+        'Steady monthly cash + product makes value predictable.',
+        'Brand frequently re-signs ambassadors — long-term upside.',
+      ],
+      risks: [
+        'Broad exclusivity blocks Nike / UA / lululemon deals during the term.',
+        'Perpetual usage rights give the brand significant downstream value.',
+        'Content load (~12 deliverables/mo) is heavy.',
+      ],
+      recommendation: 'consider',
+    },
   },
   {
     id: 'd-3',
@@ -316,6 +454,53 @@ const MOCK_SHARED_DEALS: SharedDeal[] = [
     dealRange: '$1,200 flat',
     deadline: 'Apply by May 2',
     network: 'invite',
+    brandProfile: {
+      description: 'Raising Cane\'s is a US fast-casual chicken-finger chain with cult fan loyalty and aggressive expansion. Heavy investor in collegiate athletics and athlete-led store events.',
+      foundedYear: 1996,
+      employees: '50,000+',
+      revenue: '$3.7B (2023)',
+      headquarters: 'Plano, TX',
+      products: ['The Box Combo', 'Chicken Finger Plates', 'Caniacs Combo'],
+      recentNews: [
+        { headline: 'Cane\'s opens 800th US location', date: 'Apr 10', source: 'QSR Magazine' },
+        { headline: 'Founder Todd Graves backs SEC NIL collective', date: 'Mar 30', source: 'On3' },
+      ],
+    },
+    breakdown: {
+      deliverables: [
+        { item: 'In-store appearance · 90 minutes', due: 'May 18 · 5–6:30pm' },
+        { item: 'Pre-event Instagram Story announcing visit', due: 'May 16' },
+        { item: 'Post-event recap Story or Reel', due: 'May 20' },
+      ],
+      compensation: [
+        { type: 'Flat cash', amount: '$1,200' },
+        { type: 'Catering for athlete + 4 guests', amount: '~$120' },
+        { type: 'Travel reimbursement', amount: 'up to $200' },
+      ],
+      exclusivity: 'Non-exclusive · QSR vertical only blackout (24h pre/post event)',
+      usageRights: 'Brand can re-share organic posts; no paid amplification',
+      contractLength: '2 weeks (booking → recap post)',
+    },
+    stage: 'committed',
+    commitments: [
+      'Be on-site, on-time, in NIL-approved attire',
+      'Sign autographs / take photos for the duration',
+      'Submit story content for 4-hour review window',
+      'No alcohol/competitor products visible in event content',
+    ],
+    aiReview: {
+      fitScore: 88,
+      summary: 'Excellent local-fit deal. Compensation is at the top of band for a single-day commitment, and brand consistently re-books athletes from prior events.',
+      strengths: [
+        'Single-day execution, low scope creep risk.',
+        'Cane\'s has 100% on-time payment history across Proslync.',
+        'Local activation strengthens hometown narrative for your brand.',
+      ],
+      risks: [
+        'In-person event — schedule conflict risk if game shifts.',
+      ],
+      recommendation: 'apply',
+    },
   },
   {
     id: 'd-4',
@@ -329,6 +514,51 @@ const MOCK_SHARED_DEALS: SharedDeal[] = [
     dealRange: '$800 – $2,000',
     deadline: 'Apply by May 20',
     network: 'open',
+    brandProfile: {
+      description: 'YETI builds premium coolers, drinkware, and outdoor gear. Brand strategy leans on authentic outdoor / endurance ambassadors with strong storytelling.',
+      foundedYear: 2006,
+      employees: '1,200',
+      revenue: '$1.7B (2023)',
+      headquarters: 'Austin, TX',
+      products: ['Tundra Hard Coolers', 'Hopper Soft Coolers', 'Rambler Drinkware', 'Crossroads Bags'],
+      recentNews: [
+        { headline: 'YETI launches first apparel line', date: 'Apr 8', source: 'GearJunkie' },
+        { headline: 'Q1 revenue up 11% YoY on direct-to-consumer growth', date: 'Apr 1', source: 'YETI investor relations' },
+      ],
+    },
+    breakdown: {
+      deliverables: [
+        { item: 'Lifestyle Instagram post featuring Rambler', due: 'May 27' },
+        { item: 'Behind-the-scenes Reel (≥30s) — training day', due: 'Jun 3' },
+        { item: 'UGC kit: 5 raw clips + 5 stills delivered to brand', due: 'Jun 5' },
+      ],
+      compensation: [
+        { type: 'Flat cash', amount: '$1,200' },
+        { type: 'YETI product bundle', amount: '~$450 retail' },
+      ],
+      exclusivity: 'Non-exclusive',
+      usageRights: 'Brand may use UGC across paid + owned for 12 months',
+      contractLength: '3 weeks',
+    },
+    stage: 'open',
+    commitments: [
+      'Submit raw UGC files in 4K landscape + portrait',
+      'Approve final cut from brand creative team',
+      'No competing premium drinkware tags/mentions during term',
+    ],
+    aiReview: {
+      fitScore: 64,
+      summary: 'Reasonable comp but UGC usage rights skew brand-favorable (12 months on paid). Audience overlap with YETI buyers is moderate.',
+      strengths: [
+        'Cash + premium product is a clean trade.',
+        'Brand has strong creative leeway — content tends to be authentic.',
+      ],
+      risks: [
+        '12-month paid usage of UGC is broad for the comp band.',
+        'Audience-brand alignment is medium — your engagement may underperform brand benchmarks.',
+      ],
+      recommendation: 'consider',
+    },
   },
   {
     id: 'd-5',
@@ -342,6 +572,52 @@ const MOCK_SHARED_DEALS: SharedDeal[] = [
     dealRange: '$4,500 – $8,000',
     deadline: 'Apply by Jun 1',
     network: 'open',
+    brandProfile: {
+      description: 'BODYARMOR is a Coca-Cola-owned premium sports drink brand. Backed by Mike Trout, Trae Young, and dozens of D1 athletes. Heavy spend on collegiate NIL via SDP partnerships.',
+      foundedYear: 2011,
+      employees: '300+',
+      revenue: 'Owned by Coca-Cola (acquired 2021 for $5.6B)',
+      headquarters: 'Whitestone, NY',
+      products: ['BODYARMOR SuperDrink', 'BODYARMOR Lyte', 'BODYARMOR Edge', 'BODYARMOR Flash I.V.'],
+      recentNews: [
+        { headline: 'Inks NIL deal with 28 collegiate athletes for summer campaign', date: 'Apr 22', source: 'AdAge' },
+        { headline: 'New SuperWater line launches at Target nationwide', date: 'Mar 14', source: 'Beverage Daily' },
+      ],
+    },
+    breakdown: {
+      deliverables: [
+        { item: 'In-stadium photo + caption (game day)', due: 'first home game' },
+        { item: 'Brand-approved Reel × 2 over the season', due: 'rolling' },
+        { item: 'Wear BODYARMOR-branded sleeve / accessory in published clips', due: 'always-on' },
+      ],
+      compensation: [
+        { type: 'Flat campaign fee', amount: '$6,500' },
+        { type: 'Game-day product supply', amount: 'unlimited' },
+      ],
+      exclusivity: 'Exclusive — competing sports drinks (Gatorade, Powerade, Liquid IV) blacked out for the season',
+      usageRights: 'Brand may use content in paid social + OOH for the season',
+      contractLength: 'Full competitive season (~5 months)',
+    },
+    stage: 'negotiating',
+    commitments: [
+      'Wear branded item in any published practice/game content',
+      'Avoid mentioning or being photographed with competing sports drinks',
+      'Attend 1 brand summit (travel covered)',
+      'Quarterly performance review with brand team',
+    ],
+    aiReview: {
+      fitScore: 78,
+      summary: 'High dollar value and strong brand stability. Season-long exclusivity is a real cost — model the trade carefully against the competing-deal pipeline.',
+      strengths: [
+        'Coca-Cola backing means contract enforcement and on-time payment is near-certain.',
+        'Cash band is top decile for an in-season campaign at your tier.',
+      ],
+      risks: [
+        '5-month exclusivity blocks the entire sports-drink vertical.',
+        'Always-on visibility requirement adds gear/wardrobe complexity.',
+      ],
+      recommendation: 'apply',
+    },
   },
   {
     id: 'd-6',
@@ -354,14 +630,70 @@ const MOCK_SHARED_DEALS: SharedDeal[] = [
     testimonial: 'No cash but 6 pairs / drop priority. Still a win.',
     deadline: 'Rolling',
     network: 'invite',
+    brandProfile: {
+      description: 'Nike is the world\'s largest athletic apparel and footwear brand. Product-seeding deals are a common entry point for emerging collegiate athletes — typically no cash but priority access and a path to a paid tier.',
+      foundedYear: 1964,
+      employees: '79,000+',
+      revenue: '$51.4B (FY24)',
+      headquarters: 'Beaverton, OR',
+      products: ['Air Jordan', 'Nike Basketball', 'Nike Sportswear', 'Jordan Apparel', 'Air Max'],
+      recentNews: [
+        { headline: 'Nike expands collegiate seeding program to 1,200 athletes', date: 'Apr 18', source: 'Nike Newsroom' },
+        { headline: 'Q3 NA revenue down 4% — refocusing on innovation pipeline', date: 'Mar 20', source: 'CNBC' },
+      ],
+    },
+    breakdown: {
+      deliverables: [
+        { item: 'Wear Nike footwear in publicly-shared practice + game content', due: 'ongoing' },
+        { item: 'Tag @nikebasketball when wearing seeded product', due: 'ongoing' },
+        { item: 'Optional: send 2 high-quality content pieces per quarter', due: 'rolling' },
+      ],
+      compensation: [
+        { type: 'Quarterly product seeding (6 pairs / season)', amount: '~$900 retail' },
+        { type: 'Drop priority access', amount: '—' },
+        { type: 'Path to paid ambassador tier (year 2)', amount: 'TBD' },
+      ],
+      exclusivity: 'Implicit — must wear Nike footwear; cannot be paid by competing footwear brand',
+      usageRights: 'Brand may share organic posts; no paid use without separate agreement',
+      contractLength: '12 months, auto-renew with conduct review',
+    },
+    stage: 'open',
+    commitments: [
+      'Wear seeded footwear in athletic content',
+      'Tag brand in posts featuring product',
+      'Maintain conduct standards per athlete code',
+      'Honor exclusivity even without cash compensation',
+    ],
+    aiReview: {
+      fitScore: 58,
+      summary: 'Brand prestige and access are real, but the no-cash structure plus footwear exclusivity has high opportunity cost during your peak NIL years.',
+      strengths: [
+        'Nike association is a brand-equity lift.',
+        'Path to paid tier — many athletes graduate to retainer in year 2.',
+      ],
+      risks: [
+        'Locks out paid footwear deals (adidas, Puma, On Running) for 12 months.',
+        'No cash floor — value depends entirely on the year-2 promotion happening.',
+      ],
+      recommendation: 'consider',
+    },
   },
 ];
 
-function SharedDealCard({ deal }: { deal: SharedDeal }) {
-  const [interested, setInterested] = React.useState(false);
+function SharedDealCard({
+  deal,
+  applied,
+  onApply,
+}: {
+  deal: SharedDeal;
+  applied: boolean;
+  onApply: () => void;
+}) {
+  const [detailOpen, setDetailOpen] = React.useState(false);
 
   return (
     <View style={s.dealCard}>
+      <DealDetailSheet deal={deal} visible={detailOpen} onClose={() => setDetailOpen(false)} />
       {/* Header: brand + open/invite status */}
       <View style={s.dealHeader}>
         <View style={[s.dealBrandLogo, { backgroundColor: deal.brandAccent }]}>
@@ -427,27 +759,529 @@ function SharedDealCard({ deal }: { deal: SharedDeal }) {
 
       {/* Actions — all glass, no solid fills */}
       <View style={s.dealActions}>
-        <TouchableOpacity style={s.dealBtn} activeOpacity={0.75}>
+        <TouchableOpacity style={s.dealBtn} activeOpacity={0.75} onPress={() => setDetailOpen(true)}>
           <Text style={s.dealBtnText}>View Deal</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[s.dealBtn, s.dealBtnPrimary, interested && s.dealBtnActive]}
+          style={[s.dealBtn, s.dealBtnPrimary, applied && s.dealBtnActive]}
           activeOpacity={0.85}
-          onPress={() => setInterested((v) => !v)}
+          onPress={onApply}
+          disabled={applied}
         >
           <Ionicons
-            name={interested ? 'checkmark' : 'flash'}
+            name={applied ? 'checkmark-circle' : 'paper-plane'}
             size={14}
-            color={interested ? '#34C759' : '#FF6F3C'}
+            color={applied ? '#34C759' : '#FF6F3C'}
           />
-          <Text style={[s.dealBtnText, { color: interested ? '#34C759' : '#FF6F3C' }]}>
-            {interested ? 'Interested' : "I'm Interested"}
+          <Text style={[s.dealBtnText, { color: applied ? '#34C759' : '#FF6F3C' }]}>
+            {applied ? 'Applied' : 'Apply'}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={s.dealBtnIcon} activeOpacity={0.75}>
           <Ionicons name="paper-plane-outline" size={16} color="#FFF" />
         </TouchableOpacity>
       </View>
+    </View>
+  );
+}
+
+// ─── Deal detail sheet — opens when "View Deal" is tapped ─────────
+
+const DEAL_SHEET_TRAVEL = 800;
+
+function stageStepperItems(): { key: SharedDeal['stage']; label: string }[] {
+  return [
+    { key: 'open', label: 'Open' },
+    { key: 'applied', label: 'Applied' },
+    { key: 'reviewing', label: 'In review' },
+    { key: 'negotiating', label: 'Negotiating' },
+    { key: 'committed', label: 'Committed' },
+  ];
+}
+
+function recommendationStyle(rec: SharedDeal['aiReview']['recommendation']): { label: string; color: string } {
+  if (rec === 'apply') return { label: 'Apply', color: '#34C759' };
+  if (rec === 'consider') return { label: 'Consider', color: '#FF6F3C' };
+  return { label: 'Pass', color: '#FF453A' };
+}
+
+function fitScoreBand(score: number): { label: string; color: string } {
+  if (score >= 80) return { label: 'Excellent fit', color: '#34C759' };
+  if (score >= 65) return { label: 'Strong fit', color: '#FF6F3C' };
+  if (score >= 50) return { label: 'Average fit', color: '#FFD60A' };
+  return { label: 'Weak fit', color: '#FF453A' };
+}
+
+function DealDetailSheet({
+  deal,
+  visible,
+  onClose,
+}: {
+  deal: SharedDeal;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const translateY = useSharedValue(DEAL_SHEET_TRAVEL);
+  const backdropProgress = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (visible) {
+      backdropProgress.value = withTiming(1, { duration: 280 });
+      translateY.value = withTiming(0, { duration: 320 });
+    }
+  }, [visible]);
+
+  const dismiss = React.useCallback(() => {
+    translateY.value = withTiming(DEAL_SHEET_TRAVEL, { duration: 220 });
+    backdropProgress.value = withTiming(0, { duration: 220 });
+    setTimeout(onClose, 220);
+  }, [onClose]);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetY(10)
+    .onUpdate((e) => {
+      if (e.translationY > 0) {
+        translateY.value = e.translationY;
+        backdropProgress.value = 1 - Math.min(e.translationY / DEAL_SHEET_TRAVEL, 1);
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > 100 || e.velocityY > 600) {
+        translateY.value = withTiming(DEAL_SHEET_TRAVEL, { duration: 220 });
+        backdropProgress.value = withTiming(0, { duration: 220 });
+        runOnJS(onClose)();
+      } else {
+        translateY.value = withTiming(0, { duration: 200 });
+        backdropProgress.value = withTiming(1, { duration: 200 });
+      }
+    });
+
+  const sheetAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(0,0,0,${0.65 * backdropProgress.value})`,
+  }));
+
+  const stageSteps = stageStepperItems();
+  const stageIdx = stageSteps.findIndex((step) => step.key === deal.stage);
+  const rec = recommendationStyle(deal.aiReview.recommendation);
+  const fit = fitScoreBand(deal.aiReview.fitScore);
+
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
+      <Animated.View style={[dealSheetStyles.backdrop, backdropAnimStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+        <Animated.View style={[dealSheetStyles.sheet, sheetAnimStyle]}>
+          <GestureDetector gesture={panGesture}>
+            <View>
+              <View style={dealSheetStyles.handle} />
+              <View style={dealSheetStyles.header}>
+                <View style={[dealSheetStyles.headerBrandLogo, { backgroundColor: deal.brandAccent }]}>
+                  <Text style={dealSheetStyles.headerBrandInitial}>{deal.brandInitial}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={dealSheetStyles.headerBrandName}>{deal.brandName}</Text>
+                  <Text style={dealSheetStyles.headerDealType}>{deal.dealType} · {deal.category}</Text>
+                </View>
+              </View>
+            </View>
+          </GestureDetector>
+
+          <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 28 }}>
+            {/* Stage stepper */}
+            <View style={dealSheetStyles.stageRow}>
+              {stageSteps.map((step, i) => {
+                const reached = i <= stageIdx;
+                const current = i === stageIdx;
+                return (
+                  <View key={step.key} style={{ flex: 1, alignItems: 'center' }}>
+                    <View
+                      style={[
+                        dealSheetStyles.stageDot,
+                        reached
+                          ? { backgroundColor: '#FF6F3C', borderColor: '#FF6F3C' }
+                          : { backgroundColor: 'transparent', borderColor: 'rgba(255,255,255,0.15)' },
+                        current && { transform: [{ scale: 1.18 }] },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        dealSheetStyles.stageLabel,
+                        reached ? { color: '#FFF', fontWeight: '700' } : { color: 'rgba(255,255,255,0.4)' },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {step.label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            {/* Brand profile */}
+            <View style={dealSheetStyles.section}>
+              <Text style={dealSheetStyles.sectionTitle}>Brand profile</Text>
+              <Text style={dealSheetStyles.bodyText}>{deal.brandProfile.description}</Text>
+              <View style={dealSheetStyles.statsGrid}>
+                <View style={dealSheetStyles.statCell}>
+                  <Text style={dealSheetStyles.statLabel}>Founded</Text>
+                  <Text style={dealSheetStyles.statValue}>{deal.brandProfile.foundedYear}</Text>
+                </View>
+                <View style={dealSheetStyles.statCell}>
+                  <Text style={dealSheetStyles.statLabel}>Employees</Text>
+                  <Text style={dealSheetStyles.statValue}>{deal.brandProfile.employees}</Text>
+                </View>
+                <View style={dealSheetStyles.statCell}>
+                  <Text style={dealSheetStyles.statLabel}>Revenue</Text>
+                  <Text style={dealSheetStyles.statValue}>{deal.brandProfile.revenue}</Text>
+                </View>
+                <View style={dealSheetStyles.statCell}>
+                  <Text style={dealSheetStyles.statLabel}>HQ</Text>
+                  <Text style={dealSheetStyles.statValue}>{deal.brandProfile.headquarters}</Text>
+                </View>
+              </View>
+              <Text style={dealSheetStyles.subTitle}>Products</Text>
+              <View style={dealSheetStyles.chipRow}>
+                {deal.brandProfile.products.map((p) => (
+                  <View key={p} style={dealSheetStyles.productChip}>
+                    <Text style={dealSheetStyles.productChipText}>{p}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={dealSheetStyles.subTitle}>Recent news</Text>
+              {deal.brandProfile.recentNews.map((n, i) => (
+                <View key={i} style={dealSheetStyles.newsRow}>
+                  <View style={dealSheetStyles.newsDot} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={dealSheetStyles.newsHeadline}>{n.headline}</Text>
+                    <Text style={dealSheetStyles.newsMeta}>{n.source} · {n.date}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+
+            {/* Deal breakdown */}
+            <View style={dealSheetStyles.section}>
+              <Text style={dealSheetStyles.sectionTitle}>Proposed deal</Text>
+              <Text style={dealSheetStyles.subTitle}>Deliverables</Text>
+              {deal.breakdown.deliverables.map((d, i) => (
+                <View key={i} style={dealSheetStyles.deliverableRow}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color="#FF6F3C" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={dealSheetStyles.deliverableItem}>{d.item}</Text>
+                    <Text style={dealSheetStyles.deliverableDue}>Due {d.due}</Text>
+                  </View>
+                </View>
+              ))}
+              <Text style={dealSheetStyles.subTitle}>Compensation</Text>
+              {deal.breakdown.compensation.map((c, i) => (
+                <View key={i} style={dealSheetStyles.compRow}>
+                  <Text style={dealSheetStyles.compType}>{c.type}</Text>
+                  <Text style={dealSheetStyles.compAmount}>{c.amount}</Text>
+                </View>
+              ))}
+              <View style={dealSheetStyles.fineRow}>
+                <Text style={dealSheetStyles.fineLabel}>Exclusivity</Text>
+                <Text style={dealSheetStyles.fineValue}>{deal.breakdown.exclusivity}</Text>
+              </View>
+              <View style={dealSheetStyles.fineRow}>
+                <Text style={dealSheetStyles.fineLabel}>Usage rights</Text>
+                <Text style={dealSheetStyles.fineValue}>{deal.breakdown.usageRights}</Text>
+              </View>
+              <View style={dealSheetStyles.fineRow}>
+                <Text style={dealSheetStyles.fineLabel}>Contract length</Text>
+                <Text style={dealSheetStyles.fineValue}>{deal.breakdown.contractLength}</Text>
+              </View>
+            </View>
+
+            {/* Commitments */}
+            <View style={dealSheetStyles.section}>
+              <Text style={dealSheetStyles.sectionTitle}>Your commitments</Text>
+              {deal.commitments.map((c, i) => (
+                <View key={i} style={dealSheetStyles.commitmentRow}>
+                  <View style={dealSheetStyles.commitmentDot} />
+                  <Text style={dealSheetStyles.commitmentText}>{c}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* AI review */}
+            <View style={dealSheetStyles.section}>
+              <View style={dealSheetStyles.aiHeader}>
+                <View style={dealSheetStyles.aiIconWrap}>
+                  <Ionicons name="sparkles" size={14} color="#FF6F3C" />
+                </View>
+                <Text style={dealSheetStyles.sectionTitle}>Proslync AI review</Text>
+              </View>
+              <View style={dealSheetStyles.aiTopRow}>
+                <View>
+                  <Text style={dealSheetStyles.aiFitLabel}>Fit score</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6 }}>
+                    <Text style={dealSheetStyles.aiFitScore}>{deal.aiReview.fitScore}</Text>
+                    <Text style={[dealSheetStyles.aiFitBand, { color: fit.color }]}>{fit.label}</Text>
+                  </View>
+                </View>
+                <View style={[dealSheetStyles.aiRecPill, { borderColor: rec.color, backgroundColor: `${rec.color}1F` }]}>
+                  <Text style={[dealSheetStyles.aiRecText, { color: rec.color }]}>{rec.label}</Text>
+                </View>
+              </View>
+              <Text style={dealSheetStyles.bodyText}>{deal.aiReview.summary}</Text>
+              <Text style={dealSheetStyles.subTitle}>Strengths</Text>
+              {deal.aiReview.strengths.map((s, i) => (
+                <View key={i} style={dealSheetStyles.aiBulletRow}>
+                  <Ionicons name="add-circle" size={14} color="#34C759" />
+                  <Text style={dealSheetStyles.aiBulletText}>{s}</Text>
+                </View>
+              ))}
+              <Text style={dealSheetStyles.subTitle}>Risks</Text>
+              {deal.aiReview.risks.map((r, i) => (
+                <View key={i} style={dealSheetStyles.aiBulletRow}>
+                  <Ionicons name="alert-circle" size={14} color="#FF6F3C" />
+                  <Text style={dealSheetStyles.aiBulletText}>{r}</Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+const dealSheetStyles = StyleSheet.create({
+  backdrop: { flex: 1, justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: '#0F1012',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '92%',
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  handle: {
+    width: 38, height: 5, borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignSelf: 'center', marginTop: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  headerBrandLogo: {
+    width: 48, height: 48, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  headerBrandInitial: { color: '#FFF', fontSize: 20, fontWeight: '900' },
+  headerBrandName: { fontSize: 18, fontWeight: '800', color: '#FFF', letterSpacing: -0.3 },
+  headerDealType: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
+
+  stageRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  stageDot: {
+    width: 12, height: 12, borderRadius: 6,
+    borderWidth: 2,
+    marginBottom: 6,
+  },
+  stageLabel: { fontSize: 10, letterSpacing: 0.3 },
+
+  section: {
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  sectionTitle: { fontSize: 15, fontWeight: '800', color: '#FFF', letterSpacing: -0.2, marginBottom: 8 },
+  subTitle: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 14, marginBottom: 6 },
+  bodyText: { fontSize: 13, lineHeight: 19, color: 'rgba(255,255,255,0.85)' },
+
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  statCell: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  statValue: { fontSize: 14, color: '#FFF', fontWeight: '700', marginTop: 4 },
+
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  productChip: {
+    backgroundColor: 'rgba(255,111,60,0.10)',
+    borderColor: 'rgba(255,111,60,0.45)',
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  productChipText: { color: '#FF6F3C', fontSize: 11, fontWeight: '700' },
+
+  newsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 8 },
+  newsDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF6F3C', marginTop: 6 },
+  newsHeadline: { color: '#FFF', fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  newsMeta: { color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 2 },
+
+  deliverableRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 7 },
+  deliverableItem: { color: '#FFF', fontSize: 13, fontWeight: '600' },
+  deliverableDue: { color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 2 },
+
+  compRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+  },
+  compType: { color: 'rgba(255,255,255,0.85)', fontSize: 13, flex: 1 },
+  compAmount: { color: '#FF6F3C', fontSize: 14, fontWeight: '800' },
+
+  fineRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    gap: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+  },
+  fineLabel: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase', width: 96 },
+  fineValue: { flex: 1, color: '#FFF', fontSize: 12, lineHeight: 17 },
+
+  commitmentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6 },
+  commitmentDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)', marginTop: 7 },
+  commitmentText: { color: '#FFF', fontSize: 13, lineHeight: 19, flex: 1 },
+
+  aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  aiIconWrap: {
+    width: 26, height: 26, borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,111,60,0.18)',
+  },
+  aiTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 10, gap: 12 },
+  aiFitLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '700', letterSpacing: 0.4, textTransform: 'uppercase' },
+  aiFitScore: { fontSize: 32, color: '#FFF', fontWeight: '900', letterSpacing: -1, fontVariant: ['tabular-nums'] },
+  aiFitBand: { fontSize: 12, fontWeight: '700', marginBottom: 6 },
+  aiRecPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  aiRecText: { fontSize: 12, fontWeight: '800', letterSpacing: 0.4 },
+  aiBulletRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 5 },
+  aiBulletText: { flex: 1, color: 'rgba(255,255,255,0.85)', fontSize: 12, lineHeight: 17 },
+});
+
+// ─── Deals tab content — Open marketplace + My Applications ──────
+
+const APPLIED_DEALS_STORAGE_KEY = 'proslync:athlete:appliedDeals:v1';
+
+function DealsTabContent() {
+  const [subTab, setSubTab] = React.useState<'open' | 'applied'>('open');
+  const [appliedIds, setAppliedIds] = React.useState<Set<string>>(new Set());
+  const [hydrated, setHydrated] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(APPLIED_DEALS_STORAGE_KEY)
+      .then((raw) => {
+        if (cancelled || !raw) return;
+        try {
+          const arr = JSON.parse(raw) as string[];
+          setAppliedIds(new Set(arr));
+        } catch {}
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setHydrated(true); });
+    return () => { cancelled = true; };
+  }, []);
+
+  React.useEffect(() => {
+    if (!hydrated) return;
+    AsyncStorage.setItem(APPLIED_DEALS_STORAGE_KEY, JSON.stringify(Array.from(appliedIds))).catch(() => {});
+  }, [appliedIds, hydrated]);
+
+  const apply = React.useCallback((id: string) => {
+    setAppliedIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, []);
+
+  const openDeals = React.useMemo(() => MOCK_SHARED_DEALS.filter((d) => d.network === 'open'), []);
+  const myApplications = React.useMemo(() => MOCK_SHARED_DEALS.filter((d) => appliedIds.has(d.id)), [appliedIds]);
+
+  const visible = subTab === 'open' ? openDeals : myApplications;
+
+  return (
+    <View>
+      {/* Sub-tabs */}
+      <View style={s.dealsSubTabs}>
+        <TouchableOpacity
+          style={[s.dealsSubTab, subTab === 'open' && s.dealsSubTabActive]}
+          activeOpacity={0.7}
+          onPress={() => setSubTab('open')}
+        >
+          <Text style={[s.dealsSubTabText, subTab === 'open' && s.dealsSubTabTextActive]}>
+            Open · {openDeals.length}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.dealsSubTab, subTab === 'applied' && s.dealsSubTabActive]}
+          activeOpacity={0.7}
+          onPress={() => setSubTab('applied')}
+        >
+          <Text style={[s.dealsSubTabText, subTab === 'applied' && s.dealsSubTabTextActive]}>
+            My Applications · {myApplications.length}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {visible.length === 0 ? (
+        <View style={s.dealsEmpty}>
+          <Ionicons
+            name={subTab === 'open' ? 'briefcase-outline' : 'paper-plane-outline'}
+            size={28}
+            color="rgba(255,255,255,0.4)"
+          />
+          <Text style={s.dealsEmptyTitle}>
+            {subTab === 'open' ? 'No open deals right now' : "You haven't applied to anything yet"}
+          </Text>
+          <Text style={s.dealsEmptyBody}>
+            {subTab === 'open'
+              ? 'New marketplace deals from brands will appear here.'
+              : 'Tap Apply on an open deal to start tracking it here.'}
+          </Text>
+        </View>
+      ) : (
+        <View style={s.feedList}>
+          {visible.map((deal) => (
+            <SharedDealCard
+              key={deal.id}
+              deal={deal}
+              applied={appliedIds.has(deal.id)}
+              onApply={() => apply(deal.id)}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -875,6 +1709,7 @@ export default function ProfileScreen() {
   if (role === 'brand') return <BrandProfile />;
   if (role === 'fan') return <FanProfile />;
   if (role === 'school') return <SchoolProfile />;
+  if (role === 'nilManager') return <SchoolProfile />;
   return <PlayerProfileScreen />;
 }
 
@@ -935,6 +1770,22 @@ function PlayerProfileScreen() {
     () => ['about', 'posts', 'deals', 'merch', 'media'] as const,
     []
   );
+
+  // Animated sliding knob — same pattern as the dashboard top pill
+  const profileTabIndex = Math.max(0, TAB_KEYS.indexOf(profileTab));
+  const profilePillWidth = useSharedValue(0);
+  const animatedProfileTabIndex = useSharedValue(profileTabIndex);
+  React.useEffect(() => {
+    animatedProfileTabIndex.value = withTiming(profileTabIndex, { duration: 180 });
+  }, [profileTabIndex, animatedProfileTabIndex]);
+  const profileKnobStyle = useAnimatedStyle(() => {
+    const segW = profilePillWidth.value / Math.max(TAB_KEYS.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedProfileTabIndex.value * segW + inset }],
+    };
+  });
   const { data: userEvents = [], isLoading: eventsLoading } = useQuery<Event[]>({
     queryKey: ['userEvents', user?.id],
     queryFn: () => {
@@ -998,6 +1849,79 @@ function PlayerProfileScreen() {
   // Inline-editable identity fields. Defaults are the Kiyan persona.
   const [isEditing, setIsEditing] = React.useState(false);
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
+
+  // Persistent custom banner video.
+  const [bannerVideo, setBannerVideo] = React.useState<string | null>(null);
+  const [bannerHydrated, setBannerHydrated] = React.useState(false);
+  React.useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem('proslync:profile:bannerVideo:v1')
+      .then((v) => { if (!cancelled && v) setBannerVideo(v); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setBannerHydrated(true); });
+    return () => { cancelled = true; };
+  }, []);
+  React.useEffect(() => {
+    if (!bannerHydrated) return;
+    if (bannerVideo) {
+      AsyncStorage.setItem('proslync:profile:bannerVideo:v1', bannerVideo).catch(() => {});
+    } else {
+      AsyncStorage.removeItem('proslync:profile:bannerVideo:v1').catch(() => {});
+    }
+  }, [bannerVideo, bannerHydrated]);
+
+  const bannerPlayer = useVideoPlayer(bannerVideo ?? null, (p) => {
+    if (!p) return;
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+
+  // Keep banner video playing through re-renders / focus changes / hot reloads.
+  React.useEffect(() => {
+    if (!bannerPlayer || !bannerVideo) return;
+    bannerPlayer.play();
+    const sub = bannerPlayer.addListener('playingChange', (e: any) => {
+      if (!e?.isPlaying) {
+        try { bannerPlayer.play(); } catch {}
+      }
+    });
+    return () => { try { sub.remove(); } catch {} };
+  }, [bannerPlayer, bannerVideo]);
+
+  const pickBannerVideo = React.useCallback(async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Photo access needed', 'Allow photo library access in Settings to pick a video.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: false,
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      // Copy into persistent documentDirectory so the URI survives app restarts.
+      const src = result.assets[0].uri;
+      let persistedUri = src;
+      try {
+        const dir = `${FileSystem.documentDirectory}proslync-media/profile-banner/`;
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+        const ext = (src.split('?')[0].split('.').pop() || 'mp4').toLowerCase();
+        const safeExt = /^[a-z0-9]{2,4}$/.test(ext) ? ext : 'mp4';
+        const dest = `${dir}${Date.now()}.${safeExt}`;
+        await FileSystem.copyAsync({ from: src, to: dest });
+        persistedUri = dest;
+      } catch {
+        // Fall back to original URI if copy fails.
+      }
+      setBannerVideo(persistedUri);
+    }
+  }, []);
+
+  const removeBannerVideo = React.useCallback(() => {
+    setBannerVideo(null);
+  }, []);
   const [displayName, setDisplayName] = React.useState("Kiyan Anthony");
   const [metaPrimary, setMetaPrimary] = React.useState("Freshman Guard at Syracuse");
   const [metaSecondary, setMetaSecondary] = React.useState("Brooklyn, New York");
@@ -1055,118 +1979,82 @@ function PlayerProfileScreen() {
           refreshControl={refreshControl}
         >
           {/* Banner — cover image that fades into the page bg, now scrolls with the content */}
-          <View style={[s.bannerWrap, { height: insets.top + 180, backgroundColor: '#000' }]} pointerEvents="none">
-            <Image
-              source={require('@/assets/images/kiyan-banner.png')}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 249 }}
-              resizeMode="cover"
-            />
-            <LinearGradient
-              colors={[
-                'rgba(0,0,0,0)',
-                'rgba(0,0,0,0.03)',
-                'rgba(0,0,0,0.07)',
-                'rgba(0,0,0,0.13)',
-                'rgba(0,0,0,0.20)',
-                'rgba(0,0,0,0.29)',
-                'rgba(0,0,0,0.39)',
-                'rgba(0,0,0,0.50)',
-                'rgba(0,0,0,0.62)',
-                'rgba(0,0,0,0.73)',
-                'rgba(0,0,0,0.83)',
-                'rgba(0,0,0,0.91)',
-                'rgba(0,0,0,0.96)',
-                'rgba(0,0,0,0.99)',
-                '#000',
-                '#000',
-              ]}
-              locations={[
-                0, 0.07, 0.14, 0.21, 0.28, 0.35, 0.42, 0.49, 0.56, 0.63, 0.7,
-                0.77, 0.83, 0.88, 0.92, 1,
-              ]}
-              style={StyleSheet.absoluteFill}
+          <View style={[s.bannerWrap, { height: insets.top + 290, backgroundColor: '#000' }]} pointerEvents="none">
+            {bannerVideo ? (
+              <VideoView
+                player={bannerPlayer}
+                style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
+                contentFit="cover"
+                nativeControls={false}
+              />
+            ) : (
+              <Image
+                source={require('@/assets/images/kiyan-banner.png')}
+                style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
+                resizeMode="cover"
+              />
+            )}
+            {/* Subtle full-banner dark tint */}
+            <View
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.28)' }]}
               pointerEvents="none"
             />
           </View>
-          {/* Profile info row — avatar left, name + stats right */}
-          <View style={s.profileRow}>
-            <TouchableOpacity
-              onPress={handleAvatarTap}
-              activeOpacity={0.9}
-              accessibilityLabel="View profile photo"
-              accessibilityRole="imagebutton"
-            >
-              <Image
-                source={require('@/assets/images/kiyan-avatar.png')}
-                style={s.igAvatar}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-
-            <View style={s.rightCol}>
-              {isEditing ? (
-                <>
-                  <TextInput
-                    style={[s.igName, s.editableField]}
-                    value={displayName}
-                    onChangeText={setDisplayName}
-                    placeholder="Display name"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    keyboardAppearance="dark"
-                  />
-                  <TextInput
-                    style={[s.metaLine, s.metaLinePrimary, s.editableField, { marginTop: 6 }]}
-                    value={metaPrimary}
-                    onChangeText={setMetaPrimary}
-                    placeholder="Headline"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    keyboardAppearance="dark"
-                  />
-                  <TextInput
-                    style={[s.metaLine, s.editableField, { marginTop: 6 }]}
-                    value={metaSecondary}
-                    onChangeText={setMetaSecondary}
-                    placeholder="Location"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    keyboardAppearance="dark"
-                  />
-                </>
-              ) : (
-                <>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <Text style={s.igName}>{displayName}</Text>
-                    <MaterialCommunityIcons name="check-decagram" size={16} color="#FF6F3C" />
-                  </View>
-                  <Text style={[s.metaLine, s.metaLinePrimary]} numberOfLines={1}>
-                    {metaPrimary}
-                  </Text>
-                  <Text style={s.metaLine} numberOfLines={1}>
-                    {metaSecondary}
-                  </Text>
-                </>
-              )}
-            </View>
-          </View>
-
-          {/* Profile section tabs — plain row with orange underline under the active tab */}
+          {/* Profile section tabs — segmented glass pill with sliding knob (matches dashboard) */}
           <View style={s.tabsRow}>
-            {TAB_KEYS.map((key) => {
-              const isActive = profileTab === key;
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={[s.tab, isActive && s.tabActive]}
-                  onPress={() => setProfileTab(key)}
-                  activeOpacity={0.7}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: isActive }}
-                >
-                  <Text style={[s.tabLabel, isActive && s.tabLabelActive]}>
-                    {key[0].toUpperCase() + key.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+            <View
+              style={s.tabSegmentedPill}
+              onLayout={(e) => {
+                profilePillWidth.value = e.nativeEvent.layout.width;
+              }}
+            >
+              <View
+                style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 23 }]}
+                pointerEvents="none"
+              />
+              <View style={s.tabsGlassLayer} pointerEvents="none">
+                <GlassView
+                  glassEffectStyle="regular"
+                  style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+                />
+                {isLiquidGlassSupported && (
+                  <LiquidGlassView
+                    effect="regular"
+                    tintColor="rgba(255,255,255,0.10)"
+                    style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+                  />
+                )}
+              </View>
+              <Animated.View style={[s.tabKnob, profileKnobStyle]} pointerEvents="none">
+                {isLiquidGlassSupported ? (
+                  <LiquidGlassView
+                    effect="regular"
+                    tintColor="rgba(255,255,255,0.20)"
+                    style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
+                  />
+                ) : null}
+              </Animated.View>
+              {TAB_KEYS.map((key) => {
+                const isActive = profileTab === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={s.tabSegment}
+                    onPress={() => setProfileTab(key)}
+                    activeOpacity={0.7}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: isActive }}
+                  >
+                    <Text
+                      style={[s.tabPillText, isActive && s.tabPillTextActive]}
+                      numberOfLines={1}
+                    >
+                      {key[0].toUpperCase() + key.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Tab content */}
@@ -1174,11 +2062,30 @@ function PlayerProfileScreen() {
             {profileTab === 'about' && (
               <View style={s.aboutSection}>
                 <View style={s.aboutBlockBare}>
-                  <Text style={s.aboutLabel}>Bio</Text>
-                  {BIO_SECTIONS.map((section) => {
+                  <View
+                    style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+                    pointerEvents="none"
+                  />
+                  <View style={s.aboutBlockGlass} pointerEvents="none">
+                    <GlassView
+                      glassEffectStyle="regular"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                    {isLiquidGlassSupported && (
+                      <LiquidGlassView
+                        effect="regular"
+                        tintColor="rgba(255,255,255,0.10)"
+                        style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                      />
+                    )}
+                  </View>
+                  {BIO_SECTIONS.map((section, idx) => {
                     const isOpen = expandedBio.has(section.key);
                     return (
-                      <View key={section.key} style={s.bioItem}>
+                      <View
+                        key={section.key}
+                        style={[s.bioItem, idx === 0 && { borderTopWidth: 0, paddingTop: 0 }]}
+                      >
                         <TouchableOpacity
                           activeOpacity={0.7}
                           onPress={() => toggleBio(section.key)}
@@ -1200,7 +2107,23 @@ function PlayerProfileScreen() {
                 </View>
 
                 <View style={s.aboutBlockBare}>
-                  <Text style={s.aboutLabel}>Interests</Text>
+                  <View
+                    style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+                    pointerEvents="none"
+                  />
+                  <View style={s.aboutBlockGlass} pointerEvents="none">
+                    <GlassView
+                      glassEffectStyle="regular"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                    {isLiquidGlassSupported && (
+                      <LiquidGlassView
+                        effect="regular"
+                        tintColor="rgba(255,255,255,0.10)"
+                        style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                      />
+                    )}
+                  </View>
                   {([
                     {
                       key: 'philanthropy',
@@ -1217,10 +2140,13 @@ function PlayerProfileScreen() {
                       title: 'Academic',
                       body: "Early interest in entrepreneurship and real estate, and active with the Syracuse Student-Athlete Advisory Committee on the academic side.",
                     },
-                  ] as const).map((section) => {
+                  ] as const).map((section, idx) => {
                     const isOpen = expandedBio.has(section.key);
                     return (
-                      <View key={section.key} style={s.bioItem}>
+                      <View
+                        key={section.key}
+                        style={[s.bioItem, idx === 0 && { borderTopWidth: 0, paddingTop: 0 }]}
+                      >
                         <TouchableOpacity
                           activeOpacity={0.7}
                           onPress={() => toggleBio(section.key)}
@@ -1243,6 +2169,8 @@ function PlayerProfileScreen() {
               </View>
             )}
 
+            {profileTab !== 'about' && <View style={{ height: 15 }} />}
+
             {profileTab === 'posts' && (
               <View style={s.feedList}>
                 {MOCK_SOCIAL_POSTS.map((post) => (
@@ -1256,19 +2184,30 @@ function PlayerProfileScreen() {
               </View>
             )}
 
-            {profileTab === 'deals' && (
-              <View style={s.feedList}>
-                {MOCK_SHARED_DEALS.map((deal) => (
-                  <SharedDealCard key={deal.id} deal={deal} />
-                ))}
-              </View>
-            )}
+            {profileTab === 'deals' && <DealsTabContent />}
 
             {profileTab === 'merch' && <MerchTab />}
 
             {profileTab === 'media' && (
               <View>
                 <AwardsTab />
+                {/* Press hero summary — matches dashboard Stats aesthetic */}
+                <View style={s.mediaHeroCard}>
+                  <View style={s.mediaHeroLeft}>
+                    <View style={s.mediaHeroIconWrap}>
+                      <Ionicons name="newspaper" size={24} color="#FFF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.mediaHeroName}>Press</Text>
+                      <View style={s.mediaHeroSubRow}>
+                        <Ionicons name="flame" size={14} color="#FF6F3C" />
+                        <Text style={s.mediaHeroSub}>
+                          {MOCK_MEDIA.length} stories · across {new Set(MOCK_MEDIA.map((m) => m.source)).size} outlets
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
                 <View style={s.feedList}>
                   {MOCK_MEDIA.map((m) => <MediaCard key={m.id} item={m} />)}
                 </View>
@@ -1332,55 +2271,40 @@ function PlayerProfileScreen() {
         <LinearGradient
           colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
           locations={[0, 0.5, 1]}
-          style={[s.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
+          style={[s.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 100 }]}
           pointerEvents="none"
         />
 
-        {/* Floating bottom toolbar — role switcher | edit profile | go live */}
-        <View style={[s.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
-          <Pressable
-            style={s.toolbarCircle}
-            onPress={() => setRoleSheetVisible(true)}
-            accessibilityLabel="Switch role"
-            accessibilityRole="button"
-          >
-            <LiquidGlassView
-              effect="regular"
+        {/* Top-left floating profile pill — avatar + hamburger (matches dashboard) */}
+        <Pressable
+          style={[s.topLeftProfilePill, { top: insets.top + 8 }]}
+          onPress={() => setRoleSheetVisible(true)}
+          accessibilityLabel="Open menu"
+          accessibilityRole="button"
+        >
+          <View style={s.topLeftProfilePillGlass} pointerEvents="none">
+            <GlassView
+              glassEffectStyle="regular"
               style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
             />
-            <Ionicons name="menu" size={22} color="#FFF" />
-          </Pressable>
-
-          <Pressable
-            style={[s.toolbarPill, isEditing && s.toolbarPillActive]}
-            onPress={() => setIsEditing((v) => !v)}
-            accessibilityLabel={isEditing ? 'Save profile changes' : 'Edit profile'}
-            accessibilityRole="button"
-          >
-            <LiquidGlassView
-              effect="regular"
-              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
-            />
-            <Text style={s.toolbarPillText}>
-              {isEditing ? 'Save' : 'Edit Profile'}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            style={s.toolbarCircle}
-            onPress={() => setShowCreateMenu(true)}
-            accessibilityLabel="Create"
-            accessibilityRole="button"
-          >
-            <LiquidGlassView
-              effect="regular"
-              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
-            />
-            <Ionicons name="radio" size={22} color="#FF4444" />
-          </Pressable>
-        </View>
+          </View>
+          <Image
+            source={require('@/assets/images/kiyan-avatar.png')}
+            style={s.topLeftProfilePillAvatar}
+          />
+          <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
+        </Pressable>
       </View>
-      <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
+      <RoleSwitcherSheet
+        visible={roleSheetVisible}
+        onClose={() => setRoleSheetVisible(false)}
+        onEditProfile={() => setIsEditing((v) => !v)}
+        onGoLive={() => setShowCreateMenu(true)}
+        isEditing={isEditing}
+        onChangeBanner={pickBannerVideo}
+        onRemoveBanner={removeBannerVideo}
+        hasCustomBanner={!!bannerVideo}
+      />
     </SwipeableTabView>
   );
 }
@@ -1402,8 +2326,37 @@ const s = StyleSheet.create({
   topBarGlassCircle: { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
   topBarCenter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   topBarUsername: { fontSize: 20, fontWeight: '700', color: '#FFF' },
-  profileRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, marginTop: -180, marginBottom: 5 },
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: -180,
+    marginBottom: 8,
+    marginHorizontal: 14,
+    borderRadius: 32,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  profilePillGlass: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 32,
+    overflow: 'hidden',
+  },
   bannerWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#111' },
+  bannerName: {
+    fontFamily: 'Bangers_400Regular',
+    fontSize: 44,
+    color: '#FFF',
+    letterSpacing: 3,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 8,
+  },
   igAvatar: { width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: '#000' },
   rightCol: { flex: 1, marginLeft: 16 },
   statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 6 },
@@ -1416,11 +2369,43 @@ const s = StyleSheet.create({
   igActionRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 16 },
   igBtn: { height: 36, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', justifyContent: 'center', alignItems: 'center' },
   igBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
-  tabsRow: { flexDirection: 'row', marginTop: 6, marginBottom: 10, paddingHorizontal: 4 },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabActive: { borderBottomColor: '#FF6F3C' },
-  tabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)', letterSpacing: -0.1 },
-  tabLabelActive: { color: '#FF6F3C', fontWeight: '700' },
+  tabsRow: { flexDirection: 'row', marginTop: -34, marginBottom: 10, paddingHorizontal: 16 },
+  tabSegmentedPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  tabsGlassLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
+  tabKnob: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    left: 0,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    overflow: 'hidden',
+  },
+  tabSegment: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  tabPillText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.65)', letterSpacing: -0.1 },
+  tabPillTextActive: { color: '#FFF', fontWeight: '800' },
   metaLine: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.55)', marginTop: 4, letterSpacing: -0.1, lineHeight: 18 },
   metaLinePrimary: { color: '#FFF', fontWeight: '700' },
   editableField: {
@@ -1428,6 +2413,32 @@ const s = StyleSheet.create({
     borderBottomColor: 'rgba(255,111,60,0.6)',
     paddingVertical: 2,
     paddingHorizontal: 0,
+  },
+  topLeftProfilePill: {
+    position: 'absolute',
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    paddingLeft: 3,
+    paddingRight: 12,
+    borderRadius: 23,
+    overflow: 'hidden',
+    zIndex: 100,
+  },
+  topLeftProfilePillGlass: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
+  topLeftProfilePillAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   bottomToolbar: {
     position: 'absolute',
@@ -1480,6 +2491,56 @@ const s = StyleSheet.create({
   toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
   // Aggregated social feed
   feedList: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 4, gap: 14 },
+
+  // Deals sub-tabs (Open · My Applications)
+  dealsSubTabs: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingTop: 14,
+    gap: 8,
+  },
+  dealsSubTab: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+  },
+  dealsSubTabActive: {
+    backgroundColor: 'rgba(255,111,60,0.14)',
+    borderColor: 'rgba(255,111,60,0.45)',
+  },
+  dealsSubTabText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.65)',
+    letterSpacing: 0.2,
+  },
+  dealsSubTabTextActive: {
+    color: '#FF6F3C',
+  },
+  dealsEmpty: {
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 48,
+    gap: 8,
+  },
+  dealsEmptyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  dealsEmptyBody: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+    lineHeight: 17,
+  },
   socialCard: { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 14, overflow: 'hidden' },
   socialHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10 },
   socialAvatar: { width: 36, height: 36, borderRadius: 18 },
@@ -1557,13 +2618,36 @@ const s = StyleSheet.create({
   merchStock: { fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: -0.05, flex: 1, textAlign: 'right' },
 
   // Media tab
-  mediaCard: { backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 14, overflow: 'hidden' },
+  mediaHeroCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 16,
+    padding: 14,
+    marginHorizontal: 14,
+    marginTop: 10,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  mediaHeroLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  mediaHeroIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF6F3C',
+  },
+  mediaHeroName: { color: '#FFF', fontSize: 22, fontWeight: '700', letterSpacing: -0.4 },
+  mediaHeroSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
+  mediaHeroSub: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '500', flex: 1 },
+  mediaCard: { backgroundColor: '#1C1C1E', borderRadius: 16, overflow: 'hidden' },
   mediaHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10 },
   mediaSourceLogo: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   mediaSourceInitial: { fontSize: 14, fontWeight: '800', color: '#FFF', letterSpacing: -0.2 },
   mediaSourceLabel: { fontSize: 13, fontWeight: '700', color: '#FFF', letterSpacing: -0.1 },
   mediaTimeAgo: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
-  mediaThumbWrap: { width: '100%', aspectRatio: 1.6, backgroundColor: '#111' },
+  mediaThumbWrap: { width: '100%', aspectRatio: 1.6, backgroundColor: '#0A0A0A', marginTop: 4 },
   mediaThumb: { width: '100%', height: '100%' },
   mediaPlayBadge: { position: 'absolute', top: '50%', left: '50%', width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.6)', marginLeft: -24, marginTop: -24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   mediaDurationPill: { position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4 },
@@ -1571,10 +2655,10 @@ const s = StyleSheet.create({
   mediaBody: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 10, gap: 6 },
   mediaHeadline: { fontSize: 15, fontWeight: '700', color: '#FFF', lineHeight: 20, letterSpacing: -0.2 },
   mediaSnippet: { fontSize: 13, color: 'rgba(255,255,255,0.65)', fontStyle: 'italic', lineHeight: 18, letterSpacing: -0.1 },
-  mediaActions: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.08)' },
-  mediaBtnPrimary: { flex: 1.4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 34, borderRadius: 10, backgroundColor: '#FF6F3C' },
+  mediaActions: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingTop: 4, paddingBottom: 14 },
+  mediaBtnPrimary: { flex: 1.4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, borderRadius: 12, backgroundColor: '#FF6F3C' },
   mediaBtnPrimaryText: { fontSize: 13, fontWeight: '700', color: '#FFF', letterSpacing: -0.1 },
-  mediaBtnSecondary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 34, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
+  mediaBtnSecondary: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, height: 36, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.06)' },
   mediaBtnSecondaryText: { fontSize: 13, fontWeight: '600', color: '#FFF', letterSpacing: -0.1 },
 
   // Awards tab
@@ -1620,7 +2704,22 @@ const s = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.08)',
   },
-  aboutBlockBare: { gap: 10, paddingHorizontal: 4 },
+  aboutBlockBare: {
+    gap: 10,
+    borderRadius: 16,
+    padding: 14,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  aboutBlockGlass: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
   aboutLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 1.2, color: '#FF6F3C', textTransform: 'uppercase' },
   aboutBody: { fontSize: 15, color: '#FFF', lineHeight: 22, letterSpacing: -0.1 },
   bioItem: {
@@ -1636,7 +2735,7 @@ const s = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, overflow: 'hidden' },
   chipText: { fontSize: 13, fontWeight: '600', color: '#FFF', letterSpacing: -0.1 },
-  igGridSection: { },
+  igGridSection: { marginTop: -20 },
   centerContent: {
     flex: 1,
     justifyContent: "center",

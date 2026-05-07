@@ -326,7 +326,7 @@ export function SearchSheet({ visible, onClose }: SearchSheetProps) {
       switch (item.type) {
         case 'person': router.push({ pathname: '/user/[username]', params: { username: item.userName || `user-${item.id}`, userId: String(item.id) } }); break;
         case 'event': router.push({ pathname: '/event/[id]', params: { id: String(item.id) } }); break;
-        case 'venue': router.push({ pathname: '/(tabs)/search', params: { venueName: item.name || '' } }); break;
+        case 'venue': router.push({ pathname: '/map', params: { venueName: item.name || '' } }); break;
       }
     }, 300);
   }, [searchQuery, recordSearch, handleClose, router]);
@@ -338,7 +338,7 @@ export function SearchSheet({ visible, onClose }: SearchSheetProps) {
         switch (item.selectedType) {
           case 'person': router.push({ pathname: '/user/[username]', params: { username: `user-${item.selectedId}`, userId: String(item.selectedId) } }); break;
           case 'event': router.push({ pathname: '/event/[id]', params: { id: String(item.selectedId) } }); break;
-          case 'venue': router.push({ pathname: '/(tabs)/search', params: { venueName: item.displayName || '' } }); break;
+          case 'venue': router.push({ pathname: '/map', params: { venueName: item.displayName || '' } }); break;
         }
       }, 300);
     } else if (item.query) {

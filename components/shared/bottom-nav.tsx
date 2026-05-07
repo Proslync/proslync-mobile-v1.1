@@ -20,8 +20,8 @@ interface TabConfig {
 }
 
 const TABS: TabConfig[] = [
-  { name: 'search', path: '/(tabs)/search', icon: 'map-outline', iconFocused: 'map', size: 26 },
-  { name: 'explore', path: '/(tabs)/explore', icon: 'paper-plane-outline', iconFocused: 'paper-plane', size: 24 },
+  { name: 'search', path: '/map', icon: 'map-outline', iconFocused: 'map', size: 26 },
+  { name: 'explore', path: '/messages', icon: 'paper-plane-outline', iconFocused: 'paper-plane', size: 24 },
   { name: 'index', path: '/(tabs)', icon: 'home-outline', iconFocused: 'home-sharp', size: 24 },
   { name: 'activity', path: '/(tabs)/activity', icon: 'wallet-outline', iconFocused: 'wallet', size: 26 },
   { name: 'profile', path: '/(tabs)/profile', icon: 'person-outline', iconFocused: 'person', size: 24 },

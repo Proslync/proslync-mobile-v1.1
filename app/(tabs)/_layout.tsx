@@ -5,13 +5,25 @@ import {
   TAB_ORDER,
   useTabNavigation,
 } from "@/lib/providers/tab-navigation-provider";
+import { useRole } from "@/lib/providers/role-provider";
 import { usePathname } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";
 import * as React from "react";
 import { View, StyleSheet } from "react-native";
 
+const ROLE_AVATARS = {
+  player: require("@/assets/images/kiyan-avatar-tab.png"),
+  coach: require("@/assets/images/coach-avatar-tab.png"),
+  agent: require("@/assets/images/default-avatar.png"),
+  brand: require("@/assets/images/default-avatar.png"),
+  fan: require("@/assets/images/default-avatar.png"),
+  school: require("@/assets/images/default-avatar.png"),
+  nilManager: require("@/assets/images/default-avatar.png"),
+} as const;
+
 export default function TabLayout() {
   const { syncTabIndex } = useTabNavigation();
+  const { role } = useRole();
   const pathname = usePathname();
 
   React.useEffect(() => {
@@ -40,7 +52,7 @@ export default function TabLayout() {
         <NativeTabs.Trigger name="profile">
           <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
-            src={require("@/assets/images/kiyan-avatar-tab.png")}
+            src={ROLE_AVATARS[role]}
             renderingMode="original"
           />
         </NativeTabs.Trigger>

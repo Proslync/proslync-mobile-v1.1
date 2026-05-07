@@ -19,10 +19,12 @@ import Animated, {
   FadeInUp,
   FadeOutUp,
   LinearTransition,
+  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
@@ -37,13 +39,17 @@ import Svg, {
 import {
   DEMO_META,
   LIVE_GAME,
+  MY_ROSTER,
+  MY_TEAM_SUMMARY,
   OPPONENT,
   PATTERNS,
   PLAYER_TRENDS,
+  PRACTICE_TRACKING_PROVIDER,
   ROTATING_INSIGHTS,
   type AIInsight,
   type Pattern,
   type PlayerTrend,
+  type RosterPlayer,
 } from '@/lib/data/mock-coach-data';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
 
@@ -52,19 +58,20 @@ const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
-type TabKey = 'live' | 'insights' | 'scout';
+type TabKey = 'insights' | 'roster' | 'scout';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'live', label: 'Live' },
   { key: 'insights', label: 'Insights' },
+  { key: 'roster', label: 'Roster' },
   { key: 'scout', label: 'Scout' },
 ];
 
 export function CoachView() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
-  const [activeTab, setActiveTab] = React.useState<TabKey>('live');
+  const [activeTab, setActiveTab] = React.useState<TabKey>('insights');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
+  const [liveOpen, setLiveOpen] = React.useState(false);
 
   const activeTabIndex = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
   const tabPillWidth = useSharedValue(0);
@@ -82,11 +89,32 @@ export function CoachView() {
   });
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 4 }]}>
+    <View style={styles.container}>
       {/* Tab content */}
-      {activeTab === 'live' && <LiveGameTab insets={insets.bottom} />}
-      {activeTab === 'insights' && <InsightsTab insets={insets.bottom} />}
+      {activeTab === 'insights' && <InsightsTab insets={insets.bottom} onOpenLive={() => setLiveOpen(true)} />}
+      {activeTab === 'roster' && <RosterTab insets={insets.bottom} />}
       {activeTab === 'scout' && <ScoutTab insets={insets.bottom} />}
+
+      <Modal visible={liveOpen} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setLiveOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: '#000', paddingTop: insets.top }}>
+          <View style={styles.liveHeader}>
+            <Pressable onPress={() => setLiveOpen(false)} hitSlop={10} style={styles.liveBackBtn}>
+              <Ionicons name="chevron-back" size={22} color="#FFF" />
+            </Pressable>
+            <Text style={styles.liveHeaderTitle}>Live Game</Text>
+            <View style={{ width: 32 }} />
+          </View>
+          <LiveGameTab insets={insets.bottom} />
+        </View>
+      </Modal>
+
+      {/* Top fade — gives the floating top pill row visual depth */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.topFade, { height: insets.top + 90 }]}
+        pointerEvents="none"
+      />
 
       {/* Bottom darken gradient */}
       <LinearGradient
@@ -96,8 +124,8 @@ export function CoachView() {
         pointerEvents="none"
       />
 
-      {/* Floating bottom row — profile pill + segmented tabs */}
-      <View style={[styles.headerScrollFixed, styles.headerScrollContent]}>
+      {/* Floating top row — profile pill + segmented tabs */}
+      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
         <Pressable
           style={styles.headerPill}
           onPress={() => setRoleSheetVisible(true)}
@@ -308,7 +336,8 @@ function InsightCard({ insight, isTop }: { insight: AIInsight; isTop: boolean })
 // Tab 2 — Insights (Patterns + Trends combined)
 // ============================================================
 
-function InsightsTab({ insets }: { insets: number }) {
+function InsightsTab({ insets, onOpenLive }: { insets: number; onOpenLive: () => void }) {
+  const topInset = useSafeAreaInsets().top;
   const [subTab, setSubTab] = React.useState<'patterns' | 'trends'>('patterns');
   const SUB_TABS: { key: 'patterns' | 'trends'; label: string }[] = [
     { key: 'patterns', label: 'Patterns' },
@@ -316,7 +345,23 @@ function InsightsTab({ insets }: { insets: number }) {
   ];
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, paddingTop: topInset + 70 }}>
+      <Pressable
+        onPress={onOpenLive}
+        style={({ pressed }) => [styles.liveButtonCard, { opacity: pressed ? 0.85 : 1 }]}
+        accessibilityRole="button"
+        accessibilityLabel="Open live game view"
+      >
+        <View style={styles.liveButtonDotWrap}>
+          <View style={styles.liveButtonDot} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.liveButtonTitle}>Live Game</Text>
+          <Text style={styles.liveButtonSubtitle}>vs {LIVE_GAME.awayTeam} · {LIVE_GAME.quarter} {LIVE_GAME.clock}</Text>
+        </View>
+        <Text style={styles.liveButtonScore}>{LIVE_GAME.homeScore}–{LIVE_GAME.awayScore}</Text>
+        <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.5)" />
+      </Pressable>
       <View style={styles.subTabsRow}>
         {SUB_TABS.map(({ key, label }) => {
           const isActive = subTab === key;
@@ -432,13 +477,337 @@ function PatternsTab({ insets }: { insets: number }) {
 }
 
 // ============================================================
-// Tab 3 — Opponent Scout
+// Tab 3 — My Roster
+// ============================================================
+
+function trendBadge(trend: 'up' | 'down' | 'flat'): { icon: keyof typeof Ionicons.glyphMap; color: string } {
+  if (trend === 'up') return { icon: 'caret-up', color: '#34C759' };
+  if (trend === 'down') return { icon: 'caret-down', color: '#FF453A' };
+  return { icon: 'remove', color: 'rgba(255,255,255,0.55)' };
+}
+
+function statusBadge(status: RosterPlayer['status']): { label: string; color: string } | null {
+  if (status === 'active') return null;
+  if (status === 'questionable') return { label: 'Q', color: '#FFD60A' };
+  return { label: 'OUT', color: '#FF453A' };
+}
+
+function RosterTab({ insets }: { insets: number }) {
+  const topInset = useSafeAreaInsets().top;
+  const [selectedPlayerId, setSelectedPlayerId] = React.useState<string | null>(null);
+  const selectedPlayer = MY_ROSTER.find((p) => p.id === selectedPlayerId);
+
+  const teamPpg = (MY_ROSTER.reduce((s, p) => s + p.ppg, 0)).toFixed(1);
+  const teamRpg = (MY_ROSTER.reduce((s, p) => s + p.rpg, 0)).toFixed(1);
+  const teamApg = (MY_ROSTER.reduce((s, p) => s + p.apg, 0)).toFixed(1);
+  const totalPracticeShots = MY_ROSTER.reduce((s, p) => s + p.practice.totalShots, 0);
+  const weightedMakes = MY_ROSTER.reduce((s, p) => s + p.practice.totalShots * (p.practice.makesPct / 100), 0);
+  const teamPracticePct = totalPracticeShots > 0 ? (weightedMakes / totalPracticeShots) * 100 : 0;
+
+  return (
+    <ScrollView
+      contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + 70, paddingBottom: insets + 40 }]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Team summary card */}
+      <Animated.View entering={FadeInDown.duration(360)} style={styles.rosterTeamCard}>
+        <View style={styles.rosterTeamHead}>
+          <View style={styles.rosterTeamLogo}>
+            <Text style={styles.rosterTeamLogoText}>PV</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.rosterTeamName}>{MY_TEAM_SUMMARY.name}</Text>
+            <Text style={styles.rosterTeamMeta}>
+              {MY_TEAM_SUMMARY.record} · {MY_TEAM_SUMMARY.conferenceRecord} · {MY_TEAM_SUMMARY.rank}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.rosterTeamStatsRow}>
+          <View style={styles.rosterTeamStat}>
+            <Text style={styles.rosterTeamStatValue}>{teamPpg}</Text>
+            <Text style={styles.rosterTeamStatLabel}>PPG (team)</Text>
+          </View>
+          <View style={styles.rosterTeamStatDivider} />
+          <View style={styles.rosterTeamStat}>
+            <Text style={styles.rosterTeamStatValue}>{teamRpg}</Text>
+            <Text style={styles.rosterTeamStatLabel}>RPG</Text>
+          </View>
+          <View style={styles.rosterTeamStatDivider} />
+          <View style={styles.rosterTeamStat}>
+            <Text style={styles.rosterTeamStatValue}>{teamApg}</Text>
+            <Text style={styles.rosterTeamStatLabel}>APG</Text>
+          </View>
+        </View>
+      </Animated.View>
+
+      {/* Roster list */}
+      <Text style={styles.sectionLabel}>ROSTER · {MY_ROSTER.length}</Text>
+      {MY_ROSTER.map((p, i) => {
+        const trend = trendBadge(p.trend);
+        const stat = statusBadge(p.status);
+        return (
+          <Animated.View
+            key={p.id}
+            entering={FadeInDown.delay(60 + i * 30).duration(300)}
+          >
+            <Pressable
+              onPress={() => setSelectedPlayerId(p.id)}
+              style={({ pressed }) => [styles.rosterRow, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <View style={[styles.rosterAvatar, { backgroundColor: p.color }]}>
+                <Text style={styles.rosterAvatarText}>{p.initials}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.rosterNameRow}>
+                  <Text style={styles.rosterName} numberOfLines={1}>
+                    #{p.number}  {p.name}
+                  </Text>
+                  {stat && (
+                    <View style={[styles.rosterStatusPill, { backgroundColor: `${stat.color}26`, borderColor: `${stat.color}66` }]}>
+                      <Text style={[styles.rosterStatusText, { color: stat.color }]}>{stat.label}</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.rosterMeta}>
+                  {p.position} · {p.classYear} · {p.height}
+                </Text>
+              </View>
+              <View style={styles.rosterStatBlock}>
+                <Text style={styles.rosterStatBig}>{p.ppg.toFixed(1)}</Text>
+                <Text style={styles.rosterStatSmall}>PPG</Text>
+              </View>
+              <View style={styles.rosterStatBlock}>
+                <Text style={styles.rosterStatBig}>{p.fgPct.toFixed(0)}%</Text>
+                <Text style={styles.rosterStatSmall}>FG</Text>
+              </View>
+              <Ionicons name={trend.icon} size={16} color={trend.color} />
+            </Pressable>
+          </Animated.View>
+        );
+      })}
+
+      {/* Practice facility shot tracking */}
+      <View style={styles.practiceHeaderRow}>
+        <Text style={styles.sectionLabel}>PRACTICE SHOTS · LAST 7 DAYS</Text>
+        <View style={styles.practiceUnverifiedPill}>
+          <Ionicons name="ellipsis-horizontal-circle" size={11} color="rgba(255,214,10,0.95)" />
+          <Text style={styles.practiceUnverifiedText}>Awaiting integration</Text>
+        </View>
+      </View>
+
+      <Animated.View entering={FadeInDown.duration(360)} style={styles.practiceSummaryCard}>
+        <View style={styles.practiceSummaryRow}>
+          <View style={styles.practiceSummaryStat}>
+            <Text style={styles.practiceSummaryValue}>{totalPracticeShots.toLocaleString()}</Text>
+            <Text style={styles.practiceSummaryLabel}>Shots taken</Text>
+          </View>
+          <View style={styles.rosterTeamStatDivider} />
+          <View style={styles.practiceSummaryStat}>
+            <Text style={styles.practiceSummaryValue}>{teamPracticePct.toFixed(1)}%</Text>
+            <Text style={styles.practiceSummaryLabel}>Team make rate</Text>
+          </View>
+          <View style={styles.rosterTeamStatDivider} />
+          <View style={styles.practiceSummaryStat}>
+            <Text style={styles.practiceSummaryValue}>{MY_ROSTER.filter((p) => p.practice.totalShots > 0).length}</Text>
+            <Text style={styles.practiceSummaryLabel}>Players logged</Text>
+          </View>
+        </View>
+      </Animated.View>
+
+      {MY_ROSTER.filter((p) => p.practice.totalShots > 0).slice(0, 5).map((p, i) => {
+        const threePct = p.practice.threeAttempts > 0 ? (p.practice.threeMakes / p.practice.threeAttempts) * 100 : 0;
+        const midPct = p.practice.midAttempts > 0 ? (p.practice.midMakes / p.practice.midAttempts) * 100 : 0;
+        const rimPct = p.practice.rimAttempts > 0 ? (p.practice.rimMakes / p.practice.rimAttempts) * 100 : 0;
+        return (
+          <Animated.View
+            key={`prac-${p.id}`}
+            entering={FadeInDown.delay(60 + i * 40).duration(300)}
+            style={styles.practiceRow}
+          >
+            <View style={styles.practiceRowHead}>
+              <View style={[styles.rosterAvatarSmall, { backgroundColor: p.color }]}>
+                <Text style={styles.rosterAvatarTextSmall}>{p.initials}</Text>
+              </View>
+              <Text style={styles.practiceRowName} numberOfLines={1}>{p.name}</Text>
+              <Text style={styles.practiceRowTotal}>{p.practice.totalShots} shots · {p.practice.makesPct.toFixed(1)}%</Text>
+            </View>
+            <View style={styles.practiceZoneRow}>
+              <PracticeZone label="3PT" makes={p.practice.threeMakes} attempts={p.practice.threeAttempts} pct={threePct} />
+              <PracticeZone label="MID" makes={p.practice.midMakes} attempts={p.practice.midAttempts} pct={midPct} />
+              <PracticeZone label="RIM" makes={p.practice.rimMakes} attempts={p.practice.rimAttempts} pct={rimPct} />
+            </View>
+          </Animated.View>
+        );
+      })}
+
+      {/* Provider note */}
+      <View style={styles.practiceProviderCard}>
+        <View style={styles.practiceProviderHead}>
+          <Ionicons name="link" size={14} color={ACCENT} />
+          <Text style={styles.practiceProviderTitle}>Connect a shot-tracking provider</Text>
+        </View>
+        <Text style={styles.practiceProviderBody}>
+          {PRACTICE_TRACKING_PROVIDER.note} Candidate partners we're evaluating:
+        </Text>
+        {PRACTICE_TRACKING_PROVIDER.candidateProviders.map((prov) => (
+          <View key={prov.name} style={styles.practiceProviderRow}>
+            <Text style={styles.practiceProviderName}>{prov.name}</Text>
+            <Text style={styles.practiceProviderDetail} numberOfLines={1}>{prov.detail}</Text>
+          </View>
+        ))}
+      </View>
+
+      {/* Player detail sheet */}
+      <RosterPlayerSheet
+        player={selectedPlayer ?? null}
+        visible={!!selectedPlayer}
+        onClose={() => setSelectedPlayerId(null)}
+      />
+    </ScrollView>
+  );
+}
+
+function PracticeZone({ label, makes, attempts, pct }: { label: string; makes: number; attempts: number; pct: number }) {
+  const color = pct >= 50 ? '#34C759' : pct >= 38 ? ACCENT : '#FF453A';
+  return (
+    <View style={styles.practiceZone}>
+      <Text style={styles.practiceZoneLabel}>{label}</Text>
+      <Text style={[styles.practiceZonePct, { color }]}>{attempts === 0 ? '—' : `${pct.toFixed(0)}%`}</Text>
+      <Text style={styles.practiceZoneAtt}>{makes}/{attempts}</Text>
+    </View>
+  );
+}
+
+const ROSTER_SHEET_TRAVEL = 700;
+
+function RosterPlayerSheet({
+  player,
+  visible,
+  onClose,
+}: {
+  player: RosterPlayer | null;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const translateY = useSharedValue(ROSTER_SHEET_TRAVEL);
+  const backdropProgress = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (visible) {
+      backdropProgress.value = withTiming(1, { duration: 280 });
+      translateY.value = withTiming(0, { duration: 320 });
+    }
+  }, [visible]);
+
+  const dismiss = React.useCallback(() => {
+    translateY.value = withTiming(ROSTER_SHEET_TRAVEL, { duration: 220 });
+    backdropProgress.value = withTiming(0, { duration: 220 });
+    setTimeout(onClose, 220);
+  }, [onClose]);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetY(10)
+    .onUpdate((e) => {
+      if (e.translationY > 0) {
+        translateY.value = e.translationY;
+        backdropProgress.value = 1 - Math.min(e.translationY / ROSTER_SHEET_TRAVEL, 1);
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > 100 || e.velocityY > 600) {
+        translateY.value = withTiming(ROSTER_SHEET_TRAVEL, { duration: 220 });
+        backdropProgress.value = withTiming(0, { duration: 220 });
+        runOnJS(onClose)();
+      } else {
+        translateY.value = withTiming(0, { duration: 200 });
+        backdropProgress.value = withTiming(1, { duration: 200 });
+      }
+    });
+
+  const sheetAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(0,0,0,${0.65 * backdropProgress.value})`,
+  }));
+
+  if (!player) return null;
+  const trend = trendBadge(player.trend);
+  return (
+    <Modal visible={visible} transparent animationType="none" onRequestClose={dismiss} statusBarTranslucent>
+      <Animated.View style={[styles.rosterSheetBackdrop, backdropAnimStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+        <Animated.View style={[styles.rosterSheet, sheetAnimStyle]}>
+          <GestureDetector gesture={panGesture}>
+            <View>
+              <View style={styles.rosterSheetHandle} />
+              <View style={styles.rosterSheetHeader}>
+                <View style={[styles.rosterAvatarLg, { backgroundColor: player.color }]}>
+                  <Text style={styles.rosterAvatarLgText}>{player.initials}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rosterSheetName}>#{player.number}  {player.name}</Text>
+                  <Text style={styles.rosterSheetMeta}>{player.position} · {player.classYear} · {player.height}</Text>
+                  {player.statusNote && (
+                    <Text style={styles.rosterSheetStatusNote}>{player.statusNote}</Text>
+                  )}
+                </View>
+                <Ionicons name={trend.icon} size={22} color={trend.color} />
+              </View>
+            </View>
+          </GestureDetector>
+          <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 28 }}>
+            <Text style={styles.sectionLabel}>SEASON STATS</Text>
+            <View style={styles.statsGrid}>
+              <StatCell label="PPG" value={player.ppg.toFixed(1)} />
+              <StatCell label="RPG" value={player.rpg.toFixed(1)} />
+              <StatCell label="APG" value={player.apg.toFixed(1)} />
+              <StatCell label="MPG" value={player.mpg.toFixed(1)} />
+              <StatCell label="FG%" value={`${player.fgPct.toFixed(1)}%`} />
+              <StatCell label="3P%" value={player.threePct === 0 ? '—' : `${player.threePct.toFixed(1)}%`} />
+              <StatCell label="FT%" value={`${player.ftPct.toFixed(1)}%`} />
+            </View>
+            {player.practice.totalShots > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>PRACTICE · LAST 7 DAYS</Text>
+                <View style={styles.practiceRow}>
+                  <View style={styles.practiceRowHead}>
+                    <Text style={styles.practiceRowName}>Total</Text>
+                    <Text style={styles.practiceRowTotal}>{player.practice.totalShots} shots · {player.practice.makesPct.toFixed(1)}%</Text>
+                  </View>
+                  <View style={styles.practiceZoneRow}>
+                    <PracticeZone label="3PT" makes={player.practice.threeMakes} attempts={player.practice.threeAttempts} pct={player.practice.threeAttempts > 0 ? (player.practice.threeMakes / player.practice.threeAttempts) * 100 : 0} />
+                    <PracticeZone label="MID" makes={player.practice.midMakes} attempts={player.practice.midAttempts} pct={player.practice.midAttempts > 0 ? (player.practice.midMakes / player.practice.midAttempts) * 100 : 0} />
+                    <PracticeZone label="RIM" makes={player.practice.rimMakes} attempts={player.practice.rimAttempts} pct={player.practice.rimAttempts > 0 ? (player.practice.rimMakes / player.practice.rimAttempts) * 100 : 0} />
+                  </View>
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.statCell}>
+      <Text style={styles.statCellValue}>{value}</Text>
+      <Text style={styles.statCellLabel}>{label}</Text>
+    </View>
+  );
+}
+
+// ============================================================
+// Tab 4 — Opponent Scout
 // ============================================================
 
 function ScoutTab({ insets }: { insets: number }) {
+  const topInset = useSafeAreaInsets().top;
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + 70, paddingBottom: insets + 40 }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Opponent header */}
@@ -765,10 +1134,17 @@ const styles = StyleSheet.create({
   // Floating bottom row — profile pill + segmented tabs (matches player activity)
   headerScrollFixed: {
     position: 'absolute',
-    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
     left: 0,
     right: 0,
     zIndex: 100,
+    flexGrow: 0,
+  },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 99,
   },
   headerScrollContent: {
     flexDirection: 'row',
@@ -1298,4 +1674,202 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+
+  // ── Live button (in Insights tab) ────────────────────────
+  liveButtonCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(255,68,68,0.10)',
+    borderColor: 'rgba(255,68,68,0.40)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginHorizontal: 16,
+    marginBottom: 10,
+  },
+  liveButtonDotWrap: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,68,68,0.20)',
+  },
+  liveButtonDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF4444' },
+  liveButtonTitle: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.2 },
+  liveButtonSubtitle: { color: 'rgba(255,255,255,0.65)', fontSize: 11, marginTop: 2 },
+  liveButtonScore: { color: '#FFF', fontSize: 16, fontWeight: '900', fontVariant: ['tabular-nums'], marginRight: 4 },
+
+  // Live full-screen header
+  liveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  liveBackBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  liveHeaderTitle: { color: '#FFF', fontSize: 17, fontWeight: '800' },
+
+  // ── Roster tab ────────────────────────────────────────────
+  rosterTeamCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  rosterTeamHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  rosterTeamLogo: {
+    width: 46, height: 46, borderRadius: 23,
+    backgroundColor: ACCENT,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  rosterTeamLogoText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: -0.3 },
+  rosterTeamName: { color: '#FFF', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  rosterTeamMeta: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 },
+  rosterTeamStatsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.08)' },
+  rosterTeamStat: { flex: 1, alignItems: 'center' },
+  rosterTeamStatValue: { color: '#FFF', fontSize: 16, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  rosterTeamStatLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '600', marginTop: 2 },
+  rosterTeamStatDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.10)' },
+  rosterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  rosterAvatar: {
+    width: 38, height: 38, borderRadius: 19,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  rosterAvatarText: { color: '#FFF', fontSize: 12, fontWeight: '900', letterSpacing: -0.3 },
+  rosterAvatarSmall: {
+    width: 26, height: 26, borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  rosterAvatarTextSmall: { color: '#FFF', fontSize: 9, fontWeight: '900', letterSpacing: -0.2 },
+  rosterAvatarLg: {
+    width: 56, height: 56, borderRadius: 28,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  rosterAvatarLgText: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: -0.4 },
+  rosterNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  rosterName: { color: '#FFF', fontSize: 14, fontWeight: '700', flexShrink: 1 },
+  rosterMeta: { color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 1 },
+  rosterStatusPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  rosterStatusText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.4 },
+  rosterStatBlock: { alignItems: 'center', minWidth: 36 },
+  rosterStatBig: { color: '#FFF', fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  rosterStatSmall: { color: 'rgba(255,255,255,0.45)', fontSize: 9, fontWeight: '600', marginTop: 1 },
+
+  // Practice tracking
+  practiceHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+  practiceUnverifiedPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(255,214,10,0.15)',
+    borderColor: 'rgba(255,214,10,0.45)',
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6,
+  },
+  practiceUnverifiedText: { color: '#FFD60A', fontSize: 9, fontWeight: '800', letterSpacing: 0.3 },
+  practiceSummaryCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 14,
+    flexDirection: 'row',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  practiceSummaryRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  practiceSummaryStat: { flex: 1, alignItems: 'center' },
+  practiceSummaryValue: { color: '#FFF', fontSize: 16, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  practiceSummaryLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 10, fontWeight: '600', marginTop: 2 },
+  practiceRow: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  practiceRowHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  practiceRowName: { flex: 1, color: '#FFF', fontSize: 13, fontWeight: '700' },
+  practiceRowTotal: { color: 'rgba(255,255,255,0.55)', fontSize: 11, fontVariant: ['tabular-nums'] },
+  practiceZoneRow: { flexDirection: 'row', marginTop: 10, gap: 8 },
+  practiceZone: {
+    flex: 1, alignItems: 'center',
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  practiceZoneLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
+  practiceZonePct: { fontSize: 14, fontWeight: '800', marginTop: 2, fontVariant: ['tabular-nums'] },
+  practiceZoneAtt: { color: 'rgba(255,255,255,0.45)', fontSize: 9, marginTop: 1, fontVariant: ['tabular-nums'] },
+  practiceProviderCard: {
+    backgroundColor: 'rgba(255,111,60,0.06)',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,111,60,0.25)',
+  },
+  practiceProviderHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  practiceProviderTitle: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+  practiceProviderBody: { color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 17, marginTop: 6, marginBottom: 8 },
+  practiceProviderRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8, paddingVertical: 4 },
+  practiceProviderName: { color: '#FFF', fontSize: 12, fontWeight: '700', minWidth: 96 },
+  practiceProviderDetail: { flex: 1, color: 'rgba(255,255,255,0.55)', fontSize: 11 },
+
+  // Roster player sheet
+  rosterSheetBackdrop: { flex: 1, justifyContent: 'flex-end' },
+  rosterSheet: {
+    backgroundColor: '#0F1012',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    padding: 16,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  rosterSheetHandle: {
+    width: 38, height: 5, borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignSelf: 'center', marginTop: -6, marginBottom: 12,
+  },
+  rosterSheetHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
+  rosterSheetName: { color: '#FFF', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  rosterSheetMeta: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 },
+  rosterSheetStatusNote: { color: '#FFD60A', fontSize: 11, marginTop: 4, fontStyle: 'italic' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 4 },
+  statCell: {
+    width: '23%',
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  statCellValue: { color: '#FFF', fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  statCellLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: '700', marginTop: 2 },
 });

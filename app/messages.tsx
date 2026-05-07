@@ -1007,37 +1007,7 @@ export default function MessagesScreen() {
           <Ionicons name="search-outline" size={22} color="#FFF" />
         </Pressable>
 
-        <View
-          style={styles.toolbarPill}
-          onLayout={(e) => {
-            bottomPillWidth.value = e.nativeEvent.layout.width;
-          }}
-        >
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          <Animated.View style={[styles.bottomKnob, bottomKnobStyle]} pointerEvents="none" />
-          <Pressable
-            style={styles.pillSegment}
-            onPress={() => setActiveTab('Messages')}
-            accessibilityLabel="Messages"
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeTab === 'Messages' }}
-          >
-            <Text style={[styles.pillSegmentText, activeTab === 'Messages' && styles.pillSegmentTextActive]}>
-              Messages
-            </Text>
-          </Pressable>
-          <Pressable
-            style={styles.pillSegment}
-            onPress={() => setActiveTab('Notifications')}
-            accessibilityLabel="Notifications"
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeTab === 'Notifications' }}
-          >
-            <Text style={[styles.pillSegmentText, activeTab === 'Notifications' && styles.pillSegmentTextActive]}>
-              Notifications
-            </Text>
-          </Pressable>
-        </View>
+        <View style={{ flex: 1 }} />
 
         <Pressable
           style={styles.topBarGlassCircle}
@@ -1474,10 +1444,41 @@ export default function MessagesScreen() {
         icon="alert-circle-outline"
       />
 
-
+      <Pressable
+        onPress={() => router.back()}
+        style={[backChevronStyles.btn, { bottom: insets.bottom + 30 }]}
+        accessibilityLabel="Go back"
+        accessibilityRole="button"
+        hitSlop={8}
+      >
+        <View style={backChevronStyles.glass} pointerEvents="none">
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+        </View>
+        <Ionicons name="chevron-back" size={22} color="#FFF" />
+      </Pressable>
     </View>
   );
 }
+
+const backChevronStyles = StyleSheet.create({
+  btn: {
+    position: 'absolute',
+    left: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+  },
+  glass: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
+});
 
 const styles = StyleSheet.create({
   container: {

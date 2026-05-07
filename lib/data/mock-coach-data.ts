@@ -339,3 +339,133 @@ export const DEMO_META = {
   team: 'Paul VI Catholic',
   season: '2025-26',
 };
+
+// ---------- My Roster ----------
+
+export type RosterPlayer = {
+  id: string;
+  name: string;
+  number: number;
+  position: string;
+  classYear: 'Fr' | 'So' | 'Jr' | 'Sr';
+  height: string;
+  initials: string;
+  color: string; // jersey/avatar accent
+  // Season stats
+  ppg: number;
+  rpg: number;
+  apg: number;
+  fgPct: number;
+  threePct: number;
+  ftPct: number;
+  mpg: number;
+  // Trend signal — 'up' | 'down' | 'flat'
+  trend: 'up' | 'down' | 'flat';
+  status: 'active' | 'questionable' | 'out';
+  statusNote?: string;
+  // Practice shot tracking (last 7 days) — mock until partner integration
+  practice: {
+    totalShots: number;
+    makesPct: number;
+    threeAttempts: number;
+    threeMakes: number;
+    midAttempts: number;
+    midMakes: number;
+    rimAttempts: number;
+    rimMakes: number;
+  };
+};
+
+export const MY_TEAM_SUMMARY = {
+  name: 'Paul VI Catholic',
+  record: '18-4',
+  conferenceRecord: '9-1 WCAC',
+  rank: '#7 USA Today',
+  nextGame: 'vs Gonzaga · Sat 7:00p',
+};
+
+export const MY_ROSTER: RosterPlayer[] = [
+  {
+    id: 'pl-4', name: 'Marcus Reid', number: 4, position: 'PG', classYear: 'Sr', height: "6'2\"",
+    initials: 'MR', color: '#FF6F3C',
+    ppg: 18.4, rpg: 4.1, apg: 7.2, fgPct: 47.8, threePct: 38.2, ftPct: 84.5, mpg: 33.6,
+    trend: 'up', status: 'active',
+    practice: { totalShots: 412, makesPct: 51.7, threeAttempts: 168, threeMakes: 67, midAttempts: 124, midMakes: 58, rimAttempts: 120, rimMakes: 88 },
+  },
+  {
+    id: 'pl-5', name: 'Tyrese Alston', number: 5, position: 'C', classYear: 'So', height: "6'10\"",
+    initials: 'TA', color: '#7BAFD4',
+    ppg: 14.1, rpg: 9.8, apg: 1.4, fgPct: 58.4, threePct: 0, ftPct: 64.2, mpg: 31.8,
+    trend: 'up', status: 'questionable', statusNote: 'Lower-back stiffness — re-eval Friday',
+    practice: { totalShots: 287, makesPct: 64.1, threeAttempts: 0, threeMakes: 0, midAttempts: 78, midMakes: 41, rimAttempts: 209, rimMakes: 143 },
+  },
+  {
+    id: 'pl-7', name: 'Devon Banks', number: 7, position: 'SF', classYear: 'Sr', height: "6'7\"",
+    initials: 'DB', color: '#34C759',
+    ppg: 13.8, rpg: 6.4, apg: 2.9, fgPct: 49.1, threePct: 36.7, ftPct: 78.0, mpg: 30.2,
+    trend: 'flat', status: 'active',
+    practice: { totalShots: 348, makesPct: 49.4, threeAttempts: 142, threeMakes: 53, midAttempts: 96, midMakes: 44, rimAttempts: 110, rimMakes: 75 },
+  },
+  {
+    id: 'pl-11', name: 'Andre Pollard', number: 11, position: 'PF', classYear: 'Jr', height: "6'8\"",
+    initials: 'AP', color: '#A855F7',
+    ppg: 11.2, rpg: 7.1, apg: 1.6, fgPct: 53.6, threePct: 22.2, ftPct: 71.4, mpg: 27.4,
+    trend: 'up', status: 'active',
+    practice: { totalShots: 264, makesPct: 55.3, threeAttempts: 36, threeMakes: 8, midAttempts: 88, midMakes: 47, rimAttempts: 140, rimMakes: 91 },
+  },
+  {
+    id: 'pl-23', name: 'Jordan Miles', number: 23, position: 'SG', classYear: 'Jr', height: "6'4\"",
+    initials: 'JM', color: '#FFD60A',
+    ppg: 16.7, rpg: 3.8, apg: 2.1, fgPct: 44.0, threePct: 33.5, ftPct: 81.2, mpg: 31.0,
+    trend: 'down', status: 'active', statusNote: 'Watch — fatigue-driven shooting dip',
+    practice: { totalShots: 446, makesPct: 44.2, threeAttempts: 198, threeMakes: 64, midAttempts: 132, midMakes: 51, rimAttempts: 116, rimMakes: 82 },
+  },
+  {
+    id: 'pl-12', name: 'Eli Vargas', number: 12, position: 'PG', classYear: 'Fr', height: "6'1\"",
+    initials: 'EV', color: '#3B82F6',
+    ppg: 6.4, rpg: 1.9, apg: 3.1, fgPct: 41.2, threePct: 30.8, ftPct: 76.5, mpg: 14.8,
+    trend: 'up', status: 'active',
+    practice: { totalShots: 198, makesPct: 42.4, threeAttempts: 88, threeMakes: 28, midAttempts: 60, midMakes: 22, rimAttempts: 50, rimMakes: 34 },
+  },
+  {
+    id: 'pl-15', name: 'Cam Whitfield', number: 15, position: 'SG', classYear: 'Fr', height: "6'3\"",
+    initials: 'CW', color: '#14B8A6',
+    ppg: 5.2, rpg: 1.6, apg: 1.0, fgPct: 38.9, threePct: 27.3, ftPct: 72.1, mpg: 12.3,
+    trend: 'flat', status: 'active',
+    practice: { totalShots: 164, makesPct: 39.6, threeAttempts: 80, threeMakes: 22, midAttempts: 48, midMakes: 18, rimAttempts: 36, rimMakes: 25 },
+  },
+  {
+    id: 'pl-22', name: 'Khalid Brooks', number: 22, position: 'SF', classYear: 'So', height: "6'6\"",
+    initials: 'KB', color: '#E03A3E',
+    ppg: 8.6, rpg: 4.2, apg: 1.4, fgPct: 46.5, threePct: 31.4, ftPct: 70.0, mpg: 19.5,
+    trend: 'flat', status: 'out', statusNote: 'Ankle sprain — out 2-3 weeks',
+    practice: { totalShots: 0, makesPct: 0, threeAttempts: 0, threeMakes: 0, midAttempts: 0, midMakes: 0, rimAttempts: 0, rimMakes: 0 },
+  },
+  {
+    id: 'pl-32', name: "Roman O'Neal", number: 32, position: 'PF', classYear: 'Sr', height: "6'9\"",
+    initials: 'RO', color: '#FF8C00',
+    ppg: 9.1, rpg: 6.8, apg: 0.9, fgPct: 51.7, threePct: 0, ftPct: 67.0, mpg: 21.6,
+    trend: 'flat', status: 'active',
+    practice: { totalShots: 232, makesPct: 53.0, threeAttempts: 14, threeMakes: 3, midAttempts: 76, midMakes: 38, rimAttempts: 142, rimMakes: 82 },
+  },
+  {
+    id: 'pl-44', name: 'Quincy Diaz', number: 44, position: 'C', classYear: 'Fr', height: "6'11\"",
+    initials: 'QD', color: '#06B6D4',
+    ppg: 4.8, rpg: 5.4, apg: 0.6, fgPct: 60.2, threePct: 0, ftPct: 58.8, mpg: 12.0,
+    trend: 'up', status: 'active',
+    practice: { totalShots: 184, makesPct: 60.3, threeAttempts: 0, threeMakes: 0, midAttempts: 42, midMakes: 19, rimAttempts: 142, rimMakes: 92 },
+  },
+];
+
+export const PRACTICE_TRACKING_PROVIDER = {
+  // Placeholder until partnership lands. Top contenders in the space:
+  status: 'not_connected' as const,
+  candidateProviders: [
+    { name: 'Noah Basketball', detail: 'Optical tracking — shot arc, depth, % by zone' },
+    { name: 'HomeCourt', detail: 'iPhone-camera vision tracking, shot logs' },
+    { name: 'RSPCT', detail: 'Sensor + camera — shot accuracy + form' },
+    { name: 'Shot Tracker', detail: 'Wearable + ball sensor — practice & game' },
+    { name: '94Fifty', detail: 'Smart-ball sensor — shot velocity & arc' },
+  ],
+  note: 'Mock numbers shown until a partner is selected and integrated.',
+};

@@ -3,6 +3,7 @@ import { GlassView } from 'expo-glass-effect';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as React from 'react';
 import {
+  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -11,6 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import Animated, {
   FadeIn,
   FadeInDown,
@@ -18,8 +23,10 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  withTiming,
   Extrapolation,
 } from 'react-native-reanimated';
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -78,6 +85,43 @@ const COACH = {
       body: 'Partnered with Proslync AI since 2024 — pre-scout generation, in-game pattern flags, and post-game film pipeline. Eliminated ~14 hours of weekly scout prep.',
     },
   ],
+  watchlist: [
+    {
+      id: 'rec-1', name: 'Tre Johnson', position: 'PG', school: 'Lake Highland Prep (FL)',
+      classYear: 'HS \'26', initials: 'TJ', color: '#FFD60A',
+      rank: '#3 ESPN · 5★', stats: '27.4 PPG · 8.2 APG · 5.1 RPG',
+      latestUpdate: 'Officially visited Kentucky · committed to take a Duke OV next month.',
+      timeAgo: '2 days ago', trending: 'up' as const,
+    },
+    {
+      id: 'rec-2', name: 'Marcus Reyes', position: 'SF', school: 'Sierra Canyon (CA)',
+      classYear: 'HS \'26', initials: 'MR', color: '#3B82F6',
+      rank: '#11 ESPN · 5★', stats: '24.8 PPG · 7.6 RPG · 3.4 APG',
+      latestUpdate: 'Dropped 38 in title game on Saturday — 14-of-22 from the floor.',
+      timeAgo: '4 days ago', trending: 'up' as const,
+    },
+    {
+      id: 'rec-3', name: 'Devin Owusu', position: 'C', school: 'Combine Academy (NC)',
+      classYear: 'HS \'27', initials: 'DO', color: '#A855F7',
+      rank: '#28 247 · 4★', stats: '18.1 PPG · 12.4 RPG · 3.8 BPG',
+      latestUpdate: 'Cut list to 6 — UConn, Houston, Auburn, Duke, UNC, Kentucky.',
+      timeAgo: '1 week ago', trending: 'flat' as const,
+    },
+    {
+      id: 'rec-4', name: 'Cooper Gibbs', position: 'SG', school: 'IMG Academy (FL)',
+      classYear: 'HS \'27', initials: 'CG', color: '#FF6F3C',
+      rank: '#52 ESPN · 4★', stats: '19.2 PPG · 4.4 APG · 41% from 3',
+      latestUpdate: 'Foot stress reaction — out 4-6 weeks. Recovery on track per trainer.',
+      timeAgo: '5 days ago', trending: 'down' as const,
+    },
+    {
+      id: 'rec-5', name: 'Andre Lacy', position: 'PF', school: 'IMG Academy (FL)',
+      classYear: 'HS \'28', initials: 'AL', color: '#14B8A6',
+      rank: 'Unranked Sophomore · rising', stats: '15.6 PPG · 9.0 RPG (varsity sophomore)',
+      latestUpdate: 'First D1 offer in — Maryland. National coverage starting to build.',
+      timeAgo: '3 days ago', trending: 'up' as const,
+    },
+  ],
   staff: [
     { name: 'Ray Diggs', role: 'Associate Head Coach · Defense' },
     { name: 'Travis Smith', role: 'Assistant · Analytics' },
@@ -117,6 +161,75 @@ export default function CoachProfile() {
   const [isEditing, setIsEditing] = React.useState(false);
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
+  // Persistent custom banner video for the coach profile.
+  const [bannerVideo, setBannerVideo] = React.useState<string | null>(null);
+  const [bannerHydrated, setBannerHydrated] = React.useState(false);
+  React.useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem('proslync:coachprofile:bannerVideo:v1')
+      .then((v) => { if (!cancelled && v) setBannerVideo(v); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setBannerHydrated(true); });
+    return () => { cancelled = true; };
+  }, []);
+  React.useEffect(() => {
+    if (!bannerHydrated) return;
+    if (bannerVideo) {
+      AsyncStorage.setItem('proslync:coachprofile:bannerVideo:v1', bannerVideo).catch(() => {});
+    } else {
+      AsyncStorage.removeItem('proslync:coachprofile:bannerVideo:v1').catch(() => {});
+    }
+  }, [bannerVideo, bannerHydrated]);
+
+  const bannerPlayer = useVideoPlayer(bannerVideo ?? null, (p) => {
+    if (!p) return;
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+
+  React.useEffect(() => {
+    if (!bannerPlayer || !bannerVideo) return;
+    bannerPlayer.play();
+    const sub = bannerPlayer.addListener('playingChange', (e: any) => {
+      if (!e?.isPlaying) {
+        try { bannerPlayer.play(); } catch {}
+      }
+    });
+    return () => { try { sub.remove(); } catch {} };
+  }, [bannerPlayer, bannerVideo]);
+
+  const pickBannerVideo = React.useCallback(async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('Photo access needed', 'Allow photo library access in Settings to pick a video.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: false,
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const src = result.assets[0].uri;
+      let persistedUri = src;
+      try {
+        const dir = `${FileSystem.documentDirectory}proslync-media/coach-banner/`;
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+        const ext = (src.split('?')[0].split('.').pop() || 'mp4').toLowerCase();
+        const safeExt = /^[a-z0-9]{2,4}$/.test(ext) ? ext : 'mp4';
+        const dest = `${dir}${Date.now()}.${safeExt}`;
+        await FileSystem.copyAsync({ from: src, to: dest });
+        persistedUri = dest;
+      } catch {}
+      setBannerVideo(persistedUri);
+    }
+  }, []);
+
+  const removeBannerVideo = React.useCallback(() => {
+    setBannerVideo(null);
+  }, []);
+
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
@@ -124,6 +237,22 @@ export default function CoachProfile() {
   const dimStyle = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.value, [0, 60], [0, 1], Extrapolation.CLAMP),
   }));
+
+  // Segmented pill knob (matches Kiyan)
+  const tabIndex = Math.max(0, TABS.findIndex((t) => t.key === tab));
+  const tabPillWidth = useSharedValue(0);
+  const animatedTabIndex = useSharedValue(tabIndex);
+  React.useEffect(() => {
+    animatedTabIndex.value = withTiming(tabIndex, { duration: 180 });
+  }, [tabIndex, animatedTabIndex]);
+  const tabKnobStyle = useAnimatedStyle(() => {
+    const segW = tabPillWidth.value / Math.max(TABS.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedTabIndex.value * segW + inset }],
+    };
+  });
 
   const toggle = (key: string) => {
     setExpanded((prev) => {
@@ -144,150 +273,294 @@ export default function CoachProfile() {
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
-        {/* Banner */}
+        {/* Banner — matches player profile: image/video + subtle dark tint */}
         <View
           style={[
             styles.bannerWrap,
-            { height: insets.top + 180, backgroundColor: '#E7D8AC' },
+            { height: insets.top + 290, backgroundColor: '#000' },
           ]}
           pointerEvents="none"
         >
-          <Image
-            source={require('@/assets/images/coach-banner.png')}
-            style={[
-              StyleSheet.absoluteFill,
-              { transform: [{ translateX: -145 }, { translateY: -65 }, { scale: 0.6 }] },
-            ]}
-            resizeMode="contain"
-          />
-          <LinearGradient
-            colors={[
-              'rgba(0,0,0,0)',
-              'rgba(0,0,0,0.03)',
-              'rgba(0,0,0,0.07)',
-              'rgba(0,0,0,0.13)',
-              'rgba(0,0,0,0.20)',
-              'rgba(0,0,0,0.29)',
-              'rgba(0,0,0,0.39)',
-              'rgba(0,0,0,0.50)',
-              'rgba(0,0,0,0.62)',
-              'rgba(0,0,0,0.73)',
-              'rgba(0,0,0,0.83)',
-              'rgba(0,0,0,0.91)',
-              'rgba(0,0,0,0.96)',
-              'rgba(0,0,0,0.99)',
-              '#000',
-              '#000',
-            ]}
-            locations={[
-              0, 0.07, 0.14, 0.21, 0.28, 0.35, 0.42, 0.49, 0.56, 0.63, 0.7,
-              0.77, 0.83, 0.88, 0.92, 1,
-            ]}
-            style={StyleSheet.absoluteFill}
+          {bannerVideo ? (
+            <VideoView
+              player={bannerPlayer}
+              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
+              contentFit="cover"
+              nativeControls={false}
+            />
+          ) : (
+            <Image
+              source={require('@/assets/images/coach-banner.png')}
+              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
+              resizeMode="cover"
+            />
+          )}
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.28)' }]}
             pointerEvents="none"
           />
         </View>
 
-        {/* Profile row — avatar + name + meta */}
-        <View style={styles.profileRow}>
-          <Image
-            source={require('@/assets/images/coach-avatar.png')}
-            style={styles.avatar}
-            resizeMode="cover"
-          />
-          <View style={styles.rightCol}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name}>
-                Coach {COACH.firstName} {COACH.lastName}
-              </Text>
-              <MaterialCommunityIcons name="check-decagram" size={16} color="#FF6F3C" />
-            </View>
-            <Text style={[styles.metaLine, styles.metaLinePrimary]} numberOfLines={1}>
-              {COACH.metaPrimary}
-            </Text>
-            <Text style={styles.metaLine} numberOfLines={1}>
-              {COACH.metaSecondary}
-            </Text>
-          </View>
-        </View>
-
-        {/* Tab row — underline style matching Kiyan */}
+        {/* Tab row — segmented glass pill with sliding knob (matches Kiyan) */}
         <View style={styles.tabsRow}>
-          {TABS.map((t) => {
-            const active = tab === t.key;
-            return (
-              <TouchableOpacity
-                key={t.key}
-                style={[styles.tab, active && styles.tabActive]}
-                onPress={() => setTab(t.key)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+          <View
+            style={styles.tabSegmentedPill}
+            onLayout={(e) => {
+              tabPillWidth.value = e.nativeEvent.layout.width;
+            }}
+          >
+            <View style={styles.tabsGlassLayer} pointerEvents="none">
+              <GlassView
+                glassEffectStyle="regular"
+                style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+              />
+            </View>
+            <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none">
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView
+                  effect="regular"
+                  tintColor="rgba(255,255,255,0.20)"
+                  style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
+                />
+              ) : null}
+            </Animated.View>
+            {TABS.map((t) => {
+              const active = tab === t.key;
+              return (
+                <TouchableOpacity
+                  key={t.key}
+                  style={styles.tabSegment}
+                  onPress={() => setTab(t.key)}
+                  activeOpacity={0.7}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text
+                    style={[styles.tabPillText, active && styles.tabPillTextActive]}
+                    numberOfLines={1}
+                  >
+                    {t.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {/* Tab content */}
         <View style={styles.tabContent}>
           {tab === 'about' && (
             <View style={styles.aboutSection}>
-              <Text style={styles.aboutLabel}>Bio</Text>
-              {COACH.bio.map((section) => {
-                const isOpen = expanded.has(section.key);
-                return (
-                  <View key={section.key} style={styles.bioItem}>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => toggle(section.key)}
-                      style={styles.bioHeader}
+              <View style={styles.aboutBlockBare}>
+                <View
+                  style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+                  pointerEvents="none"
+                />
+                <View style={styles.aboutBlockGlass} pointerEvents="none">
+                  {isLiquidGlassSupported ? (
+                    <LiquidGlassView
+                      effect="regular"
+                      tintColor="rgba(255,255,255,0.10)"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  ) : (
+                    <GlassView
+                      glassEffectStyle="regular"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  )}
+                </View>
+                {COACH.bio.map((section, idx) => {
+                  const isOpen = expanded.has(section.key);
+                  return (
+                    <View
+                      key={section.key}
+                      style={[styles.bioItem, idx === 0 && { borderTopWidth: 0, paddingTop: 0 }]}
                     >
-                      <Text style={styles.bioTitle}>{section.title}</Text>
-                      <Ionicons
-                        name={isOpen ? 'chevron-up' : 'chevron-down'}
-                        size={16}
-                        color="rgba(255,255,255,0.6)"
-                      />
-                    </TouchableOpacity>
-                    {isOpen && <Text style={styles.bioBody}>{section.body}</Text>}
-                  </View>
-                );
-              })}
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => toggle(section.key)}
+                        style={styles.bioHeader}
+                      >
+                        <Text style={styles.bioTitle}>{section.title}</Text>
+                        <Ionicons
+                          name={isOpen ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color="rgba(255,255,255,0.6)"
+                        />
+                      </TouchableOpacity>
+                      {isOpen && <Text style={styles.bioBody}>{section.body}</Text>}
+                    </View>
+                  );
+                })}
+              </View>
             </View>
           )}
 
           {tab === 'focus' && (
             <View style={styles.aboutSection}>
-              <Text style={styles.aboutLabel}>Program Focus</Text>
-              {COACH.focus.map((section) => {
-                const isOpen = expanded.has(section.key);
-                return (
-                  <View key={section.key} style={styles.bioItem}>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => toggle(section.key)}
-                      style={styles.bioHeader}
+              <View style={styles.aboutBlockBare}>
+                <View
+                  style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+                  pointerEvents="none"
+                />
+                <View style={styles.aboutBlockGlass} pointerEvents="none">
+                  {isLiquidGlassSupported ? (
+                    <LiquidGlassView
+                      effect="regular"
+                      tintColor="rgba(255,255,255,0.10)"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  ) : (
+                    <GlassView
+                      glassEffectStyle="regular"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  )}
+                </View>
+                {COACH.focus.map((section, idx) => {
+                  const isOpen = expanded.has(section.key);
+                  return (
+                    <View
+                      key={section.key}
+                      style={[styles.bioItem, idx === 0 && { borderTopWidth: 0, paddingTop: 0 }]}
                     >
-                      <Text style={styles.bioTitle}>{section.title}</Text>
-                      <Ionicons
-                        name={isOpen ? 'chevron-up' : 'chevron-down'}
-                        size={16}
-                        color="rgba(255,255,255,0.6)"
-                      />
-                    </TouchableOpacity>
-                    {isOpen && <Text style={styles.bioBody}>{section.body}</Text>}
-                  </View>
-                );
-              })}
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => toggle(section.key)}
+                        style={styles.bioHeader}
+                      >
+                        <Text style={styles.bioTitle}>{section.title}</Text>
+                        <Ionicons
+                          name={isOpen ? 'chevron-up' : 'chevron-down'}
+                          size={16}
+                          color="rgba(255,255,255,0.6)"
+                        />
+                      </TouchableOpacity>
+                      {isOpen && <Text style={styles.bioBody}>{section.body}</Text>}
+                    </View>
+                  );
+                })}
+              </View>
+
+              {/* Recruiting watchlist — players the coach is following from other teams / HS */}
+              <View style={styles.aboutBlockBare}>
+                <View
+                  style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+                  pointerEvents="none"
+                />
+                <View style={styles.aboutBlockGlass} pointerEvents="none">
+                  {isLiquidGlassSupported ? (
+                    <LiquidGlassView
+                      effect="regular"
+                      tintColor="rgba(255,255,255,0.10)"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  ) : (
+                    <GlassView
+                      glassEffectStyle="regular"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  )}
+                </View>
+
+                {/* Header inside the container */}
+                <View style={styles.watchlistContainerHeader}>
+                  <Text style={styles.watchlistTitle}>Watchlist</Text>
+                  <Text style={styles.watchlistSub}>{COACH.watchlist.length} players · news, stats, updates</Text>
+                </View>
+
+                {COACH.watchlist.map((p, idx) => {
+                  const isOpen = expanded.has(`watch-${p.id}`);
+                  return (
+                    <Animated.View
+                      key={p.id}
+                      entering={FadeInDown.delay(idx * 50).duration(360)}
+                      style={styles.watchlistRow}
+                    >
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => toggle(`watch-${p.id}`)}
+                        accessibilityRole="button"
+                        accessibilityState={{ expanded: isOpen }}
+                      >
+                        <View style={styles.watchlistRowHead}>
+                          <View style={[styles.watchlistAvatar, { backgroundColor: p.color }]}>
+                            <Text style={styles.watchlistAvatarText}>{p.initials}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <View style={styles.watchlistNameRow}>
+                              <Text style={styles.watchlistName} numberOfLines={1}>{p.name}</Text>
+                              <Ionicons
+                                name={p.trending === 'up' ? 'caret-up' : p.trending === 'down' ? 'caret-down' : 'remove'}
+                                size={14}
+                                color={p.trending === 'up' ? '#34C759' : p.trending === 'down' ? '#FF453A' : 'rgba(255,255,255,0.55)'}
+                              />
+                            </View>
+                            <Text style={styles.watchlistMeta} numberOfLines={1}>
+                              {p.position} · {p.classYear} · {p.school}
+                            </Text>
+                          </View>
+                          <Ionicons
+                            name={isOpen ? 'chevron-up' : 'chevron-down'}
+                            size={16}
+                            color="rgba(255,255,255,0.6)"
+                          />
+                        </View>
+                      </TouchableOpacity>
+
+                      {isOpen && (
+                        <View style={styles.watchlistExpanded}>
+                          <View style={styles.watchlistFollowingRow}>
+                            <Text style={styles.watchlistRank}>{p.rank}</Text>
+                            <TouchableOpacity style={styles.watchlistFollowingPill} activeOpacity={0.7}>
+                              <Ionicons name="checkmark" size={11} color="#FF6F3C" />
+                              <Text style={styles.watchlistFollowingText}>Following</Text>
+                            </TouchableOpacity>
+                          </View>
+                          <Text style={styles.watchlistStats}>{p.stats}</Text>
+                          <View style={styles.watchlistUpdateRow}>
+                            <View style={styles.watchlistUpdateDot} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.watchlistUpdate}>{p.latestUpdate}</Text>
+                              <Text style={styles.watchlistTime}>{p.timeAgo}</Text>
+                            </View>
+                          </View>
+                        </View>
+                      )}
+                    </Animated.View>
+                  );
+                })}
+              </View>
+
+              <TouchableOpacity style={styles.watchlistAddBtn} activeOpacity={0.7}>
+                <Ionicons name="add-circle-outline" size={18} color={ACCENT} />
+                <Text style={styles.watchlistAddText}>Add player to watchlist</Text>
+              </TouchableOpacity>
             </View>
           )}
 
           {tab === 'staff' && (
             <View style={styles.listSection}>
-              <Text style={styles.aboutLabel}>Coaching Staff</Text>
-              <View style={styles.card}>
+              <View style={styles.aboutBlockBare}>
+                <View
+                  style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+                  pointerEvents="none"
+                />
+                <View style={styles.aboutBlockGlass} pointerEvents="none">
+                  {isLiquidGlassSupported ? (
+                    <LiquidGlassView
+                      effect="regular"
+                      tintColor="rgba(255,255,255,0.10)"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  ) : (
+                    <GlassView
+                      glassEffectStyle="regular"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  )}
+                </View>
                 {COACH.staff.map((s, i) => (
                   <Animated.View
                     key={s.name}
@@ -311,8 +584,25 @@ export default function CoachProfile() {
 
           {tab === 'commits' && (
             <View style={styles.listSection}>
-              <Text style={styles.aboutLabel}>D1 Commits · '26-'27</Text>
-              <View style={styles.card}>
+              <View style={styles.aboutBlockBare}>
+                <View
+                  style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+                  pointerEvents="none"
+                />
+                <View style={styles.aboutBlockGlass} pointerEvents="none">
+                  {isLiquidGlassSupported ? (
+                    <LiquidGlassView
+                      effect="regular"
+                      tintColor="rgba(255,255,255,0.10)"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  ) : (
+                    <GlassView
+                      glassEffectStyle="regular"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  )}
+                </View>
                 {COACH.commits.map((c, i) => (
                   <Animated.View
                     key={c.name}
@@ -346,8 +636,25 @@ export default function CoachProfile() {
 
           {tab === 'results' && (
             <View style={styles.listSection}>
-              <Text style={styles.aboutLabel}>Recent Games</Text>
-              <View style={styles.card}>
+              <View style={styles.aboutBlockBare}>
+                <View
+                  style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+                  pointerEvents="none"
+                />
+                <View style={styles.aboutBlockGlass} pointerEvents="none">
+                  {isLiquidGlassSupported ? (
+                    <LiquidGlassView
+                      effect="regular"
+                      tintColor="rgba(255,255,255,0.10)"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  ) : (
+                    <GlassView
+                      glassEffectStyle="regular"
+                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+                    />
+                  )}
+                </View>
                 {COACH.recentWins.map((g, i) => {
                   const won = g.result.startsWith('W');
                   return (
@@ -380,45 +687,43 @@ export default function CoachProfile() {
         </View>
       </Animated.ScrollView>
 
-      {/* Floating bottom toolbar — settings | edit profile | create */}
+      {/* Bottom darken gradient — gives the floating tab bar glass something to refract */}
       <LinearGradient
         colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
-        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 80 }]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 100 }]}
         pointerEvents="none"
       />
-      <View style={[styles.bottomToolbar, { bottom: TAB_BAR_TOP_FROM_BOTTOM + 10 }]}>
-        <Pressable
-          style={styles.toolbarCircle}
-          onPress={() => setRoleSheetVisible(true)}
-          accessibilityLabel="Switch role"
-          accessibilityRole="button"
-        >
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          <Ionicons name="menu" size={22} color="#FFF" />
-        </Pressable>
 
-        <Pressable
-          style={[styles.toolbarPill, isEditing && styles.toolbarPillActive]}
-          onPress={() => setIsEditing((v) => !v)}
-          accessibilityLabel={isEditing ? 'Save profile changes' : 'Edit profile'}
-          accessibilityRole="button"
-        >
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          <Text style={styles.toolbarPillText}>{isEditing ? 'Save' : 'Edit Profile'}</Text>
-        </Pressable>
+      {/* Top-left floating profile pill — avatar + hamburger (matches Kiyan) */}
+      <Pressable
+        style={[styles.topLeftProfilePill, { top: insets.top + 8 }]}
+        onPress={() => setRoleSheetVisible(true)}
+        accessibilityLabel="Open menu"
+        accessibilityRole="button"
+      >
+        <View style={styles.topLeftProfilePillGlass} pointerEvents="none">
+          <GlassView
+            glassEffectStyle="regular"
+            style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+          />
+        </View>
+        <Image
+          source={require('@/assets/images/coach-avatar.png')}
+          style={styles.topLeftProfilePillAvatar}
+        />
+        <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
+      </Pressable>
 
-        <Pressable
-          style={styles.toolbarCircle}
-          onPress={() => {}}
-          accessibilityLabel="Create"
-          accessibilityRole="button"
-        >
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          <Ionicons name="radio" size={22} color="#FF4444" />
-        </Pressable>
-      </View>
-      <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
+      <RoleSwitcherSheet
+        visible={roleSheetVisible}
+        onClose={() => setRoleSheetVisible(false)}
+        onEditProfile={() => setIsEditing((v) => !v)}
+        isEditing={isEditing}
+        onChangeBanner={pickBannerVideo}
+        onRemoveBanner={removeBannerVideo}
+        hasCustomBanner={!!bannerVideo}
+      />
     </View>
   );
 }
@@ -484,30 +789,83 @@ const styles = StyleSheet.create({
 
   tabsRow: {
     flexDirection: 'row',
-    marginTop: 6,
+    marginTop: -34,
     marginBottom: 10,
-    paddingHorizontal: 4,
+    paddingHorizontal: 16,
   },
-  tab: {
+  tabSegmentedPill: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  tabsGlassLayer: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
+  tabKnob: {
+    position: 'absolute',
+    top: 4,
+    bottom: 4,
+    left: 0,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    overflow: 'hidden',
+  },
+  tabSegment: {
+    flex: 1,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    paddingHorizontal: 4,
   },
-  tabActive: { borderBottomColor: ACCENT },
-  tabLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.55)',
-    letterSpacing: -0.1,
+  tabPillText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.65)', letterSpacing: -0.1 },
+  tabPillTextActive: { color: '#FFF', fontWeight: '800' },
+  topLeftProfilePill: {
+    position: 'absolute',
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 46,
+    paddingLeft: 3,
+    paddingRight: 12,
+    borderRadius: 23,
+    overflow: 'hidden',
+    zIndex: 100,
   },
-  tabLabelActive: { color: '#FFF', fontWeight: '700' },
+  topLeftProfilePillGlass: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 23,
+    overflow: 'hidden',
+  },
+  topLeftProfilePillAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
 
-  tabContent: {},
+  tabContent: { marginTop: -20 },
   aboutSection: { paddingHorizontal: 16, paddingVertical: 20, gap: 12 },
   listSection: { paddingHorizontal: 16, paddingVertical: 20, gap: 12 },
+  aboutBlockBare: {
+    gap: 10,
+    borderRadius: 16,
+    padding: 14,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  aboutBlockGlass: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
   aboutLabel: {
     fontSize: 12,
     fontWeight: '700',
@@ -621,4 +979,150 @@ const styles = StyleSheet.create({
   },
   toolbarPillActive: {},
   toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+
+  // Recruiting watchlist
+  watchlistContainerHeader: {
+    paddingBottom: 10,
+    marginBottom: 4,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  watchlistTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: -0.2,
+  },
+  watchlistSub: {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.55)',
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  watchlistRow: {
+    gap: 6,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  watchlistExpanded: {
+    gap: 6,
+    marginTop: 8,
+  },
+  watchlistFollowingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  watchlistRowHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  watchlistAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  watchlistAvatarText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: -0.3,
+  },
+  watchlistNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  watchlistName: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+    flexShrink: 1,
+  },
+  watchlistMeta: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  watchlistFollowingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,111,60,0.18)',
+    borderColor: 'rgba(255,111,60,0.55)',
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  watchlistFollowingText: {
+    color: '#FF6F3C',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  watchlistRank: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  watchlistStats: {
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  watchlistUpdateRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginTop: 6,
+  },
+  watchlistUpdateDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#FF6F3C',
+    marginTop: 6,
+  },
+  watchlistUpdate: {
+    color: '#FFF',
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: '500',
+  },
+  watchlistTime: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 10,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  watchlistAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,111,60,0.45)',
+    backgroundColor: 'rgba(255,111,60,0.06)',
+    marginTop: 4,
+  },
+  watchlistAddText: {
+    color: '#FF6F3C',
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });

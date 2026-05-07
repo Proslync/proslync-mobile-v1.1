@@ -303,7 +303,7 @@ export default function ChannelSettingsScreen() {
           leaveChannel.mutate(id, {
             onSuccess: () => {
               showSuccess('Left channel');
-              router.replace('/(tabs)/explore' as any);
+              router.replace('/messages' as any);
             },
             onError: (error) => {
               showError(error.message || 'Failed to leave channel');
@@ -328,7 +328,7 @@ export default function ChannelSettingsScreen() {
             deleteChannel.mutate(id, {
               onSuccess: () => {
                 showSuccess('Channel deleted');
-                router.replace('/(tabs)/explore' as any);
+                router.replace('/messages' as any);
               },
               onError: (error) => {
                 showError(error.message || 'Failed to delete channel');

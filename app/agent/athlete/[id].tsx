@@ -5,13 +5,21 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  Modal,
   Pressable,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle, Rect, Line, G } from 'react-native-svg';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, {
+  FadeInDown,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 
 import {
   AGENT_ATHLETES,
@@ -45,6 +53,7 @@ export default function AthleteDetailScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const athlete = AGENT_ATHLETES.find((a) => a.id === params.id);
   const audience = athlete ? AGENT_ATHLETE_AUDIENCE[athlete.id] : undefined;
+  const [scoreSheetOpen, setScoreSheetOpen] = React.useState(false);
 
   if (!athlete || !audience) {
     return (
@@ -67,7 +76,11 @@ export default function AthleteDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Animated.View entering={FadeInDown.duration(360)}>
-          <HeroIdentityCard athlete={athlete} score={audience.score} />
+          <HeroIdentityCard
+            athlete={athlete}
+            score={audience.score}
+            onScorePress={() => setScoreSheetOpen(true)}
+          />
         </Animated.View>
 
         <View style={styles.row}>
@@ -107,6 +120,13 @@ export default function AthleteDetailScreen() {
       >
         <Ionicons name="chevron-back" size={28} color="#FFF" />
       </Pressable>
+
+      <ScoreBreakdownSheet
+        score={audience.score}
+        athleteName={athlete.name}
+        visible={scoreSheetOpen}
+        onClose={() => setScoreSheetOpen(false)}
+      />
     </View>
   );
 }
@@ -116,9 +136,11 @@ export default function AthleteDetailScreen() {
 function HeroIdentityCard({
   athlete,
   score,
+  onScorePress,
 }: {
   athlete: AgentAthlete;
   score: number;
+  onScorePress: () => void;
 }) {
   return (
     <View style={styles.heroCard}>
@@ -147,7 +169,19 @@ function HeroIdentityCard({
           </View>
         </View>
       </View>
-      <ScoreGauge score={score} />
+      <Pressable
+        onPress={onScorePress}
+        accessibilityRole="button"
+        accessibilityLabel="View score breakdown"
+        accessibilityHint="Opens a breakdown of the factors making up this score"
+        hitSlop={8}
+        style={({ pressed }) => [styles.scoreTouchable, { opacity: pressed ? 0.7 : 1 }]}
+      >
+        <ScoreGauge score={score} />
+        <View style={styles.scoreInfoBadge} pointerEvents="none">
+          <Ionicons name="information" size={11} color="#000" />
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -368,6 +402,246 @@ function BarChart({ data }: { data: { bucket: string; male: number; female: numb
   );
 }
 
+// ───── Score breakdown sheet ─────
+
+type ScoreFactor = {
+  key: string;
+  name: string;
+  score: number;
+  weight: number;
+  description: string;
+  detail: string;
+};
+
+const SCORE_FACTORS: ScoreFactor[] = [
+  {
+    key: 'performance',
+    name: 'Performance',
+    score: 78,
+    weight: 30,
+    description: 'On-field/court output: stats, advanced metrics, win contribution.',
+    detail: 'Top quartile of conference peers in primary statistical category.',
+  },
+  {
+    key: 'engagement',
+    name: 'Fan Engagement',
+    score: 84,
+    weight: 25,
+    description: 'Reach, post engagement rate, comment quality, growth velocity.',
+    detail: '7.9% engagement rate beats the 4.2% NIL average.',
+  },
+  {
+    key: 'audience',
+    name: 'Audience Quality',
+    score: 71,
+    weight: 20,
+    description: 'Demographic alignment, geographic spread, audience depth and authenticity.',
+    detail: '40% Gen Z; strong 18–34 skew with concentrated regional reach.',
+  },
+  {
+    key: 'brand',
+    name: 'Brand Fit',
+    score: 66,
+    weight: 15,
+    description: 'Alignment with verified brand archetypes and category demand.',
+    detail: 'High match for athleticwear and energy categories; limited luxury alignment.',
+  },
+  {
+    key: 'conversion',
+    name: 'Conversion Potential',
+    score: 58,
+    weight: 10,
+    description: 'Likelihood that fan attention converts to purchase, subscription, or attendance.',
+    detail: 'CTR and lift data still developing; needs longer history.',
+  },
+];
+
+function bandFor(score: number): { label: string; color: string } {
+  if (score >= 80) return { label: 'Excellent', color: '#34C759' };
+  if (score >= 65) return { label: 'Strong', color: YELLOW };
+  if (score >= 50) return { label: 'Average', color: '#FFD60A' };
+  return { label: 'Needs work', color: '#FF453A' };
+}
+
+const SCORE_SHEET_TRAVEL = 700;
+
+function ScoreBreakdownSheet({
+  score,
+  athleteName,
+  visible,
+  onClose,
+}: {
+  score: number;
+  athleteName: string;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const translateY = useSharedValue(SCORE_SHEET_TRAVEL);
+  const backdropProgress = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (visible) {
+      backdropProgress.value = withTiming(1, { duration: 280 });
+      translateY.value = withTiming(0, { duration: 320 });
+    }
+  }, [visible]);
+
+  const dismiss = React.useCallback(() => {
+    translateY.value = withTiming(SCORE_SHEET_TRAVEL, { duration: 220 });
+    backdropProgress.value = withTiming(0, { duration: 220 });
+    setTimeout(onClose, 220);
+  }, [onClose]);
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetY(10)
+    .onUpdate((e) => {
+      if (e.translationY > 0) {
+        translateY.value = e.translationY;
+        backdropProgress.value = 1 - Math.min(e.translationY / SCORE_SHEET_TRAVEL, 1);
+      }
+    })
+    .onEnd((e) => {
+      if (e.translationY > 100 || e.velocityY > 600) {
+        translateY.value = withTiming(SCORE_SHEET_TRAVEL, { duration: 220 });
+        backdropProgress.value = withTiming(0, { duration: 220 });
+        runOnJS(onClose)();
+      } else {
+        translateY.value = withTiming(0, { duration: 200 });
+        backdropProgress.value = withTiming(1, { duration: 200 });
+      }
+    });
+
+  const sheetAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    backgroundColor: `rgba(0,0,0,${0.65 * backdropProgress.value})`,
+  }));
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={dismiss}
+      statusBarTranslucent
+    >
+      <Animated.View style={[scoreSheetStyles.backdrop, backdropAnimStyle]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+        <Animated.View style={[scoreSheetStyles.sheet, sheetAnimStyle]}>
+          <GestureDetector gesture={panGesture}>
+            <View>
+              <View style={scoreSheetStyles.handle} />
+              <View style={scoreSheetStyles.header}>
+                <View style={{ flex: 1 }}>
+                  <Text style={scoreSheetStyles.title}>Score Breakdown</Text>
+                  <Text style={scoreSheetStyles.subtitle}>
+                    {athleteName}'s overall score of {score} is composed of these factors.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </GestureDetector>
+          <ScrollView style={scoreSheetStyles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 28 }}>
+            {SCORE_FACTORS.map((factor) => {
+              const band = bandFor(factor.score);
+              return (
+                <View key={factor.key} style={scoreSheetStyles.factorRow}>
+                  <View style={scoreSheetStyles.factorHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={scoreSheetStyles.factorName}>{factor.name}</Text>
+                      <Text style={scoreSheetStyles.factorWeight}>Weight {factor.weight}%</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end' }}>
+                      <Text style={scoreSheetStyles.factorScore}>{factor.score}</Text>
+                      <Text style={[scoreSheetStyles.factorBand, { color: band.color }]}>{band.label}</Text>
+                    </View>
+                  </View>
+                  <View style={scoreSheetStyles.barTrack}>
+                    <View style={[scoreSheetStyles.barFill, { width: `${factor.score}%`, backgroundColor: band.color }]} />
+                  </View>
+                  <Text style={scoreSheetStyles.factorDescription}>{factor.description}</Text>
+                  <Text style={scoreSheetStyles.factorDetail}>{factor.detail}</Text>
+                </View>
+              );
+            })}
+            <View style={scoreSheetStyles.footnoteWrap}>
+              <Ionicons name="sparkles-outline" size={14} color="rgba(255,255,255,0.55)" />
+              <Text style={scoreSheetStyles.footnote}>
+                Auto-calculated daily from performance, audience, and engagement signals. The athlete can influence their score by improving on-field output, growing engagement, and broadening audience quality.
+              </Text>
+            </View>
+          </ScrollView>
+        </Animated.View>
+      </Animated.View>
+    </Modal>
+  );
+}
+
+const scoreSheetStyles = StyleSheet.create({
+  backdrop: { flex: 1, justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: '#0F1012',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  scroll: { flexShrink: 1 },
+  handle: {
+    width: 38, height: 5, borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    alignSelf: 'center', marginTop: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
+  title: { fontSize: 18, fontWeight: '800', color: '#FFF', letterSpacing: -0.2 },
+  subtitle: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 4, lineHeight: 17 },
+  factorRow: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  factorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  factorName: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  factorWeight: { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 },
+  factorScore: { fontSize: 20, fontWeight: '900', color: '#FFF', fontVariant: ['tabular-nums'] },
+  factorBand: { fontSize: 11, fontWeight: '700', marginTop: -2 },
+  barTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    marginTop: 10,
+    overflow: 'hidden',
+  },
+  barFill: { height: '100%', borderRadius: 3 },
+  factorDescription: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 9, lineHeight: 17 },
+  factorDetail: { fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 4, fontStyle: 'italic', lineHeight: 15 },
+  footnoteWrap: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 4,
+  },
+  footnote: { flex: 1, fontSize: 11, color: 'rgba(255,255,255,0.55)', lineHeight: 16 },
+});
+
 // ───── Styles ─────
 
 const styles = StyleSheet.create({
@@ -423,6 +697,20 @@ const styles = StyleSheet.create({
   gaugeWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
   gaugeCenter: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   gaugeText: { color: '#FFF', fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  scoreTouchable: { position: 'relative' },
+  scoreInfoBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: YELLOW,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: CARD_BG,
+  },
 
   // Row layout
   row: { flexDirection: 'row', gap: 8 },

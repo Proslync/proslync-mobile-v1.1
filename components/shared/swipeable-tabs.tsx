@@ -27,8 +27,8 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Tab configuration matching the app's tab order
 export const TAB_CONFIG = [
-  { name: 'search', title: 'Map', icon: 'map', iconOutline: 'map-outline', route: '/(tabs)/search' },
-  { name: 'explore', title: 'Messages', icon: 'paper-plane', iconOutline: 'paper-plane-outline', route: '/(tabs)/explore' },
+  { name: 'search', title: 'Map', icon: 'map', iconOutline: 'map-outline', route: '/map' },
+  { name: 'explore', title: 'Messages', icon: 'paper-plane', iconOutline: 'paper-plane-outline', route: '/messages' },
   { name: 'index', title: 'Home', icon: 'home-sharp', iconOutline: 'home-outline', route: '/(tabs)' },
   { name: 'activity', title: 'Wallet', icon: 'wallet', iconOutline: 'wallet-outline', route: '/(tabs)/activity' },
   { name: 'profile', title: 'Profile', icon: 'person', iconOutline: 'person-outline', route: '/(tabs)/profile' },

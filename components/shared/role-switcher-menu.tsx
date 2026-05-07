@@ -73,14 +73,33 @@ const ROLES: {
     icon: 'school-outline',
     color: '#3B82F6',
   },
+  {
+    role: 'nilManager',
+    label: 'NIL Manager',
+    description: 'School compliance · view-only roster + deals',
+    icon: 'shield-checkmark-outline',
+    color: '#001A57',
+  },
 ];
 
 export function RoleSwitcherSheet({
   visible,
   onClose,
+  onEditProfile,
+  onGoLive,
+  isEditing,
+  onChangeBanner,
+  onRemoveBanner,
+  hasCustomBanner,
 }: {
   visible: boolean;
   onClose: () => void;
+  onEditProfile?: () => void;
+  onGoLive?: () => void;
+  isEditing?: boolean;
+  onChangeBanner?: () => void;
+  onRemoveBanner?: () => void;
+  hasCustomBanner?: boolean;
 }) {
   const router = useRouter();
   const { role: activeRole, setRole } = useRole();
@@ -207,6 +226,90 @@ export function RoleSwitcherSheet({
             })}
 
             <View style={styles.sectionDivider} />
+
+            {onEditProfile && (
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.7}
+                onPress={() => {
+                  dismiss();
+                  setTimeout(onEditProfile, 240);
+                }}
+              >
+                <View style={styles.icon}>
+                  <Ionicons
+                    name={isEditing ? 'checkmark-outline' : 'pencil-outline'}
+                    size={20}
+                    color="rgba(255,255,255,0.85)"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>{isEditing ? 'Save Profile' : 'Edit Profile'}</Text>
+                  <Text style={styles.rowDesc}>Update bio, photos, and links</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            )}
+
+            {onGoLive && (
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.7}
+                onPress={() => {
+                  dismiss();
+                  setTimeout(onGoLive, 240);
+                }}
+              >
+                <View style={[styles.icon, { backgroundColor: 'rgba(255,68,68,0.18)', borderColor: 'rgba(255,68,68,0.45)' }]}>
+                  <Ionicons name="radio" size={20} color="#FF4444" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>Go Live</Text>
+                  <Text style={styles.rowDesc}>Start a livestream for your fans</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            )}
+
+            {onChangeBanner && (
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.7}
+                onPress={() => {
+                  dismiss();
+                  setTimeout(onChangeBanner, 240);
+                }}
+              >
+                <View style={styles.icon}>
+                  <Ionicons name="videocam-outline" size={20} color="rgba(255,255,255,0.85)" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>{hasCustomBanner ? 'Change banner video' : 'Set banner video'}</Text>
+                  <Text style={styles.rowDesc}>Loops behind your profile header</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            )}
+
+            {hasCustomBanner && onRemoveBanner && (
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.7}
+                onPress={() => {
+                  dismiss();
+                  setTimeout(onRemoveBanner, 240);
+                }}
+              >
+                <View style={styles.icon}>
+                  <Ionicons name="trash-outline" size={20} color="#FF453A" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowLabel, { color: '#FF453A' }]}>Remove banner video</Text>
+                  <Text style={styles.rowDesc}>Restore the default cover image</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.row}

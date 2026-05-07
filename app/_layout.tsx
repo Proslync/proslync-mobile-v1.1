@@ -175,6 +175,9 @@ function RootLayoutNav() {
           name="wallet"
           options={{ animation: "none", gestureEnabled: false }}
         />
+        <Stack.Screen name="map" />
+        <Stack.Screen name="messages" />
+        <Stack.Screen name="nil-manager/athlete/[id]" />
         <Stack.Screen name="notifications" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="notification-settings" />
@@ -208,6 +211,7 @@ export default function RootLayout() {
           Montserrat_500Medium,
           Montserrat_700Bold,
         } = await import("@expo-google-fonts/montserrat");
+        const { Bangers_400Regular } = await import("@expo-google-fonts/bangers");
         await Font.loadAsync({
           ...Ionicons.font,
           Lato_300Light: require("../assets/fonts/Lato_300Light.ttf"),
@@ -219,6 +223,7 @@ export default function RootLayout() {
           Montserrat_400Regular,
           Montserrat_500Medium,
           Montserrat_700Bold,
+          Bangers_400Regular,
         });
         setFontsLoaded(true);
       } catch (e) {
