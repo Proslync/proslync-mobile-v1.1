@@ -14,6 +14,9 @@
       "bundleIdentifier": "com.proslync.app",
       "entitlements": {},
       "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        },
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Proslync uses Face ID to verify your identity during athlete registration.",
         "NSLocationWhenInUseUsageDescription": "Status uses your location to show nearby events and share your live location with friends",

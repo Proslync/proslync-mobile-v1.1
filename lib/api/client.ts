@@ -4,6 +4,41 @@
 // Nothing here touches the network.
 
 import { ApiClientError } from './errors';
+import { config } from '../config';
+
+async function httpRequest<T>(
+  method: string,
+  endpoint: string,
+  body: unknown,
+  tokenProvider: () => Promise<string | null>,
+): Promise<T> {
+  const url = endpoint.startsWith('http') ? endpoint : `${config.api.baseUrl}${endpoint}`;
+  const headers: Record<string, string> = { Accept: 'application/json' };
+  const token = await tokenProvider();
+  if (token && !token.startsWith('mock-')) headers.Authorization = `Bearer ${token}`;
+  let payload: BodyInit | undefined;
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    payload = JSON.stringify(body);
+  }
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), config.api.timeout);
+  try {
+    const res = await fetch(url, { method, headers, body: payload, signal: controller.signal });
+    if (!res.ok) {
+      throw new ApiClientError(`HTTP ${res.status} ${res.statusText} for ${method} ${endpoint}`, res.status);
+    }
+    const text = await res.text();
+    if (!text) return undefined as T;
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return text as unknown as T;
+    }
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 // ── Mock data ────────────────────────────────────────────
 const NOW = Date.now();
@@ -494,20 +529,33 @@ class ApiClient {
     this.refreshCache = null;
   }
 
+  private async request<T>(method: string, endpoint: string, body?: unknown): Promise<T> {
+    if (config.api.mode === 'mock' || !config.api.networkEnabled) {
+      return mockResponse(method, endpoint) as T;
+    }
+    try {
+      return await httpRequest<T>(method, endpoint, body, () => this.getAccessToken());
+    } catch (err) {
+      if (config.api.fallbackToMock) {
+        return mockResponse(method, endpoint) as T;
+      }
+      throw err;
+    }
+  }
   async get<T>(endpoint: string, _config?: RequestConfig): Promise<T> {
-    return mockResponse('GET', endpoint) as T;
+    return this.request<T>('GET', endpoint);
   }
-  async post<T>(endpoint: string, _body?: unknown, _config?: RequestConfig): Promise<T> {
-    return mockResponse('POST', endpoint) as T;
+  async post<T>(endpoint: string, body?: unknown, _config?: RequestConfig): Promise<T> {
+    return this.request<T>('POST', endpoint, body);
   }
-  async put<T>(endpoint: string, _body?: unknown, _config?: RequestConfig): Promise<T> {
-    return mockResponse('PUT', endpoint) as T;
+  async put<T>(endpoint: string, body?: unknown, _config?: RequestConfig): Promise<T> {
+    return this.request<T>('PUT', endpoint, body);
   }
-  async patch<T>(endpoint: string, _body?: unknown, _config?: RequestConfig): Promise<T> {
-    return mockResponse('PATCH', endpoint) as T;
+  async patch<T>(endpoint: string, body?: unknown, _config?: RequestConfig): Promise<T> {
+    return this.request<T>('PATCH', endpoint, body);
   }
   async delete<T>(endpoint: string, _config?: RequestConfig): Promise<T> {
-    return mockResponse('DELETE', endpoint) as T;
+    return this.request<T>('DELETE', endpoint);
   }
   async uploadFile<T>(
     endpoint: string,
@@ -515,7 +563,7 @@ class ApiClient {
     _fieldName: string = 'file',
     _config?: RequestConfig,
   ): Promise<T> {
-    return mockResponse('POST', endpoint) as T;
+    return this.request<T>('POST', endpoint);
   }
 }
 

@@ -1,6 +1,8 @@
 export { apiClient } from './client';
 export { ApiClientError, handleApiError } from './errors';
 export { authApi } from './auth';
+export { proslyncApi } from './proslync';
+export { proslyncNotificationsApi, proslyncWalletApi } from './proslync-spines';
 export { addToGoogleWallet, updateGoogleWalletCard, generateAppleWalletToken, generateAppleWalletTicketToken, getMembershipCard } from './wallet';
 export { followsApi } from './follows';
 export { postsApi } from './posts';
