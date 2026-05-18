@@ -1,6 +1,10 @@
-# Status App — Frontend
+# Proslync mobile (v1.1, CANONICAL — branch `arshia`)
 
-> **NEW SESSION? READ THIS FIRST:** `~/proslync-backend-staging/NEXT-STEPS.md` (cross-repo coordination doc) and `~/.claude/projects/-Users-arshiarahnavard-proslync-mobile-app-v1/memory/MEMORY.md` (durable project memory). This repo is the **active v1+arshia line**, not a museum — see `project-v1-arshia-branch-reality` in memory. Don't re-derive what's already mapped.
+> **NEW SESSION? READ FIRST:** `~/proslync-backend-staging/NEXT-STEPS.md` (cross-repo coord) and `~/.claude/projects/-Users-arshiarahnavard-proslync-mobile-app-v1/memory/MEMORY.md` (durable memory).
+>
+> **This is the canonical mobile location** (decided 2026-05-18). Cloned locally from `~/proslync-mobile-app-v1` (the old v1) preserving its full git history including the Phase 1 A/B/C fusion commits (`360c5a0`, `9eea84f`, `c030608`). VPS wired in `.env.local`. The OLD v1 path is **archived/reference** — don't build there. The old "donor app" framing below is stale: Phase 1 already deleted 191 donor files and bulk-copied 124 ios-final assets.
+>
+> Use nvm node v24 (`export PATH=$HOME/.nvm/versions/node/v24.11.1/bin:$PATH`) — homebrew node 25.8.1 is broken.
 
 ## Documentation
 
