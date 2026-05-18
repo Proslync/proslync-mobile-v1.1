@@ -665,16 +665,10 @@ export default function SearchScreen() {
           });
           break;
         case 'event':
-          router.push({
-            pathname: '/event/[id]',
-            params: { id: String(item.id) },
-          });
+          console.warn('[Phase 1 stub] /event route deleted');
           break;
         case 'venue':
-          router.push({
-            pathname: '/map',
-            params: { venueName: item.name || '' },
-          });
+          console.warn('[Phase 1 stub] /map route deleted');
           break;
         case 'post':
           // Navigate to feed or post detail if available
@@ -716,16 +710,10 @@ export default function SearchScreen() {
       if (item.selectedId && item.selectedType) {
         switch (item.selectedType) {
           case 'event':
-            router.push({
-              pathname: '/event/[id]',
-              params: { id: String(item.selectedId) },
-            });
+            console.warn('[Phase 1 stub] /event route deleted');
             return;
           case 'venue':
-            router.push({
-              pathname: '/map',
-              params: { venueName: item.displayName || '' },
-            });
+            console.warn('[Phase 1 stub] /map route deleted');
             return;
         }
       }

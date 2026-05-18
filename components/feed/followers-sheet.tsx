@@ -124,10 +124,7 @@ const VenueRow = React.memo(function VenueRow({
 
   const handlePress = () => {
     onNavigate();
-    router.push({
-      pathname: "/venue-profile/[venueId]",
-      params: { venueId: venue.id },
-    });
+    console.warn('[Phase 1 stub] /venue-profile route deleted');
   };
 
   return (

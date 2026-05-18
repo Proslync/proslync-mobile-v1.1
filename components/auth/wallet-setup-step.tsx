@@ -23,7 +23,7 @@ export function WalletSetupStep({ onSuccess }: WalletSetupStepProps) {
   const router = useRouter();
 
   const handleContinue = () => {
-    router.push('/stripe-onboarding?from=signup');
+    console.warn('[Phase 1 stub] /stripe-onboarding route deleted');
   };
 
   return (

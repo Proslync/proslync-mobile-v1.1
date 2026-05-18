@@ -199,9 +199,9 @@ export function NotificationSheet({ visible, onClose }: NotificationSheetProps) 
     setTimeout(() => {
       switch (notification.type) {
         case 'follow': if (metadata?.actorId) router.push({ pathname: '/user/[username]', params: { username: '_', userId: String(metadata.actorId) } }); break;
-        case 'rsvp': if (metadata?.eventId) router.push(`/manage-event/${metadata.eventId}`); break;
-        case 'event_update': if (metadata?.eventId) router.push(`/event/${metadata.eventId}`); break;
-        case 'payment': if (metadata?.eventId) router.push(`/manage-event/${metadata.eventId}`); break;
+        case 'rsvp': if (metadata?.eventId) console.warn('[Phase 1 stub] /manage-event route deleted'); break;
+        case 'event_update': if (metadata?.eventId) console.warn('[Phase 1 stub] /event route deleted'); break;
+        case 'payment': if (metadata?.eventId) console.warn('[Phase 1 stub] /manage-event route deleted'); break;
         case 'like': case 'comment': if (metadata?.postId) router.push(`/post/${metadata.postId}`); break;
         case 'team_invitation': setActiveTab('teams'); break;
       }

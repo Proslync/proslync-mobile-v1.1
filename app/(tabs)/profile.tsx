@@ -8,9 +8,7 @@ import { useAppTheme } from "@/hooks/use-app-theme";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useStableRouter } from "@/hooks/use-stable-router";
 import { useUserFollowers, useUserFollowing } from "@/hooks/use-user-follows";
-import { eventsApi } from "@/lib/api/events";
 import { useQuery } from "@tanstack/react-query";
-import type { Event } from "@/lib/types/events.types";
 import { useAuth } from "@/lib/providers/auth-provider";
 import { useRole } from "@/lib/providers/role-provider";
 import CoachProfile from "@/components/coach/coach-profile";
@@ -1786,15 +1784,6 @@ function PlayerProfileScreen() {
       transform: [{ translateX: animatedProfileTabIndex.value * segW + inset }],
     };
   });
-  const { data: userEvents = [], isLoading: eventsLoading } = useQuery<Event[]>({
-    queryKey: ['userEvents', user?.id],
-    queryFn: () => {
-      if (!user?.id) return [];
-      return eventsApi.getUserEvents(user.id, { sortBy: 'date', sortOrder: 'desc' });
-    },
-    enabled: !!user?.id && profileTab === 'events',
-    staleTime: 1000 * 60 * 2,
-  });
   const [showAvatarViewer, setShowAvatarViewer] = React.useState(false);
   const closeAvatarViewer = React.useCallback(() => setShowAvatarViewer(false), []);
   const lastTapRef = React.useRef<number>(0);
@@ -1802,9 +1791,9 @@ function PlayerProfileScreen() {
   const createMenuOptions: ActionSheetOption[] = React.useMemo(
     () => [
       {
-        label: "Go Live",
-        icon: "videocam-outline",
-        onPress: () => router.push("/live"),
+        label: "Create Post",
+        icon: "add-circle-outline",
+        onPress: () => router.push("/create-post"),
       },
     ],
     [router],

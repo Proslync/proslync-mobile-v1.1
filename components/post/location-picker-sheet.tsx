@@ -4,8 +4,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { NativeSheet, canUseNativeSheet } from '@/components/ui/native-sheet';
 import { GlassView } from 'expo-glass-effect';
 import { liquidGlass } from '@/constants/glass/liquid-glass';
-import { useAddressSuggestions } from '@/hooks/use-address-suggestions';
 import { useAppTheme } from '@/hooks/use-app-theme';
+
+interface AddressSuggestion {
+  id: string;
+  mapboxId: string;
+  name: string;
+  fullAddress: string;
+}
+
+function useAddressSuggestions(_query: string): { suggestions: AddressSuggestion[]; isLoading: boolean; retrieve: (mapboxId: string) => Promise<any> } {
+  return {
+    suggestions: [],
+    isLoading: false,
+    retrieve: async () => ({ formattedAddress: '', coordinates: { lat: 0, lng: 0 } }),
+  };
+}
 
 export interface PostLocation {
   name: string;

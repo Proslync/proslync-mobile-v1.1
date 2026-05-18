@@ -568,10 +568,7 @@ export default function UserProfileScreen() {
                           style={styles.postContainer}
                           onPress={() =>
                             post.eventId
-                              ? router.push({
-                                  pathname: "/event/[id]",
-                                  params: { id: post.eventId.toString() },
-                                })
+                              ? console.warn('[Phase 1 stub] /event route deleted')
                               : router.push({
                                   pathname: "/post/[id]",
                                   params: { id: String(post.id) },

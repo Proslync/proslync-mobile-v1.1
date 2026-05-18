@@ -6,7 +6,7 @@ import { io, Socket } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { config } from '@/lib/config';
 import { apiClient } from '@/lib/api/client';
-import { STRIPE_ACCOUNT_STATUS_KEY } from './use-wallet-queries';
+const STRIPE_ACCOUNT_STATUS_KEY = 'stripe-account-status';
 
 interface UseAccountStatusSocketOptions {
   enabled?: boolean;

@@ -32,17 +32,13 @@ try {
 import { ThemeProvider, useAppTheme } from "@/lib/providers/theme-provider";
 import { AuthProvider } from "@/lib/providers/auth-provider";
 import { QueryProvider } from "@/lib/providers/query-provider";
-import { WalletProvider } from "@/lib/providers/wallet-provider";
 import { ToastProvider } from "@/components/shared/toast";
 import { TabNavigationProvider } from "@/lib/providers/tab-navigation-provider";
 import { TabBarSheetProvider } from "@/lib/providers/tab-bar-sheet-provider";
 import { LiveLocationProvider } from "@/lib/providers/live-location-provider";
 import { StripeProvider } from "@/lib/providers/stripe-provider";
-// StripeTerminal removed for free-signing build (needs paid proximity-reader entitlement)
-// import { TerminalProvider } from "@/lib/providers/terminal-provider";
 import { ChatSocketProvider } from "@/lib/providers/chat-socket-provider";
 import { ChannelsSocketProvider } from "@/lib/providers/channels-socket-provider";
-import { BarSocketProvider } from "@/lib/providers/bar-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
 import { RoleProvider } from "@/lib/providers/role-provider";
 import { RootErrorBoundary } from "@/components/shared/error-boundary";
@@ -118,7 +114,6 @@ function RootLayoutNav() {
         <Stack.Screen name="channel/[id]/settings" />
         <Stack.Screen name="create-channel" />
         <Stack.Screen name="discover-channels" />
-        <Stack.Screen name="text-blast-compose" />
         <Stack.Screen
           name="new-message"
           options={{
@@ -128,15 +123,8 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen name="user-profile/[userId]" />
-        <Stack.Screen name="event/[id]" />
-        <Stack.Screen name="event/my-tab" />
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="edit-profile" />
-        <Stack.Screen name="dashboard" />
-        <Stack.Screen name="create-event" />
-        <Stack.Screen name="my-events" />
-        <Stack.Screen name="manage-event/[id]" />
-        <Stack.Screen name="manage-venue/[id]" />
         <Stack.Screen
           name="create-post"
           options={{
@@ -154,31 +142,8 @@ function RootLayoutNav() {
             fullScreenGestureEnabled: false,
           }}
         />
-        <Stack.Screen
-          name="scan-qr"
-          options={{
-            presentation: "fullScreenModal",
-            animation: "slide_from_bottom",
-            fullScreenGestureEnabled: false,
-          }}
-        />
-        <Stack.Screen
-          name="qr-card"
-          options={{
-            presentation: "fullScreenModal",
-            animation: "slide_from_bottom",
-            fullScreenGestureEnabled: false,
-          }}
-        />
-        <Stack.Screen name="tap-to-pay" />
-        <Stack.Screen
-          name="wallet"
-          options={{ animation: "none", gestureEnabled: false }}
-        />
-        <Stack.Screen name="map" />
         <Stack.Screen name="messages" />
         <Stack.Screen name="nil-manager/athlete/[id]" />
-        <Stack.Screen name="notifications" />
         <Stack.Screen name="section/[id]" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="notification-settings" />
@@ -256,21 +221,17 @@ export default function RootLayout() {
                 <RoleProvider>
                 <ChatSocketProvider>
                   <ChannelsSocketProvider>
-                  <BarSocketProvider>
                   <CallProvider>
                       <LiveLocationProvider>
                         <TabNavigationProvider>
                           <TabBarSheetProvider>
-                            <WalletProvider>
                               <BottomSheetModalProvider>
                                 <RootLayoutNav />
                               </BottomSheetModalProvider>
-                            </WalletProvider>
                           </TabBarSheetProvider>
                         </TabNavigationProvider>
                       </LiveLocationProvider>
                   </CallProvider>
-                  </BarSocketProvider>
                   </ChannelsSocketProvider>
                 </ChatSocketProvider>
                 </RoleProvider>

@@ -1,32 +1,20 @@
 export { apiClient } from './client';
 export { ApiClientError, handleApiError } from './errors';
 export { authApi } from './auth';
-export { mapActivityToFeedItem, getEventIdFromActivity } from './feed';
-export type { FeedActivity, FeedResponse } from './feed';
-export { eventsApi } from './events';
 export { addToGoogleWallet, updateGoogleWalletCard, generateAppleWalletToken, generateAppleWalletTicketToken, getMembershipCard } from './wallet';
 export { followsApi } from './follows';
 export { postsApi } from './posts';
 export { usersApi } from './users';
-export { venuesApi } from './venues';
-export { ticketsApi } from './tickets';
 export type { FollowersResponse, FollowingResponse } from '../types/follows.types';
 
 // Additional API modules
 export { adminApi } from './admin';
 export { analyticsApi } from './analytics';
-export { artistsApi } from './artists';
 export { callsApi } from './calls';
 export { chatApi } from './chat';
-export { dashboardApi } from './dashboard';
 export { filesApi } from './files';
 export { locationsApi } from './locations';
-export { menuApi } from './menu';
 export { notificationsApi } from './notifications';
 export { paymentsApi } from './payments';
 export { preferencesApi } from './preferences';
-export { pricingApi } from './pricing';
 export { searchApi } from './search';
-export { tablesApi } from './tables';
-export { teamApi } from './team';
-export { textBlastsApi } from './text-blasts';
