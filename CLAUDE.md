@@ -1,5 +1,7 @@
 # Status App — Frontend
 
+> **NEW SESSION? READ THIS FIRST:** `~/proslync-backend-staging/NEXT-STEPS.md` (cross-repo coordination doc) and `~/.claude/projects/-Users-arshiarahnavard-proslync-mobile-app-v1/memory/MEMORY.md` (durable project memory). This repo is the **active v1+arshia line**, not a museum — see `project-v1-arshia-branch-reality` in memory. Don't re-derive what's already mapped.
+
 ## Documentation
 
 `docs/` is symlinked to the Obsidian vault. Search docs before guessing:

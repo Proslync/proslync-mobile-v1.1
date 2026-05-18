@@ -58,7 +58,7 @@ const SECTION_SNAP = SECTION_TOTAL_H + SECTION_GAP_V;
 
 // ───── Types ─────
 
-type MatchupCard = {
+export type MatchupCard = {
   id: string;
   variant: 'matchup';
   status: 'LIVE' | 'FINAL' | 'PRE';
@@ -68,7 +68,7 @@ type MatchupCard = {
   meta?: string;
 };
 
-type PlayerCard = {
+export type PlayerCard = {
   id: string;
   variant: 'player';
   topPill: string;
@@ -81,7 +81,7 @@ type PlayerCard = {
   usePhoto?: boolean;
 };
 
-type DealCard = {
+export type DealCard = {
   id: string;
   variant: 'deal';
   value: string;
@@ -93,9 +93,9 @@ type DealCard = {
   duration: string;
 };
 
-type AnyCard = MatchupCard | PlayerCard | DealCard;
+export type AnyCard = MatchupCard | PlayerCard | DealCard;
 
-type Section = {
+export type Section = {
   id: string;
   title: string;
   subtitle: string;
@@ -103,16 +103,17 @@ type Section = {
   iconColor: string;
   accent: string;
   cards: AnyCard[];
+  awardGroups?: { award: string; nominees: PlayerCard[] }[];
   bgImage?: any;
 };
 
 // ───── Mock data ─────
 
-const SECTIONS: Section[] = [
+export const SECTIONS: Section[] = [
   {
     id: 'ncaab',
     title: 'NCAA Basketball',
-    subtitle: '4 live · 12 today',
+    subtitle: '6 live · 18 today',
     iconLabel: '🏀',
     iconColor: '#F76900',
     accent: '#FF6F3C',
@@ -132,6 +133,34 @@ const SECTIONS: Section[] = [
         meta: 'JPJ Arena',
       },
       {
+        id: 'ncaab-7', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Q2 8:11',
+        away: { abbr: 'KEN', color: '#0033A0', score: 41 },
+        home: { abbr: 'TENN', color: '#FF8200', score: 38 },
+        meta: 'Thompson-Boling',
+      },
+      {
+        id: 'ncaab-8', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Q1 6:24',
+        away: { abbr: 'PUR', color: '#CFB991', score: 18 },
+        home: { abbr: 'IND', color: '#990000', score: 22 },
+        meta: 'Assembly Hall',
+      },
+      {
+        id: 'ncaab-9', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · OT',
+        away: { abbr: 'MICH', color: '#00274C', score: 76 },
+        home: { abbr: 'OSU', color: '#BB0000', score: 76 },
+        meta: 'Schottenstein',
+      },
+      {
+        id: 'ncaab-10', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Q4 0:42',
+        away: { abbr: 'TX', color: '#BF5700', score: 81 },
+        home: { abbr: 'OU', color: '#841617', score: 79 },
+        meta: 'Lloyd Noble',
+      },
+      {
         id: 'ncaab-3', variant: 'matchup',
         status: 'PRE', statusLabel: 'Tonight · 7:00p',
         away: { abbr: 'KU', color: '#0051BA' },
@@ -146,6 +175,34 @@ const SECTIONS: Section[] = [
         meta: 'McKale Center',
       },
       {
+        id: 'ncaab-11', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Tonight · 7:30p',
+        away: { abbr: 'HOU', color: '#C8102E' },
+        home: { abbr: 'ARK', color: '#9D2235' },
+        meta: 'Bud Walton',
+      },
+      {
+        id: 'ncaab-12', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Tomorrow · 6:00p',
+        away: { abbr: 'AUB', color: '#0C2340' },
+        home: { abbr: 'ALA', color: '#9E1B32' },
+        meta: 'Coleman Coliseum',
+      },
+      {
+        id: 'ncaab-13', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Sat · 2:00p',
+        away: { abbr: 'MARQ', color: '#003366' },
+        home: { abbr: 'UCONN', color: '#000E2F' },
+        meta: 'Gampel Pavilion',
+      },
+      {
+        id: 'ncaab-14', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Sat · 9:00p',
+        away: { abbr: 'OREG', color: '#154733' },
+        home: { abbr: 'WASH', color: '#4B2E83' },
+        meta: 'Hec Ed Pavilion',
+      },
+      {
         id: 'ncaab-5', variant: 'matchup',
         status: 'FINAL', statusLabel: 'Final',
         away: { abbr: 'GONZ', color: '#041E42', score: 78 },
@@ -158,6 +215,34 @@ const SECTIONS: Section[] = [
         away: { abbr: 'BAY', color: '#003015', score: 88 },
         home: { abbr: 'TTU', color: '#CC0000', score: 92 },
         meta: 'United Supermkts',
+      },
+      {
+        id: 'ncaab-15', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'ILL', color: '#13294B', score: 84 },
+        home: { abbr: 'MSU', color: '#18453B', score: 79 },
+        meta: 'State Farm Ctr',
+      },
+      {
+        id: 'ncaab-16', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final · 2OT',
+        away: { abbr: 'LSU', color: '#461D7C', score: 96 },
+        home: { abbr: 'MISS', color: '#CE1126', score: 91 },
+        meta: 'PMAC',
+      },
+      {
+        id: 'ncaab-17', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'USC', color: '#990000', score: 73 },
+        home: { abbr: 'UTAH', color: '#CC0000', score: 81 },
+        meta: 'Galen Center',
+      },
+      {
+        id: 'ncaab-18', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'WVU', color: '#002855', score: 67 },
+        home: { abbr: 'ISU', color: '#C8102E', score: 70 },
+        meta: 'Hilton Coliseum',
       },
     ],
   },
@@ -210,6 +295,63 @@ const SECTIONS: Section[] = [
         name: 'Donnie Freeman', team: 'Syracuse',
         stat: '14 PPG · off bench',
         initial: 'D', color: '#F76900',
+      },
+    ],
+    awardGroups: [
+      {
+        award: 'Wooden Award',
+        nominees: [
+          { id: 'aw-w-1', variant: 'player', topPill: '#1', topPillTone: 'gold', name: 'Cooper Flagg', team: 'Duke', stat: '22.4 PPG · 9.6 RPG', initial: 'C', color: '#001A57' },
+          { id: 'aw-w-2', variant: 'player', topPill: '#2', topPillTone: 'gold', name: 'Kiyan Anthony', team: 'Syracuse', stat: '21.0 PPG · 5.9 APG', initial: 'K', color: '#F76900', usePhoto: true },
+          { id: 'aw-w-3', variant: 'player', topPill: '#3', topPillTone: 'gold', name: 'RJ Davis', team: 'UNC', stat: '24.2 PPG · 6/11 from 3', initial: 'R', color: '#7BAFD4' },
+          { id: 'aw-w-4', variant: 'player', topPill: '#4', topPillTone: 'gold', name: 'AJ Dybantsa', team: 'BYU', stat: '19.8 PPG · True Frosh', initial: 'A', color: '#002E5D' },
+          { id: 'aw-w-5', variant: 'player', topPill: '#5', topPillTone: 'gold', name: 'Hunter Sallis', team: 'Wake Forest', stat: '18.5 PPG · 41% 3PT', initial: 'H', color: '#9E7E38' },
+          { id: 'aw-w-6', variant: 'player', topPill: '#6', topPillTone: 'gold', name: 'Trey Alexander', team: 'Creighton', stat: '17.2 PPG · 6.4 APG', initial: 'T', color: '#00478A' },
+        ],
+      },
+      {
+        award: 'Player of the Year',
+        nominees: [
+          { id: 'aw-p-1', variant: 'player', topPill: '#1', topPillTone: 'gold', name: 'Zach Edey', team: 'Purdue', stat: '24.6 PPG · 12.0 RPG', initial: 'Z', color: '#CFB991' },
+          { id: 'aw-p-2', variant: 'player', topPill: '#2', topPillTone: 'gold', name: 'Tyler Kolek', team: 'Marquette', stat: '16.2 PPG · 7.7 APG', initial: 'T', color: '#003366' },
+          { id: 'aw-p-3', variant: 'player', topPill: '#3', topPillTone: 'gold', name: 'Boo Buie', team: 'Northwestern', stat: '19.8 PPG · 4.8 APG', initial: 'B', color: '#4E2A84' },
+          { id: 'aw-p-4', variant: 'player', topPill: '#4', topPillTone: 'gold', name: 'Kyle Filipowski', team: 'Duke', stat: '17.4 PPG · 8.5 RPG', initial: 'K', color: '#001A57' },
+          { id: 'aw-p-5', variant: 'player', topPill: '#5', topPillTone: 'gold', name: 'Hunter Dickinson', team: 'Kansas', stat: '18.1 PPG · 11.0 RPG', initial: 'H', color: '#0051BA' },
+          { id: 'aw-p-6', variant: 'player', topPill: '#6', topPillTone: 'gold', name: 'Jalen Cone', team: 'Northern AZ', stat: '22.8 PPG · 38% 3PT', initial: 'J', color: '#003466' },
+        ],
+      },
+      {
+        award: 'Rookie of the Year',
+        nominees: [
+          { id: 'aw-r-1', variant: 'player', topPill: '#1', topPillTone: 'orange', name: 'AJ Dybantsa', team: 'BYU', stat: '19.8 PPG · True Frosh', initial: 'A', color: '#002E5D' },
+          { id: 'aw-r-2', variant: 'player', topPill: '#2', topPillTone: 'orange', name: 'Cameron Boozer', team: 'Duke', stat: '17.2 PPG · 8.6 RPG', initial: 'C', color: '#001A57' },
+          { id: 'aw-r-3', variant: 'player', topPill: '#3', topPillTone: 'orange', name: 'Tre Johnson', team: 'Texas', stat: '19.4 PPG · 33% 3PT', initial: 'T', color: '#BF5700' },
+          { id: 'aw-r-4', variant: 'player', topPill: '#4', topPillTone: 'orange', name: 'Boogie Fland', team: 'Arkansas', stat: '14.2 PPG · 5.5 APG', initial: 'B', color: '#9D2235' },
+          { id: 'aw-r-5', variant: 'player', topPill: '#5', topPillTone: 'orange', name: 'VJ Edgecombe', team: 'Baylor', stat: '13.8 PPG · 5.1 RPG', initial: 'V', color: '#003015' },
+          { id: 'aw-r-6', variant: 'player', topPill: '#6', topPillTone: 'orange', name: 'Karter Knox', team: 'Arkansas', stat: '11.5 PPG · 4.3 RPG', initial: 'K', color: '#9D2235' },
+        ],
+      },
+      {
+        award: 'Defensive Player of the Year',
+        nominees: [
+          { id: 'aw-d-1', variant: 'player', topPill: '#1', topPillTone: 'teal', name: 'Eddie Lampkin', team: 'Syracuse', stat: '4.1 BPG · 11.8 RPG', initial: 'E', color: '#F76900' },
+          { id: 'aw-d-2', variant: 'player', topPill: '#2', topPillTone: 'teal', name: 'Donovan Clingan', team: 'UConn', stat: '3.6 BPG · 10.2 RPG', initial: 'D', color: '#000E2F' },
+          { id: 'aw-d-3', variant: 'player', topPill: '#3', topPillTone: 'teal', name: 'Yves Missi', team: 'Baylor', stat: '2.9 BPG · 8.1 RPG', initial: 'Y', color: '#003015' },
+          { id: 'aw-d-4', variant: 'player', topPill: '#4', topPillTone: 'teal', name: 'Adem Bona', team: 'UCLA', stat: '3.2 BPG · 7.6 RPG', initial: 'A', color: '#2D68C4' },
+          { id: 'aw-d-5', variant: 'player', topPill: '#5', topPillTone: 'teal', name: "Kel'el Ware", team: 'Indiana', stat: '2.5 BPG · 9.4 RPG', initial: 'K', color: '#990000' },
+          { id: 'aw-d-6', variant: 'player', topPill: '#6', topPillTone: 'teal', name: 'Vladislav Goldin', team: 'FAU', stat: '2.3 BPG · 6.8 RPG', initial: 'V', color: '#003366' },
+        ],
+      },
+      {
+        award: 'Sixth Man of the Year',
+        nominees: [
+          { id: 'aw-s-1', variant: 'player', topPill: '#1', topPillTone: 'neutral', name: 'Donnie Freeman', team: 'Syracuse', stat: '14.0 PPG · off bench', initial: 'D', color: '#F76900' },
+          { id: 'aw-s-2', variant: 'player', topPill: '#2', topPillTone: 'neutral', name: 'Reece Beekman', team: 'Virginia', stat: '9.8 PPG · 6.2 APG', initial: 'R', color: '#232D4B' },
+          { id: 'aw-s-3', variant: 'player', topPill: '#3', topPillTone: 'neutral', name: 'KJ Simpson', team: 'Colorado', stat: '12.4 PPG · bench', initial: 'K', color: '#CFB87C' },
+          { id: 'aw-s-4', variant: 'player', topPill: '#4', topPillTone: 'neutral', name: 'Caleb Love', team: 'Arizona', stat: '11.6 PPG · 30% 3PT', initial: 'C', color: '#AB0520' },
+          { id: 'aw-s-5', variant: 'player', topPill: '#5', topPillTone: 'neutral', name: 'Andrew Carr', team: 'Wake Forest', stat: '8.9 PPG · 6.4 RPG', initial: 'A', color: '#9E7E38' },
+          { id: 'aw-s-6', variant: 'player', topPill: '#6', topPillTone: 'neutral', name: 'Tyler Burton', team: 'Villanova', stat: '9.5 PPG · 5.0 RPG', initial: 'T', color: '#002F6C' },
+        ],
       },
     ],
   },
@@ -664,6 +806,46 @@ function MiniCard({ card }: { card: AnyCard }) {
   );
 }
 
+// ───── Video cover ─────
+// Sub-component so the player is only mounted when there's a valid URI.
+// Avoids the null→URI transition where the hook keeps a dead player.
+export function VideoCover({ uri, style }: { uri: string; style: any }) {
+  const player = useVideoPlayer(uri, (p) => {
+    if (!p) return;
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+
+  React.useEffect(() => {
+    if (!player) return;
+    try { player.play(); } catch {}
+    const playSub = player.addListener('playingChange', (e: any) => {
+      if (!e?.isPlaying) {
+        try { player.play(); } catch {}
+      }
+    });
+    const statusSub = player.addListener('statusChange', (e: any) => {
+      if (e?.status === 'readyToPlay') {
+        try { player.play(); } catch {}
+      }
+    });
+    return () => {
+      try { playSub.remove(); } catch {}
+      try { statusSub.remove(); } catch {}
+    };
+  }, [player, uri]);
+
+  return (
+    <VideoView
+      player={player}
+      style={style}
+      contentFit="cover"
+      nativeControls={false}
+    />
+  );
+}
+
 // ───── Section ─────
 
 function SectionCard({
@@ -679,30 +861,12 @@ function SectionCard({
   coverMedia?: CoverMedia;
   customLogo?: string;
 }) {
+  const router = useRouter();
   const pages = chunk(section.cards, 2);
   const isVideoCover = coverMedia?.type === 'video';
   const bgSource = coverMedia
     ? (coverMedia.type === 'image' ? { uri: coverMedia.uri } : null)
     : section.bgImage;
-
-  // Each section card has its own video player when its cover is a video.
-  const videoPlayer = useVideoPlayer(isVideoCover ? coverMedia!.uri : null, (p) => {
-    if (!p) return;
-    p.loop = true;
-    p.muted = true;
-    p.play();
-  });
-
-  React.useEffect(() => {
-    if (!videoPlayer || !isVideoCover) return;
-    videoPlayer.play();
-    const sub = videoPlayer.addListener('playingChange', (e: any) => {
-      if (!e?.isPlaying) {
-        try { videoPlayer.play(); } catch {}
-      }
-    });
-    return () => { try { sub.remove(); } catch {} };
-  }, [videoPlayer, isVideoCover]);
 
   return (
     <Animated.View
@@ -712,12 +876,7 @@ function SectionCard({
       {(bgSource || isVideoCover) && (
         <>
           {isVideoCover ? (
-            <VideoView
-              player={videoPlayer}
-              style={styles.sectionBgImage}
-              contentFit="cover"
-              nativeControls={false}
-            />
+            <VideoCover uri={coverMedia!.uri} style={styles.sectionBgImage} />
           ) : (
             <Image
               source={bgSource!}
@@ -785,12 +944,16 @@ function SectionCard({
         ))}
       </ScrollView>
 
-      <View style={styles.sectionFooter}>
+      <Pressable
+        style={styles.sectionFooter}
+        hitSlop={6}
+        onPress={() => router.push({ pathname: '/section/[id]', params: { id: section.id } } as any)}
+        accessibilityRole="button"
+        accessibilityLabel={`View all ${section.title}`}
+      >
         <Text style={styles.sectionFooterText}>View all</Text>
-        <Pressable hitSlop={10}>
-          <Ionicons name="chevron-forward" size={20} color="#FFF" />
-        </Pressable>
-      </View>
+        <Ionicons name="chevron-forward" size={20} color="#FFF" />
+      </Pressable>
       </View>
     </Animated.View>
   );

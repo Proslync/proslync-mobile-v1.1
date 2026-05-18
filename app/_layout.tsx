@@ -179,6 +179,7 @@ function RootLayoutNav() {
         <Stack.Screen name="messages" />
         <Stack.Screen name="nil-manager/athlete/[id]" />
         <Stack.Screen name="notifications" />
+        <Stack.Screen name="section/[id]" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="notification-settings" />
         <Stack.Screen name="privacy-settings" />

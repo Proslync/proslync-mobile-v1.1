@@ -803,62 +803,134 @@ function StatCell({ label, value }: { label: string; value: string }) {
 // Tab 4 — Opponent Scout
 // ============================================================
 
+const TENDENCY_COLOR: Record<string, string> = {
+  OFFENSE: '#FF6F3C',
+  DEFENSE: '#3B82F6',
+  TRANSITION: '#14B8A6',
+};
+
+const ADJUSTMENT_PRIORITY: { label: string; color: string; bg: string; border: string }[] = [
+  { label: 'HIGH',   color: '#FF4444', bg: 'rgba(255,68,68,0.14)',  border: 'rgba(255,68,68,0.45)' },
+  { label: 'MEDIUM', color: '#FFD60A', bg: 'rgba(255,214,10,0.14)', border: 'rgba(255,214,10,0.45)' },
+  { label: 'LOW',    color: '#FFFFFF', bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.20)' },
+];
+
 function ScoutTab({ insets }: { insets: number }) {
   const topInset = useSafeAreaInsets().top;
+  const sortedPlays = [...OPPONENT.predictedPlays].sort((a, b) => b.likelihood - a.likelihood);
+  const playerBullets = OPPONENT.keyPlayer.tendencies;
   return (
     <ScrollView
       contentContainerStyle={[styles.scrollContent, { paddingTop: topInset + 70, paddingBottom: insets + 40 }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Opponent header */}
-      <Animated.View entering={FadeInDown.duration(400)} style={styles.scoutHeaderCard}>
+      {/* Matchup hero */}
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.scoutHero}>
         <LinearGradient
-          colors={['rgba(255,111,60,0.2)', 'rgba(255,111,60,0)']}
+          colors={['rgba(255,68,68,0.22)', 'rgba(255,111,60,0.06)', 'rgba(0,0,0,0)']}
+          locations={[0, 0.55, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <View style={styles.scoutHeaderRow}>
-          <View style={styles.opponentLogo}>
-            <Text style={styles.opponentLogoText}>{OPPONENT.logoInitial}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.opponentName}>{OPPONENT.name}</Text>
-            <Text style={styles.opponentMeta}>
-              {OPPONENT.record} · {OPPONENT.rank} · {OPPONENT.city}
-            </Text>
+        <View style={styles.scoutHeroTopRow}>
+          <Text style={styles.scoutHeroEyebrow}>SCOUTING REPORT</Text>
+          <View style={styles.threatPill}>
+            <View style={styles.threatDot} />
+            <Text style={styles.threatPillText}>{OPPONENT.threat.level} THREAT</Text>
           </View>
         </View>
-        <View style={styles.scoutNextGame}>
-          <Ionicons name="calendar-outline" size={14} color={ACCENT} />
-          <Text style={styles.scoutNextGameText}>{OPPONENT.nextGameDate}</Text>
-          <Text style={styles.scoutNextGameVenue}>· {OPPONENT.venue}</Text>
+        <View style={styles.scoutHeroMatchup}>
+          <View style={styles.scoutHeroTeamCol}>
+            <View style={[styles.scoutHeroLogo, { backgroundColor: 'rgba(255,111,60,0.16)', borderColor: 'rgba(255,111,60,0.35)' }]}>
+              <Text style={[styles.scoutHeroLogoText, { color: ACCENT }]}>P</Text>
+            </View>
+            <Text style={styles.scoutHeroTeamLabel}>US</Text>
+          </View>
+          <View style={styles.scoutHeroVs}>
+            <Text style={styles.scoutHeroVsText}>VS</Text>
+          </View>
+          <View style={styles.scoutHeroTeamCol}>
+            <View style={styles.scoutHeroLogo}>
+              <Text style={styles.scoutHeroLogoText}>{OPPONENT.logoInitial}</Text>
+            </View>
+            <Text style={styles.scoutHeroTeamLabel}>{OPPONENT.name.toUpperCase().split(' ').slice(0, 2).join(' ')}</Text>
+          </View>
         </View>
+        <Text style={styles.scoutHeroOppName}>{OPPONENT.name}</Text>
+        <Text style={styles.scoutHeroOppMeta}>
+          {OPPONENT.record} · {OPPONENT.rank} · {OPPONENT.city}
+        </Text>
+        <View style={styles.scoutHeroDivider} />
+        <View style={styles.scoutHeroFooter}>
+          <Ionicons name="calendar-outline" size={14} color="rgba(255,255,255,0.7)" />
+          <Text style={styles.scoutHeroFooterText}>{OPPONENT.nextGameDate}</Text>
+          <View style={styles.scoutHeroFooterDot} />
+          <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.7)" />
+          <Text style={styles.scoutHeroFooterText} numberOfLines={1}>{OPPONENT.venue}</Text>
+        </View>
+        <Text style={styles.scoutThreatReason}>{OPPONENT.threat.reason}</Text>
+      </Animated.View>
+
+      {/* Matchup stats grid */}
+      <Text style={styles.sectionLabel}>MATCHUP · SEASON AVERAGES</Text>
+      <Animated.View entering={FadeInDown.delay(60).duration(400)} style={styles.statsGrid}>
+        {OPPONENT.matchupStats.map((s) => {
+          const usBetter =
+            s.betterIs === 'high' ? s.us > s.them : s.us < s.them;
+          const fmt = (v: number) =>
+            s.fmt === 'pct' ? `${v.toFixed(1)}%` : v.toFixed(1);
+          return (
+            <View key={s.label} style={styles.statCell}>
+              <Text style={styles.statCellLabel}>{s.label}</Text>
+              <View style={styles.statCellRow}>
+                <Text style={[styles.statCellValue, usBetter && { color: '#34C759' }]}>{fmt(s.us)}</Text>
+                <Text style={styles.statCellSep}>vs</Text>
+                <Text style={[styles.statCellValue, !usBetter && { color: '#FF4444' }]}>{fmt(s.them)}</Text>
+              </View>
+              <Text style={styles.statCellLegend}>US · THEM</Text>
+            </View>
+          );
+        })}
       </Animated.View>
 
       {/* Top 3 tendencies */}
       <Text style={styles.sectionLabel}>TOP 3 TENDENCIES</Text>
-      {OPPONENT.tendencies.map((t, i) => (
-        <Animated.View
-          key={t.id}
-          entering={FadeInDown.delay(100 + i * 80).duration(400)}
-          style={styles.tendencyCard}
-        >
-          <View style={styles.tendencyThumb}>
-            <Ionicons name="play" size={22} color="#FFFFFF" />
-            <Text style={styles.tendencyThumbLabel}>{t.clipLabel}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.tendencyTitle}>{t.title}</Text>
-            <Text style={styles.tendencyDetail}>{t.detail}</Text>
-          </View>
-        </Animated.View>
-      ))}
+      {OPPONENT.tendencies.map((t, i) => {
+        const tone = TENDENCY_COLOR[t.category] ?? ACCENT;
+        return (
+          <Animated.View
+            key={t.id}
+            entering={FadeInDown.delay(100 + i * 80).duration(400)}
+            style={styles.tendencyCardV2}
+          >
+            <View style={[styles.tendencyAccent, { backgroundColor: tone }]} />
+            <View style={{ flex: 1, paddingLeft: 14, paddingRight: 12, paddingVertical: 14 }}>
+              <View style={styles.tendencyTopRow}>
+                <View style={[styles.categoryPill, { backgroundColor: `${tone}26`, borderColor: `${tone}55` }]}>
+                  <Text style={[styles.categoryPillText, { color: tone }]}>{t.category}</Text>
+                </View>
+                <View style={styles.pppPill}>
+                  <Text style={styles.pppPillLabel}>PPP</Text>
+                  <Text style={styles.pppPillValue}>{t.ppp}</Text>
+                </View>
+              </View>
+              <Text style={styles.tendencyTitle}>{t.title}</Text>
+              <Text style={styles.tendencyDetail}>{t.detail}</Text>
+              <View style={styles.tendencyClipsBtn}>
+                <Ionicons name="play-circle" size={14} color="#FFFFFF" />
+                <Text style={styles.tendencyClipsText}>Watch {t.clipCount} clips</Text>
+              </View>
+            </View>
+          </Animated.View>
+        );
+      })}
 
       {/* Key player */}
       <Text style={styles.sectionLabel}>THEIR KEY PLAYER</Text>
-      <Animated.View entering={FadeInDown.duration(400)} style={styles.keyPlayerCard}>
-        <View style={styles.keyPlayerHead}>
-          <View style={styles.keyPlayerAvatar}>
-            <Text style={styles.keyPlayerAvatarText}>#{OPPONENT.keyPlayer.number}</Text>
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.keyPlayerCardV2}>
+        <View style={styles.keyPlayerHeadV2}>
+          <View style={styles.jerseyBadge}>
+            <Text style={styles.jerseyHash}>#</Text>
+            <Text style={styles.jerseyNumber}>{OPPONENT.keyPlayer.number}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.keyPlayerName}>{OPPONENT.keyPlayer.name}</Text>
@@ -866,11 +938,16 @@ function ScoutTab({ insets }: { insets: number }) {
             <Text style={styles.keyPlayerStats}>{OPPONENT.keyPlayer.stats}</Text>
           </View>
         </View>
-        <View style={styles.keyPlayerDivider} />
-        {OPPONENT.keyPlayer.tendencies.map((t, idx) => (
-          <View key={idx} style={styles.keyPlayerBulletRow}>
-            <View style={styles.bulletDot} />
-            <Text style={styles.keyPlayerBullet}>{t}</Text>
+        <View style={styles.keyPlayerSubLabel}>
+          <Ionicons name="shield-half-outline" size={12} color={ACCENT} />
+          <Text style={styles.keyPlayerSubLabelText}>DEFENSIVE PRIORITIES</Text>
+        </View>
+        {playerBullets.map((t, idx) => (
+          <View key={idx} style={styles.priorityRow}>
+            <View style={styles.priorityNum}>
+              <Text style={styles.priorityNumText}>{idx + 1}</Text>
+            </View>
+            <Text style={styles.priorityText}>{t}</Text>
           </View>
         ))}
       </Animated.View>
@@ -878,31 +955,52 @@ function ScoutTab({ insets }: { insets: number }) {
       {/* Predicted plays */}
       <Text style={styles.sectionLabel}>PREDICTED PLAY CALLS</Text>
       <View style={styles.playsCard}>
-        {OPPONENT.predictedPlays.map((p, i) => (
+        {sortedPlays.map((p, i) => (
           <View
             key={p.name}
-            style={[styles.playRow, i !== OPPONENT.predictedPlays.length - 1 && styles.playRowDivider]}
+            style={[styles.playRowV2, i !== sortedPlays.length - 1 && styles.playRowDivider]}
           >
-            <Text style={styles.playName}>{p.name}</Text>
-            <View style={styles.playBarTrack}>
-              <View style={[styles.playBarFill, { width: `${p.likelihood}%` }]} />
+            <View style={styles.playRankBadge}>
+              <Text style={styles.playRankText}>{i + 1}</Text>
             </View>
-            <Text style={styles.playLikelihood}>{p.likelihood}%</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.playName}>{p.name}</Text>
+              <View style={styles.playBarTrack}>
+                <LinearGradient
+                  colors={['#FF6F3C', '#FF4444']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={[styles.playBarFillV2, { width: `${p.likelihood}%` }]}
+                />
+              </View>
+            </View>
+            <Text style={styles.playLikelihoodV2}>{p.likelihood}%</Text>
           </View>
         ))}
       </View>
 
       {/* Adjustments */}
       <Text style={styles.sectionLabel}>RECOMMENDED ADJUSTMENTS</Text>
-      <View style={styles.adjustmentsCard}>
-        {OPPONENT.adjustments.map((a, i) => (
-          <View key={i} style={styles.adjustmentRow}>
-            <View style={styles.adjustmentNumber}>
-              <Text style={styles.adjustmentNumberText}>{i + 1}</Text>
-            </View>
-            <Text style={styles.adjustmentText}>{a}</Text>
-          </View>
-        ))}
+      <View style={{ gap: 10, marginBottom: 14 }}>
+        {OPPONENT.adjustments.map((a, i) => {
+          const pri = ADJUSTMENT_PRIORITY[Math.min(i, ADJUSTMENT_PRIORITY.length - 1)];
+          return (
+            <Animated.View
+              key={i}
+              entering={FadeInDown.delay(80 + i * 60).duration(380)}
+              style={styles.adjustmentCardV2}
+            >
+              <View
+                style={[
+                  styles.adjustmentPriPill,
+                  { backgroundColor: pri.bg, borderColor: pri.border },
+                ]}
+              >
+                <Text style={[styles.adjustmentPriText, { color: pri.color }]}>{pri.label}</Text>
+              </View>
+              <Text style={styles.adjustmentText}>{a}</Text>
+            </Animated.View>
+          );
+        })}
       </View>
 
       <Text style={styles.disclaimer}>{DEMO_META.generatedBy}</Text>
@@ -1413,7 +1511,193 @@ const styles = StyleSheet.create({
   },
   evidenceCloseText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
 
-  // Scout
+  // Scout — hero
+  scoutHero: {
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,68,68,0.30)',
+    padding: 18,
+    overflow: 'hidden',
+    marginBottom: 18,
+    backgroundColor: CARD_BG,
+  },
+  scoutHeroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
+  scoutHeroEyebrow: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 1.5 },
+  threatPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,68,68,0.16)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,68,68,0.50)',
+  },
+  threatDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF4444' },
+  threatPillText: { fontSize: 10, color: '#FF4444', fontWeight: '900', letterSpacing: 0.6 },
+  scoutHeroMatchup: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12,
+    marginBottom: 14,
+  },
+  scoutHeroTeamCol: { alignItems: 'center', gap: 6, flex: 1 },
+  scoutHeroLogo: {
+    width: 60, height: 60, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#1a1b1e',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+  },
+  scoutHeroLogoText: { fontSize: 26, color: '#FFF', fontWeight: '900' },
+  scoutHeroTeamLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: '800', letterSpacing: 1.2 },
+  scoutHeroVs: { paddingHorizontal: 4 },
+  scoutHeroVsText: { fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: '900', letterSpacing: 1.5 },
+  scoutHeroOppName: { fontSize: 18, color: '#FFF', fontWeight: '800', textAlign: 'center' },
+  scoutHeroOppMeta: { fontSize: 12, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: 3 },
+  scoutHeroDivider: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: 14 },
+  scoutHeroFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center' },
+  scoutHeroFooterText: { fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: '600' },
+  scoutHeroFooterDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255,255,255,0.35)', marginHorizontal: 6 },
+  scoutThreatReason: { fontSize: 11, color: 'rgba(255,255,255,0.55)', textAlign: 'center', marginTop: 10, fontStyle: 'italic' },
+
+  // Scout — stats grid
+  statsGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10,
+    marginBottom: 18,
+  },
+  statCell: {
+    width: '48%',
+    flexGrow: 1,
+    minWidth: 150,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 6,
+  },
+  statCellLabel: { fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: '800', letterSpacing: 1.2 },
+  statCellRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  statCellValue: { fontSize: 18, color: '#FFF', fontWeight: '800', fontVariant: ['tabular-nums'] },
+  statCellSep: { fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: '700' },
+  statCellLegend: { fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.8, fontWeight: '700' },
+
+  // Scout — tendencies v2
+  tendencyCardV2: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  tendencyAccent: { width: 4 },
+  tendencyTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  categoryPill: {
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  categoryPillText: { fontSize: 9.5, fontWeight: '900', letterSpacing: 0.8 },
+  pppPill: {
+    flexDirection: 'row', alignItems: 'baseline', gap: 4,
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  pppPillLabel: { fontSize: 8, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.6, fontWeight: '800' },
+  pppPillValue: { fontSize: 11, color: '#FFF', fontWeight: '800', fontVariant: ['tabular-nums'] },
+  tendencyClipsBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.14)',
+  },
+  tendencyClipsText: { fontSize: 11, color: '#FFF', fontWeight: '700' },
+
+  // Scout — key player v2
+  keyPlayerCardV2: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    padding: 14,
+    backgroundColor: CARD_BG,
+    marginBottom: 18,
+  },
+  keyPlayerHeadV2: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 14 },
+  jerseyBadge: {
+    width: 64, height: 64,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,111,60,0.14)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,111,60,0.4)',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: 1,
+  },
+  jerseyHash: { fontSize: 14, color: ACCENT, fontWeight: '800', opacity: 0.7 },
+  jerseyNumber: { fontSize: 26, color: ACCENT, fontWeight: '900', letterSpacing: -0.5, fontVariant: ['tabular-nums'] },
+  keyPlayerSubLabel: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingTop: 10, paddingBottom: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.10)',
+  },
+  keyPlayerSubLabelText: { fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: '800', letterSpacing: 1.2 },
+  priorityRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 },
+  priorityNum: {
+    width: 22, height: 22, borderRadius: 11,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(255,111,60,0.16)',
+    borderWidth: 1, borderColor: 'rgba(255,111,60,0.35)',
+    marginTop: 1,
+  },
+  priorityNumText: { fontSize: 11, color: ACCENT, fontWeight: '800' },
+  priorityText: { flex: 1, fontSize: 13, color: 'rgba(255,255,255,0.85)', lineHeight: 18 },
+
+  // Scout — predicted plays v2
+  playRowV2: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  playRankBadge: {
+    width: 24, height: 24, borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  playRankText: { fontSize: 11, color: '#FFF', fontWeight: '800' },
+  playBarFillV2: { height: 5, borderRadius: 3 },
+  playLikelihoodV2: {
+    width: 44, fontSize: 13, color: '#FFF', fontWeight: '800',
+    textAlign: 'right', fontVariant: ['tabular-nums'],
+  },
+
+  // Scout — adjustments v2
+  adjustmentCardV2: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+    paddingVertical: 14, paddingHorizontal: 14,
+  },
+  adjustmentPriPill: {
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  adjustmentPriText: { fontSize: 9.5, fontWeight: '900', letterSpacing: 0.8 },
+
+  // Scout — legacy (kept; unused by new layout)
   scoutHeaderCard: {
     borderRadius: 18,
     borderWidth: 1,

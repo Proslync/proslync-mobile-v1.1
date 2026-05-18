@@ -214,24 +214,43 @@ export const OPPONENT = {
   nextGameDate: 'Fri · Apr 24 · 7:30 PM',
   venue: 'Carmel Hall · McLean, VA',
   logoInitial: 'G',
+  threat: {
+    level: 'HIGH' as const,
+    reason: 'Top-15 offense, 4-game win streak, healthy roster',
+  },
+  matchupStats: [
+    { label: 'PPG',       us: 81.2, them: 78.4, betterIs: 'high' as const, fmt: 'num1' as const },
+    { label: 'OPP PPG',   us: 64.5, them: 62.1, betterIs: 'low'  as const, fmt: 'num1' as const },
+    { label: '3PT%',      us: 38.4, them: 36.8, betterIs: 'high' as const, fmt: 'pct'  as const },
+    { label: 'PACE',      us: 73.5, them: 71.2, betterIs: 'high' as const, fmt: 'num1' as const },
+  ],
   tendencies: [
     {
       id: 'ten-1',
       title: 'Horns sets out of timeouts',
       detail: 'They run Horns 64% of timeouts, scoring 1.31 PPP — defend the elbow pick-and-pop first.',
       clipLabel: 'HORNS · 14 clips',
+      category: 'OFFENSE' as const,
+      ppp: '1.31',
+      clipCount: 14,
     },
     {
       id: 'ten-2',
       title: 'Pack-line defense against drives',
       detail: 'They help one-pass-away aggressively. Skip passes to the weak-side corner generate 47% catch-and-shoot 3s.',
       clipLabel: 'DEFENSE · 22 clips',
+      category: 'DEFENSE' as const,
+      ppp: '0.84',
+      clipCount: 22,
     },
     {
       id: 'ten-3',
       title: 'Secondary break with trailing 5',
       detail: 'Their 5-man trails on 78% of makes, sets high ball-screen — deny or blitz first action.',
       clipLabel: 'TRANSITION · 9 clips',
+      category: 'TRANSITION' as const,
+      ppp: '1.18',
+      clipCount: 9,
     },
   ],
   keyPlayer: {
