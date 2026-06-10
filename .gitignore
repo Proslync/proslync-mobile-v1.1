@@ -20,7 +20,8 @@ expo-env.d.ts
 *~
 
 # Media assets (tracked in assets/ repo or CDN)
-assets/
+assets/*
+!assets/media/
 *.mp4
 *.mov
 *.png
@@ -28,6 +29,14 @@ assets/
 *.jpeg
 *.gif
 *.webp
+# Curated media images must be tracked in git (permanence mechanism)
+!assets/media/**/*.mp4
+!assets/media/**/*.mov
+!assets/media/**/*.png
+!assets/media/**/*.jpg
+!assets/media/**/*.jpeg
+!assets/media/**/*.gif
+!assets/media/**/*.webp
 
 # Lock file
 package-lock.json

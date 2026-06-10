@@ -15,9 +15,16 @@ export async function persistLocalMedia(
   slot: string,
   kind: LocalMediaType,
 ): Promise<string> {
+  if (!FileSystem.documentDirectory) return uri;
   try {
     const dir = `${FileSystem.documentDirectory}proslync-media/${slot}/`;
     await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+    const existing = await FileSystem.readDirectoryAsync(dir).catch(() => [] as string[]);
+    await Promise.all(
+      existing.map((f) =>
+        FileSystem.deleteAsync(`${dir}${f}`, { idempotent: true }).catch(() => {}),
+      ),
+    );
     const fallbackExt = kind === 'video' ? 'mp4' : 'jpg';
     const ext = (uri.split('?')[0].split('.').pop() || fallbackExt).toLowerCase();
     const safeExt = /^[a-z0-9]{2,4}$/.test(ext) ? ext : fallbackExt;
