@@ -1189,6 +1189,8 @@ const dealSheetStyles = StyleSheet.create({
 // ─── Deals tab content — Open marketplace + My Applications ──────
 
 const APPLIED_DEALS_STORAGE_KEY = 'proslync:athlete:appliedDeals:v1';
+const BANNER_KEY = 'proslync:profile:banner:v2';
+const BANNER_KEY_LEGACY = 'proslync:profile:bannerVideo:v1';
 
 function DealsTabContent() {
   const [subTab, setSubTab] = React.useState<'open' | 'applied'>('open');
@@ -1842,8 +1844,6 @@ function PlayerProfileScreen() {
 
   // Persistent custom banner (image or video). v2 stores { uri, type }; v1
   // stored a bare video URI string and is migrated on first hydration.
-  const BANNER_KEY = 'proslync:profile:banner:v2';
-  const BANNER_KEY_LEGACY = 'proslync:profile:bannerVideo:v1';
   const [banner, setBanner] = React.useState<LocalMedia | null>(null);
   const [bannerHydrated, setBannerHydrated] = React.useState(false);
   React.useEffect(() => {
@@ -1858,7 +1858,6 @@ function PlayerProfileScreen() {
           const v1 = await AsyncStorage.getItem(BANNER_KEY_LEGACY);
           if (v1) {
             next = { uri: v1, type: 'video' };
-            AsyncStorage.removeItem(BANNER_KEY_LEGACY).catch(() => {});
           }
         }
         // Orphan healing: a reinstall wipes documentDirectory but not always
@@ -1877,13 +1876,19 @@ function PlayerProfileScreen() {
   React.useEffect(() => {
     if (!bannerHydrated) return;
     if (banner) {
-      AsyncStorage.setItem(BANNER_KEY, JSON.stringify(banner)).catch(() => {});
+      AsyncStorage.setItem(BANNER_KEY, JSON.stringify(banner))
+        .then(() => AsyncStorage.removeItem(BANNER_KEY_LEGACY))
+        .catch(() => {});
     } else {
       AsyncStorage.removeItem(BANNER_KEY).catch(() => {});
+      AsyncStorage.removeItem(BANNER_KEY_LEGACY).catch(() => {});
     }
   }, [banner, bannerHydrated]);
 
-  const bannerMedia = resolveSlotMedia('profile-banner', banner);
+  const bannerMedia = React.useMemo(
+    () => resolveSlotMedia('profile-banner', banner),
+    [banner],
+  );
   const bannerVideoUri =
     bannerMedia.kind !== 'none' && bannerMedia.type === 'video' ? bannerMedia.uri : null;
 
