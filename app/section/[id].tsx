@@ -113,7 +113,8 @@ export default function SectionDetailScreen() {
       ? { uri: resolvedCover.uri }
       : resolvedCover.kind === 'curated-image'
         ? resolvedCover.source
-        : null; // 'none' → preserve existing default (iconColor tint)
+        : null; // null for curated-video (VideoCover renders it) and for local videos;
+              // 'none' falls back to the iconColor tint default below.
 
   const resolvedLogo = React.useMemo(
     () => resolveSlotMedia(`logo-${id}`, customLogo ? { uri: customLogo, type: 'image' } : null),

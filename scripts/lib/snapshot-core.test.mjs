@@ -76,10 +76,13 @@ test('renderManifest sorts slots and matches the committed empty-manifest shape'
   assert.ok(src.indexOf("'a':") < src.indexOf("'b':"));
 });
 
-test('merge semantics: spread keeps untouched entries', () => {
+test('merge semantics: spread keeps untouched entries through render/parse round-trip', () => {
   const existing = { a: { type: 'video', url: 'https://old' }, b: { type: 'image', requirePath: '../../assets/media/curated/b.jpg' } };
   const fresh = { a: { type: 'video', url: 'https://new' } };
   const merged = { ...existing, ...fresh };
-  assert.equal(merged.a.url, 'https://new');
-  assert.equal(merged.b.requirePath, '../../assets/media/curated/b.jpg');
+  const roundTripped = parseManifestEntries(renderManifest(merged));
+  assert.deepEqual(roundTripped, {
+    a: { type: 'video', url: 'https://new' },
+    b: { type: 'image', requirePath: '../../assets/media/curated/b.jpg' },
+  });
 });
