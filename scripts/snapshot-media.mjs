@@ -2,7 +2,8 @@
 // Snapshot curated media from the booted iOS simulator (or a connected iPhone)
 // into the repos:
 //   images → <mobile>/assets/media/curated/   (bundled into the app)
-//   videos → <web>/public/videos/curated/     (pushed; streamed via SHA-pinned jsdelivr)
+//   videos → <web>/public/videos/curated/     (pushed; streamed via GitHub Pages —
+//             NOT jsdelivr @sha URLs, whose `@` breaks AVPlayer's NSURL parser on device)
 // then regenerates lib/media/curated-manifest.ts. See
 // docs/superpowers/specs/2026-06-09-curated-media-persistence-design.md.
 //
@@ -238,7 +239,6 @@ for (const f of staged.images) {
 }
 
 // ── 4. Publish videos via the web repo ────────────────────────────────────
-let webSha = null;
 let webRemote = null;
 if (staged.videos.length) {
   if (!fs.existsSync(path.join(WEB_REPO, '.git'))) fail(`Web repo not found at ${WEB_REPO} (override with PROSLYNC_WEB_REPO env var).`);
@@ -266,7 +266,6 @@ if (staged.videos.length) {
   } else {
     console.log('• video files unchanged — reusing current web HEAD');
   }
-  webSha = run('git', ['-C', WEB_REPO, 'rev-parse', 'HEAD']);
   const originUrl = run('git', ['-C', WEB_REPO, 'remote', 'get-url', 'origin']);
   // Strip only a trailing ".git" — repo names may legitimately contain dots
   // (this one is proslync-web-v1.1).
@@ -296,7 +295,12 @@ for (const f of staged.images) {
   freshEntries[f.slot] = { type: 'image', requirePath: `../../assets/media/curated/${f.destName}` };
 }
 for (const f of staged.videos) {
-  const url = `https://cdn.jsdelivr.net/gh/${webRemote}@${webSha}/public/videos/curated/${f.destName}`;
+  // GitHub Pages, NOT jsdelivr @sha URLs: AVPlayer's strict NSURL parser
+  // rejects the `@` in jsdelivr's path on real iOS devices (see
+  // lib/profile-media.ts — learned the hard way on TestFlight). Pages serves
+  // the default branch with range support; updates propagate in ~1 min.
+  const [owner, repo] = webRemote.split('/');
+  const url = `https://${owner}.github.io/${repo}/public/videos/curated/${f.destName}`;
   process.stdout.write(`• verifying CDN: ${url} ... `);
   if (!(await verifyCdn(url))) fail(`CDN never served ${url} (90s timeout). Check the push, then re-run — the script is idempotent.`);
   console.log('206 ✓');
