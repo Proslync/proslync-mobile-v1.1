@@ -195,6 +195,15 @@ export const Colors = {
   dark: DarkColors,
 } as const;
 
+// Semantic status palette — fill is the solid display color, mid is muted
+export const Status = {
+  success:  { fill: '#3FA889', mid: '#3FA889', soft: '#1F4A3D' },
+  warning:  { fill: '#E6A020', mid: '#C78A10', soft: '#3D2A06' },
+  critical: { fill: '#B53A2B', mid: '#B53A2B', soft: '#3A150F' },
+  muted:    { fill: '#7A7A8A', mid: '#5A5A6A', soft: '#2A2A35' },
+  info:     { fill: '#5B7CA8', mid: '#5B7CA8', soft: '#1F2C3D' },
+} as const;
+
 // Type exports
 export type ThemeMode = 'light' | 'dark' | 'system';
 export type ThemeColors = typeof LightColors;

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useRole } from '@/lib/providers/role-provider';
+import { AthleteView } from '@/components/athlete/athlete-view';
 import { CoachView } from '@/components/coach/coach-view';
 import { AgentView } from '@/components/agent/agent-view';
 import { BrandView } from '@/components/brand/brand-view';
@@ -37,7 +38,7 @@ export default function ActivityTab() {
   if (role === 'fan') return <FanView />;
   if (role === 'school') return <SchoolView />;
   if (role === 'nilManager') return <NilManagerView />;
-  return <PlayerActivityPlaceholder />;
+  return <AthleteView />;
 }
 
 const styles = StyleSheet.create({

@@ -13,9 +13,21 @@
     },
     "production": {
       "autoIncrement": true
+    },
+    "development-tf": {
+      "developmentClient": true,
+      "distribution": "store",
+      "autoIncrement": true,
+      "ios": {
+        "buildConfiguration": "Debug"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6763113930"
+      }
+    }
   }
 }

@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import Animated, {
@@ -25,14 +24,6 @@ const SCHOOL_BLUE = '#3B82F6';
 const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
 const TAB_BAR_TOP_FROM_BOTTOM = 90;
-
-const SCHOOL_PROFILE = {
-  name: 'Syracuse University',
-  conference: 'ACC · Division I',
-  athletes: 612,
-  sports: 20,
-  titleIxScore: 92,
-};
 
 const ROSTER = [
   { id: 'r-1', name: 'Kiyan Anthony', sport: "Men's Basketball", year: 'Freshman', tag: '#3' },
@@ -92,43 +83,35 @@ export function SchoolView() {
     };
   });
 
+  const topPad = insets.top + 70;
+  const bottomPad = insets.bottom + 120;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 4 }]}>
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>{SCHOOL_PROFILE.name}</Text>
-          <Text style={styles.headerSubtitle}>
-            {SCHOOL_PROFILE.conference} · {SCHOOL_PROFILE.athletes} athletes · {SCHOOL_PROFILE.sports} sports
-          </Text>
-        </View>
-        <View style={styles.statusPill}>
-          <Ionicons name="shield-checkmark" size={11} color={SCHOOL_BLUE} />
-          <Text style={styles.statusPillText}>{SCHOOL_PROFILE.titleIxScore}% IX</Text>
-        </View>
-      </View>
+    <View style={styles.container}>
+      {activeTab === 'team' && <TeamTab topPad={topPad} bottomPad={bottomPad} />}
+      {activeTab === 'compliance' && <ComplianceTab topPad={topPad} bottomPad={bottomPad} />}
+      {activeTab === 'news' && <NewsTab topPad={topPad} bottomPad={bottomPad} />}
 
-      {activeTab === 'team' && <TeamTab insets={insets.bottom} />}
-      {activeTab === 'compliance' && <ComplianceTab insets={insets.bottom} />}
-      {activeTab === 'news' && <NewsTab insets={insets.bottom} />}
-
+      {/* Top fade — gives the floating top pill row visual depth */}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+        colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
         locations={[0, 0.5, 1]}
-        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
+        style={[styles.topFade, { height: insets.top + 90 }]}
         pointerEvents="none"
       />
 
-      <View style={[styles.headerScrollFixed, styles.headerScrollContent]}>
+      {/* Floating header row — avatar/menu pill + segmented tabs (TOP) */}
+      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
         <Pressable
           style={styles.headerPill}
           onPress={() => setRoleSheetVisible(true)}
-          accessibilityLabel="Switch role"
+          accessibilityLabel="Open menu"
           accessibilityRole="button"
         >
           <View style={styles.glassLayer} pointerEvents="none">
             <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
           </View>
-          <Image source={require('@/assets/images/default-avatar.png')} style={styles.headerPillAvatar} />
+          <Image source={require('@/assets/images/kiyan-avatar.png')} style={styles.headerPillAvatar} />
           <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
         </Pressable>
 
@@ -162,6 +145,14 @@ export function SchoolView() {
         </View>
       </View>
 
+      {/* Bottom fade — keeps content fading into the floating native tab bar */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 110 }]}
+        pointerEvents="none"
+      />
+
       <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
     </View>
   );
@@ -171,45 +162,73 @@ function SectionHeader({ label }: { label: string }) {
   return <Text style={styles.sectionHeader}>{label}</Text>;
 }
 
-function TeamTab({ insets }: { insets: number }) {
+function TeamTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   const [subTab, setSubTab] = React.useState<'roster' | 'schedule'>('roster');
-  const SUB_TABS: { key: 'roster' | 'schedule'; label: string }[] = [
-    { key: 'roster', label: 'Roster' },
-    { key: 'schedule', label: 'Schedule' },
-  ];
+  const SUB_TABS = [
+    { key: 'roster', label: 'Roster', count: ROSTER.length },
+    { key: 'schedule', label: 'Schedule', count: SCHEDULE.length },
+  ] as const;
+
+  const subIndex = Math.max(0, SUB_TABS.findIndex((t) => t.key === subTab));
+  const subPillWidth = useSharedValue(0);
+  const animatedSubIndex = useSharedValue(subIndex);
+  React.useEffect(() => {
+    animatedSubIndex.value = withTiming(subIndex, { duration: 180 });
+  }, [subIndex, animatedSubIndex]);
+  const subKnobStyle = useAnimatedStyle(() => {
+    const segW = subPillWidth.value / Math.max(SUB_TABS.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedSubIndex.value * segW + inset }],
+    };
+  });
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
+    <View style={{ flex: 1, paddingTop: topPad }}>
+      <View
+        style={styles.subTabsRow}
+        onLayout={(e) => {
+          subPillWidth.value = e.nativeEvent.layout.width;
+        }}
+      >
+        <View style={styles.glassLayer} pointerEvents="none">
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+        </View>
+        <Animated.View style={[styles.tabKnob, subKnobStyle]} pointerEvents="none" />
+        {SUB_TABS.map(({ key, label, count }) => {
           const isActive = subTab === key;
           return (
-            <TouchableOpacity
+            <Pressable
               key={key}
-              style={[styles.subTab, isActive && styles.subTabActive]}
+              style={styles.subTab}
               onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
             >
               <Text style={[styles.subTabLabel, isActive && styles.subTabLabelActive]}>
                 {label}
               </Text>
-            </TouchableOpacity>
+              <View style={[styles.subTabBadge, isActive && styles.subTabBadgeActive]}>
+                <Text style={[styles.subTabBadgeText, isActive && styles.subTabBadgeTextActive]}>
+                  {count}
+                </Text>
+              </View>
+            </Pressable>
           );
         })}
       </View>
 
-      {subTab === 'roster' && <RosterTab insets={insets} />}
-      {subTab === 'schedule' && <ScheduleTab insets={insets} />}
+      {subTab === 'roster' && <RosterTab bottomPad={bottomPad} />}
+      {subTab === 'schedule' && <ScheduleTab bottomPad={bottomPad} />}
     </View>
   );
 }
 
-function RosterTab({ insets }: { insets: number }) {
+function RosterTab({ bottomPad }: { bottomPad: number }) {
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       <SectionHeader label="ATHLETES" />
@@ -235,10 +254,10 @@ function RosterTab({ insets }: { insets: number }) {
   );
 }
 
-function ScheduleTab({ insets }: { insets: number }) {
+function ScheduleTab({ bottomPad }: { bottomPad: number }) {
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       <SectionHeader label="UPCOMING" />
@@ -260,10 +279,10 @@ function ScheduleTab({ insets }: { insets: number }) {
   );
 }
 
-function ComplianceTab({ insets }: { insets: number }) {
+function ComplianceTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       <SectionHeader label="NCAA · TITLE IX" />
@@ -290,10 +309,10 @@ function ComplianceTab({ insets }: { insets: number }) {
   );
 }
 
-function NewsTab({ insets }: { insets: number }) {
+function NewsTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       <SectionHeader label="LATEST" />
@@ -319,46 +338,38 @@ function NewsTab({ insets }: { insets: number }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
 
-  // Sub-tab pill switcher (Roster | Schedule inside Team tab)
+  // Sub-tab pill switcher (Roster | Schedule inside Team tab) — glass pill
   subTabsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    position: 'relative',
   },
   subTab: {
     flex: 1,
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    alignItems: 'center',
-  },
-  subTabActive: { borderBottomColor: ACCENT },
-  subTabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
-  subTabLabelActive: { color: '#FFF', fontWeight: '700' },
-
-  header: {
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-    gap: 12,
+    justifyContent: 'center',
+    gap: 7,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#FFF', letterSpacing: -0.3 },
-  headerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
-  statusPill: {
-    flexDirection: 'row',
+  subTabLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
+  subTabLabelActive: { color: '#FFF' },
+  subTabBadge: {
+    minWidth: 20,
+    height: 18,
+    paddingHorizontal: 6,
+    borderRadius: 9,
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: 'rgba(59,130,246,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(59,130,246,0.4)',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  statusPillText: { color: SCHOOL_BLUE, fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
+  subTabBadgeActive: { backgroundColor: ACCENT },
+  subTabBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.6)' },
+  subTabBadgeTextActive: { color: '#FFF' },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
   sectionHeader: {
@@ -404,12 +415,12 @@ const styles = StyleSheet.create({
   },
   avatarChipText: { color: SCHOOL_BLUE, fontSize: 12, fontWeight: '700' },
 
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
   bottomFade: { position: 'absolute', left: 0, right: 0, zIndex: 99 },
 
-  // Floating bottom row — profile pill + segmented tabs (matches player activity)
+  // Floating header row — profile pill + segmented tabs (matches player activity)
   headerScrollFixed: {
     position: 'absolute',
-    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
     left: 0,
     right: 0,
     zIndex: 100,
@@ -456,8 +467,8 @@ const styles = StyleSheet.create({
     bottom: 4,
     left: 0,
     borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
-  tabPillText: { fontSize: 14, color: '#FFF', fontWeight: '500' },
-  tabPillTextActive: { color: '#FF6F3C', fontWeight: '700' },
+  tabPillText: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
+  tabPillTextActive: { color: '#FF6F3C', fontWeight: '800' },
 });

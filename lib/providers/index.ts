@@ -19,3 +19,7 @@ export { MessagesProvider, useMessages } from './messages-provider';
 
 // Calls
 export { CallProvider, useCall } from './call-provider';
+
+// Actor context (Phase 2)
+export { ActorContextProvider, useActorContext } from './actor-context-provider';
+export { ImpersonationProvider, useImpersonation } from './impersonation-provider';

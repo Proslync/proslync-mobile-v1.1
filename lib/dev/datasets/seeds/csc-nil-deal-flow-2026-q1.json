@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "source": "College Sports Commission (CSC) — disclosure form template excerpts",
+    "sourceUrl": "https://www.collegesportscommission.org/nil-disclosure",
+    "retrievedAt": "2026-05-10",
+    "license": "Public information, attestation-template excerpts reproduced under fair use for tooling design.",
+    "attribution": "Excerpts of compliance-attestation phrasing and disclosure template structure derived from the College Sports Commission public template.",
+    "version": "2026-Q1",
+    "caveat": "Proslync is not a CSC submitter. Template phrasing is reproduced as design reference only; consult counsel before adapting for production attestation."
+  },
+  "attestationPhrasing": {
+    "athleteSelfDisclosure": "I attest under penalty of perjury that the information disclosed in this packet is true and complete to the best of my knowledge, and that no material consideration has been omitted.",
+    "agentDisclosure": "I confirm that the compensation and service-provider rows accurately reflect the engagement terms between the athlete and the represented brand or payor.",
+    "schoolReceipt": "The institution acknowledges receipt of the above disclosure and has performed the three-track review (NCAA / school / ethics) per the institutional NIL policy."
+  },
+  "valueBandPatterns": [
+    {
+      "band": "$0–$50K",
+      "typicalScope": "Single-event appearance, social-post pack, local-market activation",
+      "exclusivityNorm": "Non-exclusive or category-limited"
+    },
+    {
+      "band": "$50K–$250K",
+      "typicalScope": "Multi-month creator-package, regional ambassador, content series",
+      "exclusivityNorm": "Category-exclusive (e.g. footwear, audio)"
+    },
+    {
+      "band": "$250K–$1M",
+      "typicalScope": "Multi-year exclusive, signature-line collab, flagship campaign",
+      "exclusivityNorm": "Category-exclusive multi-region, often global"
+    },
+    {
+      "band": "$1M+",
+      "typicalScope": "Flagship multi-category, signature-shoe or signature-line",
+      "exclusivityNorm": "Global multi-category exclusive, royalty-bearing"
+    }
+  ],
+  "thresholdGuidance": {
+    "lowDollarThresholdCents": 60000,
+    "highDollarThresholdCents": 60000000,
+    "highValueDisclosureSLAdays": 14,
+    "note": "Thresholds reflect commonly-discussed CSC working numbers; verify the institutional policy for the operative cutoff."
+  }
+}

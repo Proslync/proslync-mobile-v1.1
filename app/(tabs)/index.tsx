@@ -54,7 +54,6 @@ const SECTION_HEADER_H = 50;
 const SECTION_FOOTER_H = 44;
 const SECTION_TOTAL_H = SECTION_INNER_PAD * 2 + SECTION_HEADER_H + MINI_SLOT_H + SECTION_FOOTER_H;
 const SECTION_GAP_V = 14;
-const SECTION_SNAP = SECTION_TOTAL_H + SECTION_GAP_V;
 
 // ───── Types ─────
 
@@ -428,7 +427,7 @@ export const SECTIONS: Section[] = [
       {
         id: 'nil-3', variant: 'deal',
         value: '$950K', athlete: 'AJ Dybantsa', athleteInitial: 'A', athleteColor: '#002E5D',
-        brand: 'PUMA', brandColor: '#000', duration: '3yr · excl',
+        brand: 'Nike', brandColor: '#000', duration: '3yr · excl',
       },
       {
         id: 'nil-4', variant: 'deal',
@@ -1280,13 +1279,24 @@ export default function FeedScreen() {
     });
   }, []);
 
-  const snapOffsets = React.useMemo(() => {
-    const out = [0];
-    for (let i = 2; i < SECTIONS.length; i += 2) {
-      out.push(i * SECTION_SNAP);
-    }
-    return out;
-  }, []);
+  // Measure each card's real position and snap to every-other one, so every
+  // swiped pair lands in the exact same spot as the first pair (no drift from
+  // estimated card heights). Offset brings card[2p] flush under the header.
+  const cardYRef = React.useRef<number[]>([]);
+  const [snapOffsets, setSnapOffsets] = React.useState<number[]>([]);
+  const onCardLayout = React.useCallback(
+    (i: number, y: number) => {
+      cardYRef.current[i] = y;
+      const offs: number[] = [];
+      for (let k = 0; k < SECTIONS.length; k += 2) {
+        const cy = cardYRef.current[k];
+        if (cy == null) return; // wait until all pair-leading cards are measured
+        offs.push(Math.max(0, cy - (insets.top + 62)));
+      }
+      setSnapOffsets(offs);
+    },
+    [insets.top],
+  );
 
   return (
     <View style={styles.container}>
@@ -1294,21 +1304,22 @@ export default function FeedScreen() {
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 62 }]}
         showsVerticalScrollIndicator={false}
-        snapToOffsets={snapOffsets}
+        snapToOffsets={snapOffsets.length ? snapOffsets : undefined}
         decelerationRate="fast"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#888" />
         }
       >
         {SECTIONS.map((s, i) => (
-          <SectionCard
-            key={s.id}
-            section={s}
-            index={i}
-            onMenuPress={setMenuSection}
-            coverMedia={coverMedia[s.id]}
-            customLogo={customLogos[s.id]}
-          />
+          <View key={s.id} onLayout={(e) => onCardLayout(i, e.nativeEvent.layout.y)}>
+            <SectionCard
+              section={s}
+              index={i}
+              onMenuPress={setMenuSection}
+              coverMedia={coverMedia[s.id]}
+              customLogo={customLogos[s.id]}
+            />
+          </View>
         ))}
       </ScrollView>
 
@@ -1330,7 +1341,29 @@ export default function FeedScreen() {
         pointerEvents="none"
       />
 
+      {/* Top fade — sits above the flush card, not on it, so the resting card
+          stays crisp (no shadow) while a card swiped upward dissolves into the
+          black background as it crosses into this region. */}
+      <LinearGradient
+        colors={['#000', '#000', 'rgba(0,0,0,0)']}
+        locations={[0, 0.8, 1]}
+        style={[styles.topFade, { height: insets.top + 62 }]}
+        pointerEvents="none"
+      />
+
       <View style={[styles.topRow, { top: insets.top + 3 }]}>
+        <Pressable
+          style={styles.iconCircle}
+          onPress={() => router.push('/map' as any)}
+          accessibilityLabel="Open map"
+          accessibilityRole="button"
+        >
+          <View style={styles.glassLayer} pointerEvents="none">
+            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+          </View>
+          <Ionicons name="map-outline" size={19} color="#FFF" />
+        </Pressable>
+
         <Pressable
           style={styles.searchBar}
           onPress={() => router.push('/search-screen' as any)}
@@ -1346,35 +1379,17 @@ export default function FeedScreen() {
           </Text>
         </Pressable>
 
-        <View style={styles.iconPill}>
+        <Pressable
+          style={styles.iconCircle}
+          onPress={() => router.push('/messages' as any)}
+          accessibilityLabel="Messages"
+          accessibilityRole="button"
+        >
           <View style={styles.glassLayer} pointerEvents="none">
             <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
           </View>
-          <Pressable
-            style={styles.iconBtn}
-            onPress={() => router.push('/map' as any)}
-            accessibilityLabel="Open map"
-            accessibilityRole="button"
-          >
-            <Ionicons name="map-outline" size={19} color="#FFF" />
-          </Pressable>
-          <Pressable
-            style={styles.iconBtn}
-            onPress={() => router.push('/notifications' as any)}
-            accessibilityLabel="Notifications"
-            accessibilityRole="button"
-          >
-            <Ionicons name="notifications-outline" size={19} color="#FFF" />
-          </Pressable>
-          <Pressable
-            style={styles.iconBtn}
-            onPress={() => router.push('/messages' as any)}
-            accessibilityLabel="Messages"
-            accessibilityRole="button"
-          >
-            <Ionicons name="paper-plane-outline" size={19} color="#FFF" />
-          </Pressable>
-        </View>
+          <Ionicons name="paper-plane-outline" size={19} color="#FFF" />
+        </Pressable>
       </View>
     </View>
   );
@@ -1384,8 +1399,9 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  scrollContent: { paddingHorizontal: SECTION_OUTER_PAD, paddingBottom: 200, gap: 14 },
+  scrollContent: { paddingHorizontal: SECTION_OUTER_PAD, paddingBottom: 240, gap: SECTION_GAP_V },
   bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, zIndex: 10 },
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 150 },
 
   topRow: {
     position: 'absolute',
@@ -1411,20 +1427,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
-  iconPill: {
+  iconCircle: {
+    width: 46,
     height: 46,
     borderRadius: 23,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    overflow: 'hidden',
-  },
-  iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   glassLayer: {
     position: 'absolute',

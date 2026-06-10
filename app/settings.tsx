@@ -62,7 +62,7 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
     description: 'Sponsor deals · athlete discovery',
     icon: 'briefcase-outline',
     color: '#00C6B0',
-    name: 'PUMA Hoops',
+    name: 'Nike Hoops',
     handle: '@pumahoops',
   },
   fan: {

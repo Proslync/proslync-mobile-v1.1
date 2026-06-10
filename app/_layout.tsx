@@ -41,6 +41,9 @@ import { ChatSocketProvider } from "@/lib/providers/chat-socket-provider";
 import { ChannelsSocketProvider } from "@/lib/providers/channels-socket-provider";
 import { CallProvider } from "@/lib/providers/call-provider";
 import { RoleProvider } from "@/lib/providers/role-provider";
+import { ActorContextProvider } from "@/lib/providers/actor-context-provider";
+import { ImpersonationProvider } from "@/lib/providers/impersonation-provider";
+import { WalletProvider } from "@/lib/providers/wallet-provider";
 import { RootErrorBoundary } from "@/components/shared/error-boundary";
 
 SplashScreen.preventAutoHideAsync();
@@ -143,7 +146,9 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen name="messages" />
+        <Stack.Screen name="map" />
         <Stack.Screen name="nil-manager/athlete/[id]" />
+        <Stack.Screen name="deal/[id]" />
         <Stack.Screen name="section/[id]" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="notification-settings" />
@@ -219,7 +224,10 @@ export default function RootLayout() {
           <StripeProvider>
             <ToastProvider>
               <AuthProvider>
+                <ImpersonationProvider>
                 <RoleProvider>
+                <WalletProvider>
+                <ActorContextProvider>
                 <ChatSocketProvider>
                   <ChannelsSocketProvider>
                   <CallProvider>
@@ -235,7 +243,10 @@ export default function RootLayout() {
                   </CallProvider>
                   </ChannelsSocketProvider>
                 </ChatSocketProvider>
+                </ActorContextProvider>
+                </WalletProvider>
                 </RoleProvider>
+                </ImpersonationProvider>
               </AuthProvider>
             </ToastProvider>
           </StripeProvider>

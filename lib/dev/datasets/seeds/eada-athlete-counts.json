@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "source": "Equity in Athletics Data Analysis (EADA) — annual federal disclosure dataset",
+    "sourceUrl": "https://ope.ed.gov/athletics/",
+    "retrievedAt": "2026-05-10",
+    "license": "U.S. Department of Education public dataset. Athlete-count and program-size figures are public federal disclosure data.",
+    "attribution": "Athlete-count and program-size patterns drawn from EADA public disclosures. Reproductions are approximate ranges for demo realism.",
+    "version": "FY 2024-25 disclosure cycle",
+    "caveat": "EADA self-reports vary; current-year figures may differ. Verify against the live federal export before any external presentation."
+  },
+  "schoolAthleteCounts": {
+    "Duke University": { "total": 660, "men": 320, "women": 340 },
+    "Syracuse University": { "total": 580, "men": 285, "women": 295 },
+    "University of North Carolina": { "total": 770, "men": 380, "women": 390 },
+    "University of Kentucky": { "total": 540, "men": 270, "women": 270 },
+    "UConn": { "total": 510, "men": 250, "women": 260 },
+    "UCLA": { "total": 700, "men": 340, "women": 360 },
+    "University of Southern California": { "total": 690, "men": 330, "women": 360 },
+    "BYU": { "total": 590, "men": 290, "women": 300 },
+    "University of Michigan": { "total": 920, "men": 460, "women": 460 },
+    "University of Alabama": { "total": 600, "men": 320, "women": 280 },
+    "University of Florida": { "total": 580, "men": 290, "women": 290 },
+    "Louisiana State University": { "total": 590, "men": 300, "women": 290 },
+    "Notre Dame": { "total": 760, "men": 380, "women": 380 },
+    "Michigan State University": { "total": 760, "men": 380, "women": 380 },
+    "Rutgers University": { "total": 700, "men": 350, "women": 350 },
+    "Georgia Tech": { "total": 410, "men": 220, "women": 190 },
+    "Howard University": { "total": 360, "men": 180, "women": 180 }
+  }
+}

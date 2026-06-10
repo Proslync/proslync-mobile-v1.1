@@ -19,7 +19,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useStableRouter } from '@/hooks/use-stable-router';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 
 import {
@@ -27,7 +26,6 @@ import {
   BRAND_CAMPAIGNS,
   BRAND_DEALS,
   BRAND_INSIGHTS,
-  BRAND_PROFILE,
   type Athlete,
   type Campaign,
   type Deal,
@@ -47,9 +45,23 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'insights', label: 'Insights' },
 ];
 
+function parseMoney(v: string): number {
+  const m = v.match(/\$\s*([\d,.]+)\s*([km])?/i);
+  if (!m) return 0;
+  const n = parseFloat(m[1].replace(/,/g, ''));
+  if (!Number.isFinite(n)) return 0;
+  const u = (m[2] || '').toLowerCase();
+  return u === 'm' ? n * 1_000_000 : u === 'k' ? n * 1_000 : n;
+}
+
+function formatMoney(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`;
+  if (n >= 1_000) return `$${Math.round(n / 1_000)}k`;
+  return `$${Math.round(n)}`;
+}
+
 export function BrandView() {
   const insets = useSafeAreaInsets();
-  const router = useStableRouter();
   const [activeTab, setActiveTab] = React.useState<TabKey>('pipeline');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
@@ -68,45 +80,35 @@ export function BrandView() {
     };
   });
 
+  const topPad = insets.top + 70;
+  const bottomPad = insets.bottom + 120;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 4 }]}>
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Brand HQ</Text>
-          <Text style={styles.headerSubtitle}>
-            {BRAND_PROFILE.name} · {BRAND_PROFILE.stats[0].value} athletes signed
-          </Text>
-        </View>
-        <View style={styles.budgetPill}>
-          <Ionicons name="wallet-outline" size={12} color={TEAL} />
-          <Text style={styles.budgetPillText}>{BRAND_PROFILE.stats[1].value} FY26</Text>
-        </View>
-      </View>
+    <View style={styles.container}>
+      {activeTab === 'pipeline' && <PipelineTab topPad={topPad} bottomPad={bottomPad} />}
+      {activeTab === 'athletes' && <AthletesTab topPad={topPad} bottomPad={bottomPad} />}
+      {activeTab === 'insights' && <InsightsTab topPad={topPad} bottomPad={bottomPad} />}
 
-      {activeTab === 'pipeline' && <PipelineTab insets={insets.bottom} />}
-      {activeTab === 'athletes' && <AthletesTab insets={insets.bottom} />}
-      {activeTab === 'insights' && <InsightsTab insets={insets.bottom} />}
-
-      {/* Bottom darken gradient */}
+      {/* Top fade — gives the floating top pill row visual depth */}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+        colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
         locations={[0, 0.5, 1]}
-        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
+        style={[styles.topFade, { height: insets.top + 90 }]}
         pointerEvents="none"
       />
 
-      {/* Floating bottom row — profile pill + segmented tabs */}
-      <View style={[styles.headerScrollFixed, styles.headerScrollContent]}>
+      {/* Floating header row — avatar/menu pill + segmented tabs (TOP) */}
+      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
         <Pressable
           style={styles.headerPill}
           onPress={() => setRoleSheetVisible(true)}
-          accessibilityLabel="Switch role"
+          accessibilityLabel="Open menu"
           accessibilityRole="button"
         >
           <View style={styles.glassLayer} pointerEvents="none">
             <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
           </View>
-          <Image source={require('@/assets/images/default-avatar.png')} style={styles.headerPillAvatar} />
+          <Image source={require('@/assets/images/kiyan-avatar.png')} style={styles.headerPillAvatar} />
           <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
         </Pressable>
 
@@ -140,6 +142,14 @@ export function BrandView() {
         </View>
       </View>
 
+      {/* Bottom fade — keeps content fading into the floating native tab bar */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 110 }]}
+        pointerEvents="none"
+      />
+
       <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
     </View>
   );
@@ -149,37 +159,65 @@ export function BrandView() {
 // Tab 1 — Pipeline (Campaigns + Deals combined)
 // ============================================================
 
-function PipelineTab({ insets }: { insets: number }) {
+function PipelineTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   const [subTab, setSubTab] = React.useState<'campaigns' | 'deals'>('campaigns');
-  const SUB_TABS: { key: 'campaigns' | 'deals'; label: string }[] = [
-    { key: 'campaigns', label: 'Campaigns' },
-    { key: 'deals', label: 'Deals' },
-  ];
+  const SUB_TABS = [
+    { key: 'campaigns', label: 'Campaigns', count: BRAND_CAMPAIGNS.length },
+    { key: 'deals', label: 'Deals', count: BRAND_DEALS.length },
+  ] as const;
+
+  const subIndex = Math.max(0, SUB_TABS.findIndex((t) => t.key === subTab));
+  const subPillWidth = useSharedValue(0);
+  const animatedSubIndex = useSharedValue(subIndex);
+  React.useEffect(() => {
+    animatedSubIndex.value = withTiming(subIndex, { duration: 180 });
+  }, [subIndex, animatedSubIndex]);
+  const subKnobStyle = useAnimatedStyle(() => {
+    const segW = subPillWidth.value / Math.max(SUB_TABS.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedSubIndex.value * segW + inset }],
+    };
+  });
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
+    <View style={{ flex: 1, paddingTop: topPad }}>
+      <View
+        style={styles.subTabsRow}
+        onLayout={(e) => {
+          subPillWidth.value = e.nativeEvent.layout.width;
+        }}
+      >
+        <View style={styles.glassLayer} pointerEvents="none">
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+        </View>
+        <Animated.View style={[styles.tabKnob, subKnobStyle]} pointerEvents="none" />
+        {SUB_TABS.map(({ key, label, count }) => {
           const isActive = subTab === key;
           return (
-            <TouchableOpacity
+            <Pressable
               key={key}
-              style={[styles.subTab, isActive && styles.subTabActive]}
+              style={styles.subTab}
               onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
             >
               <Text style={[styles.subTabLabel, isActive && styles.subTabLabelActive]}>
                 {label}
               </Text>
-            </TouchableOpacity>
+              <View style={[styles.subTabBadge, isActive && styles.subTabBadgeActive]}>
+                <Text style={[styles.subTabBadgeText, isActive && styles.subTabBadgeTextActive]}>
+                  {count}
+                </Text>
+              </View>
+            </Pressable>
           );
         })}
       </View>
 
-      {subTab === 'campaigns' && <CampaignsTab insets={insets} />}
-      {subTab === 'deals' && <DealsTab insets={insets} />}
+      {subTab === 'campaigns' && <CampaignsTab bottomPad={bottomPad} />}
+      {subTab === 'deals' && <DealsTab bottomPad={bottomPad} />}
     </View>
   );
 }
@@ -188,21 +226,42 @@ function PipelineTab({ insets }: { insets: number }) {
 // Tab 1a — Campaigns
 // ============================================================
 
-function CampaignsTab({ insets }: { insets: number }) {
+function CampaignsTab({ bottomPad }: { bottomPad: number }) {
   const live = BRAND_CAMPAIGNS.filter((c) => c.status === 'live');
   const upcoming = BRAND_CAMPAIGNS.filter((c) => c.status === 'upcoming');
   const wrapped = BRAND_CAMPAIGNS.filter((c) => c.status === 'wrapped');
+  const totalBudget = BRAND_CAMPAIGNS.reduce((s, c) => s + parseMoney(c.budget), 0);
+  const statuses = [
+    { key: 'live', label: 'Live', color: TEAL, count: live.length },
+    { key: 'upcoming', label: 'Upcoming', color: ACCENT, count: upcoming.length },
+    { key: 'wrapped', label: 'Wrapped', color: 'rgba(255,255,255,0.45)', count: wrapped.length },
+  ].filter((s) => s.count > 0);
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.summaryRow}>
-        <SummaryTile label="Live" value={String(live.length)} color={TEAL} />
-        <SummaryTile label="Upcoming" value={String(upcoming.length)} color={ACCENT} />
-        <SummaryTile label="Wrapped · Q2" value={String(wrapped.length)} color="rgba(255,255,255,0.5)" />
-      </View>
+      <Animated.View entering={FadeIn.duration(300)} style={styles.pipeSummary}>
+        <Text style={styles.pipeSummaryLabel}>CAMPAIGN SPEND</Text>
+        <Text style={styles.pipeSummaryValue}>{formatMoney(totalBudget)}</Text>
+        <Text style={styles.pipeSummarySub}>
+          {BRAND_CAMPAIGNS.length} campaigns · {live.length} live
+        </Text>
+        <View style={styles.funnelBar}>
+          {statuses.map((s) => (
+            <View key={s.key} style={[styles.funnelSeg, { flex: s.count, backgroundColor: s.color }]} />
+          ))}
+        </View>
+        <View style={styles.funnelLegend}>
+          {statuses.map((s) => (
+            <View key={s.key} style={styles.funnelLegendItem}>
+              <View style={[styles.funnelDot, { backgroundColor: s.color }]} />
+              <Text style={styles.funnelLegendText}>{s.label} · {s.count}</Text>
+            </View>
+          ))}
+        </View>
+      </Animated.View>
 
       <Text style={styles.kicker}>LIVE · {live.length}</Text>
       {live.map((c, i) => (
@@ -233,39 +292,42 @@ function CampaignCard({ c, delay }: { c: Campaign; delay: number }) {
       entering={FadeInDown.delay(delay).duration(380)}
       style={[styles.campaignCard, isLive && { borderColor: 'rgba(0,198,176,0.35)' }]}
     >
-      {isLive && (
-        <LinearGradient
-          colors={['rgba(0,198,176,0.12)', 'transparent']}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
-      <View style={styles.campaignTop}>
-        <View style={[styles.statusPill, { borderColor: badgeColor, backgroundColor: `${badgeColor}20` }]}>
-          <Text style={[styles.statusPillText, { color: badgeColor }]}>{badgeLabel}</Text>
+      <View style={[styles.dealAccent, { backgroundColor: badgeColor }]} />
+      <View style={styles.campaignBody}>
+        {isLive && (
+          <LinearGradient
+            colors={['rgba(0,198,176,0.12)', 'transparent']}
+            style={StyleSheet.absoluteFill}
+          />
+        )}
+        <View style={styles.campaignTop}>
+          <View style={[styles.statusPill, { borderColor: badgeColor, backgroundColor: `${badgeColor}20` }]}>
+            <Text style={[styles.statusPillText, { color: badgeColor }]}>{badgeLabel}</Text>
+          </View>
+          <Text style={styles.campaignRange}>{c.startDate} – {c.endDate}</Text>
         </View>
-        <Text style={styles.campaignRange}>{c.startDate} – {c.endDate}</Text>
-      </View>
-      <Text style={styles.campaignName}>{c.name}</Text>
-      <Text style={styles.campaignAthlete}>{c.athlete}</Text>
+        <Text style={styles.campaignName}>{c.name}</Text>
+        <Text style={styles.campaignAthlete}>{c.athlete}</Text>
 
-      <View style={styles.metricsRow}>
-        <Metric label="Reach" value={c.reach} />
-        <View style={styles.metricDivider} />
-        <Metric label="Impressions" value={c.impressions} />
-        <View style={styles.metricDivider} />
-        <Metric label="ER" value={c.engagement} />
-      </View>
+        <View style={styles.metricsRow}>
+          <Metric label="Reach" value={c.reach} />
+          <View style={styles.metricDivider} />
+          <Metric label="Impressions" value={c.impressions} />
+          <View style={styles.metricDivider} />
+          <Metric label="ER" value={c.engagement} />
+        </View>
 
-      <View style={styles.budgetRow}>
-        <Text style={styles.budgetLabel}>Budget</Text>
-        <Text style={styles.budgetValue}>{c.budget}</Text>
+        <View style={styles.budgetRow}>
+          <Text style={styles.budgetLabel}>Budget</Text>
+          <Text style={styles.budgetValue}>{c.budget}</Text>
+        </View>
+        <View style={styles.spendTrack}>
+          <View style={[styles.spendFill, { width: `${c.spent}%` }]} />
+        </View>
+        <Text style={styles.spendMeta}>
+          {c.spent}% spent · {c.status === 'live' ? 'pacing on-plan' : c.status === 'upcoming' ? 'launching in ' + daysUntil(c.startDate) + ' days' : 'final report ready'}
+        </Text>
       </View>
-      <View style={styles.spendTrack}>
-        <View style={[styles.spendFill, { width: `${c.spent}%` }]} />
-      </View>
-      <Text style={styles.spendMeta}>
-        {c.spent}% spent · {c.status === 'live' ? 'pacing on-plan' : c.status === 'upcoming' ? 'launching in ' + daysUntil(c.startDate) + ' days' : 'final report ready'}
-      </Text>
     </Animated.View>
   );
 }
@@ -284,26 +346,17 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SummaryTile({ label, value, color }: { label: string; value: string; color: string }) {
-  return (
-    <View style={styles.summaryTile}>
-      <Text style={[styles.summaryValue, { color }]}>{value}</Text>
-      <Text style={styles.summaryLabel}>{label}</Text>
-    </View>
-  );
-}
-
 // ============================================================
 // Tab 2 — Athletes
 // ============================================================
 
-function AthletesTab({ insets }: { insets: number }) {
+function AthletesTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   const signed = BRAND_ATHLETES.filter((a) => a.signed);
   const discovery = BRAND_ATHLETES.filter((a) => !a.signed);
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.kicker}>SIGNED ATHLETES · {signed.length}</Text>
@@ -370,7 +423,7 @@ function AthleteRow({ a, delay }: { a: Athlete; delay: number }) {
 // Tab 3 — Deal Pipeline
 // ============================================================
 
-function DealsTab({ insets }: { insets: number }) {
+function DealsTab({ bottomPad }: { bottomPad: number }) {
   const stages: { key: Deal['stage']; label: string; color: string }[] = [
     { key: 'draft', label: 'Drafts', color: 'rgba(255,255,255,0.4)' },
     { key: 'sent', label: 'Sent', color: '#3B82F6' },
@@ -379,42 +432,67 @@ function DealsTab({ insets }: { insets: number }) {
     { key: 'live', label: 'Live', color: TEAL },
   ];
 
+  const total = BRAND_DEALS.reduce((s, d) => s + parseMoney(d.value), 0);
+  const present = stages.filter((st) => BRAND_DEALS.some((d) => d.stage === st.key));
+
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View entering={FadeIn.duration(300)} style={styles.kickerRow}>
-        <Text style={styles.kickerTitle}>{BRAND_DEALS.length} deals across 5 stages</Text>
-        <Text style={styles.kickerSub}>
-          ${(BRAND_DEALS.reduce((s, d) => s + parseFloat(d.value.replace(/[^0-9.]/g, '')), 0) / 1000).toFixed(0)}K in pipeline value
+      <Animated.View entering={FadeIn.duration(300)} style={styles.pipeSummary}>
+        <Text style={styles.pipeSummaryLabel}>DEAL PIPELINE</Text>
+        <Text style={styles.pipeSummaryValue}>{formatMoney(total)}</Text>
+        <Text style={styles.pipeSummarySub}>
+          {BRAND_DEALS.length} deals · {present.length} stages
         </Text>
+        <View style={styles.funnelBar}>
+          {present.map((st) => {
+            const c = BRAND_DEALS.filter((d) => d.stage === st.key).length;
+            return (
+              <View key={st.key} style={[styles.funnelSeg, { flex: c, backgroundColor: st.color }]} />
+            );
+          })}
+        </View>
+        <View style={styles.funnelLegend}>
+          {present.map((st) => (
+            <View key={st.key} style={styles.funnelLegendItem}>
+              <View style={[styles.funnelDot, { backgroundColor: st.color }]} />
+              <Text style={styles.funnelLegendText}>
+                {st.label} · {BRAND_DEALS.filter((d) => d.stage === st.key).length}
+              </Text>
+            </View>
+          ))}
+        </View>
       </Animated.View>
 
       {stages.map((stage) => {
         const deals = BRAND_DEALS.filter((d) => d.stage === stage.key);
         if (deals.length === 0) return null;
         return (
-          <View key={stage.key} style={{ marginBottom: 18 }}>
+          <View key={stage.key} style={{ marginBottom: 18, gap: 8 }}>
             <View style={styles.stageHeader}>
               <View style={[styles.stageDot, { backgroundColor: stage.color }]} />
-              <Text style={styles.stageLabel}>{stage.label}</Text>
+              <Text style={styles.stageLabel}>{stage.label.toUpperCase()}</Text>
               <Text style={styles.stageCount}>{deals.length}</Text>
             </View>
             {deals.map((d, i) => (
               <Animated.View
                 key={d.id}
-                entering={FadeInDown.delay(i * 50).duration(380)}
+                entering={FadeInDown.delay(i * 40).duration(360)}
                 style={styles.dealCard}
               >
-                <View style={styles.dealTop}>
-                  <Text style={styles.dealAthlete}>{d.athlete}</Text>
-                  <Text style={styles.dealValue}>{d.value}</Text>
-                </View>
-                <Text style={styles.dealTerm}>{d.term}</Text>
-                <View style={styles.dealFooter}>
-                  <Text style={styles.dealFooterText}>{d.lastTouched}</Text>
-                  <Text style={styles.dealOwner}>{d.owner}</Text>
+                <View style={[styles.dealAccent, { backgroundColor: stage.color }]} />
+                <View style={styles.dealBody}>
+                  <View style={styles.dealTop}>
+                    <Text style={styles.dealAthlete}>{d.athlete}</Text>
+                    <Text style={styles.dealValue}>{d.value}</Text>
+                  </View>
+                  <Text style={styles.dealTerm}>{d.term}</Text>
+                  <View style={styles.dealFooter}>
+                    <Text style={styles.dealFooterText}>{d.lastTouched}</Text>
+                    <Text style={styles.dealOwner}>{d.owner}</Text>
+                  </View>
                 </View>
               </Animated.View>
             ))}
@@ -429,10 +507,10 @@ function DealsTab({ insets }: { insets: number }) {
 // Tab 4 — Insights
 // ============================================================
 
-function InsightsTab({ insets }: { insets: number }) {
+function InsightsTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.kicker}>KPIs · LAST 30 DAYS</Text>
@@ -516,50 +594,39 @@ function InsightsTab({ insets }: { insets: number }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
 
-  // Sub-tab pill switcher (Campaigns | Deals inside Pipeline tab)
+  // Sub-tab segmented switcher (Campaigns | Deals) — glass pill matching the
+  // Pipeline/Athletes/Insights row above it.
   subTabsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    position: 'relative',
   },
   subTab: {
     flex: 1,
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    alignItems: 'center',
-  },
-  subTabActive: { borderBottomColor: ACCENT },
-  subTabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
-  subTabLabelActive: { color: '#FFF', fontWeight: '700' },
-
-  header: {
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 12,
+    justifyContent: 'center',
+    gap: 7,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#FFFFFF' },
-  headerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
-  budgetPill: {
-    flexDirection: 'row',
+  subTabLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
+  subTabLabelActive: { color: '#FFF' },
+  subTabBadge: {
+    minWidth: 20,
+    height: 18,
+    paddingHorizontal: 6,
+    borderRadius: 9,
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,198,176,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,198,176,0.35)',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  budgetPillText: {
-    fontSize: 10.5,
-    color: TEAL,
-    letterSpacing: 0.5,
-    fontWeight: '800',
-  },
+  subTabBadgeActive: { backgroundColor: ACCENT },
+  subTabBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.6)' },
+  subTabBadgeTextActive: { color: '#FFF' },
 
   tabRow: {
     paddingHorizontal: 16,
@@ -589,10 +656,10 @@ const styles = StyleSheet.create({
   },
   tabPillTextActive: { color: '#FF6F3C', fontWeight: '700' },
 
-  // Floating bottom row — profile pill + segmented tabs (matches player activity)
+  // Floating header row — avatar pill + segmented tabs (matches player activity)
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
   headerScrollFixed: {
     position: 'absolute',
-    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
     left: 0,
     right: 0,
     zIndex: 100,
@@ -645,7 +712,7 @@ const styles = StyleSheet.create({
     bottom: 4,
     left: 0,
     borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
@@ -662,33 +729,39 @@ const styles = StyleSheet.create({
   kickerTitle: { fontSize: 15, color: '#FFFFFF', fontWeight: '700' },
   kickerSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 3 },
 
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 10,
+  // Pipeline/Campaign summary hero + funnel bar
+  pipeSummary: {
+    backgroundColor: CARD_BG,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    gap: 4,
     marginTop: 4,
   },
-  summaryTile: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
-    alignItems: 'center',
-  },
-  summaryValue: { fontSize: 22, fontWeight: '800' },
-  summaryLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 3, letterSpacing: 0.4, fontWeight: '600' },
+  pipeSummaryLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: 'rgba(255,255,255,0.55)' },
+  pipeSummaryValue: { fontSize: 30, fontWeight: '900', color: '#FFF', letterSpacing: -0.6 },
+  pipeSummarySub: { fontSize: 12, color: 'rgba(255,255,255,0.55)', fontWeight: '600' },
+  funnelBar: { flexDirection: 'row', gap: 3, height: 8, marginTop: 12 },
+  funnelSeg: { height: '100%', borderRadius: 4 },
+  funnelLegend: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 10 },
+  funnelLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  funnelDot: { width: 7, height: 7, borderRadius: 4 },
+  funnelLegendText: { fontSize: 10.5, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
 
-  // Campaign card
+  // Campaign card — left status-accent stripe + body
   campaignCard: {
+    flexDirection: 'row',
     borderRadius: 16,
     borderWidth: 1,
     borderColor: CARD_BORDER,
-    padding: 14,
     marginBottom: 10,
     backgroundColor: CARD_BG,
     overflow: 'hidden',
   },
+  campaignBody: { flex: 1, padding: 14 },
+  dealAccent: { width: 4, alignSelf: 'stretch' },
+  dealBody: { flex: 1, padding: 12 },
   campaignTop: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -862,12 +935,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   dealCard: {
+    flexDirection: 'row',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
-    padding: 12,
     backgroundColor: CARD_BG,
-    marginBottom: 6,
+    overflow: 'hidden',
   },
   dealTop: {
     flexDirection: 'row',

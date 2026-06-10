@@ -1,7 +1,7 @@
 // Mock data for Brand demo. Swap values here for different demos.
 
 export const BRAND_PROFILE = {
-  name: 'PUMA Hoops',
+  name: 'Nike Hoops',
   handle: 'pumahoops',
   metaPrimary: 'NIL & Amateur Athletics',
   metaSecondary: 'Boston, MA · HQ',

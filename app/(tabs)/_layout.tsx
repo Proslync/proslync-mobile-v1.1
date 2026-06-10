@@ -14,11 +14,11 @@ import { View, StyleSheet } from "react-native";
 const ROLE_AVATARS = {
   player: require("@/assets/images/kiyan-avatar-tab.png"),
   coach: require("@/assets/images/coach-avatar-tab.png"),
-  agent: require("@/assets/images/default-avatar.png"),
-  brand: require("@/assets/images/default-avatar.png"),
-  fan: require("@/assets/images/default-avatar.png"),
-  school: require("@/assets/images/default-avatar.png"),
-  nilManager: require("@/assets/images/default-avatar.png"),
+  agent: require("@/assets/images/kiyan-avatar-tab.png"),
+  brand: require("@/assets/images/kiyan-avatar-tab.png"),
+  fan: require("@/assets/images/kiyan-avatar-tab.png"),
+  school: require("@/assets/images/kiyan-avatar-tab.png"),
+  nilManager: require("@/assets/images/kiyan-avatar-tab.png"),
 } as const;
 
 export default function TabLayout() {

@@ -1,0 +1,43 @@
+{
+  "_meta": {
+    "source": "Opendorse — NIL activation taxonomy (paraphrased from public marketing materials)",
+    "sourceUrl": "https://opendorse.com",
+    "retrievedAt": "2026-05-10",
+    "license": "Vendor public-marketing taxonomy paraphrased for design reference. No verbatim text reproduced.",
+    "attribution": "Brand category + activation-type taxonomies paraphrased from Opendorse public marketing materials.",
+    "version": "2026-spring",
+    "caveat": "Vendor taxonomies evolve. Cross-check against the operative deal templates before exporting reports."
+  },
+  "brandCategories": [
+    { "id": "apparel-footwear", "label": "Apparel & footwear", "examples": ["Nike", "Adidas", "PUMA", "Under Armour", "New Balance", "Jordan Brand"] },
+    { "id": "beverage", "label": "Beverage", "examples": ["Gatorade", "BodyArmor", "Celsius", "Liquid Death"] },
+    { "id": "audio-electronics", "label": "Consumer audio & electronics", "examples": ["Beats by Dre", "Spotify"] },
+    { "id": "qsr-restaurant", "label": "Quick-serve restaurant", "examples": ["Buffalo Wild Wings", "Bojangles'", "Raising Cane's", "Chipotle"] },
+    { "id": "retail", "label": "Sports retail", "examples": ["Dick's Sporting Goods"] },
+    { "id": "telecom", "label": "Telecom", "examples": ["AT&T", "Verizon"] },
+    { "id": "gaming-entertainment", "label": "Gaming & entertainment", "examples": ["EA Sports"] },
+    { "id": "auto-local", "label": "Automotive & local", "examples": ["Local dealer groups"] },
+    { "id": "collective", "label": "School-affiliated collective", "examples": ["Conference-aligned collectives"] }
+  ],
+  "activationTypes": [
+    { "id": "endorsement", "label": "Endorsement / paid social", "typicalDeliverables": ["IG Reels", "TikTok shorts", "Twitter posts"] },
+    { "id": "signature-line", "label": "Signature line / co-branded merch", "typicalDeliverables": ["Capsule design", "Launch posts", "Royalty schedule"] },
+    { "id": "ambassador", "label": "Ambassador / multi-year", "typicalDeliverables": ["Pre-season reveal", "Quarterly content", "Live events"] },
+    { "id": "appearance", "label": "Appearance / clinic", "typicalDeliverables": ["In-person event", "Photo op", "Autograph session"] },
+    { "id": "affiliate", "label": "Affiliate / promo code", "typicalDeliverables": ["Discount code", "Linked content", "Conversion tracking"] },
+    { "id": "merch-licensing", "label": "Merch / likeness licensing", "typicalDeliverables": ["Likeness rights", "Approved cutdowns"] },
+    { "id": "autograph", "label": "Autograph / signed memorabilia", "typicalDeliverables": ["Signed item run", "Authentication certificate"] },
+    { "id": "collective", "label": "Collective-funded engagement", "typicalDeliverables": ["Community appearance", "Charity event"] }
+  ],
+  "contentCategories": [
+    "Game highlights",
+    "Behind-the-scenes",
+    "Training",
+    "Lifestyle",
+    "Tutorial / How-to",
+    "Community appearance",
+    "Brand integration",
+    "Sponsored review",
+    "Live stream"
+  ]
+}

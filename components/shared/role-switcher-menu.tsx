@@ -91,6 +91,11 @@ export function RoleSwitcherSheet({
   onChangeBanner,
   onRemoveBanner,
   hasCustomBanner,
+  onChangeAvatar,
+  onRemoveAvatar,
+  hasCustomAvatar,
+  accountMode,
+  onSwitchAccountMode,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -100,6 +105,11 @@ export function RoleSwitcherSheet({
   onChangeBanner?: () => void;
   onRemoveBanner?: () => void;
   hasCustomBanner?: boolean;
+  onChangeAvatar?: () => void;
+  onRemoveAvatar?: () => void;
+  hasCustomAvatar?: boolean;
+  accountMode?: 'personal' | 'professional';
+  onSwitchAccountMode?: (mode: 'personal' | 'professional') => void;
 }) {
   const router = useRouter();
   const { role: activeRole, setRole } = useRole();
@@ -179,6 +189,35 @@ export function RoleSwitcherSheet({
           </View>
 
           <View style={styles.list}>
+            {accountMode && onSwitchAccountMode && (
+              <View style={styles.accountToggle}>
+                {(['personal', 'professional'] as const).map((m) => {
+                  const active = accountMode === m;
+                  return (
+                    <TouchableOpacity
+                      key={m}
+                      style={[styles.accountSeg, active && styles.accountSegActive]}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      onPress={() => {
+                        onSwitchAccountMode(m);
+                        dismiss();
+                      }}
+                    >
+                      <Ionicons
+                        name={m === 'personal' ? 'person-outline' : 'briefcase-outline'}
+                        size={15}
+                        color={active ? '#000' : 'rgba(255,255,255,0.7)'}
+                      />
+                      <Text style={[styles.accountSegText, active && styles.accountSegTextActive]}>
+                        {m === 'personal' ? 'Personal' : 'Professional'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
             {ROLES.map((r, index) => {
               const selected = activeRole === r.role;
               return (
@@ -311,6 +350,46 @@ export function RoleSwitcherSheet({
               </TouchableOpacity>
             )}
 
+            {onChangeAvatar && (
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.7}
+                onPress={() => {
+                  dismiss();
+                  setTimeout(onChangeAvatar, 240);
+                }}
+              >
+                <View style={styles.icon}>
+                  <Ionicons name="image-outline" size={20} color="rgba(255,255,255,0.85)" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>{hasCustomAvatar ? 'Change profile photo' : 'Set profile photo'}</Text>
+                  <Text style={styles.rowDesc}>Shown on your profile + menu</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            )}
+
+            {hasCustomAvatar && onRemoveAvatar && (
+              <TouchableOpacity
+                style={styles.row}
+                activeOpacity={0.7}
+                onPress={() => {
+                  dismiss();
+                  setTimeout(onRemoveAvatar, 240);
+                }}
+              >
+                <View style={styles.icon}>
+                  <Ionicons name="trash-outline" size={20} color="#FF453A" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowLabel, { color: '#FF453A' }]}>Remove profile photo</Text>
+                  <Text style={styles.rowDesc}>Restore the default avatar</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               style={styles.row}
               activeOpacity={0.7}
@@ -371,6 +450,28 @@ const styles = StyleSheet.create({
   },
 
   list: { paddingHorizontal: 12, paddingBottom: 8 },
+  accountToggle: {
+    flexDirection: 'row',
+    gap: 6,
+    padding: 4,
+    marginBottom: 10,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  accountSeg: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  accountSegActive: { backgroundColor: '#FFF' },
+  accountSegText: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
+  accountSegTextActive: { color: '#000' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

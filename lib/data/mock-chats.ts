@@ -34,7 +34,7 @@ const MOCK_THREADS: Record<string, MockThread> = {
       { id: "rp-4", text: "Good. Two scouts flew in for Miami. Feedback was 🔥. Top-15 range if you hold.", userId: "rp", userName: "Rich Paul", createdAt: m(60 * 24), isOwn: false },
       { id: "rp-5", text: "You: that's crazy to hear", userId: "me", userName: "Kiyan", createdAt: m(60 * 23), isOwn: true },
       { id: "rp-6", text: "Stay off twitter. Let the work talk.", userId: "rp", userName: "Rich Paul", createdAt: m(60 * 22), isOwn: false },
-      { id: "rp-7", text: "Also — PUMA wants you on a bigger extension. Marcus is running point.", userId: "rp", userName: "Rich Paul", createdAt: m(180), isOwn: false },
+      { id: "rp-7", text: "Also — Nike wants you on a bigger extension. Marcus is running point.", userId: "rp", userName: "Rich Paul", createdAt: m(180), isOwn: false },
       { id: "rp-8", text: "Talked to the league scout — feedback was 🔥. Call me tonight.", userId: "rp", userName: "Rich Paul", createdAt: m(8), isOwn: false },
     ],
   },
@@ -55,11 +55,11 @@ const MOCK_THREADS: Record<string, MockThread> = {
       },
     },
     messages: [
-      { id: "mk-1", text: "PUMA came back. 1yr / $85k + 4% royalty on the MB.04 NY edition.", userId: "mk", userName: "Marcus", createdAt: m(90), isOwn: false },
+      { id: "mk-1", text: "Nike came back. 1yr / $85k + 4% royalty on the MB.04 NY edition.", userId: "mk", userName: "Marcus", createdAt: m(90), isOwn: false },
       { id: "mk-2", text: "How does that compare to the Jordan ask?", userId: "me", userName: "Kiyan", createdAt: m(80), isOwn: true },
       { id: "mk-3", text: "Jordan is $65k + sample tier. But better long-term leverage if you stay.", userId: "mk", userName: "Marcus", createdAt: m(75), isOwn: false },
-      { id: "mk-4", text: "And PUMA is asking for exclusivity in the sneaker category only — you can still do Beats, Celsius, etc.", userId: "mk", userName: "Marcus", createdAt: m(73), isOwn: false },
-      { id: "mk-5", text: "Locking PUMA numbers EOD. Need your call on the royalty split.", userId: "mk", userName: "Marcus", createdAt: m(32), isOwn: false },
+      { id: "mk-4", text: "And Nike is asking for exclusivity in the sneaker category only — you can still do Beats, Celsius, etc.", userId: "mk", userName: "Marcus", createdAt: m(73), isOwn: false },
+      { id: "mk-5", text: "Locking Nike numbers EOD. Need your call on the royalty split.", userId: "mk", userName: "Marcus", createdAt: m(32), isOwn: false },
     ],
   },
   "mock-deal-desk": {
@@ -79,11 +79,11 @@ const MOCK_THREADS: Record<string, MockThread> = {
       },
     },
     messages: [
-      { id: "dd-1", text: "New offer routed to you: PUMA Hoops · NY Edition signature line.", userId: "desk", userName: "Proslync Deal Desk", createdAt: m(120), isOwn: false },
+      { id: "dd-1", text: "New offer routed to you: Nike Hoops · NY Edition signature line.", userId: "desk", userName: "Proslync Deal Desk", createdAt: m(120), isOwn: false },
       { id: "dd-2", text: "Base: $65,000. Performance bonuses up to +$20,000. 2 content deliverables / month.", userId: "desk", userName: "Proslync Deal Desk", createdAt: m(118), isOwn: false },
       { id: "dd-3", text: "Counter sent?", userId: "me", userName: "Kiyan", createdAt: m(95), isOwn: true },
       { id: "dd-4", text: "Klutch countered at $90k + 4% royalty. Brand accepted $85k + 4%.", userId: "desk", userName: "Proslync Deal Desk", createdAt: m(75), isOwn: false },
-      { id: "dd-5", text: "PUMA upped to $85k + 4% royalty. Pitch deck attached.", userId: "desk", userName: "Proslync Deal Desk", createdAt: m(65), isOwn: false, attachments: [{ type: "image", url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80" }] },
+      { id: "dd-5", text: "Nike upped to $85k + 4% royalty. Pitch deck attached.", userId: "desk", userName: "Proslync Deal Desk", createdAt: m(65), isOwn: false, attachments: [{ type: "image", url: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&q=80" }] },
     ],
   },
   "mock-jordan": {
@@ -107,7 +107,7 @@ const MOCK_THREADS: Record<string, MockThread> = {
     info: {
       id: "mock-puma",
       type: "direct",
-      name: "PUMA Hoops · Tosan",
+      name: "Nike Hoops · Tosan",
       memberCount: 2,
       isOnline: false,
       members: [],

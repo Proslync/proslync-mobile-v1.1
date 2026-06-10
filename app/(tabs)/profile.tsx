@@ -17,6 +17,7 @@ import BrandProfile from "@/components/brand/brand-profile";
 import FanProfile from "@/components/fan/fan-profile";
 import SchoolProfile from "@/components/school/school-profile";
 import { RoleSwitcherSheet } from "@/components/shared/role-switcher-menu";
+import { PROFILE_MEDIA } from "@/lib/profile-media";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
 import { LinearGradient } from "expo-linear-gradient";
@@ -164,8 +165,8 @@ const MOCK_SOCIAL_POSTS: SocialPost[] = [
     platform: 'facebook',
     mediaUrl: 'https://images.unsplash.com/photo-1577223625816-7546f13df25d?w=1200&q=80',
     mediaType: 'image',
-    caption: 'Proud to partner with PUMA for the new Melo signature line. Dropping soon 🎯',
-    brandTag: 'PUMA',
+    caption: 'Proud to partner with Nike for the new Melo signature line. Dropping soon 🎯',
+    brandTag: 'Nike',
     mentions: ['puma'],
     likes: 12840,
     comments: 248,
@@ -1859,7 +1860,11 @@ function PlayerProfileScreen() {
     }
   }, [bannerVideo, bannerHydrated]);
 
-  const bannerPlayer = useVideoPlayer(bannerVideo ?? null, (p) => {
+  // Bundled defaults (ship to TestFlight); picked media overrides at runtime.
+  const media = PROFILE_MEDIA.player;
+  const effectiveBannerVideo = bannerVideo ?? media.bannerVideo ?? null;
+
+  const bannerPlayer = useVideoPlayer(effectiveBannerVideo, (p) => {
     if (!p) return;
     p.loop = true;
     p.muted = true;
@@ -1868,7 +1873,7 @@ function PlayerProfileScreen() {
 
   // Keep banner video playing through re-renders / focus changes / hot reloads.
   React.useEffect(() => {
-    if (!bannerPlayer || !bannerVideo) return;
+    if (!bannerPlayer || !effectiveBannerVideo) return;
     bannerPlayer.play();
     const sub = bannerPlayer.addListener('playingChange', (e: any) => {
       if (!e?.isPlaying) {
@@ -1876,7 +1881,7 @@ function PlayerProfileScreen() {
       }
     });
     return () => { try { sub.remove(); } catch {} };
-  }, [bannerPlayer, bannerVideo]);
+  }, [bannerPlayer, effectiveBannerVideo]);
 
   const pickBannerVideo = React.useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -1969,7 +1974,7 @@ function PlayerProfileScreen() {
         >
           {/* Banner — cover image that fades into the page bg, now scrolls with the content */}
           <View style={[s.bannerWrap, { height: insets.top + 290, backgroundColor: '#000' }]} pointerEvents="none">
-            {bannerVideo ? (
+            {effectiveBannerVideo ? (
               <VideoView
                 player={bannerPlayer}
                 style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
@@ -1978,7 +1983,7 @@ function PlayerProfileScreen() {
               />
             ) : (
               <Image
-                source={require('@/assets/images/kiyan-banner.png')}
+                source={media.banner}
                 style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
                 resizeMode="cover"
               />
@@ -2278,7 +2283,7 @@ function PlayerProfileScreen() {
             />
           </View>
           <Image
-            source={require('@/assets/images/kiyan-avatar.png')}
+            source={media.avatar}
             style={s.topLeftProfilePillAvatar}
           />
           <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />

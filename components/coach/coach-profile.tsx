@@ -31,6 +31,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
+import { PROFILE_MEDIA } from '@/lib/profile-media';
 
 const ACCENT = '#FF6F3C';
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
@@ -181,7 +182,11 @@ export default function CoachProfile() {
     }
   }, [bannerVideo, bannerHydrated]);
 
-  const bannerPlayer = useVideoPlayer(bannerVideo ?? null, (p) => {
+  // Bundled defaults (ship to TestFlight); picked media overrides at runtime.
+  const media = PROFILE_MEDIA.coach;
+  const effectiveBannerVideo = bannerVideo ?? media.bannerVideo ?? null;
+
+  const bannerPlayer = useVideoPlayer(effectiveBannerVideo, (p) => {
     if (!p) return;
     p.loop = true;
     p.muted = true;
@@ -189,7 +194,7 @@ export default function CoachProfile() {
   });
 
   React.useEffect(() => {
-    if (!bannerPlayer || !bannerVideo) return;
+    if (!bannerPlayer || !effectiveBannerVideo) return;
     bannerPlayer.play();
     const sub = bannerPlayer.addListener('playingChange', (e: any) => {
       if (!e?.isPlaying) {
@@ -197,7 +202,7 @@ export default function CoachProfile() {
       }
     });
     return () => { try { sub.remove(); } catch {} };
-  }, [bannerPlayer, bannerVideo]);
+  }, [bannerPlayer, effectiveBannerVideo]);
 
   const pickBannerVideo = React.useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -281,7 +286,7 @@ export default function CoachProfile() {
           ]}
           pointerEvents="none"
         >
-          {bannerVideo ? (
+          {effectiveBannerVideo ? (
             <VideoView
               player={bannerPlayer}
               style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
@@ -290,7 +295,7 @@ export default function CoachProfile() {
             />
           ) : (
             <Image
-              source={require('@/assets/images/coach-banner.png')}
+              source={media.banner}
               style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
               resizeMode="cover"
             />
@@ -709,7 +714,7 @@ export default function CoachProfile() {
           />
         </View>
         <Image
-          source={require('@/assets/images/coach-avatar.png')}
+          source={media.avatar}
           style={styles.topLeftProfilePillAvatar}
         />
         <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />

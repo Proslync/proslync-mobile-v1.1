@@ -45,7 +45,7 @@ const BRAND_CATALOG: BrandItem[] = [
   { id: 'br-nike',     name: 'Nike',          handle: '@nike',         category: 'Athleticwear',     initials: 'N',  color: '#000000', followers: '12.4M' },
   { id: 'br-gatorade', name: 'Gatorade',      handle: '@gatorade',     category: 'Hydration',        initials: 'G',  color: '#FF6900', followers: '4.1M'  },
   { id: 'br-adidas',   name: 'Adidas',        handle: '@adidas',       category: 'Athleticwear',     initials: 'A',  color: '#000000', followers: '11.2M' },
-  { id: 'br-puma',     name: 'PUMA Hoops',    handle: '@pumahoops',    category: 'Basketball',       initials: 'P',  color: '#000000', followers: '2.4M'  },
+  { id: 'br-puma',     name: 'Nike Hoops',    handle: '@pumahoops',    category: 'Basketball',       initials: 'P',  color: '#000000', followers: '2.4M'  },
   { id: 'br-spotify',  name: 'Spotify',       handle: '@spotify',      category: 'Music · Creator',  initials: 'S',  color: '#1DB954', followers: '8.6M'  },
   { id: 'br-bww',      name: 'Buffalo Wild Wings', handle: '@bwwings', category: 'Food',             initials: 'B',  color: '#FFCA02', followers: '1.1M'  },
   { id: 'br-bojangles',name: "Bojangles'",    handle: '@bojangles',    category: 'Food · Regional',  initials: 'B',  color: '#E03A3E', followers: '432k'  },

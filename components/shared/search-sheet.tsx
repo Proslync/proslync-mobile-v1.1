@@ -55,9 +55,9 @@ const MOCK_RECENT_SEARCHES: SearchSuggestion[] = [
   {
     type: 'recent',
     id: 9002,
-    query: 'PUMA Hoops',
+    query: 'Nike Hoops',
     selectedType: 'venue',
-    displayName: 'PUMA Hoops',
+    displayName: 'Nike Hoops',
     displayImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&q=80',
   },
   {

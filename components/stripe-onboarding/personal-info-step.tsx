@@ -1,0 +1,254 @@
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { useFormContext, Controller } from 'react-hook-form';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { GlassView } from 'expo-glass-effect';
+import { useAppTheme } from '@/hooks/use-app-theme';
+import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { GlassButton } from '@/components/glass/glass-button';
+import type { StripeOnboardingFormData } from '@/lib/validation/stripe-onboarding';
+import { personalInfoFields } from '@/lib/validation/stripe-onboarding';
+
+interface PersonalInfoStepProps {
+  onNext: () => void;
+}
+
+export function PersonalInfoStep({ onNext }: PersonalInfoStepProps) {
+  const { colors, isDark } = useAppTheme();
+  const { control, trigger, formState: { errors } } = useFormContext<StripeOnboardingFormData>();
+
+  const handleNext = async () => {
+    const valid = await trigger(personalInfoFields);
+    if (valid) onNext();
+  };
+
+  const inputStyle = [styles.input, {
+    color: colors.text,
+    borderColor: colors.borderStrong,
+  }];
+  const errorBorder = { borderColor: '#ef4444' };
+
+  return (
+    <View style={styles.container}>
+      <Animated.Text
+        entering={FadeInDown.duration(300)}
+        style={[styles.stepTitle, { color: colors.text }]}
+      >
+        Personal Information
+      </Animated.Text>
+      <Animated.Text
+        entering={FadeInDown.duration(300).delay(50)}
+        style={[styles.stepDescription, { color: colors.textSecondary }]}
+      >
+        Legal name and identity details for Stripe verification.
+      </Animated.Text>
+
+      <Animated.View entering={FadeInDown.duration(300).delay(100)} style={styles.row}>
+        <View style={styles.halfField}>
+          <Text style={[styles.label, { color: colors.text }]}>First Name</Text>
+          <Controller
+            name="firstName"
+            control={control}
+            render={({ field: { onChange, value, onBlur } }) => (
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[inputStyle, errors.firstName && errorBorder]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="John"
+                  placeholderTextColor={colors.placeholder}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              </View>
+            )}
+          />
+          {errors.firstName && <Text style={styles.error}>{errors.firstName.message}</Text>}
+        </View>
+        <View style={styles.halfField}>
+          <Text style={[styles.label, { color: colors.text }]}>Last Name</Text>
+          <Controller
+            name="lastName"
+            control={control}
+            render={({ field: { onChange, value, onBlur } }) => (
+              <View style={styles.inputWrapper}>
+                {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                <TextInput
+                  style={[inputStyle, errors.lastName && errorBorder]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  placeholder="Doe"
+                  placeholderTextColor={colors.placeholder}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              </View>
+            )}
+          />
+          {errors.lastName && <Text style={styles.error}>{errors.lastName.message}</Text>}
+        </View>
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.duration(300).delay(150)}>
+        <Text style={[styles.label, { color: colors.text }]}>Date of Birth</Text>
+        <View style={styles.row}>
+          <View style={styles.thirdField}>
+            <Controller
+              name="dobMonth"
+              control={control}
+              render={({ field: { onChange, value, onBlur } }) => (
+                <View style={styles.inputWrapper}>
+                  {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                  <TextInput
+                    style={[inputStyle, errors.dobMonth && errorBorder]}
+                    value={value ? String(value) : ''}
+                    onChangeText={(t) => {
+                      const n = parseInt(t, 10);
+                      onChange(isNaN(n) ? '' : n);
+                    }}
+                    onBlur={onBlur}
+                    placeholder="MM"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                </View>
+              )}
+            />
+          </View>
+          <View style={styles.thirdField}>
+            <Controller
+              name="dobDay"
+              control={control}
+              render={({ field: { onChange, value, onBlur } }) => (
+                <View style={styles.inputWrapper}>
+                  {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                  <TextInput
+                    style={[inputStyle, errors.dobDay && errorBorder]}
+                    value={value ? String(value) : ''}
+                    onChangeText={(t) => {
+                      const n = parseInt(t, 10);
+                      onChange(isNaN(n) ? '' : n);
+                    }}
+                    onBlur={onBlur}
+                    placeholder="DD"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                </View>
+              )}
+            />
+          </View>
+          <View style={styles.thirdField}>
+            <Controller
+              name="dobYear"
+              control={control}
+              render={({ field: { onChange, value, onBlur } }) => (
+                <View style={styles.inputWrapper}>
+                  {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+                  <TextInput
+                    style={[inputStyle, errors.dobYear && errorBorder]}
+                    value={value ? String(value) : ''}
+                    onChangeText={(t) => {
+                      const n = parseInt(t, 10);
+                      onChange(isNaN(n) ? '' : n);
+                    }}
+                    onBlur={onBlur}
+                    placeholder="YYYY"
+                    placeholderTextColor={colors.placeholder}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                </View>
+              )}
+            />
+          </View>
+        </View>
+        {(errors.dobMonth || errors.dobDay || errors.dobYear) && (
+          <Text style={styles.error}>
+            {errors.dobMonth?.message || errors.dobDay?.message || errors.dobYear?.message}
+          </Text>
+        )}
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.duration(300).delay(200)}>
+        <Text style={[styles.label, { color: colors.text }]}>SSN Last 4 Digits</Text>
+        <Controller
+          name="ssnLast4"
+          control={control}
+          render={({ field: { onChange, value, onBlur } }) => (
+            <View style={styles.inputWrapper}>
+              {isDark && <GlassView {...liquidGlass.fillFaint} borderRadius={12} style={StyleSheet.absoluteFillObject} />}
+              <TextInput
+                style={[inputStyle, errors.ssnLast4 && errorBorder]}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                placeholder="1234"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="number-pad"
+                maxLength={4}
+                secureTextEntry
+              />
+            </View>
+          )}
+        />
+        {errors.ssnLast4 && <Text style={styles.error}>{errors.ssnLast4.message}</Text>}
+      </Animated.View>
+
+      <View style={styles.buttonContainer}>
+        <GlassButton label="Next" onPress={handleNext} fullWidth size="lg" />
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  stepTitle: {
+    fontSize: 20,
+  },
+  stepDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  label: {
+    fontSize: 14,
+    marginBottom: 6,
+  },
+  inputWrapper: {
+    overflow: 'hidden',
+    borderRadius: 12,
+  },
+  input: {
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    borderWidth: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  halfField: {
+    flex: 1,
+  },
+  thirdField: {
+    flex: 1,
+  },
+  error: {
+    fontSize: 13,
+    color: '#ef4444',
+    marginTop: 4,
+  },
+  buttonContainer: {
+    marginTop: 8,
+  },
+});
