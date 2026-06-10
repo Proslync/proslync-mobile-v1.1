@@ -47,9 +47,9 @@ import { ActionSheet } from '@/components/ui/action-sheet';
 
 const SCREEN_W = Dimensions.get('window').width;
 const SECTION_OUTER_PAD = 14;
-// ── Masonry grid geometry (mirrors fan-home-feed.tsx) ──────────────────────────
-const GRID_MARGIN = 12;
-const GRID_GUTTER = 8;
+// ── Masonry grid geometry (home runs slightly bigger cards than the fan feed) ──
+const GRID_MARGIN = 8;
+const GRID_GUTTER = 6;
 const GRID_CARD_WIDTH = (SCREEN_W - GRID_MARGIN * 2 - GRID_GUTTER) / 2;
 const SECTION_INNER_PAD = 12;
 const CARD_GAP = 10;

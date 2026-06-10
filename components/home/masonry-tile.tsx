@@ -13,7 +13,11 @@ import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } fr
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { AbstractArt } from '@/components/fan/abstract-art';
-import { seededAspect } from '@/lib/fan/seeded';
+import { seededPick } from '@/lib/fan/seeded';
+
+// Home tiles snap to real media shapes — story (9:16), portrait (4:5),
+// square (1:1) — mixed deterministically per tile id.
+const TILE_ASPECTS = [9 / 16, 4 / 5, 1] as const;
 
 
 /**
@@ -82,7 +86,7 @@ export const MasonryTile = React.memo(function MasonryTile({
   media,
   onMenuPress,
 }: Props): React.JSX.Element {
-  const artHeight = Math.round(colWidth / seededAspect(id));
+  const artHeight = Math.round(colWidth / TILE_ASPECTS[seededPick(`shape:${id}`, 3)]);
   const handlePress = React.useCallback(() => onPress(), [onPress]);
 
   // Render the art/media box at the seeded aspect — always the same height
