@@ -265,7 +265,9 @@ if (staged.videos.length) {
   }
   webSha = run('git', ['-C', WEB_REPO, 'rev-parse', 'HEAD']);
   const originUrl = run('git', ['-C', WEB_REPO, 'remote', 'get-url', 'origin']);
-  const m = /github\.com[:/]([^/]+)\/([^/.]+)/.exec(originUrl);
+  // Strip only a trailing ".git" — repo names may legitimately contain dots
+  // (this one is proslync-web-v1.1).
+  const m = /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/.exec(originUrl);
   if (!m) fail(`Can't parse GitHub owner/repo from origin URL: ${originUrl}`);
   webRemote = `${m[1]}/${m[2]}`;
 }

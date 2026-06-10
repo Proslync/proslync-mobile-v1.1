@@ -6,4 +6,12 @@ export type CuratedMediaEntry =
   | { type: 'image'; source: ImageSourcePropType } // bundled in the app binary
   | { type: 'video'; uri: string }; // hosted, SHA-pinned CDN URL
 
-export const CURATED_MEDIA: Record<string, CuratedMediaEntry> = {};
+export const CURATED_MEDIA: Record<string, CuratedMediaEntry> = {
+  'coach-banner': { type: 'video', uri: 'https://cdn.jsdelivr.net/gh/arshiarahnavard7-sys/proslync-web-v1.1@9e6941ee52a5d4fef10e07828a7038b7f2b01056/public/videos/curated/coach-banner.mov' },
+  'cover-awards': { type: 'image', source: require('../../assets/media/curated/cover-awards.png') },
+  'cover-nba': { type: 'video', uri: 'https://cdn.jsdelivr.net/gh/arshiarahnavard7-sys/proslync-web-v1.1@9e6941ee52a5d4fef10e07828a7038b7f2b01056/public/videos/curated/cover-nba.mov' },
+  'cover-ncaab': { type: 'video', uri: 'https://cdn.jsdelivr.net/gh/arshiarahnavard7-sys/proslync-web-v1.1@9e6941ee52a5d4fef10e07828a7038b7f2b01056/public/videos/curated/cover-ncaab.mov' },
+  'logo-awards': { type: 'image', source: require('../../assets/media/curated/logo-awards.jpg') },
+  'logo-ncaab': { type: 'image', source: require('../../assets/media/curated/logo-ncaab.jpg') },
+  'profile-banner': { type: 'video', uri: 'https://cdn.jsdelivr.net/gh/arshiarahnavard7-sys/proslync-web-v1.1@9e6941ee52a5d4fef10e07828a7038b7f2b01056/public/videos/curated/profile-banner.mov' },
+};
