@@ -5,7 +5,95 @@ import {
   classifyExt,
   parseManifestEntries,
   renderManifest,
+  pickDevice,
 } from './snapshot-core.mjs';
+
+// ── pickDevice fixtures ────────────────────────────────────────────────────
+// Redacted copy of real `xcrun devicectl list devices --json-output` shape
+// (serial / ecid / IP scrubbed; structure preserved exactly).
+const DEVICE_A = {
+  identifier: '60F97B44-5747-5E0F-AB35-CBA650932373',
+  deviceProperties: { name: "A's iPhone" },
+  connectionProperties: { pairingState: 'paired', tunnelState: 'connected' },
+  hardwareProperties: { udid: '00008140-001579E83A53001C', serialNumber: 'AAAAAAAAAAAA' },
+};
+const DEVICE_B = {
+  identifier: 'BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB',
+  deviceProperties: { name: "B's iPhone" },
+  connectionProperties: { pairingState: 'paired', tunnelState: 'connected' },
+  hardwareProperties: { udid: '00008140-000000000000000B', serialNumber: 'BBBBBBBBBBBB' },
+};
+const DEVICE_UNPAIRED = {
+  identifier: 'CCCCCCCC-CCCC-CCCC-CCCC-CCCCCCCCCCCC',
+  deviceProperties: { name: "C's iPad" },
+  connectionProperties: { pairingState: 'unpaired', tunnelState: 'disconnected' },
+  hardwareProperties: { udid: '00008140-000000000000000C', serialNumber: 'CCCCCCCCCCCC' },
+};
+
+function makeJson(devices) {
+  return { result: { devices } };
+}
+
+test('pickDevice auto-picks the single paired device', () => {
+  const result = pickDevice(makeJson([DEVICE_A]), null);
+  assert.deepEqual(result, { identifier: '60F97B44-5747-5E0F-AB35-CBA650932373', name: "A's iPhone" });
+});
+
+test('pickDevice ignores unpaired devices during auto-pick', () => {
+  const result = pickDevice(makeJson([DEVICE_UNPAIRED, DEVICE_A]), null);
+  assert.deepEqual(result, { identifier: '60F97B44-5747-5E0F-AB35-CBA650932373', name: "A's iPhone" });
+});
+
+test('pickDevice throws when no paired devices present', () => {
+  assert.throws(
+    () => pickDevice(makeJson([DEVICE_UNPAIRED]), null),
+    (err) => {
+      assert.ok(err instanceof Error);
+      assert.ok(err.message.includes('No paired device'), `unexpected message: ${err.message}`);
+      return true;
+    },
+  );
+});
+
+test('pickDevice throws when multiple paired devices and no --device given (ambiguous)', () => {
+  assert.throws(
+    () => pickDevice(makeJson([DEVICE_A, DEVICE_B]), null),
+    (err) => {
+      assert.ok(err instanceof Error);
+      assert.ok(err.message.includes('Multiple'), `unexpected message: ${err.message}`);
+      assert.ok(err.message.includes("A's iPhone"), `expected device A in message: ${err.message}`);
+      assert.ok(err.message.includes("B's iPhone"), `expected device B in message: ${err.message}`);
+      return true;
+    },
+  );
+});
+
+test('pickDevice resolves requested device by name', () => {
+  const result = pickDevice(makeJson([DEVICE_A, DEVICE_B]), "A's iPhone");
+  assert.deepEqual(result, { identifier: '60F97B44-5747-5E0F-AB35-CBA650932373', name: "A's iPhone" });
+});
+
+test('pickDevice resolves requested device by identifier (UUID)', () => {
+  const result = pickDevice(makeJson([DEVICE_A, DEVICE_B]), '60F97B44-5747-5E0F-AB35-CBA650932373');
+  assert.deepEqual(result, { identifier: '60F97B44-5747-5E0F-AB35-CBA650932373', name: "A's iPhone" });
+});
+
+test('pickDevice resolves requested device by classic UDID', () => {
+  const result = pickDevice(makeJson([DEVICE_A, DEVICE_B]), '00008140-001579E83A53001C');
+  assert.deepEqual(result, { identifier: '60F97B44-5747-5E0F-AB35-CBA650932373', name: "A's iPhone" });
+});
+
+test('pickDevice throws when requested device not found', () => {
+  assert.throws(
+    () => pickDevice(makeJson([DEVICE_A]), 'does-not-exist'),
+    (err) => {
+      assert.ok(err instanceof Error);
+      assert.ok(err.message.includes('does-not-exist'), `expected requested value in message: ${err.message}`);
+      assert.ok(err.message.includes("A's iPhone"), `expected candidate list in message: ${err.message}`);
+      return true;
+    },
+  );
+});
 
 test('collectSlots reads v2 banner keys, covers, logos, avatar', () => {
   const storage = {

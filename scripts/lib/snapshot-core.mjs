@@ -79,6 +79,57 @@ export function parseManifestEntries(src) {
   return entries;
 }
 
+/**
+ * Parses the JSON output of `xcrun devicectl list devices --json-output <file>`
+ * and returns { identifier, name } for the chosen device, or throws with an
+ * actionable message.
+ *
+ * @param {object} devicesJson  - Parsed JSON object from devicectl.
+ * @param {string|null} requested - Name, UUID identifier, classic UDID, serial
+ *   number, or null to auto-pick the single paired device.
+ */
+export function pickDevice(devicesJson, requested) {
+  const all = devicesJson?.result?.devices ?? [];
+  // "Suitable" = paired (development-signed containers can be exported).
+  const paired = all.filter((d) => d?.connectionProperties?.pairingState === 'paired');
+
+  if (requested === null || requested === undefined) {
+    if (paired.length === 0) {
+      throw new Error(
+        'No paired device found. Connect your iPhone via USB and trust this computer, then retry.',
+      );
+    }
+    if (paired.length > 1) {
+      const names = paired.map((d) => `  • ${d.deviceProperties?.name} (${d.identifier})`).join('\n');
+      throw new Error(
+        `Multiple paired devices found — pass --device <name-or-udid> to pick one:\n${names}`,
+      );
+    }
+    const d = paired[0];
+    return { identifier: d.identifier, name: d.deviceProperties?.name };
+  }
+
+  // Requested: match against identifier (UUID), classic UDID, serial, or name.
+  const needle = requested.toLowerCase();
+  const match = all.find(
+    (d) =>
+      d.identifier?.toLowerCase() === needle ||
+      d.hardwareProperties?.udid?.toLowerCase() === needle ||
+      d.hardwareProperties?.serialNumber?.toLowerCase() === needle ||
+      d.deviceProperties?.name?.toLowerCase() === needle,
+  );
+
+  if (!match) {
+    const candidates = all.map((d) => `  • ${d.deviceProperties?.name} (${d.identifier})`).join('\n');
+    const candidateNote = candidates
+      ? `\nKnown devices:\n${candidates}`
+      : '\nNo devices found at all.';
+    throw new Error(`Device '${requested}' not found.${candidateNote}`);
+  }
+
+  return { identifier: match.identifier, name: match.deviceProperties?.name };
+}
+
 /** Renders the full curated-manifest.ts source from an entries map. */
 export function renderManifest(entries) {
   const lines = Object.keys(entries)

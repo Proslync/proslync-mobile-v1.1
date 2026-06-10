@@ -134,7 +134,18 @@ Screens keep their own picker + AsyncStorage hydration code (minimal diff); the 
 5. **Merge safety:** re-curate ONE slot, re-snapshot → other manifest entries unchanged (git diff shows one entry + one asset).
 6. **Orphan healing:** delete a media file from the container but leave its AsyncStorage key → screen shows curated default, key gets cleaned.
 
-## 7. Out of scope / follow-ups
+## 7. Snapshot from a physical iPhone
+
+Pass `--device` (or `--device <name-or-udid>`) to snapshot media curated on a cable-connected iPhone instead of the simulator:
+
+```bash
+npm run snapshot-media -- --device           # auto-pick the single paired device
+npm run snapshot-media -- --device --dry-run # preview without writing
+```
+
+**Dev-signed builds only** — the container export (`xcrun devicectl device copy from`) requires a development-provisioned app. TestFlight and App Store builds are not eligible. The rest of the pipeline (AsyncStorage parsing, slot resolution, image/video staging, manifest generation) is identical to the simulator path: `exportDeviceContainer` copies the two relevant subtrees into a local temp dir laid out the same way, so `resolveContainerPath` re-anchors the phone's `file://` URIs onto the temp dir automatically.
+
+## 8. Out of scope / follow-ups
 
 - **Per-user media sync** across accounts/devices — requires VPS `/api/files/*` (presigned upload) + user profile media fields. Blocked on Trajan. This design layers under it: server-backed media would become resolution step 0 ahead of local override. Follow-up: write `proposed-endpoints/` spec in `proslync-backend-staging` for profile media fields.
 - **In-app "Publish curation" button** (Approach C) — dev-mode one-tap alternative to running the script; can reuse the script's logic later if desired.
