@@ -39,7 +39,8 @@ import { trackScreen } from '@/lib/analytics';
 import { persistLocalMedia, isLocalMediaAlive, healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
 import { MasonryTile } from '@/components/home/masonry-tile';
-import { NotificationSheet } from '@/components/shared/notification-sheet';
+import { NotificationSheet } from "@/components/shared/notification-sheet";
+import { SymbolView } from "expo-symbols";
 
 // ───── Layout constants ─────
 
@@ -1477,7 +1478,7 @@ export default function FeedScreen() {
           accessibilityLabel="Open map"
           accessibilityRole="button"
         >
-          <Ionicons name="map-outline" size={22} color="#FFF" />
+          <SymbolView name="map" size={22} tintColor="#FFF" />
         </Pressable>
 
         <Pressable
@@ -1486,7 +1487,7 @@ export default function FeedScreen() {
           accessibilityLabel="Search"
           accessibilityRole="search"
         >
-          <Ionicons name="search" size={22} color="#FFF" />
+          <SymbolView name="magnifyingglass" size={22} tintColor="#FFF" />
         </Pressable>
 
         <Pressable
@@ -1495,7 +1496,7 @@ export default function FeedScreen() {
           accessibilityLabel="Messages"
           accessibilityRole="button"
         >
-          <Ionicons name="paper-plane-outline" size={22} color="#FFF" />
+          <SymbolView name="paperplane" size={22} tintColor="#FFF" />
         </Pressable>
 
         <Pressable
@@ -1504,7 +1505,7 @@ export default function FeedScreen() {
           accessibilityLabel="Notifications"
           accessibilityRole="button"
         >
-          <Ionicons name="notifications-outline" size={22} color="#FFF" />
+          <SymbolView name="bell" size={22} tintColor="#FFF" />
         </Pressable>
       </Animated.View>
 
@@ -1537,15 +1538,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandMark: {
-    width: 30,
-    height: 30,
+    width: 34,
+    height: 34,
   },
   brandWordmark: {
     fontSize: 20,
     fontWeight: '800',
     color: '#FFF',
     letterSpacing: -0.4,
-    marginLeft: 2,
+    marginLeft: -2,
   },
 
   // Section card
