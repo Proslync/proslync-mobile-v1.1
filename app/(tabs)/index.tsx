@@ -1467,9 +1467,6 @@ export default function FeedScreen() {
           accessibilityLabel="Open map"
           accessibilityRole="button"
         >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          </View>
           <Ionicons name="map-outline" size={19} color="#FFF" />
         </Pressable>
 
@@ -1479,9 +1476,6 @@ export default function FeedScreen() {
           accessibilityLabel="Search"
           accessibilityRole="search"
         >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          </View>
           <Ionicons name="search" size={17} color="rgba(255,255,255,0.65)" />
           <Text style={styles.searchPlaceholder} numberOfLines={1}>
             Search players, teams, deals
@@ -1494,9 +1488,6 @@ export default function FeedScreen() {
           accessibilityLabel="Messages"
           accessibilityRole="button"
         >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          </View>
           <Ionicons name="paper-plane-outline" size={19} color="#FFF" />
         </Pressable>
       </Animated.View>
@@ -1529,6 +1520,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     overflow: 'hidden',
+    backgroundColor: '#1A1A1A',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   searchPlaceholder: {
     fontSize: 14,
@@ -1543,12 +1537,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-  },
-  glassLayer: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 23,
-    overflow: 'hidden',
+    backgroundColor: '#1A1A1A',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
 
   // Section card
