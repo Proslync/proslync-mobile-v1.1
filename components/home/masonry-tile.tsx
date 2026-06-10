@@ -6,6 +6,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as React from 'react';
 import { Image, Pressable, StyleSheet, Text, View, type ImageSourcePropType } from 'react-native';
@@ -14,7 +15,6 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AbstractArt } from '@/components/fan/abstract-art';
 import { seededAspect } from '@/lib/fan/seeded';
 
-const TEXT_SECONDARY = 'rgba(255,255,255,0.55)';
 
 /**
  * Media descriptor for a tile.
@@ -109,8 +109,16 @@ export const MasonryTile = React.memo(function MasonryTile({
   }
 
   const card = (
-    <Pressable style={styles.card} onPress={handlePress}>
+    <Pressable style={[styles.card, { width: colWidth, height: artHeight }]} onPress={handlePress}>
       {artBox}
+      {/* The media fades into black at the bottom; the caption sits on the fade
+          instead of on a separate strip below the card. */}
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.55)', 'rgba(0,0,0,0.92)']}
+        locations={[0, 0.55, 1]}
+        style={styles.captionScrim}
+        pointerEvents="none"
+      />
       <View style={styles.metaRow}>
         <Text style={styles.caption} numberOfLines={1}>{caption}</Text>
         {/* ··· is its own Pressable — inner press does NOT bubble to the card. */}
@@ -123,7 +131,7 @@ export const MasonryTile = React.memo(function MasonryTile({
           accessibilityLabel="Tile options"
           accessibilityRole="button"
         >
-          <Ionicons name="ellipsis-horizontal" size={16} color={TEXT_SECONDARY} />
+          <Ionicons name="ellipsis-horizontal" size={16} color="rgba(255,255,255,0.8)" />
         </Pressable>
       </View>
     </Pressable>
@@ -142,12 +150,23 @@ export const MasonryTile = React.memo(function MasonryTile({
 
 const styles = StyleSheet.create({
   card: { borderRadius: 16, overflow: 'hidden', backgroundColor: '#1A1A1A' },
+  captionScrim: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 72,
+  },
   metaRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingBottom: 9,
   },
-  caption: { flex: 1, color: TEXT_SECONDARY, fontSize: 13 },
+  caption: { flex: 1, color: 'rgba(255,255,255,0.92)', fontSize: 13, fontWeight: '600' },
 });
