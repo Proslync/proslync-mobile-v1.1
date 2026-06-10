@@ -44,6 +44,8 @@ import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import { useVideoPlayer, VideoView } from "expo-video";
+import { persistLocalMedia, isLocalMediaAlive, type LocalMedia } from '@/lib/media/local-media';
+import { resolveSlotMedia } from '@/lib/media/resolve-media';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView } from "expo-glass-effect";
 import Animated, {
@@ -1839,27 +1841,54 @@ function PlayerProfileScreen() {
   const [isEditing, setIsEditing] = React.useState(false);
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
-  // Persistent custom banner video.
-  const [bannerVideo, setBannerVideo] = React.useState<string | null>(null);
+  // Persistent custom banner (image or video). v2 stores { uri, type }; v1
+  // stored a bare video URI string and is migrated on first hydration.
+  const BANNER_KEY = 'proslync:profile:banner:v2';
+  const BANNER_KEY_LEGACY = 'proslync:profile:bannerVideo:v1';
+  const [banner, setBanner] = React.useState<LocalMedia | null>(null);
   const [bannerHydrated, setBannerHydrated] = React.useState(false);
   React.useEffect(() => {
     let cancelled = false;
-    AsyncStorage.getItem('proslync:profile:bannerVideo:v1')
-      .then((v) => { if (!cancelled && v) setBannerVideo(v); })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setBannerHydrated(true); });
+    (async () => {
+      try {
+        let next: LocalMedia | null = null;
+        const v2 = await AsyncStorage.getItem(BANNER_KEY);
+        if (v2) {
+          next = JSON.parse(v2);
+        } else {
+          const v1 = await AsyncStorage.getItem(BANNER_KEY_LEGACY);
+          if (v1) {
+            next = { uri: v1, type: 'video' };
+            AsyncStorage.removeItem(BANNER_KEY_LEGACY).catch(() => {});
+          }
+        }
+        // Orphan healing: a reinstall wipes documentDirectory but not always
+        // AsyncStorage — drop pointers to files that no longer exist so the
+        // curated default shows instead of a black box.
+        if (next && !(await isLocalMediaAlive(next.uri))) next = null;
+        if (!cancelled && next) setBanner(next);
+      } catch {
+        // ignore corrupt storage
+      } finally {
+        if (!cancelled) setBannerHydrated(true);
+      }
+    })();
     return () => { cancelled = true; };
   }, []);
   React.useEffect(() => {
     if (!bannerHydrated) return;
-    if (bannerVideo) {
-      AsyncStorage.setItem('proslync:profile:bannerVideo:v1', bannerVideo).catch(() => {});
+    if (banner) {
+      AsyncStorage.setItem(BANNER_KEY, JSON.stringify(banner)).catch(() => {});
     } else {
-      AsyncStorage.removeItem('proslync:profile:bannerVideo:v1').catch(() => {});
+      AsyncStorage.removeItem(BANNER_KEY).catch(() => {});
     }
-  }, [bannerVideo, bannerHydrated]);
+  }, [banner, bannerHydrated]);
 
-  const bannerPlayer = useVideoPlayer(bannerVideo ?? null, (p) => {
+  const bannerMedia = resolveSlotMedia('profile-banner', banner);
+  const bannerVideoUri =
+    bannerMedia.kind !== 'none' && bannerMedia.type === 'video' ? bannerMedia.uri : null;
+
+  const bannerPlayer = useVideoPlayer(bannerVideoUri, (p) => {
     if (!p) return;
     p.loop = true;
     p.muted = true;
@@ -1868,7 +1897,7 @@ function PlayerProfileScreen() {
 
   // Keep banner video playing through re-renders / focus changes / hot reloads.
   React.useEffect(() => {
-    if (!bannerPlayer || !bannerVideo) return;
+    if (!bannerPlayer || !bannerVideoUri) return;
     bannerPlayer.play();
     const sub = bannerPlayer.addListener('playingChange', (e: any) => {
       if (!e?.isPlaying) {
@@ -1876,40 +1905,29 @@ function PlayerProfileScreen() {
       }
     });
     return () => { try { sub.remove(); } catch {} };
-  }, [bannerPlayer, bannerVideo]);
+  }, [bannerPlayer, bannerVideoUri]);
 
-  const pickBannerVideo = React.useCallback(async () => {
+  const pickBanner = React.useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Photo access needed', 'Allow photo library access in Settings to pick a video.');
+      Alert.alert('Photo access needed', 'Allow photo library access in Settings to pick media.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: false,
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
-      // Copy into persistent documentDirectory so the URI survives app restarts.
-      const src = result.assets[0].uri;
-      let persistedUri = src;
-      try {
-        const dir = `${FileSystem.documentDirectory}proslync-media/profile-banner/`;
-        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-        const ext = (src.split('?')[0].split('.').pop() || 'mp4').toLowerCase();
-        const safeExt = /^[a-z0-9]{2,4}$/.test(ext) ? ext : 'mp4';
-        const dest = `${dir}${Date.now()}.${safeExt}`;
-        await FileSystem.copyAsync({ from: src, to: dest });
-        persistedUri = dest;
-      } catch {
-        // Fall back to original URI if copy fails.
-      }
-      setBannerVideo(persistedUri);
+      const asset = result.assets[0];
+      const type: 'image' | 'video' = asset.type === 'video' ? 'video' : 'image';
+      const persistedUri = await persistLocalMedia(asset.uri, 'profile-banner', type);
+      setBanner({ uri: persistedUri, type });
     }
   }, []);
 
-  const removeBannerVideo = React.useCallback(() => {
-    setBannerVideo(null);
+  const removeBanner = React.useCallback(() => {
+    setBanner(null);
   }, []);
   const [displayName, setDisplayName] = React.useState("Kiyan Anthony");
   const [metaPrimary, setMetaPrimary] = React.useState("Freshman Guard at Syracuse");
@@ -1969,7 +1987,7 @@ function PlayerProfileScreen() {
         >
           {/* Banner — cover image that fades into the page bg, now scrolls with the content */}
           <View style={[s.bannerWrap, { height: insets.top + 290, backgroundColor: '#000' }]} pointerEvents="none">
-            {bannerVideo ? (
+            {bannerVideoUri ? (
               <VideoView
                 player={bannerPlayer}
                 style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
@@ -1978,7 +1996,13 @@ function PlayerProfileScreen() {
               />
             ) : (
               <Image
-                source={require('@/assets/images/kiyan-banner.png')}
+                source={
+                  bannerMedia.kind === 'local'
+                    ? { uri: bannerMedia.uri }
+                    : bannerMedia.kind === 'curated-image'
+                      ? bannerMedia.source
+                      : require('@/assets/images/kiyan-banner.png')
+                }
                 style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
                 resizeMode="cover"
               />
@@ -2290,9 +2314,9 @@ function PlayerProfileScreen() {
         onEditProfile={() => setIsEditing((v) => !v)}
         onGoLive={() => setShowCreateMenu(true)}
         isEditing={isEditing}
-        onChangeBanner={pickBannerVideo}
-        onRemoveBanner={removeBannerVideo}
-        hasCustomBanner={!!bannerVideo}
+        onChangeBanner={pickBanner}
+        onRemoveBanner={removeBanner}
+        hasCustomBanner={!!banner}
       />
     </SwipeableTabView>
   );
