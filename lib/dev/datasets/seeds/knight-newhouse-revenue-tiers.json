@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "source": "Knight-Newhouse College Athletics Database",
+    "sourceUrl": "https://knightnewhousedata.org",
+    "retrievedAt": "2026-05-10",
+    "license": "Academic + journalism reference — public revenue and spending data sourced from Department of Education filings.",
+    "attribution": "Revenue tiers are paraphrased from Knight-Newhouse public reporting on college athletics finances.",
+    "version": "FY 2023-24 reporting",
+    "caveat": "Revenue tiers shift annually with TV deals and conference realignment. This snapshot is design reference only."
+  },
+  "tiers": [
+    {
+      "tier": "Tier 1 — Power 5 elite",
+      "annualRevenueRangeCents": [16000000000, 25000000000],
+      "exampleSchools": [
+        "Ohio State University",
+        "University of Texas",
+        "University of Michigan",
+        "University of Alabama",
+        "Louisiana State University",
+        "University of Georgia"
+      ],
+      "narrative": "Top-tier media-rights + ticketing + donor pipelines. Cap usage typically saturates the House-v.-NCAA $20.5M annual share within Q3."
+    },
+    {
+      "tier": "Tier 2 — Power 5 stable",
+      "annualRevenueRangeCents": [10000000000, 16000000000],
+      "exampleSchools": [
+        "Duke University",
+        "University of North Carolina",
+        "Syracuse University",
+        "UCLA",
+        "USC",
+        "Notre Dame",
+        "Michigan State University"
+      ],
+      "narrative": "Strong basketball + football revenue, healthy donor pipeline. Cap usage approaches but doesn't routinely max out the annual share."
+    },
+    {
+      "tier": "Tier 3 — Power 5 mid",
+      "annualRevenueRangeCents": [7000000000, 10000000000],
+      "exampleSchools": [
+        "Rutgers University",
+        "Boston College",
+        "Virginia Tech",
+        "Georgia Tech",
+        "Kansas State University"
+      ],
+      "narrative": "Solid power-conference baseline. Rev-share strategy emphasizes football + basketball; Olympic sports lean on donor support."
+    },
+    {
+      "tier": "Tier 4 — Group of 5",
+      "annualRevenueRangeCents": [3000000000, 7000000000],
+      "exampleSchools": [
+        "BYU",
+        "University of Connecticut",
+        "Marquette University",
+        "Villanova University"
+      ],
+      "narrative": "Mid-major footprint with regional draw. Rev-share strategy is brand-deal heavy with collective-supplement."
+    },
+    {
+      "tier": "Tier 5 — Non-FBS / HBCU",
+      "annualRevenueRangeCents": [800000000, 3000000000],
+      "exampleSchools": ["Howard University", "Princeton University"],
+      "narrative": "Cap-share is symbolic; brand-deal + collective revenue dominates. Title IX equity ratios are tighter under EADA review."
+    }
+  ]
+}

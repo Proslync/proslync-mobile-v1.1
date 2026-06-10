@@ -214,7 +214,7 @@ const MOCK_NOTIFICATIONS = [
   { id: 2, type: 'follow', title: 'Coach Glenn Farello started following you', body: null, imageUrl: 'https://i.pravatar.cc/200?img=15', isRead: false, createdAt: ago(120), data: { userId: 2 } },
   { id: 3, type: 'like', title: 'Coach Diggs liked your highlight reel', body: '19-pt debut vs Delaware State', imageUrl: 'https://i.pravatar.cc/200?img=33', isRead: false, createdAt: ago(60 * 3), data: { postId: 'post-1' } },
   { id: 4, type: 'mention', title: 'Marcus Reid tagged you in a clip', body: 'Pick-and-roll breakdown · vs UNC', imageUrl: 'https://i.pravatar.cc/200?img=12', isRead: true, createdAt: ago(60 * 24), data: { postId: 'post-2' } },
-  { id: 5, type: 'payment', title: 'NIL deal payout · $4,200', body: 'PUMA Hoops · campaign 03', imageUrl: null, isRead: true, createdAt: ago(60 * 36), data: {} },
+  { id: 5, type: 'payment', title: 'NIL deal payout · $4,200', body: 'Nike Hoops · campaign 03', imageUrl: null, isRead: true, createdAt: ago(60 * 36), data: {} },
   { id: 6, type: 'rsvp', title: '12 friends are going to your game', body: 'Saturday · Syracuse vs Miami', imageUrl: null, isRead: true, createdAt: ago(60 * 48), data: { eventId: 1003 } },
   { id: 7, type: 'team_invitation', title: 'Welcome to Proslync', body: 'Follow athletes and coaches to see games and stats', imageUrl: null, isRead: true, createdAt: ago(60 * 72), data: {} },
 ];
@@ -401,6 +401,25 @@ function mockResponse(method: string, endpoint: string): any {
   }
 
   // ── Wallet ───────────────────────────────────────────────
+  if (path === '/api/wallet/me') {
+    return {
+      data: {
+        id: 'wallet-1',
+        holderType: 'athlete',
+        holderId: '1',
+        userId: 1,
+        currency: 'USD',
+        balanceCents: 24550,
+        pendingCents: 0,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    };
+  }
+  if (path.match(/^\/api\/wallet\/[^/]+\/transactions/)) {
+    return { data: [], nextCursor: null, hasMore: false };
+  }
   if (path.startsWith('/api/wallet')) {
     return MOCK_WALLET;
   }
@@ -568,6 +587,49 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+
+// ── CENTRALIZED DOMAIN REGISTRY (ported from ios-final r6-api-1) ─────
+// Domain-grouped API objects are mounted on `apiClient.*` so every
+// hook routes through one place. Implementations live in
+// `lib/api/_internal/*-impl.ts`.
+
+import { athletePayoutsApi as _athletePayoutsApi } from './_internal/athlete-payouts-impl';
+import { disclosuresApi as _disclosuresApi } from './_internal/disclosures-impl';
+import { nilCompsApi as _nilCompsApi } from './_internal/nil-comps-impl';
+import {
+  schoolApi as _schoolApi,
+  getSchoolDashboardSnapshot as _getSchoolDashboardSnapshot,
+} from './_internal/school-impl';
+import type {
+  SchoolDashboardSnapshot as _SchoolDashboardSnapshot,
+  SchoolDealRollup as _SchoolDealRollup,
+  SchoolSnapshotSource as _SchoolSnapshotSource,
+  GetSchoolDashboardSnapshotOptions as _GetSchoolDashboardSnapshotOptions,
+  NilManagerSnapshot as _NilManagerSnapshot,
+} from './_internal/school-impl';
+
+(apiClient as ApiClient & {
+  athletePayouts: typeof _athletePayoutsApi;
+  disclosures: typeof _disclosuresApi;
+  nilComps: typeof _nilCompsApi;
+  school: typeof _schoolApi;
+}).athletePayouts = _athletePayoutsApi;
+(apiClient as ApiClient & { disclosures: typeof _disclosuresApi }).disclosures =
+  _disclosuresApi;
+(apiClient as ApiClient & { nilComps: typeof _nilCompsApi }).nilComps =
+  _nilCompsApi;
+(apiClient as ApiClient & { school: typeof _schoolApi }).school = _schoolApi;
+
+export const athletePayoutsApi = _athletePayoutsApi;
+export const disclosuresApi = _disclosuresApi;
+export const nilCompsApi = _nilCompsApi;
+export const schoolApi = _schoolApi;
+export const getSchoolDashboardSnapshot = _getSchoolDashboardSnapshot;
+export type SchoolDashboardSnapshot = _SchoolDashboardSnapshot;
+export type SchoolDealRollup = _SchoolDealRollup;
+export type SchoolSnapshotSource = _SchoolSnapshotSource;
+export type GetSchoolDashboardSnapshotOptions = _GetSchoolDashboardSnapshotOptions;
+export type NilManagerSnapshot = _NilManagerSnapshot;
 
 // Keep ApiClientError exported-adjacent usage stable for any importers.
 export { ApiClientError };

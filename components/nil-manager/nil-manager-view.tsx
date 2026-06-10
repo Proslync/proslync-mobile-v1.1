@@ -225,26 +225,20 @@ export function NilManagerView() {
         pointerEvents="none"
       />
 
-      {/* Top floating pill — role switcher */}
-      <View style={[styles.topPillRow, { top: insets.top + 8 }]}>
+      {/* Floating header row — avatar/menu pill (TOP). No tabs for NIL Manager. */}
+      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
         <Pressable
-          style={styles.topPill}
+          style={styles.headerPill}
           onPress={() => setRoleSheetVisible(true)}
-          accessibilityLabel="Switch role"
+          accessibilityLabel="Open menu"
           accessibilityRole="button"
         >
           <View style={styles.glassLayer} pointerEvents="none">
             <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
           </View>
-          <View style={[styles.schoolLogoSm, { backgroundColor: SCHOOL_BLUE }]}>
-            <Text style={styles.schoolLogoSmText}>D</Text>
-          </View>
-          <Ionicons name="menu" size={20} color="#FFF" style={{ marginLeft: 6 }} />
+          <Image source={require('@/assets/images/kiyan-avatar.png')} style={styles.headerPillAvatar} />
+          <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
         </Pressable>
-        <View style={styles.titleStack}>
-          <Text style={styles.titleEyebrow}>NIL MANAGER</Text>
-          <Text style={styles.titleHeadline}>{NIL_MANAGER_PROFILE.school}</Text>
-        </View>
       </View>
 
       <RoleSwitcherSheet
@@ -260,40 +254,43 @@ const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 16, gap: 12 },
 
   bottomFade: { position: 'absolute', left: 0, right: 0, zIndex: 99 },
-  topFade: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 99 },
 
-  topPillRow: {
+  // Floating header row — avatar/menu pill (matches brand/agent/player chrome)
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
+  headerScrollFixed: {
     position: 'absolute',
-    left: 14,
-    right: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    left: 0,
+    right: 0,
     zIndex: 100,
   },
-  topPill: {
+  headerScrollContent: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    gap: 8,
+    alignItems: 'center',
+  },
+  headerPill: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 46,
-    paddingLeft: 4,
+    paddingLeft: 3,
     paddingRight: 12,
     borderRadius: 23,
     overflow: 'hidden',
   },
+  headerPillAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  headerPillIcon: {
+    marginLeft: 8,
+  },
   glassLayer: {
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 23,
+    ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
+    borderRadius: 23,
   },
-  schoolLogoSm: {
-    width: 38, height: 38, borderRadius: 19,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  schoolLogoSmText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: -0.3 },
-  titleStack: { flex: 1 },
-  titleEyebrow: { fontSize: 10, fontWeight: '800', color: 'rgba(255,255,255,0.55)', letterSpacing: 1.4 },
-  titleHeadline: { fontSize: 14, fontWeight: '800', color: '#FFF', marginTop: 1 },
 
   // Hero
   heroCard: {

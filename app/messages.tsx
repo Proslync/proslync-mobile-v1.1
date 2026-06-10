@@ -520,7 +520,7 @@ const MOCK_CONVERSATIONS: ChannelData[] = (() => {
       id: 'mock-agent-marketing',
       name: 'Marcus · Klutch Marketing',
       imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&q=80',
-      lastMessage: { text: 'Locking PUMA numbers EOD. Need your call on the royalty split.', createdAt: ago(32), userId: 'mk', attachmentType: null },
+      lastMessage: { text: 'Locking Nike numbers EOD. Need your call on the royalty split.', createdAt: ago(32), userId: 'mk', attachmentType: null },
       unreadCount: 1,
       memberCount: 2,
       isOnline: true,
@@ -533,7 +533,7 @@ const MOCK_CONVERSATIONS: ChannelData[] = (() => {
       id: 'mock-deal-desk',
       name: 'Proslync Deal Desk',
       imageUrl: 'https://images.unsplash.com/photo-1554774853-aae0a22c8aa4?w=200&q=80',
-      lastMessage: { text: 'PUMA upped to $85k + 4% royalty. Pitch deck attached.', createdAt: ago(65), userId: 'desk', attachmentType: 'image' },
+      lastMessage: { text: 'Nike upped to $85k + 4% royalty. Pitch deck attached.', createdAt: ago(65), userId: 'desk', attachmentType: 'image' },
       unreadCount: 1,
       memberCount: 2,
       isOnline: true,
@@ -544,7 +544,7 @@ const MOCK_CONVERSATIONS: ChannelData[] = (() => {
     },
     {
       id: 'mock-puma',
-      name: 'PUMA Hoops · Tosan',
+      name: 'Nike Hoops · Tosan',
       imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&q=80',
       lastMessage: { text: 'You: Loved the MB.04 colorway — let\'s do a NY edition', createdAt: ago(280), userId: 'me', attachmentType: null },
       unreadCount: 0,
@@ -663,6 +663,7 @@ export default function MessagesScreen() {
     });
   }, [notifications]);
   const markRead = useMarkNotificationRead();
+  const unreadNotifs = filteredNotifications.filter((n) => !n.read).length;
   const [composeKeyboardHeight, setComposeKeyboardHeight] = useState(0);
 
   useEffect(() => {
@@ -1111,6 +1112,37 @@ export default function MessagesScreen() {
             data={filteredChannels}
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
+            ListHeaderComponent={
+              searchQuery ? null : (
+                <TouchableOpacity
+                  style={styles.notifContactRow}
+                  activeOpacity={0.7}
+                  onPress={() => setActiveTab('Notifications')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Notifications"
+                >
+                  <View style={styles.notifContactAvatar}>
+                    <Ionicons name="notifications" size={24} color="#FFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.notifContactName}>Notifications</Text>
+                    <Text style={styles.notifContactSub} numberOfLines={1}>
+                      {unreadNotifs > 0
+                        ? `${unreadNotifs} new alert${unreadNotifs === 1 ? '' : 's'}`
+                        : 'Your alerts & activity'}
+                    </Text>
+                  </View>
+                  {unreadNotifs > 0 && (
+                    <View style={styles.notifContactBadge}>
+                      <Text style={styles.notifContactBadgeText}>
+                        {unreadNotifs > 99 ? '99+' : unreadNotifs}
+                      </Text>
+                    </View>
+                  )}
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.3)" />
+                </TouchableOpacity>
+              )
+            }
             ListEmptyComponent={renderEmptyState}
             contentContainerStyle={[
               filteredChannels.length === 0
@@ -1665,6 +1697,33 @@ const styles = StyleSheet.create({
     paddingTop: 70,
     paddingBottom: 160,
   },
+  notifContactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  notifContactAvatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#EB621A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notifContactName: { color: '#FFF', fontSize: 16, fontWeight: '700', letterSpacing: -0.2 },
+  notifContactSub: { color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 2 },
+  notifContactBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    backgroundColor: '#FF3B30',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notifContactBadgeText: { color: '#FFF', fontSize: 12, fontWeight: '800' },
   conversationRow: {
     flexDirection: "row",
     alignItems: "center",

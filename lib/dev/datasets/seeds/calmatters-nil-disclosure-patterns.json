@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "source": "CalMatters — NIL disclosure pattern investigations",
+    "sourceUrl": "https://calmatters.org",
+    "retrievedAt": "2026-05-10",
+    "license": "Journalism source — patterns paraphrased for design reference. No verbatim text reproduced.",
+    "attribution": "California-state disclosure patterns and red-flag categories paraphrased from CalMatters reporting on the AB 252 disclosure framework.",
+    "version": "2026-spring",
+    "caveat": "California-specific patterns may not map to other states. Verify against the operative state law before drawing reviewer conclusions."
+  },
+  "redFlagPatterns": [
+    {
+      "id": "rf-payor-association",
+      "name": "Payor associated with collective",
+      "summary": "Brand payor shares registered-agent overlap with an active NIL collective. Bylaw 22 association test is the gating review.",
+      "severity": "watch"
+    },
+    {
+      "id": "rf-loaner-vehicle",
+      "name": "Non-cash value missing",
+      "summary": "Loaner vehicles, gear allocations, and product seeding rotate through disclosure with inconsistent non-cash-value declarations.",
+      "severity": "watch"
+    },
+    {
+      "id": "rf-aggregating-threshold",
+      "name": "Aggregating threshold approach",
+      "summary": "Multiple smaller deals on the same athlete trip-aggregating thresholds when summed across reporting periods.",
+      "severity": "watch"
+    },
+    {
+      "id": "rf-category-overlap",
+      "name": "Category-exclusive overlap",
+      "summary": "Secondary deal in a category overlapping an exclusive master agreement — requires carve-out memo.",
+      "severity": "flagged"
+    },
+    {
+      "id": "rf-out-of-state-payor",
+      "name": "Out-of-state payor with no in-state nexus",
+      "summary": "Payor entity registered out-of-state with no in-state activation nexus — secondary review required.",
+      "severity": "watch"
+    }
+  ],
+  "californiaAB252Note": "California AB 252 (2024) requires post-graduation NIL deals to be disclosed within 14 days of execution. Several patterns above derive from CalMatters reporting on early-cycle filings."
+}

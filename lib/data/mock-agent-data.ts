@@ -180,7 +180,7 @@ export const AGENT_DEALS: AgentDeal[] = [
     athleteName: 'Kiyan Anthony',
     athleteInitial: 'K',
     athleteColor: '#F76900',
-    brand: 'PUMA Hoops',
+    brand: 'Nike Hoops',
     brandInitial: 'P',
     brandColor: '#E11E2B',
     stage: 'negotiation',

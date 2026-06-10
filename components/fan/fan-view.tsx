@@ -19,7 +19,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useStableRouter } from '@/hooks/use-stable-router';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 
 import {
@@ -51,7 +50,6 @@ const TABS: { key: TabKey; label: string }[] = [
 
 export function FanView() {
   const insets = useSafeAreaInsets();
-  const router = useStableRouter();
   const [activeTab, setActiveTab] = React.useState<TabKey>('home');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
@@ -70,45 +68,35 @@ export function FanView() {
     };
   });
 
+  const topPad = insets.top + 70;
+  const bottomPad = insets.bottom + 120;
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 4 }]}>
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Fan Hub</Text>
-          <Text style={styles.headerSubtitle}>
-            Following {FAN_FOLLOWING.length} athletes · {FAN_PROFILE.superfanPoints.toLocaleString()} pts
-          </Text>
-        </View>
-        <View style={styles.tierPill}>
-          <Ionicons name="diamond" size={11} color={PURPLE} />
-          <Text style={styles.tierPillText}>{FAN_PROFILE.superfanTier.toUpperCase()}</Text>
-        </View>
-      </View>
+    <View style={styles.container}>
+      {activeTab === 'home' && <HomeTab topPad={topPad} bottomPad={bottomPad} />}
+      {activeTab === 'pickem' && <PickemTab topPad={topPad} bottomPad={bottomPad} />}
+      {activeTab === 'perks' && <PerksTab topPad={topPad} bottomPad={bottomPad} />}
 
-      {activeTab === 'home' && <HomeTab insets={insets.bottom} />}
-      {activeTab === 'pickem' && <PickemTab insets={insets.bottom} />}
-      {activeTab === 'perks' && <PerksTab insets={insets.bottom} />}
-
-      {/* Bottom darken gradient */}
+      {/* Top fade — gives the floating top pill row visual depth */}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+        colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
         locations={[0, 0.5, 1]}
-        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
+        style={[styles.topFade, { height: insets.top + 90 }]}
         pointerEvents="none"
       />
 
-      {/* Floating bottom row — profile pill + segmented tabs */}
-      <View style={[styles.headerScrollFixed, styles.headerScrollContent]}>
+      {/* Floating header row — avatar/menu pill + segmented tabs (TOP) */}
+      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
         <Pressable
           style={styles.headerPill}
           onPress={() => setRoleSheetVisible(true)}
-          accessibilityLabel="Switch role"
+          accessibilityLabel="Open menu"
           accessibilityRole="button"
         >
           <View style={styles.glassLayer} pointerEvents="none">
             <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
           </View>
-          <Image source={require('@/assets/images/default-avatar.png')} style={styles.headerPillAvatar} />
+          <Image source={require('@/assets/images/kiyan-avatar.png')} style={styles.headerPillAvatar} />
           <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
         </Pressable>
 
@@ -142,6 +130,14 @@ export function FanView() {
         </View>
       </View>
 
+      {/* Bottom fade — keeps content fading into the floating native tab bar */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
+        locations={[0, 0.5, 1]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 110 }]}
+        pointerEvents="none"
+      />
+
       <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
     </View>
   );
@@ -151,45 +147,73 @@ export function FanView() {
 // Tab 1 — Following Feed
 // ============================================================
 
-function HomeTab({ insets }: { insets: number }) {
+function HomeTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   const [subTab, setSubTab] = React.useState<'following' | 'games'>('following');
-  const SUB_TABS: { key: 'following' | 'games'; label: string }[] = [
-    { key: 'following', label: 'Following' },
-    { key: 'games', label: 'Games' },
-  ];
+  const SUB_TABS = [
+    { key: 'following', label: 'Following', count: FAN_FOLLOWING.length },
+    { key: 'games', label: 'Games', count: FAN_GAMES.length },
+  ] as const;
+
+  const subIndex = Math.max(0, SUB_TABS.findIndex((t) => t.key === subTab));
+  const subPillWidth = useSharedValue(0);
+  const animatedSubIndex = useSharedValue(subIndex);
+  React.useEffect(() => {
+    animatedSubIndex.value = withTiming(subIndex, { duration: 180 });
+  }, [subIndex, animatedSubIndex]);
+  const subKnobStyle = useAnimatedStyle(() => {
+    const segW = subPillWidth.value / Math.max(SUB_TABS.length, 1);
+    const inset = 4;
+    return {
+      width: Math.max(segW - inset * 2, 0),
+      transform: [{ translateX: animatedSubIndex.value * segW + inset }],
+    };
+  });
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={styles.subTabsRow}>
-        {SUB_TABS.map(({ key, label }) => {
+    <View style={{ flex: 1, paddingTop: topPad }}>
+      <View
+        style={styles.subTabsRow}
+        onLayout={(e) => {
+          subPillWidth.value = e.nativeEvent.layout.width;
+        }}
+      >
+        <View style={styles.glassLayer} pointerEvents="none">
+          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
+        </View>
+        <Animated.View style={[styles.tabKnob, subKnobStyle]} pointerEvents="none" />
+        {SUB_TABS.map(({ key, label, count }) => {
           const isActive = subTab === key;
           return (
-            <TouchableOpacity
+            <Pressable
               key={key}
-              style={[styles.subTab, isActive && styles.subTabActive]}
+              style={styles.subTab}
               onPress={() => setSubTab(key)}
-              activeOpacity={0.7}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
             >
               <Text style={[styles.subTabLabel, isActive && styles.subTabLabelActive]}>
                 {label}
               </Text>
-            </TouchableOpacity>
+              <View style={[styles.subTabBadge, isActive && styles.subTabBadgeActive]}>
+                <Text style={[styles.subTabBadgeText, isActive && styles.subTabBadgeTextActive]}>
+                  {count}
+                </Text>
+              </View>
+            </Pressable>
           );
         })}
       </View>
 
-      {subTab === 'following' && <FeedTab insets={insets} />}
-      {subTab === 'games' && <GamesTab insets={insets} />}
+      {subTab === 'following' && <FeedTab bottomPad={bottomPad} />}
+      {subTab === 'games' && <GamesTab bottomPad={bottomPad} />}
     </View>
   );
 }
 
-function FeedTab({ insets }: { insets: number }) {
+function FeedTab({ bottomPad }: { bottomPad: number }) {
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Athlete strip */}
@@ -294,14 +318,14 @@ function FeedCard({ item, delay }: { item: FeedItem; delay: number }) {
 // Tab 2 — Games Today
 // ============================================================
 
-function GamesTab({ insets }: { insets: number }) {
+function GamesTab({ bottomPad }: { bottomPad: number }) {
   const live = FAN_GAMES.filter((g) => g.status === 'live');
   const upcoming = FAN_GAMES.filter((g) => g.status === 'upcoming');
   const finals = FAN_GAMES.filter((g) => g.status === 'final');
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       {live.length > 0 && (
@@ -422,7 +446,7 @@ function GameCard({ g, delay }: { g: LiveGame; delay: number }) {
 // Tab 3 — Pick'em
 // ============================================================
 
-function PickemTab({ insets }: { insets: number }) {
+function PickemTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   const [picks, setPicks] = React.useState<Record<string, string | undefined>>(
     Object.fromEntries(FAN_PREDICTIONS.map((p) => [p.id, p.myPick])),
   );
@@ -433,7 +457,7 @@ function PickemTab({ insets }: { insets: number }) {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       <Animated.View entering={FadeIn.duration(300)} style={styles.fanScoreCard}>
@@ -555,10 +579,10 @@ function PredictionCard({
 // Tab 4 — Perks
 // ============================================================
 
-function PerksTab({ insets }: { insets: number }) {
+function PerksTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: insets + 40 }]}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Tier progress */}
@@ -681,50 +705,39 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
 
-  // Sub-tab pill switcher (Following | Games inside Home tab)
+  // Sub-tab segmented switcher (Following | Games inside Home tab) — glass pill
+  // matching the Home/Pick'em/Perks row above it.
   subTabsRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    height: 46,
+    borderRadius: 23,
+    overflow: 'hidden',
+    position: 'relative',
   },
   subTab: {
     flex: 1,
-    paddingVertical: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    alignItems: 'center',
-  },
-  subTabActive: { borderBottomColor: ACCENT },
-  subTabLabel: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
-  subTabLabelActive: { color: '#FFF', fontWeight: '700' },
-
-  header: {
+    height: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 12,
+    justifyContent: 'center',
+    gap: 7,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#FFFFFF' },
-  headerSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
-  tierPill: {
-    flexDirection: 'row',
+  subTabLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
+  subTabLabelActive: { color: '#FFF' },
+  subTabBadge: {
+    minWidth: 20,
+    height: 18,
+    paddingHorizontal: 6,
+    borderRadius: 9,
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    backgroundColor: 'rgba(168,85,247,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(168,85,247,0.4)',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  tierPillText: {
-    fontSize: 10.5,
-    color: PURPLE,
-    letterSpacing: 0.8,
-    fontWeight: '800',
-  },
+  subTabBadgeActive: { backgroundColor: ACCENT },
+  subTabBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.6)' },
+  subTabBadgeTextActive: { color: '#FFF' },
 
   tabRow: {
     paddingHorizontal: 16,
@@ -754,10 +767,10 @@ const styles = StyleSheet.create({
   },
   tabPillTextActive: { color: '#FF6F3C', fontWeight: '700' },
 
-  // Floating bottom row — profile pill + segmented tabs (matches player activity)
+  // Floating header row — avatar pill + segmented tabs (matches player activity)
+  topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
   headerScrollFixed: {
     position: 'absolute',
-    bottom: TAB_BAR_TOP_FROM_BOTTOM + 10,
     left: 0,
     right: 0,
     zIndex: 100,
@@ -810,7 +823,7 @@ const styles = StyleSheet.create({
     bottom: 4,
     left: 0,
     borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
 
   scrollContent: { paddingHorizontal: 16, paddingTop: 4 },

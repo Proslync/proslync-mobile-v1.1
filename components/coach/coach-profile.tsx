@@ -32,6 +32,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
+import { PROFILE_MEDIA } from '@/lib/profile-media';
 
 const BANNER_KEY = 'proslync:coachprofile:banner:v2';
 const BANNER_KEY_LEGACY = 'proslync:coachprofile:bannerVideo:v1';
@@ -741,7 +742,7 @@ export default function CoachProfile() {
           />
         </View>
         <Image
-          source={require('@/assets/images/coach-avatar.png')}
+          source={PROFILE_MEDIA.coach.avatar}
           style={styles.topLeftProfilePillAvatar}
         />
         <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
