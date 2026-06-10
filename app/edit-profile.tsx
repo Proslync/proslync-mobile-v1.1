@@ -18,6 +18,9 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { GlassView } from 'expo-glass-effect';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { persistLocalMedia } from '@/lib/media/local-media';
+import { resolveAvatarSource } from '@/lib/media/resolve-media';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
 import { useToast } from '@/components/shared/toast';
@@ -27,6 +30,7 @@ import type { UpdateProfileRequest } from '@/lib/types/auth.types';
 
 const ACCENT = '#FF6F3C';
 const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
+const AVATAR_KEY = 'proslync:profile:avatar:v1';
 
 interface FormData {
   firstName: string;
@@ -68,6 +72,14 @@ export default function EditProfileScreen() {
     }
   }, [user]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(AVATAR_KEY)
+      .then((v) => { if (!cancelled && v) setSelectedImage(v); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const updateField = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setHasChanges(true);
@@ -84,7 +96,7 @@ export default function EditProfileScreen() {
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
-        await uploadAvatar(asset.uri, asset.fileSize);
+        await saveAvatarLocally(asset.uri);
       }
     } catch (error) {
       console.error('Image picker error:', error);
@@ -108,7 +120,7 @@ export default function EditProfileScreen() {
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setSelectedImage(asset.uri);
-        await uploadAvatar(asset.uri, asset.fileSize);
+        await saveAvatarLocally(asset.uri);
       }
     } catch (error) {
       console.error('Camera error:', error);
@@ -116,24 +128,19 @@ export default function EditProfileScreen() {
     }
   };
 
-  const uploadAvatar = async (uri: string, fileSize?: number) => {
+  // The VPS backend has no /api/files/* endpoints yet, so avatar uploads can't
+  // work. Persist the pick locally (same pattern as profile banners); the
+  // curated-media snapshot bakes it into builds.
+  const saveAvatarLocally = async (uri: string) => {
     setIsUploadingPhoto(true);
     try {
-      const fileName = uri.split('/').pop() || 'avatar.jpg';
-      const extension = fileName.split('.').pop()?.toLowerCase();
-      let mimeType = 'image/jpeg';
-      if (extension === 'png') mimeType = 'image/png';
-      else if (extension === 'gif') mimeType = 'image/gif';
-      else if (extension === 'webp') mimeType = 'image/webp';
-      const uploadFileSize = fileSize || 1024 * 1024;
-      const presignedResponse = await authApi.getAvatarPresignedUrl(fileName, mimeType, uploadFileSize);
-      await authApi.uploadToPresignedUrl(presignedResponse.uploadUrl, uri, mimeType);
-      await authApi.confirmUpload(presignedResponse.fileId);
+      const persistedUri = await persistLocalMedia(uri, 'profile-avatar', 'image');
+      setSelectedImage(persistedUri);
+      await AsyncStorage.setItem(AVATAR_KEY, persistedUri);
       showSuccess('Photo updated');
-      await refreshUser();
     } catch (error: any) {
-      console.error('Upload avatar error:', error);
-      showError(error?.message || 'Failed to upload photo');
+      console.error('Save avatar error:', error);
+      showError(error?.message || 'Failed to save photo');
       setSelectedImage(null);
     } finally {
       setIsUploadingPhoto(false);
@@ -183,7 +190,9 @@ export default function EditProfileScreen() {
     else router.back();
   };
 
-  const avatarUrl = selectedImage || user?.avatar?.url;
+  const avatarSource = selectedImage
+    ? { uri: selectedImage }
+    : resolveAvatarSource(null, user?.avatar?.url, DEFAULT_AVATAR);
 
   return (
     <View style={styles.container}>
@@ -249,7 +258,7 @@ export default function EditProfileScreen() {
                 disabled={isUploadingPhoto}
               >
                 <Image
-                  source={avatarUrl ? { uri: avatarUrl } : DEFAULT_AVATAR}
+                  source={avatarSource}
                   style={styles.avatar}
                 />
                 <View style={styles.cameraBadge}>

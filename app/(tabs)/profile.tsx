@@ -39,12 +39,13 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  type ImageSourcePropType,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { persistLocalMedia, isLocalMediaAlive, type LocalMedia } from '@/lib/media/local-media';
-import { resolveSlotMedia } from '@/lib/media/resolve-media';
+import { resolveSlotMedia, resolveAvatarSource } from '@/lib/media/resolve-media';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView } from "expo-glass-effect";
 import Animated, {
@@ -195,7 +196,7 @@ const PLATFORM_META: Record<SocialPlatform, { icon: keyof typeof Ionicons.glyphM
   snapchat: { icon: 'logo-snapchat', color: '#FFFC00', label: 'Snapchat' },
 };
 
-function SocialPostCard({ post, athleteName, athleteMeta }: { post: SocialPost; athleteName: string; athleteMeta: string }) {
+function SocialPostCard({ post, athleteName, athleteMeta, avatarSource }: { post: SocialPost; athleteName: string; athleteMeta: string; avatarSource: ImageSourcePropType }) {
   const meta = PLATFORM_META[post.platform];
   const [liked, setLiked] = React.useState(false);
 
@@ -204,7 +205,7 @@ function SocialPostCard({ post, athleteName, athleteMeta }: { post: SocialPost; 
       {/* Header row */}
       <View style={s.socialHeader}>
         <Image
-          source={require('@/assets/images/kiyan-avatar.png')}
+          source={avatarSource}
           style={s.socialAvatar}
         />
         <View style={{ flex: 1 }}>
@@ -1191,6 +1192,7 @@ const dealSheetStyles = StyleSheet.create({
 const APPLIED_DEALS_STORAGE_KEY = 'proslync:athlete:appliedDeals:v1';
 const BANNER_KEY = 'proslync:profile:banner:v2';
 const BANNER_KEY_LEGACY = 'proslync:profile:bannerVideo:v1';
+const AVATAR_KEY = 'proslync:profile:avatar:v1';
 
 function DealsTabContent() {
   const [subTab, setSubTab] = React.useState<'open' | 'applied'>('open');
@@ -1829,13 +1831,34 @@ function PlayerProfileScreen() {
     tintColor: "#1a1a1a",
   });
 
-  const { username, avatarUrl, initial } = React.useMemo(
+  const [localAvatar, setLocalAvatar] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const v = await AsyncStorage.getItem(AVATAR_KEY);
+        if (v && (await isLocalMediaAlive(v))) {
+          if (!cancelled) setLocalAvatar(v);
+        } else if (v) {
+          // Orphaned pointer from a reinstall — clean it up.
+          AsyncStorage.removeItem(AVATAR_KEY).catch(() => {});
+        }
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const { username, avatarSource, initial } = React.useMemo(
     () => ({
       username: "kiyan",
-      avatarUrl: user?.avatar?.url,
+      avatarSource: resolveAvatarSource(
+        localAvatar,
+        user?.avatar?.url,
+        require('@/assets/images/kiyan-avatar.png'),
+      ),
       initial: "K",
     }),
-    [user],
+    [user, localAvatar],
   );
 
   // Inline-editable identity fields. Defaults are the Kiyan persona.
@@ -1933,6 +1956,7 @@ function PlayerProfileScreen() {
   const removeBanner = React.useCallback(() => {
     setBanner(null);
   }, []);
+
   const [displayName, setDisplayName] = React.useState("Kiyan Anthony");
   const [metaPrimary, setMetaPrimary] = React.useState("Freshman Guard at Syracuse");
   const [metaSecondary, setMetaSecondary] = React.useState("Brooklyn, New York");
@@ -1953,7 +1977,7 @@ function PlayerProfileScreen() {
     } else {
       // Single tap → open avatar viewer (delayed to detect double tap)
       avatarTapTimer.current = setTimeout(() => {
-        if (avatarUrl) setShowAvatarViewer(true);
+        setShowAvatarViewer(true);
       }, 300);
     }
     lastTapRef.current = now;
@@ -2196,6 +2220,7 @@ function PlayerProfileScreen() {
                     post={post}
                     athleteName={displayName}
                     athleteMeta="Freshman Guard  ·  Syracuse"
+                    avatarSource={avatarSource}
                   />
                 ))}
               </View>
@@ -2265,13 +2290,11 @@ function PlayerProfileScreen() {
             onPress={closeAvatarViewer}
           >
             <View style={s.avatarViewerContainer}>
-              {avatarUrl && (
-                <Image
-                  source={{ uri: avatarUrl }}
-                  style={s.avatarViewerImage}
-                  resizeMode="contain"
-                />
-              )}
+              <Image
+                source={avatarSource}
+                style={s.avatarViewerImage}
+                resizeMode="contain"
+              />
             </View>
             <TouchableOpacity
               style={s.avatarViewerClose}
@@ -2306,7 +2329,7 @@ function PlayerProfileScreen() {
             />
           </View>
           <Image
-            source={require('@/assets/images/kiyan-avatar.png')}
+            source={avatarSource}
             style={s.topLeftProfilePillAvatar}
           />
           <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
