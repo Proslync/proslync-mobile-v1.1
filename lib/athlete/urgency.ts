@@ -45,7 +45,8 @@ function hoursUntilDeadline(isoString: string | null | undefined): number | null
   const d = new Date(isoString);
   if (Number.isNaN(d.getTime())) return null;
   const ms = d.getTime() - Date.now();
-  return ms / (1000 * 60 * 60); // may be negative if past
+  if (ms <= 0) return null; // past deadline — treat as no deadline
+  return ms / (1000 * 60 * 60);
 }
 
 // ── Contract → UrgencyItem conversion ────────────────────

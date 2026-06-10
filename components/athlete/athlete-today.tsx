@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -352,6 +353,7 @@ function PipelineZone({
       -1,
       false,
     );
+    return () => { cancelAnimation(activeOpacity); };
   }, [activeOpacity]);
   const activeAnimStyle = useAnimatedStyle(() => ({
     opacity: activeOpacity.value,
@@ -728,7 +730,7 @@ function MasonryCard({
         </View>
         <Text style={styles.masonryCardBrand} numberOfLines={1}>{contract.brand}</Text>
         <Text style={styles.masonryCardContract} numberOfLines={2}>{contract.contract}</Text>
-        <Text style={[styles.masonryCardAmount, { fontVariant: ['tabular-nums'] }]}>{contract.amount}</Text>
+        <Text style={styles.masonryCardAmount}>{contract.amount}</Text>
         <View style={styles.masonryProgressTrack}>
           <View style={[styles.masonryProgressFill, { width: `${pct}%`, backgroundColor: stageColor }]} />
         </View>
@@ -843,14 +845,18 @@ export function AthleteToday({
   const wallet = walletQuery.data;
   const reachData = reachQuery.data;
 
-  // Derive urgency items from real hook data
-  const urgencyItems = React.useMemo(() =>
-    deriveUrgencyItems({
+  // Derive urgency items only once both hooks have settled (loaded or errored).
+  // Returning [] while loading prevents mock data from flashing in before real
+  // data arrives (the "mock urgency shows while hooks load" bug).
+  const contractsSettled = !contractsQuery.isLoading;
+  const offersSettled = !offersQuery.isLoading;
+  const urgencyItems = React.useMemo(() => {
+    if (!contractsSettled || !offersSettled) return [];
+    return deriveUrgencyItems({
       contracts: contracts?.contracts,
       offers: offers?.offers,
-    }),
-    [contracts, offers],
-  );
+    });
+  }, [contractsSettled, offersSettled, contracts, offers]);
 
   const pipelineCounts = React.useMemo(() =>
     computePipelineCounts(contracts, offers?.offerCount ?? 0),
@@ -1347,6 +1353,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: -0.2,
+    fontVariant: ['tabular-nums'],
   },
   masonryProgressTrack: {
     height: 3,
