@@ -34,7 +34,8 @@
           "bluetooth-central"
         ]
       },
-      "bitcode": false
+      "bitcode": false,
+      "appleTeamId": "BR742P8675"
     },
     "android": {
       "adaptiveIcon": {
