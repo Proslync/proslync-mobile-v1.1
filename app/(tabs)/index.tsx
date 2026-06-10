@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Alert,
   View,
@@ -864,7 +864,10 @@ function SectionCard({
 }) {
   const router = useRouter();
   const pages = chunk(section.cards, 2);
-  const resolvedCover = resolveSlotMedia(`cover-${section.id}`, coverMedia ?? null);
+  const resolvedCover = useMemo(
+    () => resolveSlotMedia(`cover-${section.id}`, coverMedia ?? null),
+    [section.id, coverMedia],
+  );
   const coverVideoUri =
     resolvedCover.kind !== 'none' && resolvedCover.type === 'video' ? resolvedCover.uri : null;
   const bgSource =
@@ -876,9 +879,9 @@ function SectionCard({
           ? section.bgImage
           : null;
 
-  const resolvedLogo = resolveSlotMedia(
-    `logo-${section.id}`,
-    customLogo ? { uri: customLogo, type: 'image' } : null,
+  const resolvedLogo = useMemo(
+    () => resolveSlotMedia(`logo-${section.id}`, customLogo ? { uri: customLogo, type: 'image' } : null),
+    [section.id, customLogo],
   );
   const logoSource =
     resolvedLogo.kind === 'local'
@@ -1209,17 +1212,30 @@ export default function FeedScreen() {
           });
         }
         const prunedCovers: Record<string, CoverMedia> = {};
-        for (const [id, m] of Object.entries(covers)) {
-          if (await isLocalMediaAlive(m.uri)) prunedCovers[id] = m;
-        }
+        await Promise.all(
+          Object.entries(covers).map(async ([id, m]) => {
+            if (await isLocalMediaAlive(m.uri)) prunedCovers[id] = m;
+          }),
+        );
         const logos = logosRaw ? (JSON.parse(logosRaw) as Record<string, string>) : {};
         const prunedLogos: Record<string, string> = {};
-        for (const [id, uri] of Object.entries(logos)) {
-          if (await isLocalMediaAlive(uri)) prunedLogos[id] = uri;
-        }
+        await Promise.all(
+          Object.entries(logos).map(async ([id, uri]) => {
+            if (await isLocalMediaAlive(uri)) prunedLogos[id] = uri;
+          }),
+        );
         if (cancelled) return;
-        if (Object.keys(prunedCovers).length) setCoverMedia(prunedCovers);
-        if (Object.keys(prunedLogos).length) setCustomLogos(prunedLogos);
+        if (Object.keys(prunedCovers).length) {
+          setCoverMedia(prunedCovers);
+        } else if (coversRaw || legacyRaw) {
+          // All entries pruned — clear stale storage so next mount skips the stat work.
+          AsyncStorage.setItem(STORAGE_KEY_COVERS, JSON.stringify({})).catch(() => {});
+        }
+        if (Object.keys(prunedLogos).length) {
+          setCustomLogos(prunedLogos);
+        } else if (logosRaw) {
+          AsyncStorage.setItem(STORAGE_KEY_LOGOS, JSON.stringify({})).catch(() => {});
+        }
       } catch {
         // ignore corrupt storage
       } finally {
