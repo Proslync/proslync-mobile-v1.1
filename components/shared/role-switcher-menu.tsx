@@ -284,7 +284,7 @@ export function RoleSwitcherSheet({
                   <Ionicons name="videocam-outline" size={20} color="rgba(255,255,255,0.85)" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.rowLabel}>{hasCustomBanner ? 'Change banner video' : 'Set banner video'}</Text>
+                  <Text style={styles.rowLabel}>{hasCustomBanner ? 'Change banner' : 'Set banner'}</Text>
                   <Text style={styles.rowDesc}>Loops behind your profile header</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
@@ -304,7 +304,7 @@ export function RoleSwitcherSheet({
                   <Ionicons name="trash-outline" size={20} color="#FF453A" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowLabel, { color: '#FF453A' }]}>Remove banner video</Text>
+                  <Text style={[styles.rowLabel, { color: '#FF453A' }]}>Remove banner</Text>
                   <Text style={styles.rowDesc}>Restore the default cover image</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />

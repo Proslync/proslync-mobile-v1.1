@@ -19,7 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { GlassView } from 'expo-glass-effect';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { persistLocalMedia } from '@/lib/media/local-media';
+import { persistLocalMedia, isLocalMediaAlive } from '@/lib/media/local-media';
 import { resolveAvatarSource } from '@/lib/media/resolve-media';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
@@ -46,7 +46,7 @@ export default function EditProfileScreen() {
   const { user, refreshUser } = useAuth();
   const { showSuccess, showError } = useToast();
   const [isSaving, setIsSaving] = React.useState(false);
-  const [isUploadingPhoto, setIsUploadingPhoto] = React.useState(false);
+  const [isSavingPhoto, setIsSavingPhoto] = React.useState(false);
   const [hasChanges, setHasChanges] = React.useState(false);
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
   const [showPhotoMenu, setShowPhotoMenu] = React.useState(false);
@@ -74,9 +74,15 @@ export default function EditProfileScreen() {
 
   React.useEffect(() => {
     let cancelled = false;
-    AsyncStorage.getItem(AVATAR_KEY)
-      .then((v) => { if (!cancelled && v) setSelectedImage(v); })
-      .catch(() => {});
+    (async () => {
+      const v = await AsyncStorage.getItem(AVATAR_KEY).catch(() => null);
+      if (v && (await isLocalMediaAlive(v))) {
+        if (!cancelled) setSelectedImage(v);
+      } else if (v) {
+        // Orphaned pointer from a reinstall — clean it up.
+        AsyncStorage.removeItem(AVATAR_KEY).catch(() => {});
+      }
+    })();
     return () => { cancelled = true; };
   }, []);
 
@@ -131,7 +137,7 @@ export default function EditProfileScreen() {
   // curated-media snapshot bakes it into builds.
   const saveAvatarLocally = async (uri: string) => {
     const previousImage = selectedImage;
-    setIsUploadingPhoto(true);
+    setIsSavingPhoto(true);
     try {
       const persistedUri = await persistLocalMedia(uri, 'profile-avatar', 'image');
       setSelectedImage(persistedUri);
@@ -142,7 +148,7 @@ export default function EditProfileScreen() {
       showError(error?.message || 'Failed to save photo');
       setSelectedImage(previousImage);
     } finally {
-      setIsUploadingPhoto(false);
+      setIsSavingPhoto(false);
     }
   };
 
@@ -212,7 +218,7 @@ export default function EditProfileScreen() {
           <TouchableOpacity
             style={styles.backBtn}
             onPress={handleCancel}
-            disabled={isSaving || isUploadingPhoto}
+            disabled={isSaving || isSavingPhoto}
             activeOpacity={0.7}
           >
             <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 19 }]} />
@@ -224,7 +230,7 @@ export default function EditProfileScreen() {
           <TouchableOpacity
             style={[styles.doneBtn, hasChanges && styles.doneBtnActive]}
             onPress={handleSave}
-            disabled={isSaving || isUploadingPhoto || !hasChanges}
+            disabled={isSaving || isSavingPhoto || !hasChanges}
             activeOpacity={0.7}
           >
             {isSaving ? (
@@ -254,14 +260,14 @@ export default function EditProfileScreen() {
               <TouchableOpacity
                 onPress={() => setShowPhotoMenu(true)}
                 activeOpacity={0.85}
-                disabled={isUploadingPhoto}
+                disabled={isSavingPhoto}
               >
                 <Image
                   source={avatarSource}
                   style={styles.avatar}
                 />
                 <View style={styles.cameraBadge}>
-                  {isUploadingPhoto ? (
+                  {isSavingPhoto ? (
                     <ActivityIndicator color="#FFFFFF" size="small" />
                   ) : (
                     <Ionicons name="camera" size={14} color="#FFFFFF" />
@@ -271,12 +277,12 @@ export default function EditProfileScreen() {
             </View>
             <TouchableOpacity
               onPress={() => setShowPhotoMenu(true)}
-              disabled={isUploadingPhoto}
+              disabled={isSavingPhoto}
               style={styles.changePhotoBtn}
               activeOpacity={0.75}
             >
               <Text style={styles.changePhotoText}>
-                {isUploadingPhoto ? 'Uploading…' : 'Change Photo'}
+                {isSavingPhoto ? 'Saving…' : 'Change Photo'}
               </Text>
             </TouchableOpacity>
           </Animated.View>
