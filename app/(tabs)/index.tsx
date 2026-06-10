@@ -39,7 +39,7 @@ import { trackScreen } from '@/lib/analytics';
 import { persistLocalMedia, isLocalMediaAlive, healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
 import { MasonryTile } from '@/components/home/masonry-tile';
-import { NotificationSheet } from "@/components/shared/notification-sheet";
+import { FanPostComposer } from "@/components/fan/post-composer";
 import { SymbolView } from "expo-symbols";
 import { ActionSheet } from '@/components/ui/action-sheet';
 
@@ -1200,7 +1200,7 @@ export default function FeedScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [menuSection, setMenuSection] = useState<Section | null>(null);
   const [menuTileId, setMenuTileId] = useState<string | null>(null);
-  const [notifOpen, setNotifOpen] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [coverMedia, setCoverMedia] = useState<Record<string, CoverMedia>>({});
   const [customLogos, setCustomLogos] = useState<Record<string, string>>({});
   const [tileMedia, setTileMedia] = useState<Record<string, { uri: string; type: 'image' | 'video' }>>({});
@@ -1571,20 +1571,11 @@ export default function FeedScreen() {
 
         <Pressable
           style={styles.iconBare}
-          onPress={() => router.push('/map' as any)}
-          accessibilityLabel="Open map"
+          onPress={() => setComposerOpen(true)}
+          accessibilityLabel="Create post"
           accessibilityRole="button"
         >
-          <SymbolView name="map" size={22} tintColor="#FFF" />
-        </Pressable>
-
-        <Pressable
-          style={styles.iconBare}
-          onPress={() => router.push('/search-screen' as any)}
-          accessibilityLabel="Search"
-          accessibilityRole="search"
-        >
-          <SymbolView name="magnifyingglass" size={22} tintColor="#FFF" />
+          <SymbolView name="plus" size={22} tintColor="#FFF" />
         </Pressable>
 
         <Pressable
@@ -1595,18 +1586,13 @@ export default function FeedScreen() {
         >
           <SymbolView name="paperplane" size={22} tintColor="#FFF" />
         </Pressable>
-
-        <Pressable
-          style={styles.iconBare}
-          onPress={() => setNotifOpen(true)}
-          accessibilityLabel="Notifications"
-          accessibilityRole="button"
-        >
-          <SymbolView name="bell" size={22} tintColor="#FFF" />
-        </Pressable>
       </Animated.View>
 
-      <NotificationSheet visible={notifOpen} onClose={() => setNotifOpen(false)} />
+      <FanPostComposer
+        visible={composerOpen}
+        onClose={() => setComposerOpen(false)}
+        onPosted={() => setComposerOpen(false)}
+      />
     </View>
   );
 }
