@@ -28,8 +28,10 @@ import {
   type PlayerCard,
   type DealCard,
 } from '@/app/(tabs)/index';
+import { isLocalMediaAlive, type LocalMedia } from '@/lib/media/local-media';
+import { resolveSlotMedia } from '@/lib/media/resolve-media';
 
-type CoverMedia = { uri: string; type: 'image' | 'video' };
+type CoverMedia = LocalMedia;
 const COVER_STORAGE_KEY = 'proslync:home:coverMedia:v2';
 const LOGO_STORAGE_KEY = 'proslync:home:customLogos:v1';
 const SCREEN_W = Dimensions.get('window').width;
@@ -75,18 +77,24 @@ export default function SectionDetailScreen() {
       AsyncStorage.getItem(COVER_STORAGE_KEY),
       AsyncStorage.getItem(LOGO_STORAGE_KEY),
     ])
-      .then(([coversRaw, logosRaw]) => {
+      .then(async ([coversRaw, logosRaw]) => {
         if (cancelled || !id) return;
         if (coversRaw) {
           try {
             const map = JSON.parse(coversRaw) as Record<string, CoverMedia>;
-            if (map[id]) setCover(map[id]);
+            const entry = map[id];
+            if (entry && await isLocalMediaAlive(entry.uri)) {
+              if (!cancelled) setCover(entry);
+            }
           } catch {}
         }
         if (logosRaw) {
           try {
             const map = JSON.parse(logosRaw) as Record<string, string>;
-            if (map[id]) setCustomLogo(map[id]);
+            const uri = map[id];
+            if (uri && await isLocalMediaAlive(uri)) {
+              if (!cancelled) setCustomLogo(uri);
+            }
           } catch {}
         }
       })
@@ -94,7 +102,29 @@ export default function SectionDetailScreen() {
     return () => { cancelled = true; };
   }, [id]);
 
-  const isVideo = cover?.type === 'video';
+  const resolvedCover = React.useMemo(
+    () => resolveSlotMedia(`cover-${id}`, cover),
+    [id, cover],
+  );
+  const coverVideoUri =
+    resolvedCover.kind !== 'none' && resolvedCover.type === 'video' ? resolvedCover.uri : null;
+  const bgSource =
+    resolvedCover.kind === 'local' && resolvedCover.type === 'image'
+      ? { uri: resolvedCover.uri }
+      : resolvedCover.kind === 'curated-image'
+        ? resolvedCover.source
+        : null; // 'none' → preserve existing default (iconColor tint)
+
+  const resolvedLogo = React.useMemo(
+    () => resolveSlotMedia(`logo-${id}`, customLogo ? { uri: customLogo, type: 'image' } : null),
+    [id, customLogo],
+  );
+  const logoSource =
+    resolvedLogo.kind === 'local'
+      ? { uri: resolvedLogo.uri }
+      : resolvedLogo.kind === 'curated-image'
+        ? resolvedLogo.source
+        : null;
 
   if (!section) {
     return (
@@ -136,7 +166,6 @@ export default function SectionDetailScreen() {
   }, [section]);
 
   const heroH = HERO_H + insets.top;
-  const hasCover = !!cover;
 
   return (
     <View style={styles.container}>
@@ -146,12 +175,10 @@ export default function SectionDetailScreen() {
       >
         {/* Hero — cover photo/video that fades into the page bg */}
         <View style={[styles.hero, { height: heroH }]}>
-          {hasCover ? (
-            isVideo ? (
-              <VideoCover uri={cover!.uri} style={StyleSheet.absoluteFill} />
-            ) : (
-              <Image source={{ uri: cover!.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-            )
+          {coverVideoUri ? (
+            <VideoCover uri={coverVideoUri} style={StyleSheet.absoluteFill} />
+          ) : bgSource ? (
+            <Image source={bgSource} style={StyleSheet.absoluteFill} resizeMode="cover" />
           ) : (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: section.iconColor + '26' }]} />
           )}
@@ -177,13 +204,13 @@ export default function SectionDetailScreen() {
             <View
               style={[
                 styles.headerIcon,
-                customLogo
+                logoSource
                   ? { backgroundColor: '#000', borderColor: 'rgba(255,255,255,0.18)' }
                   : { backgroundColor: `${section.iconColor}26`, borderColor: `${section.iconColor}55` },
               ]}
             >
-              {customLogo ? (
-                <Image source={{ uri: customLogo }} style={styles.headerIconImage} />
+              {logoSource ? (
+                <Image source={logoSource} style={styles.headerIconImage} />
               ) : (
                 <Text style={styles.headerIconText}>{section.iconLabel}</Text>
               )}
