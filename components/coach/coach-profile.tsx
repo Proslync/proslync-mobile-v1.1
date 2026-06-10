@@ -215,7 +215,7 @@ export default function CoachProfile() {
   const bannerVideoUri =
     bannerMedia.kind !== 'none' && bannerMedia.type === 'video' ? bannerMedia.uri : null;
 
-  const bannerPlayer = useVideoPlayer(bannerVideoUri ?? null, (p) => {
+  const bannerPlayer = useVideoPlayer(bannerVideoUri, (p) => {
     if (!p) return;
     p.loop = true;
     p.muted = true;
