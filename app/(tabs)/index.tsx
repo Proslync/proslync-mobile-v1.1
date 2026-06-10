@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system/legacy';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -32,6 +31,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { trackScreen } from '@/lib/analytics';
+import { persistLocalMedia, isLocalMediaAlive, type LocalMedia } from '@/lib/media/local-media';
+import { resolveSlotMedia } from '@/lib/media/resolve-media';
 
 // ───── Layout constants ─────
 
@@ -863,20 +864,38 @@ function SectionCard({
 }) {
   const router = useRouter();
   const pages = chunk(section.cards, 2);
-  const isVideoCover = coverMedia?.type === 'video';
-  const bgSource = coverMedia
-    ? (coverMedia.type === 'image' ? { uri: coverMedia.uri } : null)
-    : section.bgImage;
+  const resolvedCover = resolveSlotMedia(`cover-${section.id}`, coverMedia ?? null);
+  const coverVideoUri =
+    resolvedCover.kind !== 'none' && resolvedCover.type === 'video' ? resolvedCover.uri : null;
+  const bgSource =
+    resolvedCover.kind === 'local' && resolvedCover.type === 'image'
+      ? { uri: resolvedCover.uri }
+      : resolvedCover.kind === 'curated-image'
+        ? resolvedCover.source
+        : resolvedCover.kind === 'none'
+          ? section.bgImage
+          : null;
+
+  const resolvedLogo = resolveSlotMedia(
+    `logo-${section.id}`,
+    customLogo ? { uri: customLogo, type: 'image' } : null,
+  );
+  const logoSource =
+    resolvedLogo.kind === 'local'
+      ? { uri: resolvedLogo.uri }
+      : resolvedLogo.kind === 'curated-image'
+        ? resolvedLogo.source
+        : null;
 
   return (
     <Animated.View
       entering={FadeInDown.delay(60 + index * 50).duration(380)}
       style={styles.section}
     >
-      {(bgSource || isVideoCover) && (
+      {(bgSource || coverVideoUri) && (
         <>
-          {isVideoCover ? (
-            <VideoCover uri={coverMedia!.uri} style={styles.sectionBgImage} />
+          {coverVideoUri ? (
+            <VideoCover uri={coverVideoUri} style={styles.sectionBgImage} />
           ) : (
             <Image
               source={bgSource!}
@@ -897,13 +916,13 @@ function SectionCard({
         <View
           style={[
             styles.sectionIcon,
-            customLogo
+            logoSource
               ? { backgroundColor: '#000', borderColor: 'rgba(255,255,255,0.18)' }
               : { backgroundColor: `${section.iconColor}26`, borderColor: `${section.iconColor}55` },
           ]}
         >
-          {customLogo ? (
-            <Image source={{ uri: customLogo }} style={styles.sectionIconImage} />
+          {logoSource ? (
+            <Image source={logoSource} style={styles.sectionIconImage} />
           ) : (
             <Text style={styles.sectionIconText}>{section.iconLabel}</Text>
           )}
@@ -1137,30 +1156,12 @@ function SectionMenuSheet({
 
 // ───── Screen ─────
 
-type CoverMedia = { uri: string; type: 'image' | 'video' };
+type CoverMedia = LocalMedia;
 
 const STORAGE_KEY_COVERS = 'proslync:home:coverMedia:v2';
 const STORAGE_KEY_COVERS_LEGACY = 'proslync:home:coverPhotos:v1';
 const STORAGE_KEY_LOGOS = 'proslync:home:customLogos:v1';
 
-// Copies a picked asset (image/video) into the app's persistent documentDirectory
-// so the URI survives across app restarts and TestFlight reinstalls. The picker's
-// returned URI typically points to a temp/cache file that gets purged.
-async function persistAsset(uri: string, sub: string, kind: 'image' | 'video'): Promise<string> {
-  try {
-    const dir = `${FileSystem.documentDirectory}proslync-media/${sub}/`;
-    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-    const fallbackExt = kind === 'video' ? 'mp4' : 'jpg';
-    const ext = (uri.split('?')[0].split('.').pop() || fallbackExt).toLowerCase();
-    const safeExt = /^[a-z0-9]{2,4}$/.test(ext) ? ext : fallbackExt;
-    const dest = `${dir}${Date.now()}.${safeExt}`;
-    await FileSystem.copyAsync({ from: uri, to: dest });
-    return dest;
-  } catch {
-    // If copy fails, fall back to the original URI — better than nothing.
-    return uri;
-  }
-}
 
 async function requestPhotoPermission(): Promise<boolean> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -1185,7 +1186,8 @@ export default function FeedScreen() {
 
   useEffect(() => { trackScreen('feed', 'home-explore'); }, []);
 
-  // Hydrate persisted picks on mount. Handles legacy v1 (image-only) data.
+  // Hydrate persisted picks on mount. Handles legacy v1 (image-only) data and
+  // prunes entries whose backing file is gone (orphan healing after reinstall).
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1196,18 +1198,28 @@ export default function FeedScreen() {
           AsyncStorage.getItem(STORAGE_KEY_LOGOS),
         ]);
         if (cancelled) return;
+        let covers: Record<string, CoverMedia> = {};
         if (coversRaw) {
-          setCoverMedia(JSON.parse(coversRaw));
+          covers = JSON.parse(coversRaw);
         } else if (legacyRaw) {
           // Migrate legacy v1: { [id]: uri } → { [id]: { uri, type: 'image' } }
           const legacy = JSON.parse(legacyRaw) as Record<string, string>;
-          const migrated: Record<string, CoverMedia> = {};
           Object.entries(legacy).forEach(([id, uri]) => {
-            migrated[id] = { uri, type: 'image' };
+            covers[id] = { uri, type: 'image' };
           });
-          setCoverMedia(migrated);
         }
-        if (logosRaw) setCustomLogos(JSON.parse(logosRaw));
+        const prunedCovers: Record<string, CoverMedia> = {};
+        for (const [id, m] of Object.entries(covers)) {
+          if (await isLocalMediaAlive(m.uri)) prunedCovers[id] = m;
+        }
+        const logos = logosRaw ? (JSON.parse(logosRaw) as Record<string, string>) : {};
+        const prunedLogos: Record<string, string> = {};
+        for (const [id, uri] of Object.entries(logos)) {
+          if (await isLocalMediaAlive(uri)) prunedLogos[id] = uri;
+        }
+        if (cancelled) return;
+        if (Object.keys(prunedCovers).length) setCoverMedia(prunedCovers);
+        if (Object.keys(prunedLogos).length) setCustomLogos(prunedLogos);
       } catch {
         // ignore corrupt storage
       } finally {
@@ -1245,7 +1257,7 @@ export default function FeedScreen() {
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       const type: 'image' | 'video' = asset.type === 'video' ? 'video' : 'image';
-      const persistedUri = await persistAsset(asset.uri, `cover-${sectionId}`, type);
+      const persistedUri = await persistLocalMedia(asset.uri, `cover-${sectionId}`, type);
       setCoverMedia((p) => ({ ...p, [sectionId]: { uri: persistedUri, type } }));
     }
   }, []);
@@ -1267,7 +1279,7 @@ export default function FeedScreen() {
       quality: 0.9,
     });
     if (!result.canceled && result.assets[0]) {
-      const persistedUri = await persistAsset(result.assets[0].uri, `logo-${sectionId}`, 'image');
+      const persistedUri = await persistLocalMedia(result.assets[0].uri, `logo-${sectionId}`, 'image');
       setCustomLogos((p) => ({ ...p, [sectionId]: persistedUri }));
     }
   }, []);
