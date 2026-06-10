@@ -1,8 +1,6 @@
 // Athlete dashboard view. Two account modes (toggled from the hamburger menu
-// via the actor context): Personal → Today / Stats / Team / Schedule;
-// Professional → Today / Deals / Wallet. "Today" is the universal first tab,
-// always shown regardless of account mode, and is the default selection.
-// Header row = avatar+menu pill beside the segmented glass tabs.
+// via the actor context): Personal → Stats / Team / Schedule; Professional →
+// Deals / Wallet. Header row = avatar+menu pill beside the segmented glass tabs.
 import React, { useCallback } from 'react';
 import {
   Image,
@@ -30,7 +28,6 @@ import {
   StatusCardMenuSheet,
   WalletSkeleton,
 } from '@/components/wallet';
-import { AthleteToday } from '@/components/athlete/athlete-today';
 import { AthleteStatsSection } from '@/components/athlete/athlete-stats-section';
 import { AthleteTeamSection } from '@/components/athlete/athlete-team-section';
 import { AthleteScheduleSection } from '@/components/athlete/athlete-schedule-section';
@@ -45,14 +42,10 @@ const HEADER_OFFSET = 140;
 // Base page background (matches styles.container.backgroundColor)
 const PAGE_BG = '#000';
 
-// "Today" is universal — always first, always present.
-const TODAY_TAB = 'Today' as const;
 // Personal account → on-court life. Professional account → NIL business.
 const PERSONAL_TABS = ['Stats', 'Team', 'Schedule'] as const;
 const PRO_TABS = ['Deals', 'Wallet'] as const;
-type PersonalTab = (typeof PERSONAL_TABS)[number];
-type ProTab = (typeof PRO_TABS)[number];
-type AthleteTab = typeof TODAY_TAB | PersonalTab | ProTab;
+type AthleteTab = (typeof PERSONAL_TABS)[number] | (typeof PRO_TABS)[number];
 
 export function AthleteView() {
   const insets = useSafeAreaInsets();
@@ -64,28 +57,19 @@ export function AthleteView() {
 
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
-  // Default to Today (the new first tab)
-  const [activeTab, setActiveTab] = React.useState<AthleteTab>(TODAY_TAB);
+  const [activeTab, setActiveTab] = React.useState<AthleteTab>('Stats');
 
   // Personal vs professional account — driven by the actor-context override
   // (toggled from the hamburger menu). Defaults to personal on the dashboard.
   const { override, setOverride } = useActorContext();
   const accountMode: 'personal' | 'professional' = override ?? 'personal';
-  // Build the full tab list: Today + mode-specific tabs
-  const modeTabs: readonly (PersonalTab | ProTab)[] =
-    accountMode === 'professional' ? PRO_TABS : PERSONAL_TABS;
-  const tabs: readonly AthleteTab[] = [TODAY_TAB, ...modeTabs];
-
-  // If the current activeTab is a mode-specific tab that no longer exists
-  // after an account-mode switch, fall back to Today.
+  const tabs = accountMode === 'professional' ? PRO_TABS : PERSONAL_TABS;
   const safeActiveTab: AthleteTab = (tabs as readonly AthleteTab[]).includes(activeTab)
     ? activeTab
-    : TODAY_TAB;
+    : tabs[0];
 
   // Animated sliding knob behind the active tab (selected-item indicator).
-  // `tabs.length` is now 4 (personal) or 3 (professional) — the knob width
-  // math derives from this value at runtime, so no hardcoding needed.
-  const tabIndex = Math.max(0, tabs.indexOf(safeActiveTab));
+  const tabIndex = Math.max(0, tabs.indexOf(safeActiveTab as never));
   const tabPillWidth = useSharedValue(0);
   const animatedTabIndex = useSharedValue(tabIndex);
   React.useEffect(() => {
@@ -113,27 +97,7 @@ export function AthleteView() {
     onRefresh: refreshWallet,
   });
 
-  // Deep-link callback from AthleteToday — switches the parent tab
-  const handleTodayNavigate = useCallback((tab: 'stats' | 'team' | 'schedule' | 'deals' | 'wallet') => {
-    const map: Record<string, AthleteTab> = {
-      stats: 'Stats',
-      team: 'Team',
-      schedule: 'Schedule',
-      deals: 'Deals',
-      wallet: 'Wallet',
-    };
-    const target = map[tab];
-    if (target && (tabs as readonly AthleteTab[]).includes(target)) {
-      setActiveTab(target);
-    }
-  }, [tabs]);
-
   const showSkeleton = isLoading || !user;
-
-  // Padding for AthleteToday's own ScrollView — mirrors the outer ScrollView's
-  // contentContainerStyle so content clears the fixed pill header.
-  const todayTopPad = insets.top + 70;
-  const todayBottomPad = TAB_BAR_TOP_FROM_BOTTOM + 110;
 
   return (
     <View style={styles.container}>
@@ -190,14 +154,6 @@ export function AthleteView() {
 
       {showSkeleton ? (
         <WalletSkeleton topOffset={HEADER_OFFSET} />
-      ) : safeActiveTab === TODAY_TAB ? (
-        /* Today tab has its own inner ScrollView — renders directly in the
-         * container, NOT nested inside the outer ScrollView. */
-        <AthleteToday
-          onNavigateTab={handleTodayNavigate}
-          topPad={todayTopPad}
-          bottomPad={todayBottomPad}
-        />
       ) : (
         <ScrollView
           style={{ flex: 1 }}
