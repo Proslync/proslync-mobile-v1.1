@@ -5,9 +5,8 @@
 // were supposed to take the direct old home page and the 3 things it had
 // and implement it" — the 3 things being the Home/Pick'em/Perks pills.
 //
-// FanHomeFeed (real `/api/fan/feed/home` consumer) is unreferenced for now;
-// its content can fold back into FanView's Home segment if/when the real
-// backend feed needs to replace the mocked FollowingFeed.
+// FanHomeFeed (real `/api/fan/feed/home` consumer) is now mounted as
+// FanView's Home segment, replacing the mocked FollowingFeed.
 
 import * as React from 'react';
 

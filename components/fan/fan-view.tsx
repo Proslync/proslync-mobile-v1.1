@@ -19,6 +19,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FanHomeFeed } from '@/components/fan/fan-home-feed';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 
 import {
@@ -73,7 +74,7 @@ export function FanView() {
 
   return (
     <View style={styles.container}>
-      {activeTab === 'home' && <HomeTab topPad={topPad} bottomPad={bottomPad} />}
+      {activeTab === 'home' && <FanHomeFeed topInset={topPad} />}
       {activeTab === 'pickem' && <PickemTab topPad={topPad} bottomPad={bottomPad} />}
       {activeTab === 'perks' && <PerksTab topPad={topPad} bottomPad={bottomPad} />}
 

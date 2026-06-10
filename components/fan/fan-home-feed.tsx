@@ -36,7 +36,13 @@ const GRID_GUTTER = 8;
 // wrapper paddingHorizontal = GUTTER/2, each card's true width is:
 const CARD_WIDTH = (SCREEN_WIDTH - GRID_MARGIN * 2 - GRID_GUTTER) / 2;
 
-export function FanHomeFeed(): React.JSX.Element {
+interface FanHomeFeedProps {
+  /** Override the list's top padding (e.g. when rendered below an in-page
+   *  header so the default `insets.top + 8` would double-inset). */
+  topInset?: number;
+}
+
+export function FanHomeFeed({ topInset }: FanHomeFeedProps = {}): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const {
     posts,
@@ -107,7 +113,7 @@ export function FanHomeFeed(): React.JSX.Element {
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         contentContainerStyle={{
-          paddingTop: insets.top + 8,
+          paddingTop: topInset !== undefined ? topInset : insets.top + 8,
           paddingBottom: 120,
           paddingHorizontal: GRID_MARGIN - GRID_GUTTER / 2,
         }}
