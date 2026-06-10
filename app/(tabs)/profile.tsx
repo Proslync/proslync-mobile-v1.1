@@ -7,6 +7,7 @@ import { useUserFeed } from "@/hooks";
 import { useAppTheme } from "@/hooks/use-app-theme";
 import { useRefreshControl } from "@/hooks/use-refresh-control";
 import { useStableRouter } from "@/hooks/use-stable-router";
+import { useFocusEffect } from "expo-router";
 import { useUserFollowers, useUserFollowing } from "@/hooks/use-user-follows";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/lib/providers/auth-provider";
@@ -1832,21 +1833,27 @@ function PlayerProfileScreen() {
   });
 
   const [localAvatar, setLocalAvatar] = React.useState<string | null>(null);
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const v = await AsyncStorage.getItem(AVATAR_KEY);
-        if (v && (await isLocalMediaAlive(v))) {
-          if (!cancelled) setLocalAvatar(v);
-        } else if (v) {
-          // Orphaned pointer from a reinstall — clean it up.
-          AsyncStorage.removeItem(AVATAR_KEY).catch(() => {});
-        }
-      } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  // Re-read on every stack focus (not just mount) so changes made in the
+  // edit-profile screen show up when the user navigates back. This is stack
+  // focus, not PagerView tab visibility — safe per the tab-navigation rules.
+  useFocusEffect(
+    React.useCallback(() => {
+      let cancelled = false;
+      (async () => {
+        try {
+          const v = await AsyncStorage.getItem(AVATAR_KEY);
+          if (cancelled) return;
+          if (v && (await isLocalMediaAlive(v))) {
+            if (!cancelled) setLocalAvatar(v);
+          } else {
+            if (v) AsyncStorage.removeItem(AVATAR_KEY).catch(() => {});
+            if (!cancelled) setLocalAvatar(null);
+          }
+        } catch {}
+      })();
+      return () => { cancelled = true; };
+    }, []),
+  );
 
   const { username, avatarSource, initial } = React.useMemo(
     () => ({

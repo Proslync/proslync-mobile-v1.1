@@ -95,7 +95,6 @@ export default function EditProfileScreen() {
       });
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        setSelectedImage(asset.uri);
         await saveAvatarLocally(asset.uri);
       }
     } catch (error) {
@@ -119,7 +118,6 @@ export default function EditProfileScreen() {
       });
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
-        setSelectedImage(asset.uri);
         await saveAvatarLocally(asset.uri);
       }
     } catch (error) {
@@ -132,6 +130,7 @@ export default function EditProfileScreen() {
   // work. Persist the pick locally (same pattern as profile banners); the
   // curated-media snapshot bakes it into builds.
   const saveAvatarLocally = async (uri: string) => {
+    const previousImage = selectedImage;
     setIsUploadingPhoto(true);
     try {
       const persistedUri = await persistLocalMedia(uri, 'profile-avatar', 'image');
@@ -141,7 +140,7 @@ export default function EditProfileScreen() {
     } catch (error: any) {
       console.error('Save avatar error:', error);
       showError(error?.message || 'Failed to save photo');
-      setSelectedImage(null);
+      setSelectedImage(previousImage);
     } finally {
       setIsUploadingPhoto(false);
     }
