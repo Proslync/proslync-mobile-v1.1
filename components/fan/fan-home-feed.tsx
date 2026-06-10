@@ -1,14 +1,15 @@
 // ── FanHomeFeed ────────────────────────────────────────────
-// Phase 2 — paginated FlatList of `FanPostCard` items fed by
-// `useFanHomeFeed`. Includes a FAB that opens the post composer
-// when authed. The composer prepend's the newly-published post
-// into the feed so the user sees their work immediately.
+// Phase 3 — FlashList masonry grid of MasonryPostCard items fed by
+// `useFanHomeFeed`. Tap a card → bottom-sheet detail. Includes a FAB
+// that opens the post composer when authed. The composer prepend's
+// the newly-published post into the feed so the user sees their work immediately.
 
 import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
 import {
   ActivityIndicator,
-  FlatList,
+  Dimensions,
+  Modal,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -17,13 +18,23 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FlashList } from '@shopify/flash-list';
+
 import { FanPostCard } from '@/components/fan/fan-post-card';
+import { MasonryPostCard } from '@/components/fan/masonry-post-card';
 import { FanPostComposer } from '@/components/fan/post-composer';
 import { useFanHomeFeed } from '@/hooks/fan/use-fan-home-feed';
 import type { FanPost } from '@/lib/types/fan.types';
 
 const ACCENT = '#EB621A';
 const TEXT_SECONDARY = 'rgba(255,255,255,0.55)';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const GRID_MARGIN = 12;
+const GRID_GUTTER = 8;
+// With contentContainer paddingHorizontal = MARGIN − GUTTER/2 and per-item
+// wrapper paddingHorizontal = GUTTER/2, each card's true width is:
+const CARD_WIDTH = (SCREEN_WIDTH - GRID_MARGIN * 2 - GRID_GUTTER) / 2;
 
 export function FanHomeFeed(): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -41,6 +52,12 @@ export function FanHomeFeed(): React.JSX.Element {
 
   const [composerOpen, setComposerOpen] = React.useState(false);
   const [replyTarget, setReplyTarget] = React.useState<FanPost | null>(null);
+  const [detailPost, setDetailPost] = React.useState<FanPost | null>(null);
+
+  const openDetail = React.useCallback((p: FanPost) => setDetailPost(p), []);
+
+  // Keep detailPost fresh against the live list so likes update in the sheet.
+  const livePost = detailPost ? posts.find((p) => p.id === detailPost.id) ?? detailPost : null;
 
   const handleReply = React.useCallback((post: FanPost) => {
     setReplyTarget(post);
@@ -73,29 +90,26 @@ export function FanHomeFeed(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <FlatList
+      <FlashList
         data={posts}
+        masonry
+        numColumns={2}
+        optimizeItemArrangement
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <FanPostCard
-            post={item}
-            onLike={like}
-            onUnlike={unlike}
-            onReply={handleReply}
-          />
+        renderItem={({ item, index }) => (
+          <View style={{ paddingHorizontal: GRID_GUTTER / 2, paddingBottom: GRID_GUTTER }}>
+            <MasonryPostCard post={item} colWidth={CARD_WIDTH} index={index} onPress={openDetail} />
+          </View>
         )}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor="rgba(255,255,255,0.5)"
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#EB621A" />
         }
         onEndReached={loadMore}
-        onEndReachedThreshold={0.4}
+        onEndReachedThreshold={0.5}
         contentContainerStyle={{
           paddingTop: insets.top + 8,
           paddingBottom: 120,
+          paddingHorizontal: GRID_MARGIN - GRID_GUTTER / 2,
         }}
         ListEmptyComponent={
           loading ? (
@@ -141,6 +155,26 @@ export function FanHomeFeed(): React.JSX.Element {
         parentPostId={replyTarget?.id}
         replyingToHandle={replyTarget?.author.handle}
       />
+
+      <Modal
+        visible={livePost != null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDetailPost(null)}
+      >
+        <Pressable style={styles.sheetScrim} onPress={() => setDetailPost(null)} />
+        <View style={styles.sheet}>
+          <View style={styles.sheetHandle} />
+          {livePost ? (
+            <FanPostCard
+              post={livePost}
+              onLike={like}
+              onUnlike={unlike}
+              onReply={(p) => { setDetailPost(null); handleReply(p); }}
+            />
+          ) : null}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -187,5 +221,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 12,
     elevation: 8,
+  },
+  sheetScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheet: {
+    backgroundColor: '#0F0F0F',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 8,
+    paddingBottom: 34,
+    maxHeight: '80%',
+  },
+  sheetHandle: {
+    alignSelf: 'center', width: 36, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)', marginBottom: 8,
   },
 });
