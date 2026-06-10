@@ -112,7 +112,11 @@ for (const f of staged.images) {
   const dest = path.join(IMAGE_DIR, f.destName);
   if (f.heic) {
     // RN renders HEIC unreliably — convert to JPEG with macOS sips.
-    run('sips', ['-s', 'format', 'jpeg', f.src, '--out', dest]);
+    try {
+      run('sips', ['-s', 'format', 'jpeg', f.src, '--out', dest]);
+    } catch {
+      fail(`${f.slot}: sips failed to convert HEIC → JPEG.\n  Try manually: sips -s format jpeg "${f.src}" --out "${dest}"`);
+    }
   } else {
     fs.copyFileSync(f.src, dest);
   }
@@ -129,11 +133,21 @@ if (staged.videos.length) {
     fs.copyFileSync(f.src, path.join(VIDEO_DIR, f.destName));
     console.log(`  ✓ ${f.slot} → public/videos/curated/${f.destName}`);
   }
+  const preStaged = run('git', ['-C', WEB_REPO, 'diff', '--cached', '--name-only'])
+    .split('\n')
+    .filter((l) => l && !l.startsWith('public/videos/curated'));
+  if (preStaged.length) {
+    fail(`Web repo has unrelated staged changes — commit or unstage them first:\n  ${preStaged.join('\n  ')}`);
+  }
   run('git', ['-C', WEB_REPO, 'add', 'public/videos/curated']);
   const hasChanges = run('git', ['-C', WEB_REPO, 'diff', '--cached', '--name-only']) !== '';
   if (hasChanges) {
     run('git', ['-C', WEB_REPO, 'commit', '-m', `chore(media): curated mobile media snapshot ${new Date().toISOString().slice(0, 10)}`]);
-    run('git', ['-C', WEB_REPO, 'push', 'origin', 'HEAD']);
+    try {
+      run('git', ['-C', WEB_REPO, 'push', 'origin', 'HEAD']);
+    } catch (e) {
+      fail(`Push to web repo failed — pull/rebase or check credentials, then re-run.\n  (git said: ${e.stderr?.toString().trim() || e.message})`);
+    }
     console.log('• web repo committed + pushed');
   } else {
     console.log('• video files unchanged — reusing current web HEAD');
@@ -152,7 +166,10 @@ async function verifyCdn(url) {
     try {
       const res = await fetch(url, { headers: { Range: 'bytes=0-99' } });
       if (res.status === 206 || res.status === 200) return true;
-    } catch {}
+      else process.stdout.write(`[${res.status}] `);
+    } catch (e) {
+      process.stdout.write(`[${e.cause?.code || e.code || 'fetch-error'}] `);
+    }
     await new Promise((r) => setTimeout(r, 5000));
   }
   return false;
