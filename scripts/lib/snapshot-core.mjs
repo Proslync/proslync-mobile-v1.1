@@ -127,6 +127,13 @@ export function pickDevice(devicesJson, requested) {
     throw new Error(`Device '${requested}' not found.${candidateNote}`);
   }
 
+  if (match.connectionProperties?.pairingState !== 'paired') {
+    throw new Error(
+      `Device '${requested}' (${match.deviceProperties?.name ?? 'unknown'}) is not paired. ` +
+      `Connect it via USB and trust this computer, then retry.`,
+    );
+  }
+
   return { identifier: match.identifier, name: match.deviceProperties?.name };
 }
 

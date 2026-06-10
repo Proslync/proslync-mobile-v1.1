@@ -95,6 +95,22 @@ test('pickDevice throws when requested device not found', () => {
   );
 });
 
+test('pickDevice throws when requested device is found but unpaired', () => {
+  assert.throws(
+    () => pickDevice(makeJson([DEVICE_A, DEVICE_UNPAIRED]), "C's iPad"),
+    (err) => {
+      assert.ok(err instanceof Error);
+      assert.ok(/not paired/.test(err.message), `expected "not paired" in message: ${err.message}`);
+      return true;
+    },
+  );
+});
+
+test('pickDevice resolves requested device by serial number', () => {
+  const result = pickDevice(makeJson([DEVICE_A, DEVICE_B]), 'BBBBBBBBBBBB');
+  assert.deepEqual(result, { identifier: 'BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB', name: "B's iPhone" });
+});
+
 test('collectSlots reads v2 banner keys, covers, logos, avatar', () => {
   const storage = {
     'proslync:profile:banner:v2': JSON.stringify({ uri: 'file:///a/Documents/proslync-media/profile-banner/1.mp4', type: 'video' }),

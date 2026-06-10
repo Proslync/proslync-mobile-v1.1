@@ -61,18 +61,21 @@ let deviceTmpDir = null; // set when --device; cleaned up on success
 if (USE_DEVICE) {
   // ── 1a. Discover the target device ──────────────────────────────────────
   const devicesJsonPath = path.join(os.tmpdir(), `proslync-devices-${Date.now()}.json`);
-  try {
-    run('xcrun', ['devicectl', 'list', 'devices', '--json-output', devicesJsonPath]);
-  } catch (e) {
-    fail(`xcrun devicectl list devices failed — is Xcode 16+ installed?\n  (${e.message})`);
-  }
   let devicesJson;
   try {
-    devicesJson = JSON.parse(fs.readFileSync(devicesJsonPath, 'utf8'));
-  } catch {
-    fail('Could not parse devicectl JSON output.');
+    try {
+      run('xcrun', ['devicectl', 'list', 'devices', '--json-output', devicesJsonPath]);
+    } catch (e) {
+      fail(`xcrun devicectl list devices failed — is Xcode 16+ installed?\n  (${e.message})`);
+    }
+    try {
+      devicesJson = JSON.parse(fs.readFileSync(devicesJsonPath, 'utf8'));
+    } catch {
+      fail('Could not parse devicectl JSON output.');
+    }
+  } finally {
+    fs.rmSync(devicesJsonPath, { force: true });
   }
-  fs.rmSync(devicesJsonPath, { force: true });
 
   let device;
   try {
@@ -267,7 +270,7 @@ if (staged.videos.length) {
   const originUrl = run('git', ['-C', WEB_REPO, 'remote', 'get-url', 'origin']);
   // Strip only a trailing ".git" — repo names may legitimately contain dots
   // (this one is proslync-web-v1.1).
-  const m = /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/.exec(originUrl);
+  const m = /github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?\/?$/.exec(originUrl);
   if (!m) fail(`Can't parse GitHub owner/repo from origin URL: ${originUrl}`);
   webRemote = `${m[1]}/${m[2]}`;
 }
