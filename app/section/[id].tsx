@@ -129,20 +129,12 @@ export default function SectionDetailScreen() {
         ? resolvedLogo.source
         : null;
 
-  if (!section) {
-    return (
-      <View style={[styles.container, { paddingTop: insets.top + 60, paddingHorizontal: 16 }]}>
-        <Text style={styles.notFound}>Section not found.</Text>
-        <Pressable onPress={() => router.back()} style={styles.notFoundBtn}>
-          <Text style={styles.notFoundBtnText}>Go back</Text>
-        </Pressable>
-      </View>
-    );
-  }
-
   // Group cards. Awards section has explicit per-award groups; matchup
   // sections group by status; everything else is one flat group.
-  const groups = React.useMemo(() => {
+  // Declared BEFORE the early return so hooks order is stable regardless of
+  // whether `section` is defined.
+  const groups = React.useMemo((): { label: string; cards: AnyCard[] }[] => {
+    if (!section) return [] as { label: string; cards: AnyCard[] }[];
     if (section.awardGroups && section.awardGroups.length) {
       return section.awardGroups.map((g) => ({
         label: g.award,
@@ -167,6 +159,17 @@ export default function SectionDetailScreen() {
     if (final.length) out.push({ label: `Final · ${final.length}`, cards: final });
     return out;
   }, [section]);
+
+  if (!section) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top + 60, paddingHorizontal: 16 }]}>
+        <Text style={styles.notFound}>Section not found.</Text>
+        <Pressable onPress={() => router.back()} style={styles.notFoundBtn}>
+          <Text style={styles.notFoundBtnText}>Go back</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   const heroH = HERO_H + insets.top;
 

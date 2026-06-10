@@ -27,6 +27,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeInDown,
+  interpolate,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -1351,31 +1352,31 @@ export default function FeedScreen() {
   // ── Collapsing header ─────────────────────────────────────────────────────
   // Header is absolutely positioned; we track height via onLayout so we know
   // exactly how far to translate it when hiding.
-  const [headerHeight, setHeaderHeight] = React.useState(0);
+  // Initialise to 49 (header top-offset 3 + control height 46) so the first
+  // hide gesture uses a sane distance before onLayout fires.
+  const [headerHeight, setHeaderHeight] = React.useState(49);
   const lastScrollY = useRef(0);
   const headerSV = useSharedValue(0); // 0 = visible, 1 = hidden
-  const headerAnimStyle = useAnimatedStyle(() => {
-    // translateY: 0 → -(headerHeight + 24), opacity: 1 → 0
-    const hideDist = headerHeight + 24;
-    return {
-      transform: [{ translateY: withTiming(headerSV.value === 0 ? 0 : -hideDist, { duration: 220 }) }],
-      opacity: withTiming(headerSV.value === 0 ? 1 : 0, { duration: 220 }),
-    };
-  });
+  // Track the last-dispatched goal so we only write headerSV when it changes,
+  // preventing redundant withTiming calls that would restart in-flight animations.
+  const headerGoalRef = useRef(0);
+  // Pure interpolation — no withTiming inside the worklet.
+  const headerAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: interpolate(headerSV.value, [0, 1], [0, -(headerHeight + 24)]) }],
+    opacity: interpolate(headerSV.value, [0, 1], [1, 0]),
+  }));
 
   const onListScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const y = e.nativeEvent.contentOffset.y;
       const prev = lastScrollY.current;
       const delta = y - prev;
-      if (Math.abs(delta) < 8) return;
       lastScrollY.current = y;
-      if (y <= 0) {
-        headerSV.value = 0; // always show at top
-      } else if (delta > 0) {
-        headerSV.value = 1; // scrolling down → hide
-      } else {
-        headerSV.value = 0; // scrolling up → show
+      // Derive goal; null means "no change" (delta below threshold).
+      const goal = y <= 0 ? 0 : delta > 8 ? 1 : delta < -8 ? 0 : null;
+      if (goal !== null && headerGoalRef.current !== goal) {
+        headerGoalRef.current = goal;
+        headerSV.value = withTiming(goal, { duration: 220 });
       }
     },
     [headerSV],
