@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Alert,
   View,
@@ -11,6 +11,9 @@ import {
   ScrollView,
   Pressable,
   Dimensions,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+  type LayoutChangeEvent,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -30,14 +33,20 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { FlashList } from '@shopify/flash-list';
 import { trackScreen } from '@/lib/analytics';
 import { persistLocalMedia, isLocalMediaAlive, healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
+import { MasonryTile } from '@/components/home/masonry-tile';
 
 // ───── Layout constants ─────
 
 const SCREEN_W = Dimensions.get('window').width;
 const SECTION_OUTER_PAD = 14;
+// ── Masonry grid geometry (mirrors fan-home-feed.tsx) ──────────────────────────
+const GRID_MARGIN = 12;
+const GRID_GUTTER = 8;
+const GRID_CARD_WIDTH = (SCREEN_W - GRID_MARGIN * 2 - GRID_GUTTER) / 2;
 const SECTION_INNER_PAD = 12;
 const CARD_GAP = 10;
 const SECTION_W = SCREEN_W - SECTION_OUTER_PAD * 2;
@@ -1309,49 +1318,107 @@ export default function FeedScreen() {
     });
   }, []);
 
-  // Measure each card's real position and snap to every-other one, so every
-  // swiped pair lands in the exact same spot as the first pair (no drift from
-  // estimated card heights). Offset brings card[2p] flush under the header.
-  const cardYRef = React.useRef<number[]>([]);
-  const [snapOffsets, setSnapOffsets] = React.useState<number[]>([]);
-  const onCardLayout = React.useCallback(
-    (i: number, y: number) => {
-      cardYRef.current[i] = y;
-      const offs: number[] = [];
-      for (let k = 0; k < SECTIONS.length; k += 2) {
-        const cy = cardYRef.current[k];
-        if (cy == null) return; // wait until all pair-leading cards are measured
-        offs.push(Math.max(0, cy - (insets.top + 62)));
-      }
-      setSnapOffsets(offs);
+  // ── Tiles data (one tile per card + one hub tile per section) ──────────────
+  const tiles = useMemo(() => {
+    const result: Array<{ id: string; caption: string; sectionId: string }> = [];
+    for (const section of SECTIONS) {
+      // Hub tile (one per section)
+      result.push({ id: `${section.id}:hub`, caption: section.title, sectionId: section.id });
+      // Per-card tiles
+      section.cards.forEach((card, idx) => {
+        let caption = section.title;
+        if (card.variant === 'matchup') {
+          caption = `${card.away.abbr} @ ${card.home.abbr} · ${card.statusLabel}`;
+        } else if (card.variant === 'player') {
+          caption = card.topPill ? `${card.name} · ${card.topPill}` : card.name;
+        } else if (card.variant === 'deal') {
+          caption = `${card.athlete} × ${card.brand}`;
+        }
+        result.push({ id: `${section.id}:${card.id ?? idx}`, caption, sectionId: section.id });
+      });
+    }
+    return result;
+  }, []);
+
+  // ── Stable navigation callback ────────────────────────────────────────────
+  const openSection = useCallback(
+    (sectionId: string) => {
+      router.push({ pathname: '/section/[id]', params: { id: sectionId } } as any);
     },
-    [insets.top],
+    [router],
   );
+
+  // ── Collapsing header ─────────────────────────────────────────────────────
+  // Header is absolutely positioned; we track height via onLayout so we know
+  // exactly how far to translate it when hiding.
+  const [headerHeight, setHeaderHeight] = React.useState(0);
+  const lastScrollY = useRef(0);
+  const headerSV = useSharedValue(0); // 0 = visible, 1 = hidden
+  const headerAnimStyle = useAnimatedStyle(() => {
+    // translateY: 0 → -(headerHeight + 24), opacity: 1 → 0
+    const hideDist = headerHeight + 24;
+    return {
+      transform: [{ translateY: withTiming(headerSV.value === 0 ? 0 : -hideDist, { duration: 220 }) }],
+      opacity: withTiming(headerSV.value === 0 ? 1 : 0, { duration: 220 }),
+    };
+  });
+
+  const onListScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      const prev = lastScrollY.current;
+      const delta = y - prev;
+      if (Math.abs(delta) < 8) return;
+      lastScrollY.current = y;
+      if (y <= 0) {
+        headerSV.value = 0; // always show at top
+      } else if (delta > 0) {
+        headerSV.value = 1; // scrolling down → hide
+      } else {
+        headerSV.value = 0; // scrolling up → show
+      }
+    },
+    [headerSV],
+  );
+
+  // Header clearance: top-of-screen safe inset + 3 (header top offset) + 46
+  // (button height) + 13 (gap to content) ≈ insets.top + 62.
+  const HEADER_CLEARANCE = insets.top + 62;
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 62 }]}
+
+      {/* ── Masonry grid ─────────────────────────────────────────────────── */}
+      <FlashList
+        data={tiles}
+        numColumns={2}
+        // @ts-ignore — FlashList's type defs don't yet expose the masonry prop
+        masonry
+        keyExtractor={(t) => t.id}
+        renderItem={({ item: t, index }) => (
+          <View style={{ paddingHorizontal: GRID_GUTTER / 2, paddingBottom: GRID_GUTTER }}>
+            <MasonryTile
+              id={t.id}
+              caption={t.caption}
+              colWidth={GRID_CARD_WIDTH}
+              index={index}
+              onPress={() => openSection(t.sectionId)}
+            />
+          </View>
+        )}
+        contentContainerStyle={{
+          paddingHorizontal: GRID_MARGIN - GRID_GUTTER / 2,
+          paddingTop: HEADER_CLEARANCE,
+          paddingBottom: 240,
+        }}
         showsVerticalScrollIndicator={false}
-        snapToOffsets={snapOffsets.length ? snapOffsets : undefined}
-        decelerationRate="fast"
+        onScroll={onListScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#888" />
         }
-      >
-        {SECTIONS.map((s, i) => (
-          <View key={s.id} onLayout={(e) => onCardLayout(i, e.nativeEvent.layout.y)}>
-            <SectionCard
-              section={s}
-              index={i}
-              onMenuPress={setMenuSection}
-              coverMedia={coverMedia[s.id]}
-              customLogo={customLogos[s.id]}
-            />
-          </View>
-        ))}
-      </ScrollView>
+      />
 
       <SectionMenuSheet
         section={menuSection}
@@ -1371,17 +1438,18 @@ export default function FeedScreen() {
         pointerEvents="none"
       />
 
-      {/* Top fade — sits above the flush card, not on it, so the resting card
-          stays crisp (no shadow) while a card swiped upward dissolves into the
-          black background as it crosses into this region. */}
+      {/* Top fade — covers the area behind the floating header row. */}
       <LinearGradient
         colors={['#000', '#000', 'rgba(0,0,0,0)']}
         locations={[0, 0.8, 1]}
-        style={[styles.topFade, { height: insets.top + 62 }]}
+        style={[styles.topFade, { height: HEADER_CLEARANCE }]}
         pointerEvents="none"
       />
 
-      <View style={[styles.topRow, { top: insets.top + 3 }]}>
+      <Animated.View
+        style={[styles.topRow, { top: insets.top + 3 }, headerAnimStyle]}
+        onLayout={(e: LayoutChangeEvent) => setHeaderHeight(e.nativeEvent.layout.height)}
+      >
         <Pressable
           style={styles.iconCircle}
           onPress={() => router.push('/map' as any)}
@@ -1420,7 +1488,7 @@ export default function FeedScreen() {
           </View>
           <Ionicons name="paper-plane-outline" size={19} color="#FFF" />
         </Pressable>
-      </View>
+      </Animated.View>
     </View>
   );
 }
