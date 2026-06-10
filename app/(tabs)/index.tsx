@@ -39,6 +39,7 @@ import { trackScreen } from '@/lib/analytics';
 import { persistLocalMedia, isLocalMediaAlive, healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
 import { MasonryTile } from '@/components/home/masonry-tile';
+import { NotificationSheet } from '@/components/shared/notification-sheet';
 
 // ───── Layout constants ─────
 
@@ -1192,6 +1193,7 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [menuSection, setMenuSection] = useState<Section | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [coverMedia, setCoverMedia] = useState<Record<string, CoverMedia>>({});
   const [customLogos, setCustomLogos] = useState<Record<string, string>>({});
   const [storageHydrated, setStorageHydrated] = useState(false);
@@ -1461,36 +1463,52 @@ export default function FeedScreen() {
         style={[styles.topRow, { top: insets.top + 3 }, headerAnimStyle]}
         onLayout={(e: LayoutChangeEvent) => setHeaderHeight(e.nativeEvent.layout.height)}
       >
+        <Image
+          source={require('@/assets/images/brand/transparent/proslync-mark-256.png')}
+          style={styles.brandMark}
+          resizeMode="contain"
+        />
+        <Text style={styles.brandWordmark}>Proslync</Text>
+        <View style={{ flex: 1 }} />
+
         <Pressable
-          style={styles.iconCircle}
+          style={styles.iconBare}
           onPress={() => router.push('/map' as any)}
           accessibilityLabel="Open map"
           accessibilityRole="button"
         >
-          <Ionicons name="map-outline" size={19} color="#FFF" />
+          <Ionicons name="map-outline" size={22} color="#FFF" />
         </Pressable>
 
         <Pressable
-          style={styles.searchBar}
+          style={styles.iconBare}
           onPress={() => router.push('/search-screen' as any)}
           accessibilityLabel="Search"
           accessibilityRole="search"
         >
-          <Ionicons name="search" size={17} color="rgba(255,255,255,0.65)" />
-          <Text style={styles.searchPlaceholder} numberOfLines={1}>
-            Search players, teams, deals
-          </Text>
+          <Ionicons name="search" size={22} color="#FFF" />
         </Pressable>
 
         <Pressable
-          style={styles.iconCircle}
+          style={styles.iconBare}
           onPress={() => router.push('/messages' as any)}
           accessibilityLabel="Messages"
           accessibilityRole="button"
         >
-          <Ionicons name="paper-plane-outline" size={19} color="#FFF" />
+          <Ionicons name="paper-plane-outline" size={22} color="#FFF" />
+        </Pressable>
+
+        <Pressable
+          style={styles.iconBare}
+          onPress={() => setNotifOpen(true)}
+          accessibilityLabel="Notifications"
+          accessibilityRole="button"
+        >
+          <Ionicons name="notifications-outline" size={22} color="#FFF" />
         </Pressable>
       </Animated.View>
+
+      <NotificationSheet visible={notifOpen} onClose={() => setNotifOpen(false)} />
     </View>
   );
 }
@@ -1508,38 +1526,26 @@ const styles = StyleSheet.create({
     left: 14, right: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'flex-start',
+    gap: 6,
     zIndex: 200,
   },
-  searchBar: {
-    flex: 1,
-    height: 46,
-    borderRadius: 23,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    overflow: 'hidden',
-    backgroundColor: '#1A1A1A',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.10)',
-  },
-  searchPlaceholder: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.55)',
-    fontWeight: '500',
-    flex: 1,
-  },
-  iconCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+  iconBare: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    backgroundColor: '#1A1A1A',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.10)',
+  },
+  brandMark: {
+    width: 30,
+    height: 30,
+  },
+  brandWordmark: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFF',
+    letterSpacing: -0.4,
+    marginLeft: 2,
   },
 
   // Section card
