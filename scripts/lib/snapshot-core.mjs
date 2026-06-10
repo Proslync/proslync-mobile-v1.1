@@ -49,6 +49,14 @@ export function collectSlots(storage) {
   const avatar = storage['proslync:profile:avatar:v1'];
   if (avatar) slots.push({ slot: 'profile-avatar', uri: avatar, type: 'image' });
 
+  const tileMediaMap = json('proslync:home:tileMedia:v1') || {};
+  for (const [id, m] of Object.entries(tileMediaMap)) {
+    if (m && m.uri) {
+      const slot = `tile-${id.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+      slots.push({ slot, uri: m.uri, type: m.type === 'video' ? 'video' : 'image' });
+    }
+  }
+
   return slots;
 }
 

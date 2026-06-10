@@ -180,6 +180,21 @@ test('renderManifest sorts slots and matches the committed empty-manifest shape'
   assert.ok(src.indexOf("'a':") < src.indexOf("'b':"));
 });
 
+test('collectSlots reads tileMedia:v1 and sanitises slot name', () => {
+  const storage = {
+    'proslync:home:tileMedia:v1': JSON.stringify({
+      'ncaab:g1': { uri: 'file:///a/Documents/proslync-media/tile-ncaab-g1/9.jpg', type: 'image' },
+    }),
+  };
+  const slots = collectSlots(storage);
+  assert.equal(slots.length, 1);
+  assert.deepEqual(slots[0], {
+    slot: 'tile-ncaab-g1',
+    uri: 'file:///a/Documents/proslync-media/tile-ncaab-g1/9.jpg',
+    type: 'image',
+  });
+});
+
 test('merge semantics: spread keeps untouched entries through render/parse round-trip', () => {
   const existing = { a: { type: 'video', url: 'https://old' }, b: { type: 'image', requirePath: '../../assets/media/curated/b.jpg' } };
   const fresh = { a: { type: 'video', url: 'https://new' } };

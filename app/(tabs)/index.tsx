@@ -41,6 +41,7 @@ import { resolveSlotMedia } from '@/lib/media/resolve-media';
 import { MasonryTile } from '@/components/home/masonry-tile';
 import { NotificationSheet } from "@/components/shared/notification-sheet";
 import { SymbolView } from "expo-symbols";
+import { ActionSheet } from '@/components/ui/action-sheet';
 
 // ───── Layout constants ─────
 
@@ -1175,6 +1176,10 @@ type CoverMedia = LocalMedia;
 const STORAGE_KEY_COVERS = 'proslync:home:coverMedia:v2';
 const STORAGE_KEY_COVERS_LEGACY = 'proslync:home:coverPhotos:v1';
 const STORAGE_KEY_LOGOS = 'proslync:home:customLogos:v1';
+const STORAGE_KEY_TILE_MEDIA = 'proslync:home:tileMedia:v1';
+
+/** Filesystem-safe slot name for a tile id. */
+const tileSlot = (id: string) => `tile-${id.replace(/[^a-zA-Z0-9-]/g, '-')}`;
 
 
 async function requestPhotoPermission(): Promise<boolean> {
@@ -1194,9 +1199,11 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
   const [menuSection, setMenuSection] = useState<Section | null>(null);
+  const [menuTileId, setMenuTileId] = useState<string | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [coverMedia, setCoverMedia] = useState<Record<string, CoverMedia>>({});
   const [customLogos, setCustomLogos] = useState<Record<string, string>>({});
+  const [tileMedia, setTileMedia] = useState<Record<string, { uri: string; type: 'image' | 'video' }>>({});
   const [storageHydrated, setStorageHydrated] = useState(false);
 
   useEffect(() => { trackScreen('feed', 'home-explore'); }, []);
@@ -1207,10 +1214,11 @@ export default function FeedScreen() {
     let cancelled = false;
     (async () => {
       try {
-        const [coversRaw, legacyRaw, logosRaw] = await Promise.all([
+        const [coversRaw, legacyRaw, logosRaw, tileMediaRaw] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY_COVERS),
           AsyncStorage.getItem(STORAGE_KEY_COVERS_LEGACY),
           AsyncStorage.getItem(STORAGE_KEY_LOGOS),
+          AsyncStorage.getItem(STORAGE_KEY_TILE_MEDIA),
         ]);
         if (cancelled) return;
         let covers: Record<string, CoverMedia> = {};
@@ -1250,6 +1258,22 @@ export default function FeedScreen() {
         } else if (logosRaw) {
           AsyncStorage.setItem(STORAGE_KEY_LOGOS, JSON.stringify({})).catch(() => {});
         }
+        // Tile media: heal local URIs, prune stale entries.
+        const rawTiles = tileMediaRaw
+          ? (JSON.parse(tileMediaRaw) as Record<string, { uri: string; type: 'image' | 'video' }>)
+          : {};
+        const prunedTiles: Record<string, { uri: string; type: 'image' | 'video' }> = {};
+        await Promise.all(
+          Object.entries(rawTiles).map(async ([id, m]) => {
+            const healed = await healLocalMediaUri(m.uri);
+            if (healed) prunedTiles[id] = healed !== m.uri ? { ...m, uri: healed } : m;
+          }),
+        );
+        if (Object.keys(prunedTiles).length) {
+          setTileMedia(prunedTiles);
+        } else if (tileMediaRaw) {
+          AsyncStorage.setItem(STORAGE_KEY_TILE_MEDIA, JSON.stringify({})).catch(() => {});
+        }
       } catch {
         // ignore corrupt storage
       } finally {
@@ -1269,6 +1293,11 @@ export default function FeedScreen() {
     if (!storageHydrated) return;
     AsyncStorage.setItem(STORAGE_KEY_LOGOS, JSON.stringify(customLogos)).catch(() => {});
   }, [customLogos, storageHydrated]);
+
+  useEffect(() => {
+    if (!storageHydrated) return;
+    AsyncStorage.setItem(STORAGE_KEY_TILE_MEDIA, JSON.stringify(tileMedia)).catch(() => {});
+  }, [tileMedia, storageHydrated]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -1322,6 +1351,29 @@ export default function FeedScreen() {
     });
   }, []);
 
+  const pickTileMedia = useCallback(async (tileId: string) => {
+    if (!(await requestPhotoPermission())) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: false,
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const type: 'image' | 'video' = asset.type === 'video' ? 'video' : 'image';
+      const persistedUri = await persistLocalMedia(asset.uri, tileSlot(tileId), type);
+      setTileMedia((p) => ({ ...p, [tileId]: { uri: persistedUri, type } }));
+    }
+  }, []);
+
+  const removeTileMedia = useCallback((tileId: string) => {
+    setTileMedia((p) => {
+      const next = { ...p };
+      delete next[tileId];
+      return next;
+    });
+  }, []);
+
   // ── Tiles data (one tile per card + one hub tile per section) ──────────────
   const tiles = useMemo(() => {
     const result: Array<{ id: string; caption: string; sectionId: string }> = [];
@@ -1343,6 +1395,27 @@ export default function FeedScreen() {
     }
     return result;
   }, []);
+
+  // ── Per-tile resolved media (local pick or curated fallback) ─────────────
+  // Builds a Map<tileId, TileMedia | null> once per [tiles, tileMedia] change.
+  // CURATED_MEDIA is static so the lookup is cheap.
+  const tileMediaMap = useMemo(() => {
+    const map = new Map<string, import('@/components/home/masonry-tile').TileMedia | null>();
+    for (const t of tiles) {
+      const local = tileMedia[t.id] ?? null;
+      const resolved = resolveSlotMedia(tileSlot(t.id), local);
+      if (resolved.kind === 'local') {
+        map.set(t.id, { type: resolved.type, uri: resolved.uri });
+      } else if (resolved.kind === 'curated-video') {
+        map.set(t.id, { type: 'video', uri: resolved.uri });
+      } else if (resolved.kind === 'curated-image') {
+        map.set(t.id, { type: 'image', source: resolved.source });
+      } else {
+        map.set(t.id, null);
+      }
+    }
+    return map;
+  }, [tiles, tileMedia]);
 
   // ── Stable navigation callback ────────────────────────────────────────────
   const openSection = useCallback(
@@ -1413,6 +1486,8 @@ export default function FeedScreen() {
               colWidth={GRID_CARD_WIDTH}
               index={index}
               onPress={() => openSection(t.sectionId)}
+              media={tileMediaMap.get(t.id) ?? null}
+              onMenuPress={() => setMenuTileId(t.id)}
             />
           </View>
         )}
@@ -1439,6 +1514,28 @@ export default function FeedScreen() {
         onRemoveCoverPhoto={() => menuSection && removeCoverPhoto(menuSection.id)}
         onPickLogo={() => menuSection && pickLogo(menuSection.id)}
         onRemoveLogo={() => menuSection && removeLogo(menuSection.id)}
+      />
+
+      {/* Tile media action sheet */}
+      <ActionSheet
+        visible={!!menuTileId}
+        title={menuTileId ? (tiles.find((t) => t.id === menuTileId)?.caption ?? undefined) : undefined}
+        onClose={() => setMenuTileId(null)}
+        options={[
+          {
+            label: 'Upload photo or video',
+            icon: 'image-outline',
+            onPress: () => { if (menuTileId) pickTileMedia(menuTileId); },
+          },
+          ...(menuTileId && tileMedia[menuTileId]
+            ? [{
+                label: 'Remove media',
+                icon: 'trash-outline' as const,
+                destructive: true,
+                onPress: () => { if (menuTileId) removeTileMedia(menuTileId); },
+              }]
+            : []),
+        ]}
       />
 
       <LinearGradient
