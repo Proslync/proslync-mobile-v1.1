@@ -42,7 +42,6 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as FileSystem from "expo-file-system/legacy";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { persistLocalMedia, isLocalMediaAlive, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
