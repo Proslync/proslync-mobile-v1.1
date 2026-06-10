@@ -1365,6 +1365,11 @@ export default function FeedScreen() {
     transform: [{ translateY: interpolate(headerSV.value, [0, 1], [0, -(headerHeight + 24)]) }],
     opacity: interpolate(headerSV.value, [0, 1], [1, 0]),
   }));
+  // The black top fade must vanish with the header, otherwise hiding the
+  // header just reveals a black strip instead of the content beneath it.
+  const topFadeAnimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(headerSV.value, [0, 1], [1, 0]),
+  }));
 
   const onListScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -1439,13 +1444,18 @@ export default function FeedScreen() {
         pointerEvents="none"
       />
 
-      {/* Top fade — covers the area behind the floating header row. */}
-      <LinearGradient
-        colors={['#000', '#000', 'rgba(0,0,0,0)']}
-        locations={[0, 0.8, 1]}
-        style={[styles.topFade, { height: HEADER_CLEARANCE }]}
+      {/* Top fade — covers the area behind the floating header row. Fades
+          out together with the header so hidden-state shows content, not black. */}
+      <Animated.View
+        style={[styles.topFade, { height: HEADER_CLEARANCE }, topFadeAnimStyle]}
         pointerEvents="none"
-      />
+      >
+        <LinearGradient
+          colors={['#000', '#000', 'rgba(0,0,0,0)']}
+          locations={[0, 0.8, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
 
       <Animated.View
         style={[styles.topRow, { top: insets.top + 3 }, headerAnimStyle]}
