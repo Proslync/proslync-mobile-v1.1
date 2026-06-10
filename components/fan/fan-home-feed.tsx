@@ -57,7 +57,7 @@ export function FanHomeFeed(): React.JSX.Element {
   const openDetail = React.useCallback((p: FanPost) => setDetailPost(p), []);
 
   // Keep detailPost fresh against the live list so likes update in the sheet.
-  const livePost = detailPost ? posts.find((p) => p.id === detailPost.id) ?? detailPost : null;
+  const livePost = detailPost ? (posts.find((p) => p.id === detailPost.id) ?? null) : null;
 
   const handleReply = React.useCallback((post: FanPost) => {
     setReplyTarget(post);
@@ -162,17 +162,19 @@ export function FanHomeFeed(): React.JSX.Element {
         animationType="slide"
         onRequestClose={() => setDetailPost(null)}
       >
-        <Pressable style={styles.sheetScrim} onPress={() => setDetailPost(null)} />
-        <View style={styles.sheet}>
-          <View style={styles.sheetHandle} />
-          {livePost ? (
-            <FanPostCard
-              post={livePost}
-              onLike={like}
-              onUnlike={unlike}
-              onReply={(p) => { setDetailPost(null); handleReply(p); }}
-            />
-          ) : null}
+        <View style={styles.sheetRoot}>
+          <Pressable style={styles.sheetScrim} onPress={() => setDetailPost(null)} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            {livePost ? (
+              <FanPostCard
+                post={livePost}
+                onLike={like}
+                onUnlike={unlike}
+                onReply={(p) => { setDetailPost(null); handleReply(p); }}
+              />
+            ) : null}
+          </View>
         </View>
       </Modal>
     </View>
@@ -222,7 +224,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  sheetScrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheetRoot: { flex: 1, justifyContent: 'flex-end' },
+  sheetScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
   sheet: {
     backgroundColor: '#0F0F0F',
     borderTopLeftRadius: 24,

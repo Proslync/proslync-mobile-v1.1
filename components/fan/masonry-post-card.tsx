@@ -21,8 +21,9 @@ export const MasonryPostCard = React.memo(function MasonryPostCard({
 }: Props): React.JSX.Element {
   const artHeight = Math.round(colWidth / seededAspect(post.id));
   const caption = post.body?.trim() || `@${post.author?.handle ?? 'unknown'}`;
+  const handlePress = React.useCallback(() => onPress(post), [onPress, post]);
   const card = (
-    <Pressable style={styles.card} onPress={() => onPress(post)}>
+    <Pressable style={styles.card} onPress={handlePress}>
       <AbstractArt seed={post.id} width={colWidth} height={artHeight} />
       <View style={styles.metaRow}>
         <Text style={styles.caption} numberOfLines={1}>{caption}</Text>
