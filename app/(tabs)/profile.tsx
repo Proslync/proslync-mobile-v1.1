@@ -45,7 +45,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { persistLocalMedia, isLocalMediaAlive, type LocalMedia } from '@/lib/media/local-media';
+import { persistLocalMedia, isLocalMediaAlive, healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia, resolveAvatarSource } from '@/lib/media/resolve-media';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView } from "expo-glass-effect";
@@ -1843,10 +1843,16 @@ function PlayerProfileScreen() {
         try {
           const v = await AsyncStorage.getItem(AVATAR_KEY);
           if (cancelled) return;
-          if (v && (await isLocalMediaAlive(v))) {
-            if (!cancelled) setLocalAvatar(v);
+          if (v) {
+            const healed = await healLocalMediaUri(v);
+            if (healed) {
+              if (healed !== v) AsyncStorage.setItem(AVATAR_KEY, healed).catch(() => {});
+              if (!cancelled) setLocalAvatar(healed);
+            } else {
+              AsyncStorage.removeItem(AVATAR_KEY).catch(() => {});
+              if (!cancelled) setLocalAvatar(null);
+            }
           } else {
-            if (v) AsyncStorage.removeItem(AVATAR_KEY).catch(() => {});
             if (!cancelled) setLocalAvatar(null);
           }
         } catch {}
@@ -1890,10 +1896,15 @@ function PlayerProfileScreen() {
             next = { uri: v1, type: 'video' };
           }
         }
-        // Orphan healing: a reinstall wipes documentDirectory but not always
-        // AsyncStorage — drop pointers to files that no longer exist so the
-        // curated default shows instead of a black box.
-        if (next && !(await isLocalMediaAlive(next.uri))) next = null;
+        // Heal stale URIs from iOS container rotation before setting state.
+        if (next) {
+          const healed = await healLocalMediaUri(next.uri);
+          if (!healed) {
+            next = null;
+          } else if (healed !== next.uri) {
+            next = { ...next, uri: healed };
+          }
+        }
         if (!cancelled && next) setBanner(next);
       } catch {
         // ignore corrupt storage

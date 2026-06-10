@@ -31,7 +31,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { trackScreen } from '@/lib/analytics';
-import { persistLocalMedia, isLocalMediaAlive, type LocalMedia } from '@/lib/media/local-media';
+import { persistLocalMedia, isLocalMediaAlive, healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
 
 // ───── Layout constants ─────
@@ -1213,14 +1213,16 @@ export default function FeedScreen() {
         const prunedCovers: Record<string, CoverMedia> = {};
         await Promise.all(
           Object.entries(covers).map(async ([id, m]) => {
-            if (await isLocalMediaAlive(m.uri)) prunedCovers[id] = m;
+            const healed = await healLocalMediaUri(m.uri);
+            if (healed) prunedCovers[id] = healed !== m.uri ? { ...m, uri: healed } : m;
           }),
         );
         const logos = logosRaw ? (JSON.parse(logosRaw) as Record<string, string>) : {};
         const prunedLogos: Record<string, string> = {};
         await Promise.all(
           Object.entries(logos).map(async ([id, uri]) => {
-            if (await isLocalMediaAlive(uri)) prunedLogos[id] = uri;
+            const healed = await healLocalMediaUri(uri);
+            if (healed) prunedLogos[id] = healed;
           }),
         );
         if (cancelled) return;

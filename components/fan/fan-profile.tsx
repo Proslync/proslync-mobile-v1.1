@@ -32,6 +32,7 @@ import {
   FAN_PERKS,
   FAN_PROFILE,
 } from '@/lib/data/mock-fan-data';
+import { healLocalMediaUri } from '@/lib/media/local-media';
 
 const ACCENT = '#FF6F3C';
 const PURPLE = '#A855F7';
@@ -99,7 +100,12 @@ export default function FanProfile() {
   React.useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem('proslync:fan-profile:bannerVideo:v1')
-      .then((v) => { if (!cancelled && v) setBannerVideo(v); })
+      .then(async (v) => {
+        if (cancelled || !v) return;
+        const healed = await healLocalMediaUri(v);
+        if (!cancelled && healed) setBannerVideo(healed);
+        else if (!healed) AsyncStorage.removeItem('proslync:fan-profile:bannerVideo:v1').catch(() => {});
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setBannerHydrated(true); });
     return () => { cancelled = true; };

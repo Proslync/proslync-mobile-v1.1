@@ -27,6 +27,7 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
+import { healLocalMediaUri } from '@/lib/media/local-media';
 
 const SCHOOL_BLUE = '#3B82F6';
 const TAB_BAR_TOP_FROM_BOTTOM = 90;
@@ -105,7 +106,12 @@ export default function SchoolProfile() {
   React.useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem('proslync:school-profile:bannerVideo:v1')
-      .then((v) => { if (!cancelled && v) setBannerVideo(v); })
+      .then(async (v) => {
+        if (cancelled || !v) return;
+        const healed = await healLocalMediaUri(v);
+        if (!cancelled && healed) setBannerVideo(healed);
+        else if (!healed) AsyncStorage.removeItem('proslync:school-profile:bannerVideo:v1').catch(() => {});
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setBannerHydrated(true); });
     return () => { cancelled = true; };
@@ -180,7 +186,12 @@ export default function SchoolProfile() {
   React.useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem('proslync:school-profile:avatar:v1')
-      .then((v) => { if (!cancelled && v) setAvatarUri(v); })
+      .then(async (v) => {
+        if (cancelled || !v) return;
+        const healed = await healLocalMediaUri(v);
+        if (!cancelled && healed) setAvatarUri(healed);
+        else if (!healed) AsyncStorage.removeItem('proslync:school-profile:avatar:v1').catch(() => {});
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setAvatarHydrated(true); });
     return () => { cancelled = true; };

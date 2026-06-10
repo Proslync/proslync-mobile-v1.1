@@ -32,6 +32,7 @@ import {
   AGENT_INSIGHTS,
   AGENT_PROFILE,
 } from '@/lib/data/mock-agent-data';
+import { healLocalMediaUri } from '@/lib/media/local-media';
 
 const ACCENT = '#FF6F3C';
 const TEAL = '#14B8A6';
@@ -58,7 +59,12 @@ export default function AgentProfile() {
   React.useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem('proslync:agent-profile:bannerVideo:v1')
-      .then((v) => { if (!cancelled && v) setBannerVideo(v); })
+      .then(async (v) => {
+        if (cancelled || !v) return;
+        const healed = await healLocalMediaUri(v);
+        if (!cancelled && healed) setBannerVideo(healed);
+        else if (!healed) AsyncStorage.removeItem('proslync:agent-profile:bannerVideo:v1').catch(() => {});
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setBannerHydrated(true); });
     return () => { cancelled = true; };

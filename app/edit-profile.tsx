@@ -19,7 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { GlassView } from 'expo-glass-effect';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { persistLocalMedia, isLocalMediaAlive } from '@/lib/media/local-media';
+import { persistLocalMedia, healLocalMediaUri } from '@/lib/media/local-media';
 import { resolveAvatarSource } from '@/lib/media/resolve-media';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { authApi } from '@/lib/api/auth';
@@ -76,11 +76,15 @@ export default function EditProfileScreen() {
     let cancelled = false;
     (async () => {
       const v = await AsyncStorage.getItem(AVATAR_KEY).catch(() => null);
-      if (v && (await isLocalMediaAlive(v))) {
-        if (!cancelled) setSelectedImage(v);
-      } else if (v) {
-        // Orphaned pointer from a reinstall — clean it up.
-        AsyncStorage.removeItem(AVATAR_KEY).catch(() => {});
+      if (v) {
+        const healed = await healLocalMediaUri(v);
+        if (healed) {
+          if (healed !== v) AsyncStorage.setItem(AVATAR_KEY, healed).catch(() => {});
+          if (!cancelled) setSelectedImage(healed);
+        } else {
+          // File is truly gone — clean up the stale pointer.
+          AsyncStorage.removeItem(AVATAR_KEY).catch(() => {});
+        }
       }
     })();
     return () => { cancelled = true; };

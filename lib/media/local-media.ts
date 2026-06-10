@@ -51,3 +51,33 @@ export async function isLocalMediaAlive(uri: string): Promise<boolean> {
     return true;
   }
 }
+
+/**
+ * Heals a locally-persisted media URI after an app update. iOS rotates the
+ * data-container UUID on updates, so absolute file:// URIs go stale while the
+ * file itself survives under the new container. Returns:
+ *   - the original uri if it still exists (or isn't a file:// uri),
+ *   - a re-anchored uri (current documentDirectory + path after /Documents/)
+ *     if the file exists there,
+ *   - null if the file is truly gone.
+ */
+export async function healLocalMediaUri(uri: string): Promise<string | null> {
+  if (!uri.startsWith('file://')) return uri;
+  try {
+    if ((await FileSystem.getInfoAsync(uri)).exists) return uri;
+  } catch {
+    return uri; // can't verify — trust it rather than destroy state
+  }
+  const docDir = FileSystem.documentDirectory;
+  const marker = '/Documents/';
+  const idx = uri.indexOf(marker);
+  if (docDir && idx !== -1) {
+    // documentDirectory ends with a trailing slash, e.g. "file:///…/Documents/"
+    // uri.slice(idx + marker.length) strips the leading slash so we get exactly one.
+    const reanchored = docDir + uri.slice(idx + marker.length);
+    try {
+      if ((await FileSystem.getInfoAsync(reanchored)).exists) return reanchored;
+    } catch {}
+  }
+  return null;
+}

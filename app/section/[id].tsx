@@ -28,7 +28,7 @@ import {
   type PlayerCard,
   type DealCard,
 } from '@/app/(tabs)/index';
-import { isLocalMediaAlive, type LocalMedia } from '@/lib/media/local-media';
+import { healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
 
 type CoverMedia = LocalMedia;
@@ -83,8 +83,9 @@ export default function SectionDetailScreen() {
           try {
             const map = JSON.parse(coversRaw) as Record<string, CoverMedia>;
             const entry = map[id];
-            if (entry && await isLocalMediaAlive(entry.uri)) {
-              if (!cancelled) setCover(entry);
+            if (entry) {
+              const healed = await healLocalMediaUri(entry.uri);
+              if (healed && !cancelled) setCover(healed !== entry.uri ? { ...entry, uri: healed } : entry);
             }
           } catch {}
         }
@@ -92,8 +93,9 @@ export default function SectionDetailScreen() {
           try {
             const map = JSON.parse(logosRaw) as Record<string, string>;
             const uri = map[id];
-            if (uri && await isLocalMediaAlive(uri)) {
-              if (!cancelled) setCustomLogo(uri);
+            if (uri) {
+              const healed = await healLocalMediaUri(uri);
+              if (healed && !cancelled) setCustomLogo(healed);
             }
           } catch {}
         }

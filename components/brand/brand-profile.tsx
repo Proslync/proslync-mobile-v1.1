@@ -32,6 +32,7 @@ import {
   BRAND_CAMPAIGNS,
   BRAND_PROFILE,
 } from '@/lib/data/mock-brand-data';
+import { healLocalMediaUri } from '@/lib/media/local-media';
 
 const ACCENT = '#FF6F3C';
 const TEAL = '#00C6B0';
@@ -92,7 +93,12 @@ export default function BrandProfile() {
   React.useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem('proslync:brand-profile:bannerVideo:v1')
-      .then((v) => { if (!cancelled && v) setBannerVideo(v); })
+      .then(async (v) => {
+        if (cancelled || !v) return;
+        const healed = await healLocalMediaUri(v);
+        if (!cancelled && healed) setBannerVideo(healed);
+        else if (!healed) AsyncStorage.removeItem('proslync:brand-profile:bannerVideo:v1').catch(() => {});
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setBannerHydrated(true); });
     return () => { cancelled = true; };
@@ -169,7 +175,12 @@ export default function BrandProfile() {
   React.useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem('proslync:brand-profile:avatar:v1')
-      .then((v) => { if (!cancelled && v) setAvatarUri(v); })
+      .then(async (v) => {
+        if (cancelled || !v) return;
+        const healed = await healLocalMediaUri(v);
+        if (!cancelled && healed) setAvatarUri(healed);
+        else if (!healed) AsyncStorage.removeItem('proslync:brand-profile:avatar:v1').catch(() => {});
+      })
       .catch(() => {})
       .finally(() => { if (!cancelled) setAvatarHydrated(true); });
     return () => { cancelled = true; };
