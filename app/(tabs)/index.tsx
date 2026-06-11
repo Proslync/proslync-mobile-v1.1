@@ -43,7 +43,7 @@ import { MasonryTile } from '@/components/home/masonry-tile';
 import { FanPostComposer } from "@/components/fan/post-composer";
 import { SymbolView } from "expo-symbols";
 import { ActionSheet } from '@/components/ui/action-sheet';
-import { FanAssistantSheet } from '@/components/home/fan-assistant-sheet';
+import { FanAssistant } from '@/components/home/fan-assistant-sheet';
 
 // ───── Layout constants ─────
 
@@ -1200,7 +1200,6 @@ export default function FeedScreen() {
   const [menuSection, setMenuSection] = useState<Section | null>(null);
   const [menuTileId, setMenuTileId] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
   const [coverMedia, setCoverMedia] = useState<Record<string, CoverMedia>>({});
   const [customLogos, setCustomLogos] = useState<Record<string, string>>({});
   const [tileMedia, setTileMedia] = useState<Record<string, { uri: string; type: 'image' | 'video' }>>({});
@@ -1596,25 +1595,8 @@ export default function FeedScreen() {
         onPosted={() => setComposerOpen(false)}
       />
 
-      {/* Fan assistant FAB — bottom-left, sits above the bottom fade (zIndex > 10) */}
-      <Pressable
-        style={({ pressed }) => [
-          styles.assistantFab,
-          pressed && styles.assistantFabPressed,
-        ]}
-        onPress={() => {
-          setAssistantOpen(true);
-        }}
-        accessibilityLabel="Ask Proslync"
-        accessibilityRole="button"
-      >
-        <Ionicons name="chatbubble-ellipses-outline" size={24} color="#EB621A" />
-      </Pressable>
-
-      <FanAssistantSheet
-        visible={assistantOpen}
-        onClose={() => setAssistantOpen(false)}
-      />
+      {/* Fan assistant — self-contained FAB + floating panel */}
+      <FanAssistant />
     </View>
   );
 }
@@ -1744,25 +1726,6 @@ const styles = StyleSheet.create({
   playerAvatarInitial: { fontSize: 20, fontWeight: '900', color: '#FFF' },
   playerName: { fontSize: 12, color: '#FFF', fontWeight: '700' },
   playerStat: { fontSize: 9.5, color: 'rgba(255,255,255,0.55)', textAlign: 'center' },
-
-  // Fan assistant FAB — bottom-left, zIndex 150 (above bottomFade at 10)
-  assistantFab: {
-    position: 'absolute',
-    left: 20,
-    bottom: 110,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(26,26,26,0.92)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 150,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  assistantFabPressed: {
-    transform: [{ scale: 0.92 }],
-  },
 
   // Deal body
   dealBody: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },

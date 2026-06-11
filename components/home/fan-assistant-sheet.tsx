@@ -1,7 +1,8 @@
-// FanAssistantSheet — floating chat sheet for fan-facing NIL Q&A.
-// Mirrors AskProslyncSheet chassis (gorhom BottomSheet, markdown renderer,
-// streaming token chunks, suggestion chips, input row, haptics).
-// Title: "Proslync Assistant" / subtitle: "Answers for fans".
+// FanAssistant — floating chat panel that collapses to a FAB bubble.
+// No gorhom BottomSheet — plain Views with KeyboardAvoidingView.
+// Panel: absolute position left:16 right:16 bottom:110, zIndex 160.
+// FAB:   absolute position left:20 bottom:110, 52px circle, zIndex 150.
+// Only the ✕ closes the panel; tapping outside has no effect (no scrim).
 
 import * as React from 'react';
 import {
@@ -13,24 +14,15 @@ import {
   StyleSheet,
   Keyboard,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Dimensions,
+  Platform,
 } from 'react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
-import { GlassView } from 'expo-glass-effect';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { renderBackdrop } from '@/components/shared/bottom-sheet-backdrop';
 import { fanAssistant, FAN_SUGGESTIONS, type AgentChunk } from '@/lib/api/fan-assistant';
 
-interface FanAssistantSheetProps {
-  visible: boolean;
-  onClose: () => void;
-}
-
 // ─── Inline markdown renderer ─────────────────────────────────────────────────
-// Handles **bold**, blank-line paragraphs, and `- item` bullets.
-// Duplicated from ask-proslync-sheet.tsx (kept inline to avoid a shared dep).
 
 function MarkdownInline({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -81,31 +73,31 @@ function MarkdownText({ text }: { text: string }) {
   );
 }
 
-// ─── Sheet component ──────────────────────────────────────────────────────────
+// ─── Panel height ─────────────────────────────────────────────────────────────
 
-export function FanAssistantSheet({ visible, onClose }: FanAssistantSheetProps) {
-  const bottomSheetRef = React.useRef<BottomSheet>(null);
-  const insets = useSafeAreaInsets();
+const SCREEN_H = Dimensions.get('window').height;
+const PANEL_HEIGHT = Math.min(480, Math.round(SCREEN_H * 0.62));
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+export function FanAssistant() {
+  const [open, setOpen] = React.useState(false);
   const [input, setInput] = React.useState('');
   const [response, setResponse] = React.useState('');
   const [streaming, setStreaming] = React.useState(false);
   const abortRef = React.useRef<AbortController | null>(null);
   const scrollRef = React.useRef<ScrollView>(null);
-  const snapPoints = React.useMemo(() => ['50%', '90%'], []);
 
-  React.useEffect(() => {
-    if (visible) {
-      bottomSheetRef.current?.snapToIndex(0);
-    } else {
-      bottomSheetRef.current?.close();
-    }
-  }, [visible]);
+  const handleOpen = React.useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setOpen(true);
+  }, []);
 
   const handleClose = React.useCallback(() => {
     abortRef.current?.abort();
     Keyboard.dismiss();
-    onClose();
-  }, [onClose]);
+    setOpen(false);
+  }, []);
 
   const handleAsk = React.useCallback(async (prompt: string) => {
     if (!prompt.trim() || streaming) return;
@@ -114,8 +106,6 @@ export function FanAssistantSheet({ visible, onClose }: FanAssistantSheetProps) 
     setStreaming(true);
     setInput('');
     Keyboard.dismiss();
-
-    bottomSheetRef.current?.snapToIndex(1);
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -139,168 +129,221 @@ export function FanAssistantSheet({ visible, onClose }: FanAssistantSheetProps) 
   }, [streaming]);
 
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={-1}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      onClose={handleClose}
-      backdropComponent={renderBackdrop}
-      handleIndicatorStyle={styles.handle}
-      backgroundStyle={styles.background}
-      style={styles.sheet}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
-    >
-      <BottomSheetView style={[styles.content, { paddingBottom: insets.bottom + 16 }]}>
-        <GlassView
-          {...liquidGlass.fillFaint}
-          borderRadius={0}
-          style={StyleSheet.absoluteFillObject}
-        />
+    <>
+      {/* FAB — hidden while panel is open */}
+      {!open && (
+        <Pressable
+          style={({ pressed }) => [
+            styles.fab,
+            pressed && styles.fabPressed,
+          ]}
+          onPress={handleOpen}
+          accessibilityLabel="Ask Proslync"
+          accessibilityRole="button"
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={24} color="#EB621A" />
+        </Pressable>
+      )}
 
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color="#EB621A" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Proslync Assistant</Text>
-            <Text style={styles.headerSubtitle}>Answers for fans</Text>
-          </View>
-          <Pressable onPress={handleClose} hitSlop={8} style={styles.closeBtn}>
-            <Ionicons name="close" size={18} color="rgba(255,255,255,0.6)" />
-          </Pressable>
-        </View>
-
-        {/* Suggestion chips (shown when thread is empty) */}
-        {!response && !streaming && (
-          <View style={styles.suggestionsContainer}>
-            <Text style={styles.suggestionsLabel}>Try asking...</Text>
-            <View style={styles.suggestionsGrid}>
-              {FAN_SUGGESTIONS.map((s) => (
+      {/* Floating panel + KAV wrapper — only mounted while open */}
+      {open && (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.kavWrapper}
+          pointerEvents="box-none"
+        >
+          <View style={styles.panel} pointerEvents="box-none">
+            <View style={styles.panelInner}>
+              {/* Header */}
+              <View style={styles.header}>
+                <View style={styles.headerIcon}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={18} color="#EB621A" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.headerTitle}>Proslync Assistant</Text>
+                  <Text style={styles.headerSubtitle}>Answers for fans</Text>
+                </View>
                 <Pressable
-                  key={s}
-                  style={({ pressed }) => [
-                    styles.chip,
-                    pressed && styles.chipPressed,
-                  ]}
-                  onPress={() => handleAsk(s)}
+                  onPress={handleClose}
+                  style={styles.closeBtn}
+                  hitSlop={8}
+                  accessibilityLabel="Close assistant"
+                  accessibilityRole="button"
                 >
-                  <Text style={styles.chipText}>{s}</Text>
-                  <Ionicons name="arrow-forward" size={12} color="rgba(255,255,255,0.5)" />
+                  <Ionicons name="close" size={18} color="rgba(255,255,255,0.55)" />
                 </Pressable>
-              ))}
+              </View>
+
+              {/* Suggestion chips — shown when thread is empty */}
+              {!response && !streaming && (
+                <View style={styles.suggestionsContainer}>
+                  <Text style={styles.suggestionsLabel}>Try asking...</Text>
+                  <View style={styles.suggestionsGrid}>
+                    {FAN_SUGGESTIONS.map((s) => (
+                      <Pressable
+                        key={s}
+                        style={({ pressed }) => [
+                          styles.chip,
+                          pressed && styles.chipPressed,
+                        ]}
+                        onPress={() => handleAsk(s)}
+                      >
+                        <Text style={styles.chipText}>{s}</Text>
+                        <Ionicons name="arrow-forward" size={12} color="rgba(255,255,255,0.5)" />
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {/* Response area */}
+              {(response || streaming) && (
+                <ScrollView
+                  ref={scrollRef}
+                  style={styles.responseScroll}
+                  contentContainerStyle={styles.responseContent}
+                  showsVerticalScrollIndicator={false}
+                  onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+                >
+                  <MarkdownText text={response} />
+                  {streaming && (
+                    <Text style={[styles.responseText, styles.cursor]}>|</Text>
+                  )}
+                </ScrollView>
+              )}
+
+              {/* Input row */}
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Ask about NIL, merch, supporting athletes..."
+                  placeholderTextColor="rgba(255,255,255,0.35)"
+                  value={input}
+                  onChangeText={setInput}
+                  onSubmitEditing={() => handleAsk(input)}
+                  returnKeyType="send"
+                  editable={!streaming}
+                  autoCapitalize="sentences"
+                  autoCorrect={false}
+                  autoComplete="off"
+                  spellCheck={false}
+                  keyboardAppearance="dark"
+                />
+                <Pressable
+                  style={[styles.sendBtn, (!input.trim() || streaming) && styles.sendBtnDisabled]}
+                  onPress={() => handleAsk(input)}
+                  disabled={!input.trim() || streaming}
+                >
+                  {streaming ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <Ionicons name="arrow-up" size={18} color="#FFF" />
+                  )}
+                </Pressable>
+              </View>
             </View>
           </View>
-        )}
-
-        {/* Response area */}
-        {(response || streaming) && (
-          <ScrollView
-            ref={scrollRef}
-            style={styles.responseScroll}
-            contentContainerStyle={styles.responseContent}
-            showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
-          >
-            <MarkdownText text={response} />
-            {streaming && (
-              <Text style={[styles.responseText, styles.cursor]}>|</Text>
-            )}
-          </ScrollView>
-        )}
-
-        {/* Input row */}
-        <View style={styles.inputRow}>
-          <TextInput
-            style={styles.input}
-            placeholder="Ask about NIL, merch, supporting athletes..."
-            placeholderTextColor="rgba(255,255,255,0.35)"
-            value={input}
-            onChangeText={setInput}
-            onSubmitEditing={() => handleAsk(input)}
-            returnKeyType="send"
-            editable={!streaming}
-            autoCapitalize="sentences"
-            autoCorrect={false}
-            autoComplete="off"
-            spellCheck={false}
-            keyboardAppearance="dark"
-          />
-          <Pressable
-            style={[styles.sendBtn, (!input.trim() || streaming) && styles.sendBtnDisabled]}
-            onPress={() => handleAsk(input)}
-            disabled={!input.trim() || streaming}
-          >
-            {streaming ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <Ionicons name="arrow-up" size={18} color="#FFF" />
-            )}
-          </Pressable>
-        </View>
-      </BottomSheetView>
-    </BottomSheet>
+        </KeyboardAvoidingView>
+      )}
+    </>
   );
 }
+
+// Legacy alias — keeps any other imports from breaking.
+export const FanAssistantSheet = FanAssistant;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  sheet: {
-    zIndex: 999,
+  // FAB bubble
+  fab: {
+    position: 'absolute',
+    left: 20,
+    bottom: 110,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(26,26,26,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 150,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.18)',
   },
-  background: {
-    backgroundColor: '#1A1A1E',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  fabPressed: {
+    transform: [{ scale: 0.92 }],
   },
-  handle: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    width: 36,
+
+  // KeyboardAvoidingView: full-screen, pointer-events box-none so touches
+  // fall through where no panel exists.
+  kavWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 160,
   },
-  content: {
-    flex: 1,
+
+  // Outer positioning container — sits at bottom, passes pointer-events through.
+  panel: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 110,
+  },
+
+  // The visible card
+  panelInner: {
+    height: PANEL_HEIGHT,
+    borderRadius: 20,
+    backgroundColor: 'rgba(16,16,16,0.98)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
   },
+
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 16,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
     gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   headerIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(235,98,26,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
     color: '#FFF',
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.45)',
     marginTop: 1,
   },
   closeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // Suggestion chips
   suggestionsContainer: {
-    paddingHorizontal: 20,
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
     gap: 12,
   },
   suggestionsLabel: {
@@ -332,11 +375,14 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '500',
   },
+
+  // Response scroll area
   responseScroll: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   responseContent: {
+    paddingTop: 12,
     paddingBottom: 16,
   },
   responseText: {
@@ -348,12 +394,16 @@ const styles = StyleSheet.create({
     color: '#EB621A',
     fontWeight: '700',
   },
+
+  // Input row
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.08)',
   },
   input: {
     flex: 1,
