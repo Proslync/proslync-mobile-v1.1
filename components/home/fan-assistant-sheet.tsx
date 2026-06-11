@@ -1,5 +1,5 @@
 // FanAssistant — floating chat panel that collapses to a FAB bubble.
-// No gorhom BottomSheet — plain Views with KeyboardAvoidingView.
+// No gorhom BottomSheet — plain Views; the panel lifts itself above the keyboard.
 // Panel: absolute position left:16 right:16 bottom:110, zIndex 160.
 // FAB:   absolute position left:20 bottom:110, 52px circle, zIndex 150.
 // Only the ✕ closes the panel; tapping outside has no effect (no scrim).
@@ -14,7 +14,7 @@ import {
   StyleSheet,
   Keyboard,
   ActivityIndicator,
-  KeyboardAvoidingView,
+
   Dimensions,
   Platform,
 } from 'react-native';
@@ -88,6 +88,20 @@ export function FanAssistant() {
   const abortRef = React.useRef<AbortController | null>(null);
   const scrollRef = React.useRef<ScrollView>(null);
 
+  // Track the keyboard directly — KeyboardAvoidingView is unreliable for
+  // absolutely-positioned panels, so we lift the panel above the keyboard
+  // ourselves and shrink it if vertical space runs out.
+  const [kbHeight, setKbHeight] = React.useState(0);
+  React.useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvt, (e) => setKbHeight(e.endCoordinates?.height ?? 0));
+    const hide = Keyboard.addListener(hideEvt, () => setKbHeight(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  const panelBottom = kbHeight > 0 ? kbHeight + 12 : 110;
+  const panelHeight = Math.min(PANEL_HEIGHT, SCREEN_H - panelBottom - 76);
+
   const handleOpen = React.useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setOpen(true);
@@ -145,15 +159,11 @@ export function FanAssistant() {
         </Pressable>
       )}
 
-      {/* Floating panel + KAV wrapper — only mounted while open */}
+      {/* Floating panel — only mounted while open; lifts with the keyboard */}
       {open && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.kavWrapper}
-          pointerEvents="box-none"
-        >
-          <View style={styles.panel} pointerEvents="box-none">
-            <View style={styles.panelInner}>
+        <View style={styles.kavWrapper} pointerEvents="box-none">
+          <View style={[styles.panel, { bottom: panelBottom }]} pointerEvents="box-none">
+            <View style={[styles.panelInner, { height: panelHeight }]}>
               {/* Header */}
               <View style={styles.header}>
                 <View style={styles.headerIcon}>
@@ -243,7 +253,7 @@ export function FanAssistant() {
               </View>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       )}
     </>
   );
