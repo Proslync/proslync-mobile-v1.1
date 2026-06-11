@@ -1,11 +1,13 @@
 // app/deal-engine/[id].tsx
-// NIL Deal Engine — Deal Cockpit (Phase D1).
+// NIL Deal Engine — Deal Cockpit (Phase D1 + D2).
 //
 // Sections:
 //   - Header: brand × athlete, Deal ID, status pill
+//   - NIL GO deadline chip (Phase D2): signed deals ≥$600
 //   - ESCROW card: funded amount, fee line, FUND ESCROW button (demo brand lens)
 //   - MILESTONE BOARD: per-milestone rows with athlete/brand actions
 //   - AUDIT TRAIL: append-only event log
+//   - EXPORT CSC PACKET button (Phase D2): real PDF via expo-print + expo-sharing
 //
 // Lens toggle (VIEW AS: Athlete | Brand) switches action button visibility.
 // Auto-approve: on render, submitted milestones past +72h flip to auto-approved.
@@ -16,6 +18,7 @@ import {
   Alert,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -25,6 +28,8 @@ import {
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 import {
   DEMO_DEAL,
@@ -38,6 +43,8 @@ import type {
   EngineDealStatus,
 } from '@/lib/types/deal-engine.types';
 import { computeFees, isAutoApproved, milestoneAutoApproveAt } from '@/lib/deal-engine/engine';
+import { nilGoDeadline } from '@/lib/compliance/preclearance';
+import { RULES_VERSION } from '@/lib/compliance/rules-2026-06';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -52,6 +59,9 @@ const WARNING = '#FF9F0A';
 const DANGER = '#FF453A';
 const INFO = 'rgba(255,255,255,0.72)';
 const MONO_BG = 'rgba(0,0,0,0.32)';
+
+/** CSC mandatory-reporting floor in cents ($600) */
+const CSC_REPORT_FLOOR_CENTS = 60_000;
 
 type Lens = 'athlete' | 'brand';
 
@@ -139,6 +149,200 @@ function formatISO(isoString: string): string {
 
 function normalizeParam(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
+}
+
+// ── NIL Go deadline helpers ───────────────────────────────────────────────
+
+/**
+ * Returns NIL Go deadline ISO string if the deal is signed and ≥ $600,
+ * otherwise null.
+ */
+function getNilGoDeadline(deal: EngineDeal): string | null {
+  if (deal.amountCents < CSC_REPORT_FLOOR_CENTS) return null;
+  const signedAt = deal.athleteSignedAt ?? deal.brandSignedAt;
+  if (!signedAt) return null;
+  return nilGoDeadline(signedAt);
+}
+
+function nilGoChipLabel(deadlineISO: string): string {
+  const h = hoursUntil(deadlineISO + 'T23:59:59Z');
+  if (h <= 0) return 'OVERDUE — Submit to NIL Go immediately';
+  const daysLeft = Math.ceil(h / 24);
+  return `Report to NIL Go by ${deadlineISO} · ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`;
+}
+
+function nilGoChipColor(deadlineISO: string): string {
+  const h = hoursUntil(deadlineISO + 'T23:59:59Z');
+  if (h <= 0) return DANGER;
+  if (h < 24) return DANGER;
+  if (h < 72) return WARNING;
+  return SUCCESS;
+}
+
+// ── CSC Packet PDF builder ────────────────────────────────────────────────
+
+function buildCscPacketHtml(deal: EngineDeal): string {
+  const fees = computeFees(deal.amountCents, deal.feeRate);
+  const pc = deal.preclearance;
+
+  const testRows = pc
+    ? [
+        ['Valid Business Purpose', pc.tests.businessPurpose],
+        ['Real Activation', pc.tests.activation],
+        ['Comp-Range Alignment', pc.tests.compRange],
+      ]
+        .map(
+          ([label, result]) =>
+            `<tr><td style="padding:6px 10px;border-bottom:1px solid #333">${label}</td>
+             <td style="padding:6px 10px;border-bottom:1px solid #333;text-transform:uppercase;font-weight:bold;
+               color:${result === 'pass' ? '#30D158' : result === 'warn' ? '#FF9F0A' : '#FF453A'}">${result}</td></tr>`,
+        )
+        .join('')
+    : '<tr><td colspan="2" style="padding:6px 10px">Pre-check not run</td></tr>';
+
+  const auditRows = [...deal.events]
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+    .map(
+      (ev) =>
+        `<tr>
+          <td style="padding:5px 8px;border-bottom:1px solid #2a2a2a;font-family:monospace;font-size:11px">${ev.at}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #2a2a2a;font-family:monospace;font-size:11px">${ev.actor.toUpperCase()}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #2a2a2a;font-family:monospace;font-size:11px">${ev.kind.replace(/-/g, ' ').toUpperCase()}</td>
+          <td style="padding:5px 8px;border-bottom:1px solid #2a2a2a;font-family:monospace;font-size:11px">${ev.note ?? ''}${ev.ip ? ` · IP: ${ev.ip}` : ''}</td>
+        </tr>`,
+    )
+    .join('');
+
+  const nilGoLine = getNilGoDeadline(deal)
+    ? `<p><strong>NIL Go Deadline:</strong> ${getNilGoDeadline(deal)} (5 business days from execution)</p>`
+    : '';
+
+  const aeStatus = pc?.payerEntityType
+    ? `${pc.payerEntityType}${['collective', 'booster-llc', 'mmr-partner', 'school-sponsor'].includes(pc.payerEntityType) ? ' — ASSOCIATED ENTITY (enhanced review)' : ''}`
+    : 'Not captured';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>CSC Packet — ${deal.dealId}</title>
+<style>
+  body { font-family: -apple-system, Helvetica, sans-serif; background: #fff; color: #111; margin: 0; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; font-weight: 700; margin: 20px 0 6px; border-bottom: 2px solid #EB621A; padding-bottom: 4px; color: #EB621A; }
+  p { margin: 4px 0; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 6px 10px; background: #f5f5f5; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .verdict { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 900; font-size: 12px; letter-spacing: 0.8px; }
+  .likely-clear { background: #e6fdf0; color: #30D158; border: 1px solid #30D158; }
+  .needs-review { background: #fff8e6; color: #FF9F0A; border: 1px solid #FF9F0A; }
+  .likely-rejected { background: #fdf0f0; color: #FF453A; border: 1px solid #FF453A; }
+  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 10px; color: #888; }
+  .demo-notice { background: #fffbe6; border: 1px solid #FFD60A; border-radius: 6px; padding: 10px 14px; margin: 12px 0; font-size: 12px; font-weight: 600; color: #7a6000; }
+</style>
+</head>
+<body>
+
+<h1>NIL Pre-Clearance &amp; CSC Packet</h1>
+<p style="color:#888;font-size:12px">Deal ID: <strong>${deal.dealId}</strong> · Generated ${new Date().toLocaleString()}</p>
+
+<div class="demo-notice">DEMO — Prepared with Proslync — not an official CSC submission. No legal obligations created.</div>
+
+<h2>Parties</h2>
+<p><strong>Athlete:</strong> ${deal.athlete}</p>
+<p><strong>Brand / Payer:</strong> ${deal.brand}</p>
+<p><strong>Payer Entity Type:</strong> ${aeStatus}</p>
+
+<h2>Identity Verification</h2>
+<p>Athlete signature captured at ${deal.athleteSignedAt ? formatISO(deal.athleteSignedAt) : 'N/A'} · Typed name: ${deal.athleteSignedName ?? 'N/A'} · IP: ${deal.events.find((e) => e.kind === 'signed')?.ip ?? 'N/A'}</p>
+
+<h2>Deal Terms</h2>
+<p><strong>Amount:</strong> $${formatCents(deal.amountCents)} (athlete receives 100%)</p>
+<p><strong>Brand total (incl. ${Math.round((deal.feeRate ?? 0.10) * 100)}% platform fee):</strong> $${formatCents(fees.brandTotalCents)}</p>
+<p><strong>Term:</strong> ${deal.termStart} — ${deal.termEnd}</p>
+<p><strong>Payment schedule:</strong> ${deal.paymentSchedule}</p>
+<p><strong>Deliverables:</strong> ${deal.deliverableDescription || '—'}</p>
+${nilGoLine}
+
+<h2>Pre-Clearance Results</h2>
+${pc ? `<p>Verdict: <span class="verdict ${pc.verdict}">${pc.verdict.replace(/-/g, ' ').toUpperCase()}</span> · Rules version: ${pc.rulesVersion ?? RULES_VERSION}</p>` : '<p>Pre-check not run at deal creation.</p>'}
+<table>
+  <thead><tr><th>CSC Test</th><th>Result</th></tr></thead>
+  <tbody>${testRows}</tbody>
+</table>
+
+<h2>Audit Trail</h2>
+<table>
+  <thead><tr><th>Timestamp</th><th>Actor</th><th>Event</th><th>Notes</th></tr></thead>
+  <tbody>${auditRows}</tbody>
+</table>
+
+<div class="footer">
+  Rules version: ${pc?.rulesVersion ?? RULES_VERSION} · Prepared with Proslync — not an official CSC submission.
+  This document does not constitute legal advice. Athletes should consult their institution's NIL compliance office
+  before submitting to NIL Go or executing agreements with associated-entity payers.
+</div>
+</body>
+</html>`;
+}
+
+// ── Export CSC packet ─────────────────────────────────────────────────────
+
+async function exportCscPacket(deal: EngineDeal): Promise<void> {
+  try {
+    const html = buildCscPacketHtml(deal);
+
+    // Try real PDF via expo-print
+    let pdfUri: string | null = null;
+    try {
+      const result = await Print.printToFileAsync({ html, base64: false });
+      pdfUri = result.uri;
+    } catch (printErr) {
+      // expo-print may not be available in Expo Go; fall through to JSON share
+    }
+
+    if (pdfUri) {
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(pdfUri, {
+          mimeType: 'application/pdf',
+          dialogTitle: `CSC Packet — ${deal.dealId}`,
+          UTI: 'com.adobe.pdf',
+        });
+        return;
+      }
+    }
+
+    // JSON fallback
+    const jsonPayload = {
+      packet: 'csc-deal-engine',
+      dealId: deal.dealId,
+      athlete: deal.athlete,
+      brand: deal.brand,
+      amountCents: deal.amountCents,
+      termStart: deal.termStart,
+      termEnd: deal.termEnd,
+      deliverableDescription: deal.deliverableDescription,
+      athleteSignedAt: deal.athleteSignedAt,
+      preclearance: deal.preclearance ?? null,
+      nilGoDeadline: getNilGoDeadline(deal),
+      events: deal.events,
+      rulesVersion: RULES_VERSION,
+      exportedAt: new Date().toISOString(),
+      caveat: 'Prepared with Proslync — not an official CSC submission.',
+    };
+
+    await Share.share({
+      title: `CSC Packet — ${deal.dealId}`,
+      message: JSON.stringify(jsonPayload, null, 2),
+    });
+  } catch (err) {
+    Alert.alert(
+      'Export Failed',
+      `Could not generate the CSC packet. ${err instanceof Error ? err.message : 'Unknown error.'}`,
+      [{ text: 'OK' }],
+    );
+  }
 }
 
 // ── Auto-approve check ────────────────────────────────────────────────────
@@ -935,6 +1139,25 @@ export default function DealEngineCockpit() {
             )}
           </View>
 
+          {/* NIL Go deadline chip — Phase D2 */}
+          {(() => {
+            const deadlineISO = getNilGoDeadline(deal);
+            if (!deadlineISO) return null;
+            const chipColor = nilGoChipColor(deadlineISO);
+            return (
+              <View
+                style={[
+                  cockpitStyles.nilGoChip,
+                  { borderColor: chipColor },
+                ]}
+              >
+                <Text style={[cockpitStyles.nilGoChipText, { color: chipColor }]}>
+                  NIL GO · {nilGoChipLabel(deadlineISO)}
+                </Text>
+              </View>
+            );
+          })()}
+
           {/* Lens toggle */}
           <View style={cockpitStyles.lensRow}>
             <Text style={cockpitStyles.lensLabel}>VIEW AS:</Text>
@@ -1017,6 +1240,23 @@ export default function DealEngineCockpit() {
               <AuditTrail events={deal.events} />
             </View>
           )}
+
+          {/* EXPORT CSC PACKET — Phase D2 */}
+          <TouchableOpacity
+            style={cockpitStyles.exportBtn}
+            onPress={() => exportCscPacket(deal)}
+            activeOpacity={0.82}
+            accessibilityRole="button"
+            accessibilityLabel="Export CSC compliance packet as PDF"
+          >
+            <Text style={cockpitStyles.exportBtnText}>EXPORT CSC PACKET</Text>
+            <View style={cockpitStyles.demoBadge}>
+              <Text style={cockpitStyles.demoBadgeText}>PDF</Text>
+            </View>
+          </TouchableOpacity>
+          <Text style={cockpitStyles.exportCaveat}>
+            Prepared with Proslync — not an official CSC submission. Rules v{RULES_VERSION}.
+          </Text>
         </ScrollView>
       </View>
     </>
@@ -1320,5 +1560,46 @@ const cockpitStyles = StyleSheet.create({
     fontSize: 13,
     color: MUTED,
     fontWeight: '600',
+  },
+  nilGoChip: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  nilGoChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    fontVariant: ['tabular-nums'],
+  },
+  exportBtn: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(235,98,26,0.12)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COPPER,
+    paddingVertical: 15,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+    gap: 10,
+    marginTop: 4,
+  },
+  exportBtnText: {
+    color: COPPER,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  exportCaveat: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.25)',
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: -6,
+    lineHeight: 14,
   },
 });
