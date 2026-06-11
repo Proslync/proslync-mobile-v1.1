@@ -28,6 +28,7 @@ import type { EngineDeal } from '@/lib/types/deal-engine.types';
 import type { AppNotification } from '@/lib/types/notifications.types';
 
 import { GlassButton } from '@/components/glass/glass-button';
+import { useFocusEffect } from 'expo-router';
 import { useStableRouter } from '@/hooks/use-stable-router';
 import { useAthletePermissionGrants } from '@/hooks/use-permission-grants';
 import { useAthletePayouts } from '@/hooks/use-athlete-payouts';
@@ -594,31 +595,32 @@ function useDealNotifications() {
   const [notifItems, setNotifItems] = React.useState<AppNotification[]>([]);
   const [seenAt, setSeenAt] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    async function load() {
-      try {
-        const [raw, seenRaw] = await Promise.all([
-          AsyncStorage.getItem(DEAL_ENGINE_STORAGE_KEY),
-          AsyncStorage.getItem(NOTIF_SEEN_KEY),
-        ]);
-        const deals: EngineDeal[] = raw ? JSON.parse(raw) : [];
-        const now = new Date().toISOString();
-        const notifs: DealNotification[] = deriveDealNotifications(deals, now);
-        const mapped: AppNotification[] = notifs.map((n, i) => ({
-          id: 98_000 + i,
-          type: 'payment' as const,
-          title: n.title,
-          body: n.body,
-          read: seenRaw ? n.atISO <= seenRaw : false,
-          metadata: { dealId: n.dealId, kind: n.kind },
-          createdAt: n.atISO,
-        }));
-        setNotifItems(mapped);
-        setSeenAt(seenRaw);
-      } catch (_) {}
-    }
+  async function load() {
+    try {
+      const [raw, seenRaw] = await Promise.all([
+        AsyncStorage.getItem(DEAL_ENGINE_STORAGE_KEY),
+        AsyncStorage.getItem(NOTIF_SEEN_KEY),
+      ]);
+      const deals: EngineDeal[] = raw ? JSON.parse(raw) : [];
+      const now = new Date().toISOString();
+      const notifs: DealNotification[] = deriveDealNotifications(deals, now);
+      const mapped: AppNotification[] = notifs.map((n, i) => ({
+        id: 98_000 + i,
+        type: 'payment' as const,
+        title: n.title,
+        body: n.body,
+        read: seenRaw ? n.atISO <= seenRaw : false,
+        metadata: { dealId: n.dealId, kind: n.kind },
+        createdAt: n.atISO,
+      }));
+      setNotifItems(mapped);
+      setSeenAt(seenRaw);
+    } catch (_) {}
+  }
+
+  useFocusEffect(React.useCallback(() => {
     load();
-  }, []);
+  }, []));
 
   const unreadCount = notifItems.filter((n) => !n.read).length;
 
@@ -627,6 +629,7 @@ function useDealNotifications() {
     setSeenAt(now);
     setNotifItems((prev) => prev.map((n) => ({ ...n, read: true })));
     await AsyncStorage.setItem(NOTIF_SEEN_KEY, now);
+    await load();
   }
 
   return { notifItems, unreadCount, markSeen };

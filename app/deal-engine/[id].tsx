@@ -1744,6 +1744,8 @@ export default function DealEngineCockpit() {
     if (!deal || !disputeSheetMilestoneId) return;
     setDisputeSheetMilestoneId(null);
     const milestoneId = disputeSheetMilestoneId;
+    const milestone = deal.milestones.find((m) => m.id === milestoneId);
+    if (!milestone || milestone.status !== 'submitted') return;
     const now = new Date().toISOString();
     const deadline = athleteResponseDeadline(now);
     const disputeCase: DisputeCase = {
@@ -1846,7 +1848,7 @@ export default function DealEngineCockpit() {
     const milestoneId = determinationSheetMilestoneId;
     const now = new Date().toISOString();
     const milestone = deal.milestones.find((m) => m.id === milestoneId);
-    if (!milestone) return;
+    if (!milestone || milestone.dispute?.determination) return;
 
     const determination = { decision, reasoning, decidedAtISO: now };
 
@@ -1896,7 +1898,7 @@ export default function DealEngineCockpit() {
       newEscrow = {
         ...newEscrow,
         fundedCents: newFunded,
-        state: newFunded <= 0 ? 'unfunded' : newFunded <= deal.escrow.releasedCents ? 'released' : 'partially-released',
+        state: newFunded <= 0 ? 'unfunded' : 'partially-released',
       };
       newEvents.push({
         at: now,

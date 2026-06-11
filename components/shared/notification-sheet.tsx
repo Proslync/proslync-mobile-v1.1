@@ -62,6 +62,7 @@ const NOTIFICATION_ICONS: Record<NotificationType, { name: keyof typeof Ionicons
   like: { name: 'heart', color: '#FFFFFF' },
   comment: { name: 'chatbubble', color: '#FFFFFF' },
   team_invitation: { name: 'people', color: '#FFFFFF' },
+  mention: { name: 'at-circle', color: '#FFFFFF' },
 };
 
 const ACTOR_PHOTO_TYPES: NotificationType[] = ['follow', 'like', 'comment'];
