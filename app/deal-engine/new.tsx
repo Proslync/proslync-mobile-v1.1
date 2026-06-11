@@ -1,12 +1,13 @@
 // app/deal-engine/new.tsx
-// NIL Deal Engine — Create & Sign flow (Phase D1).
+// NIL Deal Engine — Create & Sign flow (Phase D1 + D2).
 //
 // Internal steps:
 //   1. Template picker (5 template cards)
 //   2. Form (prefilled from Kiyan persona, required fields)
 //   3. Plain-language summary (required reading + "I understand" check)
-//   4. Signature step (draw-to-sign + typed name)
-//   5. Confirmation (Deal ID + DEMO pill + open deal button)
+//   4. WILL THIS CLEAR? pre-check (Phase D2 — three CSC tests + AE banner)
+//   5. Signature step (draw-to-sign + typed name)
+//   6. Confirmation (Deal ID + DEMO pill + open deal button)
 //
 // All state is local. On sign, the new deal is merged into AsyncStorage
 // key DEAL_ENGINE_STORAGE_KEY alongside the fixture.
@@ -39,6 +40,14 @@ import {
   computeFees,
   milestoneAutoApproveAt,
 } from '@/lib/deal-engine/engine';
+import {
+  scorePreclearance,
+} from '@/lib/compliance/preclearance';
+import type { PreclearanceResult } from '@/lib/compliance/preclearance';
+import {
+  ASSOCIATED_ENTITY_TYPES,
+  RULES_VERSION,
+} from '@/lib/compliance/rules-2026-06';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -52,13 +61,29 @@ const INPUT_BG = 'rgba(255,255,255,0.07)';
 const SIGN_PAD_BG = 'rgba(255,255,255,0.04)';
 const SIGN_PAD_BORDER = 'rgba(255,255,255,0.15)';
 
+// Tone colors for verdict/test semantics
+const TONE_PASS = '#30D158';   // green
+const TONE_WARN = '#FF9F0A';   // amber
+const TONE_FAIL = '#FF453A';   // red
+
 // ── Kiyan Anthony persona defaults ────────────────────────────────────────
 
 const KIYAN_NAME = 'Kiyan Anthony';
 const KIYAN_SCHOOL = 'Syracuse University';
 const FIXTURE_IP = '192.168.1.24';
 
-type Step = 'picker' | 'form' | 'summary' | 'sign' | 'confirm';
+type Step = 'picker' | 'form' | 'summary' | 'precheck' | 'sign' | 'confirm';
+
+// Payer entity type for pre-check selector
+type PayerEntityType = 'brand' | 'collective' | 'booster-llc' | 'mmr-partner' | 'school-sponsor';
+
+const PAYER_ENTITY_LABELS: Record<PayerEntityType, string> = {
+  brand: 'Brand',
+  collective: 'Collective',
+  'booster-llc': 'Booster LLC',
+  'mmr-partner': 'MMR Partner',
+  'school-sponsor': 'School Sponsor',
+};
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -591,7 +616,7 @@ function SummaryStep({ summaryText, acknowledged, onToggle, onContinue, onBack }
           activeOpacity={acknowledged ? 0.82 : 1}
         >
           <Text style={[formStyles.continueBtnText, !acknowledged && summaryStyles.disabledText]}>
-            SIGN THE DEAL
+            PRE-CHECK & SIGN
           </Text>
         </TouchableOpacity>
       </View>
@@ -1030,6 +1055,419 @@ const confirmStyles = StyleSheet.create({
   },
 });
 
+// ── Step 4: WILL THIS CLEAR? Pre-check ────────────────────────────────────
+
+interface PrecheckStepProps {
+  amountCents: number;
+  dealKind: ContractTemplate['kind'];
+  deliverableDescription: string;
+  payerEntityType: PayerEntityType;
+  onPayerChange: (v: PayerEntityType) => void;
+  onContinue: () => void;
+  onBack: () => void;
+}
+
+function testColor(result: 'pass' | 'warn' | 'fail'): string {
+  if (result === 'pass') return TONE_PASS;
+  if (result === 'warn') return TONE_WARN;
+  return TONE_FAIL;
+}
+
+function testLabel(result: 'pass' | 'warn' | 'fail'): string {
+  if (result === 'pass') return 'PASS';
+  if (result === 'warn') return 'REVIEW';
+  return 'FAIL';
+}
+
+function verdictColor(verdict: PreclearanceResult['verdict']): string {
+  if (verdict === 'likely-clear') return TONE_PASS;
+  if (verdict === 'needs-review') return TONE_WARN;
+  return TONE_FAIL;
+}
+
+function verdictLabel(verdict: PreclearanceResult['verdict']): string {
+  if (verdict === 'likely-clear') return 'LIKELY CLEAR';
+  if (verdict === 'needs-review') return 'NEEDS REVIEW';
+  return 'LIKELY REJECTED';
+}
+
+const CSC_TEST_LABELS: Record<string, string> = {
+  businessPurpose: 'Valid Business Purpose',
+  activation: 'Real Activation',
+  compRange: 'Comp-Range Alignment',
+};
+
+function PrecheckStep({
+  amountCents,
+  dealKind,
+  deliverableDescription,
+  payerEntityType,
+  onPayerChange,
+  onContinue,
+  onBack,
+}: PrecheckStepProps) {
+  // Build a simple comp range for new deals: use a deal-kind-based heuristic
+  // (no specific comp ID available at creation time — use kind-level defaults)
+  const kindCompRanges: Record<ContractTemplate['kind'], { lowCents: number; highCents: number }> = {
+    endorsement: { lowCents: 50_000, highCents: 500_000_00 },
+    'social-post': { lowCents: 5_000, highCents: 50_000_00 },
+    appearance: { lowCents: 20_000, highCents: 200_000_00 },
+    autograph: { lowCents: 10_000, highCents: 100_000_00 },
+    licensing: { lowCents: 30_000, highCents: 300_000_00 },
+  };
+  const compRange = kindCompRanges[dealKind] ?? null;
+
+  const result = scorePreclearance({
+    amountCents,
+    dealKind,
+    deliverableDescription,
+    payerEntityType,
+    compRange,
+  });
+
+  const isAE = (ASSOCIATED_ENTITY_TYPES as readonly string[]).includes(payerEntityType);
+
+  return (
+    <ScrollView
+      contentContainerStyle={precheckStyles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      <Text style={precheckStyles.title}>Will This Clear?</Text>
+      <Text style={precheckStyles.subtitle}>
+        Pre-check against the three CSC tests before you sign.
+        This is a copilot — not an official CSC determination.
+      </Text>
+
+      {/* Verdict pill at top */}
+      <View style={precheckStyles.verdictRow}>
+        <Text style={precheckStyles.verdictLabel}>OVERALL VERDICT</Text>
+        <View
+          style={[
+            precheckStyles.verdictPill,
+            { borderColor: verdictColor(result.verdict) },
+          ]}
+        >
+          <Text style={[precheckStyles.verdictText, { color: verdictColor(result.verdict) }]}>
+            {verdictLabel(result.verdict)}
+          </Text>
+        </View>
+      </View>
+
+      {/* Strong warning when likely-rejected */}
+      {result.verdict === 'likely-rejected' && (
+        <View style={precheckStyles.rejectedBanner}>
+          <Text style={precheckStyles.rejectedBannerText}>
+            One or more CSC tests failed. Signing is still your choice — this is a copilot,
+            not a gate. Review the test results below and address before submitting to NIL Go.
+          </Text>
+        </View>
+      )}
+
+      {/* Payer entity type selector */}
+      <View style={precheckStyles.selectorGroup}>
+        <Text style={precheckStyles.selectorLabel}>PAYER ENTITY TYPE</Text>
+        <View style={precheckStyles.chipRow}>
+          {(Object.keys(PAYER_ENTITY_LABELS) as PayerEntityType[]).map((type) => (
+            <TouchableOpacity
+              key={type}
+              style={[
+                precheckStyles.entityChip,
+                payerEntityType === type && precheckStyles.entityChipSelected,
+              ]}
+              onPress={() => onPayerChange(type)}
+              activeOpacity={0.75}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: payerEntityType === type }}
+            >
+              <Text
+                style={[
+                  precheckStyles.entityChipText,
+                  payerEntityType === type && precheckStyles.entityChipTextSelected,
+                ]}
+              >
+                {PAYER_ENTITY_LABELS[type]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Associated-Entity banner */}
+      {isAE && (
+        <View style={precheckStyles.aeBanner}>
+          <Text style={precheckStyles.aeBannerTitle}>ASSOCIATED-ENTITY PAYER</Text>
+          <Text style={precheckStyles.aeBannerBody}>
+            Enhanced CSC review likely — document business purpose and deliverables.
+            The "{payerEntityType}" entity type triggers heightened scrutiny under
+            CSC June 2026 rules.
+          </Text>
+        </View>
+      )}
+
+      {/* Three CSC test rows */}
+      <View style={precheckStyles.card}>
+        <Text style={precheckStyles.cardTitle}>CSC TEST RESULTS</Text>
+        {(Object.entries(result.tests) as [string, 'pass' | 'warn' | 'fail'][]).map(([key, val]) => (
+          <View key={key} style={precheckStyles.testRow}>
+            <Text style={precheckStyles.testName}>{CSC_TEST_LABELS[key] ?? key}</Text>
+            <View
+              style={[
+                precheckStyles.testPill,
+                { borderColor: testColor(val) },
+              ]}
+            >
+              <Text style={[precheckStyles.testPillText, { color: testColor(val) }]}>
+                {testLabel(val)}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {/* Comp-range line */}
+      {compRange && (
+        <View style={precheckStyles.compLine}>
+          <Text style={precheckStyles.compLineLabel}>COMP RANGE</Text>
+          <Text style={precheckStyles.compLineValue}>
+            ${formatCents(amountCents)} deal · comps ${formatCents(compRange.lowCents)}–${formatCents(compRange.highCents)}
+          </Text>
+        </View>
+      )}
+
+      {/* Flags */}
+      {result.flags.filter((f) => f.kind !== 'csc-report-required').map((flag) => (
+        <View key={flag.kind} style={precheckStyles.flagCard}>
+          <Text style={precheckStyles.flagLabel}>{flag.label.toUpperCase()}</Text>
+          <Text style={precheckStyles.flagDetail}>{flag.detail}</Text>
+        </View>
+      ))}
+
+      <Text style={precheckStyles.disclaimer}>
+        Rules version: {RULES_VERSION} · Prepared with Proslync — not an official CSC submission.
+        This pre-check is a copilot tool, not legal advice.
+      </Text>
+
+      <View style={formStyles.buttonRow}>
+        <TouchableOpacity style={formStyles.backBtn} onPress={onBack} activeOpacity={0.75}>
+          <Text style={formStyles.backBtnText}>Back</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={formStyles.continueBtn} onPress={onContinue} activeOpacity={0.82}>
+          <Text style={formStyles.continueBtnText}>SIGN THE DEAL</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  );
+}
+
+const precheckStyles = StyleSheet.create({
+  container: {
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 40,
+    gap: 14,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: WHITE,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: MUTED,
+    fontWeight: '500',
+    lineHeight: 19,
+  },
+  verdictRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: CARD_BG,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  verdictLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: MUTED,
+    letterSpacing: 1,
+  },
+  verdictPill: {
+    borderRadius: 999,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  verdictText: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  rejectedBanner: {
+    backgroundColor: 'rgba(255,69,58,0.10)',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,69,58,0.35)',
+    padding: 14,
+  },
+  rejectedBannerText: {
+    fontSize: 13,
+    color: 'rgba(255,69,58,0.9)',
+    fontWeight: '600',
+    lineHeight: 19,
+  },
+  selectorGroup: {
+    gap: 8,
+  },
+  selectorLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: MUTED,
+    letterSpacing: 1,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  entityChip: {
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: CARD_BG,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  entityChipSelected: {
+    backgroundColor: 'rgba(235,98,26,0.18)',
+    borderColor: COPPER,
+  },
+  entityChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: MUTED,
+  },
+  entityChipTextSelected: {
+    color: COPPER,
+    fontWeight: '700',
+  },
+  aeBanner: {
+    backgroundColor: 'rgba(255,159,10,0.10)',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,159,10,0.35)',
+    padding: 14,
+    gap: 5,
+  },
+  aeBannerTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: TONE_WARN,
+    letterSpacing: 1.2,
+  },
+  aeBannerBody: {
+    fontSize: 13,
+    color: 'rgba(255,159,10,0.9)',
+    fontWeight: '600',
+    lineHeight: 19,
+  },
+  card: {
+    backgroundColor: CARD_BG,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    padding: 14,
+    gap: 10,
+  },
+  cardTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: MUTED,
+    letterSpacing: 1.2,
+    marginBottom: 2,
+  },
+  testRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  testName: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: WHITE,
+  },
+  testPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  testPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  compLine: {
+    backgroundColor: CARD_BG,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  compLineLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: MUTED,
+    letterSpacing: 1,
+  },
+  compLineValue: {
+    fontSize: 12,
+    color: WHITE,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+    textAlign: 'right',
+  },
+  flagCard: {
+    backgroundColor: 'rgba(255,159,10,0.07)',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,159,10,0.22)',
+    padding: 12,
+    gap: 4,
+  },
+  flagLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: TONE_WARN,
+    letterSpacing: 1,
+  },
+  flagDetail: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.72)',
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  disclaimer: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.30)',
+    fontWeight: '500',
+    lineHeight: 15,
+    marginTop: 2,
+  },
+});
+
 // ── Root screen component ─────────────────────────────────────────────────
 
 export default function DealEngineNewScreen() {
@@ -1040,6 +1478,7 @@ export default function DealEngineNewScreen() {
   const [template, setTemplate] = React.useState<ContractTemplate | null>(null);
   const [fieldValues, setFieldValues] = React.useState<Record<string, string>>({});
   const [acknowledged, setAcknowledged] = React.useState(false);
+  const [payerEntityType, setPayerEntityType] = React.useState<PayerEntityType>('brand');
   const [typedName, setTypedName] = React.useState(KIYAN_NAME);
   const [svgPath, setSvgPath] = React.useState('');
   const [dealId, setDealId] = React.useState('');
@@ -1048,6 +1487,7 @@ export default function DealEngineNewScreen() {
     picker: 'Start a Deal',
     form: 'Deal Details',
     summary: 'Review Summary',
+    precheck: 'Will This Clear?',
     sign: 'Sign',
     confirm: 'Confirmed',
   };
@@ -1097,6 +1537,23 @@ export default function DealEngineNewScreen() {
     const newDealId = generateDealId(year, defaultRand);
     const amountCents = Math.round((parseFloat(fieldValues['dealValue'] ?? '0') || 0) * 100);
     const fees = computeFees(amountCents);
+
+    // Compute preclearance result to store with the deal (Phase D2)
+    const kindCompRanges: Record<ContractTemplate['kind'], { lowCents: number; highCents: number }> = {
+      endorsement: { lowCents: 50_000, highCents: 500_000_00 },
+      'social-post': { lowCents: 5_000, highCents: 50_000_00 },
+      appearance: { lowCents: 20_000, highCents: 200_000_00 },
+      autograph: { lowCents: 10_000, highCents: 100_000_00 },
+      licensing: { lowCents: 30_000, highCents: 300_000_00 },
+    };
+    const compRange = kindCompRanges[template.kind] ?? null;
+    const preclearanceResult = scorePreclearance({
+      amountCents,
+      dealKind: template.kind,
+      deliverableDescription: fieldValues['deliverableDescription'] ?? '',
+      payerEntityType,
+      compRange,
+    });
 
     const signEvent: DealEvent = {
       at: now,
@@ -1179,6 +1636,12 @@ export default function DealEngineNewScreen() {
       athleteSignedName: typedName,
       athleteSignaturePath: svgPath,
       isDemo: true,
+      preclearance: {
+        ...preclearanceResult,
+        payerEntityType,
+        rulesVersion: RULES_VERSION,
+        compRange,
+      },
       createdAt: now,
       updatedAt: now,
     };
@@ -1197,7 +1660,7 @@ export default function DealEngineNewScreen() {
     setStep('confirm');
   }
 
-  const stepIndex = (['picker', 'form', 'summary', 'sign', 'confirm'] as Step[]).indexOf(step);
+  const stepIndex = (['picker', 'form', 'summary', 'precheck', 'sign', 'confirm'] as Step[]).indexOf(step);
 
   return (
     <>
@@ -1214,8 +1677,10 @@ export default function DealEngineNewScreen() {
                   setStep('picker');
                 } else if (step === 'summary') {
                   setStep('form');
-                } else if (step === 'sign') {
+                } else if (step === 'precheck') {
                   setStep('summary');
+                } else if (step === 'sign') {
+                  setStep('precheck');
                 }
               }}
               style={screenStyles.backPressable}
@@ -1230,7 +1695,7 @@ export default function DealEngineNewScreen() {
           {/* Step indicator */}
           {step !== 'confirm' && (
             <View style={screenStyles.stepRow}>
-              {([0, 1, 2, 3] as number[]).map((i) => (
+              {([0, 1, 2, 3, 4] as number[]).map((i) => (
                 <View
                   key={i}
                   style={[
@@ -1259,8 +1724,19 @@ export default function DealEngineNewScreen() {
             summaryText={buildSummaryText()}
             acknowledged={acknowledged}
             onToggle={() => setAcknowledged((p) => !p)}
-            onContinue={() => setStep('sign')}
+            onContinue={() => setStep('precheck')}
             onBack={() => setStep('form')}
+          />
+        )}
+        {step === 'precheck' && template && (
+          <PrecheckStep
+            amountCents={Math.round((parseFloat(fieldValues['dealValue'] ?? '0') || 0) * 100)}
+            dealKind={template.kind}
+            deliverableDescription={fieldValues['deliverableDescription'] ?? ''}
+            payerEntityType={payerEntityType}
+            onPayerChange={setPayerEntityType}
+            onContinue={() => setStep('sign')}
+            onBack={() => setStep('summary')}
           />
         )}
         {step === 'sign' && (
