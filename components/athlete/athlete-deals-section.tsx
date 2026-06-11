@@ -19,6 +19,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { NotificationSheet } from '@/components/shared/notification-sheet';
+import { deriveDealNotifications, type DealNotification } from '@/lib/deal-engine/engine';
+import { DEAL_ENGINE_STORAGE_KEY } from '@/lib/data/mock-deal-engine';
+import type { EngineDeal } from '@/lib/types/deal-engine.types';
+import type { AppNotification } from '@/lib/types/notifications.types';
 
 import { GlassButton } from '@/components/glass/glass-button';
 import { useStableRouter } from '@/hooks/use-stable-router';
@@ -578,11 +585,60 @@ const ptStyles = StyleSheet.create({
   },
 });
 
+// ── Deal notifications hook ──────────────────────────────────────
+
+const NOTIF_SEEN_KEY = 'proslync:deal-engine:notifSeen:v1';
+const DANGER_COLOR = '#FF453A';
+
+function useDealNotifications() {
+  const [notifItems, setNotifItems] = React.useState<AppNotification[]>([]);
+  const [seenAt, setSeenAt] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const [raw, seenRaw] = await Promise.all([
+          AsyncStorage.getItem(DEAL_ENGINE_STORAGE_KEY),
+          AsyncStorage.getItem(NOTIF_SEEN_KEY),
+        ]);
+        const deals: EngineDeal[] = raw ? JSON.parse(raw) : [];
+        const now = new Date().toISOString();
+        const notifs: DealNotification[] = deriveDealNotifications(deals, now);
+        const mapped: AppNotification[] = notifs.map((n, i) => ({
+          id: 98_000 + i,
+          type: 'payment' as const,
+          title: n.title,
+          body: n.body,
+          read: seenRaw ? n.atISO <= seenRaw : false,
+          metadata: { dealId: n.dealId, kind: n.kind },
+          createdAt: n.atISO,
+        }));
+        setNotifItems(mapped);
+        setSeenAt(seenRaw);
+      } catch (_) {}
+    }
+    load();
+  }, []);
+
+  const unreadCount = notifItems.filter((n) => !n.read).length;
+
+  async function markSeen() {
+    const now = new Date().toISOString();
+    setSeenAt(now);
+    setNotifItems((prev) => prev.map((n) => ({ ...n, read: true })));
+    await AsyncStorage.setItem(NOTIF_SEEN_KEY, now);
+  }
+
+  return { notifItems, unreadCount, markSeen };
+}
+
 // ── Section root ────────────────────────────────────────────────
 
 export function AthleteDealsSection() {
   const contractsQuery = useAthleteContracts(DEMO_ATHLETE_ID);
   const offersQuery = useAthleteOffers();
+  const [notifSheetVisible, setNotifSheetVisible] = React.useState(false);
+  const { notifItems, unreadCount, markSeen } = useDealNotifications();
 
   const activeCount = contractsQuery.data?.activeCount ?? 0;
   const offerCount = offersQuery.data?.offerCount ?? 0;
@@ -608,6 +664,30 @@ export function AthleteDealsSection() {
 
   return (
     <View style={{ gap: 16 }}>
+      {/* Deal notifications bell — top-right of the Deals section */}
+      <View style={dealsBellStyles.headerRow}>
+        <Text style={dealsBellStyles.sectionTitle}>DEALS</Text>
+        <TouchableOpacity
+          style={dealsBellStyles.bellBtn}
+          onPress={() => {
+            setNotifSheetVisible(true);
+            markSeen();
+          }}
+          activeOpacity={0.82}
+          accessibilityRole="button"
+          accessibilityLabel={`Deal notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+        >
+          <Ionicons name="notifications-outline" size={22} color={COPPER} />
+          {unreadCount > 0 && (
+            <View style={dealsBellStyles.bellDot}>
+              <Text style={dealsBellStyles.bellDotText}>
+                {unreadCount > 9 ? '9+' : String(unreadCount)}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
       {/* Payment Truth — per-deal 3-step state (spec §4 thin truth layer) */}
       <PaymentTruthSection />
 
@@ -668,6 +748,13 @@ export function AthleteDealsSection() {
         <Text style={listStyles.sectionLabel}>OFFER INBOX</Text>
         <OffersList query={offersQuery} />
       </View>
+
+      {/* Notification sheet — mounted here so the Deals tab owns it */}
+      <NotificationSheet
+        visible={notifSheetVisible}
+        onClose={() => setNotifSheetVisible(false)}
+        extraItems={notifItems}
+      />
     </View>
   );
 }
@@ -1340,6 +1427,46 @@ const opportunitiesCtaStyles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
+  },
+});
+
+const dealsBellStyles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.4,
+    color: 'rgba(255,255,255,0.45)',
+  },
+  bellBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: DANGER_COLOR,
+    borderWidth: 1.5,
+    borderColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  bellDotText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: '#FFF',
   },
 });
 
