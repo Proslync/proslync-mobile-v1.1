@@ -155,9 +155,11 @@ function TeamInvitationRow({
 interface NotificationSheetProps {
   visible: boolean;
   onClose: () => void;
+  /** Optional deal-engine notifications to prepend to the activity list */
+  extraItems?: AppNotification[];
 }
 
-export function NotificationSheet({ visible, onClose }: NotificationSheetProps) {
+export function NotificationSheet({ visible, onClose, extraItems = [] }: NotificationSheetProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -258,9 +260,9 @@ export function NotificationSheet({ visible, onClose }: NotificationSheetProps) 
       {activeTab === 'activity' ? (
         isLoading ? (
           <ActivityIndicator color="rgba(255,255,255,0.5)" style={{ marginVertical: 40 }} />
-        ) : notifications.length > 0 ? (
+        ) : (extraItems.length > 0 || notifications.length > 0) ? (
           <FlatList
-            data={notifications}
+            data={[...extraItems, ...notifications]}
             keyExtractor={item => item.id.toString()}
             renderItem={({ item }) => <ActivityRow item={item} onPress={handleNotificationPress} />}
             contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
