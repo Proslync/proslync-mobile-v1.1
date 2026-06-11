@@ -1,3 +1,5 @@
+import { ProfileActions } from "@/components/athlete/profile-actions";
+import { MediaKitCard } from "@/components/athlete/media-kit-card";
 import { FollowersSheet } from "@/components/feed/followers-sheet";
 import { LinkifiedText } from "@/components/shared/linkified-text";
 import { SwipeableTabView } from "@/components/shared/swipeable-tab-view";
@@ -2059,6 +2061,8 @@ function PlayerProfileScreen() {
               pointerEvents="none"
             />
           </View>
+          {/* Storefront CTAs — Support + Work with me (hidden in edit mode) */}
+          {!isEditing && <ProfileActions athleteName="Kiyan" />}
           {/* Profile section tabs — segmented glass pill with sliding knob (matches dashboard) */}
           <View style={s.tabsRow}>
             <View
@@ -2120,6 +2124,7 @@ function PlayerProfileScreen() {
           <View style={s.igGridSection}>
             {profileTab === 'about' && (
               <View style={s.aboutSection}>
+                <MediaKitCard onViewPosts={() => setProfileTab('posts')} />
                 <View style={s.aboutBlockBare}>
                   <View
                     style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}

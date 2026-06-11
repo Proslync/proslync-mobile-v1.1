@@ -1,0 +1,620 @@
+// ── ProfileActions ────────────────────────────────────────────
+// Athlete storefront — two CTA buttons (SUPPORT + WORK WITH ME)
+// rendered below the identity block on the athlete's own profile.
+// Both buttons open bottom-anchored Modal sheets.
+// Demo fixture only — NO real payments or deal submission.
+
+import { Ionicons } from '@expo/vector-icons';
+import * as React from 'react';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const COPPER = '#EB621A';
+const MUTED = 'rgba(255,255,255,0.52)';
+const WHITE = '#FFFFFF';
+const SHEET_BG = '#0F0F0F';
+const CARD_BG = 'rgba(255,255,255,0.055)';
+const CARD_BORDER = 'rgba(255,255,255,0.10)';
+const SUCCESS_GREEN = '#00C6B0';
+
+// ─── SupporterSheet ──────────────────────────────────────────
+
+type SupportTier = 'fan' | 'insider' | 'courtside';
+
+const TIERS: {
+  id: SupportTier;
+  label: string;
+  price: string;
+  perks: string[];
+  amountCents: number;
+  platformCents: number;
+}[] = [
+  {
+    id: 'fan',
+    label: 'FAN',
+    price: '$5/mo',
+    perks: ['Supporter badge', 'Gated drops'],
+    amountCents: 500,
+    platformCents: 44,
+  },
+  {
+    id: 'insider',
+    label: 'INSIDER',
+    price: '$12/mo',
+    perks: ['Everything in Fan', 'Monthly Q&A', 'Early merch'],
+    amountCents: 1200,
+    platformCents: 144,
+  },
+  {
+    id: 'courtside',
+    label: 'COURTSIDE',
+    price: '$25/mo',
+    perks: ['Everything in Insider', 'Signed item each season', 'Name in credits'],
+    amountCents: 2500,
+    platformCents: 244,
+  },
+];
+
+function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+interface SupporterSheetProps {
+  visible: boolean;
+  athleteName: string;
+  onClose: () => void;
+}
+
+function SupporterSheet({ visible, athleteName, onClose }: SupporterSheetProps) {
+  const insets = useSafeAreaInsets();
+  const [selectedTier, setSelectedTier] = React.useState<SupportTier>('insider');
+  const [confirmed, setConfirmed] = React.useState(false);
+
+  const handleClose = React.useCallback(() => {
+    setConfirmed(false);
+    setSelectedTier('insider');
+    onClose();
+  }, [onClose]);
+
+  const tier = TIERS.find((t) => t.id === selectedTier) ?? TIERS[1];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={handleClose}
+    >
+      <View style={ss.root}>
+        <Pressable style={ss.scrim} onPress={handleClose} />
+        <View style={[ss.sheet, { paddingBottom: insets.bottom + 20 }]}>
+          <View style={ss.handle} />
+
+          {confirmed ? (
+            /* ── Confirmation state ── */
+            <ScrollView
+              contentContainerStyle={ss.sheetContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={ss.title}>You&apos;re supporter #15</Text>
+              <View style={ss.receiptCard}>
+                <ReceiptRow label="You pay" value={formatCents(tier.amountCents)} />
+                <ReceiptRow
+                  label={`Reaches ${athleteName}`}
+                  value={formatCents(tier.amountCents - tier.platformCents)}
+                />
+                <ReceiptRow label="Platform" value={formatCents(tier.platformCents)} />
+              </View>
+              <View style={ss.demoPill}>
+                <Text style={ss.demoPillText}>DEMO — payments not enabled</Text>
+              </View>
+              <TouchableOpacity
+                style={ss.ctaBtn}
+                onPress={handleClose}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Done"
+              >
+                <Text style={ss.ctaBtnText}>Done</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          ) : (
+            /* ── Tier selection state ── */
+            <ScrollView
+              contentContainerStyle={ss.sheetContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={ss.title}>Support {athleteName} directly</Text>
+
+              {TIERS.map((t) => {
+                const isSelected = selectedTier === t.id;
+                return (
+                  <TouchableOpacity
+                    key={t.id}
+                    style={[ss.tierCard, isSelected && ss.tierCardSelected]}
+                    onPress={() => setSelectedTier(t.id)}
+                    activeOpacity={0.8}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: isSelected }}
+                  >
+                    <View style={ss.tierRow}>
+                      <View style={[ss.radio, isSelected && ss.radioSelected]}>
+                        {isSelected ? (
+                          <View style={ss.radioDot} />
+                        ) : null}
+                      </View>
+                      <View style={ss.tierMeta}>
+                        <Text style={ss.tierLabel}>{t.label}</Text>
+                        <Text style={ss.tierPerks} numberOfLines={2}>
+                          {t.perks.join(' · ')}
+                        </Text>
+                      </View>
+                      <Text style={[ss.tierPrice, isSelected && ss.tierPriceSelected]}>
+                        {t.price}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <Text style={ss.receiptNote}>
+                Every dollar is a real NIL transaction — you&apos;ll see exactly what
+                reaches {athleteName}.
+              </Text>
+
+              <TouchableOpacity
+                style={ss.ctaBtn}
+                onPress={() => setConfirmed(true)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Become supporter #15"
+              >
+                <Text style={ss.ctaBtnText}>Become supporter #15</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function ReceiptRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={ss.receiptRow}>
+      <Text style={ss.receiptLabel}>{label}</Text>
+      <Text style={ss.receiptValue}>{value}</Text>
+    </View>
+  );
+}
+
+// ─── WorkWithMeSheet ──────────────────────────────────────────
+
+const DEAL_TYPES: { label: string; range: string }[] = [
+  { label: 'Endorsement post', range: '$1.2–2.4K' },
+  { label: 'Appearance', range: '$3–6K' },
+  { label: 'Licensing', range: '$800–1.8K' },
+];
+
+const TRUST_CHIPS = [
+  '4 deals completed on time',
+  'NIL Go cleared history',
+];
+
+interface WorkWithMeSheetProps {
+  visible: boolean;
+  athleteName: string;
+  onClose: () => void;
+}
+
+function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps) {
+  const insets = useSafeAreaInsets();
+  const [confirmed, setConfirmed] = React.useState(false);
+
+  const handleClose = React.useCallback(() => {
+    setConfirmed(false);
+    onClose();
+  }, [onClose]);
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={handleClose}
+    >
+      <View style={ss.root}>
+        <Pressable style={ss.scrim} onPress={handleClose} />
+        <View style={[ss.sheet, { paddingBottom: insets.bottom + 20 }]}>
+          <View style={ss.handle} />
+
+          {confirmed ? (
+            /* ── Confirmation state ── */
+            <ScrollView
+              contentContainerStyle={ss.sheetContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={ss.title}>Request sent to {athleteName}&apos;s team</Text>
+              <Text style={ss.receiptNote}>
+                The team typically responds within 2 business days.
+              </Text>
+              <View style={ss.demoPill}>
+                <Text style={ss.demoPillText}>DEMO</Text>
+              </View>
+              <TouchableOpacity
+                style={ss.ctaBtn}
+                onPress={handleClose}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Done"
+              >
+                <Text style={ss.ctaBtnText}>Done</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          ) : (
+            /* ── Deal type selection state ── */
+            <ScrollView
+              contentContainerStyle={ss.sheetContent}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={ss.title}>Work with {athleteName}</Text>
+
+              {DEAL_TYPES.map((dt) => (
+                <View key={dt.label} style={ss.dealTypeRow}>
+                  <Text style={ss.dealTypeLabel}>{dt.label}</Text>
+                  <View style={ss.dealTypeRight}>
+                    <Text style={ss.dealTypeRangeLabel}>est. range</Text>
+                    <Text style={ss.dealTypeRange}>{dt.range}</Text>
+                  </View>
+                </View>
+              ))}
+
+              <View style={ss.trustRow}>
+                {TRUST_CHIPS.map((chip) => (
+                  <View key={chip} style={ss.trustChip}>
+                    <Ionicons name="checkmark" size={11} color={SUCCESS_GREEN} />
+                    <Text style={ss.trustChipText}>{chip}</Text>
+                  </View>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={ss.ctaBtn}
+                onPress={() => setConfirmed(true)}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Start a deal request"
+              >
+                <Text style={ss.ctaBtnText}>Start a deal request</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── ProfileActions ───────────────────────────────────────────
+
+export interface ProfileActionsProps {
+  athleteName: string;
+}
+
+export function ProfileActions({ athleteName }: ProfileActionsProps) {
+  const [supporterOpen, setSupporterOpen] = React.useState(false);
+  const [workOpen, setWorkOpen] = React.useState(false);
+
+  return (
+    <>
+      <View style={pa.row}>
+        {/* SUPPORT — filled copper */}
+        <TouchableOpacity
+          style={pa.supportBtn}
+          onPress={() => setSupporterOpen(true)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={`Support ${athleteName}`}
+        >
+          <Text style={pa.supportBtnText}>SUPPORT</Text>
+        </TouchableOpacity>
+
+        {/* WORK WITH ME — ghost copper */}
+        <TouchableOpacity
+          style={pa.workBtn}
+          onPress={() => setWorkOpen(true)}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={`Work with ${athleteName}`}
+        >
+          <Text style={pa.workBtnText}>WORK WITH ME</Text>
+        </TouchableOpacity>
+      </View>
+
+      <SupporterSheet
+        visible={supporterOpen}
+        athleteName={athleteName}
+        onClose={() => setSupporterOpen(false)}
+      />
+      <WorkWithMeSheet
+        visible={workOpen}
+        athleteName={athleteName}
+        onClose={() => setWorkOpen(false)}
+      />
+    </>
+  );
+}
+
+// ─── Styles ──────────────────────────────────────────────────
+
+const BTN_HEIGHT = 46;
+const BTN_RADIUS = 23;
+
+const pa = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  supportBtn: {
+    flex: 1,
+    height: BTN_HEIGHT,
+    borderRadius: BTN_RADIUS,
+    backgroundColor: COPPER,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supportBtnText: {
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  workBtn: {
+    flex: 1,
+    height: BTN_HEIGHT,
+    borderRadius: BTN_RADIUS,
+    backgroundColor: 'transparent',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COPPER,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  workBtnText: {
+    color: COPPER,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+});
+
+const ss = StyleSheet.create({
+  root: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  sheet: {
+    backgroundColor: SHEET_BG,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingTop: 8,
+    maxHeight: '88%',
+  },
+  handle: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    marginBottom: 8,
+  },
+  sheetContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 24,
+    gap: 12,
+  },
+  title: {
+    color: WHITE,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -0.4,
+    marginBottom: 4,
+  },
+  // Tier cards
+  tierCard: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+    padding: 14,
+  },
+  tierCardSelected: {
+    borderColor: COPPER,
+    backgroundColor: `${COPPER}18`,
+  },
+  tierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    borderColor: COPPER,
+  },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COPPER,
+  },
+  tierMeta: {
+    flex: 1,
+    gap: 3,
+  },
+  tierLabel: {
+    color: WHITE,
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+  },
+  tierPerks: {
+    color: MUTED,
+    fontSize: 11.5,
+    fontWeight: '500',
+    lineHeight: 15,
+  },
+  tierPrice: {
+    color: MUTED,
+    fontSize: 14,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  tierPriceSelected: {
+    color: COPPER,
+  },
+  receiptNote: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  receiptCard: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+    padding: 14,
+    gap: 10,
+  },
+  receiptRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  receiptLabel: {
+    color: MUTED,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  receiptValue: {
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  demoPill: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  demoPillText: {
+    color: MUTED,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  ctaBtn: {
+    height: BTN_HEIGHT,
+    borderRadius: BTN_RADIUS,
+    backgroundColor: COPPER,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  ctaBtnText: {
+    color: WHITE,
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  // WorkWithMe — deal type rows
+  dealTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 52,
+  },
+  dealTypeLabel: {
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  dealTypeRight: {
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  dealTypeRangeLabel: {
+    color: MUTED,
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  dealTypeRange: {
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  trustRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 2,
+  },
+  trustChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${SUCCESS_GREEN}44`,
+    backgroundColor: `${SUCCESS_GREEN}12`,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  trustChipText: {
+    color: SUCCESS_GREEN,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+});
