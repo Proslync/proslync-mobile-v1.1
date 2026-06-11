@@ -414,6 +414,16 @@ function PaymentTruthSection() {
       <View style={ptStyles.sectionHeader}>
         <View style={ptStyles.sectionBar} />
         <Text style={ptStyles.sectionLabel}>PAYMENT TRUTH</Text>
+        {/* START A DEAL CTA — routes to NIL Deal Engine create flow */}
+        <TouchableOpacity
+          style={ptStyles.startDealCta}
+          onPress={() => router.push('/deal-engine/new')}
+          activeOpacity={0.82}
+          accessibilityRole="button"
+          accessibilityLabel="Start a new NIL deal"
+        >
+          <Text style={ptStyles.startDealCtaText}>+ START A DEAL</Text>
+        </TouchableOpacity>
       </View>
       <View style={ptStyles.rows}>
         {deals.map((deal) => (
@@ -448,6 +458,23 @@ const ptStyles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 1.2,
     color: COPPER,
+    flex: 1,
+  },
+  startDealCta: {
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: COPPER,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(235,98,26,0.10)',
+    minHeight: 30,
+    justifyContent: 'center',
+  },
+  startDealCtaText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: COPPER,
+    letterSpacing: 0.8,
   },
   rows: {
     gap: 8,
