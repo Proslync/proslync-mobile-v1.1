@@ -1,6 +1,8 @@
 // lib/types/deal-engine.types.ts
-// Type definitions for the NIL Deal Engine — Phase D1.
+// Type definitions for the NIL Deal Engine — Phase D1 + D2.
 // Fee model: BRAND-SIDE only; athlete receives 100% of deal amount.
+
+import type { PreclearanceResult } from '@/lib/compliance/preclearance';
 
 // ── Contract templates ────────────────────────────────────────────────────
 
@@ -191,6 +193,20 @@ export interface EngineDeal {
 
   /** Whether this deal was created in the demo flow */
   isDemo?: boolean;
+
+  /**
+   * Pre-clearance result computed at creation time.
+   * Optional — present when athlete ran the WILL THIS CLEAR? check.
+   * Phase D2.
+   */
+  preclearance?: PreclearanceResult & {
+    /** Entity type the payer was classified as during scoring */
+    payerEntityType: string;
+    /** Rules-file version used for scoring */
+    rulesVersion: string;
+    /** ISO comp-range used (may be null if no data available) */
+    compRange: { lowCents: number; highCents: number } | null;
+  };
 
   createdAt: string;
   updatedAt: string;
