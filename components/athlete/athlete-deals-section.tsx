@@ -11,6 +11,7 @@
 import * as React from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -32,6 +33,12 @@ import {
   type OfferInboxView,
 } from '@/hooks/use-athlete-offers';
 import { getAthleteDiscovery } from '@/lib/data/mock-athlete-discovery';
+import {
+  hoursUntilISO,
+  thresholdForHours,
+} from '@/lib/athlete/truth';
+import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
+import type { DealTruth, PaymentState } from '@/lib/athlete/truth';
 
 const STATS_CARD_BG = '#1C1C1E';
 
@@ -237,6 +244,313 @@ function AthleteWalletRefreshCta() {
   );
 }
 
+// ── Payment Truth Section ─────────────────────────────────────────────────
+// Spec §4 — per-deal 3-step payment state indicator: EXPECTED → CSC REVIEW → PAID
+// One row per deal. Copper for current state, white-30 for pending, green for paid.
+// Tapping any row → /athlete/disclosures (v1 deep-link, sufficient for demo).
+
+const COPPER = '#EB621A';
+const GREEN_PAID = '#34C759';
+const RED_DENIED = '#FF3B30';
+const AMBER_DUE = '#FFD60A';
+
+type StepState = 'pending' | 'current' | 'done' | 'denied';
+
+interface PaymentStep {
+  label: string;
+  state: StepState;
+}
+
+function stepsForPaymentState(ps: PaymentState): PaymentStep[] {
+  switch (ps) {
+    case 'expected':
+      return [
+        { label: 'EXPECTED', state: 'current' },
+        { label: 'CSC REVIEW', state: 'pending' },
+        { label: 'PAID', state: 'pending' },
+      ];
+    case 'in-review':
+      return [
+        { label: 'EXPECTED', state: 'done' },
+        { label: 'CSC REVIEW', state: 'current' },
+        { label: 'PAID', state: 'pending' },
+      ];
+    case 'cleared':
+      return [
+        { label: 'EXPECTED', state: 'done' },
+        { label: 'CSC REVIEW', state: 'done' },
+        { label: 'PAID', state: 'current' },
+      ];
+    case 'paid':
+      return [
+        { label: 'EXPECTED', state: 'done' },
+        { label: 'CSC REVIEW', state: 'done' },
+        { label: 'PAID', state: 'done' },
+      ];
+    default:
+      return [
+        { label: 'EXPECTED', state: 'pending' },
+        { label: 'CSC REVIEW', state: 'pending' },
+        { label: 'PAID', state: 'pending' },
+      ];
+  }
+}
+
+function stepDotColor(s: StepState): string {
+  if (s === 'done') return GREEN_PAID;
+  if (s === 'current') return COPPER;
+  if (s === 'denied') return RED_DENIED;
+  return 'rgba(255,255,255,0.30)';
+}
+
+function PaymentTruthRow({ deal, onPress }: { deal: DealTruth; onPress: () => void }) {
+  const router = useStableRouter();
+  const steps = stepsForPaymentState(deal.paymentState);
+
+  // Sub-chip: disclosure countdown (if undisclosed)
+  let disclosureChip: React.ReactNode = null;
+  if (deal.disclosure.state === 'undisclosed' && deal.disclosure.deadlineISO) {
+    const hours = hoursUntilISO(deal.disclosure.deadlineISO);
+    const threshold = thresholdForHours(hours);
+    const chipColor = threshold === 'red' ? RED_DENIED : threshold === 'amber' ? AMBER_DUE : COPPER;
+    const label =
+      hours === null ? 'overdue'
+        : hours < 24 ? `${Math.floor(hours)}h to report`
+        : `${Math.floor(hours / 24)}d to report`;
+    disclosureChip = (
+      <View style={ptStyles.subChip}>
+        <Ionicons name="time-outline" size={10} color={chipColor} />
+        <Text style={[ptStyles.subChipText, { color: chipColor }]}>{label}</Text>
+      </View>
+    );
+  }
+
+  // Sub-chip: upcoming undone deliverable (amber/red if <72h)
+  let deliverableChip: React.ReactNode = null;
+  const nextDel = deal.deliverables
+    .filter((d) => !d.done)
+    .sort((a, b) => a.dueISO.localeCompare(b.dueISO))[0];
+  if (nextDel && !disclosureChip) {
+    const hours = hoursUntilISO(nextDel.dueISO);
+    const threshold = thresholdForHours(hours);
+    if (threshold === 'amber' || threshold === 'red') {
+      const chipColor = threshold === 'red' ? RED_DENIED : AMBER_DUE;
+      const label =
+        hours !== null && hours < 24
+          ? `${Math.floor(hours)}h · ${nextDel.label}`
+          : hours !== null
+            ? `${Math.floor(hours / 24)}d · ${nextDel.label}`
+            : `overdue · ${nextDel.label}`;
+      deliverableChip = (
+        <View style={ptStyles.subChip}>
+          <Ionicons name="calendar-outline" size={10} color={chipColor} />
+          <Text style={[ptStyles.subChipText, { color: chipColor }]}>{label}</Text>
+        </View>
+      );
+    }
+  }
+
+  // NUDGE PAYER chip: shown when payment is expected/cleared and no urgency sub-chip
+  const showNudge =
+    (deal.paymentState === 'expected' || deal.paymentState === 'cleared') &&
+    !disclosureChip &&
+    !deliverableChip;
+
+  return (
+    <Pressable
+      style={ptStyles.row}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${deal.brand} — ${deal.paymentState}`}
+    >
+      <View style={ptStyles.rowTop}>
+        <View style={{ flex: 1 }}>
+          <Text style={ptStyles.brandName} numberOfLines={1}>{deal.brand}</Text>
+          <Text style={ptStyles.titleLine} numberOfLines={1}>{deal.title}</Text>
+        </View>
+        <View style={ptStyles.stepsRow}>
+          {steps.map((step, i) => (
+            <View key={step.label} style={ptStyles.stepCell}>
+              <View style={[ptStyles.stepDot, { backgroundColor: stepDotColor(step.state) }]} />
+              <Text style={[ptStyles.stepLabel, step.state === 'current' && ptStyles.stepLabelActive]}>
+                {step.label}
+              </Text>
+              {i < steps.length - 1 ? (
+                <View style={ptStyles.stepConnector} />
+              ) : null}
+            </View>
+          ))}
+        </View>
+      </View>
+      {(disclosureChip ?? deliverableChip) ? (
+        <View style={ptStyles.subRow}>
+          {disclosureChip}
+          {deliverableChip}
+        </View>
+      ) : null}
+      {showNudge ? (
+        <View style={ptStyles.subRow}>
+          <Pressable
+            style={ptStyles.nudgeChip}
+            onPress={() => router.push('/athlete/disclosures')}
+            accessibilityRole="button"
+            accessibilityLabel="Nudge payer"
+          >
+            <Text style={ptStyles.nudgeText}>NUDGE PAYER</Text>
+          </Pressable>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
+
+function PaymentTruthSection() {
+  const router = useStableRouter();
+  const deals = DEAL_TRUTH_FIXTURE;
+  if (deals.length === 0) return null;
+  return (
+    <View style={ptStyles.section}>
+      {/* Lower-third header: 4px copper left bar + caps label (spec §4) */}
+      <View style={ptStyles.sectionHeader}>
+        <View style={ptStyles.sectionBar} />
+        <Text style={ptStyles.sectionLabel}>PAYMENT TRUTH</Text>
+      </View>
+      <View style={ptStyles.rows}>
+        {deals.map((deal) => (
+          <PaymentTruthRow
+            key={deal.dealId}
+            deal={deal}
+            onPress={() => router.push('/athlete/disclosures')}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const ptStyles = StyleSheet.create({
+  section: {
+    gap: 8,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionBar: {
+    width: 4,
+    height: 14,
+    borderRadius: 2,
+    backgroundColor: COPPER,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: COPPER,
+  },
+  rows: {
+    gap: 8,
+  },
+  row: {
+    backgroundColor: STATS_CARD_BG,
+    borderRadius: 14,
+    padding: 12,
+    gap: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.07)',
+  },
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  brandName: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: -0.1,
+  },
+  titleLine: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  stepsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 0,
+  },
+  stepCell: {
+    alignItems: 'center',
+    gap: 3,
+    position: 'relative',
+    paddingHorizontal: 4,
+  },
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  stepLabel: {
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+    color: 'rgba(255,255,255,0.30)',
+    textAlign: 'center',
+  },
+  stepLabelActive: {
+    color: COPPER,
+  },
+  stepConnector: {
+    position: 'absolute',
+    top: 4,
+    right: -4,
+    width: 8,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  subRow: {
+    flexDirection: 'row',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  subChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  subChipText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  nudgeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${COPPER}66`,
+    backgroundColor: 'rgba(235,98,26,0.08)',
+    minHeight: 28,
+  },
+  nudgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    color: COPPER,
+  },
+});
+
 // ── Section root ────────────────────────────────────────────────
 
 export function AthleteDealsSection() {
@@ -267,6 +581,9 @@ export function AthleteDealsSection() {
 
   return (
     <View style={{ gap: 16 }}>
+      {/* Payment Truth — per-deal 3-step state (spec §4 thin truth layer) */}
+      <PaymentTruthSection />
+
       {/* Hero — gradient backdrop with KPI + tile grid */}
       <View style={heroStyles.heroCard}>
         <LinearGradient

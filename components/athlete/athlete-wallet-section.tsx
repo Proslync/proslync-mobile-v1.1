@@ -31,6 +31,7 @@ import {
   type AthleteWalletRecentPayout,
 } from '@/hooks/use-athlete-wallet';
 import { formatCents } from '@/lib/utils/currency';
+import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 
 const STATS_CARD_BG = '#1C1C1E';
 const ACCENT = '#EB621A';
@@ -297,6 +298,9 @@ export function AthleteWalletSection() {
         )}
       </View>
 
+      {/* Tax set-aside — paid deal estimate (spec §4, not financial advice) */}
+      <TaxSetAsideRow />
+
       {/* Upcoming invoices — backend has no invoice surface yet. Reserve
        *  the section for layout continuity and show an empty state. */}
       <View style={{ gap: 10 }}>
@@ -426,6 +430,94 @@ function TransferOutSheet({
     </Modal>
   );
 }
+
+// ── Tax Set-Aside Row ────────────────────────────────────────────────────
+// One clearly-bounded element per spec §4 — shows estimated tax hold on the
+// most recent paid fixture deal. Muted styling, one footnote. Not financial advice.
+function TaxSetAsideRow() {
+  const paidDeal = DEAL_TRUTH_FIXTURE.find(
+    (d) => d.paymentState === 'paid' && d.taxSetAsideCents !== undefined,
+  );
+  if (!paidDeal || paidDeal.taxSetAsideCents === undefined) return null;
+
+  const setAsideDollars = Math.round(paidDeal.taxSetAsideCents / 100);
+  const totalDollars = Math.round(paidDeal.amountCents / 100);
+
+  return (
+    <View style={taxStyles.container}>
+      <View style={taxStyles.row}>
+        <View style={taxStyles.iconBubble}>
+          <Ionicons name="calculator-outline" size={16} color="rgba(255,255,255,0.55)" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={taxStyles.label}>TAX SET-ASIDE (EST.)</Text>
+          <Text style={taxStyles.amount}>
+            {'$'}{setAsideDollars.toLocaleString('en-US')}
+            <Text style={taxStyles.amountOf}>{' of $'}{totalDollars.toLocaleString('en-US')}</Text>
+            <Text style={taxStyles.brand}>{' · '}{paidDeal.brand}</Text>
+          </Text>
+        </View>
+      </View>
+      <Text style={taxStyles.footnote}>Conservative 24% estimate — not tax advice.</Text>
+    </View>
+  );
+}
+
+const taxStyles = StyleSheet.create({
+  container: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.09)',
+    padding: 12,
+    gap: 6,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconBubble: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1.0,
+    color: 'rgba(255,255,255,0.45)',
+    textTransform: 'uppercase',
+  },
+  amount: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.80)',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
+    marginTop: 2,
+  },
+  amountOf: {
+    color: 'rgba(255,255,255,0.45)',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  brand: {
+    color: 'rgba(255,255,255,0.45)',
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  footnote: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.38)',
+    fontStyle: 'italic',
+    lineHeight: 14,
+  },
+});
 
 function EmptyRow({ label }: { label: string }) {
   return (
