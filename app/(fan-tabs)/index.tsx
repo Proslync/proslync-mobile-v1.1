@@ -6,7 +6,7 @@
 // and inline Pickem + Perks teasers.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as React from 'react';
 import {
@@ -34,6 +34,12 @@ import {
   type Perk,
   type Prediction,
 } from '@/lib/data/mock-fan-data';
+import {
+  loadPasses,
+  loadReceipts,
+  type SupporterPass,
+  type SupporterReceipt,
+} from '@/lib/fan/supporter';
 
 const COPPER = '#EB621A';
 const PURPLE = '#A855F7';
@@ -47,6 +53,27 @@ export default function FanHomeTab() {
   const router = useRouter();
   const [picks, setPicks] = React.useState<Record<string, string | undefined>>(
     Object.fromEntries(FAN_PREDICTIONS.map((p) => [p.id, p.myPick])),
+  );
+
+  // ── MY ATHLETES — supporter passes ──────────────────────────
+  const [myPasses, setMyPasses] = React.useState<SupporterPass[]>([]);
+  const [passReceipts, setPassReceipts] = React.useState<SupporterReceipt[]>([]);
+
+  const loadSupporterData = React.useCallback(async () => {
+    try {
+      const [passMap, allReceipts] = await Promise.all([loadPasses(), loadReceipts()]);
+      setMyPasses(Object.values(passMap));
+      setPassReceipts(allReceipts);
+    } catch {
+      // silent — demo
+    }
+  }, []);
+
+  // Load on mount and re-load each time the tab gains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadSupporterData();
+    }, [loadSupporterData]),
   );
 
   const setPick = (predId: string, optId: string) => {
@@ -141,6 +168,50 @@ export default function FanHomeTab() {
             </Text>
           </View>
         </Animated.View>
+
+        {/* ── MY ATHLETES ─────────────────────────────────── */}
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionLabel}>MY ATHLETES</Text>
+        </View>
+        {myPasses.length === 0 ? (
+          <View style={styles.myAthletesEmpty}>
+            <Text style={styles.myAthletesEmptyText}>
+              Back an athlete from their profile — every dollar shows up here with a receipt.
+            </Text>
+          </View>
+        ) : (
+          myPasses.map((p) => {
+            const lastReceipt = passReceipts
+              .filter((r) => r.passAthleteId === p.athleteId)
+              .slice(-1)[0] ?? null;
+            const tierLabel =
+              p.tier === 'fan' ? 'FAN' : p.tier === 'insider' ? 'INSIDER' : 'COURTSIDE';
+            const sinceLabel = (() => {
+              try {
+                return new Date(p.startedAtISO).toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: 'numeric',
+                });
+              } catch { return ''; }
+            })();
+            return (
+              <View key={p.athleteId} style={styles.myAthleteRow}>
+                <View style={styles.myAthleteLeft}>
+                  <Text style={styles.myAthleteName}>{p.athleteName}</Text>
+                  <Text style={styles.myAthleteMeta}>
+                    since {sinceLabel}
+                    {lastReceipt
+                      ? `  ·  $${(lastReceipt.paidCents / 100).toFixed(2)} → $${(lastReceipt.toAthleteCents / 100).toFixed(2)} to ${p.athleteName} ✓`
+                      : ''}
+                  </Text>
+                </View>
+                <View style={styles.myAthleteTierChip}>
+                  <Text style={styles.myAthleteTierText}>{tierLabel}</Text>
+                </View>
+              </View>
+            );
+          })
+        )}
 
         <View style={styles.sectionHead}>
           <Text style={styles.sectionLabel}>
@@ -738,4 +809,62 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   claimBtnCost: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '800' },
+
+  // ── MY ATHLETES ───────────────────────────────────────────
+  myAthletesEmpty: {
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+    marginBottom: 10,
+  },
+  myAthletesEmptyText: {
+    color: 'rgba(255,255,255,0.42)',
+    fontSize: 13,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  myAthleteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+    marginBottom: 8,
+  },
+  myAthleteLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  myAthleteName: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  myAthleteMeta: {
+    color: 'rgba(255,255,255,0.50)',
+    fontSize: 11.5,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+    lineHeight: 15,
+  },
+  myAthleteTierChip: {
+    borderRadius: 8,
+    backgroundColor: `${'#EB621A'}18`,
+    borderWidth: 1,
+    borderColor: `${'#EB621A'}44`,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  myAthleteTierText: {
+    color: '#EB621A',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
 });

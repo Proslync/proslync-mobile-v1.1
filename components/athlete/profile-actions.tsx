@@ -17,6 +17,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import {
+  cancelPass,
+  loadPasses,
+  loadReceipts,
+  savePass,
+  type SupporterPass,
+  type SupporterReceipt,
+} from '@/lib/fan/supporter';
+
 const COPPER = '#EB621A';
 const MUTED = 'rgba(255,255,255,0.52)';
 const WHITE = '#FFFFFF';
@@ -24,6 +33,7 @@ const SHEET_BG = '#0F0F0F';
 const CARD_BG = 'rgba(255,255,255,0.055)';
 const CARD_BORDER = 'rgba(255,255,255,0.10)';
 const SUCCESS_GREEN = '#00C6B0';
+const DANGER = '#B53A2B';
 
 // ─── SupporterSheet ──────────────────────────────────────────
 
@@ -67,24 +77,92 @@ function formatCents(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-interface SupporterSheetProps {
-  visible: boolean;
-  athleteName: string;
-  onClose: () => void;
+function formatDateShort(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  } catch {
+    return '';
+  }
 }
 
-function SupporterSheet({ visible, athleteName, onClose }: SupporterSheetProps) {
+// ─── SupporterSheet (new + manage modes) ─────────────────────
+
+type SheetMode = 'new' | 'manage';
+
+interface SupporterSheetProps {
+  visible: boolean;
+  athleteId: string;
+  athleteName: string;
+  mode: SheetMode;
+  existingPass: SupporterPass | null;
+  recentReceipts: SupporterReceipt[];
+  supporterNumber: number;
+  onClose: () => void;
+  onPassSaved: (pass: SupporterPass) => void;
+  onPassCancelled: () => void;
+}
+
+function SupporterSheet({
+  visible,
+  athleteId,
+  athleteName,
+  mode,
+  existingPass,
+  recentReceipts,
+  supporterNumber,
+  onClose,
+  onPassSaved,
+  onPassCancelled,
+}: SupporterSheetProps) {
   const insets = useSafeAreaInsets();
-  const [selectedTier, setSelectedTier] = React.useState<SupportTier>('insider');
+  const [selectedTier, setSelectedTier] = React.useState<SupportTier>(
+    existingPass?.tier ?? 'insider',
+  );
   const [confirmed, setConfirmed] = React.useState(false);
+  const [cancelConfirm, setCancelConfirm] = React.useState(false);
+
+  // Sync selectedTier when existingPass changes (e.g. modal re-opened)
+  React.useEffect(() => {
+    if (existingPass) setSelectedTier(existingPass.tier);
+  }, [existingPass]);
 
   const handleClose = React.useCallback(() => {
     setConfirmed(false);
-    setSelectedTier('insider');
+    setCancelConfirm(false);
+    if (!existingPass) setSelectedTier('insider');
     onClose();
-  }, [onClose]);
+  }, [onClose, existingPass]);
 
   const tier = TIERS.find((t) => t.id === selectedTier) ?? TIERS[1];
+
+  const handleConfirm = React.useCallback(async () => {
+    const pass: SupporterPass = {
+      athleteId,
+      athleteName,
+      tier: selectedTier,
+      priceCents: tier.amountCents,
+      supporterNumber,
+      startedAtISO: existingPass?.startedAtISO ?? new Date().toISOString(),
+    };
+    await savePass(pass);
+    setConfirmed(true);
+    onPassSaved(pass);
+  }, [athleteId, athleteName, selectedTier, tier.amountCents, supporterNumber, existingPass, onPassSaved]);
+
+  const handleCancelPass = React.useCallback(async () => {
+    await cancelPass(athleteId);
+    onPassCancelled();
+    handleClose();
+  }, [athleteId, onPassCancelled, handleClose]);
+
+  // Decide which CTA label to show in manage mode
+  const tierChanged = existingPass && existingPass.tier !== selectedTier;
+  const ctaLabel = mode === 'new'
+    ? `Become supporter #${supporterNumber}`
+    : tierChanged
+      ? `Switch to ${tier.label}`
+      : `Renew ${tier.label}`;
 
   return (
     <Modal
@@ -104,7 +182,13 @@ function SupporterSheet({ visible, athleteName, onClose }: SupporterSheetProps) 
               contentContainerStyle={ss.sheetContent}
               showsVerticalScrollIndicator={false}
             >
-              <Text style={ss.title}>You&apos;re supporter #15</Text>
+              <Text style={ss.title}>
+                {mode === 'new'
+                  ? `You're supporter #${supporterNumber}`
+                  : tierChanged
+                    ? `Switched to ${tier.label}`
+                    : `Pass renewed`}
+              </Text>
               <View style={ss.receiptCard}>
                 <ReceiptRow label="You pay" value={formatCents(tier.amountCents)} />
                 <ReceiptRow
@@ -127,15 +211,20 @@ function SupporterSheet({ visible, athleteName, onClose }: SupporterSheetProps) 
               </TouchableOpacity>
             </ScrollView>
           ) : (
-            /* ── Tier selection state ── */
+            /* ── Tier selection / manage state ── */
             <ScrollView
               contentContainerStyle={ss.sheetContent}
               showsVerticalScrollIndicator={false}
             >
-              <Text style={ss.title}>Support {athleteName} directly</Text>
+              <Text style={ss.title}>
+                {mode === 'manage'
+                  ? `Supporting ${athleteName}`
+                  : `Support ${athleteName} directly`}
+              </Text>
 
               {TIERS.map((t) => {
                 const isSelected = selectedTier === t.id;
+                const isCurrent = existingPass?.tier === t.id;
                 return (
                   <TouchableOpacity
                     key={t.id}
@@ -152,7 +241,14 @@ function SupporterSheet({ visible, athleteName, onClose }: SupporterSheetProps) 
                         ) : null}
                       </View>
                       <View style={ss.tierMeta}>
-                        <Text style={ss.tierLabel}>{t.label}</Text>
+                        <View style={ss.tierLabelRow}>
+                          <Text style={ss.tierLabel}>{t.label}</Text>
+                          {isCurrent && (
+                            <View style={ss.currentChip}>
+                              <Text style={ss.currentChipText}>CURRENT</Text>
+                            </View>
+                          )}
+                        </View>
                         <Text style={ss.tierPerks} numberOfLines={2}>
                           {t.perks.join(' · ')}
                         </Text>
@@ -165,20 +261,81 @@ function SupporterSheet({ visible, athleteName, onClose }: SupporterSheetProps) 
                 );
               })}
 
-              <Text style={ss.receiptNote}>
-                Every dollar is a real NIL transaction — you&apos;ll see exactly what
-                reaches {athleteName}.
-              </Text>
+              {/* Recent receipts in manage mode */}
+              {mode === 'manage' && recentReceipts.length > 0 && (
+                <>
+                  <Text style={ss.receiptHeading}>RECENT PAYMENTS</Text>
+                  <View style={ss.receiptCard}>
+                    {recentReceipts.slice(0, 3).map((r) => (
+                      <ReceiptRow
+                        key={r.id}
+                        label={formatDateShort(r.atISO)}
+                        value={`${formatCents(r.paidCents)} → ${formatCents(r.toAthleteCents)} to ${athleteName} ✓`}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+
+              {mode === 'new' && (
+                <Text style={ss.receiptNote}>
+                  Every dollar is a real NIL transaction — you&apos;ll see exactly what
+                  reaches {athleteName}.
+                </Text>
+              )}
 
               <TouchableOpacity
                 style={ss.ctaBtn}
-                onPress={() => setConfirmed(true)}
+                onPress={handleConfirm}
                 activeOpacity={0.85}
                 accessibilityRole="button"
-                accessibilityLabel="Become supporter #15"
+                accessibilityLabel={ctaLabel}
               >
-                <Text style={ss.ctaBtnText}>Become supporter #15</Text>
+                <Text style={ss.ctaBtnText}>{ctaLabel}</Text>
               </TouchableOpacity>
+
+              {/* Cancel support (manage mode only) */}
+              {mode === 'manage' && !cancelConfirm && (
+                <TouchableOpacity
+                  style={ss.cancelGhostBtn}
+                  onPress={() => setCancelConfirm(true)}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel support"
+                >
+                  <Text style={ss.cancelGhostText}>Cancel support</Text>
+                </TouchableOpacity>
+              )}
+
+              {mode === 'manage' && cancelConfirm && (
+                <View style={ss.cancelConfirmRow}>
+                  <Text style={ss.cancelConfirmMsg}>
+                    Remove your pass? Receipts are kept.
+                  </Text>
+                  <TouchableOpacity
+                    style={ss.cancelDestructiveBtn}
+                    onPress={handleCancelPass}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Confirm cancel"
+                  >
+                    <Text style={ss.cancelDestructiveText}>Yes, cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setCancelConfirm(false)}
+                    activeOpacity={0.7}
+                    style={{ alignSelf: 'center' }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Keep pass"
+                  >
+                    <Text style={ss.cancelKeepText}>Keep pass</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
+              <View style={ss.demoPill}>
+                <Text style={ss.demoPillText}>DEMO — payments not enabled</Text>
+              </View>
             </ScrollView>
           )}
         </View>
@@ -191,7 +348,7 @@ function ReceiptRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={ss.receiptRow}>
       <Text style={ss.receiptLabel}>{label}</Text>
-      <Text style={ss.receiptValue}>{value}</Text>
+      <Text style={ss.receiptValue} numberOfLines={1}>{value}</Text>
     </View>
   );
 }
@@ -306,25 +463,79 @@ function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps
 // ─── ProfileActions ───────────────────────────────────────────
 
 export interface ProfileActionsProps {
+  athleteId?: string;
   athleteName: string;
 }
 
-export function ProfileActions({ athleteName }: ProfileActionsProps) {
+export function ProfileActions({ athleteId = 'a-1', athleteName }: ProfileActionsProps) {
   const [supporterOpen, setSupporterOpen] = React.useState(false);
   const [workOpen, setWorkOpen] = React.useState(false);
+
+  // Persisted pass state
+  const [pass, setPass] = React.useState<SupporterPass | null>(null);
+  const [receipts, setReceipts] = React.useState<SupporterReceipt[]>([]);
+  const [hydrated, setHydrated] = React.useState(false);
+
+  // Hydrate on mount
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [passes, allReceipts] = await Promise.all([loadPasses(), loadReceipts()]);
+        if (cancelled) return;
+        setPass(passes[athleteId] ?? null);
+        setReceipts(allReceipts.filter((r) => r.passAthleteId === athleteId));
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [athleteId]);
+
+  const handlePassSaved = React.useCallback((saved: SupporterPass) => {
+    setPass(saved);
+    // Re-fetch receipts so newly appended receipt appears
+    loadReceipts().then((all) => {
+      setReceipts(all.filter((r) => r.passAthleteId === athleteId));
+    }).catch(() => {});
+  }, [athleteId]);
+
+  const handlePassCancelled = React.useCallback(() => {
+    setPass(null);
+  }, []);
+
+  const isSupporting = hydrated && pass !== null;
+  const tierLabelShort = pass?.tier === 'fan' ? 'FAN'
+    : pass?.tier === 'insider' ? 'INSIDER'
+    : pass?.tier === 'courtside' ? 'COURTSIDE'
+    : '';
+
+  // Fixture supporter number: 15 if no pass stored yet, else keep existing
+  const supporterNumber = pass?.supporterNumber ?? 15;
 
   return (
     <>
       <View style={pa.row}>
-        {/* SUPPORT — filled copper */}
+        {/* SUPPORT / SUPPORTING button */}
         <TouchableOpacity
-          style={pa.supportBtn}
+          style={[pa.supportBtn, isSupporting && pa.supportingBtn]}
           onPress={() => setSupporterOpen(true)}
           activeOpacity={0.85}
           accessibilityRole="button"
-          accessibilityLabel={`Support ${athleteName}`}
+          accessibilityLabel={isSupporting ? `Managing support for ${athleteName}` : `Support ${athleteName}`}
         >
-          <Text style={pa.supportBtnText}>SUPPORT</Text>
+          {isSupporting ? (
+            <View style={pa.supportingRow}>
+              <Ionicons name="checkmark-circle" size={14} color={SUCCESS_GREEN} />
+              <Text style={pa.supportingBtnText}>
+                SUPPORTING · {tierLabelShort}
+              </Text>
+            </View>
+          ) : (
+            <Text style={pa.supportBtnText}>SUPPORT</Text>
+          )}
         </TouchableOpacity>
 
         {/* WORK WITH ME — ghost copper */}
@@ -341,8 +552,15 @@ export function ProfileActions({ athleteName }: ProfileActionsProps) {
 
       <SupporterSheet
         visible={supporterOpen}
+        athleteId={athleteId}
         athleteName={athleteName}
+        mode={isSupporting ? 'manage' : 'new'}
+        existingPass={pass}
+        recentReceipts={receipts}
+        supporterNumber={supporterNumber}
         onClose={() => setSupporterOpen(false)}
+        onPassSaved={handlePassSaved}
+        onPassCancelled={handlePassCancelled}
       />
       <WorkWithMeSheet
         visible={workOpen}
@@ -374,11 +592,28 @@ const pa = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  supportingBtn: {
+    backgroundColor: 'rgba(0,198,176,0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0,198,176,0.40)',
+  },
+  supportingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   supportBtnText: {
     color: WHITE,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  supportingBtnText: {
+    color: SUCCESS_GREEN,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   workBtn: {
@@ -476,11 +711,30 @@ const ss = StyleSheet.create({
     flex: 1,
     gap: 3,
   },
+  tierLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   tierLabel: {
     color: WHITE,
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.3,
+  },
+  currentChip: {
+    borderRadius: 999,
+    backgroundColor: `${SUCCESS_GREEN}22`,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${SUCCESS_GREEN}55`,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  currentChipText: {
+    color: SUCCESS_GREEN,
+    fontSize: 8.5,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
   tierPerks: {
     color: MUTED,
@@ -496,6 +750,13 @@ const ss = StyleSheet.create({
   },
   tierPriceSelected: {
     color: COPPER,
+  },
+  receiptHeading: {
+    color: MUTED,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    marginTop: 2,
   },
   receiptNote: {
     color: MUTED,
@@ -516,17 +777,21 @@ const ss = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 8,
   },
   receiptLabel: {
     color: MUTED,
     fontSize: 13,
     fontWeight: '600',
+    flexShrink: 0,
   },
   receiptValue: {
     color: WHITE,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
+    textAlign: 'right',
+    flexShrink: 1,
   },
   demoPill: {
     alignSelf: 'flex-start',
@@ -558,6 +823,48 @@ const ss = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.4,
     textTransform: 'uppercase',
+  },
+  cancelGhostBtn: {
+    alignSelf: 'center',
+    paddingVertical: 6,
+  },
+  cancelGhostText: {
+    color: DANGER,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  cancelConfirmRow: {
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${DANGER}44`,
+    backgroundColor: `${DANGER}10`,
+    padding: 14,
+  },
+  cancelConfirmMsg: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  cancelDestructiveBtn: {
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: DANGER,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelDestructiveText: {
+    color: WHITE,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+  },
+  cancelKeepText: {
+    color: MUTED,
+    fontSize: 12,
+    fontWeight: '600',
   },
   // WorkWithMe — deal type rows
   dealTypeRow: {
