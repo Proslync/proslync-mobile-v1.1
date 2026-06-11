@@ -51,7 +51,23 @@ export type MilestoneStatus =
   | 'approved'
   | 'auto-approved'
   | 'disputed'
-  | 'paid';
+  | 'paid'
+  | 'refunded';
+
+export interface DisputeCase {
+  reason: string;
+  openedAtISO: string;
+  openedBy: 'brand';
+  athleteResponse?: string;
+  respondedAtISO?: string;
+  /** ISO of athlete's response deadline (+48h from openedAtISO) */
+  athleteResponseDeadlineISO: string;
+  determination?: {
+    decision: 'release' | 'refund';
+    reasoning: string;
+    decidedAtISO: string;
+  };
+}
 
 export type DeliverableType =
   | 'post'
@@ -76,6 +92,8 @@ export interface EngineMilestone {
   approvedISO?: string;
   /** Present when status is disputed */
   disputeReason?: string;
+  /** Present when status is disputed */
+  dispute?: DisputeCase;
   /** Present when status is paid */
   paidISO?: string;
   /** ISO of the +72h auto-approve deadline (computed from submittedISO) */
@@ -99,7 +117,13 @@ export type DealEventKind =
   | 'milestone-paid'
   | 'deal-completed'
   | 'deal-disputed'
-  | 'note-added';
+  | 'note-added'
+  | 'dispute-opened'
+  | 'dispute-response'
+  | 'dispute-escalated'
+  | 'dispute-determination'
+  | 'milestone-refunded'
+  | 'escrow-refunded';
 
 export interface DealEvent {
   /** ISO 8601 timestamp */
