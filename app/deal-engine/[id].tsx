@@ -16,6 +16,9 @@
 import * as React from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -25,11 +28,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown, Easing } from 'react-native-reanimated';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import { Ionicons } from '@expo/vector-icons';
 
 import {
   DEMO_DEAL,
@@ -41,8 +46,10 @@ import type {
   DealEvent,
   MilestoneStatus,
   EngineDealStatus,
+  DisputeCase,
 } from '@/lib/types/deal-engine.types';
-import { computeFees, isAutoApproved, milestoneAutoApproveAt } from '@/lib/deal-engine/engine';
+import { computeFees, isAutoApproved, milestoneAutoApproveAt, athleteResponseDeadline, deriveDealNotifications } from '@/lib/deal-engine/engine';
+import { NotificationSheet } from '@/components/shared/notification-sheet';
 import { nilGoDeadline } from '@/lib/compliance/preclearance';
 import { RULES_VERSION } from '@/lib/compliance/rules-2026-06';
 
@@ -102,6 +109,7 @@ function statusColor(status: MilestoneStatus): string {
     case 'auto-approved': return SUCCESS;
     case 'submitted': return WARNING;
     case 'disputed': return DANGER;
+    case 'refunded': return MUTED;
     case 'pending': return MUTED;
     default: return MUTED;
   }
@@ -149,6 +157,22 @@ function formatISO(isoString: string): string {
 
 function normalizeParam(v: string | string[] | undefined): string | undefined {
   return Array.isArray(v) ? v[0] : v;
+}
+
+// ── Deal notifications helper ─────────────────────────────────────────────
+
+function deriveDealNotificationsForSheet(deal: EngineDeal | null) {
+  if (!deal) return [];
+  const notifs = deriveDealNotifications([deal], new Date().toISOString());
+  return notifs.map((n, i) => ({
+    id: 99_000 + i,
+    type: 'payment' as const,
+    title: n.title,
+    body: n.body,
+    read: false,
+    metadata: { dealId: n.dealId, kind: n.kind },
+    createdAt: n.atISO,
+  }));
 }
 
 // ── NIL Go deadline helpers ───────────────────────────────────────────────
@@ -480,6 +504,513 @@ function EscrowCard({
   );
 }
 
+// ── DisputeSheet ──────────────────────────────────────────────────────────
+
+function DisputeSheet({
+  visible,
+  onClose,
+  onSubmit,
+  milestoneDescription,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (reason: string) => void;
+  milestoneDescription: string;
+}) {
+  const insets = useSafeAreaInsets();
+  const [reason, setReason] = React.useState('');
+  const MIN_LENGTH = 10;
+  const canSubmit = reason.trim().length >= MIN_LENGTH;
+
+  function handleSubmit() {
+    if (!canSubmit) return;
+    onSubmit(reason.trim());
+    setReason('');
+  }
+
+  function handleClose() {
+    setReason('');
+    onClose();
+  }
+
+  if (!visible) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(140)}
+          style={sheetStyles.backdrop}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+          <Animated.View
+            entering={SlideInDown.duration(200).easing(Easing.out(Easing.cubic))}
+            exiting={SlideOutDown.duration(160)}
+            style={[sheetStyles.sheet, { paddingBottom: insets.bottom + 20 }]}
+          >
+            <View style={sheetStyles.handle} />
+            <Text style={sheetStyles.sheetTitle}>Dispute Milestone</Text>
+            <Text style={sheetStyles.sheetSubtitle} numberOfLines={2}>
+              {milestoneDescription}
+            </Text>
+            <Text style={sheetStyles.fieldLabel}>Reason for dispute</Text>
+            <TextInput
+              style={sheetStyles.textInput}
+              placeholder="Describe why this milestone does not meet the agreed specification…"
+              placeholderTextColor={MUTED}
+              multiline
+              numberOfLines={4}
+              value={reason}
+              onChangeText={setReason}
+              autoFocus
+              accessibilityLabel="Dispute reason"
+            />
+            <Text style={sheetStyles.charHint}>
+              {reason.trim().length < MIN_LENGTH
+                ? `${MIN_LENGTH - reason.trim().length} more characters required`
+                : '✓ Ready to submit'}
+            </Text>
+            <TouchableOpacity
+              style={[sheetStyles.submitBtn, !canSubmit && sheetStyles.submitBtnDisabled]}
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              activeOpacity={0.82}
+              accessibilityRole="button"
+              accessibilityLabel="Submit dispute"
+            >
+              <Text style={sheetStyles.submitBtnText}>SUBMIT DISPUTE</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+// ── ResponseSheet ─────────────────────────────────────────────────────────
+
+function ResponseSheet({
+  visible,
+  onClose,
+  onSubmit,
+  milestoneDescription,
+  disputeReason,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (response: string) => void;
+  milestoneDescription: string;
+  disputeReason: string;
+}) {
+  const insets = useSafeAreaInsets();
+  const [response, setResponse] = React.useState('');
+  const MIN_LENGTH = 10;
+  const canSubmit = response.trim().length >= MIN_LENGTH;
+
+  function handleSubmit() {
+    if (!canSubmit) return;
+    onSubmit(response.trim());
+    setResponse('');
+  }
+
+  function handleClose() {
+    setResponse('');
+    onClose();
+  }
+
+  if (!visible) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(140)}
+          style={sheetStyles.backdrop}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+          <Animated.View
+            entering={SlideInDown.duration(200).easing(Easing.out(Easing.cubic))}
+            exiting={SlideOutDown.duration(160)}
+            style={[sheetStyles.sheet, { paddingBottom: insets.bottom + 20 }]}
+          >
+            <View style={sheetStyles.handle} />
+            <Text style={sheetStyles.sheetTitle}>Respond to Dispute</Text>
+            <Text style={sheetStyles.sheetSubtitle} numberOfLines={2}>
+              {milestoneDescription}
+            </Text>
+            <View style={sheetStyles.quoteBlock}>
+              <Text style={sheetStyles.quoteLabel}>BRAND'S REASON</Text>
+              <Text style={sheetStyles.quoteText}>{disputeReason}</Text>
+            </View>
+            <Text style={sheetStyles.fieldLabel}>Your response</Text>
+            <TextInput
+              style={sheetStyles.textInput}
+              placeholder="Explain how the milestone was completed as agreed…"
+              placeholderTextColor={MUTED}
+              multiline
+              numberOfLines={4}
+              value={response}
+              onChangeText={setResponse}
+              autoFocus
+              accessibilityLabel="Dispute response"
+            />
+            <Text style={sheetStyles.charHint}>
+              {response.trim().length < MIN_LENGTH
+                ? `${MIN_LENGTH - response.trim().length} more characters required`
+                : '✓ Ready to submit'}
+            </Text>
+            <TouchableOpacity
+              style={[sheetStyles.submitBtn, !canSubmit && sheetStyles.submitBtnDisabled]}
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              activeOpacity={0.82}
+              accessibilityRole="button"
+              accessibilityLabel="Submit response"
+            >
+              <Text style={sheetStyles.submitBtnText}>SUBMIT RESPONSE</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+// ── DeterminationSheet ────────────────────────────────────────────────────
+
+function DeterminationSheet({
+  visible,
+  onClose,
+  onSubmit,
+  milestoneDescription,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (decision: 'release' | 'refund', reasoning: string) => void;
+  milestoneDescription: string;
+}) {
+  const insets = useSafeAreaInsets();
+  const [decision, setDecision] = React.useState<'release' | 'refund' | null>(null);
+  const [reasoning, setReasoning] = React.useState('');
+  const MIN_LENGTH = 10;
+  const canSubmit = decision !== null && reasoning.trim().length >= MIN_LENGTH;
+
+  function handleSubmit() {
+    if (!canSubmit || !decision) return;
+    onSubmit(decision, reasoning.trim());
+    setDecision(null);
+    setReasoning('');
+  }
+
+  function handleClose() {
+    setDecision(null);
+    setReasoning('');
+    onClose();
+  }
+
+  if (!visible) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(140)}
+          style={sheetStyles.backdrop}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+          <Animated.View
+            entering={SlideInDown.duration(200).easing(Easing.out(Easing.cubic))}
+            exiting={SlideOutDown.duration(160)}
+            style={[sheetStyles.sheet, { paddingBottom: insets.bottom + 20 }]}
+          >
+            <View style={sheetStyles.handle} />
+            <View style={sheetStyles.titleRow}>
+              <Text style={sheetStyles.sheetTitle}>Admin Determination</Text>
+              <View style={sheetStyles.demoPill}>
+                <Text style={sheetStyles.demoPillText}>DEMO</Text>
+              </View>
+            </View>
+            <Text style={sheetStyles.sheetSubtitle} numberOfLines={2}>
+              {milestoneDescription}
+            </Text>
+            <Text style={sheetStyles.fieldLabel}>Decision</Text>
+            <View style={sheetStyles.decisionRow}>
+              <TouchableOpacity
+                style={[
+                  sheetStyles.decisionBtn,
+                  decision === 'release' && sheetStyles.decisionBtnRelease,
+                ]}
+                onPress={() => setDecision('release')}
+                activeOpacity={0.82}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: decision === 'release' }}
+                accessibilityLabel="Release payment"
+              >
+                <Text
+                  style={[
+                    sheetStyles.decisionBtnText,
+                    decision === 'release' && sheetStyles.decisionBtnTextRelease,
+                  ]}
+                >
+                  RELEASE PAYMENT
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  sheetStyles.decisionBtn,
+                  decision === 'refund' && sheetStyles.decisionBtnRefund,
+                ]}
+                onPress={() => setDecision('refund')}
+                activeOpacity={0.82}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: decision === 'refund' }}
+                accessibilityLabel="Refund brand"
+              >
+                <Text
+                  style={[
+                    sheetStyles.decisionBtnText,
+                    decision === 'refund' && sheetStyles.decisionBtnTextRefund,
+                  ]}
+                >
+                  REFUND BRAND
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={sheetStyles.fieldLabel}>Reasoning</Text>
+            <TextInput
+              style={sheetStyles.textInput}
+              placeholder="State the reasoning for this determination…"
+              placeholderTextColor={MUTED}
+              multiline
+              numberOfLines={4}
+              value={reasoning}
+              onChangeText={setReasoning}
+              accessibilityLabel="Determination reasoning"
+            />
+            <Text style={sheetStyles.charHint}>
+              {reasoning.trim().length < MIN_LENGTH
+                ? `${MIN_LENGTH - reasoning.trim().length} more characters required`
+                : '✓ Ready to confirm'}
+            </Text>
+            <TouchableOpacity
+              style={[sheetStyles.submitBtn, !canSubmit && sheetStyles.submitBtnDisabled]}
+              onPress={handleSubmit}
+              disabled={!canSubmit}
+              activeOpacity={0.82}
+              accessibilityRole="button"
+              accessibilityLabel="Confirm determination"
+            >
+              <Text style={sheetStyles.submitBtnText}>CONFIRM DETERMINATION</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+const sheetStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: '#0F0F0F',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    gap: 12,
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'center',
+    marginBottom: 4,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: WHITE,
+    flex: 1,
+  },
+  demoPill: {
+    backgroundColor: 'rgba(255,214,10,0.12)',
+    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,214,10,0.4)',
+  },
+  demoPillText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#FFD60A',
+    letterSpacing: 1.2,
+  },
+  sheetSubtitle: {
+    fontSize: 13,
+    color: MUTED,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  quoteBlock: {
+    backgroundColor: 'rgba(255,69,58,0.07)',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,69,58,0.25)',
+    padding: 12,
+    gap: 4,
+  },
+  quoteLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: DANGER,
+    letterSpacing: 1,
+  },
+  quoteText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.78)',
+    lineHeight: 18,
+    fontStyle: 'italic',
+  },
+  fieldLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: MUTED,
+    letterSpacing: 0.8,
+    marginTop: 4,
+  },
+  textInput: {
+    backgroundColor: 'rgba(255,255,255,0.055)',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: '500',
+    padding: 14,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  charHint: {
+    fontSize: 11,
+    color: MUTED,
+    fontWeight: '500',
+  },
+  submitBtn: {
+    backgroundColor: COPPER,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    minHeight: 50,
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  submitBtnDisabled: {
+    opacity: 0.38,
+  },
+  submitBtnText: {
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  decisionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  decisionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    alignItems: 'center',
+    backgroundColor: CARD_BG,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  decisionBtnRelease: {
+    backgroundColor: 'rgba(48,209,88,0.12)',
+    borderColor: SUCCESS,
+  },
+  decisionBtnRefund: {
+    backgroundColor: 'rgba(255,69,58,0.10)',
+    borderColor: DANGER,
+  },
+  decisionBtnText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+    color: MUTED,
+  },
+  decisionBtnTextRelease: {
+    color: SUCCESS,
+  },
+  decisionBtnTextRefund: {
+    color: DANGER,
+  },
+});
+
+// ── Bell button with unread dot ───────────────────────────────────────────
+
+function BellButton({ onPress, deal }: { onPress: () => void; deal: EngineDeal }) {
+  const notifs = deriveDealNotifications([deal], new Date().toISOString());
+  const hasUnread = notifs.length > 0;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={cockpitStyles.bellBtn}
+      accessibilityRole="button"
+      accessibilityLabel={`Notifications${hasUnread ? ` — ${notifs.length} unread` : ''}`}
+      hitSlop={8}
+    >
+      <Ionicons name="notifications-outline" size={22} color={WHITE} />
+      {hasUnread && <View style={cockpitStyles.bellDot} />}
+    </Pressable>
+  );
+}
+
 // ── Milestone board ───────────────────────────────────────────────────────
 
 function MilestoneRow({
@@ -488,15 +1019,28 @@ function MilestoneRow({
   onSubmit,
   onApprove,
   onDispute,
+  onRespond,
+  onEscalate,
 }: {
   milestone: EngineMilestone;
   lens: Lens;
   onSubmit: (id: string) => void;
   onApprove: (id: string) => void;
   onDispute: (id: string) => void;
+  onRespond: (id: string) => void;
+  onEscalate: (id: string) => void;
 }) {
   const hasDeadline =
     milestone.status === 'submitted' && milestone.autoApproveAt;
+
+  const dispute = milestone.dispute;
+  const showDisputePanel = milestone.status === 'disputed' && !!dispute;
+  const now = new Date().toISOString();
+  const responseOverdue = dispute
+    ? new Date(now).getTime() > new Date(dispute.athleteResponseDeadlineISO).getTime()
+    : false;
+  const hasResponse = !!dispute?.athleteResponse;
+  const canEscalate = showDisputePanel && (hasResponse || responseOverdue);
 
   return (
     <View style={milestoneStyles.row}>
@@ -564,6 +1108,116 @@ function MilestoneRow({
               AUTO-APPROVE IN {countdownLabel(milestone.autoApproveAt)}
             </Text>
           </View>
+        </View>
+      )}
+
+      {/* Dispute panel — shown when status = disputed */}
+      {showDisputePanel && dispute && (
+        <View style={milestoneStyles.disputePanel}>
+          {/* Dispute reason quote */}
+          <View style={milestoneStyles.disputeQuote}>
+            <Text style={milestoneStyles.disputeQuoteLabel}>BRAND'S REASON</Text>
+            <Text style={milestoneStyles.disputeQuoteText}>{dispute.reason}</Text>
+          </View>
+
+          {/* Response countdown chip */}
+          {!hasResponse && (
+            <View style={milestoneStyles.countdownRow}>
+              <View
+                style={[
+                  milestoneStyles.countdownChip,
+                  { borderColor: responseOverdue ? MUTED : countdownColor(dispute.athleteResponseDeadlineISO) },
+                ]}
+              >
+                <Text
+                  style={[
+                    milestoneStyles.countdownText,
+                    { color: responseOverdue ? MUTED : countdownColor(dispute.athleteResponseDeadlineISO) },
+                  ]}
+                >
+                  {responseOverdue
+                    ? 'RESPONSE WINDOW PASSED'
+                    : `ATHLETE RESPONSE DUE ${countdownLabel(dispute.athleteResponseDeadlineISO)}`}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Athlete's response (if submitted) */}
+          {hasResponse && (
+            <View style={milestoneStyles.responseBlock}>
+              <Text style={milestoneStyles.responseLabel}>ATHLETE'S RESPONSE</Text>
+              <Text style={milestoneStyles.responseText}>{dispute.athleteResponse}</Text>
+              {dispute.respondedAtISO && (
+                <Text style={milestoneStyles.responseTime}>
+                  {formatISO(dispute.respondedAtISO)}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Determination result (if decided) */}
+          {dispute.determination && (
+            <View
+              style={[
+                milestoneStyles.determinationBlock,
+                {
+                  borderColor:
+                    dispute.determination.decision === 'release' ? SUCCESS : DANGER,
+                  backgroundColor:
+                    dispute.determination.decision === 'release'
+                      ? 'rgba(48,209,88,0.07)'
+                      : 'rgba(255,69,58,0.07)',
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  milestoneStyles.determinationLabel,
+                  { color: dispute.determination.decision === 'release' ? SUCCESS : DANGER },
+                ]}
+              >
+                {dispute.determination.decision === 'release'
+                  ? 'PAYMENT RELEASED'
+                  : 'BRAND REFUNDED'}
+              </Text>
+              <Text style={milestoneStyles.determinationReasoning}>
+                {dispute.determination.reasoning}
+              </Text>
+              <Text style={milestoneStyles.determinationTime}>
+                {formatISO(dispute.determination.decidedAtISO)}
+              </Text>
+            </View>
+          )}
+
+          {/* Athlete: RESPOND button (if no response yet and window not passed) */}
+          {lens === 'athlete' && !hasResponse && !responseOverdue && (
+            <TouchableOpacity
+              style={milestoneStyles.actionBtn}
+              onPress={() => onRespond(milestone.id)}
+              activeOpacity={0.82}
+              accessibilityRole="button"
+              accessibilityLabel={`Respond to dispute for ${milestone.description}`}
+            >
+              <Text style={milestoneStyles.actionBtnText}>RESPOND</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Both lenses: ESCALATE TO PROSLYNC ADMIN (after response or window passed, no determination yet) */}
+          {canEscalate && !dispute.determination && (
+            <TouchableOpacity
+              style={milestoneStyles.escalateBtn}
+              onPress={() => onEscalate(milestone.id)}
+              activeOpacity={0.82}
+              accessibilityRole="button"
+              accessibilityLabel="Escalate to Proslync Admin for determination"
+            >
+              <Text style={milestoneStyles.escalateBtnText}>ESCALATE TO PROSLYNC ADMIN</Text>
+              <View style={milestoneStyles.demoBadgeSmall}>
+                <Text style={milestoneStyles.demoBadgeSmallText}>DEMO</Text>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -771,6 +1425,88 @@ const milestoneStyles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: 0.5,
   },
+  disputePanel: {
+    backgroundColor: 'rgba(255,69,58,0.05)',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,69,58,0.22)',
+    padding: 12,
+    gap: 10,
+  },
+  disputeQuote: {
+    gap: 4,
+  },
+  disputeQuoteLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: DANGER,
+    letterSpacing: 1,
+  },
+  disputeQuoteText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.78)',
+    lineHeight: 17,
+    fontStyle: 'italic',
+  },
+  responseBlock: {
+    gap: 3,
+  },
+  responseLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: SUCCESS,
+    letterSpacing: 1,
+  },
+  responseText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.78)',
+    lineHeight: 17,
+  },
+  responseTime: {
+    fontSize: 10,
+    color: MUTED,
+    fontFamily: 'Courier',
+  },
+  determinationBlock: {
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: 10,
+    gap: 4,
+  },
+  determinationLabel: {
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  determinationReasoning: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.78)',
+    lineHeight: 17,
+  },
+  determinationTime: {
+    fontSize: 10,
+    color: MUTED,
+    fontFamily: 'Courier',
+  },
+  escalateBtn: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.20)',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    gap: 8,
+  },
+  escalateBtnText: {
+    color: WHITE,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
 });
 
 // ── Audit Trail ───────────────────────────────────────────────────────────
@@ -862,6 +1598,10 @@ export default function DealEngineCockpit() {
   const [lens, setLens] = React.useState<Lens>('athlete');
   const [activeTab, setActiveTab] = React.useState<ActiveTab>('milestones');
   const [loading, setLoading] = React.useState(true);
+  const [disputeSheetMilestoneId, setDisputeSheetMilestoneId] = React.useState<string | null>(null);
+  const [responseSheetMilestoneId, setResponseSheetMilestoneId] = React.useState<string | null>(null);
+  const [determinationSheetMilestoneId, setDeterminationSheetMilestoneId] = React.useState<string | null>(null);
+  const [notifSheetVisible, setNotifSheetVisible] = React.useState(false);
 
   // Load deal
   React.useEffect(() => {
@@ -994,48 +1734,194 @@ export default function DealEngineCockpit() {
     persistDeal(updated);
   }
 
-  // Dispute milestone (brand lens)
+  // Open dispute sheet (brand lens) — replaces Alert.prompt stub
   function handleMilestoneDispute(milestoneId: string) {
-    if (!deal) return;
-    Alert.alert(
-      'Dispute Milestone',
-      'Provide a brief reason for the dispute:',
-      [
-        { text: 'Cancel', style: 'cancel' },
+    setDisputeSheetMilestoneId(milestoneId);
+  }
+
+  // Confirm dispute from sheet
+  function handleDisputeConfirm(reason: string) {
+    if (!deal || !disputeSheetMilestoneId) return;
+    setDisputeSheetMilestoneId(null);
+    const milestoneId = disputeSheetMilestoneId;
+    const now = new Date().toISOString();
+    const deadline = athleteResponseDeadline(now);
+    const disputeCase: DisputeCase = {
+      reason,
+      openedAtISO: now,
+      openedBy: 'brand',
+      athleteResponseDeadlineISO: deadline,
+    };
+    const updated: EngineDeal = {
+      ...deal,
+      milestones: deal.milestones.map((m) =>
+        m.id === milestoneId
+          ? { ...m, status: 'disputed' as MilestoneStatus, disputeReason: reason, dispute: disputeCase }
+          : m,
+      ),
+      events: [
+        ...deal.events,
         {
-          text: 'Dispute',
-          style: 'destructive',
-          onPress: () => {
-            const now = new Date().toISOString();
-            const reason = 'Deliverable does not meet agreed specifications.';
-            const updated: EngineDeal = {
-              ...deal,
-              milestones: deal.milestones.map((m) =>
-                m.id === milestoneId
-                  ? {
-                      ...m,
-                      status: 'disputed' as MilestoneStatus,
-                      disputeReason: reason,
-                    }
-                  : m,
-              ),
-              events: [
-                ...deal.events,
-                {
-                  at: now,
-                  actor: 'brand',
-                  kind: 'milestone-disputed',
-                  note: `Dispute raised: ${reason}`,
-                  milestoneId,
-                } as DealEvent,
-              ],
-              updatedAt: now,
-            };
-            persistDeal(updated);
-          },
-        },
+          at: now,
+          actor: 'brand',
+          kind: 'dispute-opened',
+          note: `Dispute opened: ${reason}`,
+          milestoneId,
+        } as DealEvent,
       ],
+      updatedAt: now,
+    };
+    persistDeal(updated);
+  }
+
+  // Athlete responds to dispute
+  function handleDisputeResponse(milestoneId: string) {
+    setResponseSheetMilestoneId(milestoneId);
+  }
+
+  function handleResponseConfirm(response: string) {
+    if (!deal || !responseSheetMilestoneId) return;
+    setResponseSheetMilestoneId(null);
+    const milestoneId = responseSheetMilestoneId;
+    const now = new Date().toISOString();
+    const updated: EngineDeal = {
+      ...deal,
+      milestones: deal.milestones.map((m) =>
+        m.id === milestoneId && m.dispute
+          ? {
+              ...m,
+              dispute: {
+                ...m.dispute,
+                athleteResponse: response,
+                respondedAtISO: now,
+              },
+            }
+          : m,
+      ),
+      events: [
+        ...deal.events,
+        {
+          at: now,
+          actor: 'athlete',
+          kind: 'dispute-response',
+          note: `Athlete response: ${response}`,
+          milestoneId,
+        } as DealEvent,
+      ],
+      updatedAt: now,
+    };
+    persistDeal(updated);
+  }
+
+  // Open determination sheet (both lenses, admin action)
+  function handleEscalate(milestoneId: string) {
+    setDeterminationSheetMilestoneId(milestoneId);
+    const now = new Date().toISOString();
+    if (!deal) return;
+    const already = deal.events.some(
+      (e) => e.kind === 'dispute-escalated' && e.milestoneId === milestoneId,
     );
+    if (!already) {
+      const updated: EngineDeal = {
+        ...deal,
+        events: [
+          ...deal.events,
+          {
+            at: now,
+            actor: lens === 'brand' ? 'brand' : 'athlete',
+            kind: 'dispute-escalated',
+            note: 'Dispute escalated to Proslync Admin for determination.',
+            milestoneId,
+          } as DealEvent,
+        ],
+        updatedAt: now,
+      };
+      persistDeal(updated);
+    }
+  }
+
+  function handleDeterminationConfirm(decision: 'release' | 'refund', reasoning: string) {
+    if (!deal || !determinationSheetMilestoneId) return;
+    setDeterminationSheetMilestoneId(null);
+    const milestoneId = determinationSheetMilestoneId;
+    const now = new Date().toISOString();
+    const milestone = deal.milestones.find((m) => m.id === milestoneId);
+    if (!milestone) return;
+
+    const determination = { decision, reasoning, decidedAtISO: now };
+
+    const newMilestones = deal.milestones.map((m) =>
+      m.id === milestoneId
+        ? {
+            ...m,
+            dispute: m.dispute ? { ...m.dispute, determination } : m.dispute,
+            status: decision === 'release'
+              ? ('paid' as MilestoneStatus)
+              : ('refunded' as MilestoneStatus),
+            ...(decision === 'release' ? { approvedISO: now, paidISO: now } : {}),
+          }
+        : m,
+    );
+
+    const fees = computeFees(milestone.amountCents, deal.feeRate);
+
+    const newEvents: DealEvent[] = [
+      {
+        at: now,
+        actor: 'platform',
+        kind: 'dispute-determination',
+        note: `Admin determination: ${decision.toUpperCase()}. Reasoning: ${reasoning}`,
+        milestoneId,
+      } as DealEvent,
+    ];
+
+    let newEscrow = { ...deal.escrow };
+
+    if (decision === 'release') {
+      const newReleased = deal.escrow.releasedCents + milestone.amountCents;
+      newEscrow = {
+        ...newEscrow,
+        releasedCents: newReleased,
+        state: newReleased >= deal.amountCents ? 'released' : 'partially-released',
+      };
+      newEvents.push({
+        at: now,
+        actor: 'platform',
+        kind: 'milestone-paid',
+        note: `Payout following admin determination: $${formatCents(milestone.amountCents)} released to athlete. Brand paid $${formatCents(milestone.amountCents)} + $${formatCents(fees.brandFeeCents)} fee (${Math.round((deal.feeRate ?? 0.10) * 100)}%).`,
+        milestoneId,
+      } as DealEvent);
+    } else {
+      const newFunded = Math.max(0, deal.escrow.fundedCents - milestone.amountCents);
+      newEscrow = {
+        ...newEscrow,
+        fundedCents: newFunded,
+        state: newFunded <= 0 ? 'unfunded' : newFunded <= deal.escrow.releasedCents ? 'released' : 'partially-released',
+      };
+      newEvents.push({
+        at: now,
+        actor: 'platform',
+        kind: 'escrow-refunded',
+        note: `Escrow refunded $${formatCents(milestone.amountCents)} to brand following admin determination.`,
+        milestoneId,
+      } as DealEvent);
+      newEvents.push({
+        at: now,
+        actor: 'platform',
+        kind: 'milestone-refunded',
+        note: `Milestone refunded. Escrow reduced by $${formatCents(milestone.amountCents)}.`,
+        milestoneId,
+      } as DealEvent);
+    }
+
+    const updated: EngineDeal = {
+      ...deal,
+      milestones: newMilestones,
+      escrow: newEscrow,
+      events: [...deal.events, ...newEvents],
+      updatedAt: now,
+    };
+    persistDeal(updated);
   }
 
   if (loading) {
@@ -1088,6 +1974,10 @@ export default function DealEngineCockpit() {
               <Text style={cockpitStyles.demoPillText}>DEMO</Text>
             </View>
           )}
+          <BellButton
+            onPress={() => setNotifSheetVisible(true)}
+            deal={deal}
+          />
         </View>
 
         <ScrollView
@@ -1229,6 +2119,8 @@ export default function DealEngineCockpit() {
                     onSubmit={handleMilestoneSubmit}
                     onApprove={handleMilestoneApprove}
                     onDispute={handleMilestoneDispute}
+                    onRespond={handleDisputeResponse}
+                    onEscalate={handleEscalate}
                   />
                 ))
               )}
@@ -1260,6 +2152,53 @@ export default function DealEngineCockpit() {
           </Text>
         </ScrollView>
       </View>
+
+      {/* Dispute Sheet */}
+      {disputeSheetMilestoneId !== null && (() => {
+        const m = deal?.milestones.find(ms => ms.id === disputeSheetMilestoneId);
+        return m ? (
+          <DisputeSheet
+            visible
+            onClose={() => setDisputeSheetMilestoneId(null)}
+            onSubmit={handleDisputeConfirm}
+            milestoneDescription={m.description}
+          />
+        ) : null;
+      })()}
+
+      {/* Response Sheet */}
+      {responseSheetMilestoneId !== null && (() => {
+        const m = deal?.milestones.find(ms => ms.id === responseSheetMilestoneId);
+        return m?.dispute ? (
+          <ResponseSheet
+            visible
+            onClose={() => setResponseSheetMilestoneId(null)}
+            onSubmit={handleResponseConfirm}
+            milestoneDescription={m.description}
+            disputeReason={m.dispute.reason}
+          />
+        ) : null;
+      })()}
+
+      {/* Determination Sheet */}
+      {determinationSheetMilestoneId !== null && (() => {
+        const m = deal?.milestones.find(ms => ms.id === determinationSheetMilestoneId);
+        return m ? (
+          <DeterminationSheet
+            visible
+            onClose={() => setDeterminationSheetMilestoneId(null)}
+            onSubmit={handleDeterminationConfirm}
+            milestoneDescription={m.description}
+          />
+        ) : null;
+      })()}
+
+      {/* Notification sheet */}
+      <NotificationSheet
+        visible={notifSheetVisible}
+        onClose={() => setNotifSheetVisible(false)}
+        extraItems={deriveDealNotificationsForSheet(deal)}
+      />
     </>
   );
 }
@@ -1602,5 +2541,23 @@ const cockpitStyles = StyleSheet.create({
     textAlign: 'center',
     marginTop: -6,
     lineHeight: 14,
+  },
+  bellBtn: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: DANGER,
+    borderWidth: 1.5,
+    borderColor: BG,
   },
 });
