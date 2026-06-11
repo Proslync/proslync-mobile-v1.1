@@ -5,6 +5,7 @@
 // Demo fixture only — NO real payments or deal submission.
 
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   Modal,
@@ -374,6 +375,7 @@ interface WorkWithMeSheetProps {
 
 function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [confirmed, setConfirmed] = React.useState(false);
 
   const handleClose = React.useCallback(() => {
@@ -401,19 +403,32 @@ function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps
             >
               <Text style={ss.title}>Request sent to {athleteName}&apos;s team</Text>
               <Text style={ss.receiptNote}>
-                The team typically responds within 2 business days.
+                The team typically responds within 2 business days — or draft the
+                contract now and send it for signature.
               </Text>
               <View style={ss.demoPill}>
                 <Text style={ss.demoPillText}>DEMO</Text>
               </View>
               <TouchableOpacity
                 style={ss.ctaBtn}
+                onPress={() => {
+                  handleClose();
+                  router.push('/deal-engine/new' as any);
+                }}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Draft the contract"
+              >
+                <Text style={ss.ctaBtnText}>Draft the contract →</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={ss.ctaBtnGhost}
                 onPress={handleClose}
                 activeOpacity={0.85}
                 accessibilityRole="button"
                 accessibilityLabel="Done"
               >
-                <Text style={ss.ctaBtnText}>Done</Text>
+                <Text style={ss.ctaBtnGhostText}>Done</Text>
               </TouchableOpacity>
             </ScrollView>
           ) : (
@@ -816,6 +831,21 @@ const ss = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
+  },
+  ctaBtnGhost: {
+    height: BTN_HEIGHT,
+    borderRadius: BTN_RADIUS,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+  },
+  ctaBtnGhostText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   ctaBtnText: {
     color: WHITE,
