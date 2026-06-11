@@ -9,7 +9,7 @@
 // All deadlines are computed relative to Date.now() at module load so
 // the fixture never expires. Export EMPTY_DEAL_TRUTH for empty-state testing.
 
-import { addBusinessDays } from '@/lib/athlete/truth.mjs';
+import { addBusinessDays } from '@/lib/athlete/truth';
 import type { DealTruth } from '@/lib/athlete/truth';
 
 // ── JMA Wireless: executed yesterday, UNDISCLOSED, NIL Go deadline ~3 biz days out ──
