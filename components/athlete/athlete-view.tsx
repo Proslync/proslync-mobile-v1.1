@@ -1,6 +1,8 @@
-// Athlete dashboard view. Two account modes (toggled from the hamburger menu
-// via the actor context): Personal → Stats / Team / Schedule; Professional →
-// Deals / Wallet. Header row = avatar+menu pill beside the segmented glass tabs.
+// Athlete dashboard view. Fixed tabs: Home (default) · Deals · Wallet.
+// Charter §A — one athlete = one business. No account-mode split.
+// Stats/Team/Schedule section components remain in the repo but are UNMOUNTED
+// (files not deleted). RoleSwitcherSheet + actor-context untouched (they
+// control other things beyond tab routing).
 import React, { useCallback } from 'react';
 import {
   Image,
@@ -28,24 +30,27 @@ import {
   StatusCardMenuSheet,
   WalletSkeleton,
 } from '@/components/wallet';
-import { AthleteStatsSection } from '@/components/athlete/athlete-stats-section';
-import { AthleteTeamSection } from '@/components/athlete/athlete-team-section';
-import { AthleteScheduleSection } from '@/components/athlete/athlete-schedule-section';
 import { AthleteDealsSection } from '@/components/athlete/athlete-deals-section';
 import { AthleteWalletSection } from '@/components/athlete/athlete-wallet-section';
+import { AthleteHome } from '@/components/athlete/athlete-home';
 import { TAB_BAR_TOP_FROM_BOTTOM } from '@/lib/navigation/constants';
+
+// Stats/Team/Schedule files remain in repo. Imports commented so the files
+// are not tree-shaken away; they simply aren't rendered (charter §A).
+// import { AthleteStatsSection } from '@/components/athlete/athlete-stats-section';
+// import { AthleteTeamSection } from '@/components/athlete/athlete-team-section';
+// import { AthleteScheduleSection } from '@/components/athlete/athlete-schedule-section';
 
 const useMembershipCard = (_enabled?: boolean) => ({ data: undefined as any, isLoading: false });
 
 // Top inset beneath the fixed pill header (tab row only)
 const HEADER_OFFSET = 140;
-// Base page background (matches styles.container.backgroundColor)
+// Base page background
 const PAGE_BG = '#000';
 
-// Personal account → on-court life. Professional account → NIL business.
-const PERSONAL_TABS = ['Stats', 'Team', 'Schedule'] as const;
-const PRO_TABS = ['Deals', 'Wallet'] as const;
-type AthleteTab = (typeof PERSONAL_TABS)[number] | (typeof PRO_TABS)[number];
+// Charter §A: fixed tabs — no account-mode split.
+const ATHLETE_TABS = ['Home', 'Deals', 'Wallet'] as const;
+type AthleteTab = (typeof ATHLETE_TABS)[number];
 
 export function AthleteView() {
   const insets = useSafeAreaInsets();
@@ -57,26 +62,21 @@ export function AthleteView() {
 
   const [cardMenuVisible, setCardMenuVisible] = React.useState(false);
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<AthleteTab>('Stats');
+  const [activeTab, setActiveTab] = React.useState<AthleteTab>('Home');
 
-  // Personal vs professional account — driven by the actor-context override
-  // (toggled from the hamburger menu). Defaults to personal on the dashboard.
-  const { override, setOverride } = useActorContext();
-  const accountMode: 'personal' | 'professional' = override ?? 'personal';
-  const tabs = accountMode === 'professional' ? PRO_TABS : PERSONAL_TABS;
-  const safeActiveTab: AthleteTab = (tabs as readonly AthleteTab[]).includes(activeTab)
-    ? activeTab
-    : tabs[0];
+  // Actor context kept — RoleSwitcherSheet uses it for role display and
+  // other surfaces that read the override beyond tab routing.
+  const { override: _override, setOverride: _setOverride } = useActorContext();
 
-  // Animated sliding knob behind the active tab (selected-item indicator).
-  const tabIndex = Math.max(0, tabs.indexOf(safeActiveTab as never));
+  // Animated sliding knob — same math as before, now always 3 tabs.
+  const tabIndex = Math.max(0, ATHLETE_TABS.indexOf(activeTab));
   const tabPillWidth = useSharedValue(0);
   const animatedTabIndex = useSharedValue(tabIndex);
   React.useEffect(() => {
     animatedTabIndex.value = withTiming(tabIndex, { duration: 180 });
   }, [tabIndex, animatedTabIndex]);
   const tabKnobStyle = useAnimatedStyle(() => {
-    const segW = tabPillWidth.value / Math.max(tabs.length, 1);
+    const segW = tabPillWidth.value / ATHLETE_TABS.length;
     const inset = 4;
     return {
       width: Math.max(segW - inset * 2, 0),
@@ -92,7 +92,7 @@ export function AthleteView() {
     setCardMenuVisible(false);
   }, []);
 
-  // Pull-to-refresh with haptic feedback
+  // Pull-to-refresh — meaningful on Deals/Wallet; Home uses focus-effect.
   const { refreshControl } = useRefreshControl({
     onRefresh: refreshWallet,
   });
@@ -134,8 +134,8 @@ export function AthleteView() {
             />
           </View>
           <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none" />
-          {tabs.map((label) => {
-            const isActive = safeActiveTab === label;
+          {ATHLETE_TABS.map((label) => {
+            const isActive = activeTab === label;
             return (
               <Pressable
                 key={label}
@@ -155,18 +155,33 @@ export function AthleteView() {
       {showSkeleton ? (
         <WalletSkeleton topOffset={HEADER_OFFSET} />
       ) : (
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
-          showsVerticalScrollIndicator={false}
-          refreshControl={refreshControl}
-        >
-          {safeActiveTab === 'Stats' && <AthleteStatsSection />}
-          {safeActiveTab === 'Team' && <AthleteTeamSection />}
-          {safeActiveTab === 'Schedule' && <AthleteScheduleSection />}
-          {safeActiveTab === 'Deals' && <AthleteDealsSection />}
-          {safeActiveTab === 'Wallet' && <AthleteWalletSection />}
-        </ScrollView>
+        <>
+          {activeTab === 'Home' && (
+            <View style={{ flex: 1, paddingTop: insets.top + 70 }}>
+              <AthleteHome onNavigateToDeals={() => setActiveTab('Deals')} />
+            </View>
+          )}
+          {activeTab === 'Deals' && (
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
+              showsVerticalScrollIndicator={false}
+              refreshControl={refreshControl}
+            >
+              <AthleteDealsSection />
+            </ScrollView>
+          )}
+          {activeTab === 'Wallet' && (
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
+              showsVerticalScrollIndicator={false}
+              refreshControl={refreshControl}
+            >
+              <AthleteWalletSection />
+            </ScrollView>
+          )}
+        </>
       )}
 
       {user && (
@@ -200,8 +215,8 @@ export function AthleteView() {
       <RoleSwitcherSheet
         visible={roleSheetVisible}
         onClose={() => setRoleSheetVisible(false)}
-        accountMode={accountMode}
-        onSwitchAccountMode={(m) => setOverride(m)}
+        accountMode="professional"
+        onSwitchAccountMode={(_m) => {}}
       />
     </View>
   );
