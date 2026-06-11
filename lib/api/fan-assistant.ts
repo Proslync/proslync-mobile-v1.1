@@ -17,7 +17,7 @@ type OnChunk = (chunk: AgentChunk) => void;
 const CANNED: Array<{ keys: string[]; response: string }> = [
   {
     keys: [
-      'support', 'how do i support', 'back an athlete', 'give money', 'donate',
+      'support', 'supporting', 'how do i support', 'back an athlete', 'give money', 'donate',
       'contribute', 'fund', 'help an athlete',
     ],
     response: `**Supporting an athlete on Proslync**
@@ -47,7 +47,7 @@ _General info — not legal advice._`,
   },
   {
     keys: [
-      'what is nil', 'nil meaning', 'nil explained', 'name image likeness',
+      'nil', 'what is nil', 'nil meaning', 'nil explained', 'name image likeness',
       'what does nil mean', 'nil definition', 'house settlement',
     ],
     response: `**NIL = Name, Image, Likeness**
@@ -104,7 +104,7 @@ Athlete merchandise lives on their profile under the **Merch tab**.
   },
   {
     keys: [
-      'tickets', 'games', 'schedule', 'when do they play', 'next game',
+      'tickets', 'game', 'games', 'schedule', 'playing', 'when do they play', 'next game',
       'this week', 'upcoming',
     ],
     response: `**Games and schedules**
@@ -113,7 +113,7 @@ Check the **team section** on the athlete's profile and the **This Week** area o
   },
   {
     keys: [
-      'who are you', 'what can you do', 'what is this', 'help', 'what can i ask',
+      'hi', 'hello', 'hey', 'who are you', 'what can you do', 'what is this', 'help', 'what can i ask',
       'proslync assistant', 'what do you know',
     ],
     response: `**Proslync Assistant — here for fans**
@@ -148,14 +148,46 @@ export const FAN_SUGGESTIONS: string[] = [
 // Matching + streaming
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Forgiving normalizer: lowercases, strips apostrophes ("what's" → "whats"),
+ * expands the common contractions back out, and drops punctuation so
+ * "What's NIL??" matches the same as "what is nil".
+ */
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[’']/g, '')
+    .replace(/\bwhats\b/g, 'what is')
+    .replace(/\bwheres\b/g, 'where is')
+    .replace(/\bhows\b/g, 'how is')
+    .replace(/\bwhos\b/g, 'who is')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Length-weighted, word-boundary matching: every key that appears in the
+ * prompt adds its length to the entry's score; the highest-scoring entry
+ * wins, so specific multi-word phrases ("nil rules") beat generic single
+ * words ("nil") when both hit.
+ */
 function findCannedResponse(prompt: string): string {
-  const lower = prompt.toLowerCase();
+  const text = ` ${normalize(prompt)} `;
+  let bestScore = 0;
+  let bestResponse: string | null = null;
   for (const entry of CANNED) {
-    if (entry.keys.some((k) => lower.includes(k))) {
-      return entry.response;
+    let score = 0;
+    for (const k of entry.keys) {
+      const key = normalize(k);
+      if (key && text.includes(` ${key} `)) score += key.length;
+    }
+    if (score > bestScore) {
+      bestScore = score;
+      bestResponse = entry.response;
     }
   }
-  return DEFAULT_FALLBACK;
+  return bestResponse ?? DEFAULT_FALLBACK;
 }
 
 async function streamCanned(text: string, onChunk: OnChunk, signal?: AbortSignal) {
