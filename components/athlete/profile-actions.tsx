@@ -413,7 +413,7 @@ function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps
                 style={ss.ctaBtn}
                 onPress={() => {
                   handleClose();
-                  router.push('/deal-engine/new' as any);
+                  setTimeout(() => router.push('/deal-engine/new' as any), 350);
                 }}
                 activeOpacity={0.85}
                 accessibilityRole="button"

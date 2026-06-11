@@ -719,17 +719,21 @@ function SignatureStep({
   svgPath,
   onSvgPathChange,
   onSign,
-}: SignatureStepProps & { onBack: () => void }) {
+  signing,
+}: SignatureStepProps & { onBack: () => void; signing: boolean }) {
   // Build SVG path string from touch tracking via PanResponder
   const pathRef = React.useRef<string>('');
   const isDrawing = React.useRef(false);
+  const scrollRef = React.useRef<ScrollView>(null);
 
   const panResponder = React.useMemo(
     () =>
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: (e) => {
+          scrollRef.current?.setNativeProps({ scrollEnabled: false });
           const { locationX: x, locationY: y } = e.nativeEvent;
           pathRef.current = `${pathRef.current}M${x.toFixed(1)},${y.toFixed(1)} `;
           isDrawing.current = true;
@@ -743,6 +747,11 @@ function SignatureStep({
         },
         onPanResponderRelease: () => {
           isDrawing.current = false;
+          scrollRef.current?.setNativeProps({ scrollEnabled: true });
+        },
+        onPanResponderTerminate: () => {
+          isDrawing.current = false;
+          scrollRef.current?.setNativeProps({ scrollEnabled: true });
         },
       }),
     [onSvgPathChange],
@@ -757,6 +766,7 @@ function SignatureStep({
 
   return (
     <ScrollView
+      ref={scrollRef}
       contentContainerStyle={signStyles.container}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
@@ -829,13 +839,13 @@ function SignatureStep({
       </View>
 
       <TouchableOpacity
-        style={[signStyles.signBtn, !canSign && signStyles.signBtnDisabled]}
-        onPress={canSign ? onSign : undefined}
-        activeOpacity={canSign ? 0.82 : 1}
+        style={[signStyles.signBtn, (!canSign || signing) && signStyles.signBtnDisabled]}
+        onPress={canSign && !signing ? onSign : undefined}
+        activeOpacity={canSign && !signing ? 0.82 : 1}
         accessibilityRole="button"
         accessibilityLabel="Sign the deal"
       >
-        <Text style={signStyles.signBtnText}>SIGN DEAL</Text>
+        <Text style={signStyles.signBtnText}>{signing ? 'SIGNING…' : 'SIGN DEAL'}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -1057,6 +1067,14 @@ const confirmStyles = StyleSheet.create({
 
 // ── Step 4: WILL THIS CLEAR? Pre-check ────────────────────────────────────
 
+const KIND_COMP_RANGES: Record<ContractTemplate['kind'], { lowCents: number; highCents: number }> = {
+  endorsement: { lowCents: 50_000, highCents: 500_000_00 },
+  'social-post': { lowCents: 5_000, highCents: 50_000_00 },
+  appearance: { lowCents: 20_000, highCents: 200_000_00 },
+  autograph: { lowCents: 10_000, highCents: 100_000_00 },
+  licensing: { lowCents: 30_000, highCents: 300_000_00 },
+};
+
 interface PrecheckStepProps {
   amountCents: number;
   dealKind: ContractTemplate['kind'];
@@ -1108,22 +1126,19 @@ function PrecheckStep({
 }: PrecheckStepProps) {
   // Build a simple comp range for new deals: use a deal-kind-based heuristic
   // (no specific comp ID available at creation time — use kind-level defaults)
-  const kindCompRanges: Record<ContractTemplate['kind'], { lowCents: number; highCents: number }> = {
-    endorsement: { lowCents: 50_000, highCents: 500_000_00 },
-    'social-post': { lowCents: 5_000, highCents: 50_000_00 },
-    appearance: { lowCents: 20_000, highCents: 200_000_00 },
-    autograph: { lowCents: 10_000, highCents: 100_000_00 },
-    licensing: { lowCents: 30_000, highCents: 300_000_00 },
-  };
-  const compRange = kindCompRanges[dealKind] ?? null;
+  const compRange = KIND_COMP_RANGES[dealKind] ?? null;
 
-  const result = scorePreclearance({
-    amountCents,
-    dealKind,
-    deliverableDescription,
-    payerEntityType,
-    compRange,
-  });
+  const result = React.useMemo(
+    () =>
+      scorePreclearance({
+        amountCents,
+        dealKind,
+        deliverableDescription,
+        payerEntityType,
+        compRange,
+      }),
+    [amountCents, dealKind, deliverableDescription, payerEntityType, compRange],
+  );
 
   const isAE = (ASSOCIATED_ENTITY_TYPES as readonly string[]).includes(payerEntityType);
 
@@ -1482,6 +1497,7 @@ export default function DealEngineNewScreen() {
   const [typedName, setTypedName] = React.useState(KIYAN_NAME);
   const [svgPath, setSvgPath] = React.useState('');
   const [dealId, setDealId] = React.useState('');
+  const [signing, setSigning] = React.useState(false);
 
   const stepTitles: Record<Step, string> = {
     picker: 'Start a Deal',
@@ -1530,7 +1546,8 @@ export default function DealEngineNewScreen() {
   }
 
   async function handleSign() {
-    if (!template) return;
+    if (!template || signing) return;
+    setSigning(true);
 
     const now = new Date().toISOString();
     const year = new Date().getFullYear();
@@ -1539,14 +1556,7 @@ export default function DealEngineNewScreen() {
     const fees = computeFees(amountCents);
 
     // Compute preclearance result to store with the deal (Phase D2)
-    const kindCompRanges: Record<ContractTemplate['kind'], { lowCents: number; highCents: number }> = {
-      endorsement: { lowCents: 50_000, highCents: 500_000_00 },
-      'social-post': { lowCents: 5_000, highCents: 50_000_00 },
-      appearance: { lowCents: 20_000, highCents: 200_000_00 },
-      autograph: { lowCents: 10_000, highCents: 100_000_00 },
-      licensing: { lowCents: 30_000, highCents: 300_000_00 },
-    };
-    const compRange = kindCompRanges[template.kind] ?? null;
+    const compRange = KIND_COMP_RANGES[template.kind] ?? null;
     const preclearanceResult = scorePreclearance({
       amountCents,
       dealKind: template.kind,
@@ -1747,6 +1757,7 @@ export default function DealEngineNewScreen() {
             onSvgPathChange={setSvgPath}
             onSign={handleSign}
             onBack={() => setStep('summary')}
+            signing={signing}
           />
         )}
         {step === 'confirm' && (

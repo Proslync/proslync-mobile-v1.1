@@ -868,7 +868,8 @@ export default function DealEngineCockpit() {
     const id = idParam ?? DEMO_DEAL.dealId;
     loadDeal(id).then((d) => {
       if (d) {
-        setDeal(applyAutoApprovals(d));
+        const next = applyAutoApprovals(d);
+        if (next !== d) persistDeal(next); else setDeal(d);
       }
       setLoading(false);
     });
