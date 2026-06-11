@@ -27,3 +27,44 @@ export declare function escrowCoverage(
   milestones: Array<{ amountCents: number }>,
   fundedCents: number,
 ): EscrowCoverageResult;
+
+export declare function athleteResponseDeadline(openedISO: string): string;
+export declare function isResponseOverdue(deadlineISO: string, nowISO: string): boolean;
+
+export interface DealNotification {
+  id: string;
+  dealId: string;
+  atISO: string;
+  kind:
+    | 'escrow-funded'
+    | 'milestone-submitted'
+    | 'auto-approve-imminent'
+    | 'milestone-auto-approved'
+    | 'disputed'
+    | 'response-due'
+    | 'determination'
+    | 'payout';
+  title: string;
+  body: string;
+}
+
+export declare function deriveDealNotifications(
+  deals: Array<{
+    dealId: string;
+    escrow: { state: string; fundedCents: number; releasedCents: number };
+    milestones: Array<{
+      id: string;
+      status: string;
+      description: string;
+      amountCents: number;
+      submittedISO?: string;
+      autoApproveAt?: string;
+      dispute?: {
+        athleteResponse?: string;
+        athleteResponseDeadlineISO: string;
+      };
+    }>;
+    events: Array<{ at: string; actor: string; kind: string; note?: string }>;
+  }>,
+  nowISO: string,
+): DealNotification[];

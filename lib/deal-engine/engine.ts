@@ -11,11 +11,14 @@ import {
   milestoneAutoApproveAt as _milestoneAutoApproveAt,
   isAutoApproved as _isAutoApproved,
   escrowCoverage as _escrowCoverage,
+  athleteResponseDeadline as _athleteResponseDeadline,
+  isResponseOverdue as _isResponseOverdue,
+  deriveDealNotifications as _deriveDealNotifications,
 } from './engine.mjs';
 
-import type { FeeResult, EscrowCoverageResult } from './engine.d';
+import type { FeeResult, EscrowCoverageResult, DealNotification } from './engine.d';
 
-export type { FeeResult, EscrowCoverageResult };
+export type { FeeResult, EscrowCoverageResult, DealNotification };
 
 export const generateDealId = _generateDealId as (
   year: number,
@@ -42,3 +45,17 @@ export const escrowCoverage = _escrowCoverage as (
   milestones: Array<{ amountCents: number }>,
   fundedCents: number,
 ) => EscrowCoverageResult;
+
+export const athleteResponseDeadline = _athleteResponseDeadline as (
+  openedISO: string,
+) => string;
+
+export const isResponseOverdue = _isResponseOverdue as (
+  deadlineISO: string,
+  nowISO: string,
+) => boolean;
+
+export const deriveDealNotifications = _deriveDealNotifications as (
+  deals: Parameters<typeof _deriveDealNotifications>[0],
+  nowISO: string,
+) => DealNotification[];
