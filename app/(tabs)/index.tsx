@@ -38,6 +38,7 @@ import { FlashList } from '@shopify/flash-list';
 import { trackScreen } from '@/lib/analytics';
 import { persistLocalMedia, isLocalMediaAlive, healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
+import { TILE_MEDIA_STORAGE_KEY, tileSlot } from '@/lib/home/tiles';
 import { MasonryTile } from '@/components/home/masonry-tile';
 import { FanPostComposer } from "@/components/fan/post-composer";
 import { SymbolView } from "expo-symbols";
@@ -1176,10 +1177,7 @@ type CoverMedia = LocalMedia;
 const STORAGE_KEY_COVERS = 'proslync:home:coverMedia:v2';
 const STORAGE_KEY_COVERS_LEGACY = 'proslync:home:coverPhotos:v1';
 const STORAGE_KEY_LOGOS = 'proslync:home:customLogos:v1';
-const STORAGE_KEY_TILE_MEDIA = 'proslync:home:tileMedia:v1';
-
-/** Filesystem-safe slot name for a tile id. */
-const tileSlot = (id: string) => `tile-${id.replace(/[^a-zA-Z0-9-]/g, '-')}`;
+const STORAGE_KEY_TILE_MEDIA = TILE_MEDIA_STORAGE_KEY;
 
 
 async function requestPhotoPermission(): Promise<boolean> {
@@ -1418,9 +1416,11 @@ export default function FeedScreen() {
   }, [tiles, tileMedia]);
 
   // ── Stable navigation callback ────────────────────────────────────────────
-  const openSection = useCallback(
-    (sectionId: string) => {
-      router.push({ pathname: '/section/[id]', params: { id: sectionId } } as any);
+  // Every tile opens its card detail page (media + title); the card page
+  // routes onward to NCAA Basketball for now.
+  const openCard = useCallback(
+    (tileId: string, caption: string) => {
+      router.push({ pathname: '/card/[id]', params: { id: tileId, caption } } as any);
     },
     [router],
   );
@@ -1485,7 +1485,7 @@ export default function FeedScreen() {
               caption={t.caption}
               colWidth={GRID_CARD_WIDTH}
               index={index}
-              onPress={() => openSection(t.sectionId)}
+              onPress={() => openCard(t.id, t.caption)}
               media={tileMediaMap.get(t.id) ?? null}
               onMenuPress={() => setMenuTileId(t.id)}
             />

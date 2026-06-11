@@ -150,6 +150,7 @@ function RootLayoutNav() {
         <Stack.Screen name="nil-manager/athlete/[id]" />
         <Stack.Screen name="deal/[id]" />
         <Stack.Screen name="section/[id]" />
+        <Stack.Screen name="card/[id]" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="notification-settings" />
         <Stack.Screen name="privacy-settings" />
