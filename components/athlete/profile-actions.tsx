@@ -6,7 +6,16 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import Animated, { SlideInDown } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  SlideInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import * as React from 'react';
 import {
   Modal,
@@ -88,6 +97,79 @@ function formatDateShort(iso: string): string {
   }
 }
 
+// ─── DraggableSheet ──────────────────────────────────────────
+// Shared modal shell: scrim fades in place (Modal "fade"), the sheet slides
+// up on mount, and dragging the sheet down interactively reduces the scrim
+// dim until release either dismisses (past threshold) or springs back.
+
+function DraggableSheet({
+  visible,
+  onClose,
+  paddingBottom,
+  children,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  paddingBottom: number;
+  children: React.ReactNode;
+}) {
+  const translateY = useSharedValue(0);
+  const sheetHeight = useSharedValue(420);
+
+  React.useEffect(() => {
+    if (visible) translateY.value = 0;
+  }, [visible, translateY]);
+
+  const pan = Gesture.Pan()
+    .activeOffsetY(12)
+    .failOffsetY(-12)
+    .onUpdate((e) => {
+      translateY.value = Math.max(0, e.translationY);
+    })
+    .onEnd((e) => {
+      if (e.translationY > 120 || e.velocityY > 800) {
+        runOnJS(onClose)();
+      } else {
+        translateY.value = withSpring(0, { damping: 22, stiffness: 240 });
+      }
+    });
+
+  const sheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+  // The lower the sheet is dragged, the less the background dims.
+  const scrimStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      translateY.value,
+      [0, Math.max(sheetHeight.value, 1)],
+      [1, 0],
+      Extrapolation.CLAMP,
+    ),
+  }));
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={ss.root}>
+        <Animated.View style={[ss.scrim, scrimStyle]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
+        <GestureDetector gesture={pan}>
+          <Animated.View
+            entering={SlideInDown.duration(320)}
+            style={[ss.sheet, { paddingBottom }, sheetStyle]}
+            onLayout={(e) => {
+              sheetHeight.value = e.nativeEvent.layout.height;
+            }}
+          >
+            <View style={ss.handle} />
+            {children}
+          </Animated.View>
+        </GestureDetector>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── SupporterSheet (new + manage modes) ─────────────────────
 
 type SheetMode = 'new' | 'manage';
@@ -167,16 +249,7 @@ function SupporterSheet({
       : `Renew ${tier.label}`;
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
-      <View style={ss.root}>
-        <Pressable style={ss.scrim} onPress={handleClose} />
-        <Animated.View entering={SlideInDown.duration(320)} style={[ss.sheet, { paddingBottom: insets.bottom + 20 }]}>
-          <View style={ss.handle} />
+    <DraggableSheet visible={visible} onClose={handleClose} paddingBottom={insets.bottom + 20}>
 
           {confirmed ? (
             /* ── Confirmation state ── */
@@ -340,9 +413,7 @@ function SupporterSheet({
               </View>
             </ScrollView>
           )}
-        </Animated.View>
-      </View>
-    </Modal>
+    </DraggableSheet>
   );
 }
 
@@ -385,16 +456,7 @@ function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps
   }, [onClose]);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
-      <View style={ss.root}>
-        <Pressable style={ss.scrim} onPress={handleClose} />
-        <Animated.View entering={SlideInDown.duration(320)} style={[ss.sheet, { paddingBottom: insets.bottom + 20 }]}>
-          <View style={ss.handle} />
+    <DraggableSheet visible={visible} onClose={handleClose} paddingBottom={insets.bottom + 20}>
 
           {confirmed ? (
             /* ── Confirmation state ── */
@@ -470,9 +532,7 @@ function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps
               </TouchableOpacity>
             </ScrollView>
           )}
-        </Animated.View>
-      </View>
-    </Modal>
+    </DraggableSheet>
   );
 }
 
