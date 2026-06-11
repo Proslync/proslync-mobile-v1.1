@@ -14,4 +14,11 @@ export const CURATED_MEDIA: Record<string, CuratedMediaEntry> = {
   'logo-awards': { type: 'image', source: require('../../assets/media/curated/logo-awards.jpg') },
   'logo-ncaab': { type: 'image', source: require('../../assets/media/curated/logo-ncaab.jpg') },
   'profile-banner': { type: 'video', uri: 'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos/curated/profile-banner.mov' },
+  'tile-ncaab-hub': { type: 'video', uri: 'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos/curated/tile-ncaab-hub.mov' },
+  'tile-ncaab-ncaab-1': { type: 'video', uri: 'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos/curated/tile-ncaab-ncaab-1.mov' },
+  'tile-ncaab-ncaab-10': { type: 'video', uri: 'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos/curated/tile-ncaab-ncaab-10.mov' },
+  'tile-ncaab-ncaab-2': { type: 'video', uri: 'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos/curated/tile-ncaab-ncaab-2.mov' },
+  'tile-ncaab-ncaab-7': { type: 'video', uri: 'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos/curated/tile-ncaab-ncaab-7.mov' },
+  'tile-ncaab-ncaab-8': { type: 'video', uri: 'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos/curated/tile-ncaab-ncaab-8.mp4' },
+  'tile-ncaab-ncaab-9': { type: 'video', uri: 'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos/curated/tile-ncaab-ncaab-9.mov' },
 };
