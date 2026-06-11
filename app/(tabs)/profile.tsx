@@ -1731,17 +1731,17 @@ function PlayerProfileScreen() {
     "followers" | "following"
   >("followers");
   const [showCreateMenu, setShowCreateMenu] = React.useState(false);
-  const [profileTab, setProfileTab] = React.useState<'about' | 'posts' | 'deals' | 'merch' | 'media'>('about');
-  const [expandedBio, setExpandedBio] = React.useState<Set<string>>(new Set());
-  const toggleBio = React.useCallback((key: string) => {
-    setExpandedBio((prev) => {
+  const [profileTab, setProfileTab] = React.useState<'kit' | 'posts' | 'merch'>('kit');
+  const [_expandedBio, _setExpandedBio] = React.useState<Set<string>>(new Set());
+  const _toggleBio = React.useCallback((key: string) => {
+    _setExpandedBio((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
       else next.add(key);
       return next;
     });
   }, []);
-  const BIO_SECTIONS = React.useMemo(
+  const _BIO_SECTIONS = React.useMemo(
     () => [
       {
         key: 'freshman',
@@ -1773,7 +1773,7 @@ function PlayerProfileScreen() {
   );
 
   const TAB_KEYS = React.useMemo(
-    () => ['about', 'posts', 'deals', 'merch', 'media'] as const,
+    () => ['kit', 'posts', 'merch'] as const,
     []
   );
 
@@ -2122,119 +2122,23 @@ function PlayerProfileScreen() {
           {!isEditing && <ProfileActions athleteName="Kiyan" />}
 
           {/* Tab content */}
+          {/* LEGACY_TABS: 'about', 'deals', 'media' are unmounted (charter §B). */}
+          {/* JSX preserved below; branches unreachable via TAB_KEYS. Not deleted. */}
           <View style={s.igGridSection}>
-            {profileTab === 'about' && (
+            {profileTab === 'kit' && (
               <View style={s.aboutSection}>
                 <MediaKitCard onViewPosts={() => setProfileTab('posts')} />
-                <View style={s.aboutBlockBare}>
-                  <View
-                    style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
-                    pointerEvents="none"
-                  />
-                  <View style={s.aboutBlockGlass} pointerEvents="none">
-                    <GlassView
-                      glassEffectStyle="regular"
-                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-                    />
-                    {isLiquidGlassSupported && (
-                      <LiquidGlassView
-                        effect="regular"
-                        tintColor="rgba(255,255,255,0.10)"
-                        style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-                      />
-                    )}
-                  </View>
-                  {BIO_SECTIONS.map((section, idx) => {
-                    const isOpen = expandedBio.has(section.key);
-                    return (
-                      <View
-                        key={section.key}
-                        style={[s.bioItem, idx === 0 && { borderTopWidth: 0, paddingTop: 0 }]}
-                      >
-                        <TouchableOpacity
-                          activeOpacity={0.7}
-                          onPress={() => toggleBio(section.key)}
-                          style={s.bioHeader}
-                          accessibilityRole="button"
-                          accessibilityState={{ expanded: isOpen }}
-                        >
-                          <Text style={s.bioTitle}>{section.title}</Text>
-                          <Ionicons
-                            name={isOpen ? 'chevron-up' : 'chevron-down'}
-                            size={16}
-                            color="rgba(255,255,255,0.6)"
-                          />
-                        </TouchableOpacity>
-                        {isOpen && <Text style={s.bioBody}>{section.body}</Text>}
-                      </View>
-                    );
-                  })}
-                </View>
-
-                <View style={s.aboutBlockBare}>
-                  <View
-                    style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
-                    pointerEvents="none"
-                  />
-                  <View style={s.aboutBlockGlass} pointerEvents="none">
-                    <GlassView
-                      glassEffectStyle="regular"
-                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-                    />
-                    {isLiquidGlassSupported && (
-                      <LiquidGlassView
-                        effect="regular"
-                        tintColor="rgba(255,255,255,0.10)"
-                        style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-                      />
-                    )}
-                  </View>
-                  {([
-                    {
-                      key: 'philanthropy',
-                      title: 'Philanthropy',
-                      body: "Gives back through the Boys & Girls Clubs of Harlem and mentors youth with After-School All-Stars and Team IMPACT.",
-                    },
-                    {
-                      key: 'personal',
-                      title: 'Personal',
-                      body: "Deep into fashion, sneaker culture, and music production — plans to launch his own apparel label after college. Downtime is mostly film, photography, vinyl collecting, and pickup hoops around Brooklyn.",
-                    },
-                    {
-                      key: 'academic',
-                      title: 'Academic',
-                      body: "Early interest in entrepreneurship and real estate, and active with the Syracuse Student-Athlete Advisory Committee on the academic side.",
-                    },
-                  ] as const).map((section, idx) => {
-                    const isOpen = expandedBio.has(section.key);
-                    return (
-                      <View
-                        key={section.key}
-                        style={[s.bioItem, idx === 0 && { borderTopWidth: 0, paddingTop: 0 }]}
-                      >
-                        <TouchableOpacity
-                          activeOpacity={0.7}
-                          onPress={() => toggleBio(section.key)}
-                          style={s.bioHeader}
-                          accessibilityRole="button"
-                          accessibilityState={{ expanded: isOpen }}
-                        >
-                          <Text style={s.bioTitle}>{section.title}</Text>
-                          <Ionicons
-                            name={isOpen ? 'chevron-up' : 'chevron-down'}
-                            size={16}
-                            color="rgba(255,255,255,0.6)"
-                          />
-                        </TouchableOpacity>
-                        {isOpen && <Text style={s.bioBody}>{section.body}</Text>}
-                      </View>
-                    );
-                  })}
-                </View>
+                {/* LEGACY_TABS — bio accordions unmounted; JSX kept for reference.
+                {<View style={s.aboutBlockBare}>
+                  BIO_SECTIONS accordion (background/freshman year etc.)
+                </View>}
+                {<View style={s.aboutBlockBare}>
+                  philanthropy/personal/academic accordion
+                </View>} */}
               </View>
             )}
 
-            {profileTab !== 'about' && <View style={{ height: 15 }} />}
+            {profileTab !== 'kit' && <View style={{ height: 15 }} />}
 
             {profileTab === 'posts' && (
               <View style={s.feedList}>
@@ -2250,11 +2154,13 @@ function PlayerProfileScreen() {
               </View>
             )}
 
-            {profileTab === 'deals' && <DealsTabContent />}
+            {/* LEGACY_TABS — 'deals' tab unmounted (charter §B, unreachable via TAB_KEYS) */}
+            {(profileTab as string) === 'deals' && <DealsTabContent />}
 
             {profileTab === 'merch' && <MerchTab />}
 
-            {profileTab === 'media' && (
+            {/* LEGACY_TABS — 'media' tab unmounted (charter §B, unreachable via TAB_KEYS) */}
+            {(profileTab as string) === 'media' && (
               <View>
                 <AwardsTab />
                 {/* Press hero summary — matches dashboard Stats aesthetic */}

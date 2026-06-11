@@ -202,6 +202,30 @@ export function MediaKitCard({ onViewPosts }: MediaKitCardProps) {
           These receipts double as CSC valid-business-purpose evidence.
         </Text>
       </GlassBlock>
+
+      {/* ── Rates & Reliability block (charter §B) ── */}
+      <GlassBlock>
+        <View style={mk.labelRow}>
+          <Text style={mk.label}>Rates & Reliability</Text>
+        </View>
+
+        {/* Rate ranges — tabular fixture */}
+        {([
+          { type: 'Endorsement post', range: '$1.2–2.4K' },
+          { type: 'Appearance', range: '$800–1.5K' },
+          { type: 'Licensing', range: '$2–5K' },
+        ] as const).map((item, idx) => (
+          <View key={item.type} style={[mk.row, idx === 0 && mk.rowFirst]}>
+            <Text style={mk.rowTitle}>{item.type}</Text>
+            <Text style={mk.rateValue}>{item.range}</Text>
+          </View>
+        ))}
+
+        {/* Reliability line */}
+        <Text style={mk.reliabilityLine}>
+          5 deals completed · 100% on time · responds in ~2h
+        </Text>
+      </GlassBlock>
     </>
   );
 }
@@ -349,5 +373,19 @@ const mk = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 14,
     marginTop: 2,
+  },
+  rateValue: {
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.2,
+  },
+  reliabilityLine: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 4,
+    lineHeight: 15,
   },
 });
