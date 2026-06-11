@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    zIndex: 160,
+    zIndex: 300,
   },
 
   // Outer positioning container — sits at bottom, passes pointer-events through.
