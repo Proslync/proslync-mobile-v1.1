@@ -1,26 +1,25 @@
 // ── MediaKitCard ──────────────────────────────────────────────
-// Brand-facing "verified media kit" block: cross-platform reach rows
-// + completed deal receipts. Sits at the top of the About tab.
+// Brand-facing "verified media kit": cross-platform reach rows
+// + completed deal receipts. Sits at the top of the About tab and
+// uses the SAME liquid-glass block material + label styling as the
+// bio blocks below it ("Freshman year" etc).
 // Demo fixture only — data is static.
 
+import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassView } from 'expo-glass-effect';
 import * as React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import {
-  CARD_BG,
-  CARD_BG_INSET,
-  CARD_BORDER,
-  RADIUS_MD,
-  RADIUS_PILL,
-} from '@/components/shared/ui-kit/tokens';
+import { RADIUS_PILL } from '@/components/shared/ui-kit/tokens';
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import { getMockAthleteSocialReach } from '@/lib/data/mock-social-reach';
 
-const COPPER = '#EB621A';
+const LABEL_ORANGE = '#FF6F3C';
 const MUTED = 'rgba(255,255,255,0.52)';
 const WHITE = '#FFFFFF';
 const SUCCESS_GREEN = '#00C6B0';
+const HAIRLINE = 'rgba(255,255,255,0.08)';
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -71,6 +70,30 @@ const EXTRA_PARTNERSHIPS = [
   { brand: 'Beats by Dre', deliverable: 'Product feature story' },
 ];
 
+// ─── GlassBlock — same material as the About bio blocks ──────
+
+function GlassBlock({ children }: { children: React.ReactNode }) {
+  return (
+    <View style={mk.block}>
+      <View
+        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+        pointerEvents="none"
+      />
+      <View style={mk.blockGlass} pointerEvents="none">
+        <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+        {isLiquidGlassSupported && (
+          <LiquidGlassView
+            effect="regular"
+            tintColor="rgba(255,255,255,0.10)"
+            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+          />
+        )}
+      </View>
+      {children}
+    </View>
+  );
+}
+
 // ─── Props ───────────────────────────────────────────────────
 
 export interface MediaKitCardProps {
@@ -91,205 +114,167 @@ export function MediaKitCard({ onViewPosts }: MediaKitCardProps) {
   );
 
   return (
-    <View style={mk.card}>
-      {/* ── Header ── */}
-      <View style={mk.headerRow}>
-        <View style={mk.copperBar} />
-        <Text style={mk.headerTitle}>VERIFIED MEDIA KIT</Text>
-        <Text style={mk.headerMuted}>Updated today</Text>
-      </View>
+    <>
+      {/* ── Verified media kit block ── */}
+      <GlassBlock>
+        <View style={mk.labelRow}>
+          <Text style={mk.label}>Verified media kit</Text>
+          <Text style={mk.labelMuted}>Updated today</Text>
+        </View>
 
-      {/* ── Reach rows ── */}
-      {reach != null ? (
-        <View style={mk.section}>
-          {reach.platforms.map((p) => {
-            const days = p.source.freshnessDays;
-            const isStale = days >= 7;
-            const icon = PLATFORM_ICON[p.platform] ?? 'globe-outline';
-            const label = PLATFORM_LABEL[p.platform] ?? p.platform;
-            const engRate =
-              typeof reach.engagementRate7d === 'number'
-                ? `Avg engagement ${(reach.engagementRate7d * 100).toFixed(1)}% · last 30 posts`
-                : null;
+        {reach != null
+          ? reach.platforms.map((p, idx) => {
+              const days = p.source.freshnessDays;
+              const isStale = days >= 7;
+              const icon = PLATFORM_ICON[p.platform] ?? 'globe-outline';
+              const label = PLATFORM_LABEL[p.platform] ?? p.platform;
 
-            return (
-              <View key={p.platform} style={mk.reachRow}>
-                <View style={mk.platformIconWrap}>
-                  <Ionicons name={icon} size={18} color={WHITE} />
-                </View>
-                <View style={mk.reachMeta}>
-                  <Text style={mk.platformLabel}>{label}</Text>
-                  {engRate != null ? (
-                    <Text style={mk.engagementLine} numberOfLines={1}>
-                      {engRate}
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={mk.reachRight}>
-                  <Text style={mk.followerCount}>{formatFollowers(p.followers)}</Text>
-                  <View style={[mk.freshnessChip, isStale && mk.freshnessChipStale]}>
-                    <Text style={[mk.freshnessText, isStale && mk.freshnessTextStale]}>
-                      {formatFreshness(days)}
-                    </Text>
+              return (
+                <View key={p.platform} style={[mk.row, idx === 0 && mk.rowFirst]}>
+                  <View style={mk.platformIconWrap}>
+                    <Ionicons name={icon} size={17} color={WHITE} />
+                  </View>
+                  <Text style={mk.rowTitle}>{label}</Text>
+                  <View style={mk.rowRight}>
+                    <Text style={mk.followerCount}>{formatFollowers(p.followers)}</Text>
+                    <View style={[mk.freshnessChip, isStale && mk.freshnessChipStale]}>
+                      <Text style={[mk.freshnessText, isStale && mk.freshnessTextStale]}>
+                        {formatFreshness(days)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
+              );
+            })
+          : null}
+
+        {reach != null && typeof reach.engagementRate7d === 'number' ? (
+          <Text style={mk.engagementLine}>
+            Avg engagement {(reach.engagementRate7d * 100).toFixed(1)}% · last 30 posts
+          </Text>
+        ) : null}
+      </GlassBlock>
+
+      {/* ── Past partnerships block ── */}
+      <GlassBlock>
+        <View style={mk.labelRow}>
+          <Text style={mk.label}>Past partnerships</Text>
+        </View>
+
+        {[...paidDeals.map((d) => ({
+          key: d.dealId,
+          brand: d.brand,
+          deliverable: d.deliverables[0]?.label ?? 'Deliverable',
+        })), ...EXTRA_PARTNERSHIPS.map((ep) => ({
+          key: ep.brand,
+          brand: ep.brand,
+          deliverable: ep.deliverable,
+        }))].map((p, idx) => (
+          <View key={p.key} style={[mk.row, idx === 0 && mk.rowFirst]}>
+            <View style={mk.partnerMeta}>
+              <Text style={mk.rowTitle}>{p.brand}</Text>
+              <Text style={mk.partnerDeliverable} numberOfLines={1}>
+                {p.deliverable}
+              </Text>
+            </View>
+            <View style={mk.rowRight}>
+              <View style={mk.deliveredPill}>
+                <Ionicons name="checkmark" size={11} color={SUCCESS_GREEN} />
+                <Text style={mk.deliveredText}>Delivered on time</Text>
               </View>
-            );
-          })}
-        </View>
-      ) : null}
-
-      {/* ── Past Partnerships ── */}
-      <View style={mk.subHeader}>
-        <Text style={mk.subHeaderText}>PAST PARTNERSHIPS</Text>
-      </View>
-
-      <View style={mk.section}>
-        {paidDeals.map((d) => (
-          <PartnershipRow
-            key={d.dealId}
-            brand={d.brand}
-            deliverable={d.deliverables[0]?.label ?? 'Deliverable'}
-            onViewPosts={onViewPosts}
-          />
+              {onViewPosts != null ? (
+                <TouchableOpacity
+                  onPress={onViewPosts}
+                  activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${p.brand} post`}
+                >
+                  <Text style={mk.viewPost}>View post →</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={mk.viewPost}>View post →</Text>
+              )}
+            </View>
+          </View>
         ))}
-        {EXTRA_PARTNERSHIPS.map((ep) => (
-          <PartnershipRow
-            key={ep.brand}
-            brand={ep.brand}
-            deliverable={ep.deliverable}
-            onViewPosts={onViewPosts}
-          />
-        ))}
-      </View>
 
-      {/* ── Footer ── */}
-      <Text style={mk.footer}>
-        These receipts double as CSC valid-business-purpose evidence.
-      </Text>
-    </View>
-  );
-}
-
-// ─── PartnershipRow ───────────────────────────────────────────
-
-function PartnershipRow({
-  brand,
-  deliverable,
-  onViewPosts,
-}: {
-  brand: string;
-  deliverable: string;
-  onViewPosts?: () => void;
-}) {
-  return (
-    <View style={mk.partnerRow}>
-      <View style={mk.partnerMeta}>
-        <Text style={mk.partnerBrand}>{brand}</Text>
-        <Text style={mk.partnerDeliverable} numberOfLines={1}>
-          {deliverable}
+        <Text style={mk.footer}>
+          These receipts double as CSC valid-business-purpose evidence.
         </Text>
-      </View>
-      <View style={mk.partnerRight}>
-        <View style={mk.deliveredPill}>
-          <Ionicons name="checkmark" size={11} color={SUCCESS_GREEN} />
-          <Text style={mk.deliveredText}>Delivered on time</Text>
-        </View>
-        {onViewPosts != null ? (
-          <TouchableOpacity
-            onPress={onViewPosts}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel={`View ${brand} post`}
-          >
-            <Text style={mk.viewPost}>View post →</Text>
-          </TouchableOpacity>
-        ) : (
-          <Text style={mk.viewPost}>View post →</Text>
-        )}
-      </View>
-    </View>
+      </GlassBlock>
+    </>
   );
 }
 
 // ─── Styles ──────────────────────────────────────────────────
 
 const mk = StyleSheet.create({
-  card: {
+  // Same material recipe as profile.tsx aboutBlockBare/aboutBlockGlass
+  block: {
+    gap: 10,
     borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
+    padding: 14,
     overflow: 'hidden',
-    marginBottom: 12,
+    position: 'relative',
   },
-  headerRow: {
+  blockGlass: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: CARD_BORDER,
+    justifyContent: 'space-between',
   },
-  copperBar: {
-    width: 4,
-    height: 20,
-    borderRadius: 2,
-    backgroundColor: COPPER,
-  },
-  headerTitle: {
-    flex: 1,
-    color: WHITE,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.8,
+  // Matches profile.tsx aboutLabel
+  label: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    color: LABEL_ORANGE,
     textTransform: 'uppercase',
   },
-  headerMuted: {
+  labelMuted: {
     color: MUTED,
     fontSize: 10,
     fontWeight: '600',
   },
-  section: {
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  reachRow: {
+  // Matches profile.tsx bioItem separators
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderRadius: RADIUS_MD,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG_INSET,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: HAIRLINE,
+    paddingTop: 10,
+    paddingBottom: 2,
+  },
+  rowFirst: {
+    borderTopWidth: 0,
+    paddingTop: 0,
   },
   platformIconWrap: {
-    width: 30,
-    height: 30,
+    width: 28,
+    height: 28,
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  reachMeta: {
+  // Matches profile.tsx bioTitle
+  rowTitle: {
     flex: 1,
-    gap: 2,
-  },
-  platformLabel: {
+    fontSize: 15,
     color: WHITE,
-    fontSize: 12.5,
-    fontWeight: '800',
+    fontWeight: '600',
+    letterSpacing: -0.1,
   },
-  engagementLine: {
-    color: MUTED,
-    fontSize: 10.5,
-    fontWeight: '500',
-  },
-  reachRight: {
+  rowRight: {
     alignItems: 'flex-end',
     gap: 3,
   },
@@ -298,6 +283,12 @@ const mk = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
+  },
+  engagementLine: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
   },
   freshnessChip: {
     borderRadius: RADIUS_PILL,
@@ -321,48 +312,14 @@ const mk = StyleSheet.create({
   freshnessTextStale: {
     color: '#FFD60A',
   },
-  subHeader: {
-    paddingHorizontal: 14,
-    paddingTop: 6,
-    paddingBottom: 2,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
-  },
-  subHeaderText: {
-    color: MUTED,
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
-  },
-  partnerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    borderRadius: RADIUS_MD,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG_INSET,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
   partnerMeta: {
     flex: 1,
     gap: 2,
-  },
-  partnerBrand: {
-    color: WHITE,
-    fontSize: 13,
-    fontWeight: '800',
   },
   partnerDeliverable: {
     color: MUTED,
     fontSize: 11,
     fontWeight: '500',
-  },
-  partnerRight: {
-    alignItems: 'flex-end',
-    gap: 4,
   },
   deliveredPill: {
     flexDirection: 'row',
@@ -391,10 +348,6 @@ const mk = StyleSheet.create({
     fontSize: 10,
     fontWeight: '500',
     lineHeight: 14,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-    paddingTop: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    marginTop: 2,
   },
 });
