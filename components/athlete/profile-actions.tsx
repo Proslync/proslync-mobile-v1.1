@@ -6,6 +6,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import Animated, { SlideInDown } from 'react-native-reanimated';
 import * as React from 'react';
 import {
   Modal,
@@ -169,12 +170,12 @@ function SupporterSheet({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={handleClose}
     >
       <View style={ss.root}>
         <Pressable style={ss.scrim} onPress={handleClose} />
-        <View style={[ss.sheet, { paddingBottom: insets.bottom + 20 }]}>
+        <Animated.View entering={SlideInDown.duration(320)} style={[ss.sheet, { paddingBottom: insets.bottom + 20 }]}>
           <View style={ss.handle} />
 
           {confirmed ? (
@@ -339,7 +340,7 @@ function SupporterSheet({
               </View>
             </ScrollView>
           )}
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -387,12 +388,12 @@ function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={handleClose}
     >
       <View style={ss.root}>
         <Pressable style={ss.scrim} onPress={handleClose} />
-        <View style={[ss.sheet, { paddingBottom: insets.bottom + 20 }]}>
+        <Animated.View entering={SlideInDown.duration(320)} style={[ss.sheet, { paddingBottom: insets.bottom + 20 }]}>
           <View style={ss.handle} />
 
           {confirmed ? (
@@ -469,7 +470,7 @@ function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps
               </TouchableOpacity>
             </ScrollView>
           )}
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
