@@ -2061,8 +2061,6 @@ function PlayerProfileScreen() {
               pointerEvents="none"
             />
           </View>
-          {/* Storefront CTAs — Support + Work with me (hidden in edit mode) */}
-          {!isEditing && <ProfileActions athleteName="Kiyan" />}
           {/* Profile section tabs — segmented glass pill with sliding knob (matches dashboard) */}
           <View style={s.tabsRow}>
             <View
@@ -2119,6 +2117,9 @@ function PlayerProfileScreen() {
               })}
             </View>
           </View>
+
+          {/* Storefront CTAs — Support + Work with me (hidden in edit mode) */}
+          {!isEditing && <ProfileActions athleteName="Kiyan" />}
 
           {/* Tab content */}
           <View style={s.igGridSection}>
