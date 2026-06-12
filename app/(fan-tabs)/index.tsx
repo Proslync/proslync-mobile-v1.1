@@ -1,38 +1,28 @@
-// Fan HQ — rich fan landing page. Replaces the prior auth-branched
-// FanHomeFeed/FanView shell during fan-dashboard-remix-2026-05-12; the
-// social-feed surface moved to `(fan-tabs)/dashboard.tsx` (slot-2, "Fan
-// Hub"). This Home tab is now a curated single-scroll Fan HQ command page
-// with the tier badge, fan score, leaderboard rank, live-athletes strip,
-// and inline Pickem + Perks teasers.
+// app/(fan-tabs)/index.tsx
+// ── FAN HQ — charter rebuild 2026-06-11 ──────────────────────────────────
+// Charter law: PROOF + BELONGING, ration intimacy.
+// MODULES: YOUR IMPACT · FROM YOUR ATHLETES · PERKS · MY ATHLETES
+// UNMOUNTED (not deleted): fan score, leaderboard, live strip, streak/gamification,
+//   pick'em, tier progress bar, stat row, PredictionCard, PerkCard (old).
+//   Orphaned variables prefixed with _.
+// No animations (charter). Tabular numerals on money. Copper = act-now only.
+// DEMO Alert on every simulated action.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useFocusEffect, useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import * as React from 'react';
 import {
-  Image,
+  Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AthleteAvatar } from '@/components/explore/sections/athlete-avatar';
 import {
-  FAN_ACCENT,
-  FAN_ACCENT_BORDER,
-  FAN_ACCENT_SOFT,
-} from '@/constants/brand';
-import {
-  FAN_FOLLOWING,
-  FAN_PERKS,
-  FAN_PREDICTIONS,
   FAN_PROFILE,
-  type Perk,
-  type Prediction,
 } from '@/lib/data/mock-fan-data';
 import {
   loadPasses,
@@ -41,21 +31,371 @@ import {
   type SupporterReceipt,
 } from '@/lib/fan/supporter';
 
-const COPPER = '#EB621A';
-const PURPLE = '#A855F7';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.09)';
+// ── Unmounted imports (kept for module resolution, _ prefix) ────────────
+// These were used by removed sections (live strip, pick'em, old perks card).
+// Do NOT re-enable without charter review.
+import {
+  FAN_FOLLOWING as _FAN_FOLLOWING,
+  FAN_PERKS as _FAN_PERKS,
+  FAN_PREDICTIONS as _FAN_PREDICTIONS,
+} from '@/lib/data/mock-fan-data';
+import { FAN_ACCENT, FAN_ACCENT_BORDER, FAN_ACCENT_SOFT } from '@/constants/brand';
+import { AthleteAvatar as _AthleteAvatar } from '@/components/explore/sections/athlete-avatar';
+import { LinearGradient as _LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeIn as _FadeIn, FadeInDown as _FadeInDown } from 'react-native-reanimated';
 
-const liveAthletes = FAN_FOLLOWING.filter((a) => a.isLive);
+// ── Charter constants ─────────────────────────────────────────────────────
+const CARD_BG = '#1C1C1E';
+const CARD_BORDER = 'rgba(255,255,255,0.07)';
+const MUTED = 'rgba(255,255,255,0.50)';
+const GREEN = '#34C759';
+
+// ── Fixture: supporter-only feed rows ────────────────────────────────────
+// Raw text-first; no emoji per charter.
+const SUPPORTER_FEED = [
+  {
+    id: 'sf-1',
+    athlete: 'Kiyan A.',
+    time: '2h',
+    body: 'Film session done. New drop for Insiders Friday.',
+    chip: 'SUPPORTERS ONLY',
+  },
+  {
+    id: 'sf-2',
+    athlete: 'Kiyan A.',
+    time: '1d',
+    body: 'Thanks for the renew, supporter #15.',
+    chip: 'SUPPORTERS ONLY',
+  },
+  {
+    id: 'sf-3',
+    athlete: 'JJ Starling',
+    time: '3h',
+    body: 'Locked in for the next two weeks. Film, weight room, the usual.',
+    chip: 'SUPPORTERS ONLY',
+  },
+];
+
+// ── Fixture: perk fulfillment rows ───────────────────────────────────────
+type PerkRow = {
+  id: string;
+  title: string;
+  athlete: string;
+  steps: ('REQUESTED' | 'RECORDED' | 'DELIVERED')[];
+  currentStep: number; // 0-indexed
+  deliverNote: string;
+  isLocal?: boolean;
+  localCta?: string;
+};
+
+const PERK_ROWS: PerkRow[] = [
+  {
+    id: 'pr-1',
+    title: 'KA7 Orange Crush hoodie — pre-release',
+    athlete: 'Kiyan Anthony',
+    steps: ['REQUESTED', 'RECORDED', 'DELIVERED'],
+    currentStep: 2, // DELIVERED
+    deliverNote: 'Delivered Jun 9',
+  },
+  {
+    id: 'pr-2',
+    title: 'Signed 8x10 print — training camp',
+    athlete: 'Kiyan Anthony',
+    steps: ['REQUESTED', 'RECORDED', 'DELIVERED'],
+    currentStep: 1, // RECORDED
+    deliverNote: 'Recorded Tue · delivers by Fri',
+  },
+  {
+    id: 'pr-3',
+    title: '2-for-1 at Santangelo\'s — JMA x Kiyan signing Sat',
+    athlete: 'JMA Wireless x Kiyan Anthony',
+    steps: ['REQUESTED', 'RECORDED', 'DELIVERED'],
+    currentStep: 0, // local activation
+    deliverNote: 'Local activation — show code at door',
+    isLocal: true,
+    localCta: 'SHOW CODE',
+  },
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function formatReceiptDate(isoString: string): string {
+  try {
+    return new Date(isoString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  } catch {
+    return '';
+  }
+}
+
+function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+// ── Section header — 4px accent bar + caps label ──────────────────────
+function SectionHeader({ label, chip }: { label: string; chip?: string }) {
+  return (
+    <View style={s.sectionHeader}>
+      <View style={s.sectionBar} />
+      <Text style={s.sectionLabel}>{label}</Text>
+      {chip ? (
+        <View style={s.sectionChip}>
+          <Text style={s.sectionChipText}>{chip}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+// ── MODULE 1: YOUR IMPACT ─────────────────────────────────────────────────
+
+function ImpactModule({ receipts }: { receipts: SupporterReceipt[] }) {
+  const mostRecent = receipts.length > 0 ? receipts[receipts.length - 1] : null;
+
+  return (
+    <View style={s.card}>
+      <SectionHeader label="YOUR IMPACT" />
+      <Text style={s.impactProof}>
+        88% of every dollar reaches the athlete — receipts prove it.
+      </Text>
+      {receipts.length === 0 ? (
+        <Text style={s.emptyText}>
+          Back an athlete and every dollar shows up here with a receipt.
+        </Text>
+      ) : (
+        <>
+          {receipts.map((r, idx) => {
+            const isFirst = idx === receipts.length - 1;
+            const athleteName =
+              r.note.split(' — ')[0].replace('Insider $12/mo', '').replace('Fan $5/mo', '').replace('Courtside $25/mo', '').trim() ||
+              r.passAthleteId;
+            return (
+              <View key={r.id} style={[s.receiptRow, idx > 0 && s.receiptRowBorder]}>
+                <Text style={s.receiptDate}>{formatReceiptDate(r.atISO)}</Text>
+                <Text style={s.receiptDot}> · </Text>
+                <Text style={s.receiptMoney}>
+                  {formatCents(r.paidCents)} → {formatCents(r.toAthleteCents)} reached {r.passAthleteId}
+                </Text>
+                <View style={s.receiptCheck}>
+                  <Ionicons name="checkmark-circle" size={13} color={GREEN} />
+                </View>
+                {isFirst && mostRecent?.note ? (
+                  <Text style={s.receiptFund}>
+                    {'\n'}Funded: {mostRecent.note}
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })}
+        </>
+      )}
+    </View>
+  );
+}
+
+// ── MODULE 2: FROM YOUR ATHLETES ──────────────────────────────────────────
+
+function SupporterFeedModule({ hasPasses }: { hasPasses: boolean }) {
+  if (!hasPasses) return null;
+  return (
+    <View style={s.card}>
+      <SectionHeader label="FROM YOUR ATHLETES" chip="SUPPORTERS ONLY" />
+      {SUPPORTER_FEED.map((item, idx) => (
+        <View key={item.id} style={[s.feedRow, idx > 0 && s.feedRowBorder]}>
+          <View style={s.feedMeta}>
+            <Text style={s.feedAthlete}>{item.athlete}</Text>
+            <Text style={s.feedTime}> · {item.time}</Text>
+          </View>
+          <Text style={s.feedBody}>{item.body}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ── MODULE 3: PERKS ───────────────────────────────────────────────────────
+
+function SlaStep({
+  label,
+  state,
+}: {
+  label: string;
+  state: 'done' | 'active' | 'pending';
+}) {
+  return (
+    <View style={s.slaStep}>
+      <View
+        style={[
+          s.slaDot,
+          state === 'done' && s.slaDotDone,
+          state === 'active' && s.slaDotActive,
+        ]}
+      />
+      <Text
+        style={[
+          s.slaLabel,
+          state === 'done' && s.slaLabelDone,
+          state === 'active' && s.slaLabelActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+function PerksModule({ hasPasses }: { hasPasses: boolean }) {
+  if (!hasPasses) return null;
+  return (
+    <View style={s.card}>
+      <SectionHeader label="PERKS" />
+      {PERK_ROWS.map((row, idx) => (
+        <View key={row.id} style={[s.perkRow, idx > 0 && s.perkRowBorder]}>
+          <View style={s.perkLeft}>
+            <Text style={s.perkTitle}>{row.title}</Text>
+            <Text style={s.perkAthlete}>{row.athlete}</Text>
+            {/* SLA stepper */}
+            <View style={s.slaStepper}>
+              {row.steps.map((step, stepIdx) => {
+                const state =
+                  stepIdx < row.currentStep
+                    ? 'done'
+                    : stepIdx === row.currentStep
+                    ? 'active'
+                    : 'pending';
+                return (
+                  <React.Fragment key={step}>
+                    <SlaStep label={step} state={state} />
+                    {stepIdx < row.steps.length - 1 && (
+                      <View style={s.slaConnector} />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </View>
+            <Text style={s.perkDeliverNote}>{row.deliverNote}</Text>
+          </View>
+          {row.currentStep === 2 && !row.isLocal ? (
+            <View style={s.perkDeliveredBadge}>
+              <Ionicons name="checkmark-circle" size={16} color={GREEN} />
+              <Text style={s.perkDeliveredText}>DELIVERED</Text>
+            </View>
+          ) : null}
+          {row.isLocal ? (
+            <Pressable
+              style={s.showCodeChip}
+              onPress={() =>
+                Alert.alert(
+                  'Show Code',
+                  'Present this screen at the door for your 2-for-1 at Santangelo\'s. (DEMO)',
+                )
+              }
+              accessibilityRole="button"
+              accessibilityLabel="Show activation code"
+            >
+              <Text style={s.showCodeChipText}>{row.localCta}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ── MODULE 4: MY ATHLETES ────────────────────────────────────────────────
+
+function MyAthletesModule({
+  passes,
+  receipts,
+}: {
+  passes: SupporterPass[];
+  receipts: SupporterReceipt[];
+}) {
+  return (
+    <View style={s.card}>
+      <SectionHeader label="MY ATHLETES" />
+      {passes.length === 0 ? (
+        <Text style={s.emptyText}>
+          Back an athlete from their profile — every dollar shows up here with a receipt.
+        </Text>
+      ) : (
+        <>
+          {passes.map((p, idx) => {
+            const lastReceipt =
+              receipts.filter((r) => r.passAthleteId === p.athleteId).slice(-1)[0] ?? null;
+            const tierLabel =
+              p.tier === 'fan' ? 'FAN' : p.tier === 'insider' ? 'INSIDER' : 'COURTSIDE';
+            const sinceLabel = (() => {
+              try {
+                return new Date(p.startedAtISO).toLocaleDateString('en-US', {
+                  month: 'short',
+                  year: 'numeric',
+                });
+              } catch {
+                return '';
+              }
+            })();
+            return (
+              <View key={p.athleteId} style={[s.athleteRow, idx > 0 && s.athleteRowBorder]}>
+                <View style={s.athleteLeft}>
+                  <Text style={s.athleteName}>{p.athleteName}</Text>
+                  <Text style={s.athleteMeta}>
+                    since {sinceLabel}
+                    {lastReceipt
+                      ? `  ·  ${formatCents(lastReceipt.paidCents)} → ${formatCents(lastReceipt.toAthleteCents)} to ${p.athleteName} ✓`
+                      : ''}
+                  </Text>
+                </View>
+                <View style={s.athleteTierChip}>
+                  <Text style={s.athleteTierText}>{tierLabel}</Text>
+                </View>
+              </View>
+            );
+          })}
+          {/* Breadth prompt — only when ≥1 pass */}
+          <Pressable
+            style={s.breadthPrompt}
+            onPress={() =>
+              Alert.alert(
+                'Back a Teammate',
+                'Support Marcus T. (Syracuse MBB) starting from $5/mo. (DEMO)',
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel="Back a teammate"
+          >
+            <Text style={s.breadthPromptText}>
+              Back a teammate — Marcus T. (Syracuse MBB) · from $5/mo
+            </Text>
+            <Ionicons name="chevron-forward" size={13} color={MUTED} />
+          </Pressable>
+        </>
+      )}
+    </View>
+  );
+}
+
+// ── Footer wall ───────────────────────────────────────────────────────────
+
+function FooterWall() {
+  return (
+    <View style={s.wallRow}>
+      <Ionicons name="lock-closed" size={13} color={MUTED} />
+      <Text style={s.wallText}>
+        No leaderboards, no spend ranks — your tier is your identity here, and every dollar is receipted.
+      </Text>
+    </View>
+  );
+}
+
+// ── Root screen ───────────────────────────────────────────────────────────
 
 export default function FanHomeTab() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const [picks, setPicks] = React.useState<Record<string, string | undefined>>(
-    Object.fromEntries(FAN_PREDICTIONS.map((p) => [p.id, p.myPick])),
-  );
 
-  // ── MY ATHLETES — supporter passes ──────────────────────────
+  // ── MY ATHLETES — supporter passes (data wiring preserved from prior build)
   const [myPasses, setMyPasses] = React.useState<SupporterPass[]>([]);
   const [passReceipts, setPassReceipts] = React.useState<SupporterReceipt[]>([]);
 
@@ -76,23 +416,32 @@ export default function FanHomeTab() {
     }, [loadSupporterData]),
   );
 
-  const setPick = (predId: string, optId: string) => {
-    setPicks((prev) => ({ ...prev, [predId]: optId }));
-  };
-
-  const tierPct =
+  // ── Unmounted vars (kept to avoid dead-code TS errors on imports) ────────
+  const _tierPct =
     (FAN_PROFILE.superfanPoints /
       (FAN_PROFILE.superfanPoints + FAN_PROFILE.pointsToNext)) *
     100;
+  const _predictionTeasers = _FAN_PREDICTIONS.slice(0, 3);
+  const _perkTeasers = _FAN_PERKS.filter((p) => !p.claimed).slice(0, 3);
+  const _liveAthletes = _FAN_FOLLOWING.filter((a) => a.isLive);
+  void _tierPct;
+  void _predictionTeasers;
+  void _perkTeasers;
+  void _liveAthletes;
+  // Suppress unused-import warnings for unmounted visual components
+  void _AthleteAvatar;
+  void _LinearGradient;
+  void _FadeIn;
+  void _FadeInDown;
+  void Animated;
 
-  const predictionTeasers = FAN_PREDICTIONS.slice(0, 3);
-  const perkTeasers = FAN_PERKS.filter((p) => !p.claimed).slice(0, 3);
+  const hasPasses = myPasses.length > 0;
 
   return (
-    <View style={styles.container}>
+    <View style={s.container}>
       <ScrollView
         contentContainerStyle={[
-          styles.scrollContent,
+          s.scrollContent,
           {
             paddingTop: insets.top + 12,
             paddingBottom: insets.bottom + 140,
@@ -100,386 +449,54 @@ export default function FanHomeTab() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
+        {/* Header */}
+        <View style={s.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerKicker}>FAN HQ</Text>
-            <Text style={styles.headerTitle}>
+            <Text style={s.headerKicker}>FAN HQ</Text>
+            <Text style={s.headerTitle}>
               Welcome back, {FAN_PROFILE.firstName}
             </Text>
-            <Text style={styles.headerSubtitle}>{FAN_PROFILE.metaPrimary}</Text>
+            <Text style={s.headerSubtitle}>{FAN_PROFILE.metaPrimary}</Text>
           </View>
-          <View style={styles.tierPill}>
+          <View style={s.tierPill}>
             <Ionicons name="diamond" size={11} color={FAN_ACCENT} />
-            <Text style={styles.tierPillText}>
+            <Text style={s.tierPillText}>
               {FAN_PROFILE.superfanTier.toUpperCase()}
             </Text>
           </View>
         </View>
 
-        <Animated.View entering={FadeIn.duration(300)} style={styles.tierCard}>
-          <LinearGradient
-            colors={['rgba(199,154,165,0.22)', 'rgba(199,154,165,0.02)']}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.tierTopRow}>
-            <View style={styles.tierBadge}>
-              <Ionicons name="diamond" size={22} color={FAN_ACCENT} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.tierCurrent}>
-                {FAN_PROFILE.superfanTier} Tier
-              </Text>
-              <Text style={styles.tierPoints}>
-                {FAN_PROFILE.superfanPoints.toLocaleString()} pts ·{' '}
-                {FAN_PROFILE.stats[1].value} games watched
-              </Text>
-            </View>
-            <View style={styles.tierRight}>
-              <Text style={styles.tierToNext}>
-                +{FAN_PROFILE.pointsToNext}
-              </Text>
-              <Text style={styles.tierToNextLabel}>
-                to {FAN_PROFILE.nextTier}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.tierTrack}>
-            <View style={[styles.tierFill, { width: `${tierPct}%` }]} />
-          </View>
-        </Animated.View>
+        {/* Module 1 — YOUR IMPACT */}
+        <ImpactModule receipts={passReceipts} />
 
-        <Animated.View
-          entering={FadeIn.duration(360).delay(60)}
-          style={styles.statRow}
-        >
-          <View style={[styles.statCard, styles.statCardCopper]}>
-            <Text style={styles.statKicker}>LEADERBOARD</Text>
-            <Text style={styles.statValue}>#134</Text>
-            <Text style={styles.statMeta}>
-              <Ionicons name="trending-up" size={11} color={COPPER} /> up 22
-              this week
-            </Text>
-          </View>
-          <View style={[styles.statCard, styles.statCardPurple]}>
-            <Text style={[styles.statKicker, { color: PURPLE }]}>ACCURACY</Text>
-            <Text style={styles.statValue}>67%</Text>
-            <Text style={styles.statMeta}>
-              42 of 63 picks · 2025 season
-            </Text>
-          </View>
-        </Animated.View>
+        {/* Module 2 — FROM YOUR ATHLETES (supporter-only feed) */}
+        <SupporterFeedModule hasPasses={hasPasses} />
 
-        {/* ── MY ATHLETES ─────────────────────────────────── */}
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionLabel}>MY ATHLETES</Text>
-        </View>
-        {myPasses.length === 0 ? (
-          <View style={styles.myAthletesEmpty}>
-            <Text style={styles.myAthletesEmptyText}>
-              Back an athlete from their profile — every dollar shows up here with a receipt.
-            </Text>
-          </View>
-        ) : (
-          myPasses.map((p) => {
-            const lastReceipt = passReceipts
-              .filter((r) => r.passAthleteId === p.athleteId)
-              .slice(-1)[0] ?? null;
-            const tierLabel =
-              p.tier === 'fan' ? 'FAN' : p.tier === 'insider' ? 'INSIDER' : 'COURTSIDE';
-            const sinceLabel = (() => {
-              try {
-                return new Date(p.startedAtISO).toLocaleDateString('en-US', {
-                  month: 'short',
-                  year: 'numeric',
-                });
-              } catch { return ''; }
-            })();
-            return (
-              <View key={p.athleteId} style={styles.myAthleteRow}>
-                <View style={styles.myAthleteLeft}>
-                  <Text style={styles.myAthleteName}>{p.athleteName}</Text>
-                  <Text style={styles.myAthleteMeta}>
-                    since {sinceLabel}
-                    {lastReceipt
-                      ? `  ·  $${(lastReceipt.paidCents / 100).toFixed(2)} → $${(lastReceipt.toAthleteCents / 100).toFixed(2)} to ${p.athleteName} ✓`
-                      : ''}
-                  </Text>
-                </View>
-                <View style={styles.myAthleteTierChip}>
-                  <Text style={styles.myAthleteTierText}>{tierLabel}</Text>
-                </View>
-              </View>
-            );
-          })
-        )}
+        {/* Module 3 — PERKS */}
+        <PerksModule hasPasses={hasPasses} />
 
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionLabel}>
-            LIVE NOW · {liveAthletes.length}
-          </Text>
-          <TouchableOpacity
-            onPress={() => router.push('/(fan-tabs)/dashboard' as any)}
-            accessibilityRole="link"
-            accessibilityLabel="See all followed athletes"
-          >
-            <Text style={styles.sectionLink}>All follows ›</Text>
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.liveStrip}
-        >
-          {FAN_FOLLOWING.slice(0, 10).map((a) => (
-            <TouchableOpacity
-              key={a.id}
-              activeOpacity={0.7}
-              style={styles.liveChip}
-              accessibilityRole="button"
-              accessibilityLabel={`Open ${a.name}`}
-            >
-              <AthleteAvatar
-                size={58}
-                color={a.avatarColor}
-                initials={a.initials}
-                headshotUrl={a.headshotUrl}
-                isLive={a.isLive}
-                borderWidth={2}
-              />
-              <Text style={styles.liveChipName} numberOfLines={1}>
-                {a.name.split(' ')[0]}
-              </Text>
-              <Text style={styles.liveChipMeta} numberOfLines={1}>
-                {a.isLive ? 'LIVE' : a.school.split(' · ')[0]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {/* Module 4 — MY ATHLETES */}
+        <MyAthletesModule passes={myPasses} receipts={passReceipts} />
 
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionLabel}>
-            PICK'EM · {FAN_PREDICTIONS.length} active
-          </Text>
-          <TouchableOpacity accessibilityRole="link" accessibilityLabel="See all picks">
-            <Text style={styles.sectionLink}>See all ›</Text>
-          </TouchableOpacity>
-        </View>
-        {predictionTeasers.map((p, i) => (
-          <PredictionCard
-            key={p.id}
-            p={p}
-            pick={picks[p.id]}
-            onPick={(opt) => !p.locked && setPick(p.id, opt)}
-            delay={i * 70}
-          />
-        ))}
-
-        <View style={styles.sectionHead}>
-          <Text style={styles.sectionLabel}>
-            PERKS · {perkTeasers.length} available
-          </Text>
-          <TouchableOpacity accessibilityRole="link" accessibilityLabel="See all perks">
-            <Text style={styles.sectionLink}>See all ›</Text>
-          </TouchableOpacity>
-        </View>
-        {perkTeasers.map((p, i) => (
-          <PerkCard key={p.id} p={p} delay={i * 80} />
-        ))}
+        {/* Footer wall */}
+        <FooterWall />
       </ScrollView>
     </View>
   );
 }
 
-function PredictionCard({
-  p,
-  pick,
-  onPick,
-  delay,
-}: {
-  p: Prediction;
-  pick: string | undefined;
-  onPick: (optId: string) => void;
-  delay: number;
-}) {
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(delay).duration(380)}
-      style={[styles.predCard, p.locked && { opacity: 0.85 }]}
-    >
-      <View style={styles.predHead}>
-        <Text style={styles.predLabel}>{p.label}</Text>
-        <View style={[styles.potPill, p.locked && { opacity: 0.6 }]}>
-          <Ionicons name="trophy" size={11} color={COPPER} />
-          <Text style={styles.potText}>{p.potPoints} pts</Text>
-        </View>
-      </View>
-      <Text
-        style={[
-          styles.predDeadline,
-          p.locked && { color: '#FF4444', fontWeight: '700' },
-        ]}
-      >
-        {p.deadline}
-      </Text>
-      <View style={styles.predOpts}>
-        {p.options.map((opt) => {
-          const selected = pick === opt.id;
-          return (
-            <TouchableOpacity
-              key={opt.id}
-              activeOpacity={p.locked ? 1 : 0.7}
-              onPress={() => onPick(opt.id)}
-              style={[styles.predOpt, selected && styles.predOptSelected]}
-            >
-              <View style={styles.predOptBarTrack}>
-                <View
-                  style={[
-                    styles.predOptBarFill,
-                    {
-                      width: `${opt.pct}%`,
-                      backgroundColor: selected
-                        ? 'rgba(168,85,247,0.35)'
-                        : 'rgba(255,255,255,0.07)',
-                    },
-                  ]}
-                />
-              </View>
-              <View style={styles.predOptContent}>
-                <Text
-                  style={[
-                    styles.predOptText,
-                    selected && styles.predOptTextSelected,
-                  ]}
-                >
-                  {opt.text}
-                </Text>
-                <Text
-                  style={[
-                    styles.predOptPct,
-                    selected && { color: PURPLE, fontWeight: '800' },
-                  ]}
-                >
-                  {opt.pct}%
-                </Text>
-              </View>
-              {selected && (
-                <View style={styles.predMyPick}>
-                  <Ionicons name="checkmark-circle" size={12} color={PURPLE} />
-                  <Text style={styles.predMyPickText}>YOUR PICK</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </Animated.View>
-  );
-}
+// ── Styles ────────────────────────────────────────────────────────────────
 
-function PerkCard({ p, delay }: { p: Perk; delay: number }) {
-  const icon: Record<Perk['type'], keyof typeof Ionicons.glyphMap> = {
-    tickets: 'ticket',
-    merch: 'shirt',
-    experience: 'basketball',
-    meet: 'people',
-  };
-  const tierColor: Record<Perk['tier'], string> = {
-    Gold: '#F5B400',
-    Platinum: '#C0C0C0',
-    Diamond: FAN_ACCENT,
-  };
-  const affordable = FAN_PROFILE.superfanPoints >= p.cost;
-
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(delay).duration(380)}
-      style={p.imageUrl ? styles.perkCardWithHero : styles.perkCard}
-    >
-      {p.imageUrl ? (
-        <View style={styles.perkHero}>
-          <Image
-            source={{ uri: p.imageUrl }}
-            style={styles.perkHeroImage}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
-          <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.8)']}
-            locations={[0.35, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.perkHeroBadge}>
-            <Ionicons name={icon[p.type]} size={20} color="#FFFFFF" />
-          </View>
-        </View>
-      ) : (
-        <View style={styles.perkIconBox}>
-          <Ionicons name={icon[p.type]} size={22} color={COPPER} />
-        </View>
-      )}
-      <View style={p.imageUrl ? styles.perkBodyBelowHero : { flex: 1 }}>
-        <View style={styles.perkTopRow}>
-          <View
-            style={[
-              styles.perkTierPill,
-              {
-                borderColor: tierColor[p.tier],
-                backgroundColor: `${tierColor[p.tier]}1a`,
-              },
-            ]}
-          >
-            <Text style={[styles.perkTierText, { color: tierColor[p.tier] }]}>
-              {p.tier.toUpperCase()}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.perkTitle}>{p.title}</Text>
-        <Text style={styles.perkAthlete}>{p.athlete}</Text>
-        <Text style={styles.perkDesc} numberOfLines={2}>
-          {p.description}
-        </Text>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[styles.claimBtn, !affordable && styles.claimBtnDisabled]}
-        >
-          <Ionicons
-            name="diamond-outline"
-            size={13}
-            color={affordable ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
-          />
-          <Text
-            style={[
-              styles.claimBtnText,
-              !affordable && { color: 'rgba(255,255,255,0.5)' },
-            ]}
-          >
-            {affordable
-              ? 'Claim'
-              : `Need ${(p.cost - FAN_PROFILE.superfanPoints).toLocaleString()} more`}
-          </Text>
-          <Text
-            style={[
-              styles.claimBtnCost,
-              !affordable && { color: 'rgba(255,255,255,0.5)' },
-            ]}
-          >
-            {p.cost.toLocaleString()} pts
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
-}
-
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  scrollContent: { paddingHorizontal: 16 },
+  scrollContent: { paddingHorizontal: 16, gap: 14 },
 
+  // Header
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 18,
+    marginBottom: 4,
   },
   headerKicker: {
     fontSize: 11,
@@ -517,343 +534,269 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  tierCard: {
-    padding: 16,
+  // Card container
+  card: {
+    backgroundColor: CARD_BG,
     borderRadius: 18,
-    borderWidth: 1,
-    borderColor: FAN_ACCENT_BORDER,
-    backgroundColor: CARD_BG,
-    overflow: 'hidden',
-    marginBottom: 12,
-  },
-  tierTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    marginBottom: 14,
-  },
-  tierBadge: {
-    width: 46,
-    height: 46,
-    borderRadius: 13,
-    backgroundColor: FAN_ACCENT_SOFT,
-    borderWidth: 1,
-    borderColor: FAN_ACCENT_BORDER,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tierCurrent: { color: '#FFFFFF', fontSize: 17, fontWeight: '800' },
-  tierPoints: { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 3 },
-  tierRight: { alignItems: 'flex-end' },
-  tierToNext: { color: FAN_ACCENT, fontSize: 17, fontWeight: '800' },
-  tierToNextLabel: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 10.5,
-    fontWeight: '700',
-    marginTop: 2,
-    letterSpacing: 0.4,
-  },
-  tierTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
-  },
-  tierFill: { height: 6, borderRadius: 3, backgroundColor: FAN_ACCENT },
-
-  statRow: {
-    flexDirection: 'row',
+    padding: 16,
     gap: 10,
-    marginBottom: 18,
-  },
-  statCard: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    backgroundColor: CARD_BG,
-  },
-  statCardCopper: {
-    borderColor: 'rgba(235,98,26,0.30)',
-  },
-  statCardPurple: {
-    borderColor: 'rgba(168,85,247,0.30)',
-  },
-  statKicker: {
-    fontSize: 10,
-    color: COPPER,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-  },
-  statValue: {
-    color: '#FFFFFF',
-    fontSize: 26,
-    fontWeight: '800',
-    marginTop: 4,
-  },
-  statMeta: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 11,
-    marginTop: 4,
-    lineHeight: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
   },
 
-  sectionHead: {
+  // Section header: accent bar + caps label + optional chip
+  sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginTop: 4,
-    marginBottom: 10,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  sectionBar: {
+    width: 4,
+    height: 14,
+    borderRadius: 2,
+    backgroundColor: FAN_ACCENT,
   },
   sectionLabel: {
     fontSize: 11,
-    color: 'rgba(255,255,255,0.45)',
-    letterSpacing: 0.8,
-    fontWeight: '700',
+    fontWeight: '900',
+    letterSpacing: 1.2,
+    color: FAN_ACCENT,
+    flex: 1,
   },
-  sectionLink: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '700',
-  },
-
-  liveStrip: { gap: 14, paddingBottom: 4, paddingRight: 4 },
-  liveChip: { alignItems: 'center', width: 70 },
-  liveChipName: {
-    color: '#FFFFFF',
-    fontSize: 11.5,
-    marginTop: 6,
-    fontWeight: '700',
-  },
-  liveChipMeta: {
-    color: 'rgba(255,255,255,0.5)',
-    fontSize: 9.5,
-    marginTop: 2,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-
-  // Prediction cards (compact teaser variant — same shape as the Pick'em
-  // route had pre-remix; trimmed of header / scroll host).
-  predCard: {
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
-    marginBottom: 10,
-  },
-  predHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  predLabel: { flex: 1, color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  potPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
+  sectionChip: {
+    paddingHorizontal: 7,
     paddingVertical: 3,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,111,60,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,111,60,0.3)',
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  potText: { color: COPPER, fontSize: 11, fontWeight: '800' },
-  predDeadline: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 4,
-    marginBottom: 10,
-  },
-  predOpts: { gap: 6 },
-  predOpt: {
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    overflow: 'hidden',
-  },
-  predOptSelected: { borderColor: 'rgba(168,85,247,0.5)' },
-  predOptBarTrack: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-  },
-  predOptBarFill: { height: '100%' },
-  predOptContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  predOptText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  predOptTextSelected: { color: '#FFFFFF', fontWeight: '700' },
-  predOptPct: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 13,
-    fontWeight: '700',
-    fontVariant: ['tabular-nums'],
-  },
-  predMyPick: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingBottom: 8,
-  },
-  predMyPickText: {
-    fontSize: 9.5,
-    color: PURPLE,
+  sectionChipText: {
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.5,
+    color: MUTED,
   },
 
-  // Perks
-  perkCard: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
-    marginBottom: 10,
+  // Impact module
+  impactProof: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: MUTED,
+    lineHeight: 17,
   },
-  perkCardWithHero: {
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
-    overflow: 'hidden',
-    marginBottom: 10,
-  },
-  perkHero: {
-    height: 110,
-    width: '100%',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  perkHeroImage: { width: '100%', height: '100%' },
-  perkHeroBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  perkBodyBelowHero: { padding: 14 },
-  perkIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,111,60,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,111,60,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  perkTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  perkTierPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  perkTierText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-  perkTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  perkAthlete: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 3 },
-  perkDesc: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 11.5,
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  claimBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    borderRadius: 10,
-    backgroundColor: 'rgba(199,154,165,0.16)',
-    borderWidth: 1,
-    borderColor: FAN_ACCENT_BORDER,
-  },
-  claimBtnDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  claimBtnText: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 12.5,
-    fontWeight: '700',
-  },
-  claimBtnCost: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '800' },
-
-  // ── MY ATHLETES ───────────────────────────────────────────
-  myAthletesEmpty: {
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
-    marginBottom: 10,
-  },
-  myAthletesEmptyText: {
-    color: 'rgba(255,255,255,0.42)',
+  emptyText: {
     fontSize: 13,
     fontWeight: '500',
+    color: 'rgba(255,255,255,0.38)',
     lineHeight: 18,
+    paddingVertical: 4,
   },
-  myAthleteRow: {
+  receiptRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    paddingVertical: 8,
+  },
+  receiptRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: CARD_BORDER,
+  },
+  receiptDate: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: MUTED,
+    fontVariant: ['tabular-nums'],
+  },
+  receiptDot: {
+    fontSize: 12,
+    color: MUTED,
+  },
+  receiptMoney: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontVariant: ['tabular-nums'],
+    flex: 1,
+  },
+  receiptCheck: {
+    marginLeft: 6,
+    marginTop: 1,
+  },
+  receiptFund: {
+    width: '100%',
+    fontSize: 11,
+    color: MUTED,
+    lineHeight: 16,
+    marginTop: 2,
+  },
+
+  // Supporter feed module
+  feedRow: {
+    paddingVertical: 10,
+    gap: 4,
+  },
+  feedRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: CARD_BORDER,
+  },
+  feedMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  feedAthlete: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.1,
+  },
+  feedTime: {
+    fontSize: 11,
+    color: MUTED,
+    fontWeight: '500',
+  },
+  feedBody: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.85)',
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+
+  // Perks module
+  perkRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 10,
+    gap: 12,
+  },
+  perkRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: CARD_BORDER,
+  },
+  perkLeft: {
+    flex: 1,
+    gap: 4,
+  },
+  perkTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.1,
+  },
+  perkAthlete: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: MUTED,
+  },
+  perkDeliverNote: {
+    fontSize: 11,
+    color: MUTED,
+    marginTop: 2,
+  },
+  perkDeliveredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexShrink: 0,
+    marginTop: 2,
+  },
+  perkDeliveredText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: GREEN,
+    letterSpacing: 0.4,
+  },
+  showCodeChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.20)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    flexShrink: 0,
+    marginTop: 2,
+    alignSelf: 'flex-start',
+  },
+  showCodeChipText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: MUTED,
+    letterSpacing: 0.4,
+  },
+
+  // SLA stepper
+  slaStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 0,
+  },
+  slaStep: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  slaDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  slaDotDone: {
+    backgroundColor: GREEN,
+  },
+  slaDotActive: {
+    backgroundColor: FAN_ACCENT,
+  },
+  slaLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.30)',
+    letterSpacing: 0.3,
+  },
+  slaLabelDone: {
+    color: GREEN,
+  },
+  slaLabelActive: {
+    color: FAN_ACCENT,
+  },
+  slaConnector: {
+    width: 14,
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    marginHorizontal: 2,
+  },
+
+  // MY ATHLETES rows
+  athleteRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
-    marginBottom: 8,
+    paddingVertical: 10,
   },
-  myAthleteLeft: {
+  athleteRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: CARD_BORDER,
+  },
+  athleteLeft: {
     flex: 1,
     gap: 4,
   },
-  myAthleteName: {
+  athleteName: {
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
   },
-  myAthleteMeta: {
-    color: 'rgba(255,255,255,0.50)',
+  athleteMeta: {
+    color: MUTED,
     fontSize: 11.5,
     fontWeight: '500',
     fontVariant: ['tabular-nums'],
     lineHeight: 15,
   },
-  myAthleteTierChip: {
+  athleteTierChip: {
     borderRadius: 8,
     backgroundColor: `${'#EB621A'}18`,
     borderWidth: 1,
@@ -861,10 +804,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  myAthleteTierText: {
+  athleteTierText: {
     color: '#EB621A',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  breadthPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: CARD_BORDER,
+    marginTop: 2,
+  },
+  breadthPromptText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: MUTED,
+    lineHeight: 16,
+  },
+
+  // Footer wall
+  wallRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 4,
+    paddingBottom: 4,
+  },
+  wallText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '500',
+    color: MUTED,
+    lineHeight: 15,
   },
 });
