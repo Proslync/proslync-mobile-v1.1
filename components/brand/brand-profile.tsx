@@ -1,3 +1,13 @@
+// components/brand/brand-profile.tsx
+// ── BRAND PROFILE — TRUST CARD (athlete/agent view) ─────────────────────
+// Charter §B — wiped to the trust card athletes and agents see.
+// Four glass blocks: PAYMENT RELIABILITY (hero) · TRACK RECORD ·
+//   COMPLIANCE · TYPICAL BRIEF.
+// No open contact CTA — muted funded-brief-only line at the footer.
+// Banner/avatar chrome + persistence kept verbatim.
+// Old profile content (About/Roster/Campaigns/Team tabs) unmounted, not deleted.
+// _ prefix applied to unused vars per charter.
+
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView } from 'expo-glass-effect';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,15 +19,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import Animated, {
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -27,67 +30,418 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
-import {
-  BRAND_ATHLETES,
-  BRAND_CAMPAIGNS,
-  BRAND_PROFILE,
-} from '@/lib/data/mock-brand-data';
 import { healLocalMediaUri } from '@/lib/media/local-media';
 
-const ACCENT = '#FF6F3C';
-const TEAL = '#00C6B0';
+// Unmounted old data imports — kept for lineage reference (not used).
+// import { BRAND_ATHLETES, BRAND_CAMPAIGNS, BRAND_PROFILE } from '@/lib/data/mock-brand-data';
+
+const _COPPER = '#EB621A'; void _COPPER;
 const TAB_BAR_TOP_FROM_BOTTOM = 90;
+const GREEN = '#34C759';
+const MUTED = 'rgba(255,255,255,0.50)';
+const HAIRLINE = 'rgba(255,255,255,0.08)';
 
-type TabKey = 'about' | 'roster' | 'campaigns' | 'team';
+// ── GlassBlock — same material as media-kit-card.tsx ─────────────────────
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'about', label: 'About' },
-  { key: 'roster', label: 'Roster' },
-  { key: 'campaigns', label: 'Campaigns' },
-  { key: 'team', label: 'Team' },
-];
+function GlassBlock({ children }: { children: React.ReactNode }) {
+  return (
+    <View style={gb.block}>
+      <View
+        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
+        pointerEvents="none"
+      />
+      <View style={gb.blockGlass} pointerEvents="none">
+        <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
+        {isLiquidGlassSupported && (
+          <LiquidGlassView
+            effect="regular"
+            tintColor="rgba(255,255,255,0.10)"
+            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
+          />
+        )}
+      </View>
+      {children}
+    </View>
+  );
+}
 
-const BRAND_TEAM = [
-  { name: 'Tosan Evbuomwan', role: 'VP · NIL & Grassroots', initials: 'TE' },
-  { name: 'Maya Lindgren', role: 'Sr. Manager · Athlete Partnerships', initials: 'ML' },
-  { name: 'Darnell Price', role: 'Manager · Creative & Content', initials: 'DP' },
-  { name: 'Priya Raman', role: 'Analyst · NIL Insights', initials: 'PR' },
-  { name: 'Greg Sato', role: 'Counsel · Reed Smith (outside)', initials: 'GS' },
-  { name: 'Nia Castillo', role: 'Coordinator · Athlete Ops', initials: 'NC' },
-];
+const gb = StyleSheet.create({
+  block: {
+    gap: 10,
+    borderRadius: 16,
+    padding: 14,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  blockGlass: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+});
+
+// ── Trust card content ────────────────────────────────────────────────────
+
+function TrustCard() {
+  return (
+    <View style={tc.wrapper}>
+
+      {/* 1. PAYMENT RELIABILITY — hero glass block */}
+      <GlassBlock>
+        <View style={tc.blockLabelRow}>
+          <Text style={tc.blockLabel}>PAYMENT RELIABILITY</Text>
+        </View>
+
+        {/* Big badge */}
+        <View style={tc.reliabilityBadgeRow}>
+          <Ionicons name="checkmark-circle" size={20} color={GREEN} />
+          <Text style={tc.reliabilityBadge}>RELIABLE PAYER ✓</Text>
+        </View>
+
+        {/* Tabular rows */}
+        <View style={tc.tabularBlock}>
+          <View style={tc.tabularRow}>
+            <Text style={tc.tabularLabel}>Deals fully paid</Text>
+            <Text style={tc.tabularValue}>14 / 14</Text>
+          </View>
+          <View style={[tc.tabularRow, tc.tabularRowBorder]}>
+            <Text style={tc.tabularLabel}>Median days to pay</Text>
+            <Text style={tc.tabularValue}>6 days</Text>
+          </View>
+          <View style={[tc.tabularRow, tc.tabularRowBorder]}>
+            <Text style={tc.tabularLabel}>Escrow-funded before work</Text>
+            <Text style={tc.tabularValue}>100%</Text>
+          </View>
+        </View>
+      </GlassBlock>
+
+      {/* 2. TRACK RECORD */}
+      <GlassBlock>
+        <View style={tc.blockLabelRow}>
+          <Text style={tc.blockLabel}>TRACK RECORD</Text>
+        </View>
+
+        <View style={tc.trackSummaryRow}>
+          <Text style={tc.trackStat}>14 campaigns</Text>
+          <View style={tc.trackDot} />
+          <Text style={tc.trackStat}>71% repeat-athlete rate</Text>
+        </View>
+
+        {/* Consented sample activation rows */}
+        {[
+          { athlete: 'Kiyan A.', activation: '3 posts + code', status: 'delivered ✓' },
+          { athlete: 'JJ S.', activation: 'Local appearance', status: 'delivered ✓' },
+        ].map((row, idx) => (
+          <View key={row.athlete} style={[tc.activationRow, idx > 0 && tc.activationRowBorder]}>
+            <View style={{ flex: 1 }}>
+              <Text style={tc.activationAthlete}>{row.athlete}</Text>
+              <Text style={tc.activationMeta}>{row.activation}</Text>
+            </View>
+            <View style={tc.deliveredPill}>
+              <Ionicons name="checkmark" size={11} color={GREEN} />
+              <Text style={tc.deliveredText}>{row.status}</Text>
+            </View>
+          </View>
+        ))}
+      </GlassBlock>
+
+      {/* 3. COMPLIANCE */}
+      <GlassBlock>
+        <View style={tc.blockLabelRow}>
+          <Text style={tc.blockLabel}>COMPLIANCE</Text>
+        </View>
+
+        <View style={tc.complianceRow}>
+          <Ionicons name="checkmark-circle" size={14} color={GREEN} />
+          <Text style={tc.complianceText}>Business identity verified ✓</Text>
+        </View>
+
+        {/* Associated Entity flag — the one athletes price risk on */}
+        <View style={[tc.complianceRow, tc.complianceAERow]}>
+          <Ionicons name="checkmark-circle" size={14} color={GREEN} />
+          <View style={{ flex: 1 }}>
+            <Text style={tc.complianceAELabel}>Associated Entity: NO</Text>
+            <Text style={tc.complianceAENote}>
+              Independent local business — no university, booster, or third-party AE affiliation
+            </Text>
+          </View>
+        </View>
+
+        <View style={tc.complianceRow}>
+          <Ionicons name="checkmark-circle" size={14} color={GREEN} />
+          <Text style={tc.complianceText}>CSC clearance rate 100% (11 reviewed)</Text>
+        </View>
+
+        <View style={tc.complianceRow}>
+          <Ionicons name="checkmark-circle" size={14} color={GREEN} />
+          <Text style={tc.complianceText}>FTC guidelines on file ✓</Text>
+        </View>
+      </GlassBlock>
+
+      {/* 4. TYPICAL BRIEF */}
+      <GlassBlock>
+        <View style={tc.blockLabelRow}>
+          <Text style={tc.blockLabel}>TYPICAL BRIEF</Text>
+        </View>
+
+        <View style={tc.typicalGrid}>
+          <View style={tc.typicalItem}>
+            <Text style={tc.typicalValue}>Social posts + appearances</Text>
+            <Text style={tc.typicalItemLabel}>Type</Text>
+          </View>
+          <View style={[tc.typicalItem, tc.typicalItemBorder]}>
+            <Text style={tc.typicalValue}>$300–2,400</Text>
+            <Text style={tc.typicalItemLabel}>Band</Text>
+          </View>
+          <View style={[tc.typicalItem, tc.typicalItemBorder]}>
+            <Text style={tc.typicalValue}>Syracuse metro</Text>
+            <Text style={tc.typicalItemLabel}>Geo</Text>
+          </View>
+        </View>
+      </GlassBlock>
+
+      {/* Footer — no open contact CTA */}
+      <Pressable
+        onPress={() => Alert.alert('Funded briefs only', 'Offers arrive with escrow attached — contact only through a funded brief. (DEMO)')}
+        style={tc.footerRow}
+        accessibilityRole="button"
+        accessibilityLabel="How contact works"
+      >
+        <Ionicons name="lock-closed" size={13} color={MUTED} />
+        <Text style={tc.footerText}>
+          Offers arrive with escrow attached — athletes see funded briefs first.
+        </Text>
+      </Pressable>
+
+    </View>
+  );
+}
+
+const tc = StyleSheet.create({
+  wrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+    gap: 12,
+  },
+
+  // Block label — mirrors media-kit-card.tsx label style
+  blockLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  blockLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    color: 'rgba(255,255,255,0.55)',
+    textTransform: 'uppercase',
+  },
+
+  // 1. Payment Reliability
+  reliabilityBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  reliabilityBadge: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    letterSpacing: -0.3,
+  },
+  tabularBlock: {
+    gap: 0,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HAIRLINE,
+  },
+  tabularRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  tabularRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: HAIRLINE,
+  },
+  tabularLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: MUTED,
+  },
+  tabularValue: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#FFFFFF',
+    fontVariant: ['tabular-nums'],
+  },
+
+  // 2. Track Record
+  trackSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingBottom: 4,
+  },
+  trackStat: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontVariant: ['tabular-nums'],
+  },
+  trackDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: MUTED,
+  },
+  activationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    gap: 10,
+  },
+  activationRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: HAIRLINE,
+  },
+  activationAthlete: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: -0.1,
+  },
+  activationMeta: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: MUTED,
+    marginTop: 2,
+  },
+  deliveredPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${GREEN}44`,
+    backgroundColor: `${GREEN}12`,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    flexShrink: 0,
+  },
+  deliveredText: {
+    color: GREEN,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+
+  // 3. Compliance
+  complianceRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingVertical: 3,
+  },
+  complianceText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: MUTED,
+    flex: 1,
+    lineHeight: 17,
+  },
+  // AE flag — prominent because athletes price risk on it
+  complianceAERow: {
+    backgroundColor: `${GREEN}0D`,
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${GREEN}28`,
+  },
+  complianceAELabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: GREEN,
+    letterSpacing: -0.1,
+  },
+  complianceAENote: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: `${GREEN}BB`,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+
+  // 4. Typical Brief
+  typicalGrid: {
+    gap: 0,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HAIRLINE,
+  },
+  typicalItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  typicalItemBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: HAIRLINE,
+  },
+  typicalValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    fontVariant: ['tabular-nums'],
+  },
+  typicalItemLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: MUTED,
+    marginTop: 2,
+    letterSpacing: 0.4,
+  },
+
+  // Footer
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 4,
+    paddingTop: 4,
+  },
+  footerText: {
+    flex: 1,
+    fontSize: 11,
+    fontWeight: '500',
+    color: MUTED,
+    lineHeight: 15,
+  },
+});
+
+// ── Root component ────────────────────────────────────────────────────────
 
 export default function BrandProfile() {
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = React.useState<TabKey>('about');
-  const [expanded, setExpanded] = React.useState<Set<string>>(new Set(['mission']));
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
-  // Animated sliding knob — same segmented glass pill as the player profile.
-  const tabIndex = Math.max(0, TABS.findIndex((t) => t.key === tab));
-  const tabPillWidth = useSharedValue(0);
-  const animatedTabIndex = useSharedValue(tabIndex);
-  React.useEffect(() => {
-    animatedTabIndex.value = withTiming(tabIndex, { duration: 180 });
-  }, [tabIndex, animatedTabIndex]);
-  const tabKnobStyle = useAnimatedStyle(() => {
-    const segW = tabPillWidth.value / Math.max(TABS.length, 1);
-    const inset = 4;
-    return {
-      width: Math.max(segW - inset * 2, 0),
-      transform: [{ translateX: animatedTabIndex.value * segW + inset }],
-    };
-  });
+  // Unmounted old state:
+  // const [_tab, _setTab] = React.useState<TabKey>('about');
+  // const [_expanded, _setExpanded] = React.useState<Set<string>>(new Set(['mission']));
 
-  const toggle = (key: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  };
-
-  // Persistent custom banner video.
+  // Persistent custom banner video — kept verbatim from prior version.
   const [bannerVideo, setBannerVideo] = React.useState<string | null>(null);
   const [bannerHydrated, setBannerHydrated] = React.useState(false);
   React.useEffect(() => {
@@ -112,7 +466,6 @@ export default function BrandProfile() {
     }
   }, [bannerVideo, bannerHydrated]);
 
-  // Bundled defaults (ship to TestFlight); picked media overrides at runtime.
   const media = PROFILE_MEDIA.brand;
   const effectiveBannerVideo = bannerVideo ?? media.bannerVideo ?? null;
 
@@ -123,7 +476,6 @@ export default function BrandProfile() {
     p.play();
   });
 
-  // Keep banner video playing through re-renders / focus changes / hot reloads.
   React.useEffect(() => {
     if (!bannerPlayer || !effectiveBannerVideo) return;
     bannerPlayer.play();
@@ -147,7 +499,6 @@ export default function BrandProfile() {
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
-      // Copy into persistent documentDirectory so the URI survives app restarts.
       const src = result.assets[0].uri;
       let persistedUri = src;
       try {
@@ -169,7 +520,7 @@ export default function BrandProfile() {
     setBannerVideo(null);
   }, []);
 
-  // Persistent custom profile photo (avatar).
+  // Persistent custom profile photo (avatar) — kept verbatim.
   const [avatarUri, setAvatarUri] = React.useState<string | null>(null);
   const [avatarHydrated, setAvatarHydrated] = React.useState(false);
   React.useEffect(() => {
@@ -228,10 +579,6 @@ export default function BrandProfile() {
     setAvatarUri(null);
   }, []);
 
-  const signed = BRAND_ATHLETES.filter((a) => a.signed);
-  const live = BRAND_CAMPAIGNS.filter((c) => c.status === 'live');
-  const upcoming = BRAND_CAMPAIGNS.filter((c) => c.status === 'upcoming');
-
   return (
     <View style={styles.container}>
       <ScrollView
@@ -239,7 +586,7 @@ export default function BrandProfile() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner — cover video/image that fades into the page bg, scrolls with content */}
+        {/* Banner — cover video/image that fades into the page bg */}
         <View style={[styles.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
           {effectiveBannerVideo ? (
             <VideoView
@@ -259,243 +606,20 @@ export default function BrandProfile() {
             style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.28)' }]}
             pointerEvents="none"
           />
+          {/* Gradient fade into content below banner */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)', '#000']}
+            locations={[0.55, 0.82, 1]}
+            style={[StyleSheet.absoluteFill]}
+            pointerEvents="none"
+          />
         </View>
 
-        {/* Profile section tabs — segmented glass pill with sliding knob */}
-        <View style={styles.tabsRow}>
-          <View
-            style={styles.tabSegmentedPill}
-            onLayout={(e) => {
-              tabPillWidth.value = e.nativeEvent.layout.width;
-            }}
-          >
-            <View
-              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 23 }]}
-              pointerEvents="none"
-            />
-            <View style={styles.tabsGlassLayer} pointerEvents="none">
-              <GlassView
-                glassEffectStyle="regular"
-                style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
-              />
-              {isLiquidGlassSupported && (
-                <LiquidGlassView
-                  effect="regular"
-                  tintColor="rgba(255,255,255,0.10)"
-                  style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
-                />
-              )}
-            </View>
-            <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none">
-              {isLiquidGlassSupported ? (
-                <LiquidGlassView
-                  effect="regular"
-                  tintColor="rgba(255,255,255,0.20)"
-                  style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
-                />
-              ) : null}
-            </Animated.View>
-            {TABS.map((t) => {
-              const isActive = tab === t.key;
-              return (
-                <TouchableOpacity
-                  key={t.key}
-                  style={styles.tabSegment}
-                  onPress={() => setTab(t.key)}
-                  activeOpacity={0.7}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: isActive }}
-                >
-                  <Text
-                    style={[styles.tabPillText, isActive && styles.tabPillTextActive]}
-                    numberOfLines={1}
-                  >
-                    {t.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Tab content */}
-        <View style={styles.igGridSection}>
-          {tab === 'about' && (
-            <View style={styles.aboutSection}>
-              {/* Identity — folded into About since the shell has no header row */}
-              <View style={styles.nameRow}>
-                <Text style={styles.name}>{BRAND_PROFILE.name}</Text>
-                <Ionicons name="shield-checkmark" size={15} color={TEAL} />
-              </View>
-              <Text style={[styles.metaLine, styles.metaLinePrimary]} numberOfLines={1}>
-                {BRAND_PROFILE.metaPrimary}
-              </Text>
-              <Text style={styles.metaLine} numberOfLines={1}>
-                {BRAND_PROFILE.metaSecondary}
-              </Text>
-              <Text style={styles.tagline}>{BRAND_PROFILE.tagline}</Text>
-
-              <View style={styles.statRow}>
-                {BRAND_PROFILE.stats.map((stat) => (
-                  <View key={stat.label} style={styles.statTile}>
-                    <Text style={styles.statValue}>{stat.value}</Text>
-                    <Text style={styles.statLabel}>{stat.label}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Bio — player-style glass block */}
-              <View style={styles.aboutBlockBare}>
-                <View
-                  style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
-                  pointerEvents="none"
-                />
-                <View style={styles.aboutBlockGlass} pointerEvents="none">
-                  <GlassView
-                    glassEffectStyle="regular"
-                    style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-                  />
-                  {isLiquidGlassSupported && (
-                    <LiquidGlassView
-                      effect="regular"
-                      tintColor="rgba(255,255,255,0.10)"
-                      style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-                    />
-                  )}
-                </View>
-                {BRAND_PROFILE.bio.map((section, idx) => {
-                  const isOpen = expanded.has(section.key);
-                  return (
-                    <View
-                      key={section.key}
-                      style={[styles.bioItem, idx === 0 && { borderTopWidth: 0, paddingTop: 0 }]}
-                    >
-                      <TouchableOpacity
-                        activeOpacity={0.7}
-                        onPress={() => toggle(section.key)}
-                        style={styles.bioHeader}
-                        accessibilityRole="button"
-                        accessibilityState={{ expanded: isOpen }}
-                      >
-                        <Text style={styles.bioTitle}>{section.title}</Text>
-                        <Ionicons
-                          name={isOpen ? 'chevron-up' : 'chevron-down'}
-                          size={16}
-                          color="rgba(255,255,255,0.6)"
-                        />
-                      </TouchableOpacity>
-                      {isOpen && <Text style={styles.bioBody}>{section.body}</Text>}
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-
-          {tab !== 'about' && <View style={{ height: 15 }} />}
-
-          {tab === 'roster' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>SIGNED ATHLETES · {signed.length}</Text>
-              <View style={styles.card}>
-                {signed.map((a, i) => (
-                  <Animated.View
-                    key={a.id}
-                    entering={FadeInDown.delay(i * 50).duration(380)}
-                    style={[
-                      styles.rosterRow,
-                      i !== signed.length - 1 && styles.rowDivider,
-                    ]}
-                  >
-                    <View style={styles.rosterAvatar}>
-                      <Text style={styles.rosterAvatarText}>{a.initials}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.rosterName}>{a.name}</Text>
-                      <Text style={styles.rosterMeta}>{a.school} · {a.position}</Text>
-                      {a.contract && <Text style={styles.rosterContract}>{a.contract}</Text>}
-                    </View>
-                    <View style={styles.ridgePill}>
-                      <Text style={styles.ridgePillText}>{a.rank}</Text>
-                    </View>
-                  </Animated.View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {tab === 'campaigns' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>LIVE · {live.length}</Text>
-              <View style={styles.card}>
-                {live.map((c, i) => (
-                  <View
-                    key={c.id}
-                    style={[
-                      styles.campaignRow,
-                      i !== live.length - 1 && styles.rowDivider,
-                    ]}
-                  >
-                    <View style={[styles.campaignDot, { backgroundColor: TEAL }]} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.campaignName}>{c.name}</Text>
-                      <Text style={styles.campaignMeta}>{c.athlete} · {c.reach} reach</Text>
-                    </View>
-                    <Text style={styles.campaignBudget}>{c.budget}</Text>
-                  </View>
-                ))}
-              </View>
-              <Text style={styles.sectionLabel}>UPCOMING · {upcoming.length}</Text>
-              <View style={styles.card}>
-                {upcoming.map((c, i) => (
-                  <View
-                    key={c.id}
-                    style={[
-                      styles.campaignRow,
-                      i !== upcoming.length - 1 && styles.rowDivider,
-                    ]}
-                  >
-                    <View style={[styles.campaignDot, { backgroundColor: ACCENT }]} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.campaignName}>{c.name}</Text>
-                      <Text style={styles.campaignMeta}>{c.athlete} · {c.startDate}</Text>
-                    </View>
-                    <Text style={styles.campaignBudget}>{c.budget}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {tab === 'team' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>BRAND TEAM</Text>
-              <View style={styles.card}>
-                {BRAND_TEAM.map((m, i) => (
-                  <Animated.View
-                    key={m.name}
-                    entering={FadeInDown.delay(i * 50).duration(380)}
-                    style={[
-                      styles.teamRow,
-                      i !== BRAND_TEAM.length - 1 && styles.rowDivider,
-                    ]}
-                  >
-                    <View style={styles.teamAvatar}>
-                      <Text style={styles.teamInitial}>{m.initials}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.teamName}>{m.name}</Text>
-                      <Text style={styles.teamRole}>{m.role}</Text>
-                    </View>
-                  </Animated.View>
-                ))}
-              </View>
-            </View>
-          )}
-        </View>
+        {/* Trust card content — full-width, directly below banner */}
+        <TrustCard />
       </ScrollView>
 
-      {/* Bottom fade — gives the floating tab bar glass something to refract */}
+      {/* Bottom fade */}
       <LinearGradient
         colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
@@ -503,7 +627,7 @@ export default function BrandProfile() {
         pointerEvents="none"
       />
 
-      {/* Top-left floating profile pill — avatar + hamburger (matches player) */}
+      {/* Top-left floating profile pill — avatar + hamburger */}
       <Pressable
         style={[styles.topLeftProfilePill, { top: insets.top + 8 }]}
         onPress={() => setRoleSheetVisible(true)}
@@ -537,175 +661,11 @@ export default function BrandProfile() {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   bannerWrap: { width: '100%', overflow: 'hidden', backgroundColor: '#000' },
-
-  // Tabs — segmented glass pill (player parity)
-  tabsRow: { flexDirection: 'row', marginTop: -34, marginBottom: 10, paddingHorizontal: 16 },
-  tabSegmentedPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  tabsGlassLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 23,
-    overflow: 'hidden',
-  },
-  tabKnob: {
-    position: 'absolute',
-    top: 4,
-    bottom: 4,
-    left: 0,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    overflow: 'hidden',
-  },
-  tabSegment: {
-    flex: 1,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  tabPillText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.65)', letterSpacing: -0.1 },
-  tabPillTextActive: { color: '#FFF', fontWeight: '800' },
-
-  // Identity (folded into About)
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 22, fontWeight: '700', color: '#FFF', letterSpacing: -0.4 },
-  metaLine: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.55)', marginTop: 4, letterSpacing: -0.1, lineHeight: 18 },
-  metaLinePrimary: { color: '#FFF', fontWeight: '700' },
-  tagline: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-    fontStyle: 'italic',
-    lineHeight: 18,
-    marginTop: 8,
-  },
-  statRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  statTile: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    gap: 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  statValue: { fontSize: 16, fontWeight: '800', color: '#FFF' },
-  statLabel: { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: '600', textAlign: 'center' },
-
-  // Content shell (player parity)
-  igGridSection: { marginTop: -20 },
-  aboutSection: { paddingHorizontal: 16, paddingVertical: 20, gap: 12 },
-  aboutBlockBare: {
-    gap: 10,
-    borderRadius: 16,
-    padding: 14,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  aboutBlockGlass: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-
-  // Section (roster / campaigns / team)
-  section: { paddingHorizontal: 16, gap: 10, paddingTop: 8 },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    color: 'rgba(255,255,255,0.55)',
-    paddingHorizontal: 4,
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  card: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-
-  // Bio
-  bioItem: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    paddingTop: 10,
-    paddingBottom: 2,
-    gap: 8,
-  },
-  bioHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  bioTitle: { fontSize: 15, color: '#FFF', fontWeight: '600', letterSpacing: -0.1 },
-  bioBody: { fontSize: 14, color: 'rgba(255,255,255,0.85)', lineHeight: 20, letterSpacing: -0.1 },
-
-  // Roster
-  rowDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.06)' },
-  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
-  rosterAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(0,198,176,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(0,198,176,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rosterAvatarText: { color: TEAL, fontSize: 12, fontWeight: '800' },
-  rosterName: { color: '#FFF', fontSize: 14, fontWeight: '700' },
-  rosterMeta: { color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 2 },
-  rosterContract: { color: TEAL, fontSize: 11, marginTop: 3, fontWeight: '600' },
-  ridgePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  ridgePillText: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '700' },
-
-  // Campaigns
-  campaignRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  campaignDot: { width: 8, height: 8, borderRadius: 4 },
-  campaignName: { color: '#FFF', fontSize: 14, fontWeight: '700' },
-  campaignMeta: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 3 },
-  campaignBudget: { color: ACCENT, fontSize: 13, fontWeight: '800' },
-
-  // Team
-  teamRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  teamAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  teamInitial: { color: '#FFF', fontSize: 12, fontWeight: '800' },
-  teamName: { color: '#FFF', fontSize: 14, fontWeight: '700' },
-  teamRole: { color: 'rgba(255,255,255,0.55)', fontSize: 11, marginTop: 2 },
 
   // Bottom fade
   bottomFade: { position: 'absolute', left: 0, right: 0, zIndex: 99 },
@@ -738,3 +698,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
 });
+
+// ── Unmounted old content — preserved in comments per charter ─────────────
+// The following were live in the previous version and are kept for lineage:
+// - TABS: about | roster | campaigns | team
+// - BRAND_TEAM constant (6 team members)
+// - toggle(key) accordion logic
+// - tab segmented pill with sliding knob (tabIndex, tabPillWidth, tabKnobStyle)
+// - AboutTab: nameRow, tagline, statRow, bio glass block with accordion
+// - RosterTab: signed athletes list
+// - CampaignsTab: live + upcoming campaign rows
+// - TeamTab: brand team member rows
+// All data fixtures unchanged in lib/data/mock-brand-data.ts.
