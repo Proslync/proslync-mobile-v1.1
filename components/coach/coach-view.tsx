@@ -1,3 +1,11 @@
+// coach-view.tsx
+// ── COACH DASHBOARD ───────────────────────────────────────────────────────
+// Charter §A — tabs wiped to ['Home', 'Roster'].
+// Header/avatar/role-switcher chrome preserved.
+// Old Insights/Scout tab content is UNMOUNTED (functions kept below, not rendered).
+// Old imports for mock-coach-data kept (still used by unmounted fns); unused
+// vars prefixed with _ to satisfy TS.
+
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GlassView } from 'expo-glass-effect';
@@ -51,27 +59,30 @@ import {
   type PlayerTrend,
   type RosterPlayer,
 } from '@/lib/data/mock-coach-data';
-import { liquidGlass } from '@/constants/glass/liquid-glass';
+import { liquidGlass as _liquidGlass } from '@/constants/glass/liquid-glass';
+
+// New charter home + roster tabs
+import { CoachHome } from '@/components/coach/coach-home';
+import { CoachRoster } from '@/components/coach/coach-roster';
 
 const ACCENT = '#FF6F3C';
 const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
-type TabKey = 'insights' | 'roster' | 'scout';
+// Charter §A: two tabs only
+type TabKey = 'home' | 'roster';
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'insights', label: 'Insights' },
+  { key: 'home',   label: 'Home'   },
   { key: 'roster', label: 'Roster' },
-  { key: 'scout', label: 'Scout' },
 ];
 
 export function CoachView() {
   const insets = useSafeAreaInsets();
-  const router = useStableRouter();
-  const [activeTab, setActiveTab] = React.useState<TabKey>('insights');
+  const _router = useStableRouter();
+  const [activeTab, setActiveTab] = React.useState<TabKey>('home');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
-  const [liveOpen, setLiveOpen] = React.useState(false);
 
   const activeTabIndex = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
   const tabPillWidth = useSharedValue(0);
@@ -90,23 +101,9 @@ export function CoachView() {
 
   return (
     <View style={styles.container}>
-      {/* Tab content */}
-      {activeTab === 'insights' && <InsightsTab insets={insets.bottom} onOpenLive={() => setLiveOpen(true)} />}
-      {activeTab === 'roster' && <RosterTab insets={insets.bottom} />}
-      {activeTab === 'scout' && <ScoutTab insets={insets.bottom} />}
-
-      <Modal visible={liveOpen} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setLiveOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: '#000', paddingTop: insets.top }}>
-          <View style={styles.liveHeader}>
-            <Pressable onPress={() => setLiveOpen(false)} hitSlop={10} style={styles.liveBackBtn}>
-              <Ionicons name="chevron-back" size={22} color="#FFF" />
-            </Pressable>
-            <Text style={styles.liveHeaderTitle}>Live Game</Text>
-            <View style={{ width: 32 }} />
-          </View>
-          <LiveGameTab insets={insets.bottom} />
-        </View>
-      </Modal>
+      {/* Tab content — charter: Home + Roster only */}
+      {activeTab === 'home'   && <CoachHome   topInset={insets.top} bottomInset={insets.bottom} />}
+      {activeTab === 'roster' && <CoachRoster topInset={insets.top} bottomInset={insets.bottom} />}
 
       {/* Top fade — gives the floating top pill row visual depth */}
       <LinearGradient
@@ -758,7 +755,7 @@ function RosterPlayerSheet({
           </GestureDetector>
           <ScrollView style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 28 }}>
             <Text style={styles.sectionLabel}>SEASON STATS</Text>
-            <View style={styles.statsGrid}>
+            <View style={styles.sheetStatsGrid}>
               <StatCell label="PPG" value={player.ppg.toFixed(1)} />
               <StatCell label="RPG" value={player.rpg.toFixed(1)} />
               <StatCell label="APG" value={player.apg.toFixed(1)} />
@@ -792,9 +789,9 @@ function RosterPlayerSheet({
 
 function StatCell({ label, value }: { label: string; value: string }) {
   return (
-    <View style={styles.statCell}>
-      <Text style={styles.statCellValue}>{value}</Text>
-      <Text style={styles.statCellLabel}>{label}</Text>
+    <View style={styles.sheetStatCell}>
+      <Text style={styles.sheetStatCellValue}>{value}</Text>
+      <Text style={styles.sheetStatCellLabel}>{label}</Text>
     </View>
   );
 }
@@ -2144,8 +2141,8 @@ const styles = StyleSheet.create({
   rosterSheetName: { color: '#FFF', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
   rosterSheetMeta: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 2 },
   rosterSheetStatusNote: { color: '#FFD60A', fontSize: 11, marginTop: 4, fontStyle: 'italic' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 4 },
-  statCell: {
+  sheetStatsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6, marginBottom: 4 },
+  sheetStatCell: {
     width: '23%',
     backgroundColor: '#1C1C1E',
     borderRadius: 10,
@@ -2154,6 +2151,6 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.08)',
   },
-  statCellValue: { color: '#FFF', fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  statCellLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: '700', marginTop: 2 },
+  sheetStatCellValue: { color: '#FFF', fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  sheetStatCellLabel: { color: 'rgba(255,255,255,0.55)', fontSize: 9, fontWeight: '700', marginTop: 2 },
 });
