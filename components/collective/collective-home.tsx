@@ -23,8 +23,8 @@ import {
 
 // ── Charter constants ──────────────────────────────────────────────────────
 const COPPER = '#EB621A';
-const CARD_BG = '#1C1C1E';
-const CARD_BORDER = 'rgba(255,255,255,0.07)';
+const CARD_BG = 'rgba(255,255,255,0.05)';
+const CARD_BORDER = 'rgba(255,255,255,0.10)';
 const MUTED = 'rgba(255,255,255,0.50)';
 const RED = '#FF3B30';
 const AMBER = '#FFD60A';

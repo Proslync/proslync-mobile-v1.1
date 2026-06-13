@@ -80,8 +80,24 @@ const PANEL_HEIGHT = Math.min(480, Math.round(SCREEN_H * 0.62));
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function FanAssistant() {
-  const [open, setOpen] = React.useState(false);
+export interface FanAssistantProps {
+  /** Controlled open state. When provided, the component is controlled. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Hide the built-in FAB bubble (when opened from an external trigger). */
+  hideFab?: boolean;
+}
+
+export function FanAssistant({ open: openProp, onOpenChange, hideFab }: FanAssistantProps = {}) {
+  const [openState, setOpenState] = React.useState(false);
+  const open = openProp !== undefined ? openProp : openState;
+  const setOpen = React.useCallback(
+    (v: boolean) => {
+      onOpenChange?.(v);
+      if (openProp === undefined) setOpenState(v);
+    },
+    [onOpenChange, openProp],
+  );
   const [input, setInput] = React.useState('');
   const [response, setResponse] = React.useState('');
   const [streaming, setStreaming] = React.useState(false);
@@ -145,7 +161,7 @@ export function FanAssistant() {
   return (
     <>
       {/* FAB — hidden while panel is open */}
-      {!open && (
+      {!open && !hideFab && (
         <Pressable
           style={({ pressed }) => [
             styles.fab,

@@ -1200,6 +1200,7 @@ export default function FeedScreen() {
   const [menuSection, setMenuSection] = useState<Section | null>(null);
   const [menuTileId, setMenuTileId] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [coverMedia, setCoverMedia] = useState<Record<string, CoverMedia>>({});
   const [customLogos, setCustomLogos] = useState<Record<string, string>>({});
   const [tileMedia, setTileMedia] = useState<Record<string, { uri: string; type: 'image' | 'video' }>>({});
@@ -1572,10 +1573,6 @@ export default function FeedScreen() {
         pointerEvents="box-none"
       >
         <Animated.View style={[styles.floatingPill, floatingPillStyle]}>
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 21 }]}
-            pointerEvents="none"
-          />
           <View style={styles.floatingPillGlass} pointerEvents="none">
             <GlassView
               glassEffectStyle="regular"
@@ -1606,6 +1603,14 @@ export default function FeedScreen() {
           >
             <SymbolView name="plus" size={20} tintColor="#FFF" />
           </Pressable>
+          <Pressable
+            style={styles.floatingPillBtn}
+            onPress={() => setAssistantOpen(true)}
+            accessibilityLabel="Ask Proslync"
+            accessibilityRole="button"
+          >
+            <SymbolView name="bubble.left" size={20} tintColor="#FFF" />
+          </Pressable>
         </Animated.View>
       </Animated.View>
 
@@ -1615,8 +1620,8 @@ export default function FeedScreen() {
         onPosted={() => setComposerOpen(false)}
       />
 
-      {/* Fan assistant — self-contained FAB + floating panel */}
-      <FanAssistant />
+      {/* Fan assistant — opened from the action pill's chat icon (FAB hidden) */}
+      <FanAssistant open={assistantOpen} onOpenChange={setAssistantOpen} hideFab />
     </View>
   );
 }

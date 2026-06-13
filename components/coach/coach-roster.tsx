@@ -20,8 +20,8 @@ import {
 } from 'react-native';
 
 // ── Color constants ────────────────────────────────────────────────────────
-const CARD_BG = '#1C1C1E';
-const CARD_BORDER = 'rgba(255,255,255,0.07)';
+const CARD_BG = 'rgba(255,255,255,0.05)';
+const CARD_BORDER = 'rgba(255,255,255,0.10)';
 const MUTED = 'rgba(255,255,255,0.50)';
 const GREEN = '#34C759';
 const RED = '#FF3B30';

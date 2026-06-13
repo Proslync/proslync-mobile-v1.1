@@ -73,25 +73,7 @@ const EXTRA_PARTNERSHIPS = [
 // ─── GlassBlock — same material as the About bio blocks ──────
 
 function GlassBlock({ children }: { children: React.ReactNode }) {
-  return (
-    <View style={mk.block}>
-      <View
-        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
-        pointerEvents="none"
-      />
-      <View style={mk.blockGlass} pointerEvents="none">
-        <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
-        {isLiquidGlassSupported && (
-          <LiquidGlassView
-            effect="regular"
-            tintColor="rgba(255,255,255,0.10)"
-            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-          />
-        )}
-      </View>
-      {children}
-    </View>
-  );
+  return <View style={mk.block}>{children}</View>;
 }
 
 // ─── Props ───────────────────────────────────────────────────
@@ -240,6 +222,9 @@ const mk = StyleSheet.create({
     padding: 14,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   blockGlass: {
     position: 'absolute',
