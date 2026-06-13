@@ -99,7 +99,7 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
   },
 };
 
-const ROLES: ProfileRole[] = ['player', 'coach', 'agent', 'brand', 'fan', 'school', 'nilManager', 'collective'];
+const ROLES: ProfileRole[] = ['player', 'coach', 'agent', 'brand', 'fan', 'school', 'collective'];
 
 export default function SettingsScreen() {
   const router = useRouter();

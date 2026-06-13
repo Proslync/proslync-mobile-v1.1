@@ -14,7 +14,6 @@ const PERSONAS: ActivePersona[] = [
   { key: "brand", label: "Brand", userRole: UserRole.USER, profileRole: "brand" },
   { key: "fan", label: "Fan", userRole: UserRole.USER, profileRole: "fan" },
   { key: "school", label: "School", userRole: UserRole.USER, profileRole: "school" },
-  { key: "nilManager", label: "NIL Manager", userRole: UserRole.USER, profileRole: "nilManager" },
   { key: "collective", label: "Collective", userRole: UserRole.USER, profileRole: "collective" },
   { key: "athleticDirector", label: "Athletic Director", userRole: UserRole.USER, profileRole: "school" },
   { key: "admin", label: "Admin (platform)", userRole: UserRole.ADMIN, profileRole: null },

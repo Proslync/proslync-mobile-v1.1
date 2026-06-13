@@ -74,13 +74,6 @@ const ROLES: {
     color: '#3B82F6',
   },
   {
-    role: 'nilManager',
-    label: 'NIL Manager',
-    description: 'School compliance · view-only roster + deals',
-    icon: 'shield-checkmark-outline',
-    color: '#001A57',
-  },
-  {
     role: 'collective',
     label: 'Collective',
     description: 'Fund deals · clearance pipeline · fan commerce',
