@@ -56,6 +56,8 @@ export function roleToDealLens(role: ProfileRole): DealLensKey {
   if (role === 'agent') return 'agent';
   if (role === 'school') return 'ad';
   if (role === 'nilManager') return 'nilManager';
+  // collective is the payer — same deal view as brand
+  if (role === 'collective') return 'brand';
   return 'athlete';
 }
 

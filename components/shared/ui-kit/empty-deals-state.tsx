@@ -78,6 +78,12 @@ const PERSONA_META: Record<ProfileRole, PersonaEmptyMeta> = {
     body: 'Follow more athletes to see their offers, content, and live drops.',
     ctaLabel: 'Find athletes',
   },
+  collective: {
+    icon: 'people-circle-outline',
+    title: 'No deals in pipeline',
+    body: 'Fund a deal to start the clearance pipeline. VBP packets move through NIL Go faster.',
+    ctaLabel: 'Start a deal',
+  },
 };
 
 // Map ProfileRole → RoleSurface key (player → athlete; nilManager → admin).

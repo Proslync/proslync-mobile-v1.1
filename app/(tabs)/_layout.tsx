@@ -19,6 +19,7 @@ const ROLE_AVATARS = {
   fan: require("@/assets/images/kiyan-avatar-tab.png"),
   school: require("@/assets/images/kiyan-avatar-tab.png"),
   nilManager: require("@/assets/images/kiyan-avatar-tab.png"),
+  collective: require("@/assets/images/kiyan-avatar-tab.png"),
 } as const;
 
 export default function TabLayout() {

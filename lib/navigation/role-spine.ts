@@ -130,6 +130,12 @@ const ROLE_OBJECTS: Record<ProfileRole, Record<RoleSpineSlot, string>> = {
     explore: 'Evidence packets, disclosure context, and shared discovery',
     account: 'NIL Manager profile and controls',
   },
+  collective: {
+    home: 'Clearance pipeline and payment ops',
+    work: 'VBP packet builder and deal funding',
+    explore: 'Clearance proof, fan commerce, and shared discovery',
+    account: 'Collective trust profile and AE disclosure',
+  },
 };
 
 function buildItem(role: ProfileRole, slot: RoleSpineSlot): RoleSpineItem {
@@ -152,6 +158,7 @@ export const ROLE_SPINES: Record<ProfileRole, RoleSpineTuple> = {
   fan: ROLE_SPINE_SLOT_ORDER.map((slot) => buildItem('fan', slot)) as unknown as RoleSpineTuple,
   school: ROLE_SPINE_SLOT_ORDER.map((slot) => buildItem('school', slot)) as unknown as RoleSpineTuple,
   nilManager: ROLE_SPINE_SLOT_ORDER.map((slot) => buildItem('nilManager', slot)) as unknown as RoleSpineTuple,
+  collective: ROLE_SPINE_SLOT_ORDER.map((slot) => buildItem('collective', slot)) as unknown as RoleSpineTuple,
 };
 
 export function getRoleSpine(role: ProfileRole): RoleSpineTuple {

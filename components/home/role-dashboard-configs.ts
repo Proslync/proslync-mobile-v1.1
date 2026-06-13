@@ -194,6 +194,31 @@ export const ROLE_DASHBOARD_CONFIGS: Record<ProfileRole, RoleDashboardConfig> = 
     ],
   },
 
+  // ── COLLECTIVE ─────────────────────────────────────────────
+  collective: {
+    contextLabel: 'COLLECTIVE',
+    greeting: 'Pipeline,',
+    name: 'Collective',
+    liveSignals: [
+      { icon: 'shield-checkmark', label: 'Clearance', value: '91%',       tone: 'success' },
+      { icon: 'document-text',    label: 'In review',  value: '4 deals',   tone: 'accent'  },
+      { icon: 'people',           label: 'Supporters', value: '1,250',     tone: 'accent'  },
+    ],
+    statsLabel: 'SEASON',
+    stats: [
+      { label: 'Cleared',  value: '$284K', hint: 'YTD',     tone: 'success' },
+      { label: '1099s',    value: '34',    hint: 'current'                  },
+      { label: 'Fans',     value: '1,250', hint: 'receipted' },
+    ],
+    activityLabel: 'CLEARANCE LOG',
+    activity: [
+      { id: 'a1', time: '2h',  icon: 'checkmark-circle', title: 'Kiyan A. × JMA cleared', subtitle: '$4,500 · 26h first-pass',        tone: 'success' },
+      { id: 'a2', time: '4h',  icon: 'document-text',    title: 'VBP packet assembled',    subtitle: 'M. Reid · appearance $2,800',    tone: 'accent'  },
+      { id: 'a3', time: '1d',  icon: 'warning',          title: 'Resubmission required',   subtitle: 'M. Reid × Nike · missing docs',  tone: 'warning' },
+      { id: 'a4', time: '2d',  icon: 'people',           title: 'JMA activation live',     subtitle: '1,250 supporters · 2-for-1 perk', tone: 'accent' },
+    ],
+  },
+
   // ── FAN ────────────────────────────────────────────────────
   // Fan-mode routes through (fan-tabs)/ via useMode()==='fan', so this
   // config is rarely the one rendered by (tabs)/index.tsx. Keep it

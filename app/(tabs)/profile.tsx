@@ -19,6 +19,7 @@ import AgentProfile from "@/components/agent/agent-profile";
 import BrandProfile from "@/components/brand/brand-profile";
 import FanProfile from "@/components/fan/fan-profile";
 import SchoolProfile from "@/components/school/school-profile";
+import CollectiveProfile from "@/components/collective/collective-profile";
 import { RoleSwitcherSheet } from "@/components/shared/role-switcher-menu";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LiquidGlassView, isLiquidGlassSupported } from "@callstack/liquid-glass";
@@ -1716,6 +1717,7 @@ export default function ProfileScreen() {
   if (role === 'fan') return <FanProfile />;
   if (role === 'school') return <SchoolProfile />;
   if (role === 'nilManager') return <SchoolProfile />;
+  if (role === 'collective') return <CollectiveProfile />;
   return <PlayerProfileScreen />;
 }
 

@@ -10,6 +10,7 @@ import { BrandView } from '@/components/brand/brand-view';
 import { FanView } from '@/components/fan/fan-view';
 import { SchoolView } from '@/components/school/school-view';
 import { NilManagerView } from '@/components/nil-manager/nil-manager-view';
+import { CollectiveView } from '@/components/collective/collective-view';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 
 const DefaultAvatarImage = require('@/assets/images/default-avatar.png');
@@ -38,6 +39,7 @@ export default function ActivityTab() {
   if (role === 'fan') return <FanView />;
   if (role === 'school') return <SchoolView />;
   if (role === 'nilManager') return <NilManagerView />;
+  if (role === 'collective') return <CollectiveView />;
   return <AthleteView />;
 }
 

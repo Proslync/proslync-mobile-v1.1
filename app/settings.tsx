@@ -89,9 +89,17 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
     name: 'Lauren Whitcombe',
     handle: '@duke-nil',
   },
+  collective: {
+    label: 'Collective',
+    description: 'Fund deals · clearance pipeline · fan commerce',
+    icon: 'people-circle-outline',
+    color: '#EB621A',
+    name: 'Orange Collective',
+    handle: '@orange-collective',
+  },
 };
 
-const ROLES: ProfileRole[] = ['player', 'coach', 'agent', 'brand', 'fan', 'school', 'nilManager'];
+const ROLES: ProfileRole[] = ['player', 'coach', 'agent', 'brand', 'fan', 'school', 'nilManager', 'collective'];
 
 export default function SettingsScreen() {
   const router = useRouter();

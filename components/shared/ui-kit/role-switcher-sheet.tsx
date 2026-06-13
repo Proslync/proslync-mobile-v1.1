@@ -77,6 +77,11 @@ export const ROLE_META: Record<ProfileRole, { label: string; icon: IconName; des
     icon: 'shield-checkmark-outline',
     description: 'Compliance review + closing',
   },
+  collective: {
+    label: 'Collective',
+    icon: 'people-circle-outline',
+    description: 'Clearance pipeline + fan commerce',
+  },
 };
 
 // Map role-provider's ProfileRole → RoleAccent key.

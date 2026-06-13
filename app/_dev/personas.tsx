@@ -15,6 +15,7 @@ const PERSONAS: ActivePersona[] = [
   { key: "fan", label: "Fan", userRole: UserRole.USER, profileRole: "fan" },
   { key: "school", label: "School", userRole: UserRole.USER, profileRole: "school" },
   { key: "nilManager", label: "NIL Manager", userRole: UserRole.USER, profileRole: "nilManager" },
+  { key: "collective", label: "Collective", userRole: UserRole.USER, profileRole: "collective" },
   { key: "athleticDirector", label: "Athletic Director", userRole: UserRole.USER, profileRole: "school" },
   { key: "admin", label: "Admin (platform)", userRole: UserRole.ADMIN, profileRole: null },
 ];
@@ -85,6 +86,7 @@ const ICON_FOR: Record<string, keyof typeof import("@expo/vector-icons").Ionicon
   fan: "heart-outline",
   school: "school-outline",
   nilManager: "shield-checkmark-outline",
+  collective: "people-circle-outline",
   athleticDirector: "trophy-outline",
   admin: "construct-outline",
 };

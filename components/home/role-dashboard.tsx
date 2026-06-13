@@ -88,6 +88,15 @@ const ROLE_HERO_COPY: Record<ProfileRole, Omit<BuyerBriefHero, 'primaryAction'>>
     intent: 'attention',
     icon: 'shield-checkmark',
   },
+  collective: {
+    eyebrow: 'Clearance pipeline',
+    title: '4 deals in NIL Go review',
+    value: '4 active',
+    summary:
+      'Your money-side seat: packet-backed deals move through clearance faster. VBP docs are your best protection.',
+    intent: 'attention',
+    icon: 'document-text',
+  },
   fan: {
     eyebrow: 'Live follow',
     title: 'Your game feed is moving',

@@ -116,6 +116,7 @@ export const PROFILE_ROLE_TO_VISUAL_KEY: Record<ProfileRole, RoleVisualKey> = {
   fan: "fan",
   school: "school",
   nilManager: "school",
+  collective: "brand",
 };
 
 export const PROFILE_ROLE_LABELS: Record<ProfileRole, string> = {
@@ -126,6 +127,7 @@ export const PROFILE_ROLE_LABELS: Record<ProfileRole, string> = {
   fan: "Fan",
   school: "AD",
   nilManager: "NIL Mgr",
+  collective: "Collective",
 };
 
 export const PROFILE_ROLE_INITIALS: Record<ProfileRole, string> = {
@@ -136,6 +138,7 @@ export const PROFILE_ROLE_INITIALS: Record<ProfileRole, string> = {
   fan: "F",
   school: "S",
   nilManager: "N",
+  collective: "K",
 };
 
 export const PROFILE_ROLE_ICONS: Record<ProfileRole, { icon: string; outlineIcon: string }> = {
@@ -146,6 +149,7 @@ export const PROFILE_ROLE_ICONS: Record<ProfileRole, { icon: string; outlineIcon
   fan: { icon: "heart", outlineIcon: "heart-outline" },
   school: { icon: "school", outlineIcon: "school-outline" },
   nilManager: { icon: "shield-checkmark", outlineIcon: "shield-checkmark-outline" },
+  collective: { icon: "people-circle", outlineIcon: "people-circle-outline" },
 };
 
 export const PROFILE_ROLE_ORDER: ProfileRole[] = [
@@ -156,6 +160,7 @@ export const PROFILE_ROLE_ORDER: ProfileRole[] = [
   "fan",
   "school",
   "nilManager",
+  "collective",
 ];
 
 export const DEV_MARKER_COLOR = Brand.colors.copper;

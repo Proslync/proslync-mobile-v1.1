@@ -80,6 +80,13 @@ const ROLES: {
     icon: 'shield-checkmark-outline',
     color: '#001A57',
   },
+  {
+    role: 'collective',
+    label: 'Collective',
+    description: 'Fund deals · clearance pipeline · fan commerce',
+    icon: 'people-circle-outline',
+    color: '#EB621A',
+  },
 ];
 
 export function RoleSwitcherSheet({
