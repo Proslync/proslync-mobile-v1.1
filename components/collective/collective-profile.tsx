@@ -33,34 +33,11 @@ const AMBER = '#FFD60A';
 const MUTED = 'rgba(255,255,255,0.50)';
 const HAIRLINE = 'rgba(255,255,255,0.08)';
 
-// ── GlassBlock ────────────────────────────────────────────────────────────
-// Same material as media-kit-card.tsx and brand-profile.tsx
+// ── GlassBlock — flat solid card (matches athlete media-kit-card) ─────────
 
 function GlassBlock({ children }: { children: React.ReactNode }) {
   return (
-    <View style={gb.block}>
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 },
-        ]}
-        pointerEvents="none"
-      />
-      <View style={gb.blockGlass} pointerEvents="none">
-        <GlassView
-          glassEffectStyle="regular"
-          style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-        />
-        {isLiquidGlassSupported && (
-          <LiquidGlassView
-            effect="regular"
-            tintColor="rgba(255,255,255,0.10)"
-            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-          />
-        )}
-      </View>
-      {children}
-    </View>
+    <View style={gb.block}>{children}</View>
   );
 }
 
@@ -71,6 +48,9 @@ const gb = StyleSheet.create({
     padding: 14,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   blockGlass: {
     position: 'absolute',

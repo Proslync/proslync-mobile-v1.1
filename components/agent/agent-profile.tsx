@@ -86,27 +86,11 @@ const TRACK_PILLS: TrackPill[] = [
   { value: '94%',  label: 'client retention' },
 ];
 
-// ── GlassBlock — same recipe as media-kit-card.tsx ────────────────────────
+// ── GlassBlock — flat solid card (matches athlete media-kit-card) ─────────
 
 function GlassBlock({ children }: { children: React.ReactNode }) {
   return (
-    <View style={g.block}>
-      <View
-        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 16 }]}
-        pointerEvents="none"
-      />
-      <View style={g.blockGlass} pointerEvents="none">
-        <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
-        {isLiquidGlassSupported && (
-          <LiquidGlassView
-            effect="regular"
-            tintColor="rgba(255,255,255,0.10)"
-            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-          />
-        )}
-      </View>
-      {children}
-    </View>
+    <View style={g.block}>{children}</View>
   );
 }
 
@@ -117,6 +101,9 @@ const g = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     gap: 0,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   blockGlass: {
     position: 'absolute',

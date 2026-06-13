@@ -107,26 +107,10 @@ const _OLD_RESULTS = [
 
 // ── Charter §B: no tabs — single scrollable storefront ───────────────────
 
-// ── GlassBlock — same material recipe as athlete media-kit-card ───────────
+// ── GlassBlock — flat solid card (matches athlete media-kit-card) ─────────
 function GlassBlock({ children }: { children: React.ReactNode }) {
   return (
-    <View style={styles.glassBlock}>
-      <View
-        style={[StyleSheet.absoluteFill, { backgroundColor: CARD_BG_GLASS, borderRadius: 16 }]}
-        pointerEvents="none"
-      />
-      <View style={styles.glassBlockInner} pointerEvents="none">
-        <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 16 }]} />
-        {isLiquidGlassSupported && (
-          <LiquidGlassView
-            effect="regular"
-            tintColor="rgba(255,255,255,0.10)"
-            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-          />
-        )}
-      </View>
-      {children}
-    </View>
+    <View style={styles.glassBlock}>{children}</View>
   );
 }
 
@@ -416,13 +400,16 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
   },
 
-  // GlassBlock internal layout
+  // GlassBlock internal layout — flat solid fill (matches athlete media-kit-card)
   glassBlock: {
     gap: 10,
     borderRadius: 16,
     padding: 14,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   glassBlockInner: {
     position: 'absolute',

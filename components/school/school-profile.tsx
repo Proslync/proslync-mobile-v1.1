@@ -81,25 +81,6 @@ const PROGRAM_STATS = [
 function CleanProgramBlock() {
   return (
     <View style={s.glassCard}>
-      {/* Glass base layers */}
-      <View
-        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 18 }]}
-        pointerEvents="none"
-      />
-      <View style={s.glassLayer} pointerEvents="none">
-        <GlassView
-          glassEffectStyle="regular"
-          style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
-        />
-        {isLiquidGlassSupported && (
-          <LiquidGlassView
-            effect="regular"
-            tintColor="rgba(255,255,255,0.08)"
-            style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
-          />
-        )}
-      </View>
-
       {/* Badge row */}
       <View style={s.badgeRow}>
         <View style={s.verifiedBadge}>
@@ -529,15 +510,16 @@ const s = StyleSheet.create({
   metaLine: { fontSize: 13, fontWeight: '500', color: MUTED, marginTop: 2, letterSpacing: -0.1, lineHeight: 18 },
   metaLinePrimary: { color: '#FFF', fontWeight: '700' },
 
-  // Glass card (Block 1)
+  // Flat solid card (Block 1) — matches athlete media-kit-card
   glassCard: {
     borderRadius: 18,
     padding: 16,
     gap: 12,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.10)',
   },
   glassLayer: {
     position: 'absolute',
