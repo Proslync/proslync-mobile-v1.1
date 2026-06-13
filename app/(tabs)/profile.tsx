@@ -53,7 +53,9 @@ import { resolveSlotMedia, resolveAvatarSource } from '@/lib/media/resolve-media
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView } from "expo-glass-effect";
 import Animated, {
+  interpolate,
   runOnJS,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -1794,6 +1796,27 @@ function PlayerProfileScreen() {
       transform: [{ translateX: animatedProfileTabIndex.value * segW + inset }],
     };
   });
+
+  // Floating Kit/Posts/Merch pill — shrinks on scroll-down, grows on scroll-up
+  // (mirrors the native bottom tab bar's onScrollDown minimize behavior).
+  const tabsLastScrollY = useSharedValue(0);
+  const tabsCollapsed = useSharedValue(0);
+  const onProfileScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      const y = e.contentOffset.y;
+      const dy = y - tabsLastScrollY.value;
+      if (dy > 1.5 && y > 30) {
+        tabsCollapsed.value = withTiming(1, { duration: 200 });
+      } else if (dy < -1.5) {
+        tabsCollapsed.value = withTiming(0, { duration: 200 });
+      }
+      tabsLastScrollY.value = y;
+    },
+  });
+  const floatingTabsStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(tabsCollapsed.value, [0, 1], [1, 0.8]) }],
+    opacity: interpolate(tabsCollapsed.value, [0, 1], [1, 0.85]),
+  }));
   const [showAvatarViewer, setShowAvatarViewer] = React.useState(false);
   const closeAvatarViewer = React.useCallback(() => setShowAvatarViewer(false), []);
   const lastTapRef = React.useRef<number>(0);
@@ -2029,11 +2052,13 @@ function PlayerProfileScreen() {
       <View style={[s.container, { backgroundColor: '#000' }]}>
 
 
-        <ScrollView
+        <Animated.ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 140 }}
           showsVerticalScrollIndicator={false}
           refreshControl={refreshControl}
+          onScroll={onProfileScroll}
+          scrollEventThrottle={16}
         >
           {/* Banner — cover image that fades into the page bg, now scrolls with the content */}
           <View style={[s.bannerWrap, { height: insets.top + 290, backgroundColor: '#000' }]} pointerEvents="none">
@@ -2063,62 +2088,8 @@ function PlayerProfileScreen() {
               pointerEvents="none"
             />
           </View>
-          {/* Profile section tabs — segmented glass pill with sliding knob (matches dashboard) */}
-          <View style={s.tabsRow}>
-            <View
-              style={s.tabSegmentedPill}
-              onLayout={(e) => {
-                profilePillWidth.value = e.nativeEvent.layout.width;
-              }}
-            >
-              <View
-                style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)', borderRadius: 23 }]}
-                pointerEvents="none"
-              />
-              <View style={s.tabsGlassLayer} pointerEvents="none">
-                <GlassView
-                  glassEffectStyle="regular"
-                  style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
-                />
-                {isLiquidGlassSupported && (
-                  <LiquidGlassView
-                    effect="regular"
-                    tintColor="rgba(255,255,255,0.10)"
-                    style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
-                  />
-                )}
-              </View>
-              <Animated.View style={[s.tabKnob, profileKnobStyle]} pointerEvents="none">
-                {isLiquidGlassSupported ? (
-                  <LiquidGlassView
-                    effect="regular"
-                    tintColor="rgba(255,255,255,0.20)"
-                    style={[StyleSheet.absoluteFill, { borderRadius: 19 }]}
-                  />
-                ) : null}
-              </Animated.View>
-              {TAB_KEYS.map((key) => {
-                const isActive = profileTab === key;
-                return (
-                  <TouchableOpacity
-                    key={key}
-                    style={s.tabSegment}
-                    onPress={() => setProfileTab(key)}
-                    activeOpacity={0.7}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: isActive }}
-                  >
-                    <Text
-                      style={[s.tabPillText, isActive && s.tabPillTextActive]}
-                      numberOfLines={1}
-                    >
-                      {key[0].toUpperCase() + key.slice(1)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
+          {/* Section tabs now float above the bottom nav (rendered after the ScrollView). */}
+          <View style={{ height: 14 }} />
 
           {/* Storefront CTAs — Support + Work with me (hidden in edit mode) */}
           {!isEditing && <ProfileActions athleteName="Kiyan" />}
@@ -2188,7 +2159,62 @@ function PlayerProfileScreen() {
               </View>
             )}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
+
+        {/* Floating Kit / Posts / Merch tabs — liquid glass, hovers above the
+            bottom nav, shrinks on scroll-down and grows back on scroll-up */}
+        <Animated.View
+          style={[s.floatingTabsWrap, { bottom: insets.bottom + 59 }]}
+          pointerEvents="box-none"
+        >
+          <Animated.View
+            style={[s.floatingPill, floatingTabsStyle]}
+            onLayout={(e) => {
+              profilePillWidth.value = e.nativeEvent.layout.width;
+            }}
+          >
+            <View
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.22)', borderRadius: 22 }]}
+              pointerEvents="none"
+            />
+            <View style={s.tabsGlassLayer} pointerEvents="none">
+              <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 22 }]} />
+              {isLiquidGlassSupported && (
+                <LiquidGlassView
+                  effect="regular"
+                  tintColor="rgba(255,255,255,0.10)"
+                  style={[StyleSheet.absoluteFill, { borderRadius: 22 }]}
+                />
+              )}
+            </View>
+            <Animated.View style={[s.tabKnob, profileKnobStyle]} pointerEvents="none">
+              {isLiquidGlassSupported ? (
+                <LiquidGlassView
+                  effect="regular"
+                  tintColor="rgba(255,255,255,0.20)"
+                  style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
+                />
+              ) : null}
+            </Animated.View>
+            {TAB_KEYS.map((key) => {
+              const isActive = profileTab === key;
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={s.tabSegment}
+                  onPress={() => setProfileTab(key)}
+                  activeOpacity={0.7}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <Text style={[s.tabPillText, isActive && s.tabPillTextActive]} numberOfLines={1}>
+                    {key[0].toUpperCase() + key.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </Animated.View>
+        </Animated.View>
 
         {/* Followers Sheet */}
         {user?.id && (
@@ -2342,6 +2368,22 @@ const s = StyleSheet.create({
   igBtn: { height: 36, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', justifyContent: 'center', alignItems: 'center' },
   igBtnText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
   tabsRow: { flexDirection: 'row', marginTop: -34, marginBottom: 10, paddingHorizontal: 16 },
+  // Floating section-tab pill that hovers above the bottom nav.
+  floatingTabsWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  floatingPill: {
+    width: 240,
+    height: 42,
+    borderRadius: 21,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
   tabSegmentedPill: {
     flex: 1,
     flexDirection: 'row',
