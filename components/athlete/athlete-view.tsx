@@ -5,7 +5,6 @@
 // control other things beyond tab routing).
 import React, { useCallback } from 'react';
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,8 +14,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassView } from 'expo-glass-effect';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, {
+  interpolate,
+  useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -84,6 +84,27 @@ export function AthleteView() {
     };
   });
 
+  // Floating-pill collapse — shrinks on scroll-down, grows on scroll-up
+  // (identical to the profile's Kit/Posts/Merch pill).
+  const tabsLastScrollY = useSharedValue(0);
+  const tabsCollapsed = useSharedValue(0);
+  const onAthleteScroll = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      const y = e.contentOffset.y;
+      const dy = y - tabsLastScrollY.value;
+      if (dy > 1.5 && y > 30) {
+        tabsCollapsed.value = withTiming(1, { duration: 200 });
+      } else if (dy < -1.5) {
+        tabsCollapsed.value = withTiming(0, { duration: 200 });
+      }
+      tabsLastScrollY.value = y;
+    },
+  });
+  const floatingTabsStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(tabsCollapsed.value, [0, 1], [1, 0.8]) }],
+    opacity: interpolate(tabsCollapsed.value, [0, 1], [1, 0.85]),
+  }));
+
   const { data: membershipCard, isLoading: isLoadingCard } = useMembershipCard(
     !!user?.isProfileComplete
   );
@@ -101,28 +122,14 @@ export function AthleteView() {
 
   return (
     <View style={styles.container}>
-      {/* Floating header row — avatar/menu pill + segmented tabs (TOP) */}
-      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
-        <Pressable
-          style={styles.profilePill}
-          onPress={() => setRoleSheetVisible(true)}
-          accessibilityLabel="Open menu"
-          accessibilityRole="button"
-        >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView
-              glassEffectStyle="regular"
-              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
-            />
-          </View>
-          <Image
-            source={require('@/assets/images/kiyan-avatar.png')}
-            style={styles.profilePillAvatar}
-          />
-          <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
-        </Pressable>
-        <View
-          style={styles.tabSegmentedPill}
+      {/* Floating segmented tabs — hovers above the bottom nav, matches the
+          profile's Kit/Posts/Merch pill (size + position) */}
+      <View
+        style={[styles.floatingTabsWrap, { bottom: insets.bottom + 14 }]}
+        pointerEvents="box-none"
+      >
+        <Animated.View
+          style={[styles.tabSegmentedPill, floatingTabsStyle]}
           onLayout={(e) => {
             tabPillWidth.value = e.nativeEvent.layout.width;
           }}
@@ -130,7 +137,7 @@ export function AthleteView() {
           <View style={styles.glassLayer} pointerEvents="none">
             <GlassView
               glassEffectStyle="regular"
-              style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+              style={[StyleSheet.absoluteFill, { borderRadius: 21 }]}
             />
           </View>
           <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none" />
@@ -149,7 +156,7 @@ export function AthleteView() {
               </Pressable>
             );
           })}
-        </View>
+        </Animated.View>
       </View>
 
       {showSkeleton ? (
@@ -157,29 +164,37 @@ export function AthleteView() {
       ) : (
         <>
           {activeTab === 'Home' && (
-            <View style={{ flex: 1, paddingTop: insets.top + 70 }}>
-              <AthleteHome onNavigateToDeals={() => setActiveTab('Deals')} />
+            <View style={{ flex: 1, paddingTop: insets.top + 16 }}>
+              <AthleteHome
+                onNavigateToDeals={() => setActiveTab('Deals')}
+                onScroll={onAthleteScroll}
+                scrollEventThrottle={16}
+              />
             </View>
           )}
           {activeTab === 'Deals' && (
-            <ScrollView
+            <Animated.ScrollView
               style={{ flex: 1 }}
-              contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
+              contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
               showsVerticalScrollIndicator={false}
               refreshControl={refreshControl}
+              onScroll={onAthleteScroll}
+              scrollEventThrottle={16}
             >
               <AthleteDealsSection />
-            </ScrollView>
+            </Animated.ScrollView>
           )}
           {activeTab === 'Wallet' && (
-            <ScrollView
+            <Animated.ScrollView
               style={{ flex: 1 }}
-              contentContainerStyle={{ paddingTop: insets.top + 70, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
+              contentContainerStyle={{ paddingTop: insets.top + 16, paddingBottom: 160, paddingHorizontal: 16, gap: 16 }}
               showsVerticalScrollIndicator={false}
               refreshControl={refreshControl}
+              onScroll={onAthleteScroll}
+              scrollEventThrottle={16}
             >
               <AthleteWalletSection />
-            </ScrollView>
+            </Animated.ScrollView>
           )}
         </>
       )}
@@ -200,7 +215,7 @@ export function AthleteView() {
       <LinearGradient
         colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
         locations={[0, 0.5, 1]}
-        style={[styles.topFade, { height: insets.top + 90 }]}
+        style={[styles.topFade, { height: insets.top + 28 }]}
         pointerEvents="none"
       />
 
@@ -262,12 +277,19 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
   },
+  floatingTabsWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 100,
+  },
   tabSegmentedPill: {
-    flex: 1,
+    width: 240,
+    height: 42,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 46,
-    borderRadius: 23,
+    borderRadius: 21,
     overflow: 'hidden',
   },
   tabKnob: {
@@ -275,7 +297,7 @@ const styles = StyleSheet.create({
     top: 4,
     bottom: 4,
     left: 0,
-    borderRadius: 19,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
   tabSegment: {
@@ -287,7 +309,7 @@ const styles = StyleSheet.create({
   glassLayer: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
-    borderRadius: 23,
+    borderRadius: 21,
   },
   tabPillText: {
     fontSize: 14,

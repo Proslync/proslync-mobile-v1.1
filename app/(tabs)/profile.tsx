@@ -2164,7 +2164,7 @@ function PlayerProfileScreen() {
         {/* Floating Kit / Posts / Merch tabs — liquid glass, hovers above the
             bottom nav, shrinks on scroll-down and grows back on scroll-up */}
         <Animated.View
-          style={[s.floatingTabsWrap, { bottom: insets.bottom + 50 }]}
+          style={[s.floatingTabsWrap, { bottom: insets.bottom + 14 }]}
           pointerEvents="box-none"
         >
           <Animated.View
@@ -2173,29 +2173,10 @@ function PlayerProfileScreen() {
               profilePillWidth.value = e.nativeEvent.layout.width;
             }}
           >
-            <View
-              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.22)', borderRadius: 22 }]}
-              pointerEvents="none"
-            />
             <View style={s.tabsGlassLayer} pointerEvents="none">
-              <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 22 }]} />
-              {isLiquidGlassSupported && (
-                <LiquidGlassView
-                  effect="regular"
-                  tintColor="rgba(255,255,255,0.10)"
-                  style={[StyleSheet.absoluteFill, { borderRadius: 22 }]}
-                />
-              )}
+              <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 21 }]} />
             </View>
-            <Animated.View style={[s.tabKnob, profileKnobStyle]} pointerEvents="none">
-              {isLiquidGlassSupported ? (
-                <LiquidGlassView
-                  effect="regular"
-                  tintColor="rgba(255,255,255,0.20)"
-                  style={[StyleSheet.absoluteFill, { borderRadius: 18 }]}
-                />
-              ) : null}
-            </Animated.View>
+            <Animated.View style={[s.tabKnob, profileKnobStyle]} pointerEvents="none" />
             {TAB_KEYS.map((key) => {
               const isActive = profileTab === key;
               return (
@@ -2374,6 +2355,7 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+    zIndex: 100,
   },
   floatingPill: {
     width: 240,
@@ -2399,7 +2381,7 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 23,
+    borderRadius: 21,
     overflow: 'hidden',
   },
   tabKnob: {
@@ -2407,19 +2389,17 @@ const s = StyleSheet.create({
     top: 4,
     bottom: 4,
     left: 0,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    overflow: 'hidden',
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
   tabSegment: {
     flex: 1,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
   },
-  tabPillText: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.65)', letterSpacing: -0.1 },
-  tabPillTextActive: { color: '#FFF', fontWeight: '800' },
+  tabPillText: { fontSize: 14, fontWeight: '500', color: 'rgba(255,255,255,0.55)' },
+  tabPillTextActive: { color: '#EB621A', fontWeight: '800' },
   metaLine: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.55)', marginTop: 4, letterSpacing: -0.1, lineHeight: 18 },
   metaLinePrimary: { color: '#FFF', fontWeight: '700' },
   editableField: {

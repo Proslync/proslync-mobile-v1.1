@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Dimensions,
   Modal,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -40,9 +42,11 @@ interface FanHomeFeedProps {
   /** Override the list's top padding (e.g. when rendered below an in-page
    *  header so the default `insets.top + 8` would double-inset). */
   topInset?: number;
+  /** Plain JS scroll handler for FloatingTabPill collapse. */
+  onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
-export function FanHomeFeed({ topInset }: FanHomeFeedProps = {}): React.JSX.Element {
+export function FanHomeFeed({ topInset, onScroll }: FanHomeFeedProps = {}): React.JSX.Element {
   const insets = useSafeAreaInsets();
   const {
     posts,
@@ -112,6 +116,8 @@ export function FanHomeFeed({ topInset }: FanHomeFeedProps = {}): React.JSX.Elem
         }
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={{
           paddingTop: topInset !== undefined ? topInset : insets.top + 8,
           paddingBottom: 120,

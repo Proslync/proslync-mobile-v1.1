@@ -1447,6 +1447,12 @@ export default function FeedScreen() {
   const topFadeAnimStyle = useAnimatedStyle(() => ({
     opacity: interpolate(headerSV.value, [0, 1], [1, 0]),
   }));
+  // Floating action pill — shrinks on scroll-down, grows on scroll-up
+  // (reuses the header's scroll signal; matches the profile/dashboard pill).
+  const floatingPillStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(headerSV.value, [0, 1], [1, 0.8]) }],
+    opacity: interpolate(headerSV.value, [0, 1], [1, 0.85]),
+  }));
 
   const onListScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -1466,7 +1472,7 @@ export default function FeedScreen() {
 
   // Header clearance: top-of-screen safe inset + 3 (header top offset) + 46
   // (button height) + 13 (gap to content) ≈ insets.top + 62.
-  const HEADER_CLEARANCE = insets.top + 62;
+  const HEADER_CLEARANCE = insets.top + 12;
 
   return (
     <View style={styles.container}>
@@ -1558,35 +1564,49 @@ export default function FeedScreen() {
         />
       </Animated.View>
 
+      {/* Floating action pill — map · notifications · plus.
+          Same glass material, size, position and scroll-shrink as the
+          profile/dashboard tab pills. */}
       <Animated.View
-        style={[styles.topRow, { top: insets.top + 3 }, headerAnimStyle]}
-        onLayout={(e: LayoutChangeEvent) => setHeaderHeight(e.nativeEvent.layout.height)}
+        style={[styles.floatingPillWrap, { bottom: insets.bottom + 14 }]}
+        pointerEvents="box-none"
       >
-        <Image
-          source={require('@/assets/images/brand/transparent/proslync-mark-256.png')}
-          style={styles.brandMark}
-          resizeMode="contain"
-        />
-        <Text style={styles.brandWordmark}>Proslync</Text>
-        <View style={{ flex: 1 }} />
-
-        <Pressable
-          style={styles.iconBare}
-          onPress={() => setComposerOpen(true)}
-          accessibilityLabel="Create post"
-          accessibilityRole="button"
-        >
-          <SymbolView name="plus" size={22} tintColor="#FFF" />
-        </Pressable>
-
-        <Pressable
-          style={styles.iconBare}
-          onPress={() => router.push('/messages' as any)}
-          accessibilityLabel="Messages"
-          accessibilityRole="button"
-        >
-          <SymbolView name="paperplane" size={22} tintColor="#FFF" />
-        </Pressable>
+        <Animated.View style={[styles.floatingPill, floatingPillStyle]}>
+          <View
+            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)', borderRadius: 21 }]}
+            pointerEvents="none"
+          />
+          <View style={styles.floatingPillGlass} pointerEvents="none">
+            <GlassView
+              glassEffectStyle="regular"
+              style={[StyleSheet.absoluteFill, { borderRadius: 21 }]}
+            />
+          </View>
+          <Pressable
+            style={styles.floatingPillBtn}
+            onPress={() => router.push('/explore' as any)}
+            accessibilityLabel="Map"
+            accessibilityRole="button"
+          >
+            <SymbolView name="map" size={20} tintColor="#FFF" />
+          </Pressable>
+          <Pressable
+            style={styles.floatingPillBtn}
+            onPress={() => router.push('/notifications' as any)}
+            accessibilityLabel="Notifications"
+            accessibilityRole="button"
+          >
+            <SymbolView name="bell" size={20} tintColor="#FFF" />
+          </Pressable>
+          <Pressable
+            style={styles.floatingPillBtn}
+            onPress={() => setComposerOpen(true)}
+            accessibilityLabel="Create post"
+            accessibilityRole="button"
+          >
+            <SymbolView name="plus" size={20} tintColor="#FFF" />
+          </Pressable>
+        </Animated.View>
       </Animated.View>
 
       <FanPostComposer
@@ -1605,6 +1625,35 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
+  // Floating action pill — identical material/size/position to the
+  // profile & dashboard tab pills, but with three icon actions.
+  floatingPillWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  floatingPill: {
+    width: 240,
+    height: 42,
+    borderRadius: 21,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  floatingPillGlass: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    borderRadius: 21,
+  },
+  floatingPillBtn: {
+    flex: 1,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollContent: { paddingHorizontal: SECTION_OUTER_PAD, paddingBottom: 240, gap: SECTION_GAP_V },
   bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, zIndex: 10 },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 150 },

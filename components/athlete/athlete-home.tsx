@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 
@@ -294,9 +295,11 @@ function DealStatusModule({
 
 export interface AthleteHomeProps {
   onNavigateToDeals: () => void;
+  onScroll?: React.ComponentProps<typeof Animated.ScrollView>['onScroll'];
+  scrollEventThrottle?: number;
 }
 
-export function AthleteHome({ onNavigateToDeals }: AthleteHomeProps) {
+export function AthleteHome({ onNavigateToDeals, onScroll, scrollEventThrottle }: AthleteHomeProps) {
   const [engineDeals, setEngineDeals] = React.useState<EngineDeal[]>([DEMO_DEAL]);
 
   // Hydrate stored deals from AsyncStorage on focus (same pattern as athlete-deals-section)
@@ -322,10 +325,12 @@ export function AthleteHome({ onNavigateToDeals }: AthleteHomeProps) {
   const deals = DEAL_TRUTH_FIXTURE;
 
   return (
-    <ScrollView
+    <Animated.ScrollView
       style={s.scroll}
       contentContainerStyle={s.content}
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={scrollEventThrottle}
     >
       <MoneyModule deals={deals} />
       <DueFromYouModule
@@ -334,7 +339,7 @@ export function AthleteHome({ onNavigateToDeals }: AthleteHomeProps) {
         onNavigateToDeals={onNavigateToDeals}
       />
       <DealStatusModule deals={deals} onNavigateToDeals={onNavigateToDeals} />
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 

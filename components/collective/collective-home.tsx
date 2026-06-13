@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
 import {
   Alert,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -334,17 +336,20 @@ function FooterWall() {
 export interface CollectiveHomeProps {
   bottomInset?: number;
   topInset?: number;
+  onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
-export function CollectiveHome({ bottomInset = 0, topInset = 0 }: CollectiveHomeProps) {
+export function CollectiveHome({ bottomInset = 0, topInset = 0, onScroll }: CollectiveHomeProps) {
   return (
     <ScrollView
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 70, paddingBottom: bottomInset + 40 },
+        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
     >
       <ClearancePipelineModule />
       <VbpPacketBuilderModule />

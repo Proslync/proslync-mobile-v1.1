@@ -1,14 +1,13 @@
 // coach-view.tsx
 // ── COACH DASHBOARD ───────────────────────────────────────────────────────
 // Charter §A — tabs wiped to ['Home', 'Roster'].
-// Header/avatar/role-switcher chrome preserved.
+// Floating bottom pill (matches athlete-view). Old top header removed.
 // Old Insights/Scout tab content is UNMOUNTED (functions kept below, not rendered).
 // Old imports for mock-coach-data kept (still used by unmounted fns); unused
 // vars prefixed with _ to satisfy TS.
 
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GlassView } from 'expo-glass-effect';
 import * as React from 'react';
 import {
   Image,
@@ -43,6 +42,7 @@ import Svg, {
   Path,
   Stop,
 } from 'react-native-svg';
+import { FloatingTabPill, useTabCollapse } from '@/components/shared/floating-tab-pill';
 
 import {
   DEMO_META,
@@ -73,43 +73,38 @@ const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edg
 // Charter §A: two tabs only
 type TabKey = 'home' | 'roster';
 
-const TABS: { key: TabKey; label: string }[] = [
+const COACH_TABS = ['Home', 'Roster'] as const;
+type CoachTabLabel = (typeof COACH_TABS)[number];
+
+const _TABS_OLD: { key: TabKey; label: string }[] = [
   { key: 'home',   label: 'Home'   },
   { key: 'roster', label: 'Roster' },
 ];
+
+function tabLabelToKey(label: CoachTabLabel): TabKey {
+  return label.toLowerCase() as TabKey;
+}
 
 export function CoachView() {
   const insets = useSafeAreaInsets();
   const _router = useStableRouter();
   const [activeTab, setActiveTab] = React.useState<TabKey>('home');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
+  const { collapsed, onScroll } = useTabCollapse();
 
-  const activeTabIndex = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
-  const tabPillWidth = useSharedValue(0);
-  const animatedTabIndex = useSharedValue(activeTabIndex);
-  React.useEffect(() => {
-    animatedTabIndex.value = withTiming(activeTabIndex, { duration: 180 });
-  }, [activeTabIndex, animatedTabIndex]);
-  const tabKnobStyle = useAnimatedStyle(() => {
-    const segW = tabPillWidth.value / Math.max(TABS.length, 1);
-    const inset = 4;
-    return {
-      width: Math.max(segW - inset * 2, 0),
-      transform: [{ translateX: animatedTabIndex.value * segW + inset }],
-    };
-  });
+  const activeLabel: CoachTabLabel = activeTab === 'home' ? 'Home' : 'Roster';
 
   return (
     <View style={styles.container}>
       {/* Tab content — charter: Home + Roster only */}
-      {activeTab === 'home'   && <CoachHome   topInset={insets.top} bottomInset={insets.bottom} />}
-      {activeTab === 'roster' && <CoachRoster topInset={insets.top} bottomInset={insets.bottom} />}
+      {activeTab === 'home'   && <CoachHome   topInset={insets.top} bottomInset={insets.bottom} onScroll={onScroll} />}
+      {activeTab === 'roster' && <CoachRoster topInset={insets.top} bottomInset={insets.bottom} onScroll={onScroll} />}
 
-      {/* Top fade — gives the floating top pill row visual depth */}
+      {/* Top fade */}
       <LinearGradient
         colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
         locations={[0, 0.5, 1]}
-        style={[styles.topFade, { height: insets.top + 90 }]}
+        style={[styles.topFade, { height: insets.top + 28 }]}
         pointerEvents="none"
       />
 
@@ -117,54 +112,18 @@ export function CoachView() {
       <LinearGradient
         colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
-        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 170 }]}
+        style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 110 }]}
         pointerEvents="none"
       />
 
-      {/* Floating top row — profile pill + segmented tabs */}
-      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
-        <Pressable
-          style={styles.headerPill}
-          onPress={() => setRoleSheetVisible(true)}
-          accessibilityLabel="Switch role"
-          accessibilityRole="button"
-        >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          </View>
-          <Image source={require('@/assets/images/coach-avatar.png')} style={styles.headerPillAvatar} />
-          <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
-        </Pressable>
-
-        <View
-          style={styles.tabSegmentedPill}
-          onLayout={(e) => {
-            tabPillWidth.value = e.nativeEvent.layout.width;
-          }}
-        >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          </View>
-          <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none" />
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <Pressable
-                key={tab.key}
-                style={styles.tabSegment}
-                onPress={() => setActiveTab(tab.key)}
-                accessibilityLabel={`${tab.label} tab`}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-              >
-                <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>
-                  {tab.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
+      {/* Floating bottom pill */}
+      <FloatingTabPill
+        tabs={COACH_TABS}
+        activeKey={activeLabel}
+        onSelect={(label) => setActiveTab(tabLabelToKey(label))}
+        collapsed={collapsed}
+        bottomInset={insets.bottom}
+      />
 
       <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
     </View>

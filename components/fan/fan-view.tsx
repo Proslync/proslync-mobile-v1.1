@@ -4,6 +4,8 @@ import { GlassView } from 'expo-glass-effect';
 import * as React from 'react';
 import {
   Image,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +23,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FanHomeFeed } from '@/components/fan/fan-home-feed';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
+import { FloatingTabPill, useTabCollapse } from '@/components/shared/floating-tab-pill';
 
 import {
   FAN_FEED,
@@ -41,102 +44,62 @@ const CARD_BG = 'rgba(255,255,255,0.05)';
 const CARD_BORDER = 'rgba(255,255,255,0.09)';
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
+// Fan has 3 main tabs: Home / Pick'em / Perks.
+// The inner Home sub-tabs (Following | Games) are left as-is.
+const FAN_TABS = ['Home', "Pick'em", 'Perks'] as const;
+type FanTabLabel = (typeof FAN_TABS)[number];
+
 type TabKey = 'home' | 'pickem' | 'perks';
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'home', label: 'Home' },
-  { key: 'pickem', label: "Pick'em" },
-  { key: 'perks', label: 'Perks' },
-];
+function tabLabelToKey(label: FanTabLabel): TabKey {
+  if (label === 'Home') return 'home';
+  if (label === "Pick'em") return 'pickem';
+  return 'perks';
+}
+function tabKeyToLabel(key: TabKey): FanTabLabel {
+  if (key === 'home') return 'Home';
+  if (key === 'pickem') return "Pick'em";
+  return 'Perks';
+}
 
 export function FanView() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = React.useState<TabKey>('home');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
+  const { collapsed, onScroll } = useTabCollapse();
 
-  const activeTabIndex = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
-  const tabPillWidth = useSharedValue(0);
-  const animatedTabIndex = useSharedValue(activeTabIndex);
-  React.useEffect(() => {
-    animatedTabIndex.value = withTiming(activeTabIndex, { duration: 180 });
-  }, [activeTabIndex, animatedTabIndex]);
-  const tabKnobStyle = useAnimatedStyle(() => {
-    const segW = tabPillWidth.value / Math.max(TABS.length, 1);
-    const inset = 4;
-    return {
-      width: Math.max(segW - inset * 2, 0),
-      transform: [{ translateX: animatedTabIndex.value * segW + inset }],
-    };
-  });
-
-  const topPad = insets.top + 70;
+  const topPad = insets.top + 16;
   const bottomPad = insets.bottom + 120;
 
   return (
     <View style={styles.container}>
-      {activeTab === 'home' && <FanHomeFeed topInset={topPad} />}
-      {activeTab === 'pickem' && <PickemTab topPad={topPad} bottomPad={bottomPad} />}
-      {activeTab === 'perks' && <PerksTab topPad={topPad} bottomPad={bottomPad} />}
+      {activeTab === 'home' && <FanHomeFeed topInset={topPad} onScroll={onScroll} />}
+      {activeTab === 'pickem' && <PickemTab topPad={topPad} bottomPad={bottomPad} onScroll={onScroll} />}
+      {activeTab === 'perks' && <PerksTab topPad={topPad} bottomPad={bottomPad} onScroll={onScroll} />}
 
-      {/* Top fade — gives the floating top pill row visual depth */}
+      {/* Top fade */}
       <LinearGradient
         colors={['rgba(0,0,0,0.95)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0)']}
         locations={[0, 0.5, 1]}
-        style={[styles.topFade, { height: insets.top + 90 }]}
+        style={[styles.topFade, { height: insets.top + 28 }]}
         pointerEvents="none"
       />
 
-      {/* Floating header row — avatar/menu pill + segmented tabs (TOP) */}
-      <View style={[styles.headerScrollFixed, styles.headerScrollContent, { top: insets.top + 8 }]}>
-        <Pressable
-          style={styles.headerPill}
-          onPress={() => setRoleSheetVisible(true)}
-          accessibilityLabel="Open menu"
-          accessibilityRole="button"
-        >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          </View>
-          <Image source={require('@/assets/images/kiyan-avatar.png')} style={styles.headerPillAvatar} />
-          <Ionicons name="menu" size={22} color="#FFF" style={styles.headerPillIcon} />
-        </Pressable>
-
-        <View
-          style={styles.tabSegmentedPill}
-          onLayout={(e) => {
-            tabPillWidth.value = e.nativeEvent.layout.width;
-          }}
-        >
-          <View style={styles.glassLayer} pointerEvents="none">
-            <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-          </View>
-          <Animated.View style={[styles.tabKnob, tabKnobStyle]} pointerEvents="none" />
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
-            return (
-              <Pressable
-                key={tab.key}
-                style={styles.tabSegment}
-                onPress={() => setActiveTab(tab.key)}
-                accessibilityLabel={`${tab.label} tab`}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-              >
-                <Text style={[styles.tabPillText, isActive && styles.tabPillTextActive]}>
-                  {tab.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* Bottom fade — keeps content fading into the floating native tab bar */}
+      {/* Bottom fade */}
       <LinearGradient
         colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.95)']}
         locations={[0, 0.5, 1]}
         style={[styles.bottomFade, { bottom: 0, height: TAB_BAR_TOP_FROM_BOTTOM + 110 }]}
         pointerEvents="none"
+      />
+
+      {/* Floating bottom pill — 3 main tabs, 240 wide (fits "Pick'em") */}
+      <FloatingTabPill
+        tabs={FAN_TABS}
+        activeKey={tabKeyToLabel(activeTab)}
+        onSelect={(label) => setActiveTab(tabLabelToKey(label))}
+        collapsed={collapsed}
+        bottomInset={insets.bottom}
       />
 
       <RoleSwitcherSheet visible={roleSheetVisible} onClose={() => setRoleSheetVisible(false)} />
@@ -447,7 +410,7 @@ function GameCard({ g, delay }: { g: LiveGame; delay: number }) {
 // Tab 3 — Pick'em
 // ============================================================
 
-function PickemTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
+function PickemTab({ topPad, bottomPad, onScroll }: { topPad: number; bottomPad: number; onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void }) {
   const [picks, setPicks] = React.useState<Record<string, string | undefined>>(
     Object.fromEntries(FAN_PREDICTIONS.map((p) => [p.id, p.myPick])),
   );
@@ -460,6 +423,8 @@ function PickemTab({ topPad, bottomPad }: { topPad: number; bottomPad: number })
     <ScrollView
       contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
     >
       <Animated.View entering={FadeIn.duration(300)} style={styles.fanScoreCard}>
         <LinearGradient
@@ -580,11 +545,13 @@ function PredictionCard({
 // Tab 4 — Perks
 // ============================================================
 
-function PerksTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
+function PerksTab({ topPad, bottomPad, onScroll }: { topPad: number; bottomPad: number; onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void }) {
   return (
     <ScrollView
       contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
     >
       {/* Tier progress */}
       <Animated.View entering={FadeIn.duration(300)} style={styles.tierCard}>

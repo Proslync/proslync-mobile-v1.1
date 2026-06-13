@@ -10,6 +10,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
 import {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -245,9 +247,10 @@ function AthleteRow({ athlete }: { athlete: RosterAthlete }) {
 export interface CoachRosterProps {
   bottomInset?: number;
   topInset?: number;
+  onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
 }
 
-export function CoachRoster({ bottomInset = 0, topInset = 0 }: CoachRosterProps) {
+export function CoachRoster({ bottomInset = 0, topInset = 0, onScroll }: CoachRosterProps) {
   const flaggedCount = ROSTER_ATHLETES.filter((a) => a.rep === 'unverified-flagged').length;
   const overdueCount = ROSTER_ATHLETES.filter((a) => a.compliance === 'overdue').length;
 
@@ -256,9 +259,11 @@ export function CoachRoster({ bottomInset = 0, topInset = 0 }: CoachRosterProps)
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 70, paddingBottom: bottomInset + 40 },
+        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
+      onScroll={onScroll}
+      scrollEventThrottle={16}
     >
       {/* Header row */}
       <View style={s.headerRow}>
