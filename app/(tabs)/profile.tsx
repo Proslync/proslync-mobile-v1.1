@@ -2164,7 +2164,7 @@ function PlayerProfileScreen() {
         {/* Floating Kit / Posts / Merch tabs — liquid glass, hovers above the
             bottom nav, shrinks on scroll-down and grows back on scroll-up */}
         <Animated.View
-          style={[s.floatingTabsWrap, { bottom: insets.bottom + 59 }]}
+          style={[s.floatingTabsWrap, { bottom: insets.bottom + 50 }]}
           pointerEvents="box-none"
         >
           <Animated.View
