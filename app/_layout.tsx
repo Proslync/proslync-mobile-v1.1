@@ -151,6 +151,7 @@ function RootLayoutNav() {
         <Stack.Screen name="deal/[id]" />
         <Stack.Screen name="deal-engine/new" />
         <Stack.Screen name="deal-engine/[id]" />
+        <Stack.Screen name="athlete/contract-scan" />
         <Stack.Screen name="section/[id]" />
         <Stack.Screen name="card/[id]" />
         <Stack.Screen name="settings" />

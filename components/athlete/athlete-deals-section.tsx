@@ -147,6 +147,35 @@ function WhoHasAccessCta() {
   );
 }
 
+// ── Contract check CTA ──
+function ContractCheckCta() {
+  const router = useStableRouter();
+  return (
+    <TouchableOpacity
+      style={contractCheckCtaStyles.card}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel="Open contract check"
+      onPress={() => router.push('/athlete/contract-scan')}
+    >
+      <View style={contractCheckCtaStyles.headRow}>
+        <Ionicons name="shield-checkmark-outline" size={16} color={COPPER} />
+        <Text style={contractCheckCtaStyles.title}>Contract check</Text>
+      </View>
+      <Text style={contractCheckCtaStyles.blurb}>
+        Spot red flags before you sign — AI-style scan in seconds.
+      </Text>
+      <View style={contractCheckCtaStyles.footer}>
+        <Text style={contractCheckCtaStyles.metaText}>Rule-based · LLM upgrade coming</Text>
+        <View style={contractCheckCtaStyles.cta}>
+          <Text style={contractCheckCtaStyles.ctaText}>Scan a deal</Text>
+          <Ionicons name="chevron-forward" size={12} color={COPPER} />
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 // ── Opportunities CTA (Sprint 2.3) ──
 function AthleteOpportunitiesCta() {
   const router = useStableRouter();
@@ -705,6 +734,10 @@ export function AthleteDealsSection() {
       {/* Who has access CTA (Sprint 3.7) — taps into the athlete consent /
           permission-grant list at `app/athlete/permissions`. */}
       <WhoHasAccessCta />
+
+      {/* Contract check CTA — taps into the NIL contract red-flag scanner
+          at `app/athlete/contract-scan`. */}
+      <ContractCheckCta />
 
       {/* Opportunities CTA (Sprint 2.3) — taps into the athlete-side
           OpenDeal discovery surface at `app/athlete/opportunities`. */}
@@ -1517,6 +1550,59 @@ const walletCtaStyles = StyleSheet.create({
   },
   ctaText: {
     color: '#FFD60A',
+    fontSize: 10.5,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+});
+
+const contractCheckCtaStyles = StyleSheet.create({
+  card: {
+    gap: 8,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(235,98,26,0.32)',
+    backgroundColor: 'rgba(235,98,26,0.08)',
+    padding: 14,
+  },
+  headRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 7,
+  },
+  title: {
+    color: COPPER,
+    fontSize: 12.5,
+    fontWeight: '900',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+    flex: 1,
+  },
+  blurb: {
+    color: 'rgba(255,255,255,0.74)',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  metaText: {
+    color: 'rgba(255,255,255,0.56)',
+    fontSize: 11.5,
+    fontWeight: '700',
+  },
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  ctaText: {
+    color: COPPER,
     fontSize: 10.5,
     fontWeight: '900',
     letterSpacing: 0.3,
