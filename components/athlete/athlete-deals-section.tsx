@@ -640,8 +640,6 @@ function useDealNotifications() {
 export function AthleteDealsSection() {
   const contractsQuery = useAthleteContracts(DEMO_ATHLETE_ID);
   const offersQuery = useAthleteOffers();
-  const [notifSheetVisible, setNotifSheetVisible] = React.useState(false);
-  const { notifItems, unreadCount, markSeen } = useDealNotifications();
 
   const activeCount = contractsQuery.data?.activeCount ?? 0;
   const offerCount = offersQuery.data?.offerCount ?? 0;
@@ -667,30 +665,6 @@ export function AthleteDealsSection() {
 
   return (
     <View style={{ gap: 16 }}>
-      {/* Deal notifications bell — top-right of the Deals section */}
-      <View style={dealsBellStyles.headerRow}>
-        <Text style={dealsBellStyles.sectionTitle}>DEALS</Text>
-        <TouchableOpacity
-          style={dealsBellStyles.bellBtn}
-          onPress={() => {
-            setNotifSheetVisible(true);
-            markSeen();
-          }}
-          activeOpacity={0.82}
-          accessibilityRole="button"
-          accessibilityLabel={`Deal notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
-        >
-          <Ionicons name="notifications-outline" size={22} color={COPPER} />
-          {unreadCount > 0 && (
-            <View style={dealsBellStyles.bellDot}>
-              <Text style={dealsBellStyles.bellDotText}>
-                {unreadCount > 9 ? '9+' : String(unreadCount)}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
       {/* Payment Truth — per-deal 3-step state (spec §4 thin truth layer) */}
       <PaymentTruthSection />
 
@@ -752,12 +726,6 @@ export function AthleteDealsSection() {
         <OffersList query={offersQuery} />
       </View>
 
-      {/* Notification sheet — mounted here so the Deals tab owns it */}
-      <NotificationSheet
-        visible={notifSheetVisible}
-        onClose={() => setNotifSheetVisible(false)}
-        extraItems={notifItems}
-      />
     </View>
   );
 }
