@@ -119,16 +119,18 @@ const DEAL_ROWS: DealRow[] = [
 // ── FMV band chip (compact per-row indicator) ─────────────────────────────
 
 function FmvBandChip({ row }: { row: DealRow }) {
-  const reach = getMockAthleteSocialReach(row.athleteId) ??
-                getMockAthleteSocialReach('a-1');
-  const prediction = predictClearance({
-    amountCents: row.amountCents,
-    dealKind: row.dealKind,
-    deliverableDescription: 'Promotional activation for brand partnership',
-    payerEntityType: 'brand',
-    totalFollowers: reach?.totalFollowers ?? 0,
-    engagementRate7d: reach?.engagementRate7d ?? 0,
-  });
+  const prediction = React.useMemo(() => {
+    const reach = getMockAthleteSocialReach(row.athleteId) ??
+                  getMockAthleteSocialReach('a-1');
+    return predictClearance({
+      amountCents: row.amountCents,
+      dealKind: row.dealKind,
+      deliverableDescription: 'Promotional activation for brand partnership',
+      payerEntityType: 'brand',
+      totalFollowers: reach?.totalFollowers ?? 0,
+      engagementRate7d: reach?.engagementRate7d ?? 0,
+    });
+  }, [row.athleteId, row.amountCents, row.dealKind]);
   const dotColor =
     prediction.band === 'likely'     ? GREEN :
     prediction.band === 'borderline' ? AMBER :
