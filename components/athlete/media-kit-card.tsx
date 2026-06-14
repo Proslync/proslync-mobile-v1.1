@@ -1,13 +1,9 @@
 // ── MediaKitCard ──────────────────────────────────────────────
-// Brand-facing "verified media kit": cross-platform reach rows
-// + completed deal receipts. Sits at the top of the About tab and
-// uses the SAME liquid-glass block material + label styling as the
-// bio blocks below it ("Freshman year" etc).
-// Demo fixture only — data is static.
+// Brand-facing "verified media kit": a polished one-pager — hero reach +
+// engagement band, per-platform rows, proven partnerships, rates & reliability.
+// Lives at the top of the profile's Kit tab. Demo fixture only.
 
-import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { Ionicons } from '@expo/vector-icons';
-import { GlassView } from 'expo-glass-effect';
 import * as React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -15,8 +11,9 @@ import { RADIUS_PILL } from '@/components/shared/ui-kit/tokens';
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import { getMockAthleteSocialReach } from '@/lib/data/mock-social-reach';
 
-const LABEL_ORANGE = '#FF6F3C';
+const COPPER = '#EB621A';
 const MUTED = 'rgba(255,255,255,0.52)';
+const FAINT = 'rgba(255,255,255,0.40)';
 const WHITE = '#FFFFFF';
 const SUCCESS_GREEN = '#00C6B0';
 const HAIRLINE = 'rgba(255,255,255,0.08)';
@@ -37,10 +34,10 @@ function formatFollowers(count: number): string {
 
 function formatFreshness(days: number): string {
   if (days <= 0) return 'today';
-  if (days === 1) return '1d ago';
-  if (days < 30) return `${days}d ago`;
+  if (days === 1) return '1d';
+  if (days < 30) return `${days}d`;
   const months = Math.round(days / 30);
-  return months <= 1 ? '1mo ago' : `${months}mo ago`;
+  return months <= 1 ? '1mo' : `${months}mo`;
 }
 
 type PlatformIcon = keyof typeof Ionicons.glyphMap;
@@ -54,6 +51,15 @@ const PLATFORM_ICON: Record<string, PlatformIcon> = {
   linkedin: 'logo-linkedin',
 };
 
+const PLATFORM_COLOR: Record<string, string> = {
+  instagram: '#E1306C',
+  tiktok: '#25F4EE',
+  twitter: '#1DA1F2',
+  youtube: '#FF0000',
+  twitch: '#9146FF',
+  linkedin: '#0A66C2',
+};
+
 const PLATFORM_LABEL: Record<string, string> = {
   instagram: 'Instagram',
   tiktok: 'TikTok',
@@ -63,26 +69,14 @@ const PLATFORM_LABEL: Record<string, string> = {
   linkedin: 'LinkedIn',
 };
 
-// ─── Extra partnership fixtures (to supplement the 4 DealTruth entries) ──
-
 const EXTRA_PARTNERSHIPS = [
   { brand: 'Jordan Brand', deliverable: 'Brand campaign posts' },
   { brand: 'Beats by Dre', deliverable: 'Product feature story' },
 ];
 
-// ─── GlassBlock — same material as the About bio blocks ──────
-
-function GlassBlock({ children }: { children: React.ReactNode }) {
-  return <View style={mk.block}>{children}</View>;
-}
-
 // ─── Props ───────────────────────────────────────────────────
 
 export interface MediaKitCardProps {
-  /**
-   * Called when the user taps "View post →" on a partnership row.
-   * Typically used to navigate to the Posts tab.
-   */
   onViewPosts?: () => void;
 }
 
@@ -90,124 +84,151 @@ export interface MediaKitCardProps {
 
 export function MediaKitCard({ onViewPosts }: MediaKitCardProps) {
   const reach = getMockAthleteSocialReach('a-1');
+  const totalReach = reach?.totalFollowers ?? 0;
+  const engagementPct = (reach?.engagementRate7d ?? 0) * 100;
 
-  const paidDeals = DEAL_TRUTH_FIXTURE.filter(
-    (d) => d.paymentState === 'paid' || d.paymentState === 'cleared',
-  );
+  const partnerships = [
+    ...DEAL_TRUTH_FIXTURE.filter(
+      (d) => d.paymentState === 'paid' || d.paymentState === 'cleared',
+    ).map((d) => ({
+      key: d.dealId,
+      brand: d.brand,
+      deliverable: d.deliverables[0]?.label ?? 'Deliverable',
+    })),
+    ...EXTRA_PARTNERSHIPS.map((ep) => ({
+      key: ep.brand,
+      brand: ep.brand,
+      deliverable: ep.deliverable,
+    })),
+  ];
 
   return (
     <>
-      {/* ── Verified media kit block ── */}
-      <GlassBlock>
-        <View style={mk.labelRow}>
-          <Text style={mk.label}>Verified media kit</Text>
-          <Text style={mk.labelMuted}>Updated today</Text>
+      {/* ── Verified media kit — hero band + platforms ── */}
+      <View style={mk.card}>
+        <View style={mk.headerRow}>
+          <View style={mk.badge}>
+            <Ionicons name="shield-checkmark" size={12} color={COPPER} />
+            <Text style={mk.badgeText}>VERIFIED MEDIA KIT</Text>
+          </View>
+          <Text style={mk.updated}>Updated today</Text>
         </View>
 
-        {reach != null
-          ? reach.platforms.map((p, idx) => {
-              const days = p.source.freshnessDays;
-              const isStale = days >= 7;
-              const icon = PLATFORM_ICON[p.platform] ?? 'globe-outline';
-              const label = PLATFORM_LABEL[p.platform] ?? p.platform;
+        {/* Hero stat band */}
+        <View style={mk.statBand}>
+          <View style={mk.stat}>
+            <Text style={mk.statNum}>{formatFollowers(totalReach)}</Text>
+            <Text style={mk.statLabel}>TOTAL REACH</Text>
+          </View>
+          <View style={mk.statDivider} />
+          <View style={mk.stat}>
+            <Text style={mk.statNum}>{engagementPct.toFixed(1)}%</Text>
+            <Text style={mk.statLabel}>ENGAGEMENT</Text>
+          </View>
+        </View>
+        <Text style={mk.benchNote}>
+          ≈2.5× the typical influencer — an audience that actually shows up.
+        </Text>
 
-              return (
-                <View key={p.platform} style={[mk.row, idx === 0 && mk.rowFirst]}>
-                  <View style={mk.platformIconWrap}>
-                    <Ionicons name={icon} size={17} color={WHITE} />
-                  </View>
-                  <Text style={mk.rowTitle}>{label}</Text>
-                  <View style={mk.rowRight}>
-                    <Text style={mk.followerCount}>{formatFollowers(p.followers)}</Text>
-                    <View style={[mk.freshnessChip, isStale && mk.freshnessChipStale]}>
-                      <Text style={[mk.freshnessText, isStale && mk.freshnessTextStale]}>
-                        {formatFreshness(days)}
-                      </Text>
-                    </View>
-                  </View>
+        {/* Platforms */}
+        <View style={mk.platforms}>
+          {reach?.platforms.map((p) => {
+            const color = PLATFORM_COLOR[p.platform] ?? '#777';
+            const icon = PLATFORM_ICON[p.platform] ?? 'globe-outline';
+            const label = PLATFORM_LABEL[p.platform] ?? p.platform;
+            return (
+              <View key={p.platform} style={mk.pRow}>
+                <View style={[mk.pIcon, { backgroundColor: `${color}26`, borderColor: `${color}66` }]}>
+                  <Ionicons name={icon} size={16} color={WHITE} />
                 </View>
-              );
-            })
-          : null}
-
-        {reach != null && typeof reach.engagementRate7d === 'number' ? (
-          <Text style={mk.engagementLine}>
-            Avg engagement {(reach.engagementRate7d * 100).toFixed(1)}% · last 30 posts
-          </Text>
-        ) : null}
-      </GlassBlock>
-
-      {/* ── Past partnerships block ── */}
-      <GlassBlock>
-        <View style={mk.labelRow}>
-          <Text style={mk.label}>Past partnerships</Text>
+                <View style={mk.pMeta}>
+                  <View style={mk.pHandleRow}>
+                    <Text style={mk.pHandle} numberOfLines={1}>@{(p as { handle?: string }).handle ?? label}</Text>
+                    {(p as { verified?: boolean }).verified ? (
+                      <Ionicons name="checkmark-circle" size={12} color={COPPER} />
+                    ) : null}
+                  </View>
+                  <Text style={mk.pPlatform}>{label}</Text>
+                </View>
+                <View style={mk.pRight}>
+                  <Text style={mk.pFollowers}>{formatFollowers(p.followers)}</Text>
+                  <Text style={mk.pFresh}>{formatFreshness(p.source.freshnessDays)} ago</Text>
+                </View>
+              </View>
+            );
+          })}
         </View>
+      </View>
 
-        {[...paidDeals.map((d) => ({
-          key: d.dealId,
-          brand: d.brand,
-          deliverable: d.deliverables[0]?.label ?? 'Deliverable',
-        })), ...EXTRA_PARTNERSHIPS.map((ep) => ({
-          key: ep.brand,
-          brand: ep.brand,
-          deliverable: ep.deliverable,
-        }))].map((p, idx) => (
-          <View key={p.key} style={[mk.row, idx === 0 && mk.rowFirst]}>
-            <View style={mk.partnerMeta}>
-              <Text style={mk.rowTitle}>{p.brand}</Text>
-              <Text style={mk.partnerDeliverable} numberOfLines={1}>
-                {p.deliverable}
-              </Text>
-            </View>
-            <View style={mk.rowRight}>
+      {/* ── Proven partnerships ── */}
+      <View style={mk.card}>
+        <Text style={mk.sectionLabel}>PROVEN PARTNERSHIPS</Text>
+        <View style={mk.platforms}>
+          {partnerships.map((p) => (
+            <View key={p.key} style={mk.pRow}>
+              <View style={mk.monogram}>
+                <Text style={mk.monogramText}>{p.brand.charAt(0)}</Text>
+              </View>
+              <View style={mk.pMeta}>
+                <Text style={mk.pHandle} numberOfLines={1}>{p.brand}</Text>
+                <Text style={mk.pPlatform} numberOfLines={1}>{p.deliverable}</Text>
+              </View>
               <View style={mk.deliveredPill}>
                 <Ionicons name="checkmark" size={11} color={SUCCESS_GREEN} />
-                <Text style={mk.deliveredText}>Delivered on time</Text>
+                <Text style={mk.deliveredText}>On time</Text>
               </View>
-              {onViewPosts != null ? (
-                <TouchableOpacity
-                  onPress={onViewPosts}
-                  activeOpacity={0.75}
-                  accessibilityRole="button"
-                  accessibilityLabel={`View ${p.brand} post`}
-                >
-                  <Text style={mk.viewPost}>View post →</Text>
-                </TouchableOpacity>
-              ) : (
-                <Text style={mk.viewPost}>View post →</Text>
-              )}
             </View>
-          </View>
-        ))}
-
+          ))}
+        </View>
+        <TouchableOpacity
+          onPress={onViewPosts}
+          disabled={onViewPosts == null}
+          activeOpacity={0.75}
+          style={mk.viewAllRow}
+          accessibilityRole="button"
+          accessibilityLabel="View partnership posts"
+        >
+          <Text style={mk.viewAll}>View the work</Text>
+          <Ionicons name="arrow-forward" size={13} color={COPPER} />
+        </TouchableOpacity>
         <Text style={mk.footer}>
-          These receipts double as CSC valid-business-purpose evidence.
+          Receipts double as CSC valid-business-purpose evidence.
         </Text>
-      </GlassBlock>
+      </View>
 
-      {/* ── Rates & Reliability block (charter §B) ── */}
-      <GlassBlock>
-        <View style={mk.labelRow}>
-          <Text style={mk.label}>Rates & Reliability</Text>
+      {/* ── Rates & reliability ── */}
+      <View style={mk.card}>
+        <Text style={mk.sectionLabel}>RATES</Text>
+        <View style={mk.platforms}>
+          {([
+            { type: 'Endorsement post', range: '$1.2–2.4K' },
+            { type: 'Appearance', range: '$800–1.5K' },
+            { type: 'Licensing', range: '$2–5K' },
+          ] as const).map((item) => (
+            <View key={item.type} style={mk.rateRow}>
+              <Text style={mk.rateType}>{item.type}</Text>
+              <Text style={mk.rateValue}>{item.range}</Text>
+            </View>
+          ))}
         </View>
 
-        {/* Rate ranges — tabular fixture */}
-        {([
-          { type: 'Endorsement post', range: '$1.2–2.4K' },
-          { type: 'Appearance', range: '$800–1.5K' },
-          { type: 'Licensing', range: '$2–5K' },
-        ] as const).map((item, idx) => (
-          <View key={item.type} style={[mk.row, idx === 0 && mk.rowFirst]}>
-            <Text style={mk.rowTitle}>{item.type}</Text>
-            <Text style={mk.rateValue}>{item.range}</Text>
+        <View style={mk.reliBand}>
+          <View style={mk.reliStat}>
+            <Text style={mk.reliNum}>5</Text>
+            <Text style={mk.reliLabel}>DEALS</Text>
           </View>
-        ))}
-
-        {/* Reliability line */}
-        <Text style={mk.reliabilityLine}>
-          5 deals completed · 100% on time · responds in ~2h
-        </Text>
-      </GlassBlock>
+          <View style={mk.statDivider} />
+          <View style={mk.reliStat}>
+            <Text style={mk.reliNum}>100%</Text>
+            <Text style={mk.reliLabel}>ON TIME</Text>
+          </View>
+          <View style={mk.statDivider} />
+          <View style={mk.reliStat}>
+            <Text style={mk.reliNum}>~2h</Text>
+            <Text style={mk.reliLabel}>REPLIES</Text>
+          </View>
+        </View>
+      </View>
     </>
   );
 }
@@ -215,121 +236,110 @@ export function MediaKitCard({ onViewPosts }: MediaKitCardProps) {
 // ─── Styles ──────────────────────────────────────────────────
 
 const mk = StyleSheet.create({
-  // Same material recipe as profile.tsx aboutBlockBare/aboutBlockGlass
-  block: {
-    gap: 10,
+  card: {
     borderRadius: 16,
-    padding: 14,
-    overflow: 'hidden',
-    position: 'relative',
+    padding: 16,
+    gap: 12,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.10)',
   },
-  blockGlass: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  labelRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  // Matches profile.tsx aboutLabel
-  label: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    color: LABEL_ORANGE,
-    textTransform: 'uppercase',
-  },
-  labelMuted: {
-    color: MUTED,
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  // Matches profile.tsx bioItem separators
-  row: {
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 5,
+    backgroundColor: 'rgba(235,98,26,0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(235,98,26,0.45)',
+    borderRadius: RADIUS_PILL,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  badgeText: {
+    color: COPPER,
+    fontSize: 10.5,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  updated: { color: FAINT, fontSize: 10, fontWeight: '600' },
+  sectionLabel: {
+    color: COPPER,
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+
+  // Hero stat band
+  statBand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  stat: { flex: 1, alignItems: 'center', gap: 3 },
+  statNum: {
+    color: WHITE,
+    fontSize: 26,
+    fontWeight: '900',
+    letterSpacing: -0.8,
+    fontVariant: ['tabular-nums'],
+  },
+  statLabel: {
+    color: MUTED,
+    fontSize: 9.5,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  statDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: 6 },
+  benchNote: {
+    color: MUTED,
+    fontSize: 11.5,
+    fontWeight: '500',
+    lineHeight: 16,
+    marginTop: -2,
+  },
+
+  // Platform / partnership rows
+  platforms: { gap: 0 },
+  pRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 11,
+    paddingVertical: 9,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: HAIRLINE,
-    paddingTop: 10,
-    paddingBottom: 2,
   },
-  rowFirst: {
-    borderTopWidth: 0,
-    paddingTop: 0,
+  pIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  platformIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+  monogram: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     backgroundColor: 'rgba(255,255,255,0.08)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Matches profile.tsx bioTitle
-  rowTitle: {
-    flex: 1,
-    fontSize: 15,
-    color: WHITE,
-    fontWeight: '600',
-    letterSpacing: -0.1,
-  },
-  rowRight: {
-    alignItems: 'flex-end',
-    gap: 3,
-  },
-  followerCount: {
-    color: WHITE,
-    fontSize: 14,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-  },
-  engagementLine: {
-    color: MUTED,
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  freshnessChip: {
-    borderRadius: RADIUS_PILL,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(0,198,176,0.45)',
-    backgroundColor: 'rgba(0,198,176,0.12)',
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  freshnessChipStale: {
-    borderColor: 'rgba(255,214,10,0.45)',
-    backgroundColor: 'rgba(255,214,10,0.12)',
-  },
-  freshnessText: {
-    color: SUCCESS_GREEN,
-    fontSize: 9.5,
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  freshnessTextStale: {
-    color: '#FFD60A',
-  },
-  partnerMeta: {
-    flex: 1,
-    gap: 2,
-  },
-  partnerDeliverable: {
-    color: MUTED,
-    fontSize: 11,
-    fontWeight: '500',
-  },
+  monogramText: { color: WHITE, fontSize: 15, fontWeight: '800' },
+  pMeta: { flex: 1, gap: 1 },
+  pHandleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  pHandle: { color: WHITE, fontSize: 14, fontWeight: '700', letterSpacing: -0.1, flexShrink: 1 },
+  pPlatform: { color: FAINT, fontSize: 11, fontWeight: '500' },
+  pRight: { alignItems: 'flex-end', gap: 1 },
+  pFollowers: { color: WHITE, fontSize: 15, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
+  pFresh: { color: FAINT, fontSize: 10, fontWeight: '600' },
+
   deliveredPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -341,36 +351,33 @@ const mk = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  deliveredText: {
-    color: SUCCESS_GREEN,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.2,
+  deliveredText: { color: SUCCESS_GREEN, fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
+
+  viewAllRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  viewAll: { color: COPPER, fontSize: 13, fontWeight: '700' },
+  footer: { color: FAINT, fontSize: 10, fontWeight: '500', lineHeight: 14 },
+
+  // Rates
+  rateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 9,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: HAIRLINE,
   },
-  viewPost: {
-    color: MUTED,
-    fontSize: 11,
-    fontWeight: '600',
+  rateType: { color: WHITE, fontSize: 14, fontWeight: '600', letterSpacing: -0.1 },
+  rateValue: { color: WHITE, fontSize: 14, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
+
+  // Reliability strip
+  reliBand: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 12,
+    paddingVertical: 12,
   },
-  footer: {
-    color: MUTED,
-    fontSize: 10,
-    fontWeight: '500',
-    lineHeight: 14,
-    marginTop: 2,
-  },
-  rateValue: {
-    color: WHITE,
-    fontSize: 14,
-    fontWeight: '900',
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.2,
-  },
-  reliabilityLine: {
-    color: MUTED,
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 4,
-    lineHeight: 15,
-  },
+  reliStat: { flex: 1, alignItems: 'center', gap: 2 },
+  reliNum: { color: WHITE, fontSize: 18, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.4 },
+  reliLabel: { color: MUTED, fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
 });
