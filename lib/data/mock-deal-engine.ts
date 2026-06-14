@@ -19,8 +19,34 @@ import type {
   EngineDeal,
   EngineMilestone,
   DealEvent,
+  DealEscrow,
+  EscrowState,
 } from '@/lib/types/deal-engine.types';
 import { milestoneAutoApproveAt } from '@/lib/deal-engine/engine.mjs';
+import { derivePayoutHoldState } from '@/lib/money/money-machine.mjs';
+import type { PayoutState, LedgerEntry } from '@/lib/money/money-model';
+
+// ── PHASE 0 STRANGLER: payout (canonical) → escrow (legacy display) ────────
+// The canonical money model treats held funds as a DELAYED PAYOUT (Stripe
+// Connect), not an escrow account. The fixture below BUILDS a PayoutState and
+// the legacy `escrow` view is DERIVED from it via escrowFromPayout(), so the
+// readers that read `deal.escrow` (app/deal-engine/[id].tsx) are untouched.
+// See lib/money/money-machine.mjs for the hold-state spec.
+
+/** Map the canonical payout hold-state to the legacy EscrowState vocabulary. */
+function escrowFromPayout(payout: PayoutState): DealEscrow {
+  const holdToEscrow: Record<PayoutState['holdState'], EscrowState> = {
+    held: payout.heldCents > 0 ? 'funded' : 'unfunded',
+    'partially-released': 'partially-released',
+    released: 'released',
+    refunded: 'unfunded',
+  };
+  return {
+    state: holdToEscrow[payout.holdState],
+    fundedCents: payout.heldCents,
+    releasedCents: payout.releasedCents,
+  };
+}
 
 // ── Reference timestamps ──────────────────────────────────────────────────
 
@@ -324,6 +350,26 @@ const DEMO_EVENTS: DealEvent[] = [
   },
 ];
 
+// ── Canonical payout (source of truth) for the demo deal ─────────────────
+// Brand funded $4,500; milestone 1 ($1,500) released → partially-released.
+const DEMO_PAYOUT: PayoutState = {
+  heldCents: 4_500_00,
+  releasedCents: 1_500_00,
+  holdState: derivePayoutHoldState(4_500_00, 1_500_00),
+  events: [
+    { kind: 'held', atISO: daysAgo(18), amountCents: 4_500_00, source: 'provider:payout', ref: 'escrow-fund' },
+    { kind: 'partial-release', atISO: daysAgo(10), amountCents: 1_500_00, source: 'provider:payout', ref: 'ms-1' },
+  ],
+};
+
+// ── Canonical ledger (source of truth) for the demo deal ─────────────────
+// Receipts / 1099 totals derive from summing these, not from display strings.
+const DEMO_LEDGER: LedgerEntry[] = [
+  { id: 'lg-demo-credit', atISO: daysAgo(18), kind: 'deal-credit', amountCents: 4_500_00, sign: 1, ref: 'PSY-2026-K1YAN001' },
+  { id: 'lg-demo-ms1', atISO: daysAgo(10), kind: 'payout', amountCents: 1_500_00, sign: 1, ref: 'ms-1' },
+  { id: 'lg-demo-fee', atISO: daysAgo(10), kind: 'platform-fee', amountCents: 150_00, sign: -1, ref: 'ms-1' },
+];
+
 export const DEMO_DEAL: EngineDeal = {
   dealId: 'PSY-2026-K1YAN001',
   templateId: 'tpl-endorsement-v1',
@@ -342,11 +388,10 @@ export const DEMO_DEAL: EngineDeal = {
   status: 'active',
   milestones: DEMO_MILESTONES,
   events: DEMO_EVENTS,
-  escrow: {
-    state: 'partially-released',
-    fundedCents: 4_500_00,
-    releasedCents: 1_500_00,
-  },
+  // Legacy display view — DERIVED from the canonical payout below.
+  escrow: escrowFromPayout(DEMO_PAYOUT),
+  payout: DEMO_PAYOUT,
+  ledger: DEMO_LEDGER,
   fieldValues: {
     dealValue: '4500',
     deliverableDescription:

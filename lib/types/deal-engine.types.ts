@@ -3,6 +3,7 @@
 // Fee model: BRAND-SIDE only; athlete receives 100% of deal amount.
 
 import type { PreclearanceResult } from '@/lib/compliance/preclearance';
+import type { PayoutState, LedgerEntry } from '@/lib/money/money-model';
 
 // ── Contract templates ────────────────────────────────────────────────────
 
@@ -200,7 +201,28 @@ export interface EngineDeal {
   /** Append-only audit trail */
   events: DealEvent[];
 
+  /**
+   * Legacy display view of held funds. NOTE: in the canonical money model this
+   * is a delayed PAYOUT, not an escrow account — see `payout` below and the
+   * spec in lib/money/money-machine.mjs. `escrow` is DERIVED from `payout`
+   * (escrowFromPayout) so the ~2 readers that read `.escrow` are untouched.
+   */
   escrow: DealEscrow;
+
+  /**
+   * PHASE 0 canonical shape (source of truth): delayed payout with cents +
+   * hold-state machine + events. Optional/additive — present on reshaped
+   * fixtures; `escrow` is derived from it. A real backend (Stripe Connect)
+   * emits this; `escrow` is the legacy display projection.
+   */
+  payout?: PayoutState;
+
+  /**
+   * PHASE 0 canonical double-entry ledger. Optional/additive — receipts &
+   * 1099 totals derive from summing entries (ledgerBalance), not display
+   * strings. See lib/money/money-model.ts.
+   */
+  ledger?: LedgerEntry[];
 
   /** Field values entered during creation, keyed by ContractRequiredField.key */
   fieldValues: Record<string, string>;

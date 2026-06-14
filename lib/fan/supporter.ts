@@ -9,6 +9,9 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { ledgerBalance } from '@/lib/money/money-machine.mjs';
+import type { LedgerEntry } from '@/lib/money/money-model';
+
 // ── Types ──────────────────────────────────────────────────────────────
 
 export interface SupporterPass {
@@ -28,6 +31,13 @@ export interface SupporterReceipt {
   toAthleteCents: number;
   platformCents: number;
   note: string;
+  /**
+   * PHASE 0 canonical double-entry ledger for this receipt (source of truth).
+   * Optional/additive — older persisted receipts won't have it. The display
+   * fields above are DERIVED from this on write (see savePass), so impact /
+   * 1099 totals come from summing entries, not from the display strings.
+   */
+  ledger?: LedgerEntry[];
 }
 
 // ── Storage keys ───────────────────────────────────────────────────────
@@ -81,14 +91,32 @@ export async function savePass(pass: SupporterPass): Promise<void> {
     passes[pass.athleteId] = pass;
 
     const { toAthleteCents, platformCents } = splitCents(pass.priceCents);
+    const atISO = new Date().toISOString();
+    const id = uid();
+
+    // Canonical double-entry ledger: payment in (credit), athlete + platform
+    // splits out (debits). Display fields are DERIVED from this so they can
+    // never drift from the ledger sum.
+    const ledger: LedgerEntry[] = [
+      { id: `${id}-pay`, atISO, kind: 'supporter-credit', amountCents: pass.priceCents, sign: 1, ref: pass.athleteId },
+      { id: `${id}-athlete`, atISO, kind: 'payout', amountCents: toAthleteCents, sign: -1, ref: pass.athleteId },
+      { id: `${id}-platform`, atISO, kind: 'platform-fee', amountCents: platformCents, sign: -1, ref: pass.athleteId },
+    ];
+
+    const athleteEntry = ledger.find((e) => e.kind === 'payout');
+    const platformEntry = ledger.find((e) => e.kind === 'platform-fee');
+    const paymentEntry = ledger.find((e) => e.kind === 'supporter-credit');
+
     const receipt: SupporterReceipt = {
-      id: uid(),
+      id,
       passAthleteId: pass.athleteId,
-      atISO: new Date().toISOString(),
-      paidCents: pass.priceCents,
-      toAthleteCents,
-      platformCents,
+      atISO,
+      // Derived from the canonical ledger (each entry summed as a 1-entry balance).
+      paidCents: ledgerBalance(paymentEntry ? [paymentEntry] : []),
+      toAthleteCents: Math.abs(ledgerBalance(athleteEntry ? [athleteEntry] : [])),
+      platformCents: Math.abs(ledgerBalance(platformEntry ? [platformEntry] : [])),
       note: `${tierLabel(pass.tier)} — monthly`,
+      ledger,
     };
 
     await Promise.all([
