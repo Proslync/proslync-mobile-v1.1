@@ -11,6 +11,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
 import {
+  predictClearance,
+  FMV_DISCLAIMER,
+} from '@/lib/fmv/fmv-engine';
+import type { DealKind } from '@/lib/fmv/fmv-engine';
+import { getMockAthleteSocialReach } from '@/lib/data/mock-social-reach';
+import {
   Alert,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -41,8 +47,6 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
-// ── MODULE 1: CLEARANCE PIPELINE ──────────────────────────────────────────
-
 const STAGE_PILLS = [
   { label: 'DRAFTING',     count: 3  },
   { label: 'PRE-CHECKED',  count: 2  },
@@ -56,8 +60,11 @@ type DealRowStatus = 'cleared' | 'submitted' | 'not-cleared' | 'pre-checked';
 type DealRow = {
   id: string;
   athlete: string;
+  athleteId: string;
   brand: string;
   amount: string;
+  amountCents: number;
+  dealKind: DealKind;
   status: DealRowStatus;
   detail: string;
 };
@@ -66,36 +73,98 @@ const DEAL_ROWS: DealRow[] = [
   {
     id: 'cr-1',
     athlete: 'Kiyan A.',
+    athleteId: 'a-1',
     brand: 'JMA Wireless',
     amount: '$4,500',
+    amountCents: 450_000,
+    dealKind: 'endorsement',
     status: 'cleared',
     detail: 'cleared in 26h ✓',
   },
   {
     id: 'cr-2',
     athlete: 'J. Starling',
+    athleteId: 'a-4',
     brand: 'Gatorade',
     amount: '$2,200',
+    amountCents: 220_000,
+    dealKind: 'social-post',
     status: 'submitted',
     detail: 'submitted · day 4 of review',
   },
   {
     id: 'cr-3',
     athlete: 'M. Reid',
+    athleteId: 'a-1',
     brand: 'Nike Campus',
     amount: '$1,800',
+    amountCents: 180_000,
+    dealKind: 'appearance',
     status: 'not-cleared',
     detail: 'NOT CLEARED — resubmission 9 of 14 days · missing VBP docs',
   },
   {
     id: 'cr-4',
     athlete: 'Devon O.',
+    athleteId: 'a-2',
     brand: 'Puma',
     amount: '$900',
+    amountCents: 90_000,
+    dealKind: 'autograph',
     status: 'pre-checked',
     detail: 'pre-checked: likely-clear · ready to submit',
   },
 ];
+
+// ── FMV band chip (compact per-row indicator) ─────────────────────────────
+
+function FmvBandChip({ row }: { row: DealRow }) {
+  const reach = getMockAthleteSocialReach(row.athleteId) ??
+                getMockAthleteSocialReach('a-1');
+  const prediction = predictClearance({
+    amountCents: row.amountCents,
+    dealKind: row.dealKind,
+    deliverableDescription: 'Promotional activation for brand partnership',
+    payerEntityType: 'brand',
+    totalFollowers: reach?.totalFollowers ?? 0,
+    engagementRate7d: reach?.engagementRate7d ?? 0,
+  });
+  const dotColor =
+    prediction.band === 'likely'     ? GREEN :
+    prediction.band === 'borderline' ? AMBER :
+                                       RED;
+  const chipLabel =
+    prediction.band === 'likely'     ? 'Likely' :
+    prediction.band === 'borderline' ? 'Borderline' :
+                                       'Unlikely';
+  return (
+    <View style={chipS.row}>
+      <View style={[chipS.dot, { backgroundColor: dotColor }]} />
+      <Text style={[chipS.label, { color: dotColor }]}>{chipLabel}</Text>
+    </View>
+  );
+}
+
+const chipS = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+  },
+});
+
+// ── MODULE 1: CLEARANCE PIPELINE ──────────────────────────────────────────
 
 function ClearancePipelineModule() {
   return (
@@ -192,10 +261,14 @@ function ClearancePipelineModule() {
               >
                 {row.detail}
               </Text>
+              <FmvBandChip row={row} />
             </View>
           </View>
         );
       })}
+
+      {/* FMV disclaimer — once at the section footer */}
+      <Text style={s.fmvDisclaimer}>{FMV_DISCLAIMER}</Text>
     </View>
   );
 }
@@ -703,5 +776,12 @@ const s = StyleSheet.create({
     fontWeight: '500',
     color: MUTED,
     lineHeight: 18,
+  },
+  fmvDisclaimer: {
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.28)',
+    fontWeight: '500',
+    lineHeight: 13,
+    marginTop: 8,
   },
 });

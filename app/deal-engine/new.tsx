@@ -48,6 +48,11 @@ import {
   ASSOCIATED_ENTITY_TYPES,
   RULES_VERSION,
 } from '@/lib/compliance/rules-2026-06';
+import {
+  predictClearance,
+  FMV_DISCLAIMER,
+} from '@/lib/fmv/fmv-engine';
+import { getMockAthleteSocialReach } from '@/lib/data/mock-social-reach';
 
 // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -1124,23 +1129,35 @@ function PrecheckStep({
   onContinue,
   onBack,
 }: PrecheckStepProps) {
-  // Build a simple comp range for new deals: use a deal-kind-based heuristic
-  // (no specific comp ID available at creation time — use kind-level defaults)
-  const compRange = KIND_COMP_RANGES[dealKind] ?? null;
+  const [showComps, setShowComps] = React.useState(false);
 
-  const result = React.useMemo(
+  // Kiyan's reach for demo predictions (athlete 'a-1')
+  const reach = getMockAthleteSocialReach('a-1');
+
+  const prediction = React.useMemo(
     () =>
-      scorePreclearance({
+      predictClearance({
         amountCents,
         dealKind,
         deliverableDescription,
         payerEntityType,
-        compRange,
+        totalFollowers: reach?.totalFollowers ?? 0,
+        engagementRate7d: reach?.engagementRate7d ?? 0,
       }),
-    [amountCents, dealKind, deliverableDescription, payerEntityType, compRange],
+    [amountCents, dealKind, deliverableDescription, payerEntityType, reach],
   );
 
+  const { band, bandLabel, reason, fmv, fmvApplies, gate } = prediction;
+  const result = gate; // alias — keeps the rest of the original code unchanged
   const isAE = (ASSOCIATED_ENTITY_TYPES as readonly string[]).includes(payerEntityType);
+
+  const bandColor =
+    band === 'likely'     ? TONE_PASS :
+    band === 'borderline' ? TONE_WARN :
+                            TONE_FAIL;
+
+  const fmtDollars = (cents: number) =>
+    '$' + Math.round(cents / 100).toLocaleString('en-US');
 
   return (
     <ScrollView
@@ -1153,7 +1170,63 @@ function PrecheckStep({
         This is a copilot — not an official CSC determination.
       </Text>
 
-      {/* Verdict pill at top */}
+      {/* ── Clearance band pill (headline) ────────────────────────── */}
+      <View style={precheckStyles.bandCard}>
+        <View style={precheckStyles.bandTop}>
+          <Text style={precheckStyles.bandHeadingLabel}>CLEARANCE OUTLOOK</Text>
+          <View style={[precheckStyles.bandPill, { borderColor: bandColor, backgroundColor: `${bandColor}18` }]}>
+            <Text style={[precheckStyles.bandPillText, { color: bandColor }]}>
+              {bandLabel.toUpperCase()}
+            </Text>
+          </View>
+        </View>
+        <Text style={precheckStyles.bandReason}>{reason}</Text>
+      </View>
+
+      {/* ── FMV range line ─────────────────────────────────────────── */}
+      <View style={precheckStyles.fmvCard}>
+        <Text style={precheckStyles.fmvLabel}>FAIR-MARKET VALUE ESTIMATE</Text>
+        <Text style={precheckStyles.fmvRange}>
+          {fmtDollars(fmv.lowCents)}–{fmtDollars(fmv.highCents)}
+          {' · '}point {fmtDollars(fmv.pointCents)}
+          {' · '}{fmv.confidence} confidence ({fmv.compsUsedCount} comps)
+        </Text>
+        {!fmvApplies && (
+          <Text style={precheckStyles.fmvNoApply}>
+            FMV review does not apply below $2,500 — business-purpose gate is primary.
+          </Text>
+        )}
+      </View>
+
+      {/* ── Expandable comparables ────────────────────────────────── */}
+      <View style={precheckStyles.card}>
+        <TouchableOpacity
+          style={precheckStyles.compsToggleRow}
+          onPress={() => setShowComps((v) => !v)}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel={showComps ? 'Hide comparables' : 'Show comparables'}
+        >
+          <Text style={precheckStyles.cardTitle}>COMPARABLES USED</Text>
+          <Text style={precheckStyles.compsToggleLabel}>
+            {showComps ? 'Hide ▲' : 'Show ▼'}
+          </Text>
+        </TouchableOpacity>
+        {showComps && (
+          fmv.compsUsedCount === 0 ? (
+            <Text style={precheckStyles.compsEmpty}>
+              Estimated from your reach + engagement (no direct comps yet).
+            </Text>
+          ) : (
+            <Text style={precheckStyles.compsNote}>
+              {fmv.compsUsedCount} comparable deal(s) used. Engagement-normalized IQR (P25–P75) applied.
+              Roster/recruiting-category deals excluded per CSC guidance.
+            </Text>
+          )
+        )}
+      </View>
+
+      {/* ── Overall verdict (secondary display) ──────────────────── */}
       <View style={precheckStyles.verdictRow}>
         <Text style={precheckStyles.verdictLabel}>OVERALL VERDICT</Text>
         <View
@@ -1239,16 +1312,6 @@ function PrecheckStep({
         ))}
       </View>
 
-      {/* Comp-range line */}
-      {compRange && (
-        <View style={precheckStyles.compLine}>
-          <Text style={precheckStyles.compLineLabel}>COMP RANGE</Text>
-          <Text style={precheckStyles.compLineValue}>
-            ${formatCents(amountCents)} deal · comps ${formatCents(compRange.lowCents)}–${formatCents(compRange.highCents)}
-          </Text>
-        </View>
-      )}
-
       {/* Flags */}
       {result.flags.filter((f) => f.kind !== 'csc-report-required').map((flag) => (
         <View key={flag.kind} style={precheckStyles.flagCard}>
@@ -1257,6 +1320,10 @@ function PrecheckStep({
         </View>
       ))}
 
+      {/* FMV Disclaimer */}
+      <Text style={precheckStyles.disclaimer}>
+        {FMV_DISCLAIMER}
+      </Text>
       <Text style={precheckStyles.disclaimer}>
         Rules version: {RULES_VERSION} · Prepared with Proslync — not an official CSC submission.
         This pre-check is a copilot tool, not legal advice.
@@ -1481,6 +1548,95 @@ const precheckStyles = StyleSheet.create({
     lineHeight: 15,
     marginTop: 2,
   },
+  bandCard: {
+    backgroundColor: CARD_BG,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    padding: 14,
+    gap: 8,
+  },
+  bandTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  bandHeadingLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: MUTED,
+    letterSpacing: 1.2,
+  },
+  bandPill: {
+    borderRadius: 999,
+    borderWidth: 1.5,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  bandPillText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  bandReason: {
+    fontSize: 13,
+    color: WHITE,
+    fontWeight: '600',
+    lineHeight: 19,
+  },
+  fmvCard: {
+    backgroundColor: CARD_BG,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 5,
+  },
+  fmvLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: MUTED,
+    letterSpacing: 1,
+  },
+  fmvRange: {
+    fontSize: 13,
+    color: WHITE,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  fmvNoApply: {
+    fontSize: 11,
+    color: MUTED,
+    fontWeight: '500',
+    lineHeight: 16,
+  },
+  compsToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 44,
+  },
+  compsToggleLabel: {
+    fontSize: 11,
+    color: MUTED,
+    fontWeight: '700',
+  },
+  compsEmpty: {
+    fontSize: 12,
+    color: MUTED,
+    fontWeight: '500',
+    lineHeight: 17,
+    paddingTop: 4,
+  },
+  compsNote: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.70)',
+    fontWeight: '500',
+    lineHeight: 17,
+    paddingTop: 4,
+  },
 });
 
 // ── Root screen component ─────────────────────────────────────────────────
@@ -1555,15 +1711,19 @@ export default function DealEngineNewScreen() {
     const amountCents = Math.round((parseFloat(fieldValues['dealValue'] ?? '0') || 0) * 100);
     const fees = computeFees(amountCents);
 
-    // Compute preclearance result to store with the deal (Phase D2)
-    const compRange = KIND_COMP_RANGES[template.kind] ?? null;
-    const preclearanceResult = scorePreclearance({
+    // Compute preclearance result to store with the deal (Phase D2 + FMV1)
+    // Use FMV-derived comp range instead of static KIND_COMP_RANGES lookup.
+    const reachForSign = getMockAthleteSocialReach('a-1');
+    const fmvForSign = predictClearance({
       amountCents,
       dealKind: template.kind,
       deliverableDescription: fieldValues['deliverableDescription'] ?? '',
       payerEntityType,
-      compRange,
+      totalFollowers: reachForSign?.totalFollowers ?? 0,
+      engagementRate7d: reachForSign?.engagementRate7d ?? 0,
     });
+    const compRange = { lowCents: fmvForSign.fmv.lowCents, highCents: fmvForSign.fmv.highCents };
+    const preclearanceResult = fmvForSign.gate;
 
     const signEvent: DealEvent = {
       at: now,
