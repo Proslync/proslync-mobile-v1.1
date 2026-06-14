@@ -44,6 +44,7 @@ import { FanPostComposer } from "@/components/fan/post-composer";
 import { SymbolView } from "expo-symbols";
 import { ActionSheet } from '@/components/ui/action-sheet';
 import { FanAssistant } from '@/components/home/fan-assistant-sheet';
+import { HomeNotificationsSheet } from '@/components/home/home-notifications-sheet';
 
 // ───── Layout constants ─────
 
@@ -1201,6 +1202,7 @@ export default function FeedScreen() {
   const [menuTileId, setMenuTileId] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [coverMedia, setCoverMedia] = useState<Record<string, CoverMedia>>({});
   const [customLogos, setCustomLogos] = useState<Record<string, string>>({});
   const [tileMedia, setTileMedia] = useState<Record<string, { uri: string; type: 'image' | 'video' }>>({});
@@ -1581,7 +1583,7 @@ export default function FeedScreen() {
           </View>
           <Pressable
             style={styles.floatingPillBtn}
-            onPress={() => router.push('/explore' as any)}
+            onPress={() => router.push('/map' as any)}
             accessibilityLabel="Map"
             accessibilityRole="button"
           >
@@ -1589,7 +1591,7 @@ export default function FeedScreen() {
           </Pressable>
           <Pressable
             style={styles.floatingPillBtn}
-            onPress={() => router.push('/notifications' as any)}
+            onPress={() => setNotifOpen(true)}
             accessibilityLabel="Notifications"
             accessibilityRole="button"
           >
@@ -1619,6 +1621,9 @@ export default function FeedScreen() {
         onClose={() => setComposerOpen(false)}
         onPosted={() => setComposerOpen(false)}
       />
+
+      {/* Notifications — opened from the action pill's bell icon */}
+      <HomeNotificationsSheet visible={notifOpen} onClose={() => setNotifOpen(false)} />
 
       {/* Fan assistant — opened from the action pill's chat icon (FAB hidden) */}
       <FanAssistant open={assistantOpen} onOpenChange={setAssistantOpen} hideFab />
