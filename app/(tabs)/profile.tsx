@@ -1457,7 +1457,13 @@ function MerchTab() {
               <Ionicons name="time-outline" size={13} color="#FFF" />
               <Text style={s.dropCountdownText}>Ends in {MOCK_ACTIVE_DROP.endsIn}</Text>
             </View>
-            <TouchableOpacity style={s.dropCta} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={s.dropCta}
+              activeOpacity={0.85}
+              onPress={() => setSelected(MOCK_MERCH[0])}
+              accessibilityRole="button"
+              accessibilityLabel="Shop the active drop"
+            >
               <Text style={s.dropCtaText}>Shop Drop</Text>
               <Ionicons name="arrow-forward" size={14} color="#FFF" />
             </TouchableOpacity>
@@ -2455,7 +2461,6 @@ const s = StyleSheet.create({
   },
   igAvatar: { width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: '#000' },
   rightCol: { flex: 1, marginLeft: 16 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 6 },
   statCol: { alignItems: 'center' },
   statNum: { fontSize: 18, fontWeight: '700', color: '#FFF' },
   statLabel: { fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
