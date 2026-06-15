@@ -1,8 +1,14 @@
 // Mock game data layer for the comprehensive game pages (box score / highlights
-// / schedule). Hand-authored detail for the marquee matchups in the home feed,
-// with a deterministic synthesizer so ANY tile id resolves to a complete,
-// plausible game. No Math.random at module load — synthesis is seeded from the
-// id + an abbr lookup so the same id always renders identically.
+// / schedule). The header (teams, scores, league, status) is SEEDED from the
+// real matchup card the user tapped — `SECTIONS` in app/(tabs)/index.tsx is the
+// single source of truth — so the detail can never disagree with the card. The
+// deep stats (scoring-by-period, team stats, player box scores, highlights,
+// schedule) are synthesized deterministically AROUND those real anchors so they
+// sum to the real score. No Math.random at module load — synthesis is seeded
+// from the id so the same id always renders identically.
+
+import { SECTIONS } from '@/app/(tabs)/index';
+import type { MatchupCard, Section } from '@/lib/home/tiles';
 
 export type GameStatus = 'live' | 'final' | 'upcoming';
 
@@ -738,6 +744,193 @@ function synthGame(id: string): GameDetail {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Seed from the real SECTIONS matchup card
+// ─────────────────────────────────────────────────────────────────────────────
+
+const LEAGUE_LABEL: Record<string, string> = {
+  ncaab: 'NCAA Basketball',
+  nba: 'NBA',
+  mlb: 'MLB',
+  nhl: 'NHL',
+  wnba: 'WNBA',
+};
+
+/** Locate a matchup card across all sections by its bare card id, returning the
+ *  card plus its owning section (the section id is the league). */
+function findMatchup(cardId: string): { card: MatchupCard; section: Section } | undefined {
+  for (const section of SECTIONS) {
+    for (const card of section.cards) {
+      if (card.variant === 'matchup' && card.id === cardId) {
+        return { card, section };
+      }
+    }
+  }
+  return undefined;
+}
+
+/** Map a card's `status` enum to the GameDetail status. */
+function statusFromCard(card: MatchupCard): GameStatus {
+  if (card.status === 'LIVE') return 'live';
+  if (card.status === 'FINAL') return 'final';
+  return 'upcoming';
+}
+
+/** Parse a live card's `statusLabel` into a period/clock pair for the header.
+ *  e.g. "LIVE · Q3 4:32" → { period: 'Q3', clock: '4:32' }, "LIVE · OT" →
+ *  { period: 'OT' }, "LIVE · 7th 1 out" → { period: '7th', clock: '1 out' }. */
+function periodClockFromLabel(statusLabel: string): { period?: string; clock?: string } {
+  const tail = statusLabel.split('·').slice(1).join('·').trim();
+  if (!tail) return {};
+  const m = tail.match(/^(\S+)\s+(.+)$/);
+  if (m) return { period: m[1], clock: m[2] };
+  return { period: tail };
+}
+
+/** Period column labels for the scoring table, by league. Basketball halves vs
+ *  hockey/baseball periods/innings — kept generic but plausible. */
+function periodLabels(leagueId: string): string[] {
+  if (leagueId === 'nhl') return ['P1', 'P2', 'P3'];
+  if (leagueId === 'mlb') return ['1-3', '4-6', '7-9'];
+  return ['H1', 'H2'];
+}
+
+/** Build a scoring-by-period table that SUMS to the real final score. */
+function scoringFor(
+  leagueId: string,
+  awayScore: number,
+  homeScore: number,
+  rng: () => number,
+): ScoringRow[] {
+  const labels = periodLabels(leagueId);
+  const split = (total: number): number[] => {
+    const parts: number[] = [];
+    let left = total;
+    for (let i = 0; i < labels.length; i++) {
+      if (i === labels.length - 1) {
+        parts.push(Math.max(0, left));
+      } else {
+        const frac = 0.4 + rng() * 0.25;
+        const v = Math.min(left, Math.round(total * frac));
+        parts.push(v);
+        left -= v;
+      }
+    }
+    return parts;
+  };
+  const aw = split(awayScore);
+  const hm = split(homeScore);
+  const rows: ScoringRow[] = labels.map((label, i) => ({ label, away: aw[i], home: hm[i] }));
+  rows.push({ label: 'F', away: awayScore, home: homeScore });
+  return rows;
+}
+
+/** Seed a complete GameDetail from a real matchup card. The header anchors
+ *  (away/home abbr+color+score, league, status/period/clock, venue) come
+ *  straight from the card; the deep stats are synthesized around them. */
+function seededGame(id: string, card: MatchupCard, section: Section): GameDetail {
+  const rng = makeRng(id);
+  const leagueId = section.id;
+  const league = LEAGUE_LABEL[leagueId] ?? section.title;
+  const status = statusFromCard(card);
+
+  const awayAbbr = card.away.abbr;
+  const homeAbbr = card.home.abbr;
+  const am = metaFor(awayAbbr);
+  const hm = metaFor(homeAbbr);
+  // Real scores when present; for PRE games there's no score on the card, so
+  // 0/0 is the honest anchor and the box scores synth to nothing meaningful.
+  const awayScore = card.away.score ?? 0;
+  const homeScore = card.home.score ?? 0;
+
+  const { period, clock } = status === 'live' ? periodClockFromLabel(card.statusLabel) : {};
+
+  const scoring = scoringFor(leagueId, awayScore, homeScore, rng);
+  const awayPlayers = synthTeam(rng, awayScore);
+  const homePlayers = synthTeam(rng, homeScore);
+
+  const highlights: Highlight[] = [];
+  const hiLabels = periodLabels(leagueId);
+  for (let i = 0; i < 8; i++) {
+    const onAway = rng() > 0.5;
+    const players = onAway ? awayPlayers : homePlayers;
+    const scorer = players[Math.floor(rng() * 5)].name;
+    const pt = PLAY_TYPES[Math.floor(rng() * PLAY_TYPES.length)];
+    const periodLabel = hiLabels[Math.min(hiLabels.length - 1, Math.floor((i / 8) * hiLabels.length))];
+    const mins = 18 - (i % 4) * 4;
+    highlights.push(
+      h(
+        `${id}-h${i}`,
+        `${scorer} with the ${pt.toLowerCase()}`,
+        pt,
+        periodLabel,
+        `${Math.max(0, mins)}:${String(Math.floor(rng() * 60)).padStart(2, '0')}`,
+        8 + Math.floor(rng() * 8),
+        onAway ? awayAbbr : homeAbbr,
+        scorer,
+      ),
+    );
+  }
+
+  const dateISO = new Date(Date.now() + (status === 'upcoming' ? 1 : -1) * 86400000).toISOString();
+
+  return {
+    id,
+    league,
+    status,
+    period,
+    clock,
+    dateISO,
+    venue: card.meta ?? `${hm.name} Arena`,
+    broadcast: ['ESPN', 'FOX', 'CBS', 'ESPN2'][Math.floor(rng() * 4)],
+    away: { abbr: awayAbbr, name: am.name, color: card.away.color, record: am.record, rank: am.rank, score: awayScore },
+    home: { abbr: homeAbbr, name: hm.name, color: card.home.color, record: hm.record, rank: hm.rank, score: homeScore },
+    scoring,
+    teamStats: [
+      shooting('Field Goals', 28, 60, 30, 62),
+      shooting('3-Pointers', 9, 24, 10, 25),
+      shooting('Free Throws', 7, 10, 6, 9),
+      statPair('Off. Rebounds', 8 + Math.floor(rng() * 5), 8 + Math.floor(rng() * 5)),
+      statPair('Def. Rebounds', 24 + Math.floor(rng() * 5), 24 + Math.floor(rng() * 5)),
+      statPair('Rebounds', 32 + Math.floor(rng() * 6), 32 + Math.floor(rng() * 6)),
+      statPair('Assists', 14 + Math.floor(rng() * 6), 14 + Math.floor(rng() * 6)),
+      statPair('Steals', 5 + Math.floor(rng() * 5), 5 + Math.floor(rng() * 5)),
+      statPair('Blocks', 2 + Math.floor(rng() * 5), 2 + Math.floor(rng() * 5)),
+      statPair('Turnovers', 9 + Math.floor(rng() * 6), 9 + Math.floor(rng() * 6)),
+      statPair('Fouls', 13 + Math.floor(rng() * 6), 13 + Math.floor(rng() * 6)),
+      statPair('Points in Paint', 26 + Math.floor(rng() * 8), 26 + Math.floor(rng() * 8)),
+      statPair('Fast Break Pts', 8 + Math.floor(rng() * 8), 8 + Math.floor(rng() * 8)),
+    ],
+    boxScore: {
+      away: { abbr: awayAbbr, players: awayPlayers, totals: totalsFrom(awayPlayers) },
+      home: { abbr: homeAbbr, players: homePlayers, totals: totalsFrom(homePlayers) },
+    },
+    highlights,
+    schedule: scheduleFor(homeAbbr, awayAbbr, id, dateISO),
+  };
+}
+
+/** Overlay the real card anchors onto a hand-authored rich game so its header
+ *  (teams, scores, league, status/clock, venue) matches the card the user
+ *  tapped, while keeping the curated deep box score. */
+function reconcileHandAuthored(base: GameDetail, card: MatchupCard, section: Section): GameDetail {
+  const league = LEAGUE_LABEL[section.id] ?? section.title;
+  const status = statusFromCard(card);
+  const awayScore = card.away.score ?? base.away.score;
+  const homeScore = card.home.score ?? base.home.score;
+  const { period, clock } = status === 'live' ? periodClockFromLabel(card.statusLabel) : {};
+  return {
+    ...base,
+    league,
+    status,
+    period,
+    clock,
+    venue: card.meta ?? base.venue,
+    away: { ...base.away, abbr: card.away.abbr, color: card.away.color, score: awayScore },
+    home: { ...base.home, abbr: card.home.abbr, color: card.home.color, score: homeScore },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Public API
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -748,11 +941,26 @@ const HAND_AUTHORED: Record<string, () => GameDetail> = {
   'ncaab-10': gameTxOu,
 };
 
-/** Returns a complete GameDetail for any id. Hand-authored when known, else a
- *  deterministically synthesized game. Never returns null/empty. */
+/** Returns a complete GameDetail for any id. The id arrives as the tile id
+ *  `${section.id}:${card.id}` (e.g. "ncaab:ncaab-1") from /card/[id]; a bare
+ *  card id ("ncaab-1") is also accepted. We strip any `league:` prefix, locate
+ *  the matchup card in SECTIONS, and seed the detail from it so the header
+ *  always matches the tapped card. Hand-authored rich games keep their curated
+ *  box score but have their header reconciled to the card. Never returns
+ *  null/empty. */
 export function getGame(gameId: string): GameDetail {
-  const id = gameId || 'ncaab-1';
-  const author = HAND_AUTHORED[id];
-  if (author) return author();
-  return synthGame(id);
+  const raw = gameId || 'ncaab:ncaab-1';
+  // Tile id is "league:card-id"; strip the league prefix to get the card id.
+  // Use the LAST colon-separated segment so a bare id passes through unchanged.
+  const cardId = raw.includes(':') ? raw.slice(raw.lastIndexOf(':') + 1) : raw;
+
+  const found = findMatchup(cardId);
+  if (found) {
+    const author = HAND_AUTHORED[cardId];
+    if (author) return reconcileHandAuthored(author(), found.card, found.section);
+    return seededGame(raw, found.card, found.section);
+  }
+
+  // Unknown id (no matching card) — fall back to the deterministic synthesizer.
+  return synthGame(raw);
 }
