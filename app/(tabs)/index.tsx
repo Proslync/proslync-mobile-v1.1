@@ -50,6 +50,7 @@ import {
   SURFACE, SURFACE_RAISED, HAIRLINE, HAIRLINE_SUBTLE,
   RADIUS_SM, RADIUS_CARD, RADIUS_LG, RADIUS_PILL,
 } from '@/components/shared/ui-kit/tokens';
+import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
 
 // ───── Layout constants ─────
 
@@ -117,6 +118,45 @@ export type DealCard = {
 };
 
 export type AnyCard = MatchupCard | PlayerCard | DealCard;
+
+// ───── NIL tile ⟷ deal-detail single source of truth ─────
+// The home "Top NIL Deals" tiles route into the Brand HQ deal-detail packets
+// (d-1…d-6). The athlete / brand / value the user TAPS must equal the detail
+// they LAND on — so those fields are derived from `getBrandDealDetail` here
+// rather than hand-authored on the tile (which let them drift). Only the
+// presentational bits (avatar colors + the short brand label rendered on the
+// chip) stay on the tile; the data fields come from the packet.
+type DealTilePresentation = {
+  id: string;
+  dealId: string;
+  /** Short, display brand label for the tile chip (matches the packet's brand). */
+  brand: string;
+  athleteColor: string;
+  brandColor: string;
+};
+
+function buildDealTile(p: DealTilePresentation): DealCard {
+  const detail = getBrandDealDetail(p.dealId);
+  // Packet stores "Dylan Harper · Rutgers"; the tile shows just the name.
+  const athlete = (detail?.deal.athlete ?? '').split('·')[0]!.trim();
+  const value = detail?.money.total ?? '';
+  // Term is "2 yrs · exclusive · renewed"; compress for the small tile footer.
+  const duration = (detail?.deal.term ?? '')
+    .replace(/\byrs?\b/g, 'yr')
+    .replace(/\s*·\s*/g, ' · ');
+  return {
+    id: p.id,
+    variant: 'deal',
+    value,
+    athlete,
+    athleteInitial: athlete.charAt(0).toUpperCase(),
+    athleteColor: p.athleteColor,
+    brand: p.brand,
+    brandColor: p.brandColor,
+    duration,
+    dealId: p.dealId,
+  };
+}
 
 export type Section = {
   id: string;
@@ -438,36 +478,14 @@ export const SECTIONS: Section[] = [
     iconColor: '#14B8A6',
     accent: '#14B8A6',
     cards: [
-      {
-        id: 'nil-1', variant: 'deal', dealId: 'd-1',
-        value: '$3.1M', athlete: 'Paige Bueckers', athleteInitial: 'P', athleteColor: '#000E2F',
-        brand: 'NIKE', brandColor: '#000', duration: '3yr · excl',
-      },
-      {
-        id: 'nil-2', variant: 'deal', dealId: 'd-2',
-        value: '$1.8M', athlete: 'Cooper Flagg', athleteInitial: 'C', athleteColor: '#001A57',
-        brand: 'GATORADE', brandColor: '#FF6900', duration: '1yr · renew',
-      },
-      {
-        id: 'nil-3', variant: 'deal', dealId: 'd-3',
-        value: '$2.4M', athlete: 'Travis Hunter', athleteInitial: 'T', athleteColor: '#CFB87C',
-        brand: 'BEATS', brandColor: '#C8102E', duration: '2yr · multi',
-      },
-      {
-        id: 'nil-4', variant: 'deal', dealId: 'd-4',
-        value: '$680K', athlete: 'Kiyan Anthony', athleteInitial: 'K', athleteColor: '#F76900',
-        brand: 'CARMAX', brandColor: '#003087', duration: '1yr · regional',
-      },
-      {
-        id: 'nil-5', variant: 'deal', dealId: 'd-5',
-        value: '$1.1M', athlete: 'Paul Skenes', athleteInitial: 'P', athleteColor: '#461D7C',
-        brand: "ZAXBY'S", brandColor: '#E8451B', duration: '2yr · Southeast',
-      },
-      {
-        id: 'nil-6', variant: 'deal', dealId: 'd-6',
-        value: '$540K', athlete: 'Simone Lee', athleteInitial: 'S', athleteColor: '#041E42',
-        brand: 'GATORADE', brandColor: '#FF6900', duration: '1yr · renew',
-      },
+      // Each tile is derived from the deal-detail packet it routes to, so the
+      // athlete / brand / value the user taps equals the page they land on.
+      buildDealTile({ id: 'nil-1', dealId: 'd-1', brand: 'NIKE', athleteColor: '#CC0033', brandColor: '#000' }),
+      buildDealTile({ id: 'nil-2', dealId: 'd-2', brand: 'BEATS', athleteColor: '#CC0033', brandColor: '#C8102E' }),
+      buildDealTile({ id: 'nil-3', dealId: 'd-3', brand: "ZAXBY'S", athleteColor: '#B3A369', brandColor: '#E8451B' }),
+      buildDealTile({ id: 'nil-4', dealId: 'd-4', brand: 'GATORADE', athleteColor: '#F76900', brandColor: '#FF6900' }),
+      buildDealTile({ id: 'nil-5', dealId: 'd-5', brand: 'CARMAX', athleteColor: '#041E42', brandColor: '#003087' }),
+      buildDealTile({ id: 'nil-6', dealId: 'd-6', brand: 'NIKE', athleteColor: '#001A57', brandColor: '#000' }),
     ],
   },
   {

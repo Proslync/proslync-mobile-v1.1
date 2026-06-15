@@ -120,6 +120,18 @@ export type NilGoRead = {
   hoursRemaining: number | null;
 };
 
+/**
+ * Resolved clearance status for a deal that is past the pre-clearance phase.
+ * Shown INSTEAD of the forward-looking FMV/clearance prediction once a deal is
+ * signed/live — a "will this clear?" read is incoherent on a done deal.
+ */
+export type ClearanceStatusRead = {
+  /** Short status line, e.g. "Cleared · passed NIL Go". */
+  label: string;
+  /** Truthy when the underlying truth record marks this deal cleared/paid. */
+  cleared: boolean;
+};
+
 export type EscrowRead = {
   dealId: string;
   funded: string;
@@ -133,7 +145,25 @@ export type DealEnrichment = {
   fmv?: FmvRead;
   nilGo?: NilGoRead;
   escrow?: EscrowRead;
+  /** Present only on post-clearance deals (signed/live) in place of `fmv`/`nilGo`. */
+  clearanceStatus?: ClearanceStatusRead;
 };
+
+// ── Stage gating ─────────────────────────────────────────────────────────────
+// A FMV band + "will this clear?" read is only coherent while clearance is a
+// LIVE question — i.e. before the deal is executed. Once a deal is signed or
+// live, the question is settled, so we show a clearance STATUS line instead of
+// a prediction (and drop the NIL Go countdown — disclosure clocks for executed
+// deals are surfaced via payment/escrow, not a pre-clearance prompt).
+const PRE_CLEARANCE_STAGES: ReadonlySet<BrandDealDetail['stage']['key']> = new Set([
+  'draft',
+  'sent',
+  'negotiation',
+]);
+
+function isPreClearance(detail: BrandDealDetail): boolean {
+  return PRE_CLEARANCE_STAGES.has(detail.stage.key ?? detail.deal.stage);
+}
 
 const PAYMENT_STATE_LABEL: Record<DealTruth['paymentState'], string> = {
   expected: 'Expected',
@@ -165,10 +195,14 @@ export function buildDealEnrichment(detail: BrandDealDetail): DealEnrichment {
     };
   }
 
-  // ── FMV band + clearance read ────────────────────────────────────────────
+  // ── FMV band + clearance read — ONLY while clearance is a live question ───
+  // For pre-clearance deals (draft/sent/negotiation) we render the forward-
+  // looking prediction. For executed deals (signed/live) we render a settled
+  // clearance STATUS line instead (built below) — never both.
+  const preClearance = isPreClearance(detail);
   const profile = DEAL_FMV_PROFILE[detail.id];
   const amountCents = parseDisplayMoneyToCents(detail.money.total);
-  if (profile && amountCents !== null) {
+  if (preClearance && profile && amountCents !== null) {
     const prediction = predictClearance({
       amountCents,
       dealKind: profile.dealKind,
@@ -190,13 +224,43 @@ export function buildDealEnrichment(detail: BrandDealDetail): DealEnrichment {
     };
   }
 
-  // ── NIL Go deadline — only where the bridged deal is UNDISCLOSED ──────────
-  if (truth && truth.disclosure.state === 'undisclosed') {
+  // ── NIL Go deadline — pre-clearance + undisclosed only ────────────────────
+  // The countdown is a "file this before you're ineligible" prompt; it only
+  // belongs while the deal is still in flight.
+  if (preClearance && truth && truth.disclosure.state === 'undisclosed') {
     const deadlineISO = truth.disclosure.deadlineISO ?? nilGoDeadline(truth.disclosure.executedAtISO);
     out.nilGo = {
       deadlineISO,
       hoursRemaining: hoursUntilISO(deadlineISO),
     };
+  }
+
+  // ── Clearance STATUS — settled read for executed deals ────────────────────
+  // Replaces the FMV prediction once the deal is signed/live. Prefer the real
+  // disclosure/payment truth where bridged; otherwise fall back to a stage-only
+  // line. Payment truth + escrow still render alongside (always relevant).
+  if (!preClearance) {
+    const disclosure = truth?.disclosure.state;
+    const passedNilGo = disclosure === 'cleared';
+    let label: string;
+    let cleared: boolean;
+    if (passedNilGo) {
+      // Disclosure cleared the school/CSC NIL Go portal — the settled happy path.
+      label = 'Cleared · passed NIL Go';
+      cleared = true;
+    } else if (disclosure === 'denied') {
+      label = 'Executed · NIL Go denied';
+      cleared = false;
+    } else if (disclosure !== undefined && disclosure !== 'not-required') {
+      // Executed but disclosure still moving (undisclosed/submitted/in-review).
+      label = 'Executed · NIL Go disclosure pending';
+      cleared = false;
+    } else {
+      // No bridged truth (or not-required): report the lifecycle stage we know.
+      label = `${detail.stage.label} · clearance settled`;
+      cleared = true;
+    }
+    out.clearanceStatus = { label, cleared };
   }
 
   // ── Escrow / milestones — only where the bridge maps to an engine deal ────

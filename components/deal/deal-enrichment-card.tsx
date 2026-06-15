@@ -39,7 +39,13 @@ export function DealEnrichmentCard({ detail }: { detail: BrandDealDetail }) {
   );
 
   // Nothing bridged → render nothing (the spine stays clean).
-  if (!enrichment.payment && !enrichment.fmv && !enrichment.nilGo && !enrichment.escrow) {
+  if (
+    !enrichment.payment &&
+    !enrichment.fmv &&
+    !enrichment.nilGo &&
+    !enrichment.escrow &&
+    !enrichment.clearanceStatus
+  ) {
     return null;
   }
 
@@ -51,6 +57,7 @@ export function DealEnrichmentCard({ detail }: { detail: BrandDealDetail }) {
 
       {enrichment.payment ? <PaymentTruthBlock data={enrichment.payment} /> : null}
       {enrichment.fmv ? <FmvBlock data={enrichment.fmv} /> : null}
+      {enrichment.clearanceStatus ? <ClearanceStatusBlock data={enrichment.clearanceStatus} /> : null}
       {enrichment.nilGo ? <NilGoBlock data={enrichment.nilGo} /> : null}
       {enrichment.escrow ? <EscrowBlock data={enrichment.escrow} /> : null}
     </SectionCard>
@@ -128,6 +135,25 @@ function FmvBlock({ data }: { data: NonNullable<DealEnrichment['fmv']> }) {
         <Ionicons name="information-circle-outline" size={13} color={TEXT_TERTIARY} />
         <Text style={styles.disclaimerText}>{data.disclaimer}</Text>
       </View>
+    </View>
+  );
+}
+
+function ClearanceStatusBlock({ data }: { data: NonNullable<DealEnrichment['clearanceStatus']> }) {
+  const tone = data.cleared ? SIGNAL_POSITIVE : ACCENT;
+  return (
+    <View style={styles.block}>
+      <View style={styles.blockHead}>
+        <Text style={styles.microLabel}>Clearance status</Text>
+        <View style={[styles.pill, { borderColor: `${tone}55`, backgroundColor: `${tone}1A` }]}>
+          {data.cleared ? <Ionicons name="checkmark-circle" size={12} color={tone} /> : null}
+          <Text style={[styles.pillText, { color: tone }]}>{data.label}</Text>
+        </View>
+      </View>
+      <Text style={styles.reason}>
+        This deal is executed — clearance is settled, so the forward-looking
+        fair-market read no longer applies. Payment and escrow status below stay live.
+      </Text>
     </View>
   );
 }
