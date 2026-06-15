@@ -48,6 +48,7 @@ import {
   TEXT_TERTIARY,
   WEIGHT,
 } from '@/components/shared/ui-kit/tokens';
+import { TriageDetailSheet, type TriageDetail } from '@/components/school/triage-detail-sheet';
 
 // ── Module helpers ─────────────────────────────────────────────────────────
 
@@ -111,6 +112,9 @@ const TRIAGE_ROWS: TriageRow[] = [
 ];
 
 function NilGoTriageModule() {
+  // Tapping a row opens a CHARTER-SAFE flag detail: clock + flag state +
+  // banded value + SPARTA/AE flags + export. No dollar ledger, no approve/veto.
+  const [openRow, setOpenRow] = React.useState<TriageDetail | null>(null);
   return (
     <View style={s.card}>
       <SectionHeader label="NIL GO TRIAGE" />
@@ -119,13 +123,16 @@ function NilGoTriageModule() {
         const isAmber = row.statusType === 'amber';
         const isClear = row.statusType === 'clear';
         return (
-          <View
+          <Pressable
             key={row.id}
             style={[
               s.triageRow,
               isWarn && s.triageRowWarn,
               isAmber && s.triageRowAmber,
             ]}
+            onPress={() => setOpenRow(row)}
+            accessibilityRole="button"
+            accessibilityLabel={`Triage flag: ${row.athlete} · ${row.entity} · ${row.status}`}
           >
             {(isWarn || isAmber) && (
               <View style={[s.triageStripe, { backgroundColor: isWarn ? SIGNAL_NEGATIVE : SIGNAL_WARN }]} />
@@ -152,10 +159,11 @@ function NilGoTriageModule() {
                 ) : null}
               </View>
             </View>
-          </View>
+          </Pressable>
         );
       })}
       <Text style={s.triageFooter}>12 more · all clear ✓</Text>
+      <TriageDetailSheet row={openRow} visible={openRow !== null} onClose={() => setOpenRow(null)} />
     </View>
   );
 }

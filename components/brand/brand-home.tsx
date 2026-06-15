@@ -7,6 +7,7 @@
 // Copper (#EB621A) = act-now only.
 
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   Alert,
@@ -52,6 +53,11 @@ type CampaignRow = {
   briefType: string;
   currentStep: 'BRIEF' | 'POSTED' | 'VERIFIED';
   proofState: ProofState;
+  /** Bridge into the live, charter-safe deal-detail page (`/deal/[id]`).
+   *  Maps each fixture campaign to an existing Brand HQ deal packet
+   *  (`d-1..d-6` in mock-brand-data). The packet is a packaged-outcome
+   *  detail — no unfunded outreach. */
+  dealId: string;
 };
 
 const ACTIVE_CAMPAIGNS: CampaignRow[] = [
@@ -61,6 +67,7 @@ const ACTIVE_CAMPAIGNS: CampaignRow[] = [
     briefType: '3 Posts + Promo Code',
     currentStep: 'VERIFIED',
     proofState: 'verified',
+    dealId: 'd-4', // Kiyan Anthony · Syracuse
   },
   {
     id: 'ac-2',
@@ -68,6 +75,7 @@ const ACTIVE_CAMPAIGNS: CampaignRow[] = [
     briefType: 'Local Appearance',
     currentStep: 'POSTED',
     proofState: 'posted',
+    dealId: 'd-1',
   },
   {
     id: 'ac-3',
@@ -75,6 +83,7 @@ const ACTIVE_CAMPAIGNS: CampaignRow[] = [
     briefType: 'Brand Ambassador Package',
     currentStep: 'BRIEF',
     proofState: 'funded',
+    dealId: 'd-6',
   },
 ];
 
@@ -182,6 +191,7 @@ function SectionHeader({ label }: { label: string }) {
 // ── MODULE 1: ACTIVE CAMPAIGNS ────────────────────────────────────────────
 
 function ActiveCampaignsModule() {
+  const router = useRouter();
   return (
     <View style={s.card}>
       <SectionHeader label="ACTIVE CAMPAIGNS" />
@@ -192,7 +202,8 @@ function ActiveCampaignsModule() {
           <Pressable
             key={row.id}
             style={[s.campaignRow, idx > 0 && s.campaignRowBorder]}
-            onPress={() => {/* no-op per charter */}}
+            // Open the live, charter-safe packaged-outcome deal detail.
+            onPress={() => router.push(`/deal/${row.dealId}?role=brand` as never)}
             accessibilityRole="button"
             accessibilityLabel={`Campaign: ${row.athlete} ${row.briefType}`}
           >

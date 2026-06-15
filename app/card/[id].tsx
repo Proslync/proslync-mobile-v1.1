@@ -21,6 +21,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AbstractArt } from '@/components/fan/abstract-art';
+import { AthleteDetailSheet } from '@/components/athlete/athlete-detail-sheet';
 import { TILE_MEDIA_STORAGE_KEY, tileSlot, type TileLocalMedia } from '@/lib/home/tiles';
 import { healLocalMediaUri } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
@@ -81,6 +82,18 @@ type CardContent = {
    *  pathname with { id: tileId } instead of opening the section. */
   ctaRoute?: string;
 };
+
+/** Slugify a display name into a roster-id candidate (e.g. "Cooper Flagg" →
+ *  "cooper-flagg"). Used to bridge a player/award card into the shared
+ *  AthleteDetailSheet; the sheet degrades gracefully when the slug doesn't
+ *  resolve a demo-roster fixture. */
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 /** Parse the tileId and params to derive richer content without needing the
  *  full SECTIONS array at runtime (keeps this file self-contained). */
@@ -323,6 +336,11 @@ export default function CardDetailScreen() {
     [tileId, caption, subtitle, sectionId, dealId],
   );
 
+  // Player/award cards can open the shared, role-neutral AthleteDetailSheet
+  // from their "{name}'s Profile" related row. Charter-safe: the sheet shows
+  // public reach/updates only and never moves money in the demo.
+  const [athleteSheet, setAthleteSheet] = React.useState(false);
+
   // Local user-uploaded media for this tile (healed), else curated, else art.
   const [local, setLocal] = React.useState<TileLocalMedia | null>(null);
   const [hydrated, setHydrated] = React.useState(false);
@@ -485,21 +503,28 @@ export default function CardDetailScreen() {
             <View style={styles.relatedBlock}>
               <Text style={styles.relatedHeader}>EXPLORE MORE</Text>
               <View style={styles.relatedCard}>
-                {content.related.map((r) => (
-                  <RelatedRow
-                    key={r.title}
-                    icon={r.icon}
-                    title={r.title}
-                    sub={r.sub}
-                    onPress={
-                      r.route
-                        ? () => goRelated(r.route)
-                        : content.ctaSectionId
-                          ? handleCta
-                          : undefined
-                    }
-                  />
-                ))}
+                {content.related.map((r) => {
+                  // Player/award "{name}'s Profile" row → shared athlete sheet.
+                  const isProfileRow =
+                    content.kind === 'player' && r.title === `${caption ?? ''}'s Profile`;
+                  return (
+                    <RelatedRow
+                      key={r.title}
+                      icon={r.icon}
+                      title={r.title}
+                      sub={r.sub}
+                      onPress={
+                        isProfileRow
+                          ? () => setAthleteSheet(true)
+                          : r.route
+                            ? () => goRelated(r.route)
+                            : content.ctaSectionId
+                              ? handleCta
+                              : undefined
+                      }
+                    />
+                  );
+                })}
               </View>
             </View>
           )}
@@ -516,6 +541,21 @@ export default function CardDetailScreen() {
       >
         <Ionicons name="chevron-back" size={22} color="#FFF" />
       </Pressable>
+
+      {/* Shared athlete sheet — opened from a player/award card's Profile row.
+          `rosterId` slug bridges into the demo roster; degrades gracefully. */}
+      {content.kind === 'player' ? (
+        <AthleteDetailSheet
+          athlete={{
+            id: tileId,
+            name: caption ?? content.title,
+            school: (subtitle ?? '').split(' · ')[2] || undefined,
+            rosterId: slugify(caption ?? content.title),
+          }}
+          visible={athleteSheet}
+          onClose={() => setAthleteSheet(false)}
+        />
+      ) : null}
     </View>
   );
 }
