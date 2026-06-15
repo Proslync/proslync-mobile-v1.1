@@ -67,7 +67,6 @@ export const PROFILE_MEDIA: Record<string, ProfileMedia> = {
   school:     { banner: null, bannerVideo: `${CDN_BASE}/school-banner.mp4`, avatar: null },
   agent:      { banner: null, avatar: null },
   fan:        { banner: null, avatar: null },
-  nilManager: { banner: null, avatar: null },
   collective: { banner: null, avatar: null },
 };
 

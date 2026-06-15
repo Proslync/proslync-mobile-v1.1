@@ -284,7 +284,7 @@ export default function CollectiveProfile() {
   const insets = useSafeAreaInsets();
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
-  const media = PROFILE_MEDIA['collective'] ?? PROFILE_MEDIA['nilManager'] ?? PROFILE_MEDIA['player'];
+  const media = PROFILE_MEDIA['collective'] ?? PROFILE_MEDIA['player'];
   const persona = personaFor('collective');
 
   return (

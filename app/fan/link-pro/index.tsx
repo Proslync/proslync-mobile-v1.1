@@ -63,12 +63,6 @@ const ROLE_CARDS: RoleCardSpec[] = [
     blurb: 'Athletic departments — oversight of school-affiliated athletes and NIL compliance.',
   },
   {
-    role: 'nilManager',
-    label: 'NIL Manager',
-    icon: 'shield-checkmark-outline',
-    blurb: 'NIL managers and collectives — broker deals, track documents, and manage payment flows.',
-  },
-  {
     role: 'coach',
     label: 'Coach',
     icon: 'clipboard-outline',
@@ -147,7 +141,9 @@ export default function LinkProRoleScreen(): React.JSX.Element {
       // shell, then mode='pro'. Mode is set last because setRole on a
       // non-fan role already nudges mode='pro', and we want our explicit
       // setMode to win in case the provider drifts.
-      setRole(role);
+      // `nilManager` is a backend-only proposal value with no selectable
+      // in-app profile role, so it never maps onto the role provider.
+      if (role !== 'nilManager') setRole(role);
       setMode('pro');
       router.replace('/(tabs)');
     } catch (error) {

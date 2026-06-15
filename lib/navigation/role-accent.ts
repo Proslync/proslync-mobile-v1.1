@@ -18,7 +18,6 @@ const PROFILE_TO_ACCENT_KEY: Record<ProfileRole, keyof typeof RoleAccent> = {
   brand: 'brand',
   fan: 'fan',
   school: 'school',
-  nilManager: 'admin',
   // collective is the money seat — maps to brand (payer side) accent
   collective: 'brand',
 };

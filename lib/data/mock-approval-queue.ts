@@ -206,7 +206,7 @@ const ITEMS: ApprovalQueueItem[] = [
     },
     priority: 'normal',
     state: 'approved',
-    submittedBy: { actor: 'AI Assistant', role: 'nilManager' },
+    submittedBy: { actor: 'AI Assistant', role: 'school' },
     submittedAt: isoMinusHours(40),
     blockers: [],
     trustMeta: trustFor('approved', 'medium', [
@@ -484,7 +484,7 @@ const ITEMS: ApprovalQueueItem[] = [
     subjectRef: { kind: 'deal', id: 'd-9', label: 'AJ Dybantsa · BYU — comp evidence' },
     priority: 'normal',
     state: 'approved',
-    submittedBy: { actor: 'AI Assistant', role: 'nilManager' },
+    submittedBy: { actor: 'AI Assistant', role: 'school' },
     submittedAt: isoMinusHours(34),
     blockers: [],
     trustMeta: trustFor('approved', 'medium', ['Single reviewer-approved comp row at $52K anchor.']),

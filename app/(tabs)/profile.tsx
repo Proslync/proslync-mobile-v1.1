@@ -1841,7 +1841,6 @@ export default function ProfileScreen() {
   if (role === 'brand') return <BrandProfile />;
   if (role === 'fan') return <FanProfile />;
   if (role === 'school') return <SchoolProfile />;
-  if (role === 'nilManager') return <SchoolProfile />;
   if (role === 'collective') return <CollectiveProfile />;
   return <PlayerProfileScreen />;
 }

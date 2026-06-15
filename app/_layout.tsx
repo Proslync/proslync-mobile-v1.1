@@ -147,7 +147,6 @@ function RootLayoutNav() {
         />
         <Stack.Screen name="messages" />
         <Stack.Screen name="map" />
-        <Stack.Screen name="nil-manager/athlete/[id]" />
         <Stack.Screen name="deal/[id]" />
         <Stack.Screen name="deal-engine/new" />
         <Stack.Screen name="deal-engine/[id]" />

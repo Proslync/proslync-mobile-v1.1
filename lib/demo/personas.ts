@@ -82,15 +82,6 @@ export const ROLE_PERSONA: Record<ProfileRole, RolePersona> = {
     tagline: 'Athletic Department',
     bannerColors: ['#2A1400', '#1A0C00'],
   },
-  nilManager: {
-    role: 'nilManager',
-    displayName: 'NIL Office',
-    handle: '@syrcompliance',
-    initials: 'NO',
-    accent: '#64748B',
-    tagline: 'NIL Compliance · Syracuse',
-    bannerColors: ['#0A0F1A', '#0D1220'],
-  },
   collective: {
     role: 'collective',
     displayName: 'Orange Collective',

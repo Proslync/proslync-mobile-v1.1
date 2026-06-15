@@ -30,8 +30,6 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
       perRoleCaveats: {
         brand:
           'Pricing reflects pre-disclosure rumored ranges; refuse to anchor an offer letter on synthetic rows.',
-        nilManager:
-          'Treat as orientation only. Promote to reviewer-approved before sharing with school compliance.',
         school:
           'Synthetic — do not enter into audit-defense exports until the reviewer-state column flips to approved.',
       },
@@ -381,7 +379,6 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         'Top-1 recruit renewals with signature-line scope disclose in a $440K–$620K band; Cooper Flagg fits the upper third.',
       perRoleCaveats: {
         brand: 'Synthetic. Anchor renewal terms on this band only after AD review attaches a reviewer-state.',
-        nilManager: 'Promote to reviewer-approved before sharing with school compliance.',
         school: 'Synthetic — fixture is for AD orientation only.',
       },
     },
@@ -466,7 +463,6 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
       summary: 'Audio-category add-ons for footwear-exclusive athletes disclose in a $145K–$240K band, but most carve-outs require master-agreement review.',
       perRoleCaveats: {
         brand: 'Audio add-on must respect Nike master-agreement category carve-outs.',
-        nilManager: 'Flag for compliance review before activation.',
         school: 'Synthetic — for orientation only.',
       },
     },

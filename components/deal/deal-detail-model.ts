@@ -6,7 +6,7 @@ import type {
 import type { ProfileRole } from '@/lib/providers/role-provider';
 import { TONE_COLOR } from '@/components/shared/ui-kit/tokens';
 
-export type DealLensKey = 'brand' | 'athlete' | 'ad' | 'nilManager' | 'agent';
+export type DealLensKey = 'brand' | 'athlete' | 'ad' | 'agent';
 export type DealTone = 'accent' | 'success' | 'warning' | 'danger' | 'muted';
 
 export type DealLens = {
@@ -49,13 +49,12 @@ export type DealTimelineRow = {
   tone: DealTone;
 };
 
-export const DEAL_LENS_ORDER: DealLensKey[] = ['brand', 'athlete', 'ad', 'nilManager', 'agent'];
+export const DEAL_LENS_ORDER: DealLensKey[] = ['brand', 'athlete', 'ad', 'agent'];
 
 export function roleToDealLens(role: ProfileRole): DealLensKey {
   if (role === 'brand') return 'brand';
   if (role === 'agent') return 'agent';
   if (role === 'school') return 'ad';
-  if (role === 'nilManager') return 'nilManager';
   // collective is the payer — same deal view as brand
   if (role === 'collective') return 'brand';
   return 'athlete';
@@ -212,44 +211,6 @@ export function buildDealLenses(detail: BrandDealDetail): Record<DealLensKey, De
           label: 'Revenue-share dependency',
           note: 'Ledger persistence is backend-owned; this screen only reserves the audit slot.',
           tone: 'muted',
-        },
-      ],
-    },
-    nilManager: {
-      key: 'nilManager',
-      label: 'NIL',
-      eyebrow: 'NIL Manager lens',
-      title: 'Disclosure and consent review',
-      summary:
-        'Inspect athlete consent scope, school disclosure receipt, contacts, attachments, and compliance caveats.',
-      primaryMetric: `${missingAttachments}`,
-      primaryLabel: 'Missing / requested',
-      secondaryMetric: `${detail.contacts.length}`,
-      secondaryLabel: 'Contacts',
-      actionLabel: 'Request missing receipt',
-      visibility: 'NIL Manager can see reviewer state and contacts only where athlete consent allows.',
-      color: '#34C759',
-      icon: 'shield-checkmark-outline',
-      checks: [
-        {
-          id: 'nil-disclosure',
-          label: 'Disclosure receipt',
-          note:
-            detail.evidence.sources.find((source) => source.id === 'source:school-compliance-precheck')?.note ??
-            'No school receipt source attached.',
-          tone: missingAttachments > 0 ? 'warning' : 'success',
-        },
-        {
-          id: 'nil-contacts',
-          label: 'Counterparty contacts',
-          note: `${detail.contacts.length} contact lanes attached to this deal.`,
-          tone: 'success',
-        },
-        {
-          id: 'nil-caveats',
-          label: 'Caveats visible',
-          note: detail.aiCompliance.caveats[1] ?? 'Reviewer state must stay visible.',
-          tone: 'warning',
         },
       ],
     },

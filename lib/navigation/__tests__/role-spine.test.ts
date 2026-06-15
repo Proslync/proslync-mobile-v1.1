@@ -16,7 +16,6 @@ const expectedRoles: SpineRole[] = [
   'brand',
   'fan',
   'school',
-  'nilManager',
 ];
 
 for (const role of expectedRoles) {

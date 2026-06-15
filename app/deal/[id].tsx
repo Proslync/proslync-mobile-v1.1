@@ -14,7 +14,7 @@ function normalizeParam(value: string | string[] | undefined): string | undefine
 
 function lensFromParam(value: string | string[] | undefined): DealLensKey | undefined {
   const role = normalizeParam(value);
-  if (role === 'brand' || role === 'athlete' || role === 'ad' || role === 'nilManager' || role === 'agent') {
+  if (role === 'brand' || role === 'athlete' || role === 'ad' || role === 'agent') {
     return role;
   }
   return undefined;

@@ -179,11 +179,11 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
     athleteId: 'a-2',
     grantee: {
       kind: 'role',
-      roleKey: 'nilManager',
+      roleKey: 'school',
     },
     level: 'summary',
     scopes: ['compliance', 'commitments', 'comp-evidence'],
-    rationale: 'School NIL manager — aggregate view for the AD back-office.',
+    rationale: 'School compliance — aggregate view for the AD back-office.',
     createdAt: '2026-01-20T16:00:00Z',
     activatedAt: '2026-01-20T16:00:00Z',
     status: 'paused',

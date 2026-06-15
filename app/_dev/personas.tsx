@@ -84,7 +84,6 @@ const ICON_FOR: Record<string, keyof typeof import("@expo/vector-icons").Ionicon
   brand: "briefcase-outline",
   fan: "heart-outline",
   school: "school-outline",
-  nilManager: "shield-checkmark-outline",
   collective: "people-circle-outline",
   athleticDirector: "trophy-outline",
   admin: "construct-outline",

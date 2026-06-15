@@ -115,7 +115,6 @@ export const PROFILE_ROLE_TO_VISUAL_KEY: Record<ProfileRole, RoleVisualKey> = {
   brand: "brand",
   fan: "fan",
   school: "school",
-  nilManager: "school",
   collective: "brand",
 };
 
@@ -126,7 +125,6 @@ export const PROFILE_ROLE_LABELS: Record<ProfileRole, string> = {
   brand: "Brand",
   fan: "Fan",
   school: "AD",
-  nilManager: "NIL Mgr",
   collective: "Collective",
 };
 
@@ -137,7 +135,6 @@ export const PROFILE_ROLE_INITIALS: Record<ProfileRole, string> = {
   brand: "B",
   fan: "F",
   school: "S",
-  nilManager: "N",
   collective: "K",
 };
 
@@ -148,7 +145,6 @@ export const PROFILE_ROLE_ICONS: Record<ProfileRole, { icon: string; outlineIcon
   brand: { icon: "briefcase", outlineIcon: "briefcase-outline" },
   fan: { icon: "heart", outlineIcon: "heart-outline" },
   school: { icon: "school", outlineIcon: "school-outline" },
-  nilManager: { icon: "shield-checkmark", outlineIcon: "shield-checkmark-outline" },
   collective: { icon: "people-circle", outlineIcon: "people-circle-outline" },
 };
 
@@ -159,7 +155,6 @@ export const PROFILE_ROLE_ORDER: ProfileRole[] = [
   "brand",
   "fan",
   "school",
-  "nilManager",
   "collective",
 ];
 

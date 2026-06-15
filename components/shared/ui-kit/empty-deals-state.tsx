@@ -60,12 +60,6 @@ const PERSONA_META: Record<ProfileRole, PersonaEmptyMeta> = {
     body: 'Invite athletes on the roster to enable NIL visibility.',
     ctaLabel: 'Invite roster',
   },
-  nilManager: {
-    icon: 'shield-checkmark-outline',
-    title: 'Queue is clear',
-    body: 'No deals waiting on your review. New rows arrive in real time.',
-    ctaLabel: 'Open closing room',
-  },
   school: {
     icon: 'school-outline',
     title: 'Approval queue is clear',
@@ -86,10 +80,9 @@ const PERSONA_META: Record<ProfileRole, PersonaEmptyMeta> = {
   },
 };
 
-// Map ProfileRole → RoleSurface key (player → athlete; nilManager → admin).
+// Map ProfileRole → RoleSurface key (player → athlete).
 function roleAccentKey(role: ProfileRole): keyof typeof RoleSurface {
   if (role === 'player') return 'athlete';
-  if (role === 'nilManager') return 'admin';
   return role as keyof typeof RoleSurface;
 }
 

@@ -81,14 +81,6 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
     name: 'Syracuse University',
     handle: '@syracuse',
   },
-  nilManager: {
-    label: 'NIL Manager',
-    description: 'School compliance · view-only roster + deals',
-    icon: 'shield-checkmark-outline',
-    color: '#001A57',
-    name: 'Lauren Whitcombe',
-    handle: '@duke-nil',
-  },
   collective: {
     label: 'Collective',
     description: 'Fund deals · clearance pipeline · fan commerce',
