@@ -85,7 +85,11 @@ function formatCount(n: number): string {
 export function AthleteDetailSheet({ athlete, visible, onClose }: AthleteDetailSheetProps) {
   // Hydrate richer data from the demo roster via the id bridge.
   const roster = athlete?.rosterId ? getAthlete(athlete.rosterId) : undefined;
-  const reach = athlete?.reachId ? getMockAthleteSocialReach(athlete.reachId) : null;
+  // Reach: prefer an explicit reachId from the caller, else the bridge carried
+  // on the resolved roster entry. Athletes without either get a graceful
+  // "reach syncing" line — never three "—" stats.
+  const reachId = athlete?.reachId ?? roster?.reachId;
+  const reach = reachId ? getMockAthleteSocialReach(reachId) : null;
 
   const [supported, setSupported] = React.useState(false);
   // Reset the local "supported" affordance whenever a new athlete opens.
@@ -139,27 +143,34 @@ export function AthleteDetailSheet({ athlete, visible, onClose }: AthleteDetailS
               </View>
             </View>
 
-            {/* Key stats row */}
-            <View style={styles.statsRow}>
-              <View style={styles.statCell}>
-                <Text style={styles.statValue}>{followers}</Text>
-                <Text style={styles.statLabel}>followers</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statCell}>
-                <Text style={styles.statValue}>{engagement}</Text>
-                <Text style={styles.statLabel}>engagement</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statCell}>
-                <Text style={styles.statValue}>{platformCount || '—'}</Text>
-                <Text style={styles.statLabel}>platforms</Text>
-              </View>
-            </View>
+            {/* Key stats row — only when a reach fixture exists. Otherwise we
+                render an intentional "syncing" line instead of three "—" cells
+                so the sheet never looks broken for athletes without reach. */}
             {reach ? (
-              <Text style={styles.reachNote}>Cross-platform reach · {reach.sourceNote}</Text>
+              <>
+                <View style={styles.statsRow}>
+                  <View style={styles.statCell}>
+                    <Text style={styles.statValue}>{followers}</Text>
+                    <Text style={styles.statLabel}>followers</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCell}>
+                    <Text style={styles.statValue}>{engagement}</Text>
+                    <Text style={styles.statLabel}>engagement</Text>
+                  </View>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCell}>
+                    <Text style={styles.statValue}>{platformCount || '—'}</Text>
+                    <Text style={styles.statLabel}>platforms</Text>
+                  </View>
+                </View>
+                <Text style={styles.reachNote}>Cross-platform reach · {reach.sourceNote}</Text>
+              </>
             ) : (
-              <Text style={styles.reachNote}>Reach sync not connected for this athlete yet.</Text>
+              <View style={styles.reachSyncCard}>
+                <Ionicons name="sync-outline" size={16} color={TEXT_SECONDARY} />
+                <Text style={styles.reachSyncText}>Reach syncing — connect socials</Text>
+              </View>
             )}
 
             {/* Recent updates */}
@@ -263,6 +274,22 @@ const styles = StyleSheet.create({
     fontSize: TEXT.caption,
     marginTop: SP_SM,
     lineHeight: 16,
+  },
+  reachSyncCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SP_SM,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_CARD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HAIRLINE,
+    paddingVertical: SP_MD,
+    paddingHorizontal: SP_MD,
+  },
+  reachSyncText: {
+    color: TEXT_SECONDARY,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.semibold,
   },
 
   sectionLabel: {

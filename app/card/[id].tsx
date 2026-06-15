@@ -336,8 +336,10 @@ export default function CardDetailScreen() {
     [tileId, caption, subtitle, sectionId, dealId],
   );
 
-  // Player/award cards can open the shared, role-neutral AthleteDetailSheet
-  // from their "{name}'s Profile" related row. Charter-safe: the sheet shows
+  // Award AND portal cards both derive `kind: 'player'`, so both open the
+  // shared, role-neutral AthleteDetailSheet from their "{name}'s Profile" row.
+  // The sheet hydrates name/sport/school + reach via the demo-roster bridge
+  // (slugified caption → roster entry → reachId). Charter-safe: it shows
   // public reach/updates only and never moves money in the demo.
   const [athleteSheet, setAthleteSheet] = React.useState(false);
 
@@ -543,12 +545,17 @@ export default function CardDetailScreen() {
       </Pressable>
 
       {/* Shared athlete sheet — opened from a player/award card's Profile row.
-          `rosterId` slug bridges into the demo roster; degrades gracefully. */}
+          `rosterId` slug bridges into the demo roster (which carries the
+          `reachId` bridge); the sheet degrades gracefully when reach is
+          absent. `sport`/`school` are derived from the card context so the
+          sheet's identity line is always coherent even when the roster slug
+          doesn't resolve. */}
       {content.kind === 'player' ? (
         <AthleteDetailSheet
           athlete={{
             id: tileId,
             name: caption ?? content.title,
+            sport: sectionId === 'portal' ? 'Football' : 'College Athlete',
             school: (subtitle ?? '').split(' · ')[2] || undefined,
             rosterId: slugify(caption ?? content.title),
           }}
