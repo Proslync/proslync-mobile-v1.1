@@ -175,12 +175,10 @@ function deriveContent(
         { label: 'Status', value: status },
         ...(venue ? [{ label: 'Venue', value: venue }] : []),
       ],
-      related: [
-        { icon: 'stats-chart-outline', title: 'Box Score', sub: 'Full stats · player lines', route: '/game/[id]?tab=box-score' },
-        { icon: 'play-circle-outline', title: 'Highlights', sub: 'Top plays from this game', route: '/game/[id]?tab=highlights' },
-        { icon: 'calendar-outline', title: 'Schedule', sub: 'Full season schedule', route: '/game/[id]?tab=schedule' },
-      ],
-      ctaLabel: 'View full box score',
+      // Single door into the game page — Box Score / Highlights / Schedule are
+      // tabs you switch between in-place once inside (no repetition on the card).
+      related: [],
+      ctaLabel: 'View game',
       ctaSectionId: sectionId,
       ctaRoute: '/game/[id]?tab=box-score',
     };
