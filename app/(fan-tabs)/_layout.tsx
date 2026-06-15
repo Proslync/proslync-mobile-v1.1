@@ -4,8 +4,9 @@
 // approximated glass; the fan side now matches the pro side exactly.
 //
 // 4 fan tabs (post fan-dashboard-remix-2026-05-12):
-//   • index     → Home (Fan HQ rich landing)
-//   • dashboard → Fan Hub (social feed — FanHomeFeed authed / FanView unauth)
+//   • index     → Home (Fan HQ — canonical supporter landing)
+//   • dashboard → Play (legacy fan dashboard: Feed + Pick'em + Perks — NOT a
+//                 second home; index.tsx owns Home)
 //   • explore   → universal ExploreView (Feed / Games / Discover)
 //   • profile   → Account
 
@@ -25,10 +26,13 @@ export default function FanTabLayout() {
             sf={{ default: "house", selected: "house.fill" }}
           />
         </NativeTabs.Trigger>
+        {/* "Play" surface — Feed + Pick'em + Perks. Gamecontroller glyph (not a
+            second house/grid) so it never reads as a duplicate Home tab. Label
+            kept empty to match the icon-only fan spine. */}
         <NativeTabs.Trigger name="dashboard">
           <NativeTabs.Trigger.Label>{""}</NativeTabs.Trigger.Label>
           <NativeTabs.Trigger.Icon
-            sf={{ default: "square.grid.2x2", selected: "square.grid.2x2.fill" }}
+            sf={{ default: "gamecontroller", selected: "gamecontroller.fill" }}
           />
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="explore">

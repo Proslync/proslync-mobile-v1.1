@@ -1,12 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { GlassView } from 'expo-glass-effect';
 import * as React from 'react';
 import {
-  Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,24 +13,17 @@ import {
 import Animated, {
   FadeIn,
   FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FanHomeFeed } from '@/components/fan/fan-home-feed';
+import { PerkSheet, type SheetPerk } from '@/components/fan/perk-sheet';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { FloatingTabPill, useTabCollapse } from '@/components/shared/floating-tab-pill';
 
 import {
-  FAN_FEED,
-  FAN_FOLLOWING,
-  FAN_GAMES,
   FAN_PERKS,
   FAN_PREDICTIONS,
   FAN_PROFILE,
-  type FeedItem,
-  type LiveGame,
   type Perk,
   type Prediction,
 } from '@/lib/data/mock-fan-data';
@@ -44,7 +34,6 @@ import {
   HAIRLINE,
   RADIUS_CARD,
   RADIUS_LG,
-  RADIUS_PILL,
   RADIUS_SM,
   SIGNAL_POSITIVE,
   SP_LG,
@@ -65,27 +54,30 @@ const PURPLE = '#A855F7';
 
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
-// Fan has 3 main tabs: Home / Pick'em / Perks.
-// The inner Home sub-tabs (Following | Games) are left as-is.
-const FAN_TABS = ['Home', "Pick'em", 'Perks'] as const;
+// "Play & Perks" surface (the legacy fan dashboard). This is NOT a second home:
+// `index.tsx` owns Fan HQ. Here the first pill is "Feed" (the live FanHomeFeed),
+// then the two interactive features that justify this tab: Pick'em + Perks.
+// (Removed: the dead HomeTab/FeedTab/GamesTab fixture screens — Home was already
+// repointed to FanHomeFeed so those were never rendered.)
+const FAN_TABS = ['Feed', "Pick'em", 'Perks'] as const;
 type FanTabLabel = (typeof FAN_TABS)[number];
 
-type TabKey = 'home' | 'pickem' | 'perks';
+type TabKey = 'feed' | 'pickem' | 'perks';
 
 function tabLabelToKey(label: FanTabLabel): TabKey {
-  if (label === 'Home') return 'home';
+  if (label === 'Feed') return 'feed';
   if (label === "Pick'em") return 'pickem';
   return 'perks';
 }
 function tabKeyToLabel(key: TabKey): FanTabLabel {
-  if (key === 'home') return 'Home';
+  if (key === 'feed') return 'Feed';
   if (key === 'pickem') return "Pick'em";
   return 'Perks';
 }
 
 export function FanView() {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = React.useState<TabKey>('home');
+  const [activeTab, setActiveTab] = React.useState<TabKey>('pickem');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
   const { collapsed, onScroll } = useTabCollapse();
 
@@ -94,7 +86,7 @@ export function FanView() {
 
   return (
     <View style={styles.container}>
-      {activeTab === 'home' && <FanHomeFeed topInset={topPad} onScroll={onScroll} />}
+      {activeTab === 'feed' && <FanHomeFeed topInset={topPad} onScroll={onScroll} />}
       {activeTab === 'pickem' && <PickemTab topPad={topPad} bottomPad={bottomPad} onScroll={onScroll} />}
       {activeTab === 'perks' && <PerksTab topPad={topPad} bottomPad={bottomPad} onScroll={onScroll} />}
 
@@ -129,306 +121,7 @@ export function FanView() {
 }
 
 // ============================================================
-// Tab 1 — Following Feed
-// ============================================================
-
-function HomeTab({ topPad, bottomPad }: { topPad: number; bottomPad: number }) {
-  const [subTab, setSubTab] = React.useState<'following' | 'games'>('following');
-  const SUB_TABS = [
-    { key: 'following', label: 'Following', count: FAN_FOLLOWING.length },
-    { key: 'games', label: 'Games', count: FAN_GAMES.length },
-  ] as const;
-
-  const subIndex = Math.max(0, SUB_TABS.findIndex((t) => t.key === subTab));
-  const subPillWidth = useSharedValue(0);
-  const animatedSubIndex = useSharedValue(subIndex);
-  React.useEffect(() => {
-    animatedSubIndex.value = withTiming(subIndex, { duration: 180 });
-  }, [subIndex, animatedSubIndex]);
-  const subKnobStyle = useAnimatedStyle(() => {
-    const segW = subPillWidth.value / Math.max(SUB_TABS.length, 1);
-    const inset = 4;
-    return {
-      width: Math.max(segW - inset * 2, 0),
-      transform: [{ translateX: animatedSubIndex.value * segW + inset }],
-    };
-  });
-
-  return (
-    <View style={{ flex: 1, paddingTop: topPad }}>
-      <View
-        style={styles.subTabsRow}
-        onLayout={(e) => {
-          subPillWidth.value = e.nativeEvent.layout.width;
-        }}
-      >
-        <View style={styles.glassLayer} pointerEvents="none">
-          <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
-        </View>
-        <Animated.View style={[styles.tabKnob, subKnobStyle]} pointerEvents="none" />
-        {SUB_TABS.map(({ key, label, count }) => {
-          const isActive = subTab === key;
-          return (
-            <Pressable
-              key={key}
-              style={styles.subTab}
-              onPress={() => setSubTab(key)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text style={[styles.subTabLabel, isActive && styles.subTabLabelActive]}>
-                {label}
-              </Text>
-              <View style={[styles.subTabBadge, isActive && styles.subTabBadgeActive]}>
-                <Text style={[styles.subTabBadgeText, isActive && styles.subTabBadgeTextActive]}>
-                  {count}
-                </Text>
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {subTab === 'following' && <FeedTab bottomPad={bottomPad} />}
-      {subTab === 'games' && <GamesTab bottomPad={bottomPad} />}
-    </View>
-  );
-}
-
-function FeedTab({ bottomPad }: { bottomPad: number }) {
-  return (
-    <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Athlete strip */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.athleteStrip}
-      >
-        {FAN_FOLLOWING.map((a) => (
-          <TouchableOpacity key={a.id} activeOpacity={0.7} style={styles.athleteChip}>
-            <View
-              style={[
-                styles.athleteChipAvatar,
-                {
-                  backgroundColor: `${a.avatarColor}20`,
-                  borderColor: a.isLive ? '#FF4444' : `${a.avatarColor}60`,
-                },
-              ]}
-            >
-              <Text style={[styles.athleteChipText, { color: a.avatarColor }]}>
-                {a.initials}
-              </Text>
-              {a.isLive && <View style={styles.liveIndicator} />}
-            </View>
-            <Text style={styles.athleteChipName} numberOfLines={1}>
-              {a.name.split(' ')[0]}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      <Text style={styles.kicker}>LATEST · {FAN_FEED.length}</Text>
-      {FAN_FEED.map((item, i) => (
-        <FeedCard key={item.id} item={item} delay={i * 60} />
-      ))}
-    </ScrollView>
-  );
-}
-
-function FeedCard({ item, delay }: { item: FeedItem; delay: number }) {
-  const typeLabel = {
-    highlight: '🔥 HIGHLIGHT',
-    post: '📱 POST',
-    announcement: '📣 ANNOUNCEMENT',
-    milestone: '🏆 MILESTONE',
-  }[item.type];
-
-  const typeColor = {
-    highlight: '#FF4444',
-    post: PURPLE,
-    announcement: ACCENT,
-    milestone: '#F5B400',
-  }[item.type];
-
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(delay).duration(380)}
-      style={styles.feedCard}
-    >
-      <View style={styles.feedHead}>
-        <View
-          style={[
-            styles.feedAvatar,
-            {
-              backgroundColor: `${item.athleteColor}20`,
-              borderColor: `${item.athleteColor}60`,
-            },
-          ]}
-        >
-          <Text style={[styles.feedAvatarText, { color: item.athleteColor }]}>
-            {item.athleteInitials}
-          </Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.feedName}>{item.athleteName}</Text>
-          <View style={styles.feedTypeRow}>
-            <Text style={[styles.feedType, { color: typeColor }]}>{typeLabel}</Text>
-            <Text style={styles.feedTime}>· {item.timeAgo}</Text>
-          </View>
-        </View>
-      </View>
-      <Text style={styles.feedContent}>{item.content}</Text>
-      <View style={styles.feedReactions}>
-        <View style={styles.reactBtn}>
-          <Ionicons name="heart-outline" size={15} color={TEXT_SECONDARY} />
-          <Text style={styles.reactText}>{item.reactions.likes.toLocaleString()}</Text>
-        </View>
-        <View style={styles.reactBtn}>
-          <Ionicons name="chatbubble-outline" size={14} color={TEXT_SECONDARY} />
-          <Text style={styles.reactText}>{item.reactions.comments.toLocaleString()}</Text>
-        </View>
-        <View style={{ flex: 1 }} />
-        <TouchableOpacity style={styles.shareBtn} activeOpacity={0.7}>
-          <Ionicons name="share-outline" size={14} color={PURPLE} />
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
-}
-
-// ============================================================
-// Tab 2 — Games Today
-// ============================================================
-
-function GamesTab({ bottomPad }: { bottomPad: number }) {
-  const live = FAN_GAMES.filter((g) => g.status === 'live');
-  const upcoming = FAN_GAMES.filter((g) => g.status === 'upcoming');
-  const finals = FAN_GAMES.filter((g) => g.status === 'final');
-
-  return (
-    <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {live.length > 0 && (
-        <>
-          <Text style={styles.kicker}>LIVE · {live.length}</Text>
-          {live.map((g, i) => <GameCard key={g.id} g={g} delay={i * 60} />)}
-        </>
-      )}
-
-      <Text style={styles.kicker}>UPCOMING</Text>
-      {upcoming.map((g, i) => <GameCard key={g.id} g={g} delay={i * 60} />)}
-
-      <Text style={styles.kicker}>FINAL · TODAY</Text>
-      {finals.map((g, i) => <GameCard key={g.id} g={g} delay={i * 60} />)}
-    </ScrollView>
-  );
-}
-
-function GameCard({ g, delay }: { g: LiveGame; delay: number }) {
-  const isLive = g.status === 'live';
-  const isFinal = g.status === 'final';
-  const borderColor = isLive ? 'rgba(255,68,68,0.35)' : HAIRLINE;
-
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(delay).duration(380)}
-      style={[styles.gameCard, { borderColor }]}
-    >
-      {isLive && (
-        <LinearGradient
-          colors={['rgba(255,68,68,0.12)', 'transparent']}
-          style={StyleSheet.absoluteFill}
-        />
-      )}
-      <View style={styles.gameHeader}>
-        {isLive && (
-          <View style={styles.livePill}>
-            <View style={styles.liveDot} />
-            <Text style={styles.livePillText}>LIVE</Text>
-          </View>
-        )}
-        {!isLive && (
-          <Text
-            style={[
-              styles.gameStatusText,
-              { color: isFinal ? TEXT_TERTIARY : ACCENT },
-            ]}
-          >
-            {isFinal ? 'FINAL' : g.tipoff}
-          </Text>
-        )}
-        {g.hasFollowedAthlete && (
-          <View style={styles.followedChip}>
-            <Ionicons name="star" size={9} color={PURPLE} />
-            <Text style={styles.followedChipText}>Following</Text>
-          </View>
-        )}
-        {isLive && (
-          <Text style={styles.gameClock}>
-            {g.quarter} · {g.clock}
-          </Text>
-        )}
-      </View>
-
-      <View style={styles.gameScoreRow}>
-        <View style={styles.gameTeamBlock}>
-          <Text style={styles.gameTeam}>{g.away}</Text>
-          {g.awayScore !== undefined && (
-            <Text
-              style={[
-                styles.gameScore,
-                isLive && g.awayScore > (g.homeScore ?? 0) && styles.gameScoreLeading,
-              ]}
-            >
-              {g.awayScore}
-            </Text>
-          )}
-        </View>
-        <Text style={styles.gameAt}>@</Text>
-        <View style={styles.gameTeamBlock}>
-          <Text style={styles.gameTeam}>{g.home}</Text>
-          {g.homeScore !== undefined && (
-            <Text
-              style={[
-                styles.gameScore,
-                isLive && g.homeScore > (g.awayScore ?? 0) && styles.gameScoreLeading,
-              ]}
-            >
-              {g.homeScore}
-            </Text>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.gameFooter}>
-        <Text style={styles.gameVenue}>{g.venue}</Text>
-        {isLive && (
-          <View style={styles.watchedRow}>
-            <Ionicons name="eye-outline" size={11} color={TEXT_TERTIARY} />
-            <Text style={styles.watchedText}>
-              {(g.watchedBy / 1000).toFixed(1)}K watching
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {isLive && (
-        <TouchableOpacity activeOpacity={0.85} style={styles.watchBtn}>
-          <Ionicons name="play" size={13} color={TEXT_PRIMARY} />
-          <Text style={styles.watchBtnText}>Watch live stream</Text>
-        </TouchableOpacity>
-      )}
-    </Animated.View>
-  );
-}
-
-// ============================================================
-// Tab 3 — Pick'em
+// Tab 1 — Pick'em
 // ============================================================
 
 function PickemTab({ topPad, bottomPad, onScroll }: { topPad: number; bottomPad: number; onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void }) {
@@ -566,8 +259,29 @@ function PredictionCard({
 // Tab 4 — Perks
 // ============================================================
 
+// Map a FAN_PERKS row → the PerkSheet's shape. Available perks are claimable;
+// already-claimed perks are read-only fulfillment status.
+function perkToSheet(p: Perk): SheetPerk {
+  return {
+    id: p.id,
+    title: p.title,
+    description: p.description,
+    source: p.athlete,
+    tier: p.tier,
+    kind: p.claimed ? 'status' : 'claimable',
+    fulfillment: p.claimed
+      ? 'Claimed — fulfillment complete in the demo timeline.'
+      : `Costs ${p.cost.toLocaleString()} pts · fulfilled by the athlete's team after claim.`,
+    delivered: p.claimed,
+  };
+}
+
 function PerksTab({ topPad, bottomPad, onScroll }: { topPad: number; bottomPad: number; onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void }) {
+  const [sheetPerk, setSheetPerk] = React.useState<SheetPerk | null>(null);
+  const openPerk = React.useCallback((p: Perk) => setSheetPerk(perkToSheet(p)), []);
+
   return (
+    <>
     <ScrollView
       contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
       showsVerticalScrollIndicator={false}
@@ -608,18 +322,21 @@ function PerksTab({ topPad, bottomPad, onScroll }: { topPad: number; bottomPad: 
 
       <Text style={styles.kicker}>AVAILABLE · {FAN_PERKS.filter((p) => !p.claimed).length}</Text>
       {FAN_PERKS.filter((p) => !p.claimed).map((p, i) => (
-        <PerkCard key={p.id} p={p} delay={i * 70} />
+        <PerkCard key={p.id} p={p} delay={i * 70} onOpen={openPerk} />
       ))}
 
       <Text style={styles.kicker}>CLAIMED · {FAN_PERKS.filter((p) => p.claimed).length}</Text>
       {FAN_PERKS.filter((p) => p.claimed).map((p, i) => (
-        <PerkCard key={p.id} p={p} delay={i * 70} />
+        <PerkCard key={p.id} p={p} delay={i * 70} onOpen={openPerk} />
       ))}
     </ScrollView>
+
+    <PerkSheet perk={sheetPerk} visible={sheetPerk != null} onClose={() => setSheetPerk(null)} />
+    </>
   );
 }
 
-function PerkCard({ p, delay }: { p: Perk; delay: number }) {
+function PerkCard({ p, delay, onOpen }: { p: Perk; delay: number; onOpen: (p: Perk) => void }) {
   const icon: Record<Perk['type'], keyof typeof Ionicons.glyphMap> = {
     tickets: 'ticket',
     merch: 'shirt',
@@ -640,10 +357,22 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
       entering={FadeInDown.delay(delay).duration(380)}
       style={[styles.perkCard, p.claimed && { opacity: 0.55 }]}
     >
-      <View style={styles.perkIconBox}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => onOpen(p)}
+        style={styles.perkIconBox}
+        accessibilityRole="button"
+        accessibilityLabel={`View perk ${p.title}`}
+      >
         <Ionicons name={icon[p.type]} size={22} color={ACCENT} />
-      </View>
-      <View style={{ flex: 1 }}>
+      </TouchableOpacity>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => onOpen(p)}
+        style={{ flex: 1 }}
+        accessibilityRole="button"
+        accessibilityLabel={`View perk ${p.title}`}
+      >
         <View style={styles.perkTopRow}>
           <View style={[styles.perkTierPill, { borderColor: tierColor[p.tier], backgroundColor: `${tierColor[p.tier]}1a` }]}>
             <Text style={[styles.perkTierText, { color: tierColor[p.tier] }]}>
@@ -661,8 +390,7 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
         <Text style={styles.perkAthlete}>{p.athlete}</Text>
         <Text style={styles.perkDesc}>{p.description}</Text>
         {!p.claimed && (
-          <TouchableOpacity
-            activeOpacity={0.85}
+          <View
             style={[
               styles.claimBtn,
               !affordable && styles.claimBtnDisabled,
@@ -680,9 +408,9 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
             >
               {p.cost.toLocaleString()} pts
             </Text>
-          </TouchableOpacity>
+          </View>
         )}
-      </View>
+      </TouchableOpacity>
     </Animated.View>
   );
 }
@@ -694,127 +422,8 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: CANVAS },
 
-  // Sub-tab segmented switcher (Following | Games inside Home tab) — glass pill
-  // matching the Home/Pick'em/Perks row above it.
-  subTabsRow: {
-    flexDirection: 'row',
-    marginHorizontal: SP_LG,
-    marginBottom: SP_MD,
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  subTab: {
-    flex: 1,
-    height: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-  },
-  subTabLabel: { fontSize: TEXT.label, fontWeight: WEIGHT.bold, color: TEXT_TERTIARY },
-  subTabLabelActive: { color: TEXT_PRIMARY },
-  subTabBadge: {
-    minWidth: 20,
-    height: 18,
-    paddingHorizontal: 6,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: SURFACE_SUBTLE,
-  },
-  // Active badge: ACCENT (active selection — copper-restraint exception)
-  subTabBadgeActive: { backgroundColor: ACCENT },
-  subTabBadgeText: { fontSize: TEXT.caption, fontWeight: WEIGHT.bold, color: TEXT_SECONDARY },
-  subTabBadgeTextActive: { color: TEXT_PRIMARY },
-
-  tabRow: {
-    paddingHorizontal: SP_LG,
-    paddingTop: SP_XS,
-    paddingBottom: 14,
-    gap: SP_SM,
-    alignItems: 'center',
-  },
-  tabPill: {
-    paddingHorizontal: SP_LG,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: RADIUS_PILL,
-    borderWidth: 1,
-    borderColor: HAIRLINE,
-    backgroundColor: SURFACE_SUBTLE,
-  },
-  tabPillActive: {
-    backgroundColor: 'rgba(168,85,247,0.15)',
-    borderColor: 'rgba(168,85,247,0.4)',
-  },
-  tabPillText: {
-    fontSize: TEXT.body,
-    color: TEXT_PRIMARY,
-    fontWeight: WEIGHT.medium,
-  },
-  tabPillTextActive: { color: ACCENT, fontWeight: WEIGHT.bold },
-
-  // Floating header row — avatar pill + segmented tabs (matches player activity)
+  // Top fade behind the status bar — kept (still rendered in FanView).
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
-  headerScrollFixed: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 100,
-  },
-  headerScrollContent: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: SP_SM,
-    alignItems: 'center',
-  },
-  headerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 46,
-    borderRadius: 23,
-    paddingLeft: 3,
-    paddingRight: SP_MD,
-    overflow: 'hidden',
-  },
-  headerPillAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  headerPillIcon: {
-    marginLeft: SP_SM,
-  },
-  glassLayer: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-    borderRadius: 23,
-  },
-  tabSegmentedPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-  },
-  tabSegment: {
-    flex: 1,
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tabKnob: {
-    position: 'absolute',
-    top: 4,
-    bottom: 4,
-    left: 0,
-    borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
 
   scrollContent: { paddingHorizontal: SP_LG, paddingTop: SP_XS },
 
@@ -826,172 +435,6 @@ const styles = StyleSheet.create({
     marginBottom: SP_SM,
     marginTop: 14,
   },
-
-  // Feed — athlete strip
-  athleteStrip: {
-    paddingHorizontal: 0,
-    paddingBottom: SP_XS,
-    gap: SP_MD,
-  },
-  athleteChip: { alignItems: 'center', width: 64 },
-  athleteChipAvatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-  },
-  athleteChipText: { fontSize: TEXT.body, fontWeight: WEIGHT.bold },
-  liveIndicator: {
-    position: 'absolute',
-    bottom: -2,
-    right: -2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#FF4444',
-    borderWidth: 2,
-    borderColor: CANVAS,
-  },
-  athleteChipName: {
-    color: TEXT_SECONDARY,
-    fontSize: TEXT.caption,
-    marginTop: 6,
-    fontWeight: WEIGHT.semibold,
-  },
-
-  feedCard: {
-    borderRadius: RADIUS_CARD,
-    borderWidth: 1,
-    borderColor: HAIRLINE,
-    padding: 14,
-    backgroundColor: SURFACE,
-    marginBottom: SP_SM,
-  },
-  feedHead: { flexDirection: 'row', alignItems: 'center', gap: SP_SM, marginBottom: SP_SM },
-  feedAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  feedAvatarText: { fontSize: TEXT.label, fontWeight: WEIGHT.bold },
-  feedName: { color: TEXT_PRIMARY, fontSize: TEXT.body, fontWeight: WEIGHT.bold },
-  feedTypeRow: { flexDirection: 'row', alignItems: 'center', gap: SP_XS, marginTop: 3 },
-  feedType: { fontSize: TEXT.caption, fontWeight: WEIGHT.bold, letterSpacing: 0.4 },
-  feedTime: { color: TEXT_TERTIARY, fontSize: TEXT.caption },
-  feedContent: { color: TEXT_PRIMARY, fontSize: TEXT.label, lineHeight: 19, marginBottom: SP_SM },
-  feedReactions: { flexDirection: 'row', alignItems: 'center', gap: SP_LG },
-  reactBtn: { flexDirection: 'row', alignItems: 'center', gap: SP_XS },
-  reactText: { fontSize: TEXT.caption, color: TEXT_SECONDARY, fontWeight: WEIGHT.semibold },
-  shareBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(168,85,247,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(168,85,247,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  // Games
-  gameCard: {
-    borderRadius: RADIUS_CARD,
-    borderWidth: 1,
-    padding: 14,
-    backgroundColor: SURFACE,
-    overflow: 'hidden',
-    marginBottom: SP_SM,
-  },
-  gameHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SP_SM,
-    marginBottom: SP_SM,
-  },
-  livePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: SP_SM,
-    paddingVertical: 3,
-    borderRadius: RADIUS_SM,
-    backgroundColor: 'rgba(255,68,68,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,68,68,0.4)',
-  },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF4444' },
-  livePillText: { color: '#FF4444', fontSize: TEXT.caption, fontWeight: WEIGHT.bold, letterSpacing: 0.4 },
-  gameStatusText: { fontSize: TEXT.caption, fontWeight: WEIGHT.bold, letterSpacing: 0.5 },
-  followedChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SP_XS,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 7,
-    backgroundColor: 'rgba(168,85,247,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(168,85,247,0.35)',
-  },
-  followedChipText: { color: PURPLE, fontSize: 9.5, fontWeight: WEIGHT.bold, letterSpacing: 0.3 },
-  gameClock: {
-    marginLeft: 'auto',
-    fontSize: TEXT.caption,
-    color: TEXT_PRIMARY,
-    fontWeight: WEIGHT.bold,
-  },
-
-  gameScoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: SP_XS,
-  },
-  gameTeamBlock: { flex: 1, alignItems: 'center' },
-  gameTeam: {
-    fontSize: TEXT.caption,
-    color: TEXT_SECONDARY,
-    fontWeight: WEIGHT.bold,
-    letterSpacing: 0.3,
-    marginBottom: 6,
-  },
-  gameScore: {
-    fontSize: 36,
-    color: TEXT_SECONDARY,
-    fontWeight: WEIGHT.bold,
-    fontVariant: ['tabular-nums'],
-  },
-  gameScoreLeading: { color: TEXT_PRIMARY },
-  gameAt: { fontSize: TEXT.caption, color: TEXT_TERTIARY, marginHorizontal: SP_XS },
-
-  gameFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: SP_SM,
-  },
-  gameVenue: { fontSize: TEXT.caption, color: TEXT_TERTIARY },
-  watchedRow: { flexDirection: 'row', alignItems: 'center', gap: SP_XS },
-  watchedText: { fontSize: TEXT.caption, color: TEXT_TERTIARY },
-
-  watchBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: SP_SM,
-    paddingVertical: SP_SM,
-    borderRadius: RADIUS_SM,
-    backgroundColor: 'rgba(255,68,68,0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,68,68,0.4)',
-  },
-  watchBtnText: { color: TEXT_PRIMARY, fontSize: TEXT.label, fontWeight: WEIGHT.bold },
 
   // Pick'em
   fanScoreCard: {
@@ -1208,39 +651,10 @@ const styles = StyleSheet.create({
   claimBtnText: { flex: 1, color: TEXT_PRIMARY, fontSize: TEXT.label, fontWeight: WEIGHT.bold },
   claimBtnCost: { color: TEXT_PRIMARY, fontSize: TEXT.label, fontWeight: WEIGHT.bold },
 
-  bottomToolbar: {
-    position: 'absolute',
-    left: SP_LG,
-    right: SP_LG,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: SP_MD,
-    zIndex: 100,
-  },
   bottomFade: {
     position: 'absolute',
     left: 0,
     right: 0,
     zIndex: 99,
   },
-  toolbarCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  toolbarPill: {
-    flex: 1,
-    height: 46,
-    borderRadius: 23,
-    overflow: 'hidden',
-    paddingHorizontal: SP_LG,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toolbarPillText: { color: TEXT_PRIMARY, fontSize: TEXT.body, fontWeight: WEIGHT.bold },
 });
