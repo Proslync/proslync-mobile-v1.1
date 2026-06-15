@@ -43,6 +43,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStableRouter as _useStableRouter } from '@/hooks/use-stable-router';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
+import { IdentityAvatar } from '@/components/shared/identity-avatar';
+import { personaFor } from '@/lib/demo/personas';
 
 const BANNER_KEY = 'proslync:coachprofile:banner:v2';
 const BANNER_KEY_LEGACY = 'proslync:coachprofile:bannerVideo:v1';
@@ -346,7 +348,15 @@ export default function CoachProfile() {
         <View style={styles.topLeftProfilePillGlass} pointerEvents="none">
           <GlassView glassEffectStyle="regular" style={[StyleSheet.absoluteFill, { borderRadius: 23 }]} />
         </View>
-        <Image source={PROFILE_MEDIA.coach.avatar} style={styles.topLeftProfilePillAvatar} />
+        {PROFILE_MEDIA.coach.avatar ? (
+          <Image source={PROFILE_MEDIA.coach.avatar} style={styles.topLeftProfilePillAvatar} />
+        ) : (
+          <IdentityAvatar
+            name={personaFor('coach').displayName}
+            size={40}
+            accent={personaFor('coach').accent}
+          />
+        )}
         <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
       </Pressable>
 

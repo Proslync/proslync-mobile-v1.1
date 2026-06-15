@@ -31,6 +31,8 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
 import { healLocalMediaUri } from '@/lib/media/local-media';
+import { IdentityAvatar } from '@/components/shared/identity-avatar';
+import { personaFor } from '@/lib/demo/personas';
 
 // Unmounted old data imports — kept for lineage reference (not used).
 // import { BRAND_ATHLETES, BRAND_CAMPAIGNS, BRAND_PROFILE } from '@/lib/data/mock-brand-data';
@@ -573,34 +575,40 @@ export default function BrandProfile() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner — cover video/image that fades into the page bg */}
-        <View style={[styles.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
-          {effectiveBannerVideo ? (
-            <VideoView
-              player={bannerPlayer}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-              contentFit="cover"
-              nativeControls={false}
-            />
-          ) : (
-            <Image
-              source={media.banner}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-              resizeMode="cover"
-            />
-          )}
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.28)' }]}
-            pointerEvents="none"
-          />
-          {/* Gradient fade into content below banner */}
-          <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)', '#000']}
-            locations={[0.55, 0.82, 1]}
-            style={[StyleSheet.absoluteFill]}
-            pointerEvents="none"
-          />
-        </View>
+        {/* Banner — brand gradient or custom video */}
+        {(() => {
+          const persona = personaFor('brand');
+          return (
+            <View style={[styles.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
+              {effectiveBannerVideo ? (
+                <VideoView
+                  player={bannerPlayer}
+                  style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
+                  contentFit="cover"
+                  nativeControls={false}
+                />
+              ) : (
+                <LinearGradient
+                  colors={[persona.bannerColors[0], persona.bannerColors[1]]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                />
+              )}
+              <View
+                style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.20)' }]}
+                pointerEvents="none"
+              />
+              {/* Gradient fade into content below banner */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.6)', '#000']}
+                locations={[0.55, 0.82, 1]}
+                style={[StyleSheet.absoluteFill]}
+                pointerEvents="none"
+              />
+            </View>
+          );
+        })()}
 
         {/* Trust card content — full-width, directly below banner */}
         <TrustCard />
@@ -627,10 +635,18 @@ export default function BrandProfile() {
             style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
           />
         </View>
-        <Image
-          source={avatarUri ? { uri: avatarUri } : media.avatar}
-          style={styles.topLeftProfilePillAvatar}
-        />
+        {avatarUri ? (
+          <Image
+            source={{ uri: avatarUri }}
+            style={styles.topLeftProfilePillAvatar}
+          />
+        ) : (
+          <IdentityAvatar
+            name={personaFor('brand').displayName}
+            size={40}
+            accent={personaFor('brand').accent}
+          />
+        )}
         <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
       </Pressable>
 

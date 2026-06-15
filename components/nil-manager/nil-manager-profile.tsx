@@ -28,6 +28,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FeedNavBar } from '@/components/feed/feed-nav-bar';
 import { useStableRouter } from '@/hooks/use-stable-router';
+import { IdentityAvatar } from '@/components/shared/identity-avatar';
+import { personaFor } from '@/lib/demo/personas';
 
 // NIL Manager accent — deep navy, matches the role-switcher menu entry
 // (`color: '#001A57'`) and the proslync-role-accents-application skill's
@@ -96,33 +98,46 @@ export default function NilManagerProfile() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner */}
-        <View style={[styles.bannerWrap, { height: insets.top + 140 }]} pointerEvents="none">
-          <LinearGradient
-            colors={['rgba(0,26,87,0.35)', 'rgba(0,26,87,0.10)', 'rgba(0,0,0,0.85)', '#000']}
-            locations={[0, 0.4, 0.85, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-        </View>
-
-        {/* Profile row */}
-        <View style={styles.profileRow}>
-          <View style={styles.avatar}>
-            <Ionicons name="shield-checkmark" size={36} color={NIL_NAVY} />
-          </View>
-          <View style={styles.rightCol}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name}>{NIL_MANAGER.name}</Text>
-              <MaterialCommunityIcons name="check-decagram" size={15} color={NIL_NAVY} />
+        {/* Banner — nil-manager persona gradient */}
+        {(() => {
+          const nilPersona = personaFor('nilManager');
+          return (
+            <View style={[styles.bannerWrap, { height: insets.top + 140 }]} pointerEvents="none">
+              <LinearGradient
+                colors={[nilPersona.bannerColors[0], nilPersona.bannerColors[1]]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
             </View>
-            <Text style={[styles.metaLine, styles.metaLinePrimary]} numberOfLines={1}>
-              {NIL_MANAGER.metaPrimary}
-            </Text>
-            <Text style={styles.metaLine} numberOfLines={1}>
-              {NIL_MANAGER.metaSecondary}
-            </Text>
-          </View>
-        </View>
+          );
+        })()}
+
+        {/* Profile row — nil-manager persona identity */}
+        {(() => {
+          const nilPersona = personaFor('nilManager');
+          return (
+            <View style={styles.profileRow}>
+              <IdentityAvatar
+                name={nilPersona.displayName}
+                size={86}
+                accent={nilPersona.accent}
+              />
+              <View style={styles.rightCol}>
+                <View style={styles.nameRow}>
+                  <Text style={styles.name}>{nilPersona.displayName}</Text>
+                  <MaterialCommunityIcons name="check-decagram" size={15} color={nilPersona.accent} />
+                </View>
+                <Text style={[styles.metaLine, styles.metaLinePrimary]} numberOfLines={1}>
+                  {nilPersona.handle}
+                </Text>
+                <Text style={styles.metaLine} numberOfLines={1}>
+                  {nilPersona.tagline}
+                </Text>
+              </View>
+            </View>
+          );
+        })()}
 
         {/* Tab row */}
         <View style={styles.tabsRow}>

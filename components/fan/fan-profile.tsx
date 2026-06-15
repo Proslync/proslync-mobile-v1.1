@@ -30,6 +30,9 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
+import { IdentityAvatar } from '@/components/shared/identity-avatar';
+import { personaFor } from '@/lib/demo/personas';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   FAN_FOLLOWING,
   FAN_PERKS as _FAN_PERKS,
@@ -37,8 +40,7 @@ import {
 } from '@/lib/data/mock-fan-data';
 import { healLocalMediaUri } from '@/lib/media/local-media';
 
-// Unmounted imports kept for module resolution
-import { LinearGradient as _LinearGradient } from 'expo-linear-gradient';
+// Note: LinearGradient is now imported at the top of the file.
 import Animated, { FadeInDown as _FadeInDown, useAnimatedStyle as _useAnimatedStyle, useSharedValue as _useSharedValue, withTiming as _withTiming } from 'react-native-reanimated';
 
 // ── Charter constants ─────────────────────────────────────────────────────
@@ -307,7 +309,6 @@ export default function FanProfile({ footer }: FanProfileProps) {
   }, []);
 
   // Suppress unused-import warnings for unmounted visual helpers
-  void _LinearGradient;
   void _FadeInDown;
   void Animated;
   void _useAnimatedStyle;
@@ -322,38 +323,47 @@ export default function FanProfile({ footer }: FanProfileProps) {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner — cover video/image (PRESERVED chrome) */}
-        <View style={[s.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
-          {effectiveBannerVideo ? (
-            <VideoView
-              player={bannerPlayer}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-              contentFit="cover"
-              nativeControls={false}
-            />
-          ) : (
-            <Image
-              source={media.banner}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-              resizeMode="cover"
-            />
-          )}
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.28)' }]}
-            pointerEvents="none"
-          />
-        </View>
+        {/* Banner — fan persona gradient or custom video */}
+        {(() => {
+          const persona = personaFor('fan');
+          return (
+            <View style={[s.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
+              {effectiveBannerVideo ? (
+                <VideoView
+                  player={bannerPlayer}
+                  style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
+                  contentFit="cover"
+                  nativeControls={false}
+                />
+              ) : (
+                <LinearGradient
+                  colors={[persona.bannerColors[0], persona.bannerColors[1]]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                />
+              )}
+              <View
+                style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.20)' }]}
+                pointerEvents="none"
+              />
+            </View>
+          );
+        })()}
 
-        {/* Identity header row — name + tier (no score, no rank) */}
-        <View style={s.identityRow}>
-          <Text style={s.identityName}>
-            {FAN_PROFILE.firstName} {FAN_PROFILE.lastName}
-          </Text>
-          <View style={s.identityMeta}>
-            <Text style={s.identityMetaText}>{FAN_PROFILE.metaPrimary}</Text>
-            <Text style={s.identityMetaText}>{FAN_PROFILE.metaSecondary}</Text>
-          </View>
-        </View>
+        {/* Identity header row — persona name + tagline (no score, no rank) */}
+        {(() => {
+          const persona = personaFor('fan');
+          return (
+            <View style={s.identityRow}>
+              <Text style={s.identityName}>{persona.displayName}</Text>
+              <View style={s.identityMeta}>
+                <Text style={s.identityMetaText}>{persona.handle}</Text>
+                <Text style={s.identityMetaText}>{persona.tagline}</Text>
+              </View>
+            </View>
+          );
+        })()}
 
         {/* Charter content sections */}
         <View style={s.sections}>
@@ -386,10 +396,18 @@ export default function FanProfile({ footer }: FanProfileProps) {
             style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
           />
         </View>
-        <Image
-          source={media.avatar}
-          style={s.topLeftProfilePillAvatar}
-        />
+        {media.avatar ? (
+          <Image
+            source={media.avatar}
+            style={s.topLeftProfilePillAvatar}
+          />
+        ) : (
+          <IdentityAvatar
+            name={personaFor('fan').displayName}
+            size={40}
+            accent={personaFor('fan').accent}
+          />
+        )}
         <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
       </Pressable>
 

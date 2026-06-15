@@ -5,6 +5,7 @@ import { logger } from "./logger";
 import type { ProfileRole } from "../providers/role-provider";
 import type { User, UserRole } from "../types/auth.types";
 import { UserRole as UR } from "../types/auth.types";
+import { ROLE_PERSONA } from "../demo/personas";
 
 const log = logger.tagged("dev-login");
 
@@ -48,7 +49,7 @@ export const DEV_PERSONAS: DevPersona[] = [
   {
     key: "player",
     label: "Athlete",
-    subtitle: "Kiyan Anthony",
+    subtitle: ROLE_PERSONA.player.displayName,
     icon: "basketball-outline",
     tint: getDevPersonaVisual("player").accent,
     phoneNumber: "+15555550101",
@@ -61,7 +62,7 @@ export const DEV_PERSONAS: DevPersona[] = [
   {
     key: "brand",
     label: "Brand",
-    subtitle: "EliteGear",
+    subtitle: ROLE_PERSONA.brand.displayName,
     icon: "briefcase-outline",
     tint: getDevPersonaVisual("brand").accent,
     phoneNumber: "+15555550102",
@@ -73,7 +74,7 @@ export const DEV_PERSONAS: DevPersona[] = [
   {
     key: "agent",
     label: "Agent",
-    subtitle: "Sarah Kim",
+    subtitle: ROLE_PERSONA.agent.displayName,
     icon: "people-outline",
     tint: getDevPersonaVisual("agent").accent,
     phoneNumber: "+15555550103",
@@ -85,7 +86,7 @@ export const DEV_PERSONAS: DevPersona[] = [
   {
     key: "school",
     label: "Athletic Director",
-    subtitle: "AD Office",
+    subtitle: ROLE_PERSONA.school.displayName,
     icon: "school-outline",
     tint: getDevPersonaVisual("school").accent,
     phoneNumber: "+15555550104",
@@ -97,7 +98,7 @@ export const DEV_PERSONAS: DevPersona[] = [
   {
     key: "nilManager",
     label: "NIL Manager",
-    subtitle: "Deal Review",
+    subtitle: ROLE_PERSONA.nilManager.displayName,
     icon: "shield-checkmark-outline",
     tint: getDevPersonaVisual("nilManager").accent,
     phoneNumber: "+15555550105",
@@ -109,7 +110,7 @@ export const DEV_PERSONAS: DevPersona[] = [
   {
     key: "coach",
     label: "Coach",
-    subtitle: "Coach Williams",
+    subtitle: ROLE_PERSONA.coach.displayName,
     icon: "megaphone-outline",
     tint: getDevPersonaVisual("coach").accent,
     phoneNumber: "+15555550106",
@@ -121,7 +122,7 @@ export const DEV_PERSONAS: DevPersona[] = [
   {
     key: "fan",
     label: "Fan",
-    subtitle: "Superfan",
+    subtitle: ROLE_PERSONA.fan.displayName,
     icon: "heart-outline",
     tint: getDevPersonaVisual("fan").accent,
     phoneNumber: "+15555550107",

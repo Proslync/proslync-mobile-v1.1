@@ -28,12 +28,20 @@ const CDN_BASE =
   'https://arshiarahnavard7-sys.github.io/proslync-web-v1.1/public/videos';
 
 export type ProfileMedia = {
-  /** require()'d cover image — shown when there's no bannerVideo. */
-  banner: number;
+  /**
+   * require()'d cover image — shown when there's no bannerVideo.
+   * For non-player roles this may be null; components should use
+   * the persona gradient banner from lib/demo/personas.ts instead.
+   */
+  banner: number | null;
   /** HTTPS URL of a looping cover video (preferred over `banner`). */
   bannerVideo?: string;
-  /** require()'d square avatar / profile photo. */
-  avatar: number;
+  /**
+   * require()'d square avatar / profile photo.
+   * For non-player roles this may be null; components should use
+   * IdentityAvatar from components/shared/identity-avatar.tsx instead.
+   */
+  avatar: number | null;
 };
 
 const KIYAN_BANNER = require('@/assets/images/kiyan-banner.png');
@@ -47,27 +55,24 @@ export const PROFILE_MEDIA: Record<string, ProfileMedia> = {
     bannerVideo: `${CDN_BASE}/player-banner.mp4`,
     avatar: KIYAN_AVATAR,
   },
-  brand: {
-    banner: KIYAN_BANNER,
-    bannerVideo: `${CDN_BASE}/brand-banner.mp4`,
-    avatar: require('@/assets/profile-media/brand-avatar.png'),
-  },
-  school: {
-    banner: KIYAN_BANNER,
-    bannerVideo: `${CDN_BASE}/school-banner.mp4`,
-    avatar: require('@/assets/profile-media/school-avatar.png'),
-  },
+  // Coach keeps curated assets; no Kiyan fallback.
   coach: {
     banner: COACH_BANNER,
     bannerVideo: `${CDN_BASE}/coach-banner.mp4`,
     avatar: COACH_AVATAR,
   },
-  // No custom video for these — default placeholders.
-  agent: { banner: KIYAN_BANNER, avatar: KIYAN_AVATAR },
-  fan: { banner: KIYAN_BANNER, avatar: KIYAN_AVATAR },
-  nilManager: { banner: KIYAN_BANNER, avatar: KIYAN_AVATAR },
+  // Non-player roles: banner=null + avatar=null so profile components use
+  // the persona gradient + IdentityAvatar from lib/demo/personas.ts.
+  brand:      { banner: null, bannerVideo: `${CDN_BASE}/brand-banner.mp4`,  avatar: null },
+  school:     { banner: null, bannerVideo: `${CDN_BASE}/school-banner.mp4`, avatar: null },
+  agent:      { banner: null, avatar: null },
+  fan:        { banner: null, avatar: null },
+  nilManager: { banner: null, avatar: null },
+  collective: { banner: null, avatar: null },
 };
 
 export function profileMedia(role: keyof typeof PROFILE_MEDIA | string): ProfileMedia {
+  // Only player falls back to player — other roles deliberately have null
+  // banner/avatar so their components use the persona gradient + IdentityAvatar.
   return PROFILE_MEDIA[role] ?? PROFILE_MEDIA.player;
 }

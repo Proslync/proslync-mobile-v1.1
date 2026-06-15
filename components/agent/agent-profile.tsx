@@ -33,6 +33,8 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
 import { healLocalMediaUri } from '@/lib/media/local-media';
+import { IdentityAvatar } from '@/components/shared/identity-avatar';
+import { personaFor } from '@/lib/demo/personas';
 
 // Old data imports — still present in mock-agent-data.ts, unused here.
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -320,39 +322,52 @@ export default function AgentProfile() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner — kept verbatim from prior agent-profile */}
-        <View style={[s.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
-          {effectiveBannerVideo ? (
-            <VideoView
-              player={bannerPlayer}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-              contentFit="cover"
-              nativeControls={false}
-            />
-          ) : (
-            <Image
-              source={media.banner}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-              resizeMode="cover"
-            />
-          )}
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.28)' }]}
-            pointerEvents="none"
-          />
-        </View>
+        {/* Banner — gradient keyed to agent persona accent */}
+        {(() => {
+          const persona = personaFor('agent');
+          return (
+            <View style={[s.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
+              {effectiveBannerVideo ? (
+                <VideoView
+                  player={bannerPlayer}
+                  style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
+                  contentFit="cover"
+                  nativeControls={false}
+                />
+              ) : (
+                <LinearGradient
+                  colors={[persona.bannerColors[0], persona.bannerColors[1]]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                />
+              )}
+              <View
+                style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.20)' }]}
+                pointerEvents="none"
+              />
+            </View>
+          );
+        })()}
 
         {/* Trust storefront — four GlassBlock sections */}
         <View style={s.pageContent}>
           {/* Agent name + VERIFIED REP inline */}
-          <View style={s.identityRow}>
-            <Text style={s.agentName}>Daniel Hayes</Text>
-            <View style={s.verifiedInlinePill}>
-              <Ionicons name="shield-checkmark" size={12} color={GREEN} />
-              <Text style={s.verifiedInlineText}>VERIFIED REP</Text>
-            </View>
-          </View>
-          <Text style={s.agentMeta}>Founder · Hayes Sports Group · Los Angeles, CA</Text>
+          {(() => {
+            const persona = personaFor('agent');
+            return (
+              <>
+                <View style={s.identityRow}>
+                  <Text style={s.agentName}>{persona.displayName}</Text>
+                  <View style={s.verifiedInlinePill}>
+                    <Ionicons name="shield-checkmark" size={12} color={GREEN} />
+                    <Text style={s.verifiedInlineText}>VERIFIED REP</Text>
+                  </View>
+                </View>
+                <Text style={s.agentMeta}>{persona.tagline} · {persona.handle}</Text>
+              </>
+            );
+          })()}
 
           {/* 1. Verification */}
           <VerificationBlock />
@@ -394,10 +409,18 @@ export default function AgentProfile() {
             style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
           />
         </View>
-        <Image
-          source={media.avatar}
-          style={s.topLeftProfilePillAvatar}
-        />
+        {media.avatar ? (
+          <Image
+            source={media.avatar}
+            style={s.topLeftProfilePillAvatar}
+          />
+        ) : (
+          <IdentityAvatar
+            name={personaFor('agent').displayName}
+            size={40}
+            accent={personaFor('agent').accent}
+          />
+        )}
         <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
       </Pressable>
 

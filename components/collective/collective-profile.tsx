@@ -26,6 +26,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
+import { IdentityAvatar } from '@/components/shared/identity-avatar';
+import { personaFor } from '@/lib/demo/personas';
 
 const TAB_BAR_TOP_FROM_BOTTOM = 90;
 const GREEN = '#34C759';
@@ -282,9 +284,8 @@ export default function CollectiveProfile() {
   const insets = useSafeAreaInsets();
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
 
-  // Use collective from PROFILE_MEDIA if present; otherwise fall back to
-  // the nilManager placeholder (same pattern — KIYAN_BANNER + kiyan-avatar).
   const media = PROFILE_MEDIA['collective'] ?? PROFILE_MEDIA['nilManager'] ?? PROFILE_MEDIA['player'];
+  const persona = personaFor('collective');
 
   return (
     <View style={styles.container}>
@@ -293,20 +294,21 @@ export default function CollectiveProfile() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner — static image fallback (no video for collective yet) */}
+        {/* Banner — collective persona gradient (no video for collective) */}
         <View
           style={[styles.bannerWrap, { height: insets.top + 290 }]}
           pointerEvents="none"
         >
-          <Image
-            source={media.banner}
-            style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-            resizeMode="cover"
+          <LinearGradient
+            colors={[persona.bannerColors[0], persona.bannerColors[1]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
           />
           <View
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: 'rgba(0,0,0,0.28)' },
+              { backgroundColor: 'rgba(0,0,0,0.20)' },
             ]}
             pointerEvents="none"
           />
@@ -346,7 +348,15 @@ export default function CollectiveProfile() {
             style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
           />
         </View>
-        <Image source={media.avatar} style={styles.topLeftProfilePillAvatar} />
+        {media.avatar ? (
+          <Image source={media.avatar} style={styles.topLeftProfilePillAvatar} />
+        ) : (
+          <IdentityAvatar
+            name={persona.displayName}
+            size={40}
+            accent={persona.accent}
+          />
+        )}
         <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
       </Pressable>
 

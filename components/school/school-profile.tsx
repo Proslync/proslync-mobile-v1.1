@@ -36,6 +36,8 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
 import { healLocalMediaUri } from '@/lib/media/local-media';
+import { IdentityAvatar } from '@/components/shared/identity-avatar';
+import { personaFor } from '@/lib/demo/personas';
 
 // ── Charter constants ──────────────────────────────────────────────────────
 const COPPER = '#EB621A';
@@ -343,27 +345,33 @@ export default function SchoolProfile() {
         contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Banner — cover video/image, scrolls with content (chrome preserved) */}
-        <View style={[s.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
-          {effectiveBannerVideo ? (
-            <VideoView
-              player={bannerPlayer}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-              contentFit="cover"
-              nativeControls={false}
-            />
-          ) : (
-            <Image
-              source={media.banner}
-              style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
-              resizeMode="cover"
-            />
-          )}
-          <View
-            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.28)' }]}
-            pointerEvents="none"
-          />
-        </View>
+        {/* Banner — school persona gradient or custom video */}
+        {(() => {
+          const schoolPersona = personaFor('school');
+          return (
+            <View style={[s.bannerWrap, { height: insets.top + 290 }]} pointerEvents="none">
+              {effectiveBannerVideo ? (
+                <VideoView
+                  player={bannerPlayer}
+                  style={{ position: 'absolute', top: -15, left: -3, width: 420, height: 320 }}
+                  contentFit="cover"
+                  nativeControls={false}
+                />
+              ) : (
+                <LinearGradient
+                  colors={[schoolPersona.bannerColors[0], schoolPersona.bannerColors[1]]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                />
+              )}
+              <View
+                style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.20)' }]}
+                pointerEvents="none"
+              />
+            </View>
+          );
+        })()}
 
         {/* Segmented pill — kept as single-segment chrome for visual parity */}
         <View style={s.tabsRow}>
@@ -406,13 +414,20 @@ export default function SchoolProfile() {
 
         {/* Content — identity + three charter blocks */}
         <View style={s.contentSection}>
-          {/* Identity */}
-          <View style={s.nameRow}>
-            <Text style={s.name}>Syracuse University</Text>
-            <MaterialCommunityIcons name="check-decagram" size={15} color={SCHOOL_BLUE} />
-          </View>
-          <Text style={[s.metaLine, s.metaLinePrimary]}>Athletics Department</Text>
-          <Text style={s.metaLine}>Syracuse, NY · ACC</Text>
+          {/* Identity — school persona */}
+          {(() => {
+            const schoolPersona = personaFor('school');
+            return (
+              <>
+                <View style={s.nameRow}>
+                  <Text style={s.name}>{schoolPersona.displayName}</Text>
+                  <MaterialCommunityIcons name="check-decagram" size={15} color={schoolPersona.accent} />
+                </View>
+                <Text style={[s.metaLine, s.metaLinePrimary]}>{schoolPersona.handle}</Text>
+                <Text style={s.metaLine}>{schoolPersona.tagline}</Text>
+              </>
+            );
+          })()}
 
           {/* Charter blocks */}
           <CleanProgramBlock />
@@ -442,10 +457,18 @@ export default function SchoolProfile() {
             style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
           />
         </View>
-        <Image
-          source={avatarUri ? { uri: avatarUri } : media.avatar}
-          style={s.topLeftProfilePillAvatar}
-        />
+        {avatarUri ? (
+          <Image
+            source={{ uri: avatarUri }}
+            style={s.topLeftProfilePillAvatar}
+          />
+        ) : (
+          <IdentityAvatar
+            name={personaFor('school').displayName}
+            size={40}
+            accent={personaFor('school').accent}
+          />
+        )}
         <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
       </Pressable>
 
