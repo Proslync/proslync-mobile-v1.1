@@ -5,8 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DealDetailSpine, roleToDealLens, type DealLensKey } from '@/components/deal';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
-// TODO Phase 2 brand: port getBrandDealDetail from ios-final's mock-brand-data
-const getBrandDealDetail = (_id: string): any => undefined;
+import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
 import { useRole } from '@/lib/providers/role-provider';
 
 function normalizeParam(value: string | string[] | undefined): string | undefined {
