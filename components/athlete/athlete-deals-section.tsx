@@ -123,113 +123,96 @@ function ComparableOffersCta() {
   );
 }
 
-// ── Who has access CTA (Sprint 3.7) ──
+// ── Tools grid (Sprint simplify) ──────────────────────────────────
+// Collapses the former navigation-only CTAs — Who has access, Contract
+// check, Opportunities, Start a deal — into one compact 2×2 grid of
+// tappable tiles. Each tile preserves its original route and live count.
+// Neutral tiles; copper reserved for the single primary ("Start a deal").
 const DEMO_ATHLETE_ID = 'a-1';
 
-function WhoHasAccessCta() {
-  const router = useStableRouter();
-  const { data } = useAthletePermissionGrants(DEMO_ATHLETE_ID);
-  const grants = data ?? [];
-  const active = grants.filter((g) => g.status === 'active').length;
-  const pending = grants.filter((g) => g.status === 'pending').length;
-
+function ToolTile({
+  icon,
+  label,
+  sublabel,
+  badge,
+  primary,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  sublabel: string;
+  badge?: string;
+  primary?: boolean;
+  onPress: () => void;
+}) {
   return (
     <TouchableOpacity
-      style={whoHasAccessCtaStyles.card}
+      style={[toolsStyles.tile, primary && toolsStyles.tilePrimary]}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`Open who has access (${grants.length} grants)`}
-      onPress={() => router.push({ pathname: '/athlete/permissions' })}
+      accessibilityLabel={`${label}${badge ? ` (${badge})` : ''}`}
+      onPress={onPress}
     >
-      <View style={whoHasAccessCtaStyles.headRow}>
-        <Ionicons name="key-outline" size={16} color="#00C6B0" />
-        <Text style={whoHasAccessCtaStyles.title}>Who has access</Text>
-        <View style={whoHasAccessCtaStyles.countPill}>
-          <Text style={whoHasAccessCtaStyles.countText}>{grants.length}</Text>
-        </View>
+      <View style={toolsStyles.tileHead}>
+        <Ionicons name={icon} size={18} color={primary ? COPPER : TEXT_PRIMARY} />
+        {badge ? (
+          <View style={toolsStyles.tileBadge}>
+            <Text style={toolsStyles.tileBadgeText}>{badge}</Text>
+          </View>
+        ) : null}
       </View>
-      <Text style={whoHasAccessCtaStyles.blurb}>
-        Roles, individuals, and organizations you&apos;ve granted access to. Coarse-grained
-        consent — pause or revoke at any time, full audit trail kept.
-      </Text>
-      <View style={whoHasAccessCtaStyles.footer}>
-        <Text style={whoHasAccessCtaStyles.metaText}>
-          {active} active · {pending} pending
+      <View style={toolsStyles.tileTextWrap}>
+        <Text style={[toolsStyles.tileLabel, primary && toolsStyles.tileLabelPrimary]} numberOfLines={1}>
+          {label}
         </Text>
-        <View style={whoHasAccessCtaStyles.cta}>
-          <Text style={whoHasAccessCtaStyles.ctaText}>View grants</Text>
-          <Ionicons name="chevron-forward" size={12} color="#00C6B0" />
-        </View>
+        <Text style={toolsStyles.tileSub} numberOfLines={1}>{sublabel}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
-// ── Contract check CTA ──
-function ContractCheckCta() {
+function AthleteToolsGrid() {
   const router = useStableRouter();
-  return (
-    <TouchableOpacity
-      style={contractCheckCtaStyles.card}
-      activeOpacity={0.85}
-      accessibilityRole="button"
-      accessibilityLabel="Open contract check"
-      onPress={() => router.push('/athlete/contract-scan')}
-    >
-      <View style={contractCheckCtaStyles.headRow}>
-        <Ionicons name="shield-checkmark-outline" size={16} color={COPPER} />
-        <Text style={contractCheckCtaStyles.title}>Contract check</Text>
-      </View>
-      <Text style={contractCheckCtaStyles.blurb}>
-        Spot red flags before you sign — AI-style scan in seconds.
-      </Text>
-      <View style={contractCheckCtaStyles.footer}>
-        <Text style={contractCheckCtaStyles.metaText}>Rule-based · LLM upgrade coming</Text>
-        <View style={contractCheckCtaStyles.cta}>
-          <Text style={contractCheckCtaStyles.ctaText}>Scan a deal</Text>
-          <Ionicons name="chevron-forward" size={12} color={COPPER} />
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// ── Opportunities CTA (Sprint 2.3) ──
-function AthleteOpportunitiesCta() {
-  const router = useStableRouter();
+  const { data: grantData } = useAthletePermissionGrants(DEMO_ATHLETE_ID);
+  const grantCount = grantData?.length ?? 0;
   const matchCount = React.useMemo(
     () => getAthleteDiscovery(DEMO_ATHLETE_ID).matched.length,
     [],
   );
+
   return (
-    <TouchableOpacity
-      style={opportunitiesCtaStyles.card}
-      activeOpacity={0.85}
-      accessibilityRole="button"
-      accessibilityLabel={`Open opportunities (${matchCount} matched)`}
-      onPress={() => router.push({ pathname: '/athlete/opportunities' })}
-    >
-      <View style={opportunitiesCtaStyles.headRow}>
-        <Ionicons name="briefcase-outline" size={16} color="#EB621A" />
-        <Text style={opportunitiesCtaStyles.title}>Opportunities</Text>
-        <View style={opportunitiesCtaStyles.countPill}>
-          <Text style={opportunitiesCtaStyles.countText}>{matchCount}</Text>
-        </View>
+    <View style={toolsStyles.wrap}>
+      <Text style={listStyles.sectionLabel}>TOOLS</Text>
+      <View style={toolsStyles.grid}>
+        <ToolTile
+          icon="add-circle-outline"
+          label="Start a deal"
+          sublabel="NIL deal engine"
+          primary
+          onPress={() => router.push('/deal-engine/new')}
+        />
+        <ToolTile
+          icon="briefcase-outline"
+          label="Opportunities"
+          sublabel={`${matchCount} matched`}
+          badge={matchCount > 0 ? String(matchCount) : undefined}
+          onPress={() => router.push({ pathname: '/athlete/opportunities' })}
+        />
+        <ToolTile
+          icon="key-outline"
+          label="Who has access"
+          sublabel="Consent & grants"
+          badge={grantCount > 0 ? String(grantCount) : undefined}
+          onPress={() => router.push({ pathname: '/athlete/permissions' })}
+        />
+        <ToolTile
+          icon="shield-checkmark-outline"
+          label="Contract check"
+          sublabel="Scan for red flags"
+          onPress={() => router.push('/athlete/contract-scan')}
+        />
       </View>
-      <Text style={opportunitiesCtaStyles.blurb}>
-        Open deals from brands matched to your profile. Apply directly — every applicant goes
-        through AI rank + human approval before any commitment.
-      </Text>
-      <View style={opportunitiesCtaStyles.footer}>
-        <Text style={opportunitiesCtaStyles.metaText}>
-          {matchCount} matched · synthetic fixture set
-        </Text>
-        <View style={opportunitiesCtaStyles.cta}>
-          <Text style={opportunitiesCtaStyles.ctaText}>Browse</Text>
-          <Ionicons name="chevron-forward" size={12} color="#EB621A" />
-        </View>
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -469,16 +452,6 @@ function PaymentTruthSection() {
       <View style={ptStyles.sectionHeader}>
         <View style={ptStyles.sectionBar} />
         <Text style={ptStyles.sectionLabel}>PAYMENT TRUTH</Text>
-        {/* START A DEAL CTA — routes to NIL Deal Engine create flow */}
-        <TouchableOpacity
-          style={ptStyles.startDealCta}
-          onPress={() => router.push('/deal-engine/new')}
-          activeOpacity={0.82}
-          accessibilityRole="button"
-          accessibilityLabel="Start a new NIL deal"
-        >
-          <Text style={ptStyles.startDealCtaText}>+ START A DEAL</Text>
-        </TouchableOpacity>
       </View>
       <View style={ptStyles.rows}>
         {deals.map((deal) => (
@@ -514,22 +487,6 @@ const ptStyles = StyleSheet.create({
     letterSpacing: 1.2,
     color: TEXT_SECONDARY,
     flex: 1,
-  },
-  startDealCta: {
-    borderRadius: RADIUS_PILL,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: COPPER,
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    backgroundColor: 'rgba(235,98,26,0.10)',
-    minHeight: 30,
-    justifyContent: 'center',
-  },
-  startDealCtaText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: COPPER,
-    letterSpacing: 0.8,
   },
   rows: {
     gap: SP_SM,
@@ -688,9 +645,6 @@ export function AthleteDealsSection() {
   const contractsQuery = useAthleteContracts(DEMO_ATHLETE_ID);
   const offersQuery = useAthleteOffers();
 
-  const activeCount = contractsQuery.data?.activeCount ?? 0;
-  const offerCount = offersQuery.data?.offerCount ?? 0;
-
   // Computed deck-top totals — sum live contract values for the hero KPI.
   const ytdTotal = React.useMemo(() => {
     const items = contractsQuery.data?.contracts ?? [];
@@ -715,7 +669,7 @@ export function AthleteDealsSection() {
       {/* Payment Truth — per-deal 3-step state (spec §4 thin truth layer) */}
       <PaymentTruthSection />
 
-      {/* Hero — gradient backdrop with KPI + tile grid */}
+      {/* Hero — gradient backdrop with the YTD deal-value KPI */}
       <View style={heroStyles.heroCard}>
         <LinearGradient
           colors={['rgba(235,98,26,0.32)', 'rgba(235,98,26,0.06)', 'rgba(0,0,0,0)']}
@@ -736,34 +690,21 @@ export function AthleteDealsSection() {
             <Text style={heroStyles.heroDelta}>+12%</Text>
           </View>
         </View>
-        <View style={heroStyles.heroTileRow}>
-          <HeroTile icon="checkmark-circle" tint="#34C759" label="ACTIVE" value={String(activeCount)} />
-          <View style={heroStyles.heroTileDivider} />
-          <HeroTile icon="mail-unread" tint="#EB621A" label="NEW OFFERS" value={String(offerCount)} />
-          <View style={heroStyles.heroTileDivider} />
-          <HeroTile icon="time" tint="#FFD60A" label="PENDING" value="2" />
-        </View>
       </View>
 
       {/* Comparable offers CTA (Sprint 2.9) — taps into the athlete-side
           comparable-deal evidence packet at `app/athlete/comparables/[dealId]`. */}
       <ComparableOffersCta />
 
-      {/* Who has access CTA (Sprint 3.7) — taps into the athlete consent /
-          permission-grant list at `app/athlete/permissions`. */}
-      <WhoHasAccessCta />
-
-      {/* Contract check CTA — taps into the NIL contract red-flag scanner
-          at `app/athlete/contract-scan`. */}
-      <ContractCheckCta />
-
-      {/* Opportunities CTA (Sprint 2.3) — taps into the athlete-side
-          OpenDeal discovery surface at `app/athlete/opportunities`. */}
-      <AthleteOpportunitiesCta />
-
       {/* Payout breakdown CTA (W31) — taps into `app/athlete/payouts` for
           the full payout split + suggested tax set-aside. */}
       <AthleteWalletRefreshCta />
+
+      {/* Tools — compact 2×2 grid that folds the former navigation-only CTAs
+          (Start a deal → /deal-engine/new, Opportunities → /athlete/opportunities,
+          Who has access → /athlete/permissions, Contract check →
+          /athlete/contract-scan), each preserving its route + live count. */}
+      <AthleteToolsGrid />
 
       {/* Active Contracts section (r6-deals-1 Phase C — /api/nil-deals) */}
       <View style={{ gap: 10 }}>
@@ -777,29 +718,6 @@ export function AthleteDealsSection() {
         <OffersList query={offersQuery} />
       </View>
 
-    </View>
-  );
-}
-
-// ── Hero tile helper ─────────────────────────────────────────────
-function HeroTile({
-  icon,
-  tint,
-  label,
-  value,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  tint: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <View style={heroStyles.heroTile}>
-      <View style={[heroStyles.heroTileIcon, { backgroundColor: `${tint}26` }]}>
-        <Ionicons name={icon} size={13} color={tint} />
-      </View>
-      <Text style={heroStyles.heroTileValue}>{value}</Text>
-      <Text style={heroStyles.heroTileLabel}>{label}</Text>
     </View>
   );
 }
@@ -1062,39 +980,64 @@ const heroStyles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: -0.2,
   },
-  heroTileRow: {
+});
+
+// ── Tools grid styles ──
+const toolsStyles = StyleSheet.create({
+  wrap: { gap: 10 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SP_SM,
+  },
+  tile: {
+    width: '48%',
+    flexGrow: 1,
+    minHeight: 78,
+    borderRadius: RADIUS_CARD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
+    padding: SP_MD,
+    justifyContent: 'space-between',
+    gap: SP_SM,
+  },
+  tilePrimary: {
+    borderColor: `${COPPER}66`,
+    backgroundColor: 'rgba(235,98,26,0.08)',
+  },
+  tileHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 14,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: HAIRLINE_SUBTLE,
+    justifyContent: 'space-between',
   },
-  heroTileDivider: {
-    width: StyleSheet.hairlineWidth,
-    alignSelf: 'stretch',
-    backgroundColor: HAIRLINE,
-    marginHorizontal: SP_XS,
-  },
-  heroTile: { flex: 1, alignItems: 'center', gap: SP_XS },
-  heroTileIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: RADIUS_PILL,
+  tileBadge: {
+    minWidth: 20,
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: SP_XS,
+    paddingVertical: 1,
+    borderRadius: RADIUS_PILL,
+    backgroundColor: SURFACE_RAISED,
   },
-  heroTileValue: {
+  tileBadgeText: {
     color: TEXT_PRIMARY,
-    fontSize: 18,
+    fontSize: 11,
     fontWeight: '900',
+    letterSpacing: 0.2,
     fontVariant: ['tabular-nums'],
-    letterSpacing: -0.4,
   },
-  heroTileLabel: {
-    color: TEXT_SECONDARY,
-    fontSize: 9,
+  tileTextWrap: { gap: 1 },
+  tileLabel: {
+    color: TEXT_PRIMARY,
+    fontSize: 13,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: -0.1,
+  },
+  tileLabelPrimary: { color: COPPER },
+  tileSub: {
+    color: TEXT_TERTIARY,
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
 
@@ -1318,140 +1261,6 @@ const ctaStyles = StyleSheet.create({
   },
 });
 
-const whoHasAccessCtaStyles = StyleSheet.create({
-  card: {
-    gap: SP_SM,
-    borderRadius: RADIUS_LG,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HAIRLINE,
-    backgroundColor: SURFACE,
-    padding: 14,
-  },
-  headRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: SP_SM,
-  },
-  title: {
-    color: TEXT_PRIMARY,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    flex: 1,
-  },
-  countPill: {
-    minWidth: 22,
-    alignItems: 'center',
-    paddingHorizontal: SP_SM,
-    paddingVertical: 2,
-    borderRadius: RADIUS_PILL,
-    backgroundColor: 'rgba(0,198,176,0.20)',
-  },
-  countText: {
-    color: '#00C6B0',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.2,
-  },
-  blurb: {
-    color: TEXT_SECONDARY,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  metaText: {
-    color: TEXT_SECONDARY,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  ctaText: {
-    color: '#00C6B0',
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-});
-
-const opportunitiesCtaStyles = StyleSheet.create({
-  card: {
-    gap: SP_SM,
-    borderRadius: RADIUS_LG,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HAIRLINE,
-    backgroundColor: SURFACE,
-    padding: 14,
-  },
-  headRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: SP_SM,
-  },
-  title: {
-    color: TEXT_PRIMARY,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    flex: 1,
-  },
-  countPill: {
-    minWidth: 22,
-    alignItems: 'center',
-    paddingHorizontal: SP_SM,
-    paddingVertical: 2,
-    borderRadius: RADIUS_PILL,
-    backgroundColor: 'rgba(255,111,60,0.20)',
-  },
-  countText: {
-    color: COPPER,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.2,
-  },
-  blurb: {
-    color: TEXT_SECONDARY,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  metaText: {
-    color: TEXT_SECONDARY,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  ctaText: {
-    color: COPPER,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-});
-
 const dealsBellStyles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
@@ -1575,55 +1384,3 @@ const walletCtaStyles = StyleSheet.create({
   },
 });
 
-const contractCheckCtaStyles = StyleSheet.create({
-  card: {
-    gap: SP_SM,
-    borderRadius: RADIUS_LG,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: HAIRLINE,
-    backgroundColor: SURFACE,
-    padding: 14,
-  },
-  headRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: SP_SM,
-  },
-  title: {
-    color: TEXT_PRIMARY,
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    flex: 1,
-  },
-  blurb: {
-    color: TEXT_SECONDARY,
-    fontSize: 12,
-    fontWeight: '500',
-    lineHeight: 17,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  metaText: {
-    color: TEXT_SECONDARY,
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  ctaText: {
-    color: COPPER,
-    fontSize: 11,
-    fontWeight: '900',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-});
