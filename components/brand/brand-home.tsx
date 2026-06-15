@@ -8,6 +8,7 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
 import * as React from 'react';
 import {
   Alert,
@@ -86,6 +87,13 @@ const ACTIVE_CAMPAIGNS: CampaignRow[] = [
     dealId: 'd-6',
   },
 ];
+
+// Display name derived from the linked deal packet so the campaign row and the
+// deal page it opens can never drift (single source of truth = getBrandDealDetail).
+function campaignAthleteName(row: CampaignRow): string {
+  const full = getBrandDealDetail(row.dealId)?.deal.athlete;
+  return full ? full.split('·')[0].trim() : row.athlete;
+}
 
 // ── Fixture: clearance lines ──────────────────────────────────────────────
 type ClearanceRow = {
@@ -198,6 +206,7 @@ function ActiveCampaignsModule() {
       {ACTIVE_CAMPAIGNS.map((row, idx) => {
         const currentIdx = STEPS.indexOf(row.currentStep);
         const detail = proofDetailLine(row);
+        const athleteName = campaignAthleteName(row);
         return (
           <Pressable
             key={row.id}
@@ -205,11 +214,11 @@ function ActiveCampaignsModule() {
             // Open the live, charter-safe packaged-outcome deal detail.
             onPress={() => router.push(`/deal/${row.dealId}?role=brand` as never)}
             accessibilityRole="button"
-            accessibilityLabel={`Campaign: ${row.athlete} ${row.briefType}`}
+            accessibilityLabel={`Campaign: ${athleteName} ${row.briefType}`}
           >
             {/* Athlete + brief type */}
             <View style={s.campaignTopRow}>
-              <Text style={s.campaignAthlete}>{row.athlete}</Text>
+              <Text style={s.campaignAthlete}>{athleteName}</Text>
               <Text style={s.campaignBriefType}>{row.briefType}</Text>
             </View>
 
