@@ -6,13 +6,14 @@
 //   pick'em, tier progress bar, stat row, PredictionCard, PerkCard (old).
 //   Orphaned variables prefixed with _.
 // No animations (charter). Tabular numerals on money. Copper = act-now only.
-// DEMO Alert on every simulated action.
+// Every reachable row opens a real detail sheet (athlete / perk / supporter
+// post); simulated money/redemption is honestly DEMO-labeled inside the sheet.
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from 'expo-router';
 import * as React from 'react';
 import {
-  Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   FAN_PROFILE,
 } from '@/lib/data/mock-fan-data';
+import {
+  AthleteDetailSheet,
+  type FanAthlete,
+} from '@/components/fan/athlete-detail-sheet';
+import { PerkSheet, type SheetPerk } from '@/components/fan/perk-sheet';
+import { getAthlete } from '@/lib/data/demo-roster';
 import {
   loadPasses,
   loadReceipts,
@@ -197,21 +204,76 @@ function ImpactModule({ receipts }: { receipts: SupporterReceipt[] }) {
 
 // ── MODULE 2: FROM YOUR ATHLETES ──────────────────────────────────────────
 
-function SupporterFeedModule({ hasPasses }: { hasPasses: boolean }) {
+type SupporterPost = (typeof SUPPORTER_FEED)[number];
+
+function SupporterFeedModule({
+  hasPasses,
+  onOpenPost,
+}: {
+  hasPasses: boolean;
+  onOpenPost: (post: SupporterPost) => void;
+}) {
   if (!hasPasses) return null;
   return (
     <View style={s.card}>
       <SectionHeader label="FROM YOUR ATHLETES" chip="SUPPORTERS ONLY" />
       {SUPPORTER_FEED.map((item, idx) => (
-        <View key={item.id} style={[s.feedRow, idx > 0 && s.feedRowBorder]}>
+        <Pressable
+          key={item.id}
+          style={[s.feedRow, idx > 0 && s.feedRowBorder]}
+          onPress={() => onOpenPost(item)}
+          accessibilityRole="button"
+          accessibilityLabel={`Open update from ${item.athlete}`}
+        >
           <View style={s.feedMeta}>
             <Text style={s.feedAthlete}>{item.athlete}</Text>
             <Text style={s.feedTime}> · {item.time}</Text>
           </View>
           <Text style={s.feedBody}>{item.body}</Text>
-        </View>
+        </Pressable>
       ))}
     </View>
+  );
+}
+
+// Lightweight read-only sheet for a supporter-only post. Reuses the
+// FanHomeFeed Modal / scrim / slide pattern; no FanPost object exists for
+// these fixture rows so this is intentionally simple (no like/reply).
+function SupporterPostSheet({
+  post,
+  visible,
+  onClose,
+}: {
+  post: SupporterPost | null;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  if (!post) return null;
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={s.sheetRoot}>
+        <Pressable style={s.sheetScrim} onPress={onClose} accessibilityLabel="Close" />
+        <View style={s.sheet}>
+          <View style={s.sheetHandle} />
+          <View style={s.sheetChip}>
+            <Text style={s.sheetChipText}>{post.chip}</Text>
+          </View>
+          <View style={s.feedMeta}>
+            <Text style={s.feedAthlete}>{post.athlete}</Text>
+            <Text style={s.feedTime}> · {post.time}</Text>
+          </View>
+          <Text style={s.sheetBody}>{post.body}</Text>
+          <Pressable
+            style={s.sheetCloseBtn}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close update"
+          >
+            <Text style={s.sheetCloseText}>Close</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -246,13 +308,51 @@ function SlaStep({
   );
 }
 
-function PerksModule({ hasPasses }: { hasPasses: boolean }) {
+// Map a PERK_ROW → the shared PerkSheet shape. Local rows surface an
+// activation CODE; in-flight rows surface read-only fulfillment status.
+function perkRowToSheet(row: PerkRow): SheetPerk {
+  const delivered = row.currentStep === 2 && !row.isLocal;
+  if (row.isLocal) {
+    return {
+      id: row.id,
+      title: row.title,
+      description: `Local activation from ${row.athlete}. ${row.deliverNote}.`,
+      source: row.athlete,
+      kind: 'code',
+      code: 'SANT-2FOR1',
+      fulfillment: row.deliverNote,
+    };
+  }
+  return {
+    id: row.id,
+    title: row.title,
+    description: `Perk from ${row.athlete}.`,
+    source: row.athlete,
+    kind: 'status',
+    fulfillment: row.deliverNote,
+    delivered,
+  };
+}
+
+function PerksModule({
+  hasPasses,
+  onOpenPerk,
+}: {
+  hasPasses: boolean;
+  onOpenPerk: (perk: SheetPerk) => void;
+}) {
   if (!hasPasses) return null;
   return (
     <View style={s.card}>
       <SectionHeader label="PERKS" />
       {PERK_ROWS.map((row, idx) => (
-        <View key={row.id} style={[s.perkRow, idx > 0 && s.perkRowBorder]}>
+        <Pressable
+          key={row.id}
+          style={[s.perkRow, idx > 0 && s.perkRowBorder]}
+          onPress={() => onOpenPerk(perkRowToSheet(row))}
+          accessibilityRole="button"
+          accessibilityLabel={`View perk ${row.title}`}
+        >
           <View style={s.perkLeft}>
             <Text style={s.perkTitle}>{row.title}</Text>
             <Text style={s.perkAthlete}>{row.athlete}</Text>
@@ -286,19 +386,14 @@ function PerksModule({ hasPasses }: { hasPasses: boolean }) {
           {row.isLocal ? (
             <Pressable
               style={s.showCodeChip}
-              onPress={() =>
-                Alert.alert(
-                  'Show Code',
-                  'Present this screen at the door for your 2-for-1 at Santangelo\'s. (DEMO)',
-                )
-              }
+              onPress={() => onOpenPerk(perkRowToSheet(row))}
               accessibilityRole="button"
               accessibilityLabel="Show activation code"
             >
               <Text style={s.showCodeChipText}>{row.localCta}</Text>
             </Pressable>
           ) : null}
-        </View>
+        </Pressable>
       ))}
     </View>
   );
@@ -306,12 +401,41 @@ function PerksModule({ hasPasses }: { hasPasses: boolean }) {
 
 // ── MODULE 4: MY ATHLETES ────────────────────────────────────────────────
 
+// Suggested teammate for the breadth prompt. No demo-roster entry exists, so
+// the sheet hydrates from these inline fields and degrades gracefully (no reach
+// fixture). Routed to AthleteDetailSheet rather than a DEMO alert.
+const SUGGESTED_TEAMMATE: FanAthlete = {
+  id: 'teammate-marcus',
+  name: 'Marcus Thompson',
+  sport: "Men's Basketball",
+  school: 'Syracuse · from $5/mo',
+  initials: 'MT',
+};
+
+// Map a supporter pass → the AthleteDetailSheet shape. `athleteId` mirrors the
+// demo-roster id (e.g. 'kiyan-anthony'), so the sheet hydrates rich data + any
+// social-reach fixture via the bridge.
+function passToAthlete(p: SupporterPass): FanAthlete {
+  const roster = getAthlete(p.athleteId);
+  // Reach fixture ids are 'a-*' for the brand HQ athletes; map the one demo
+  // overlap (Kiyan) so the sheet shows real reach where we have it.
+  const reachId = p.athleteId === 'kiyan-anthony' ? 'a-1' : undefined;
+  return {
+    id: p.athleteId,
+    name: p.athleteName,
+    rosterId: roster ? p.athleteId : undefined,
+    reachId,
+  };
+}
+
 function MyAthletesModule({
   passes,
   receipts,
+  onOpenAthlete,
 }: {
   passes: SupporterPass[];
   receipts: SupporterReceipt[];
+  onOpenAthlete: (athlete: FanAthlete) => void;
 }) {
   return (
     <View style={s.card}>
@@ -338,7 +462,13 @@ function MyAthletesModule({
               }
             })();
             return (
-              <View key={p.athleteId} style={[s.athleteRow, idx > 0 && s.athleteRowBorder]}>
+              <Pressable
+                key={p.athleteId}
+                style={[s.athleteRow, idx > 0 && s.athleteRowBorder]}
+                onPress={() => onOpenAthlete(passToAthlete(p))}
+                accessibilityRole="button"
+                accessibilityLabel={`View ${p.athleteName}`}
+              >
                 <View style={s.athleteLeft}>
                   <Text style={s.athleteName}>{p.athleteName}</Text>
                   <Text style={s.athleteMeta}>
@@ -351,18 +481,13 @@ function MyAthletesModule({
                 <View style={s.athleteTierChip}>
                   <Text style={s.athleteTierText}>{tierLabel}</Text>
                 </View>
-              </View>
+              </Pressable>
             );
           })}
           {/* Breadth prompt — only when ≥1 pass */}
           <Pressable
             style={s.breadthPrompt}
-            onPress={() =>
-              Alert.alert(
-                'Back a Teammate',
-                'Support Marcus T. (Syracuse MBB) starting from $5/mo. (DEMO)',
-              )
-            }
+            onPress={() => onOpenAthlete(SUGGESTED_TEAMMATE)}
             accessibilityRole="button"
             accessibilityLabel="Back a teammate"
           >
@@ -437,6 +562,11 @@ export default function FanHomeTab() {
 
   const hasPasses = myPasses.length > 0;
 
+  // ── Detail sheets — every reachable row now opens a real target ─────────
+  const [athleteSheet, setAthleteSheet] = React.useState<FanAthlete | null>(null);
+  const [perkSheet, setPerkSheet] = React.useState<SheetPerk | null>(null);
+  const [postSheet, setPostSheet] = React.useState<SupporterPost | null>(null);
+
   return (
     <View style={s.container}>
       <ScrollView
@@ -470,17 +600,38 @@ export default function FanHomeTab() {
         <ImpactModule receipts={passReceipts} />
 
         {/* Module 2 — FROM YOUR ATHLETES (supporter-only feed) */}
-        <SupporterFeedModule hasPasses={hasPasses} />
+        <SupporterFeedModule hasPasses={hasPasses} onOpenPost={setPostSheet} />
 
         {/* Module 3 — PERKS */}
-        <PerksModule hasPasses={hasPasses} />
+        <PerksModule hasPasses={hasPasses} onOpenPerk={setPerkSheet} />
 
         {/* Module 4 — MY ATHLETES */}
-        <MyAthletesModule passes={myPasses} receipts={passReceipts} />
+        <MyAthletesModule
+          passes={myPasses}
+          receipts={passReceipts}
+          onOpenAthlete={setAthleteSheet}
+        />
 
         {/* Footer wall */}
         <FooterWall />
       </ScrollView>
+
+      {/* Detail sheets */}
+      <AthleteDetailSheet
+        athlete={athleteSheet}
+        visible={athleteSheet != null}
+        onClose={() => setAthleteSheet(null)}
+      />
+      <PerkSheet
+        perk={perkSheet}
+        visible={perkSheet != null}
+        onClose={() => setPerkSheet(null)}
+      />
+      <SupporterPostSheet
+        post={postSheet}
+        visible={postSheet != null}
+        onClose={() => setPostSheet(null)}
+      />
     </View>
   );
 }
@@ -842,5 +993,63 @@ const s = StyleSheet.create({
     fontWeight: '500',
     color: MUTED,
     lineHeight: 15,
+  },
+
+  // Supporter-post sheet (reuses FanHomeFeed sheet pattern)
+  sheetRoot: { flex: 1, justifyContent: 'flex-end' },
+  sheetScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheet: {
+    backgroundColor: '#0F0F0F',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 34,
+  },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    marginBottom: 14,
+  },
+  sheetChip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    marginBottom: 10,
+  },
+  sheetChipText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    color: MUTED,
+  },
+  sheetBody: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.90)',
+    lineHeight: 22,
+    fontWeight: '500',
+    marginTop: 8,
+  },
+  sheetCloseBtn: {
+    marginTop: 20,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.035)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+  },
+  sheetCloseText: {
+    color: 'rgba(255,255,255,0.62)',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

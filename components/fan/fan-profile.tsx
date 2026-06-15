@@ -15,6 +15,7 @@ import * as React from 'react';
 import {
   Alert,
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -29,13 +30,15 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
+import { AthleteDetailSheet, type FanAthlete } from '@/components/fan/athlete-detail-sheet';
+import { PerkSheet, type SheetPerk } from '@/components/fan/perk-sheet';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
 import { IdentityAvatar } from '@/components/shared/identity-avatar';
 import { personaFor } from '@/lib/demo/personas';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
   FAN_FOLLOWING,
-  FAN_PERKS as _FAN_PERKS,
+  FAN_PERKS,
   FAN_PROFILE,
 } from '@/lib/data/mock-fan-data';
 import { healLocalMediaUri } from '@/lib/media/local-media';
@@ -168,7 +171,11 @@ function SegmentSection() {
 
 // ── SECTION 3: ROSTER SUPPORTED ──────────────────────────────────────────
 
-function RosterSupportedSection() {
+function RosterSupportedSection({
+  onOpenAthlete,
+}: {
+  onOpenAthlete: (athlete: FanAthlete) => void;
+}) {
   // Use following list for chips — real integration would filter by supporter passes
   const roster = FAN_FOLLOWING.slice(0, 5);
   return (
@@ -176,7 +183,23 @@ function RosterSupportedSection() {
       <SectionHeader label="ROSTER SUPPORTED" />
       <View style={s.rosterRow}>
         {roster.map((a) => (
-          <View key={a.id} style={s.rosterChip}>
+          <Pressable
+            key={a.id}
+            style={s.rosterChip}
+            onPress={() =>
+              onOpenAthlete({
+                id: a.id,
+                name: a.name,
+                school: a.school,
+                rosterId: a.rosterId,
+                reachId: a.reachId,
+                initials: a.initials,
+                accent: a.avatarColor,
+              })
+            }
+            accessibilityRole="button"
+            accessibilityLabel={`View ${a.name}`}
+          >
             <View
               style={[
                 s.rosterChipDot,
@@ -184,7 +207,7 @@ function RosterSupportedSection() {
               ]}
             />
             <Text style={s.rosterChipText}>{a.name.split(' ')[0]} {a.name.split(' ')[1]?.[0] ?? ''}.</Text>
-          </View>
+          </Pressable>
         ))}
       </View>
     </View>
@@ -193,11 +216,30 @@ function RosterSupportedSection() {
 
 // ── SECTION 4: PERKS REDEEMED ────────────────────────────────────────────
 
-function PerksRedeemedSection() {
+// Map a claimed FAN_PERKS row → the read-only PerkSheet status shape.
+function claimedPerkToSheet(p: (typeof FAN_PERKS)[number]): SheetPerk {
+  return {
+    id: p.id,
+    title: p.title,
+    description: p.description,
+    source: p.athlete,
+    tier: p.tier,
+    kind: 'status',
+    fulfillment: 'Redeemed — fulfillment complete in the demo timeline.',
+    delivered: true,
+  };
+}
+
+function PerksRedeemedSection({ onOpenHistory }: { onOpenHistory: () => void }) {
   return (
     <View style={s.card}>
       <SectionHeader label="PERKS REDEEMED" />
-      <View style={s.perksRedeemedRow}>
+      <Pressable
+        style={s.perksRedeemedRow}
+        onPress={onOpenHistory}
+        accessibilityRole="button"
+        accessibilityLabel="View perks redemption history"
+      >
         <View style={s.perksRedeemedStat}>
           <Ionicons name="checkmark-circle" size={16} color={GREEN} />
           <Text style={s.perksRedeemedValue}>7</Text>
@@ -209,8 +251,62 @@ function PerksRedeemedSection() {
           <Text style={s.perksRedeemedValue}>2</Text>
           <Text style={s.perksRedeemedLabel}>shoutouts delivered</Text>
         </View>
-      </View>
+        <Ionicons name="chevron-forward" size={14} color={MUTED} style={{ marginLeft: 6 }} />
+      </Pressable>
     </View>
+  );
+}
+
+// Perks-history sheet — lists redeemed perks; each row opens the shared
+// PerkSheet for its read-only fulfillment detail.
+function PerksHistorySheet({
+  visible,
+  onClose,
+  onOpenPerk,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onOpenPerk: (perk: SheetPerk) => void;
+}) {
+  const claimed = FAN_PERKS.filter((p) => p.claimed);
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={s.sheetRoot}>
+        <Pressable style={s.sheetScrim} onPress={onClose} accessibilityLabel="Close" />
+        <View style={s.historySheet}>
+          <View style={s.sheetHandle} />
+          <Text style={s.historyTitle}>Perks redeemed</Text>
+          {claimed.length === 0 ? (
+            <Text style={s.historyEmpty}>No redeemed perks yet.</Text>
+          ) : (
+            claimed.map((p, idx) => (
+              <Pressable
+                key={p.id}
+                style={[s.historyRow, idx > 0 && s.historyRowBorder]}
+                onPress={() => onOpenPerk(claimedPerkToSheet(p))}
+                accessibilityRole="button"
+                accessibilityLabel={`View redeemed perk ${p.title}`}
+              >
+                <Ionicons name="checkmark-circle" size={16} color={GREEN} />
+                <View style={{ flex: 1 }}>
+                  <Text style={s.historyRowTitle}>{p.title}</Text>
+                  <Text style={s.historyRowMeta}>{p.athlete}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={14} color={MUTED} />
+              </Pressable>
+            ))
+          )}
+          <Pressable
+            style={s.historyCloseBtn}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Close perks history"
+          >
+            <Text style={s.historyCloseText}>Close</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -224,6 +320,11 @@ export interface FanProfileProps {
 export default function FanProfile({ footer }: FanProfileProps) {
   const insets = useSafeAreaInsets();
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
+
+  // ── Detail sheets (roster chips + perks history) ──────────────────────
+  const [athleteSheet, setAthleteSheet] = React.useState<FanAthlete | null>(null);
+  const [historyVisible, setHistoryVisible] = React.useState(false);
+  const [perkSheet, setPerkSheet] = React.useState<SheetPerk | null>(null);
 
   // ── Unmounted state (kept for future re-enable without re-archaeology) ──
   // const _tab = React.useState<_TabKey>('about');
@@ -314,7 +415,6 @@ export default function FanProfile({ footer }: FanProfileProps) {
   void _useAnimatedStyle;
   void _useSharedValue;
   void _withTiming;
-  void _FAN_PERKS;
 
   return (
     <View style={s.container}>
@@ -369,13 +469,33 @@ export default function FanProfile({ footer }: FanProfileProps) {
         <View style={s.sections}>
           <SupporterCardSection />
           <SegmentSection />
-          <RosterSupportedSection />
-          <PerksRedeemedSection />
+          <RosterSupportedSection onOpenAthlete={setAthleteSheet} />
+          <PerksRedeemedSection onOpenHistory={() => setHistoryVisible(true)} />
 
           {/* Injected footer (LinkedRolesPanel + Sign out from profile.tsx) */}
           {footer}
         </View>
       </ScrollView>
+
+      {/* Detail sheets */}
+      <AthleteDetailSheet
+        athlete={athleteSheet}
+        visible={athleteSheet != null}
+        onClose={() => setAthleteSheet(null)}
+      />
+      <PerksHistorySheet
+        visible={historyVisible}
+        onClose={() => setHistoryVisible(false)}
+        onOpenPerk={(p) => {
+          setHistoryVisible(false);
+          setPerkSheet(p);
+        }}
+      />
+      <PerkSheet
+        perk={perkSheet}
+        visible={perkSheet != null}
+        onClose={() => setPerkSheet(null)}
+      />
 
       {/* Bottom fade */}
       <View
@@ -687,5 +807,72 @@ const s = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+  },
+
+  // Perks-history sheet (reuses FanHomeFeed sheet pattern)
+  sheetRoot: { flex: 1, justifyContent: 'flex-end' },
+  sheetScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheetHandle: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    marginBottom: 14,
+  },
+  historySheet: {
+    backgroundColor: '#0F0F0F',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 34,
+    maxHeight: '80%',
+  },
+  historyTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 6,
+  },
+  historyEmpty: {
+    fontSize: 13,
+    color: MUTED,
+    paddingVertical: 12,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 12,
+  },
+  historyRowBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: CARD_BORDER,
+  },
+  historyRowTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  historyRowMeta: {
+    fontSize: 11.5,
+    color: MUTED,
+    marginTop: 2,
+  },
+  historyCloseBtn: {
+    marginTop: 16,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.035)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+  },
+  historyCloseText: {
+    color: 'rgba(255,255,255,0.62)',
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

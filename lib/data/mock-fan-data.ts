@@ -48,16 +48,29 @@ export type FollowingAthlete = {
   lastUpdate: string;
   avatarColor: string;
   isLive?: boolean;
+  /**
+   * ID bridge → `lib/data/demo-roster.ts` `DEMO_ATHLETES`. Lets fan-side UIs
+   * (e.g. AthleteDetailSheet) hydrate rich athlete data (sport/school/class/
+   * accent) and, where the id maps, social-reach fixtures via
+   * `getMockAthleteSocialReach`. Stable so taps always resolve a real athlete.
+   */
+  rosterId: string;
+  /**
+   * Optional social-reach fixture id (`lib/data/mock-social-reach.ts`). Only a
+   * handful of athletes have hand-authored reach packets; the sheet renders a
+   * clean empty state when this is omitted or unmapped.
+   */
+  reachId?: string;
 };
 
 export const FAN_FOLLOWING: FollowingAthlete[] = [
-  { id: 'f-1', name: 'Paige Bueckers', school: 'UConn · #5', initials: 'PB', lastUpdate: 'Live now · UConn vs South Carolina · 22 PTS', avatarColor: '#000E2F', isLive: true },
-  { id: 'f-2', name: 'Cooper Flagg', school: 'Duke · #2', initials: 'CF', lastUpdate: 'ACC Player of the Week announced · 1 hr ago', avatarColor: '#001A57', isLive: true },
-  { id: 'f-3', name: 'Kiyan Anthony', school: 'Syracuse · #7', initials: 'KA', lastUpdate: 'Posted an IG reel · 18 min ago', avatarColor: '#F76900' },
-  { id: 'f-4', name: 'Travis Hunter', school: 'Colorado · #12', initials: 'TH', lastUpdate: 'Heisman finalist announced · 3 hrs ago', avatarColor: '#CFB87C' },
-  { id: 'f-5', name: 'Simone Lee', school: 'Penn St · #10', initials: 'SL', lastUpdate: 'Big Ten Volleyball Player of Week', avatarColor: '#041E42' },
-  { id: 'f-6', name: 'Paul Skenes', school: 'LSU · #20', initials: 'PS', lastUpdate: 'Yesterday · 14 K no-hitter vs Ole Miss', avatarColor: '#461D7C' },
-  { id: 'f-7', name: 'Sunisa Lee', school: 'Auburn · Gymnastics', initials: 'SL', lastUpdate: '2 days ago · SEC all-around title', avatarColor: '#0C2340' },
+  { id: 'f-1', name: 'Paige Bueckers', school: 'UConn · #5', initials: 'PB', lastUpdate: 'Live now · UConn vs South Carolina · 22 PTS', avatarColor: '#000E2F', isLive: true, rosterId: 'paige-bueckers' },
+  { id: 'f-2', name: 'Cooper Flagg', school: 'Duke · #2', initials: 'CF', lastUpdate: 'ACC Player of the Week announced · 1 hr ago', avatarColor: '#001A57', isLive: true, rosterId: 'cooper-flagg', reachId: 'a-3' },
+  { id: 'f-3', name: 'Kiyan Anthony', school: 'Syracuse · #7', initials: 'KA', lastUpdate: 'Posted an IG reel · 18 min ago', avatarColor: '#F76900', rosterId: 'kiyan-anthony', reachId: 'a-1' },
+  { id: 'f-4', name: 'Travis Hunter', school: 'Colorado · #12', initials: 'TH', lastUpdate: 'Heisman finalist announced · 3 hrs ago', avatarColor: '#CFB87C', rosterId: 'travis-hunter' },
+  { id: 'f-5', name: 'Simone Lee', school: 'Penn St · #10', initials: 'SL', lastUpdate: 'Big Ten Volleyball Player of Week', avatarColor: '#041E42', rosterId: 'simone-lee' },
+  { id: 'f-6', name: 'Paul Skenes', school: 'LSU · #20', initials: 'PS', lastUpdate: 'Yesterday · 14 K no-hitter vs Ole Miss', avatarColor: '#461D7C', rosterId: 'paul-skenes' },
+  { id: 'f-7', name: 'Sunisa Lee', school: 'Auburn · Gymnastics', initials: 'SL', lastUpdate: '2 days ago · SEC all-around title', avatarColor: '#0C2340', rosterId: 'suni-lee' },
 ];
 
 export type FeedItem = {
@@ -147,6 +160,13 @@ export type LiveGame = {
   venue: string;
   hasFollowedAthlete: boolean;
   watchedBy: number;
+  /**
+   * ID bridge → `lib/data/mock-games.ts` `getGame(id)`. Every entry maps to a
+   * real game id so a fan game card routes to `/game/[id]`. `getGame` never
+   * returns null — hand-authored ids (ncaab-1/7/9/10) get rich data, any other
+   * id is deterministically synthesized — so all of these resolve safely.
+   */
+  gameId: string;
 };
 
 export const FAN_GAMES: LiveGame[] = [
@@ -162,6 +182,7 @@ export const FAN_GAMES: LiveGame[] = [
     venue: 'JMA Wireless Dome',
     hasFollowedAthlete: true,
     watchedBy: 12400,
+    gameId: 'ncaab-1', // hand-authored Duke @ Cuse
   },
   {
     id: 'g-live-2',
@@ -175,6 +196,7 @@ export const FAN_GAMES: LiveGame[] = [
     venue: 'Jersey Mike\'s Arena',
     hasFollowedAthlete: true,
     watchedBy: 4280,
+    gameId: 'ncaab-9', // hand-authored
   },
   {
     id: 'g-up-1',
@@ -185,6 +207,7 @@ export const FAN_GAMES: LiveGame[] = [
     venue: 'Carmel Hall',
     hasFollowedAthlete: true,
     watchedBy: 0,
+    gameId: 'ncaab-7', // hand-authored
   },
   {
     id: 'g-up-2',
@@ -195,6 +218,7 @@ export const FAN_GAMES: LiveGame[] = [
     venue: 'Dean Smith Center',
     hasFollowedAthlete: false,
     watchedBy: 0,
+    gameId: 'ncaab-10', // hand-authored
   },
   {
     id: 'g-final-1',
@@ -206,6 +230,7 @@ export const FAN_GAMES: LiveGame[] = [
     venue: 'JMA Wireless Dome',
     hasFollowedAthlete: true,
     watchedBy: 15800,
+    gameId: 'ncaab-1',
   },
   {
     id: 'g-final-2',
@@ -217,6 +242,7 @@ export const FAN_GAMES: LiveGame[] = [
     venue: 'Cameron Indoor',
     hasFollowedAthlete: true,
     watchedBy: 22100,
+    gameId: 'ncaab-1',
   },
 ];
 
