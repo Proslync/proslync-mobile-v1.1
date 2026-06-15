@@ -1,15 +1,14 @@
-// Highlights page — a featured Top Play card, then clip cards grouped by
+// Highlights content — a featured Top Play card, then clip cards grouped by
 // period. Each clip uses a seeded AbstractArt thumbnail with a play-type chip,
 // a play glyph, title, scorer·team, period·clock, and m:ss duration. Tapping a
 // clip raises a demo Alert (playback not enabled).
+// Pure content: takes { game } and renders only the section body (no shell).
 
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AbstractArt } from '@/components/fan/abstract-art';
-import { GamePageShell } from '@/components/game/game-page-shell';
 import {
   ACCENT,
   HAIRLINE,
@@ -24,7 +23,7 @@ import {
   TEXT_SECONDARY,
   TEXT_TERTIARY,
 } from '@/components/shared/ui-kit/tokens';
-import { getGame, type GamePlayType, type Highlight } from '@/lib/data/mock-games';
+import type { GameDetail, GamePlayType, Highlight } from '@/lib/data/mock-games';
 
 const PLAY_GLYPH: Record<GamePlayType, keyof typeof Ionicons.glyphMap> = {
   DUNK: 'basketball-outline',
@@ -109,10 +108,14 @@ function ClipCard({ clip }: { clip: Highlight }) {
   );
 }
 
-export default function HighlightsScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const game = React.useMemo(() => getGame(id ?? ''), [id]);
+function periodLabel(p: string): string {
+  if (p === 'H1') return 'FIRST HALF';
+  if (p === 'H2') return 'SECOND HALF';
+  if (p === 'OT') return 'OVERTIME';
+  return p.toUpperCase();
+}
 
+export function HighlightsContent({ game }: { game: GameDetail }) {
   const [featured, ...rest] = game.highlights;
 
   // Group remaining clips by period in encounter order.
@@ -130,7 +133,7 @@ export default function HighlightsScreen() {
   }, [rest]);
 
   return (
-    <GamePageShell game={game} active="highlights">
+    <>
       {featured ? <FeaturedCard clip={featured} /> : null}
       {groups.map((g) => (
         <View key={g.period} style={styles.group}>
@@ -142,15 +145,8 @@ export default function HighlightsScreen() {
           </View>
         </View>
       ))}
-    </GamePageShell>
+    </>
   );
-}
-
-function periodLabel(p: string): string {
-  if (p === 'H1') return 'FIRST HALF';
-  if (p === 'H2') return 'SECOND HALF';
-  if (p === 'OT') return 'OVERTIME';
-  return p.toUpperCase();
 }
 
 const styles = StyleSheet.create({

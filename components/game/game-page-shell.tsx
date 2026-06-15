@@ -1,8 +1,8 @@
-// GamePageShell — shared chrome for the three comprehensive game pages
+// GamePageShell — shared chrome for the single comprehensive game page
 // (box score / highlights / schedule). Renders the back button, a GameHeader
 // (two team rows + status line + venue·date·broadcast meta), and a segmented
-// switcher that router.replace()s between the sibling pages so the header never
-// re-animates. Children render the page-specific body below.
+// switcher that calls onSelect() to swap the body in-place (local tab state) so
+// nothing navigates or re-animates. Children render the active body below.
 
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -87,10 +87,12 @@ function TeamRow({ team, dim }: { team: GameTeam; dim: boolean }) {
 export function GamePageShell({
   game,
   active,
+  onSelect,
   children,
 }: {
   game: GameDetail;
   active: GameTab;
+  onSelect: (tab: GameTab) => void;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -101,7 +103,7 @@ export function GamePageShell({
 
   const go = (tab: GameTab) => {
     if (tab === active) return;
-    router.replace({ pathname: `/game/[id]/${tab}` as any, params: { id: game.id } });
+    onSelect(tab);
   };
 
   return (

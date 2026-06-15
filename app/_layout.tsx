@@ -154,9 +154,7 @@ function RootLayoutNav() {
         <Stack.Screen name="athlete/contract-scan" />
         <Stack.Screen name="section/[id]" />
         <Stack.Screen name="card/[id]" />
-        <Stack.Screen name="game/[id]/box-score" />
-        <Stack.Screen name="game/[id]/highlights" />
-        <Stack.Screen name="game/[id]/schedule" />
+        <Stack.Screen name="game/[id]" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="notification-settings" />
         <Stack.Screen name="privacy-settings" />

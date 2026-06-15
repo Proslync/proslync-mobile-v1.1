@@ -154,13 +154,13 @@ function deriveContent(
         ...(venue ? [{ label: 'Venue', value: venue }] : []),
       ],
       related: [
-        { icon: 'stats-chart-outline', title: 'Box Score', sub: 'Full stats · player lines', route: '/game/[id]/box-score' },
-        { icon: 'play-circle-outline', title: 'Highlights', sub: 'Top plays from this game', route: '/game/[id]/highlights' },
-        { icon: 'calendar-outline', title: 'Schedule', sub: 'Full season schedule', route: '/game/[id]/schedule' },
+        { icon: 'stats-chart-outline', title: 'Box Score', sub: 'Full stats · player lines', route: '/game/[id]?tab=box-score' },
+        { icon: 'play-circle-outline', title: 'Highlights', sub: 'Top plays from this game', route: '/game/[id]?tab=highlights' },
+        { icon: 'calendar-outline', title: 'Schedule', sub: 'Full season schedule', route: '/game/[id]?tab=schedule' },
       ],
       ctaLabel: 'View full box score',
       ctaSectionId: sectionId,
-      ctaRoute: '/game/[id]/box-score',
+      ctaRoute: '/game/[id]?tab=box-score',
     };
   }
 
@@ -366,25 +366,42 @@ export default function CardDetailScreen() {
   // Wait one beat for hydration so a local video doesn't flash the art first.
   const showHero = hydrated || local !== null;
 
+  // Routes may carry a `?tab=...` query (e.g. the single game page). Split it
+  // off so we push the typed pathname with the tab as a navigation param.
+  const pushRoute = React.useCallback(
+    (route: string) => {
+      const [pathname, query] = route.split('?');
+      const params: Record<string, string> = { id: tileId };
+      if (query) {
+        for (const pair of query.split('&')) {
+          const [k, v] = pair.split('=');
+          if (k && v !== undefined) params[k] = v;
+        }
+      }
+      router.push({ pathname, params } as any);
+    },
+    [router, tileId],
+  );
+
   const handleCta = React.useCallback(() => {
     if (content.ctaRoute) {
-      router.push({ pathname: content.ctaRoute, params: { id: tileId } } as any);
+      pushRoute(content.ctaRoute);
       return;
     }
     if (content.ctaSectionId) {
       router.push({ pathname: '/section/[id]', params: { id: content.ctaSectionId } } as any);
     }
-  }, [router, content.ctaRoute, content.ctaSectionId, tileId]);
+  }, [router, pushRoute, content.ctaRoute, content.ctaSectionId]);
 
   const goRelated = React.useCallback(
     (route?: string) => {
       if (route) {
-        router.push({ pathname: route, params: { id: tileId } } as any);
+        pushRoute(route);
         return;
       }
       handleCta();
     },
-    [router, tileId, handleCta],
+    [pushRoute, handleCta],
   );
 
   return (

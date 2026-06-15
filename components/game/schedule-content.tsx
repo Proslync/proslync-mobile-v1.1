@@ -1,13 +1,12 @@
-// Schedule page — a record-summary header for the home team, then the season
+// Schedule content — a record-summary header for the home team, then the season
 // in chronological order. Each row shows date, vs/@ + opponent rank+abbr, and
 // either a W/L score pill (green/red) or an upcoming tip time. The current game
 // is highlighted with a copper left edge and a "TODAY" tag.
+// Pure content: takes { game } and renders only the section body (no shell).
 
-import { useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { GamePageShell } from '@/components/game/game-page-shell';
 import {
   ACCENT,
   HAIRLINE,
@@ -27,7 +26,7 @@ import {
   TEXT_SECONDARY,
   TEXT_TERTIARY,
 } from '@/components/shared/ui-kit/tokens';
-import { getGame, type ScheduleEntry } from '@/lib/data/mock-games';
+import type { GameDetail, ScheduleEntry } from '@/lib/data/mock-games';
 
 function fmtDate(iso: string): string {
   const d = new Date(iso);
@@ -76,16 +75,13 @@ function Row({ e }: { e: ScheduleEntry }) {
   );
 }
 
-export default function ScheduleScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const game = React.useMemo(() => getGame(id ?? ''), [id]);
-
+export function ScheduleContent({ game }: { game: GameDetail }) {
   const played = game.schedule.filter((e) => e.result);
   const wins = played.filter((e) => e.result === 'W').length;
   const losses = played.filter((e) => e.result === 'L').length;
 
   return (
-    <GamePageShell game={game} active="schedule">
+    <>
       {/* Record summary */}
       <View style={styles.summary}>
         <View style={styles.summaryMain}>
@@ -110,7 +106,7 @@ export default function ScheduleScreen() {
           ))}
         </View>
       </View>
-    </GamePageShell>
+    </>
   );
 }
 

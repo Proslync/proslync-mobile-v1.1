@@ -1,19 +1,17 @@
-// Box score page — scoring-by-period table, team-stat comparison rows with a
+// Box score content — scoring-by-period table, team-stat comparison rows with a
 // proportional bar, and two horizontally-scrolling player box-score tables
 // (starters then bench, plus a TOTALS row). All stats use tabular-nums.
+// Pure content: takes { game } and renders only the section body (no shell).
 
-import { useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { GamePageShell } from '@/components/game/game-page-shell';
 import {
   ACCENT,
   HAIRLINE,
   HAIRLINE_SUBTLE,
   RADIUS_CARD,
   RADIUS_SM,
-  SP_LG,
   SP_MD,
   SP_SM,
   SP_XS,
@@ -23,7 +21,7 @@ import {
   TEXT_SECONDARY,
   TEXT_TERTIARY,
 } from '@/components/shared/ui-kit/tokens';
-import { getGame, type BoxScoreLine, type BoxScoreTeam, type GameDetail } from '@/lib/data/mock-games';
+import type { BoxScoreLine, BoxScoreTeam, GameDetail } from '@/lib/data/mock-games';
 
 const STAT_COLS: { key: keyof BoxScoreLine; label: string; w: number }[] = [
   { key: 'min', label: 'MIN', w: 40 },
@@ -173,12 +171,9 @@ function BoxTable({ team }: { team: BoxScoreTeam }) {
   );
 }
 
-export default function BoxScoreScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const game = React.useMemo(() => getGame(id ?? ''), [id]);
-
+export function BoxScoreContent({ game }: { game: GameDetail }) {
   return (
-    <GamePageShell game={game} active="box-score">
+    <>
       <View style={styles.block}>
         <SectionTitle>Scoring</SectionTitle>
         <ScoringTable game={game} />
@@ -195,7 +190,7 @@ export default function BoxScoreScreen() {
         <View style={{ height: SP_MD }} />
         <BoxTable team={game.boxScore.home} />
       </View>
-    </GamePageShell>
+    </>
   );
 }
 
