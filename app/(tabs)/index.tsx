@@ -112,6 +112,8 @@ export type DealCard = {
   brand: string;
   brandColor: string;
   duration: string;
+  /** Bridges this NIL tile to a real Brand HQ deal-detail packet (d-1…d-6). */
+  dealId?: string;
 };
 
 export type AnyCard = MatchupCard | PlayerCard | DealCard;
@@ -437,32 +439,32 @@ export const SECTIONS: Section[] = [
     accent: '#14B8A6',
     cards: [
       {
-        id: 'nil-1', variant: 'deal',
+        id: 'nil-1', variant: 'deal', dealId: 'd-1',
         value: '$3.1M', athlete: 'Paige Bueckers', athleteInitial: 'P', athleteColor: '#000E2F',
         brand: 'NIKE', brandColor: '#000', duration: '3yr · excl',
       },
       {
-        id: 'nil-2', variant: 'deal',
+        id: 'nil-2', variant: 'deal', dealId: 'd-2',
         value: '$1.8M', athlete: 'Cooper Flagg', athleteInitial: 'C', athleteColor: '#001A57',
         brand: 'GATORADE', brandColor: '#FF6900', duration: '1yr · renew',
       },
       {
-        id: 'nil-3', variant: 'deal',
+        id: 'nil-3', variant: 'deal', dealId: 'd-3',
         value: '$2.4M', athlete: 'Travis Hunter', athleteInitial: 'T', athleteColor: '#CFB87C',
         brand: 'BEATS', brandColor: '#C8102E', duration: '2yr · multi',
       },
       {
-        id: 'nil-4', variant: 'deal',
+        id: 'nil-4', variant: 'deal', dealId: 'd-4',
         value: '$680K', athlete: 'Kiyan Anthony', athleteInitial: 'K', athleteColor: '#F76900',
         brand: 'CARMAX', brandColor: '#003087', duration: '1yr · regional',
       },
       {
-        id: 'nil-5', variant: 'deal',
+        id: 'nil-5', variant: 'deal', dealId: 'd-5',
         value: '$1.1M', athlete: 'Paul Skenes', athleteInitial: 'P', athleteColor: '#461D7C',
         brand: "ZAXBY'S", brandColor: '#E8451B', duration: '2yr · Southeast',
       },
       {
-        id: 'nil-6', variant: 'deal',
+        id: 'nil-6', variant: 'deal', dealId: 'd-6',
         value: '$540K', athlete: 'Simone Lee', athleteInitial: 'S', athleteColor: '#041E42',
         brand: 'GATORADE', brandColor: '#FF6900', duration: '1yr · renew',
       },
@@ -1383,7 +1385,7 @@ export default function FeedScreen() {
 
   // ── Tiles data (one tile per card + one hub tile per section) ──────────────
   const tiles = useMemo(() => {
-    const result: Array<{ id: string; caption: string; subtitle: string; sectionId: string }> = [];
+    const result: Array<{ id: string; caption: string; subtitle: string; sectionId: string; dealId?: string }> = [];
     for (const section of SECTIONS) {
       // Hub tile (one per section)
       result.push({ id: `${section.id}:hub`, caption: section.title, subtitle: section.subtitle, sectionId: section.id });
@@ -1391,6 +1393,7 @@ export default function FeedScreen() {
       section.cards.forEach((card, idx) => {
         let caption = section.title;
         let subtitle = section.subtitle;
+        let dealId: string | undefined;
         if (card.variant === 'matchup') {
           caption = `${card.away.abbr} @ ${card.home.abbr}`;
           subtitle = `${section.title} · ${card.statusLabel}${card.meta ? ' · ' + card.meta : ''}`;
@@ -1400,8 +1403,9 @@ export default function FeedScreen() {
         } else if (card.variant === 'deal') {
           caption = `${card.athlete} × ${card.brand}`;
           subtitle = `NIL Deal · ${card.value} · ${card.duration}`;
+          dealId = card.dealId;
         }
-        result.push({ id: `${section.id}:${card.id ?? idx}`, caption, subtitle, sectionId: section.id });
+        result.push({ id: `${section.id}:${card.id ?? idx}`, caption, subtitle, sectionId: section.id, dealId });
       });
     }
     return result;
@@ -1431,8 +1435,11 @@ export default function FeedScreen() {
   // ── Stable navigation callback ────────────────────────────────────────────
   // Every tile opens its card detail page (media + title + subtitle + sectionId).
   const openCard = useCallback(
-    (tileId: string, caption: string, subtitle: string, sectionId: string) => {
-      router.push({ pathname: '/card/[id]', params: { id: tileId, caption, subtitle, sectionId } } as any);
+    (tileId: string, caption: string, subtitle: string, sectionId: string, dealId?: string) => {
+      router.push({
+        pathname: '/card/[id]',
+        params: { id: tileId, caption, subtitle, sectionId, ...(dealId ? { dealId } : {}) },
+      } as any);
     },
     [router],
   );
@@ -1503,7 +1510,7 @@ export default function FeedScreen() {
               caption={t.caption}
               colWidth={GRID_CARD_WIDTH}
               index={index}
-              onPress={() => openCard(t.id, t.caption, t.subtitle, t.sectionId)}
+              onPress={() => openCard(t.id, t.caption, t.subtitle, t.sectionId, t.dealId)}
               media={tileMediaMap.get(t.id) ?? null}
               onMenuPress={() => setMenuTileId(t.id)}
             />

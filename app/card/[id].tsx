@@ -89,6 +89,7 @@ function deriveContent(
   caption: string,
   subtitle: string,
   sectionId: string,
+  dealId?: string,
 ): CardContent {
   const isHub = tileId.endsWith(':hub');
 
@@ -101,6 +102,13 @@ function deriveContent(
     const subParts = subtitle.split(' · ');
     const value = subParts[1] ?? '';
     const duration = subParts[2] ?? '';
+    // When the tile is bridged to a real Brand HQ deal packet, route the
+    // primary CTA + the valuation/deal rows into the live deal-detail page
+    // (`/deal/[id]`) instead of falling through to `/section/nil`. `__id`
+    // overrides the default tileId so `pushRoute` targets the real deal.
+    const dealRoute = dealId
+      ? `/deal/[id]?role=athlete&__id=${dealId}`
+      : undefined;
     return {
       kind: 'deal',
       title: caption,
@@ -114,12 +122,13 @@ function deriveContent(
         { label: 'Status', value: 'Executed · Active' },
       ],
       related: [
-        { icon: 'trending-up-outline', title: 'NIL Valuation', sub: `${athlete}'s market rate vs peers` },
-        { icon: 'briefcase-outline', title: 'More from ${brand}', sub: 'Other college partnerships' },
-        { icon: 'people-outline', title: 'Top NIL Deals', sub: 'Biggest contracts this week' },
+        { icon: 'trending-up-outline', title: 'NIL Valuation', sub: `${athlete}'s market rate vs peers`, route: dealRoute },
+        { icon: 'briefcase-outline', title: `More from ${brand}`, sub: 'Other college partnerships' },
+        { icon: 'people-outline', title: 'Full deal packet', sub: 'Terms, money split, compliance', route: dealRoute },
       ],
       ctaLabel: 'View full deal',
       ctaSectionId: 'nil',
+      ctaRoute: dealRoute,
     };
   }
 
@@ -294,11 +303,12 @@ const rStyles = StyleSheet.create({
 export default function CardDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id, caption, subtitle, sectionId } = useLocalSearchParams<{
+  const { id, caption, subtitle, sectionId, dealId } = useLocalSearchParams<{
     id: string;
     caption?: string;
     subtitle?: string;
     sectionId?: string;
+    dealId?: string;
   }>();
   const tileId = id ?? '';
 
@@ -308,8 +318,9 @@ export default function CardDetailScreen() {
       caption ?? '',
       subtitle ?? '',
       sectionId ?? '',
+      dealId,
     ),
-    [tileId, caption, subtitle, sectionId],
+    [tileId, caption, subtitle, sectionId, dealId],
   );
 
   // Local user-uploaded media for this tile (healed), else curated, else art.
@@ -375,7 +386,11 @@ export default function CardDetailScreen() {
       if (query) {
         for (const pair of query.split('&')) {
           const [k, v] = pair.split('=');
-          if (k && v !== undefined) params[k] = v;
+          if (!k || v === undefined) continue;
+          // `__id` overrides the dynamic-route id (e.g. bridge a NIL tile to a
+          // real deal id) without leaking the tileId into the target route.
+          if (k === '__id') params.id = v;
+          else params[k] = v;
         }
       }
       router.push({ pathname, params } as any);

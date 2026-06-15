@@ -5,6 +5,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ExportPacketButton } from '@/components/compliance/export-packet-button';
+import { DealEnrichmentCard } from '@/components/deal/deal-enrichment-card';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { SectionCard, StatusPill } from '@/components/shared/ui-kit';
 import { aiReviewApi } from '@/lib/api/ai-review';
@@ -204,6 +205,10 @@ export function DealDetailSpine({ detail, initialLens, onBack }: DealDetailSpine
 
         <Animated.View entering={FadeInDown.delay(330).duration(320)}>
           <EvidencePacketCard detail={detail} />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(345).duration(320)}>
+          <DealEnrichmentCard detail={detail} />
         </Animated.View>
 
         {comparables && comparables.rows.length > 0 ? (
