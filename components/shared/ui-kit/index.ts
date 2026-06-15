@@ -56,8 +56,6 @@ export type {
 } from './deal-row';
 export { FilterBar } from './filter-bar';
 export type { FilterBarProps, FilterBarOption, FilterBarMode } from './filter-bar';
-export { RoleSwitcherSheet, ROLE_META } from './role-switcher-sheet';
-export type { RoleSwitcherSheetProps } from './role-switcher-sheet';
 export { EmptyDealsState } from './empty-deals-state';
 export type { EmptyDealsStateProps } from './empty-deals-state';
 export { StageBandBackground, STAGE_TO_BAND } from './stage-band-background';

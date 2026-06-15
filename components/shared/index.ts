@@ -3,7 +3,6 @@ export { ActionSheet } from '../ui/action-sheet';
 export type { ActionSheetOption } from '../ui/action-sheet';
 export { ConfirmSheet } from '../ui/confirm-sheet';
 export { DarkGradientBg } from './dark-gradient-bg';
-export { IncomingCallOverlay } from './incoming-call-overlay';
 export { SegmentedControl } from './segmented-control';
 export { SwipeableTabView } from './swipeable-tab-view';
 export { SwipeableTabBar, SwipeableTabPager, useSwipeableTabs, TabPage } from './swipeable-tabs';
