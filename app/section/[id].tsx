@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, type Router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,11 +23,15 @@ import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass
 import {
   SECTIONS,
   VideoCover,
+} from '@/app/(tabs)/index';
+import {
+  tileParamsFromCard,
   type AnyCard,
   type MatchupCard,
   type PlayerCard,
   type DealCard,
-} from '@/app/(tabs)/index';
+  type Section,
+} from '@/lib/home/tiles';
 import { healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
 
@@ -261,10 +265,10 @@ export default function SectionDetailScreen() {
                     }}
                   >
                     <View style={{ width: PAGE_CARD_W, height: PAGE_CARD_H }}>
-                      <FullCard card={page[0]} />
+                      <FullCard card={page[0]} section={section} router={router} />
                     </View>
                     <View style={{ width: PAGE_CARD_W, height: PAGE_CARD_H }}>
-                      {page[1] && <FullCard card={page[1]} />}
+                      {page[1] && <FullCard card={page[1]} section={section} router={router} />}
                     </View>
                   </View>
                 ))}
@@ -288,15 +292,24 @@ export default function SectionDetailScreen() {
   );
 }
 
-function FullCard({ card }: { card: AnyCard }) {
+function FullCard({ card, section, router }: { card: AnyCard; section: Section; router: Router }) {
   const tone = statusPillTone(card);
   const topPillText =
     card.variant === 'player' ? card.topPill :
     card.variant === 'deal' ? card.value :
     null;
 
+  // Route identically to the home feed: same /card/[id] params via the shared
+  // helper → same onward routing (matchup → /game/[id], nil deal → /deal/[id]).
+  const onPress = () =>
+    router.push({ pathname: '/card/[id]', params: tileParamsFromCard(card, section) } as any);
+
   return (
-    <View style={styles.card}>
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+    >
       <GlassView
         glassEffectStyle="clear"
         style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
@@ -323,7 +336,7 @@ function FullCard({ card }: { card: AnyCard }) {
         {card.variant === 'player' && <PlayerBody card={card} />}
         {card.variant === 'deal' && <DealBody card={card} />}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -468,6 +481,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
   },
+  cardPressed: { opacity: 0.7 },
   cardInner: {
     flex: 1,
     padding: 12,

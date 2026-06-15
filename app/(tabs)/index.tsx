@@ -79,45 +79,12 @@ const SECTION_TOTAL_H = SECTION_INNER_PAD * 2 + SECTION_HEADER_H + MINI_SLOT_H +
 const SECTION_GAP_V = 14;
 
 // ───── Types ─────
-
-export type MatchupCard = {
-  id: string;
-  variant: 'matchup';
-  status: 'LIVE' | 'FINAL' | 'PRE';
-  statusLabel: string;
-  away: { abbr: string; color: string; score?: number };
-  home: { abbr: string; color: string; score?: number };
-  meta?: string;
-};
-
-export type PlayerCard = {
-  id: string;
-  variant: 'player';
-  topPill: string;
-  topPillTone: 'gold' | 'orange' | 'teal' | 'neutral';
-  name: string;
-  team: string;
-  stat: string;
-  initial: string;
-  color: string;
-  usePhoto?: boolean;
-};
-
-export type DealCard = {
-  id: string;
-  variant: 'deal';
-  value: string;
-  athlete: string;
-  athleteInitial: string;
-  athleteColor: string;
-  brand: string;
-  brandColor: string;
-  duration: string;
-  /** Bridges this NIL tile to a real Brand HQ deal-detail packet (d-1…d-6). */
-  dealId?: string;
-};
-
-export type AnyCard = MatchupCard | PlayerCard | DealCard;
+// Card/section types + the card→/card/[id] param builder now live in
+// lib/home/tiles.ts (single source of truth). Re-exported here so existing
+// imports of these types from '@/app/(tabs)/index' keep working.
+import type { MatchupCard, PlayerCard, DealCard, AnyCard, Section } from '@/lib/home/tiles';
+import { tileParamsFromCard } from '@/lib/home/tiles';
+export type { MatchupCard, PlayerCard, DealCard, AnyCard, Section };
 
 // ───── NIL tile ⟷ deal-detail single source of truth ─────
 // The home "Top NIL Deals" tiles route into the Brand HQ deal-detail packets
@@ -157,18 +124,6 @@ function buildDealTile(p: DealTilePresentation): DealCard {
     dealId: p.dealId,
   };
 }
-
-export type Section = {
-  id: string;
-  title: string;
-  subtitle: string;
-  iconLabel: string;
-  iconColor: string;
-  accent: string;
-  cards: AnyCard[];
-  awardGroups?: { award: string; nominees: PlayerCard[] }[];
-  bgImage?: any;
-};
 
 // ───── Mock data ─────
 
@@ -1407,23 +1362,10 @@ export default function FeedScreen() {
     for (const section of SECTIONS) {
       // Hub tile (one per section)
       result.push({ id: `${section.id}:hub`, caption: section.title, subtitle: section.subtitle, sectionId: section.id });
-      // Per-card tiles
-      section.cards.forEach((card, idx) => {
-        let caption = section.title;
-        let subtitle = section.subtitle;
-        let dealId: string | undefined;
-        if (card.variant === 'matchup') {
-          caption = `${card.away.abbr} @ ${card.home.abbr}`;
-          subtitle = `${section.title} · ${card.statusLabel}${card.meta ? ' · ' + card.meta : ''}`;
-        } else if (card.variant === 'player') {
-          caption = card.name;
-          subtitle = card.topPill ? `${section.title} · ${card.topPill} · ${card.team}` : `${section.title} · ${card.team}`;
-        } else if (card.variant === 'deal') {
-          caption = `${card.athlete} × ${card.brand}`;
-          subtitle = `NIL Deal · ${card.value} · ${card.duration}`;
-          dealId = card.dealId;
-        }
-        result.push({ id: `${section.id}:${card.id ?? idx}`, caption, subtitle, sectionId: section.id, dealId });
+      // Per-card tiles — params come from the shared tileParamsFromCard helper
+      // so section "View all" cards route identically to these home tiles.
+      section.cards.forEach((card) => {
+        result.push(tileParamsFromCard(card, section));
       });
     }
     return result;
