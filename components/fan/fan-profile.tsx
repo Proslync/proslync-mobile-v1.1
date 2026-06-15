@@ -30,7 +30,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
-import { AthleteDetailSheet, type FanAthlete } from '@/components/fan/athlete-detail-sheet';
+import { AthleteDetailSheet, type FanAthlete } from '@/components/athlete/athlete-detail-sheet';
 import { PerkSheet, type SheetPerk } from '@/components/fan/perk-sheet';
 import { PROFILE_MEDIA } from '@/lib/profile-media';
 import { IdentityAvatar } from '@/components/shared/identity-avatar';

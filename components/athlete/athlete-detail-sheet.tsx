@@ -1,7 +1,9 @@
 // ── AthleteDetailSheet ─────────────────────────────────────
-// Bottom-sheet detail for a demo athlete, opened from any fan-side athlete
-// tap (MY ATHLETES rows, roster chips, "Back a teammate" prompt). Reuses the
-// FanHomeFeed Modal / scrim / slide-up pattern and the shared ui-kit tokens.
+// Role-neutral bottom-sheet detail for a demo athlete. Opened from any
+// athlete tap across the app — fan-side (MY ATHLETES rows, roster chips,
+// "Back a teammate" prompt) and the card-detail player/award branch.
+// Reuses the FanHomeFeed Modal / scrim / slide-up pattern and the shared
+// ui-kit tokens.
 //
 // Data source: the caller passes a lightweight `FanAthlete` shape (id + name +
 // sport/school where known). The sheet hydrates richer fields from

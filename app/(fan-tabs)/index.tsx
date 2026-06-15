@@ -28,7 +28,7 @@ import {
 import {
   AthleteDetailSheet,
   type FanAthlete,
-} from '@/components/fan/athlete-detail-sheet';
+} from '@/components/athlete/athlete-detail-sheet';
 import { PerkSheet, type SheetPerk } from '@/components/fan/perk-sheet';
 import { getAthlete } from '@/lib/data/demo-roster';
 import {
