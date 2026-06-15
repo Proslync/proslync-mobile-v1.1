@@ -20,13 +20,26 @@ import {
   View,
 } from 'react-native';
 
-// ── Charter constants ──────────────────────────────────────────────────────
-const COPPER = '#EB621A';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
-const AMBER = '#FFD60A';
-const GREEN = '#34C759';
+import {
+  ACCENT,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_SM,
+  SIGNAL_WARN,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Module helpers ─────────────────────────────────────────────────────────
 
@@ -42,9 +55,9 @@ function SectionHeader({ label }: { label: string }) {
 // ── MODULE 1: PROGRAM REVENUE ─────────────────────────────────────────────
 
 const REVENUE_STATS = [
-  { value: '1,250', label: 'supporters'      },
-  { value: '$14,800', label: '/mo receipted' },
-  { value: '92%',   label: '3-mo retention' },
+  { value: '1,250',   label: 'supporters'      },
+  { value: '$14,800', label: '/mo receipted'   },
+  { value: '92%',     label: '3-mo retention'  },
 ] as const;
 
 function ProgramRevenueModule() {
@@ -191,7 +204,7 @@ function ActivationRailModule() {
       {ACTIVATIONS.map((act) => (
         <View key={act.id} style={s.activationRow}>
           <View style={s.activationIcon}>
-            <Ionicons name="flash" size={14} color={COPPER} />
+            <Ionicons name="flash" size={14} color={TEXT_SECONDARY} />
           </View>
           <View style={s.activationBody}>
             <Text style={s.activationTitle}>
@@ -226,7 +239,7 @@ export function CollectiveFans({ bottomInset = 0, topInset = 0, onScroll }: Coll
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -245,76 +258,76 @@ export function CollectiveFans({ bottomInset = 0, topInset = 0, onScroll }: Coll
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingHorizontal: SP_LG,
+    gap: SP_MD,
   },
 
   // Card
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
 
-  // Section header
+  // Section header: 4px copper bar + caps label (TEXT_PRIMARY per copper-restraint)
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginBottom: 2,
   },
   sectionBar: {
     width: 4,
     height: 14,
     borderRadius: 2,
-    backgroundColor: COPPER,
+    backgroundColor: ACCENT,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_PRIMARY,
   },
 
   // ── Module 1: Program Revenue ────────────────────────────
   pillsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SP_SM,
     flexWrap: 'wrap',
   },
   statPill: {
     flex: 1,
     minWidth: 80,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    borderColor: HAIRLINE,
+    paddingVertical: SP_SM,
+    paddingHorizontal: SP_SM,
     alignItems: 'center',
     gap: 2,
   },
   statValue: {
     fontSize: 18,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.4,
   },
   statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 13,
   },
   revenueTagline: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 15,
   },
 
@@ -322,7 +335,7 @@ const s = StyleSheet.create({
   tierRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: SP_SM,
   },
   tierMeta: {
     flexDirection: 'row',
@@ -331,69 +344,70 @@ const s = StyleSheet.create({
     flexShrink: 0,
   },
   tierLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     letterSpacing: 0.3,
   },
   tierPrice: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
   },
   tierBarTrack: {
     flex: 1,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: SURFACE_SUBTLE,
     overflow: 'hidden',
   },
+  // Tier fill: data-viz bar — demoted from COPPER to TEXT_TERTIARY (neutral bar)
   tierBarFill: {
     height: '100%',
     borderRadius: 3,
-    backgroundColor: COPPER,
+    backgroundColor: TEXT_TERTIARY,
   },
   tierCount: {
     width: 36,
     textAlign: 'right',
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
   },
 
   // ── Module 3: Perk Fulfillment ───────────────────────────
   fulfillRow: {
     flexDirection: 'row',
-    borderRadius: 12,
+    borderRadius: RADIUS_CARD,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
   fulfillStat: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
+    paddingVertical: SP_SM,
+    paddingHorizontal: SP_XS,
     alignItems: 'center',
     gap: 2,
   },
   fulfillStatBorder: {
     borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: CARD_BORDER,
+    borderLeftColor: HAIRLINE,
   },
   fulfillValue: {
     fontSize: 18,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
-  fulfillValueAmber: { color: AMBER },
+  fulfillValueAmber: { color: SIGNAL_WARN },
   fulfillLabel: {
     fontSize: 9,
-    fontWeight: '600',
-    color: MUTED,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 12,
   },
@@ -401,50 +415,51 @@ const s = StyleSheet.create({
   overdueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
-    backgroundColor: `${AMBER}0A`,
+    backgroundColor: `${SIGNAL_WARN}0A`,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: `${AMBER}28`,
+    borderColor: `${SIGNAL_WARN}28`,
     gap: 0,
   },
   overdueStripe: {
     width: 3,
     alignSelf: 'stretch',
-    backgroundColor: AMBER,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    backgroundColor: SIGNAL_WARN,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   overdueContent: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_SM,
     gap: 1,
   },
   overdueDesc: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
   },
   overdueAge: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: AMBER,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: SIGNAL_WARN,
   },
+  // NUDGE chip — demoted from copper (not the primary CTA of the screen)
   nudgeChip: {
-    marginRight: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: `${COPPER}55`,
-    backgroundColor: `${COPPER}10`,
-    paddingHorizontal: 10,
+    marginRight: SP_SM,
+    borderRadius: RADIUS_SM,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE_SUBTLE,
+    paddingHorizontal: SP_SM,
     paddingVertical: 5,
     flexShrink: 0,
   },
   nudgeChipText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: COPPER,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_SECONDARY,
     letterSpacing: 0.5,
   },
 
@@ -452,21 +467,22 @@ const s = StyleSheet.create({
   activationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 10,
+    gap: SP_SM,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    borderColor: HAIRLINE_SUBTLE,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_SM,
   },
+  // Activation icon box — decorative, demoted from copper to neutral
   activationIcon: {
     width: 30,
     height: 30,
-    borderRadius: 9,
-    backgroundColor: `${COPPER}18`,
+    borderRadius: RADIUS_SM,
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: `${COPPER}44`,
+    borderColor: HAIRLINE,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -476,25 +492,25 @@ const s = StyleSheet.create({
     gap: 2,
   },
   activationTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
   },
   activationMeta: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 15,
   },
   activationSupCount: {
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
   },
   activationNote: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_TERTIARY,
     lineHeight: 14,
   },
 });

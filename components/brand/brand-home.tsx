@@ -19,13 +19,27 @@ import {
   View,
 } from 'react-native';
 
-// ── Charter constants ─────────────────────────────────────────────────────
-const COPPER = '#EB621A';
-const AMBER = '#FFD60A';
-const GREEN = '#34C759';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
+import {
+  ACCENT,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_SM,
+  SIGNAL_POSITIVE,
+  SIGNAL_WARN,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Fixture: active campaign rows ────────────────────────────────────────
 // Status stepper: BRIEF → POSTED → VERIFIED
@@ -145,13 +159,13 @@ const STEPS = ['BRIEF', 'POSTED', 'VERIFIED'] as const;
 
 function proofDetailLine(row: CampaignRow): { text: string; color: string } {
   if (row.proofState === 'verified') {
-    return { text: 'proof captured ✓ · #ad check passed', color: GREEN };
+    return { text: 'proof captured ✓ · #ad check passed', color: SIGNAL_POSITIVE };
   }
   if (row.proofState === 'posted') {
-    return { text: 'due Thu 6pm', color: AMBER };
+    return { text: 'due Thu 6pm', color: SIGNAL_WARN };
   }
   // funded
-  return { text: 'escrow funded · awaiting post', color: MUTED };
+  return { text: 'escrow funded · awaiting post', color: TEXT_SECONDARY };
 }
 
 // ── Section header — 4px copper bar + caps label ─────────────────────────
@@ -227,10 +241,10 @@ function ClearanceModule() {
       </Text>
       {CLEARANCE_ROWS.map((row, idx) => (
         <View key={row.id} style={[s.clearanceRow, idx > 0 && s.clearanceRowBorder]}>
-          <View style={[s.clearanceStripe, { backgroundColor: row.cleared ? GREEN : AMBER }]} />
+          <View style={[s.clearanceStripe, { backgroundColor: row.cleared ? SIGNAL_POSITIVE : SIGNAL_WARN }]} />
           <View style={s.clearanceContent}>
             <Text style={s.clearanceLabel}>{row.label}</Text>
-            <Text style={[s.clearanceResult, { color: row.cleared ? GREEN : AMBER }]}>
+            <Text style={[s.clearanceResult, { color: row.cleared ? SIGNAL_POSITIVE : SIGNAL_WARN }]}>
               {row.result}
             </Text>
           </View>
@@ -316,7 +330,7 @@ function RebookModule() {
 function FooterWall() {
   return (
     <View style={s.wallRow}>
-      <Ionicons name="lock-closed" size={13} color={MUTED} />
+      <Ionicons name="lock-closed" size={13} color={TEXT_TERTIARY} />
       <Text style={s.wallText}>
         Athletes hear from you only through a funded brief — no unfunded outreach.
       </Text>
@@ -338,7 +352,7 @@ export function BrandHome({ bottomInset = 0, topInset = 0, onScroll }: BrandHome
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -358,48 +372,48 @@ export function BrandHome({ bottomInset = 0, topInset = 0, onScroll }: BrandHome
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingHorizontal: SP_LG,
+    gap: SP_MD,
   },
 
-  // Card container — mirrors agent-home exactly
+  // Card container
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
 
-  // Section header: 4px copper bar + caps label
+  // Section header: 4px copper bar + caps label (TEXT_PRIMARY per copper-restraint)
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginBottom: 2,
   },
   sectionBar: {
     width: 4,
     height: 14,
     borderRadius: 2,
-    backgroundColor: COPPER,
+    backgroundColor: ACCENT,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_PRIMARY,
   },
 
   // ── Module 1: Active Campaigns ─────────────────────────────
   campaignRow: {
-    paddingVertical: 10,
+    paddingVertical: SP_SM,
     gap: 7,
   },
   campaignRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: HAIRLINE,
   },
   campaignTopRow: {
     flexDirection: 'row',
@@ -407,15 +421,15 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
   },
   campaignAthlete: {
-    fontSize: 14,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.1,
   },
   campaignBriefType: {
     fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
   },
 
   // Status stepper dots — mirrors agent pipeline dots
@@ -428,13 +442,13 @@ const s = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: HAIRLINE,
   },
   stepDotCurrent: {
-    backgroundColor: COPPER,
-    borderColor: COPPER,
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
     width: 10,
     height: 10,
     borderRadius: 5,
@@ -444,67 +458,67 @@ const s = StyleSheet.create({
     borderColor: 'rgba(235,98,26,0.5)',
   },
   stepConnector: {
-    width: 16,
+    width: SP_LG,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: HAIRLINE_SUBTLE,
   },
   stepConnectorPast: {
     backgroundColor: 'rgba(235,98,26,0.4)',
   },
   stepLabel: {
     fontSize: 9,
-    fontWeight: '800',
-    color: COPPER,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     letterSpacing: 0.5,
-    marginLeft: 8,
+    marginLeft: SP_SM,
   },
 
   campaignDetailLine: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: WEIGHT.semibold,
     lineHeight: 15,
     fontVariant: ['tabular-nums'],
   },
 
   // ── Module 2: Clearance ────────────────────────────────────
   clearanceNote: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.30)',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_TERTIARY,
     marginBottom: 2,
     lineHeight: 14,
   },
   clearanceRow: {
     flexDirection: 'row',
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
   clearanceRowBorder: {
-    marginTop: 8,
+    marginTop: SP_SM,
   },
   clearanceStripe: {
     width: 3,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   clearanceContent: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_SM,
     gap: 2,
   },
   clearanceLabel: {
-    fontSize: 13,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
   },
   clearanceResult: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: WEIGHT.semibold,
     letterSpacing: 0.1,
   },
 
@@ -515,12 +529,12 @@ const s = StyleSheet.create({
   },
   redemptionRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: HAIRLINE,
   },
   redemptionCode: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     letterSpacing: 0.5,
     fontVariant: ['tabular-nums'],
   },
@@ -528,26 +542,26 @@ const s = StyleSheet.create({
     lineHeight: 18,
   },
   redemptionCount: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: TEXT.body,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
   },
   redemptionCountLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
   },
   redemptionSales: {
     fontSize: 11,
-    fontWeight: '600',
-    color: MUTED,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     fontVariant: ['tabular-nums'],
   },
   resultsFooter: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.30)',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_TERTIARY,
     lineHeight: 14,
     marginTop: 2,
   },
@@ -557,70 +571,70 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 9,
-    gap: 8,
+    gap: SP_SM,
   },
   rebookRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: HAIRLINE,
   },
   rebookAthlete: {
-    fontSize: 14,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.1,
   },
   rebookMeta: {
     fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     marginTop: 2,
   },
-  // Copper ghost REBOOK chip — act-now affordance
+  // Copper ghost REBOOK chip — act-now affordance (primary CTA per screen)
   rebookChip: {
-    paddingHorizontal: 10,
+    paddingHorizontal: SP_SM,
     paddingVertical: 5,
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: `${COPPER}66`,
-    backgroundColor: `${COPPER}1A`,
+    borderColor: `${ACCENT}66`,
+    backgroundColor: `${ACCENT}1A`,
     flexShrink: 0,
   },
   rebookChipText: {
-    fontSize: 10,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.6,
-    color: COPPER,
+    color: ACCENT,
   },
   // Muted MAKE AMBASSADOR chip
   ambassadorChip: {
-    paddingHorizontal: 8,
+    paddingHorizontal: SP_SM,
     paddingVertical: 5,
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.14)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: HAIRLINE_SUBTLE,
+    backgroundColor: SURFACE_SUBTLE,
     flexShrink: 0,
   },
   ambassadorChipText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.4,
-    color: 'rgba(255,255,255,0.40)',
+    color: TEXT_TERTIARY,
   },
 
   // ── Footer wall ────────────────────────────────────────────
   wallRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    paddingHorizontal: 4,
-    paddingBottom: 4,
+    gap: SP_SM,
+    paddingHorizontal: SP_XS,
+    paddingBottom: SP_XS,
   },
   wallText: {
     flex: 1,
     fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 15,
   },
 });

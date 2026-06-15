@@ -19,12 +19,27 @@ import {
   View,
 } from 'react-native';
 
-// ── Charter constants ──────────────────────────────────────────────────────
-const COPPER = '#EB621A';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
-const GREEN = '#34C759';
+import {
+  ACCENT,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_PILL,
+  RADIUS_SM,
+  SIGNAL_POSITIVE,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Module helpers ─────────────────────────────────────────────────────────
 
@@ -91,14 +106,14 @@ function TimelineDot({ terminal }: { terminal?: boolean }) {
 }
 
 function CaseCardView({ card }: { card: CaseCard }) {
+  const initials = card.athleteName.split(' ').map((p) => p[0]).join('');
   return (
     <View style={s.caseCard}>
       {/* Athlete header */}
       <View style={s.caseCardHeader}>
+        {/* Avatar — demoted from copper bg/border to neutral SURFACE_SUBTLE */}
         <View style={s.caseAvatar}>
-          <Text style={s.caseAvatarText}>
-            {card.athleteName.split(' ').map((p) => p[0]).join('')}
-          </Text>
+          <Text style={s.caseAvatarText}>{initials}</Text>
         </View>
         <Text style={s.caseAthleteLabel}>{card.athleteName}</Text>
       </View>
@@ -124,7 +139,7 @@ function CaseCardView({ card }: { card: CaseCard }) {
         })}
       </View>
 
-      {/* Export ghost CTA */}
+      {/* Export ghost CTA — primary act-now affordance, keeps ACCENT */}
       <Pressable
         style={({ pressed }) => [s.ghostBtn, { opacity: pressed ? 0.65 : 1 }]}
         onPress={() =>
@@ -136,7 +151,7 @@ function CaseCardView({ card }: { card: CaseCard }) {
         accessibilityRole="button"
         accessibilityLabel={`Export case file for ${card.athleteName}`}
       >
-        <Ionicons name="folder-outline" size={13} color={COPPER} />
+        <Ionicons name="folder-outline" size={13} color={ACCENT} />
         <Text style={s.ghostBtnText}>EXPORT CASE FILE</Text>
       </Pressable>
     </View>
@@ -163,7 +178,7 @@ function TitleIxLensModule() {
       <Text style={s.lensIntro}>Third-party deal activity (aggregates only)</Text>
 
       <View style={s.lensRow}>
-        {/* Women's bar */}
+        {/* Women's bar — uses purple identity (not copper) */}
         <View style={s.lensBarWrap}>
           <View style={[s.lensBar, { width: '46%', backgroundColor: '#AF52DE' }]} />
         </View>
@@ -172,16 +187,16 @@ function TitleIxLensModule() {
       </View>
 
       <View style={s.lensRow}>
-        {/* Men's bar */}
+        {/* Men's bar — data viz bar, demoted from COPPER to TEXT_TERTIARY (neutral) */}
         <View style={s.lensBarWrap}>
-          <View style={[s.lensBar, { width: '54%', backgroundColor: COPPER }]} />
+          <View style={[s.lensBar, { width: '54%', backgroundColor: TEXT_TERTIARY }]} />
         </View>
         <Text style={s.lensBarLabel}>Men's programs</Text>
         <Text style={s.lensBarValue}>54%</Text>
       </View>
 
       <View style={s.lensNoteRow}>
-        <Ionicons name="checkmark-circle" size={13} color={GREEN} />
+        <Ionicons name="checkmark-circle" size={13} color={SIGNAL_POSITIVE} />
         <Text style={s.lensNote}>Gap within conference norms</Text>
       </View>
     </View>
@@ -193,7 +208,7 @@ function TitleIxLensModule() {
 function VaultFooter() {
   return (
     <View style={s.footerRow}>
-      <Ionicons name="lock-closed-outline" size={12} color={MUTED} />
+      <Ionicons name="lock-closed-outline" size={12} color={TEXT_TERTIARY} />
       <Text style={s.footerText}>
         Dollar amounts are banded. Raw figures require athlete consent or statutory compulsion — what the school never holds can't be FOIA'd from it.
       </Text>
@@ -215,7 +230,7 @@ export function SchoolVault({ bottomInset = 0, topInset = 0, onScroll }: SchoolV
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -233,84 +248,85 @@ export function SchoolVault({ bottomInset = 0, topInset = 0, onScroll }: SchoolV
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingHorizontal: SP_LG,
+    gap: SP_MD,
   },
 
   // Card container
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 12,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_MD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
 
   // Section header
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginBottom: 2,
   },
   sectionBar: {
     width: 4,
     height: 14,
     borderRadius: 2,
-    backgroundColor: COPPER,
+    backgroundColor: ACCENT,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_PRIMARY,
   },
 
   // ── Module 1: Evidence Vault ─────────────────────────────
   caseCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 13,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    padding: 12,
-    gap: 10,
+    borderColor: HAIRLINE,
+    padding: SP_MD,
+    gap: SP_SM,
   },
   caseCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
   },
+  // Avatar — demoted from copper bg/border to neutral SURFACE_SUBTLE
   caseAvatar: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: `${COPPER}28`,
+    borderRadius: RADIUS_PILL,
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: `${COPPER}55`,
+    borderColor: HAIRLINE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   caseAvatarText: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: COPPER,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_SECONDARY,
     letterSpacing: -0.2,
   },
   caseAthleteLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: TEXT.body,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
   },
 
   // Timeline
   timeline: {
     gap: 0,
-    paddingLeft: 4,
+    paddingLeft: SP_XS,
   },
   timelineRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: SP_SM,
     minHeight: 28,
   },
   timelineLeft: {
@@ -321,12 +337,12 @@ const s = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: MUTED,
+    backgroundColor: TEXT_TERTIARY,
     marginTop: 3,
     flexShrink: 0,
   },
   dotTerminal: {
-    backgroundColor: GREEN,
+    backgroundColor: SIGNAL_POSITIVE,
     width: 10,
     height: 10,
     borderRadius: 5,
@@ -335,7 +351,7 @@ const s = StyleSheet.create({
   timelineLine: {
     flex: 1,
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: HAIRLINE,
     marginTop: 2,
   },
   timelineRight: {
@@ -343,56 +359,56 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingBottom: 8,
+    paddingBottom: SP_SM,
   },
   timelineLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.80)',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     fontVariant: ['tabular-nums'],
   },
   timelineDate: {
-    fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_TERTIARY,
     fontVariant: ['tabular-nums'],
   },
 
-  // Ghost button (per-card export)
+  // Ghost button (per-card export) — primary act-now affordance, ACCENT kept
   ghostBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 9,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: `${COPPER}55`,
-    backgroundColor: `${COPPER}10`,
+    borderRadius: RADIUS_SM,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${ACCENT}55`,
+    backgroundColor: `${ACCENT}10`,
   },
   ghostBtnText: {
-    fontSize: 11,
-    fontWeight: '900',
-    color: COPPER,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
+    color: ACCENT,
     letterSpacing: 0.6,
   },
 
   // ── Module 2: Title IX Lens ──────────────────────────────
   lensIntro: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     marginBottom: 2,
   },
   lensRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: SP_SM,
   },
   lensBarWrap: {
     flex: 1,
     height: 6,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: SURFACE_SUBTLE,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -401,15 +417,15 @@ const s = StyleSheet.create({
     borderRadius: 3,
   },
   lensBarLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     minWidth: 110,
   },
   lensBarValue: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: TEXT.body,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     minWidth: 36,
     textAlign: 'right',
@@ -421,9 +437,9 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   lensNote: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: GREEN,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: SIGNAL_POSITIVE,
   },
 
   // ── Vault footer ─────────────────────────────────────────
@@ -431,18 +447,18 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 7,
-    paddingHorizontal: 12,
+    paddingHorizontal: SP_MD,
     paddingVertical: 11,
-    borderRadius: 12,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    backgroundColor: 'rgba(255,255,255,0.025)',
+    borderColor: HAIRLINE_SUBTLE,
+    backgroundColor: SURFACE_SUBTLE,
   },
   footerText: {
     flex: 1,
-    fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_TERTIARY,
     lineHeight: 15,
   },
 });

@@ -27,14 +27,29 @@ import {
   View,
 } from 'react-native';
 
-// ── Charter constants ──────────────────────────────────────────────────────
-const COPPER = '#EB621A';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
-const RED = '#FF3B30';
-const AMBER = '#FFD60A';
-const GREEN = '#34C759';
+import {
+  ACCENT,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_SM,
+  SIGNAL_NEGATIVE,
+  SIGNAL_POSITIVE,
+  SIGNAL_WARN,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XL,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Module helpers ─────────────────────────────────────────────────────────
 
@@ -132,9 +147,9 @@ function FmvBandChip({ row }: { row: DealRow }) {
     });
   }, [row.athleteId, row.amountCents, row.dealKind]);
   const dotColor =
-    prediction.band === 'likely'     ? GREEN :
-    prediction.band === 'borderline' ? AMBER :
-                                       RED;
+    prediction.band === 'likely'     ? SIGNAL_POSITIVE :
+    prediction.band === 'borderline' ? SIGNAL_WARN :
+                                       SIGNAL_NEGATIVE;
   const chipLabel =
     prediction.band === 'likely'     ? 'Likely' :
     prediction.band === 'borderline' ? 'Borderline' :
@@ -151,7 +166,7 @@ const chipS = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: SP_XS,
     marginTop: 3,
   },
   dot: {
@@ -160,7 +175,7 @@ const chipS = StyleSheet.create({
     borderRadius: 3,
   },
   label: {
-    fontSize: 10,
+    fontSize: TEXT.caption,
     fontWeight: '700',
     letterSpacing: 0.4,
   },
@@ -240,7 +255,7 @@ function ClearancePipelineModule() {
               <View
                 style={[
                   s.dealStripe,
-                  { backgroundColor: isNotCleared ? RED : AMBER },
+                  { backgroundColor: isNotCleared ? SIGNAL_NEGATIVE : SIGNAL_WARN },
                 ]}
               />
             )}
@@ -293,7 +308,7 @@ function VbpPacketBuilderModule() {
       {/* In-progress packet card */}
       <View style={s.packetCard}>
         <View style={s.packetHeader}>
-          <Ionicons name="document-text-outline" size={16} color={COPPER} />
+          <Ionicons name="document-text-outline" size={16} color={ACCENT} />
           <Text style={s.packetTitle}>Orange Collective × M. Reid</Text>
         </View>
         <Text style={s.packetMeta}>appearance · $2,800</Text>
@@ -305,7 +320,7 @@ function VbpPacketBuilderModule() {
               <Ionicons
                 name={item.done ? 'checkmark-circle' : 'ellipse-outline'}
                 size={14}
-                color={item.done ? GREEN : AMBER}
+                color={item.done ? SIGNAL_POSITIVE : SIGNAL_WARN}
               />
               <Text
                 style={[
@@ -323,7 +338,7 @@ function VbpPacketBuilderModule() {
         </View>
       </View>
 
-      {/* Copper CTA */}
+      {/* Copper CTA — the single primary action */}
       <Pressable
         style={({ pressed }) => [s.copperBtn, { opacity: pressed ? 0.72 : 1 }]}
         onPress={() =>
@@ -398,7 +413,7 @@ function PaymentOpsModule() {
 function FooterWall() {
   return (
     <View style={s.wallRow}>
-      <Ionicons name="lock-closed" size={13} color={MUTED} />
+      <Ionicons name="lock-closed" size={13} color={TEXT_TERTIARY} />
       <Text style={s.wallText}>
         Documented business purpose on every deal — the packet is the product.
       </Text>
@@ -420,7 +435,7 @@ export function CollectiveHome({ bottomInset = 0, topInset = 0, onScroll }: Coll
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -440,38 +455,38 @@ export function CollectiveHome({ bottomInset = 0, topInset = 0, onScroll }: Coll
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingHorizontal: SP_LG,
+    gap: SP_MD,
   },
 
   // Card container
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
 
-  // Section header: 4px copper bar + caps label
+  // Section header: 4px copper bar + caps label (TEXT_PRIMARY per copper-restraint)
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginBottom: 2,
   },
   sectionBar: {
     width: 4,
     height: 14,
     borderRadius: 2,
-    backgroundColor: COPPER,
+    backgroundColor: ACCENT,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_PRIMARY,
   },
 
   // ── Module 1: Clearance Pipeline ────────────────────────
@@ -482,19 +497,19 @@ const s = StyleSheet.create({
     paddingBottom: 2,
   },
   heroStat: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
   },
   heroStatValue: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
   },
   heroStatDivider: {
-    fontSize: 12,
-    color: MUTED,
+    fontSize: TEXT.caption,
+    color: TEXT_SECONDARY,
   },
 
   stagePillsRow: {
@@ -505,67 +520,67 @@ const s = StyleSheet.create({
   stagePill: {
     flex: 1,
     minWidth: 54,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 10,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
     paddingVertical: 7,
     paddingHorizontal: 6,
     alignItems: 'center',
     gap: 1,
   },
   stagePillGreen: {
-    backgroundColor: `${GREEN}12`,
-    borderColor: `${GREEN}30`,
+    backgroundColor: `${SIGNAL_POSITIVE}12`,
+    borderColor: `${SIGNAL_POSITIVE}30`,
   },
   stagePillRed: {
-    backgroundColor: `${RED}10`,
-    borderColor: `${RED}30`,
+    backgroundColor: `${SIGNAL_NEGATIVE}10`,
+    borderColor: `${SIGNAL_NEGATIVE}30`,
   },
   stagePillCount: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: TEXT.title,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
-  stagePillCountGreen: { color: GREEN },
-  stagePillCountRed:   { color: RED   },
+  stagePillCountGreen: { color: SIGNAL_POSITIVE },
+  stagePillCountRed:   { color: SIGNAL_NEGATIVE   },
   stagePillLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: MUTED,
+    color: TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 12,
   },
-  stagePillLabelGreen: { color: `${GREEN}CC` },
-  stagePillLabelRed:   { color: `${RED}CC`   },
+  stagePillLabelGreen: { color: `${SIGNAL_POSITIVE}CC` },
+  stagePillLabelRed:   { color: `${SIGNAL_NEGATIVE}CC`   },
 
   dealRow: {
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
     flexDirection: 'row',
   },
   dealRowRed: {
-    backgroundColor: `${RED}0D`,
-    borderColor: `${RED}30`,
+    backgroundColor: `${SIGNAL_NEGATIVE}0D`,
+    borderColor: `${SIGNAL_NEGATIVE}30`,
   },
   dealRowAmber: {
-    backgroundColor: `${AMBER}0A`,
-    borderColor: `${AMBER}28`,
+    backgroundColor: `${SIGNAL_WARN}0A`,
+    borderColor: `${SIGNAL_WARN}28`,
   },
   dealStripe: {
     width: 3,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   dealContent: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_SM,
     gap: 3,
   },
   dealTop: {
@@ -574,44 +589,44 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
   },
   dealAthlete: {
-    fontSize: 13,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
   },
   dealDot: {
-    fontSize: 12,
-    color: MUTED,
+    fontSize: TEXT.caption,
+    color: TEXT_SECONDARY,
   },
   dealBrand: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.80)',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
   },
   dealAmount: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
   },
   dealDetail: {
     fontSize: 11,
-    fontWeight: '600',
-    color: MUTED,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     lineHeight: 15,
   },
-  dealDetailGreen: { color: GREEN },
-  dealDetailRed:   { color: RED   },
-  dealDetailAmber: { color: AMBER },
-  dealDetailMuted: { color: MUTED },
+  dealDetailGreen: { color: SIGNAL_POSITIVE },
+  dealDetailRed:   { color: SIGNAL_NEGATIVE   },
+  dealDetailAmber: { color: SIGNAL_WARN },
+  dealDetailMuted: { color: TEXT_SECONDARY },
 
   // ── Module 2: VBP Packet Builder ─────────────────────────
   packetCard: {
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: RADIUS_CARD,
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: `${COPPER}30`,
-    padding: 12,
-    gap: 8,
+    borderColor: `${ACCENT}30`,
+    padding: SP_MD,
+    gap: SP_SM,
   },
   packetHeader: {
     flexDirection: 'row',
@@ -619,15 +634,15 @@ const s = StyleSheet.create({
     gap: 7,
   },
   packetTitle: {
-    fontSize: 13,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     flex: 1,
   },
   packetMeta: {
     fontSize: 11,
-    fontWeight: '600',
-    color: MUTED,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     marginTop: -4,
   },
   checklist: {
@@ -640,29 +655,30 @@ const s = StyleSheet.create({
     gap: 7,
   },
   checklistLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.80)',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     flex: 1,
   },
   checklistLabelPending: {
-    color: AMBER,
-    fontWeight: '600',
+    color: SIGNAL_WARN,
+    fontWeight: WEIGHT.semibold,
   },
 
+  // Primary CTA — the ONE copper action per screen
   copperBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
-    paddingVertical: 13,
-    borderRadius: 13,
-    backgroundColor: COPPER,
+    paddingVertical: SP_MD,
+    borderRadius: RADIUS_CARD,
+    backgroundColor: ACCENT,
     marginTop: 2,
   },
   copperBtnText: {
-    fontSize: 13,
-    fontWeight: '900',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
     color: '#000',
     letterSpacing: 0.7,
   },
@@ -671,53 +687,53 @@ const s = StyleSheet.create({
   aeStatusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
   },
   aeBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 10,
+    borderRadius: RADIUS_SM,
+    paddingHorizontal: SP_SM,
     paddingVertical: 5,
     borderWidth: StyleSheet.hairlineWidth,
   },
   aeBadgeAmber: {
-    backgroundColor: `${AMBER}10`,
-    borderColor: `${AMBER}44`,
+    backgroundColor: `${SIGNAL_WARN}10`,
+    borderColor: `${SIGNAL_WARN}44`,
   },
   aeBadgeText: {
     fontSize: 11,
-    fontWeight: '900',
-    color: AMBER,
+    fontWeight: WEIGHT.bold,
+    color: SIGNAL_WARN,
     letterSpacing: 0.5,
   },
   aeBodyText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 17,
   },
 
   flagRow: {
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
     flexDirection: 'row',
     borderWidth: StyleSheet.hairlineWidth,
   },
   flagRowAmber: {
-    backgroundColor: `${AMBER}0A`,
-    borderColor: `${AMBER}28`,
+    backgroundColor: `${SIGNAL_WARN}0A`,
+    borderColor: `${SIGNAL_WARN}28`,
   },
   flagStripe: {
     width: 3,
-    backgroundColor: AMBER,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    backgroundColor: SIGNAL_WARN,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   flagText: {
     flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
-    color: AMBER,
-    paddingHorizontal: 10,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: SIGNAL_WARN,
+    paddingHorizontal: SP_SM,
     paddingVertical: 9,
     lineHeight: 16,
   },
@@ -725,37 +741,37 @@ const s = StyleSheet.create({
   // ── Module 4: Payment Ops ─────────────────────────────────
   pillsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SP_SM,
     flexWrap: 'wrap',
   },
   statPill: {
     flex: 1,
     minWidth: 80,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    borderColor: HAIRLINE,
+    paddingVertical: SP_SM,
+    paddingHorizontal: SP_SM,
     alignItems: 'center',
     gap: 2,
   },
   statPillGreen: {
-    backgroundColor: `${GREEN}0E`,
-    borderColor: `${GREEN}28`,
+    backgroundColor: `${SIGNAL_POSITIVE}0E`,
+    borderColor: `${SIGNAL_POSITIVE}28`,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.4,
   },
-  statValueGreen: { color: GREEN },
+  statValueGreen: { color: SIGNAL_POSITIVE },
   statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 13,
   },
@@ -764,26 +780,26 @@ const s = StyleSheet.create({
   wallRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderRadius: 14,
+    gap: SP_SM,
+    paddingHorizontal: SP_MD,
+    paddingVertical: SP_MD,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.09)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: HAIRLINE_SUBTLE,
+    backgroundColor: SURFACE_SUBTLE,
   },
   wallText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 18,
   },
   fmvDisclaimer: {
     fontSize: 9,
-    color: 'rgba(255,255,255,0.28)',
-    fontWeight: '500',
+    color: TEXT_TERTIARY,
+    fontWeight: WEIGHT.medium,
     lineHeight: 13,
-    marginTop: 8,
+    marginTop: SP_SM,
   },
 });

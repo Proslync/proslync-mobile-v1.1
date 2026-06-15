@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { FloatingTabPill, useTabCollapse } from '@/components/shared/floating-tab-pill';
+import { CANVAS } from '@/components/shared/ui-kit/tokens';
 
 // Charter §A: new home + vault tabs
 import { SchoolHome } from '@/components/school/school-home';
@@ -118,7 +119,7 @@ export function SchoolView() {
 // ============================================================
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: CANVAS },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
   bottomFade: { position: 'absolute', left: 0, right: 0, zIndex: 99 },
 });

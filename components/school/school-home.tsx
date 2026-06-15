@@ -26,14 +26,28 @@ import {
   View,
 } from 'react-native';
 
-// ── Charter constants ──────────────────────────────────────────────────────
-const COPPER = '#EB621A';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
-const RED = '#FF3B30';
-const AMBER = '#FFD60A';
-const GREEN = '#34C759';
+import {
+  ACCENT,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_SM,
+  SIGNAL_NEGATIVE,
+  SIGNAL_POSITIVE,
+  SIGNAL_WARN,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Module helpers ─────────────────────────────────────────────────────────
 
@@ -114,7 +128,7 @@ function NilGoTriageModule() {
             ]}
           >
             {(isWarn || isAmber) && (
-              <View style={[s.triageStripe, { backgroundColor: isWarn ? RED : AMBER }]} />
+              <View style={[s.triageStripe, { backgroundColor: isWarn ? SIGNAL_NEGATIVE : SIGNAL_WARN }]} />
             )}
             <View style={s.triageContent}>
               <View style={s.triageTop}>
@@ -214,6 +228,7 @@ function SpartaLedgerModule() {
           </View>
         );
       })}
+      {/* Primary export CTA — keeps ACCENT (act-now affordance) */}
       <Pressable
         style={({ pressed }) => [s.ghostBtn, { opacity: pressed ? 0.65 : 1 }]}
         onPress={() =>
@@ -225,7 +240,7 @@ function SpartaLedgerModule() {
         accessibilityRole="button"
         accessibilityLabel="Export agent ledger in FTC format"
       >
-        <Ionicons name="document-outline" size={14} color={COPPER} />
+        <Ionicons name="document-outline" size={14} color={ACCENT} />
         <Text style={s.ghostBtnText}>EXPORT FTC FORMAT</Text>
       </Pressable>
     </View>
@@ -283,7 +298,7 @@ function DisclosureHealthModule() {
         ))}
       </View>
       <View style={s.anomalyRow}>
-        <Ionicons name="checkmark-circle" size={14} color={GREEN} />
+        <Ionicons name="checkmark-circle" size={14} color={SIGNAL_POSITIVE} />
         <Text style={s.anomalyText}>No under-disclosure anomalies detected</Text>
       </View>
     </View>
@@ -314,7 +329,7 @@ function PaymentAlertsModule() {
 function FooterWall() {
   return (
     <View style={s.wallRow}>
-      <Ionicons name="lock-closed" size={13} color={MUTED} />
+      <Ionicons name="lock-closed" size={13} color={TEXT_TERTIARY} />
       <Text style={s.wallText}>
         Proslync shows your office clocks, flags and receipts — never the athlete's ledger. Review and flag; never approve or veto.
       </Text>
@@ -336,7 +351,7 @@ export function SchoolHome({ bottomInset = 0, topInset = 0, onScroll }: SchoolHo
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -357,66 +372,66 @@ export function SchoolHome({ bottomInset = 0, topInset = 0, onScroll }: SchoolHo
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingHorizontal: SP_LG,
+    gap: SP_MD,
   },
 
   // Card container
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
 
-  // Section header: 4px copper bar + caps label
+  // Section header: 4px copper bar + caps label (TEXT_PRIMARY per copper-restraint)
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginBottom: 2,
   },
   sectionBar: {
     width: 4,
     height: 14,
     borderRadius: 2,
-    backgroundColor: COPPER,
+    backgroundColor: ACCENT,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_PRIMARY,
   },
 
   // ── Module 1: NIL Go Triage ──────────────────────────────
   triageRow: {
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
     flexDirection: 'row',
   },
   triageRowWarn: {
-    backgroundColor: 'rgba(255,59,48,0.08)',
-    borderColor: 'rgba(255,59,48,0.28)',
+    backgroundColor: `${SIGNAL_NEGATIVE}0D`,
+    borderColor: `${SIGNAL_NEGATIVE}30`,
   },
   triageRowAmber: {
-    backgroundColor: 'rgba(255,214,10,0.07)',
-    borderColor: 'rgba(255,214,10,0.28)',
+    backgroundColor: `${SIGNAL_WARN}0A`,
+    borderColor: `${SIGNAL_WARN}28`,
   },
   triageStripe: {
     width: 3,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   triageContent: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS + 4,
     gap: 2,
   },
   triageTop: {
@@ -425,18 +440,18 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
   },
   triageAthlete: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
   },
   triageDot: {
-    fontSize: 13,
-    color: MUTED,
+    fontSize: TEXT.label,
+    color: TEXT_SECONDARY,
   },
   triageEntity: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     flex: 1,
   },
   triageBottom: {
@@ -445,162 +460,163 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
   },
   triageStatus: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
   },
   triageStatusClear: {
-    color: GREEN,
+    color: SIGNAL_POSITIVE,
   },
   triageStatusWarn: {
-    color: RED,
-    fontWeight: '700',
+    color: SIGNAL_NEGATIVE,
+    fontWeight: WEIGHT.bold,
   },
   triageStatusAmber: {
-    color: AMBER,
-    fontWeight: '700',
+    color: SIGNAL_WARN,
+    fontWeight: WEIGHT.bold,
   },
   triageBand: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     fontVariant: ['tabular-nums'],
   },
   triageFooter: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: GREEN,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: SIGNAL_POSITIVE,
     marginTop: 2,
   },
 
   // ── Module 2: SPARTA Ledger ──────────────────────────────
   agentRow: {
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
     flexDirection: 'row',
   },
   agentRowPending: {
-    backgroundColor: 'rgba(255,214,10,0.07)',
-    borderColor: 'rgba(255,214,10,0.28)',
+    backgroundColor: `${SIGNAL_WARN}0A`,
+    borderColor: `${SIGNAL_WARN}28`,
   },
   agentStripe: {
     width: 3,
-    backgroundColor: AMBER,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    backgroundColor: SIGNAL_WARN,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   agentContent: {
     flex: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS + 4,
     gap: 3,
   },
   agentName: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
   },
   agentArrow: {
-    color: MUTED,
-    fontWeight: '400',
+    color: TEXT_SECONDARY,
+    fontWeight: WEIGHT.regular,
   },
   agentAthlete: {
-    color: 'rgba(255,255,255,0.85)',
-    fontWeight: '600',
+    color: TEXT_PRIMARY,
+    fontWeight: WEIGHT.semibold,
   },
   agentNotice: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
   },
   agentNoticeReceived: {
-    color: MUTED,
+    color: TEXT_SECONDARY,
   },
   agentNoticePending: {
-    color: AMBER,
-    fontWeight: '700',
+    color: SIGNAL_WARN,
+    fontWeight: WEIGHT.bold,
   },
   agentCheck: {
-    color: GREEN,
-    fontWeight: '700',
+    color: SIGNAL_POSITIVE,
+    fontWeight: WEIGHT.bold,
   },
+  // Primary export CTA — keeps ACCENT styling (act-now affordance)
   ghostBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
-    marginTop: 4,
+    marginTop: SP_XS,
     paddingVertical: 11,
-    borderRadius: 13,
-    borderWidth: 1,
-    borderColor: `${COPPER}55`,
-    backgroundColor: `${COPPER}10`,
+    borderRadius: RADIUS_CARD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${ACCENT}55`,
+    backgroundColor: `${ACCENT}10`,
   },
   ghostBtnText: {
-    fontSize: 12,
-    fontWeight: '900',
-    color: COPPER,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
+    color: ACCENT,
     letterSpacing: 0.7,
   },
 
   // ── Modules 3-5: shared stat pill row ───────────────────
   pillsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SP_SM,
     flexWrap: 'wrap',
   },
   statPill: {
     flex: 1,
     minWidth: 80,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    borderColor: HAIRLINE,
+    paddingVertical: SP_SM,
+    paddingHorizontal: SP_SM,
     alignItems: 'center',
     gap: 2,
   },
   statValue: {
     fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.4,
   },
   statLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 13,
   },
 
   // ── Shared flag row ──────────────────────────────────────
   flagRow: {
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
     flexDirection: 'row',
     borderWidth: StyleSheet.hairlineWidth,
   },
   flagRowAmber: {
-    backgroundColor: 'rgba(255,214,10,0.07)',
-    borderColor: 'rgba(255,214,10,0.28)',
+    backgroundColor: `${SIGNAL_WARN}0A`,
+    borderColor: `${SIGNAL_WARN}28`,
   },
   flagStripe: {
     width: 3,
-    backgroundColor: AMBER,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    backgroundColor: SIGNAL_WARN,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   flagText: {
     flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
-    color: AMBER,
-    paddingHorizontal: 10,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: SIGNAL_WARN,
+    paddingHorizontal: SP_SM,
     paddingVertical: 9,
     lineHeight: 16,
   },
@@ -610,19 +626,19 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 4,
+    paddingHorizontal: SP_XS,
   },
   anomalyText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: GREEN,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: SIGNAL_POSITIVE,
   },
 
   // ── Module 5: Payment footer ──────────────────────────────
   paymentFooter: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 14,
   },
 
@@ -630,19 +646,19 @@ const s = StyleSheet.create({
   wallRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderRadius: 14,
+    gap: SP_SM,
+    paddingHorizontal: SP_MD,
+    paddingVertical: SP_MD,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.09)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: HAIRLINE_SUBTLE,
+    backgroundColor: SURFACE_SUBTLE,
   },
   wallText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 18,
   },
 });

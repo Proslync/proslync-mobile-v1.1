@@ -38,10 +38,31 @@ import {
   type Prediction,
 } from '@/lib/data/mock-fan-data';
 
-const ACCENT = '#FF6F3C';
+import {
+  ACCENT,
+  CANVAS,
+  HAIRLINE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_PILL,
+  RADIUS_SM,
+  SIGNAL_POSITIVE,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
+
+// PURPLE is the fan role's identity accent — kept throughout (not copper)
 const PURPLE = '#A855F7';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.09)';
+
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 // Fan has 3 main tabs: Home / Pick'em / Perks.
@@ -68,7 +89,7 @@ export function FanView() {
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
   const { collapsed, onScroll } = useTabCollapse();
 
-  const topPad = insets.top + 16;
+  const topPad = insets.top + SP_LG;
   const bottomPad = insets.bottom + 120;
 
   return (
@@ -262,11 +283,11 @@ function FeedCard({ item, delay }: { item: FeedItem; delay: number }) {
       <Text style={styles.feedContent}>{item.content}</Text>
       <View style={styles.feedReactions}>
         <View style={styles.reactBtn}>
-          <Ionicons name="heart-outline" size={15} color="rgba(255,255,255,0.7)" />
+          <Ionicons name="heart-outline" size={15} color={TEXT_SECONDARY} />
           <Text style={styles.reactText}>{item.reactions.likes.toLocaleString()}</Text>
         </View>
         <View style={styles.reactBtn}>
-          <Ionicons name="chatbubble-outline" size={14} color="rgba(255,255,255,0.7)" />
+          <Ionicons name="chatbubble-outline" size={14} color={TEXT_SECONDARY} />
           <Text style={styles.reactText}>{item.reactions.comments.toLocaleString()}</Text>
         </View>
         <View style={{ flex: 1 }} />
@@ -311,7 +332,7 @@ function GamesTab({ bottomPad }: { bottomPad: number }) {
 function GameCard({ g, delay }: { g: LiveGame; delay: number }) {
   const isLive = g.status === 'live';
   const isFinal = g.status === 'final';
-  const borderColor = isLive ? 'rgba(255,68,68,0.35)' : CARD_BORDER;
+  const borderColor = isLive ? 'rgba(255,68,68,0.35)' : HAIRLINE;
 
   return (
     <Animated.View
@@ -335,7 +356,7 @@ function GameCard({ g, delay }: { g: LiveGame; delay: number }) {
           <Text
             style={[
               styles.gameStatusText,
-              { color: isFinal ? 'rgba(255,255,255,0.5)' : ACCENT },
+              { color: isFinal ? TEXT_TERTIARY : ACCENT },
             ]}
           >
             {isFinal ? 'FINAL' : g.tipoff}
@@ -388,7 +409,7 @@ function GameCard({ g, delay }: { g: LiveGame; delay: number }) {
         <Text style={styles.gameVenue}>{g.venue}</Text>
         {isLive && (
           <View style={styles.watchedRow}>
-            <Ionicons name="eye-outline" size={11} color="rgba(255,255,255,0.5)" />
+            <Ionicons name="eye-outline" size={11} color={TEXT_TERTIARY} />
             <Text style={styles.watchedText}>
               {(g.watchedBy / 1000).toFixed(1)}K watching
             </Text>
@@ -398,7 +419,7 @@ function GameCard({ g, delay }: { g: LiveGame; delay: number }) {
 
       {isLive && (
         <TouchableOpacity activeOpacity={0.85} style={styles.watchBtn}>
-          <Ionicons name="play" size={13} color="#FFFFFF" />
+          <Ionicons name="play" size={13} color={TEXT_PRIMARY} />
           <Text style={styles.watchBtnText}>Watch live stream</Text>
         </TouchableOpacity>
       )}
@@ -631,7 +652,7 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
           </View>
           {p.claimed && (
             <View style={styles.claimedPill}>
-              <Ionicons name="checkmark" size={11} color="#34C759" />
+              <Ionicons name="checkmark" size={11} color={SIGNAL_POSITIVE} />
               <Text style={styles.claimedText}>CLAIMED</Text>
             </View>
           )}
@@ -647,14 +668,14 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
               !affordable && styles.claimBtnDisabled,
             ]}
           >
-            <Ionicons name="diamond-outline" size={13} color={affordable ? '#FFFFFF' : 'rgba(255,255,255,0.5)'} />
-            <Text style={[styles.claimBtnText, !affordable && { color: 'rgba(255,255,255,0.5)' }]}>
+            <Ionicons name="diamond-outline" size={13} color={affordable ? TEXT_PRIMARY : TEXT_TERTIARY} />
+            <Text style={[styles.claimBtnText, !affordable && { color: TEXT_TERTIARY }]}>
               {affordable ? 'Claim' : `Need ${(p.cost - FAN_PROFILE.superfanPoints).toLocaleString()} more`}
             </Text>
             <Text
               style={[
                 styles.claimBtnCost,
-                !affordable && { color: 'rgba(255,255,255,0.5)' },
+                !affordable && { color: TEXT_TERTIARY },
               ]}
             >
               {p.cost.toLocaleString()} pts
@@ -671,14 +692,14 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
 // ============================================================
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: CANVAS },
 
   // Sub-tab segmented switcher (Following | Games inside Home tab) — glass pill
   // matching the Home/Pick'em/Perks row above it.
   subTabsRow: {
     flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 12,
+    marginHorizontal: SP_LG,
+    marginBottom: SP_MD,
     height: 46,
     borderRadius: 23,
     overflow: 'hidden',
@@ -692,8 +713,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 7,
   },
-  subTabLabel: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.55)' },
-  subTabLabelActive: { color: '#FFF' },
+  subTabLabel: { fontSize: TEXT.label, fontWeight: WEIGHT.bold, color: TEXT_TERTIARY },
+  subTabLabelActive: { color: TEXT_PRIMARY },
   subTabBadge: {
     minWidth: 20,
     height: 18,
@@ -701,39 +722,40 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: SURFACE_SUBTLE,
   },
+  // Active badge: ACCENT (active selection — copper-restraint exception)
   subTabBadgeActive: { backgroundColor: ACCENT },
-  subTabBadgeText: { fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.6)' },
-  subTabBadgeTextActive: { color: '#FFF' },
+  subTabBadgeText: { fontSize: TEXT.caption, fontWeight: WEIGHT.bold, color: TEXT_SECONDARY },
+  subTabBadgeTextActive: { color: TEXT_PRIMARY },
 
   tabRow: {
-    paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingHorizontal: SP_LG,
+    paddingTop: SP_XS,
     paddingBottom: 14,
-    gap: 8,
+    gap: SP_SM,
     alignItems: 'center',
   },
   tabPill: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SP_LG,
     height: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 18,
+    borderRadius: RADIUS_PILL,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE_SUBTLE,
   },
   tabPillActive: {
     backgroundColor: 'rgba(168,85,247,0.15)',
     borderColor: 'rgba(168,85,247,0.4)',
   },
   tabPillText: {
-    fontSize: 14,
-    color: '#FFF',
-    fontWeight: '500',
+    fontSize: TEXT.body,
+    color: TEXT_PRIMARY,
+    fontWeight: WEIGHT.medium,
   },
-  tabPillTextActive: { color: '#FF6F3C', fontWeight: '700' },
+  tabPillTextActive: { color: ACCENT, fontWeight: WEIGHT.bold },
 
   // Floating header row — avatar pill + segmented tabs (matches player activity)
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
@@ -746,7 +768,7 @@ const styles = StyleSheet.create({
   headerScrollContent: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    gap: 8,
+    gap: SP_SM,
     alignItems: 'center',
   },
   headerPill: {
@@ -755,7 +777,7 @@ const styles = StyleSheet.create({
     height: 46,
     borderRadius: 23,
     paddingLeft: 3,
-    paddingRight: 12,
+    paddingRight: SP_MD,
     overflow: 'hidden',
   },
   headerPillAvatar: {
@@ -764,7 +786,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   headerPillIcon: {
-    marginLeft: 8,
+    marginLeft: SP_SM,
   },
   glassLayer: {
     ...StyleSheet.absoluteFillObject,
@@ -794,22 +816,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
 
-  scrollContent: { paddingHorizontal: 16, paddingTop: 4 },
+  scrollContent: { paddingHorizontal: SP_LG, paddingTop: SP_XS },
 
   kicker: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.45)',
+    fontSize: TEXT.caption,
+    color: TEXT_TERTIARY,
     letterSpacing: 0.8,
-    fontWeight: '700',
-    marginBottom: 10,
+    fontWeight: WEIGHT.bold,
+    marginBottom: SP_SM,
     marginTop: 14,
   },
 
   // Feed — athlete strip
   athleteStrip: {
     paddingHorizontal: 0,
-    paddingBottom: 4,
-    gap: 12,
+    paddingBottom: SP_XS,
+    gap: SP_MD,
   },
   athleteChip: { alignItems: 'center', width: 64 },
   athleteChipAvatar: {
@@ -820,7 +842,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
   },
-  athleteChipText: { fontSize: 14, fontWeight: '800' },
+  athleteChipText: { fontSize: TEXT.body, fontWeight: WEIGHT.bold },
   liveIndicator: {
     position: 'absolute',
     bottom: -2,
@@ -830,24 +852,24 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: '#FF4444',
     borderWidth: 2,
-    borderColor: '#000',
+    borderColor: CANVAS,
   },
   athleteChipName: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 11,
+    color: TEXT_SECONDARY,
+    fontSize: TEXT.caption,
     marginTop: 6,
-    fontWeight: '600',
+    fontWeight: WEIGHT.semibold,
   },
 
   feedCard: {
-    borderRadius: 14,
+    borderRadius: RADIUS_CARD,
     borderWidth: 1,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
     padding: 14,
-    backgroundColor: CARD_BG,
-    marginBottom: 10,
+    backgroundColor: SURFACE,
+    marginBottom: SP_SM,
   },
-  feedHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  feedHead: { flexDirection: 'row', alignItems: 'center', gap: SP_SM, marginBottom: SP_SM },
   feedAvatar: {
     width: 40,
     height: 40,
@@ -856,15 +878,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  feedAvatarText: { fontSize: 13, fontWeight: '800' },
-  feedName: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  feedTypeRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
-  feedType: { fontSize: 10, fontWeight: '800', letterSpacing: 0.4 },
-  feedTime: { color: 'rgba(255,255,255,0.45)', fontSize: 11 },
-  feedContent: { color: '#FFFFFF', fontSize: 13.5, lineHeight: 19, marginBottom: 10 },
-  feedReactions: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  reactBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  reactText: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
+  feedAvatarText: { fontSize: TEXT.label, fontWeight: WEIGHT.bold },
+  feedName: { color: TEXT_PRIMARY, fontSize: TEXT.body, fontWeight: WEIGHT.bold },
+  feedTypeRow: { flexDirection: 'row', alignItems: 'center', gap: SP_XS, marginTop: 3 },
+  feedType: { fontSize: TEXT.caption, fontWeight: WEIGHT.bold, letterSpacing: 0.4 },
+  feedTime: { color: TEXT_TERTIARY, fontSize: TEXT.caption },
+  feedContent: { color: TEXT_PRIMARY, fontSize: TEXT.label, lineHeight: 19, marginBottom: SP_SM },
+  feedReactions: { flexDirection: 'row', alignItems: 'center', gap: SP_LG },
+  reactBtn: { flexDirection: 'row', alignItems: 'center', gap: SP_XS },
+  reactText: { fontSize: TEXT.caption, color: TEXT_SECONDARY, fontWeight: WEIGHT.semibold },
   shareBtn: {
     width: 28,
     height: 28,
@@ -878,37 +900,37 @@ const styles = StyleSheet.create({
 
   // Games
   gameCard: {
-    borderRadius: 14,
+    borderRadius: RADIUS_CARD,
     borderWidth: 1,
     padding: 14,
-    backgroundColor: CARD_BG,
+    backgroundColor: SURFACE,
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: SP_SM,
   },
   gameHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: SP_SM,
+    marginBottom: SP_SM,
   },
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 8,
+    paddingHorizontal: SP_SM,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: RADIUS_SM,
     backgroundColor: 'rgba(255,68,68,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(255,68,68,0.4)',
   },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF4444' },
-  livePillText: { color: '#FF4444', fontSize: 10, fontWeight: '800', letterSpacing: 0.4 },
-  gameStatusText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  livePillText: { color: '#FF4444', fontSize: TEXT.caption, fontWeight: WEIGHT.bold, letterSpacing: 0.4 },
+  gameStatusText: { fontSize: TEXT.caption, fontWeight: WEIGHT.bold, letterSpacing: 0.5 },
   followedChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: SP_XS,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 7,
@@ -916,125 +938,125 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(168,85,247,0.35)',
   },
-  followedChipText: { color: PURPLE, fontSize: 9.5, fontWeight: '800', letterSpacing: 0.3 },
+  followedChipText: { color: PURPLE, fontSize: 9.5, fontWeight: WEIGHT.bold, letterSpacing: 0.3 },
   gameClock: {
     marginLeft: 'auto',
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '700',
+    fontSize: TEXT.caption,
+    color: TEXT_PRIMARY,
+    fontWeight: WEIGHT.bold,
   },
 
   gameScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: SP_XS,
   },
   gameTeamBlock: { flex: 1, alignItems: 'center' },
   gameTeam: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '700',
+    fontSize: TEXT.caption,
+    color: TEXT_SECONDARY,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.3,
     marginBottom: 6,
   },
   gameScore: {
     fontSize: 36,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: '800',
+    color: TEXT_SECONDARY,
+    fontWeight: WEIGHT.bold,
     fontVariant: ['tabular-nums'],
   },
-  gameScoreLeading: { color: '#FFFFFF' },
-  gameAt: { fontSize: 12, color: 'rgba(255,255,255,0.3)', marginHorizontal: 4 },
+  gameScoreLeading: { color: TEXT_PRIMARY },
+  gameAt: { fontSize: TEXT.caption, color: TEXT_TERTIARY, marginHorizontal: SP_XS },
 
   gameFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: SP_SM,
   },
-  gameVenue: { fontSize: 11, color: 'rgba(255,255,255,0.45)' },
-  watchedRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  watchedText: { fontSize: 11, color: 'rgba(255,255,255,0.5)' },
+  gameVenue: { fontSize: TEXT.caption, color: TEXT_TERTIARY },
+  watchedRow: { flexDirection: 'row', alignItems: 'center', gap: SP_XS },
+  watchedText: { fontSize: TEXT.caption, color: TEXT_TERTIARY },
 
   watchBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 10,
-    paddingVertical: 10,
-    borderRadius: 10,
+    marginTop: SP_SM,
+    paddingVertical: SP_SM,
+    borderRadius: RADIUS_SM,
     backgroundColor: 'rgba(255,68,68,0.14)',
     borderWidth: 1,
     borderColor: 'rgba(255,68,68,0.4)',
   },
-  watchBtnText: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
+  watchBtnText: { color: TEXT_PRIMARY, fontSize: TEXT.label, fontWeight: WEIGHT.bold },
 
   // Pick'em
   fanScoreCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
+    padding: SP_LG,
+    borderRadius: RADIUS_LG,
     borderWidth: 1,
     borderColor: 'rgba(168,85,247,0.3)',
-    backgroundColor: CARD_BG,
+    backgroundColor: SURFACE,
     overflow: 'hidden',
     marginBottom: 14,
   },
-  fanScoreLabel: { fontSize: 10, color: PURPLE, letterSpacing: 0.8, fontWeight: '800' },
-  fanScoreValue: { color: '#FFFFFF', fontSize: 32, fontWeight: '800', marginTop: 4 },
-  fanScoreMeta: { fontSize: 11, color: 'rgba(255,255,255,0.55)', marginTop: 4 },
+  fanScoreLabel: { fontSize: TEXT.caption, color: PURPLE, letterSpacing: 0.8, fontWeight: WEIGHT.bold },
+  fanScoreValue: { color: TEXT_PRIMARY, fontSize: 32, fontWeight: WEIGHT.bold, marginTop: SP_XS },
+  fanScoreMeta: { fontSize: TEXT.caption, color: TEXT_SECONDARY, marginTop: SP_XS },
   fanScoreRight: { alignItems: 'center' },
-  accuracyValue: { color: PURPLE, fontSize: 26, fontWeight: '800' },
+  accuracyValue: { color: PURPLE, fontSize: 26, fontWeight: WEIGHT.bold },
   accuracyLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
+    fontSize: TEXT.caption,
+    color: TEXT_TERTIARY,
     letterSpacing: 0.5,
     marginTop: 2,
-    fontWeight: '600',
+    fontWeight: WEIGHT.semibold,
   },
 
   predCard: {
     padding: 14,
-    borderRadius: 14,
+    borderRadius: RADIUS_CARD,
     borderWidth: 1,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
-    marginBottom: 10,
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
+    marginBottom: SP_SM,
   },
   predHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: SP_SM,
   },
-  predLabel: { flex: 1, color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+  predLabel: { flex: 1, color: TEXT_PRIMARY, fontSize: TEXT.body, fontWeight: WEIGHT.bold },
   potPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
+    gap: SP_XS,
+    paddingHorizontal: SP_SM,
     paddingVertical: 3,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,111,60,0.12)',
+    borderRadius: RADIUS_SM,
+    backgroundColor: `${ACCENT}1F`,
     borderWidth: 1,
-    borderColor: 'rgba(255,111,60,0.3)',
+    borderColor: `${ACCENT}4D`,
   },
-  potText: { color: ACCENT, fontSize: 11, fontWeight: '800' },
+  potText: { color: ACCENT, fontSize: TEXT.caption, fontWeight: WEIGHT.bold },
   predDeadline: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 4,
-    marginBottom: 10,
+    fontSize: TEXT.caption,
+    color: TEXT_TERTIARY,
+    marginTop: SP_XS,
+    marginBottom: SP_SM,
   },
   predOpts: { gap: 6 },
   predOpt: {
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE_SUBTLE,
     overflow: 'hidden',
   },
   predOptSelected: { borderColor: 'rgba(168,85,247,0.5)' },
@@ -1047,44 +1069,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: SP_MD,
+    paddingVertical: SP_SM,
   },
   predOptText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 13,
-    fontWeight: '600',
+    color: TEXT_SECONDARY,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.semibold,
   },
-  predOptTextSelected: { color: '#FFFFFF', fontWeight: '700' },
+  predOptTextSelected: { color: TEXT_PRIMARY, fontWeight: WEIGHT.bold },
   predOptPct: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 13,
-    fontWeight: '700',
+    color: TEXT_SECONDARY,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
     fontVariant: ['tabular-nums'],
   },
   predMyPick: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingBottom: 8,
+    gap: SP_XS,
+    paddingHorizontal: SP_SM,
+    paddingBottom: SP_SM,
   },
   predMyPickText: {
     fontSize: 9.5,
     color: PURPLE,
-    fontWeight: '800',
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.5,
   },
 
   // Perks
   tierCard: {
-    padding: 16,
-    borderRadius: 16,
+    padding: SP_LG,
+    borderRadius: RADIUS_LG,
     borderWidth: 1,
     borderColor: 'rgba(168,85,247,0.3)',
-    backgroundColor: CARD_BG,
+    backgroundColor: SURFACE,
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: SP_SM,
   },
   tierRow: {
     flexDirection: 'row',
@@ -1095,46 +1117,46 @@ const styles = StyleSheet.create({
   tierBadge: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: RADIUS_CARD,
     backgroundColor: 'rgba(168,85,247,0.15)',
     borderWidth: 1,
     borderColor: 'rgba(168,85,247,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tierCurrent: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
-  tierPoints: { color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 },
+  tierCurrent: { color: TEXT_PRIMARY, fontSize: TEXT.title, fontWeight: WEIGHT.bold },
+  tierPoints: { color: TEXT_SECONDARY, fontSize: TEXT.caption, marginTop: 2 },
   tierToNext: {
     color: PURPLE,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     textAlign: 'right',
   },
   tierTrack: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: SURFACE_SUBTLE,
     overflow: 'hidden',
   },
   tierFill: { height: 6, borderRadius: 3, backgroundColor: PURPLE },
 
   perkCard: {
     flexDirection: 'row',
-    gap: 12,
+    gap: SP_MD,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: RADIUS_CARD,
     borderWidth: 1,
-    borderColor: CARD_BORDER,
-    backgroundColor: CARD_BG,
-    marginBottom: 10,
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
+    marginBottom: SP_SM,
   },
   perkIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,111,60,0.12)',
+    borderRadius: RADIUS_CARD,
+    backgroundColor: `${ACCENT}1F`,
     borderWidth: 1,
-    borderColor: 'rgba(255,111,60,0.3)',
+    borderColor: `${ACCENT}4D`,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1150,50 +1172,50 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
   },
-  perkTierText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  perkTierText: { fontSize: 9, fontWeight: WEIGHT.bold, letterSpacing: 0.5 },
   claimedPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: SP_XS,
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: 'rgba(52,199,89,0.12)',
+    backgroundColor: `${SIGNAL_POSITIVE}1F`,
     borderWidth: 1,
-    borderColor: 'rgba(52,199,89,0.3)',
+    borderColor: `${SIGNAL_POSITIVE}4D`,
   },
-  claimedText: { color: '#34C759', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-  perkTitle: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
-  perkAthlete: { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 3 },
-  perkDesc: { color: 'rgba(255,255,255,0.55)', fontSize: 11.5, marginTop: 4, lineHeight: 16 },
+  claimedText: { color: SIGNAL_POSITIVE, fontSize: 9, fontWeight: WEIGHT.bold, letterSpacing: 0.5 },
+  perkTitle: { color: TEXT_PRIMARY, fontSize: TEXT.body, fontWeight: WEIGHT.bold },
+  perkAthlete: { color: TEXT_TERTIARY, fontSize: TEXT.caption, marginTop: 3 },
+  perkDesc: { color: TEXT_TERTIARY, fontSize: TEXT.caption, marginTop: SP_XS, lineHeight: 16 },
 
   claimBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 10,
-    paddingHorizontal: 12,
+    marginTop: SP_SM,
+    paddingHorizontal: SP_MD,
     paddingVertical: 9,
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     backgroundColor: 'rgba(168,85,247,0.16)',
     borderWidth: 1,
     borderColor: 'rgba(168,85,247,0.4)',
   },
   claimBtnDisabled: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: SURFACE_SUBTLE,
+    borderColor: HAIRLINE,
   },
-  claimBtnText: { flex: 1, color: '#FFFFFF', fontSize: 12.5, fontWeight: '700' },
-  claimBtnCost: { color: '#FFFFFF', fontSize: 12.5, fontWeight: '800' },
+  claimBtnText: { flex: 1, color: TEXT_PRIMARY, fontSize: TEXT.label, fontWeight: WEIGHT.bold },
+  claimBtnCost: { color: TEXT_PRIMARY, fontSize: TEXT.label, fontWeight: WEIGHT.bold },
 
   bottomToolbar: {
     position: 'absolute',
-    left: 16,
-    right: 16,
+    left: SP_LG,
+    right: SP_LG,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: SP_MD,
     zIndex: 100,
   },
   bottomFade: {
@@ -1215,10 +1237,10 @@ const styles = StyleSheet.create({
     height: 46,
     borderRadius: 23,
     overflow: 'hidden',
-    paddingHorizontal: 16,
+    paddingHorizontal: SP_LG,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  toolbarPillText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+  toolbarPillText: { color: TEXT_PRIMARY, fontSize: TEXT.body, fontWeight: WEIGHT.bold },
 });

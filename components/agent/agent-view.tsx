@@ -17,6 +17,7 @@ import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { AgentHome } from '@/components/agent/agent-home';
 import { AgentClients } from '@/components/agent/agent-clients';
 import { FloatingTabPill, useTabCollapse } from '@/components/shared/floating-tab-pill';
+import { CANVAS } from '@/components/shared/ui-kit/tokens';
 
 // Old tab data (AGENT_ATHLETES, AGENT_DEALS, AGENT_OFFERS, AGENT_INSIGHTS) still
 // lives in lib/data/mock-agent-data.ts — untouched. Old tab components
@@ -79,7 +80,7 @@ export function AgentView() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: CANVAS },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
   bottomFade: { position: 'absolute', left: 0, right: 0, zIndex: 99 },
 });

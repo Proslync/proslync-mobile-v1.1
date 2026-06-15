@@ -65,9 +65,19 @@ import { liquidGlass as _liquidGlass } from '@/constants/glass/liquid-glass';
 import { CoachHome } from '@/components/coach/coach-home';
 import { CoachRoster } from '@/components/coach/coach-roster';
 
-const ACCENT = '#FF6F3C';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.09)';
+import {
+  ACCENT,
+  CANVAS,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  SURFACE,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+} from '@/components/shared/ui-kit/tokens';
+
+const CARD_BG = SURFACE;
+const CARD_BORDER = HAIRLINE;
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 // Charter §A: two tabs only
@@ -1109,7 +1119,7 @@ function LineChart({ data, color }: { data: number[]; color: string }) {
 // ============================================================
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: CANVAS },
 
   // Sub-tab pill switcher (Patterns | Trends inside Insights tab)
   subTabsRow: {

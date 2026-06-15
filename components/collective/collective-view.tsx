@@ -15,6 +15,7 @@ import { RoleSwitcherSheet } from '@/components/shared/role-switcher-menu';
 import { CollectiveHome } from '@/components/collective/collective-home';
 import { CollectiveFans } from '@/components/collective/collective-fans';
 import { FloatingTabPill, useTabCollapse } from '@/components/shared/floating-tab-pill';
+import { CANVAS } from '@/components/shared/ui-kit/tokens';
 
 const TAB_BAR_TOP_FROM_BOTTOM = 90;
 
@@ -79,7 +80,7 @@ export function CollectiveView() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: CANVAS },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 160, zIndex: 99 },
   bottomFade: { position: 'absolute', left: 0, right: 0, zIndex: 99 },
 });

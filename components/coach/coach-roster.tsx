@@ -19,13 +19,26 @@ import {
   View,
 } from 'react-native';
 
-// ── Color constants ────────────────────────────────────────────────────────
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
-const GREEN = '#34C759';
-const RED = '#FF3B30';
-const AMBER = '#FFD60A';
+import {
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_SM,
+  SIGNAL_NEGATIVE,
+  SIGNAL_POSITIVE,
+  SIGNAL_WARN,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -147,25 +160,25 @@ function complianceChip(state: ComplianceState): {
       return {
         label: 'CLEAR',
         icon: '✅',
-        color: GREEN,
-        bg: `${GREEN}18`,
-        border: `${GREEN}44`,
+        color: SIGNAL_POSITIVE,
+        bg: `${SIGNAL_POSITIVE}18`,
+        border: `${SIGNAL_POSITIVE}44`,
       };
     case 'overdue':
       return {
         label: 'DISCLOSURE OVERDUE',
         icon: '⚠',
-        color: RED,
-        bg: `${RED}18`,
-        border: `${RED}44`,
+        color: SIGNAL_NEGATIVE,
+        bg: `${SIGNAL_NEGATIVE}18`,
+        border: `${SIGNAL_NEGATIVE}44`,
       };
     case 'in-review':
       return {
         label: 'IN REVIEW',
         icon: '◷',
-        color: AMBER,
-        bg: `${AMBER}18`,
-        border: `${AMBER}44`,
+        color: SIGNAL_WARN,
+        bg: `${SIGNAL_WARN}18`,
+        border: `${SIGNAL_WARN}44`,
       };
   }
 }
@@ -259,7 +272,7 @@ export function CoachRoster({ bottomInset = 0, topInset = 0, onScroll }: CoachRo
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -270,15 +283,15 @@ export function CoachRoster({ bottomInset = 0, topInset = 0, onScroll }: CoachRo
         <Text style={s.headerTitle}>ROSTER · {ROSTER_ATHLETES.length}</Text>
         <View style={s.headerPills}>
           {overdueCount > 0 && (
-            <View style={[s.headerPill, { borderColor: `${RED}55`, backgroundColor: `${RED}14` }]}>
-              <Text style={[s.headerPillText, { color: RED }]}>
+            <View style={[s.headerPill, { borderColor: `${SIGNAL_NEGATIVE}55`, backgroundColor: `${SIGNAL_NEGATIVE}14` }]}>
+              <Text style={[s.headerPillText, { color: SIGNAL_NEGATIVE }]}>
                 {overdueCount} overdue
               </Text>
             </View>
           )}
           {flaggedCount > 0 && (
-            <View style={[s.headerPill, { borderColor: `${AMBER}55`, backgroundColor: `${AMBER}14` }]}>
-              <Text style={[s.headerPillText, { color: AMBER }]}>
+            <View style={[s.headerPill, { borderColor: `${SIGNAL_WARN}55`, backgroundColor: `${SIGNAL_WARN}14` }]}>
+              <Text style={[s.headerPillText, { color: SIGNAL_WARN }]}>
                 {flaggedCount} rep flagged
               </Text>
             </View>
@@ -293,7 +306,7 @@ export function CoachRoster({ bottomInset = 0, topInset = 0, onScroll }: CoachRo
 
       {/* Footer note */}
       <View style={s.footerNote}>
-        <Ionicons name="information-circle-outline" size={13} color={MUTED} />
+        <Ionicons name="information-circle-outline" size={13} color={TEXT_TERTIARY} />
         <Text style={s.footerNoteText}>
           Compliance status is read-only. Tap rows have no action — escalate to NIL Manager for athlete-specific review.
         </Text>
@@ -307,8 +320,8 @@ export function CoachRoster({ bottomInset = 0, topInset = 0, onScroll }: CoachRo
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 8,
+    paddingHorizontal: SP_LG,
+    gap: SP_SM,
   },
 
   // Header
@@ -316,27 +329,27 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: SP_XS,
   },
   headerTitle: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: 'rgba(255,255,255,0.45)',
+    color: TEXT_TERTIARY,
   },
   headerPills: {
     flexDirection: 'row',
     gap: 6,
   },
   headerPill: {
-    paddingHorizontal: 8,
+    paddingHorizontal: SP_SM,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
   },
   headerPillText: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.3,
   },
 
@@ -344,12 +357,12 @@ const s = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: CARD_BG,
-    borderRadius: 14,
-    padding: 12,
+    gap: SP_MD,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_CARD,
+    padding: SP_MD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
 
   // Avatar
@@ -363,9 +376,9 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   avatarText: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     letterSpacing: -0.3,
   },
 
@@ -381,63 +394,63 @@ const s = StyleSheet.create({
     flexWrap: 'wrap',
   },
   athleteName: {
-    fontSize: 15,
+    fontSize: TEXT.body,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     flexShrink: 1,
     letterSpacing: -0.2,
   },
   posChip: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_SECONDARY,
     letterSpacing: 0.4,
   },
   classYear: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
   },
 
   // Compliance chip
   complianceChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: SP_XS,
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
+    paddingHorizontal: SP_SM,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
   },
   complianceIcon: {
     fontSize: 11,
   },
   complianceLabel: {
-    fontSize: 10,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.4,
   },
 
   // Rep line
   repLine: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: WEIGHT.medium,
     lineHeight: 15,
   },
   repLineMuted: {
-    color: MUTED,
+    color: TEXT_SECONDARY,
   },
   repLineName: {
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     fontWeight: '700',
   },
   repLineVerified: {
-    color: GREEN,
-    fontWeight: '600',
+    color: SIGNAL_POSITIVE,
+    fontWeight: WEIGHT.semibold,
   },
   repLineFlagged: {
-    color: AMBER,
+    color: SIGNAL_WARN,
     fontWeight: '700',
   },
 
@@ -447,18 +460,18 @@ const s = StyleSheet.create({
     alignItems: 'flex-start',
     gap: 7,
     marginTop: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingHorizontal: SP_MD,
+    paddingVertical: SP_SM,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    backgroundColor: 'rgba(255,255,255,0.025)',
+    borderColor: HAIRLINE_SUBTLE,
+    backgroundColor: SURFACE_SUBTLE,
   },
   footerNoteText: {
     flex: 1,
     fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 15,
   },
 });

@@ -20,13 +20,29 @@ import {
   View,
 } from 'react-native';
 
-// ── Charter constants ─────────────────────────────────────────────────────
-const COPPER = '#EB621A';
-const RED = '#FF3B30';
-const AMBER = '#FFD60A';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
+import {
+  ACCENT,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_PILL,
+  RADIUS_SM,
+  SIGNAL_NEGATIVE,
+  SIGNAL_WARN,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XL,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Fixture: cross-client money board ─────────────────────────────────────
 // All numbers are static demo figures — no live API calls.
@@ -154,16 +170,16 @@ const TASK_ROWS: TaskRow[] = [
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function clockColor(row: ClearanceRow): string {
-  if (row.daysLeft === null) return RED;
-  if (row.daysLeft < 1) return RED;
-  if (row.daysLeft <= 3) return AMBER;
-  return 'rgba(255,255,255,0.75)';
+  if (row.daysLeft === null) return SIGNAL_NEGATIVE;
+  if (row.daysLeft < 1) return SIGNAL_NEGATIVE;
+  if (row.daysLeft <= 3) return SIGNAL_WARN;
+  return TEXT_SECONDARY;
 }
 
 function taskDotColor(urgency: TaskRow['urgency']): string {
-  if (urgency === 'red') return RED;
-  if (urgency === 'amber') return AMBER;
-  return COPPER;
+  if (urgency === 'red') return SIGNAL_NEGATIVE;
+  if (urgency === 'amber') return SIGNAL_WARN;
+  return ACCENT;
 }
 
 // ── Section header — 4px copper bar + caps label ─────────────────────────
@@ -278,7 +294,7 @@ function DueAcrossClientsModule() {
               <Text style={s.taskDue} numberOfLines={1}>{row.due}</Text>
             </View>
             {row.urgency !== 'green' && (
-              <View style={[s.urgencyChip, { backgroundColor: dotColor === RED ? 'rgba(255,59,48,0.14)' : 'rgba(255,214,10,0.14)' }]}>
+              <View style={[s.urgencyChip, { backgroundColor: dotColor === SIGNAL_NEGATIVE ? 'rgba(255,59,48,0.14)' : 'rgba(255,214,10,0.14)' }]}>
                 <Text style={[s.urgencyChipText, { color: dotColor }]}>
                   {row.urgency === 'red' ? 'URGENT' : 'SOON'}
                 </Text>
@@ -319,7 +335,7 @@ function ComplianceLedgerModule() {
 function FooterWall() {
   return (
     <View style={s.wallRow}>
-      <Ionicons name="lock-closed" size={13} color={MUTED} />
+      <Ionicons name="lock-closed" size={13} color={TEXT_TERTIARY} />
       <Text style={s.wallText}>
         Athletes invite their rep and make every final submission — Proslync has no outbound contact or discovery.
       </Text>
@@ -341,7 +357,7 @@ export function AgentHome({ bottomInset = 0, topInset = 0, onScroll }: AgentHome
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -361,38 +377,38 @@ export function AgentHome({ bottomInset = 0, topInset = 0, onScroll }: AgentHome
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingHorizontal: SP_LG,
+    gap: SP_MD,
   },
 
-  // Card container — mirrors coach-home exactly
+  // Card container
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
 
-  // Section header: 4px copper bar + caps label
+  // Section header: 4px copper bar + caps label (TEXT_PRIMARY per copper-restraint)
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginBottom: 2,
   },
   sectionBar: {
     width: 4,
     height: 14,
     borderRadius: 2,
-    backgroundColor: COPPER,
+    backgroundColor: ACCENT,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_PRIMARY,
   },
 
   // ── Module 1: Money Board ──────────────────────────────────
@@ -404,19 +420,19 @@ const s = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   moneyAggAmount: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: TEXT.body,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
   },
   moneyAggMeta: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
   },
   moneyAggOverdue: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: RED,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: SIGNAL_NEGATIVE,
   },
 
   agingTable: {
@@ -425,27 +441,27 @@ const s = StyleSheet.create({
   agingRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 10,
-    gap: 10,
+    paddingVertical: SP_SM,
+    gap: SP_SM,
   },
   agingRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: HAIRLINE,
   },
   agingAthleteText: {
-    fontSize: 13,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.1,
   },
   agingStatus: {
     fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     marginTop: 2,
   },
   agingStatusOverdue: {
-    color: RED,
+    color: SIGNAL_NEGATIVE,
     fontWeight: '700',
   },
   agingRight: {
@@ -454,49 +470,49 @@ const s = StyleSheet.create({
     flexShrink: 0,
   },
   agingAmount: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
   },
   agingAmountOverdue: {
-    color: RED,
+    color: SIGNAL_NEGATIVE,
   },
   nudgeChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE_SUBTLE,
   },
   nudgeChipText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.6,
-    color: 'rgba(255,255,255,0.55)',
+    color: TEXT_TERTIARY,
   },
 
   // ── Module 2: Clearance Queue ──────────────────────────────
   clearanceRow: {
     flexDirection: 'row',
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
   clearanceRowBorder: {
-    marginTop: 8,
+    marginTop: SP_SM,
   },
   clearanceStripe: {
     width: 3,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   clearanceContent: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: SP_SM,
     paddingVertical: 9,
     gap: 3,
   },
@@ -504,36 +520,36 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: SP_SM,
   },
   clearanceDeal: {
-    fontSize: 13,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     flex: 1,
   },
   clockChip: {
-    paddingHorizontal: 8,
+    paddingHorizontal: SP_SM,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
     flexShrink: 0,
   },
   clockChipText: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.3,
     fontVariant: ['tabular-nums'],
   },
   clearanceAthlete: {
     fontSize: 11,
-    fontWeight: '600',
-    color: MUTED,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
   },
   clearanceFootnote: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.30)',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_TERTIARY,
     marginTop: 1,
   },
 
@@ -542,37 +558,37 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingVertical: 9,
-    gap: 10,
+    gap: SP_SM,
   },
   taskRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: HAIRLINE,
   },
   taskDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginTop: 4,
+    marginTop: SP_XS,
     flexShrink: 0,
   },
   taskClient: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.6,
-    color: MUTED,
+    color: TEXT_SECONDARY,
     textTransform: 'uppercase',
   },
   taskName: {
-    fontSize: 13,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     marginTop: 1,
     letterSpacing: -0.1,
   },
   taskDue: {
     fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     marginTop: 1,
   },
   urgencyChip: {
@@ -585,33 +601,33 @@ const s = StyleSheet.create({
   },
   urgencyChipText: {
     fontSize: 9,
-    fontWeight: '900',
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.6,
   },
 
   // ── Module 4: Compliance Ledger ────────────────────────────
   ledgerCard: {
-    gap: 8,
+    gap: SP_SM,
   },
   ledgerRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: SP_SM,
   },
   ledgerText: {
     flex: 1,
-    fontSize: 12,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 17,
   },
   receiptsLink: {
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 0.5,
-    color: 'rgba(255,255,255,0.30)',
+    color: TEXT_TERTIARY,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: HAIRLINE_SUBTLE,
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 6,
@@ -622,15 +638,15 @@ const s = StyleSheet.create({
   wallRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    paddingHorizontal: 4,
-    paddingBottom: 4,
+    gap: SP_SM,
+    paddingHorizontal: SP_XS,
+    paddingBottom: SP_XS,
   },
   wallText: {
     flex: 1,
     fontSize: 11,
-    fontWeight: '500',
-    color: MUTED,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 15,
   },
 });

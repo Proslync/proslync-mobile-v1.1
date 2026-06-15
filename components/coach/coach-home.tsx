@@ -25,13 +25,30 @@ import {
 
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 
-// ── Charter constants ──────────────────────────────────────────────────────
-const COPPER = '#EB621A';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
-const RED = '#FF3B30';
-const AMBER = '#FFD60A';
+import {
+  ACCENT,
+  CANVAS,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_PILL,
+  RADIUS_SM,
+  SIGNAL_NEGATIVE,
+  SIGNAL_WARN,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XL,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Fixture: team calendar events this week ────────────────────────────────
 // Mon–Sun of a demo week; coach sees TIME commitments, never dollar values.
@@ -249,7 +266,7 @@ function ProofPackModule() {
         accessibilityRole="button"
         accessibilityLabel="Export recruiting proof pack"
       >
-        <Ionicons name="share-outline" size={16} color={COPPER} />
+        <Ionicons name="share-outline" size={16} color={ACCENT} />
         <Text style={s.exportBtnText}>EXPORT PROOF PACK</Text>
       </Pressable>
     </View>
@@ -262,7 +279,7 @@ function ProofPackModule() {
 function DollarWallModule() {
   return (
     <View style={s.wallRow}>
-      <Ionicons name="lock-closed" size={14} color={MUTED} />
+      <Ionicons name="lock-closed" size={14} color={TEXT_TERTIARY} />
       <Text style={s.wallText}>
         Deal dollar amounts are visible only to athletes and compliance — not coaches.
       </Text>
@@ -284,7 +301,7 @@ export function CoachHome({ bottomInset = 0, topInset = 0, onScroll }: CoachHome
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -303,54 +320,54 @@ export function CoachHome({ bottomInset = 0, topInset = 0, onScroll }: CoachHome
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 14,
+    paddingHorizontal: SP_LG,
+    gap: SP_MD,
   },
 
   // Card container
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
 
-  // Section header: 4px copper bar + caps label
+  // Section header: 4px copper bar + caps label (TEXT_PRIMARY per copper-restraint)
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginBottom: 2,
   },
   sectionBar: {
     width: 4,
     height: 14,
     borderRadius: 2,
-    backgroundColor: COPPER,
+    backgroundColor: ACCENT,
   },
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '900',
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_PRIMARY,
   },
 
   emptyText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: MUTED,
-    paddingVertical: 4,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
+    paddingVertical: SP_XS,
   },
 
   // ── Module 1: Conflicts ──────────────────────────────────
   conflictRow: {
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
     flexDirection: 'row',
   },
   conflictRowHighlight: {
@@ -359,29 +376,29 @@ const s = StyleSheet.create({
   },
   conflictStripe: {
     width: 3,
-    backgroundColor: RED,
-    borderTopLeftRadius: 10,
-    borderBottomLeftRadius: 10,
+    backgroundColor: SIGNAL_NEGATIVE,
+    borderTopLeftRadius: RADIUS_SM,
+    borderBottomLeftRadius: RADIUS_SM,
   },
   conflictContent: {
     flex: 1,
-    paddingHorizontal: 10,
+    paddingHorizontal: SP_SM,
     paddingVertical: 9,
   },
   conflictText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 18,
   },
   conflictTextWarn: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: TEXT_PRIMARY,
+    fontWeight: WEIGHT.semibold,
   },
   conflictFooter: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_TERTIARY,
     marginTop: 2,
     lineHeight: 14,
   },
@@ -389,35 +406,35 @@ const s = StyleSheet.create({
   // ── Module 2: Roster Pulse ───────────────────────────────
   pillsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SP_SM,
     flexWrap: 'wrap',
   },
   pulsePillWrap: {
     flex: 1,
     minWidth: 90,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
+    borderColor: HAIRLINE,
+    paddingVertical: SP_MD,
+    paddingHorizontal: SP_SM,
     alignItems: 'center',
     gap: 3,
   },
   pulsePillValue: {
     fontSize: 22,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.5,
   },
   pulsePillValueAccent: {
-    color: AMBER,
+    color: SIGNAL_WARN,
   },
   pulsePillLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
     textAlign: 'center',
     lineHeight: 13,
   },
@@ -426,39 +443,39 @@ const s = StyleSheet.create({
   proofRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 8,
+    gap: SP_SM,
     paddingVertical: 2,
   },
   proofValue: {
     fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.5,
     minWidth: 52,
   },
   proofLabel: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
   },
   exportBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginTop: 6,
-    paddingVertical: 12,
-    borderRadius: 14,
+    paddingVertical: SP_MD,
+    borderRadius: RADIUS_CARD,
     borderWidth: 1,
-    borderColor: `${COPPER}66`,
-    backgroundColor: `${COPPER}14`,
+    borderColor: `${ACCENT}66`,
+    backgroundColor: `${ACCENT}14`,
   },
   exportBtnText: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: COPPER,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.bold,
+    color: ACCENT,
     letterSpacing: 0.8,
   },
 
@@ -466,19 +483,19 @@ const s = StyleSheet.create({
   wallRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderRadius: 14,
+    gap: SP_SM,
+    paddingHorizontal: SP_MD,
+    paddingVertical: SP_MD,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.09)',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: HAIRLINE_SUBTLE,
+    backgroundColor: SURFACE_SUBTLE,
   },
   wallText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.label,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     lineHeight: 18,
   },
 });

@@ -19,13 +19,28 @@ import {
   View,
 } from 'react-native';
 
-// ── Charter constants ─────────────────────────────────────────────────────
-const COPPER = '#EB621A';
-const AMBER = '#FFD60A';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.50)';
-const GREEN = '#34C759';
+import {
+  ACCENT,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_PILL,
+  RADIUS_SM,
+  SIGNAL_POSITIVE,
+  SIGNAL_WARN,
+  SP_LG,
+  SP_MD,
+  SP_SM,
+  SP_XS,
+  SURFACE,
+  SURFACE_SUBTLE,
+  TEXT,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  WEIGHT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ── Pipeline stage types ──────────────────────────────────────────────────
 type PipelineStage = 'SOURCED' | 'NEGOTIATING' | 'SIGNED' | 'CLEARED' | 'PAID';
@@ -53,7 +68,7 @@ const CLIENT_ROWS: ClientRow[] = [
     id: 'c-1',
     name: 'Kiyan Anthony',
     initials: 'KA',
-    avatarColor: COPPER,
+    avatarColor: ACCENT,
     sport: 'MBB',
     school: 'Syracuse',
     classYear: "Fr '27",
@@ -147,13 +162,13 @@ const p = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: SURFACE_SUBTLE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.25)',
+    borderColor: HAIRLINE,
   },
   dotCurrent: {
-    backgroundColor: COPPER,
-    borderColor: COPPER,
+    backgroundColor: ACCENT,
+    borderColor: ACCENT,
     width: 10,
     height: 10,
     borderRadius: 5,
@@ -165,17 +180,17 @@ const p = StyleSheet.create({
   connector: {
     width: 8,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: HAIRLINE_SUBTLE,
   },
   connectorPast: {
     backgroundColor: 'rgba(235,98,26,0.4)',
   },
   stageLabel: {
     fontSize: 9,
-    fontWeight: '800',
-    color: COPPER,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     letterSpacing: 0.5,
-    marginLeft: 8,
+    marginLeft: SP_SM,
     textTransform: 'uppercase',
   },
 });
@@ -194,7 +209,7 @@ export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentC
       style={s.scroll}
       contentContainerStyle={[
         s.content,
-        { paddingTop: topInset + 16, paddingBottom: bottomInset + 120 },
+        { paddingTop: topInset + SP_LG, paddingBottom: bottomInset + 120 },
       ]}
       showsVerticalScrollIndicator={false}
       onScroll={onScroll}
@@ -214,7 +229,7 @@ export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentC
         accessibilityRole="button"
         accessibilityLabel="Get invite code"
       >
-        <Ionicons name="add-circle-outline" size={18} color={MUTED} />
+        <Ionicons name="add-circle-outline" size={18} color={TEXT_SECONDARY} />
         <Text style={s.inviteText}>+ INVITE CODE</Text>
         <Text style={s.inviteHint}>Athletes add you from their Deals tab</Text>
       </Pressable>
@@ -250,7 +265,7 @@ export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentC
               <Ionicons
                 name={isPendingFee ? 'alert-circle-outline' : 'checkmark-circle-outline'}
                 size={12}
-                color={isPendingFee ? AMBER : GREEN}
+                color={isPendingFee ? SIGNAL_WARN : SIGNAL_POSITIVE}
               />
               <Text
                 style={[s.feeText, isPendingFee && s.feeTextPending]}
@@ -262,7 +277,7 @@ export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentC
 
             {/* Next deadline */}
             <View style={s.deadlineRow}>
-              <Ionicons name="time-outline" size={12} color={MUTED} />
+              <Ionicons name="time-outline" size={12} color={TEXT_SECONDARY} />
               <Text style={s.deadlineText} numberOfLines={1}>{client.nextDeadline}</Text>
             </View>
           </View>
@@ -277,58 +292,58 @@ export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentC
 const s = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
-    paddingHorizontal: 16,
-    gap: 10,
+    paddingHorizontal: SP_LG,
+    gap: SP_SM,
   },
 
   sectionLabel: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: WEIGHT.bold,
     letterSpacing: 1.2,
-    color: MUTED,
-    paddingHorizontal: 4,
-    marginBottom: 4,
+    color: TEXT_SECONDARY,
+    paddingHorizontal: SP_XS,
+    marginBottom: SP_XS,
   },
 
   // Invite code ghost row
   inviteRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 14,
-    padding: 14,
+    gap: SP_SM,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_CARD,
+    padding: SP_MD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: HAIRLINE,
     borderStyle: 'dashed',
   },
   inviteText: {
-    fontSize: 13,
+    fontSize: TEXT.label,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.55)',
+    color: TEXT_SECONDARY,
     letterSpacing: 0.5,
   },
   inviteHint: {
     flex: 1,
     fontSize: 11,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.28)',
+    fontWeight: WEIGHT.medium,
+    color: TEXT_TERTIARY,
     textAlign: 'right',
   },
 
   // Client card
   clientCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
   clientTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: SP_MD,
   },
   avatar: {
     width: 44,
@@ -339,43 +354,43 @@ const s = StyleSheet.create({
     flexShrink: 0,
   },
   avatarText: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: SP_LG,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
   },
   clientName: {
-    fontSize: 16,
+    fontSize: SP_LG,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.2,
   },
   clientMeta: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.medium,
+    color: TEXT_SECONDARY,
     marginTop: 2,
   },
   dealCountBadge: {
     alignItems: 'center',
     flexShrink: 0,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 10,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: SP_SM,
     paddingVertical: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
   dealCountText: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#FFFFFF',
+    fontSize: TEXT.title,
+    fontWeight: WEIGHT.bold,
+    color: TEXT_PRIMARY,
     fontVariant: ['tabular-nums'],
     lineHeight: 20,
   },
   dealCountLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: MUTED,
+    color: TEXT_SECONDARY,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
@@ -386,8 +401,8 @@ const s = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingHorizontal: SP_SM,
+    borderRadius: RADIUS_SM,
     backgroundColor: 'rgba(52,199,89,0.07)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(52,199,89,0.18)',
@@ -398,12 +413,12 @@ const s = StyleSheet.create({
   },
   feeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: WEIGHT.semibold,
     color: 'rgba(52,199,89,0.9)',
     flex: 1,
   },
   feeTextPending: {
-    color: AMBER,
+    color: SIGNAL_WARN,
   },
 
   // Deadline row
@@ -413,8 +428,8 @@ const s = StyleSheet.create({
     gap: 6,
   },
   deadlineText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: MUTED,
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.semibold,
+    color: TEXT_SECONDARY,
   },
 });
