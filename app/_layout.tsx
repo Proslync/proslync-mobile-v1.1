@@ -158,7 +158,7 @@ function RootLayoutNav() {
         <Stack.Screen name="notification-settings" />
         <Stack.Screen name="privacy-settings" />
         <Stack.Screen name="admin" />
-        <Stack.Screen name="_dev" />
+        {__DEV__ && <Stack.Screen name="_dev" />}
         <Stack.Screen
           name="modal"
           options={{
