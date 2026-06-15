@@ -9,6 +9,7 @@
 // No animations (charter law). Tabular numerals throughout. Copper act-now only.
 
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   predictClearance,
@@ -16,6 +17,7 @@ import {
 } from '@/lib/fmv/fmv-engine';
 import type { DealKind } from '@/lib/fmv/fmv-engine';
 import { getMockAthleteSocialReach } from '@/lib/data/mock-social-reach';
+import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
 import {
   Alert,
   NativeScrollEvent,
@@ -74,9 +76,16 @@ type DealRowStatus = 'cleared' | 'submitted' | 'not-cleared' | 'pre-checked';
 
 type DealRow = {
   id: string;
-  athlete: string;
+  /** Bridge into the live, charter-safe deal-detail page (`/deal/[id]`).
+   *  Collective is the funder (payer) — depth (dollars + packaged outcome)
+   *  is charter-ALLOWED here, so each clearance line opens the real packet
+   *  (`d-1..d-6` in mock-brand-data). The athlete + brand shown on the row are
+   *  derived from `getBrandDealDetail(dealId)` so the card can never drift from
+   *  the detail it opens (same single-source pattern as brand campaigns). */
+  dealId: string;
+  /** Identity used by the FMV band engine (social reach lookup). Kept distinct
+   *  from the deal packet so per-line clearance economics stay collective-scoped. */
   athleteId: string;
-  brand: string;
   amount: string;
   amountCents: number;
   dealKind: DealKind;
@@ -87,9 +96,8 @@ type DealRow = {
 const DEAL_ROWS: DealRow[] = [
   {
     id: 'cr-1',
-    athlete: 'Kiyan A.',
+    dealId: 'd-4', // Kiyan Anthony · Syracuse — Gatorade packet
     athleteId: 'a-1',
-    brand: 'JMA Wireless',
     amount: '$4,500',
     amountCents: 450_000,
     dealKind: 'endorsement',
@@ -98,9 +106,8 @@ const DEAL_ROWS: DealRow[] = [
   },
   {
     id: 'cr-2',
-    athlete: 'J. Starling',
+    dealId: 'd-1', // Dylan Harper · Rutgers — Nike Hoops packet
     athleteId: 'a-4',
-    brand: 'Gatorade',
     amount: '$2,200',
     amountCents: 220_000,
     dealKind: 'social-post',
@@ -109,9 +116,10 @@ const DEAL_ROWS: DealRow[] = [
   },
   {
     id: 'cr-3',
-    athlete: 'M. Reid',
-    athleteId: 'a-1',
-    brand: 'Nike Campus',
+    dealId: 'd-3', // Naithan George · GT — Zaxby's Southeast packet
+    // FMV identity fixed: was 'a-1' (= Kiyan, colliding with cr-1) so the band
+    // computed off the wrong athlete. 'a-3' is a real, distinct reach entry.
+    athleteId: 'a-3',
     amount: '$1,800',
     amountCents: 180_000,
     dealKind: 'appearance',
@@ -120,9 +128,8 @@ const DEAL_ROWS: DealRow[] = [
   },
   {
     id: 'cr-4',
-    athlete: 'Devon O.',
+    dealId: 'd-5', // Jordan Miles · Paul VI — CarMax Syracuse packet
     athleteId: 'a-2',
-    brand: 'Puma',
     amount: '$900',
     amountCents: 90_000,
     dealKind: 'autograph',
@@ -130,6 +137,19 @@ const DEAL_ROWS: DealRow[] = [
     detail: 'pre-checked: likely-clear · ready to submit',
   },
 ];
+
+// Athlete + brand shown on each clearance line are derived from the linked deal
+// packet (single source of truth = getBrandDealDetail) so the row can never
+// drift from the detail page it opens. Falls back gracefully if a packet is
+// missing (e.g. mid-migration to backend persistence).
+function dealRowAthlete(row: DealRow): string {
+  const full = getBrandDealDetail(row.dealId)?.deal.athlete;
+  return full ? full.split('·')[0].trim() : 'Athlete';
+}
+
+function dealRowBrand(row: DealRow): string {
+  return getBrandDealDetail(row.dealId)?.companyOverview.name ?? 'Brand';
+}
 
 // ── FMV band chip (compact per-row indicator) ─────────────────────────────
 
@@ -184,6 +204,7 @@ const chipS = StyleSheet.create({
 // ── MODULE 1: CLEARANCE PIPELINE ──────────────────────────────────────────
 
 function ClearancePipelineModule() {
+  const router = useRouter();
   return (
     <View style={s.card}>
       <SectionHeader label="CLEARANCE PIPELINE" />
@@ -236,20 +257,28 @@ function ClearancePipelineModule() {
         })}
       </View>
 
-      {/* Deal rows */}
+      {/* Deal rows — each opens the real packaged-outcome deal detail.
+          Collective is the funder, so depth (dollars + packet) is charter-allowed.
+          'brand' lens = the payer view (roleToDealLens maps collective→brand). */}
       {DEAL_ROWS.map((row) => {
         const isCleared = row.status === 'cleared';
         const isSubmitted = row.status === 'submitted';
         const isNotCleared = row.status === 'not-cleared';
         const isPreChecked = row.status === 'pre-checked';
+        const athlete = dealRowAthlete(row);
+        const brand = dealRowBrand(row);
         return (
-          <View
+          <Pressable
             key={row.id}
-            style={[
+            style={({ pressed }) => [
               s.dealRow,
               isNotCleared && s.dealRowRed,
               isSubmitted && s.dealRowAmber,
+              pressed && { opacity: 0.72 },
             ]}
+            onPress={() => router.push(`/deal/${row.dealId}?role=brand` as never)}
+            accessibilityRole="button"
+            accessibilityLabel={`Clearance: ${athlete} × ${brand} ${row.amount}`}
           >
             {(isNotCleared || isSubmitted) && (
               <View
@@ -261,9 +290,9 @@ function ClearancePipelineModule() {
             )}
             <View style={s.dealContent}>
               <View style={s.dealTop}>
-                <Text style={s.dealAthlete}>{row.athlete}</Text>
+                <Text style={s.dealAthlete}>{athlete}</Text>
                 <Text style={s.dealDot}> × </Text>
-                <Text style={s.dealBrand}>{row.brand}</Text>
+                <Text style={s.dealBrand}>{brand}</Text>
                 <Text style={s.dealAmount}> · {row.amount}</Text>
               </View>
               <Text
@@ -280,7 +309,7 @@ function ClearancePipelineModule() {
               </Text>
               <FmvBandChip row={row} />
             </View>
-          </View>
+          </Pressable>
         );
       })}
 
