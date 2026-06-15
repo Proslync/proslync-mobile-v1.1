@@ -1,6 +1,7 @@
-// Card detail — full page for a single home masonry tile: its media (user
-// upload → curated → abstract art) as the hero, its title, and an onward
-// destination. For now every card routes onward to NCAA Basketball.
+// Card detail — rich content page for a single home masonry tile.
+// Receives: id, caption, subtitle, sectionId (all strings from search params).
+// Shows: hero media, title, subtitle, context paragraph, stats/meta row,
+//        2-3 related rows, and a contextual primary CTA.
 
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,8 +26,12 @@ import { healLocalMediaUri } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
 
 const SCREEN_W = Dimensions.get('window').width;
-const HERO_H = Math.round(SCREEN_W * 1.15);
+const HERO_H = Math.round(SCREEN_W * 1.05);
 const COPPER = '#EB621A';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hero video
+// ─────────────────────────────────────────────────────────────────────────────
 
 function HeroVideo({ uri }: { uri: string }) {
   const player = useVideoPlayer(uri, (p) => {
@@ -51,11 +56,251 @@ function HeroVideo({ uri }: { uri: string }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Card-variant content derivation
+// ─────────────────────────────────────────────────────────────────────────────
+
+type CardKind = 'matchup' | 'deal' | 'player' | 'hub' | 'generic';
+
+type CardContent = {
+  kind: CardKind;
+  title: string;
+  subtitle: string;
+  context: string;
+  metaRows: { label: string; value: string }[];
+  related: { icon: keyof typeof Ionicons.glyphMap; title: string; sub: string }[];
+  ctaLabel: string;
+  ctaSectionId: string | null;
+};
+
+/** Parse the tileId and params to derive richer content without needing the
+ *  full SECTIONS array at runtime (keeps this file self-contained). */
+function deriveContent(
+  tileId: string,
+  caption: string,
+  subtitle: string,
+  sectionId: string,
+): CardContent {
+  const isHub = tileId.endsWith(':hub');
+
+  // Deal cards
+  if (sectionId === 'nil' && !isHub) {
+    // caption = "Athlete × Brand", subtitle = "NIL Deal · $X · duration"
+    const parts = caption.split(' × ');
+    const athlete = parts[0] ?? caption;
+    const brand = parts[1] ?? '';
+    const subParts = subtitle.split(' · ');
+    const value = subParts[1] ?? '';
+    const duration = subParts[2] ?? '';
+    return {
+      kind: 'deal',
+      title: caption,
+      subtitle: `NIL Deal · ${value}`,
+      context: `${athlete} and ${brand} have finalized a ${duration} NIL partnership valued at ${value}. The deal covers merchandise, social media activations, and branded content — one of the highest-value college NIL agreements closed this week on the Proslync marketplace.`,
+      metaRows: [
+        { label: 'Athlete', value: athlete },
+        { label: 'Brand', value: brand },
+        { label: 'Value', value: value },
+        { label: 'Term', value: duration },
+        { label: 'Status', value: 'Executed · Active' },
+      ],
+      related: [
+        { icon: 'trending-up-outline', title: 'NIL Valuation', sub: `${athlete}'s market rate vs peers` },
+        { icon: 'briefcase-outline', title: 'More from ${brand}', sub: 'Other college partnerships' },
+        { icon: 'people-outline', title: 'Top NIL Deals', sub: 'Biggest contracts this week' },
+      ],
+      ctaLabel: 'View full deal',
+      ctaSectionId: 'nil',
+    };
+  }
+
+  // Matchup cards — sectionId is ncaab, nba, mlb, nhl, wnba
+  if (['ncaab', 'nba', 'mlb', 'nhl', 'wnba'].includes(sectionId) && !isHub) {
+    // caption = "AWAY @ HOME", subtitle = "Section · StatusLabel · Venue"
+    const subParts = subtitle.split(' · ');
+    const league = subParts[0] ?? sectionId.toUpperCase();
+    const status = subParts[1] ?? '';
+    const venue = subParts[2] ?? '';
+    const leagueLabel =
+      sectionId === 'ncaab' ? 'NCAA Basketball' :
+      sectionId === 'nba' ? 'NBA' :
+      sectionId === 'mlb' ? 'MLB' :
+      sectionId === 'nhl' ? 'NHL' :
+      sectionId === 'wnba' ? 'WNBA' : league;
+    const isLive = status.includes('LIVE');
+    const isFinal = status.toLowerCase().includes('final');
+    const contextLine = isLive
+      ? `${caption} is in progress right now at ${venue || 'the arena'}. ${status}. Fans following this matchup on Proslync are streaming the live feed — track every play, stat update, and highlight in real time.`
+      : isFinal
+        ? `${caption} is in the books. Final score above. Catch the full box score, top plays, and post-game analysis in the ${leagueLabel} section.`
+        : `${caption} tips off ${status}${venue ? ' at ' + venue : ''}. Set a reminder, track player stats, and join thousands of fans watching on Proslync.`;
+    return {
+      kind: 'matchup',
+      title: caption,
+      subtitle: `${leagueLabel} · ${status}`,
+      context: contextLine,
+      metaRows: [
+        { label: 'League', value: leagueLabel },
+        { label: 'Status', value: status },
+        ...(venue ? [{ label: 'Venue', value: venue }] : []),
+      ],
+      related: [
+        { icon: 'stats-chart-outline', title: 'Box Score', sub: 'Full stats · player lines' },
+        { icon: 'play-circle-outline', title: 'Highlights', sub: 'Top plays from this game' },
+        { icon: 'calendar-outline', title: `${leagueLabel} Schedule`, sub: 'Upcoming matchups' },
+      ],
+      ctaLabel: `Open ${leagueLabel}`,
+      ctaSectionId: sectionId,
+    };
+  }
+
+  // Player / Award cards
+  if (['awards', 'portal'].includes(sectionId) && !isHub) {
+    // caption = athlete name, subtitle = "Section · pill · Team"
+    const subParts = subtitle.split(' · ');
+    const category = subParts[1] ?? '';
+    const team = subParts[2] ?? '';
+    const sportLabel = sectionId === 'portal' ? 'Transfer Portal' : 'Award Watch';
+    const contextLine = sectionId === 'portal'
+      ? `${caption} has entered the transfer portal${team ? `, departing ${team.split(' → ')[0]}` : ''}. ${category ? category + ' prospect. ' : ''}Track their recruitment in real time — visit, offer, and commitment updates live on Proslync.`
+      : `${caption}${team ? ' (' + team + ')' : ''} is a top contender in the ${category || 'award'} race this season. Track the leaderboard, compare stats, and follow every week's voting update in the Award Watch section.`;
+    return {
+      kind: 'player',
+      title: caption,
+      subtitle: `${sportLabel}${team ? ' · ' + team : ''}`,
+      context: contextLine,
+      metaRows: [
+        ...(team ? [{ label: 'School', value: team }] : []),
+        ...(category ? [{ label: 'Category', value: category }] : []),
+        { label: 'Section', value: sportLabel },
+      ],
+      related: [
+        { icon: 'person-outline', title: `${caption}'s Profile`, sub: 'Stats, NIL, highlights' },
+        { icon: 'trophy-outline', title: 'Award Leaderboard', sub: 'Full rankings this week' },
+        { icon: 'trending-up-outline', title: 'NIL Valuation', sub: 'Market rate + deal history' },
+      ],
+      ctaLabel: 'View Award Watch',
+      ctaSectionId: sectionId,
+    };
+  }
+
+  // Hub tiles (one per section)
+  if (isHub) {
+    const leagueLabel = caption;
+    return {
+      kind: 'hub',
+      title: leagueLabel,
+      subtitle: subtitle,
+      context: `${leagueLabel} — follow every live game, final score, and standings update in one place. Tap "Open section" to see the full card feed with live matchups, player spotlights, and NIL activity.`,
+      metaRows: [
+        { label: 'Section', value: leagueLabel },
+        { label: 'Updates', value: subtitle },
+      ],
+      related: [
+        { icon: 'notifications-outline', title: 'Follow Section', sub: 'Get alerts for new activity' },
+        { icon: 'star-outline', title: 'Top Performers', sub: 'Best players this week' },
+        { icon: 'calendar-outline', title: 'Schedule', sub: 'Upcoming games & events' },
+      ],
+      ctaLabel: 'Open section',
+      ctaSectionId: sectionId === 'ncaab:hub' ? 'ncaab' : sectionId.replace(':hub', ''),
+    };
+  }
+
+  // Generic fallback
+  return {
+    kind: 'generic',
+    title: caption || 'Card',
+    subtitle: subtitle,
+    context: `Explore more about ${caption} — tap the button below to view the full section on Proslync.`,
+    metaRows: [],
+    related: [
+      { icon: 'grid-outline', title: 'View Section', sub: 'Full card feed' },
+    ],
+    ctaLabel: 'Open section',
+    ctaSectionId: sectionId || null,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Related row component
+// ─────────────────────────────────────────────────────────────────────────────
+
+function RelatedRow({
+  icon,
+  title,
+  sub,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  sub: string;
+  onPress?: () => void;
+}) {
+  return (
+    <Pressable
+      style={rStyles.row}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
+      <View style={rStyles.iconWrap}>
+        <Ionicons name={icon} size={18} color={COPPER} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={rStyles.rowTitle}>{title}</Text>
+        <Text style={rStyles.rowSub} numberOfLines={1}>{sub}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
+    </Pressable>
+  );
+}
+
+const rStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.07)',
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(235,98,26,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowTitle: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+  rowSub: { color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main screen
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function CardDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id, caption } = useLocalSearchParams<{ id: string; caption?: string }>();
+  const { id, caption, subtitle, sectionId } = useLocalSearchParams<{
+    id: string;
+    caption?: string;
+    subtitle?: string;
+    sectionId?: string;
+  }>();
   const tileId = id ?? '';
+
+  const content = React.useMemo(
+    () => deriveContent(
+      tileId,
+      caption ?? '',
+      subtitle ?? '',
+      sectionId ?? '',
+    ),
+    [tileId, caption, subtitle, sectionId],
+  );
 
   // Local user-uploaded media for this tile (healed), else curated, else art.
   const [local, setLocal] = React.useState<TileLocalMedia | null>(null);
@@ -111,35 +356,90 @@ export default function CardDetailScreen() {
   // Wait one beat for hydration so a local video doesn't flash the art first.
   const showHero = hydrated || local !== null;
 
+  const handleCta = React.useCallback(() => {
+    if (content.ctaSectionId) {
+      router.push({ pathname: '/section/[id]', params: { id: content.ctaSectionId } } as any);
+    }
+  }, [router, content.ctaSectionId]);
+
   return (
     <View style={styles.container}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 48 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 56 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroWrap}>
+        {/* ── Hero ─────────────────────────────────────────────────────── */}
+        <View style={[styles.heroWrap, { height: HERO_H }]}>
           {showHero ? hero : <View style={{ width: SCREEN_W, height: HERO_H, backgroundColor: '#1A1A1A' }} />}
-          {/* Bottom fade into the page so the title sits on the media. */}
+          {/* Bottom fade into the page */}
           <View style={styles.heroFade} pointerEvents="none" />
         </View>
 
+        {/* ── Body ─────────────────────────────────────────────────────── */}
         <View style={styles.body}>
-          <Text style={styles.title}>{caption || 'Untitled'}</Text>
+          {/* Title + subtitle */}
+          <View style={styles.titleBlock}>
+            {content.subtitle ? (
+              <Text style={styles.eyebrow} numberOfLines={2}>{content.subtitle}</Text>
+            ) : null}
+            <Text style={styles.title}>{content.title}</Text>
+          </View>
 
-          <Pressable
-            style={styles.sectionLink}
-            onPress={() => router.push({ pathname: '/section/[id]', params: { id: 'ncaab' } } as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Open NCAA Basketball"
-          >
-            <View style={styles.sectionLinkBar} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sectionLinkEyebrow}>GO TO</Text>
-              <Text style={styles.sectionLinkTitle}>NCAA Basketball</Text>
+          {/* Context paragraph */}
+          <Text style={styles.context}>{content.context}</Text>
+
+          {/* Stats/meta row */}
+          {content.metaRows.length > 0 && (
+            <View style={styles.metaCard}>
+              {content.metaRows.map((row, i) => (
+                <React.Fragment key={row.label}>
+                  <View style={styles.metaRow}>
+                    <Text style={styles.metaLabel}>{row.label}</Text>
+                    <Text style={styles.metaValue} numberOfLines={1}>{row.value}</Text>
+                  </View>
+                  {i < content.metaRows.length - 1 && (
+                    <View style={styles.metaDivider} />
+                  )}
+                </React.Fragment>
+              ))}
             </View>
-            <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
-          </Pressable>
+          )}
+
+          {/* Primary CTA */}
+          {content.ctaSectionId && (
+            <Pressable
+              style={styles.cta}
+              onPress={handleCta}
+              accessibilityRole="button"
+              accessibilityLabel={content.ctaLabel}
+            >
+              <View style={styles.ctaBar} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.ctaEyebrow}>GO TO</Text>
+                <Text style={styles.ctaTitle}>{content.ctaLabel}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+            </Pressable>
+          )}
+
+          {/* Related rows */}
+          {content.related.length > 0 && (
+            <View style={styles.relatedBlock}>
+              <Text style={styles.relatedHeader}>EXPLORE MORE</Text>
+              <View style={styles.relatedCard}>
+                {content.related.map((r) => (
+                  <RelatedRow
+                    key={r.title}
+                    icon={r.icon}
+                    title={r.title}
+                    sub={r.sub}
+                    onPress={content.ctaSectionId ? handleCta : undefined}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -159,55 +459,127 @@ export default function CardDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  heroWrap: { width: SCREEN_W, height: HERO_H, backgroundColor: '#1A1A1A' },
+  heroWrap: { width: SCREEN_W, backgroundColor: '#1A1A1A', overflow: 'hidden' },
   heroFade: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 110,
+    height: 80,
     backgroundColor: 'transparent',
-    // Simple two-stop fade without adding a gradient dep here: layered views.
   },
-  body: { paddingHorizontal: 16, paddingTop: 14, gap: 16 },
+  body: { paddingHorizontal: 16, paddingTop: 16, gap: 18 },
+
+  // Title block
+  titleBlock: { gap: 5 },
+  eyebrow: {
+    color: COPPER,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
   title: {
     color: '#FFF',
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
-    letterSpacing: -0.4,
-    lineHeight: 30,
+    letterSpacing: -0.5,
+    lineHeight: 32,
   },
-  sectionLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+
+  // Context
+  context: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '400',
+  },
+
+  // Meta card
+  metaCard: {
     backgroundColor: 'rgba(255,255,255,0.055)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,255,255,0.10)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 11,
+    gap: 8,
+  },
+  metaLabel: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 12,
+    fontWeight: '600',
+    flexShrink: 0,
+  },
+  metaValue: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'right',
+    flex: 1,
+  },
+  metaDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+
+  // Primary CTA
+  cta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(235,98,26,0.12)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(235,98,26,0.30)',
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 14,
     minHeight: 44,
   },
-  sectionLinkBar: {
+  ctaBar: {
     width: 4,
     alignSelf: 'stretch',
     borderRadius: 2,
     backgroundColor: COPPER,
   },
-  sectionLinkEyebrow: {
-    color: 'rgba(255,255,255,0.45)',
+  ctaEyebrow: {
+    color: COPPER,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
   },
-  sectionLinkTitle: {
+  ctaTitle: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: -0.2,
     marginTop: 2,
   },
+
+  // Related
+  relatedBlock: { gap: 10 },
+  relatedHeader: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  relatedCard: {
+    backgroundColor: 'rgba(255,255,255,0.042)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 2,
+  },
+
+  // Back button
   backBtn: {
     position: 'absolute',
     left: 14,

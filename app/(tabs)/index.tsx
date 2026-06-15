@@ -280,9 +280,9 @@ export const SECTIONS: Section[] = [
       {
         id: 'aw-2', variant: 'player',
         topPill: '#2 · POY', topPillTone: 'gold',
-        name: 'Kiyan Anthony', team: 'Syracuse',
-        stat: '21.0 PPG · 5.9 APG',
-        initial: 'K', color: '#F76900', usePhoto: true,
+        name: 'Paige Bueckers', team: 'UConn',
+        stat: '26.2 PPG · 6.1 APG',
+        initial: 'P', color: '#000E2F',
       },
       {
         id: 'aw-3', variant: 'player',
@@ -301,16 +301,16 @@ export const SECTIONS: Section[] = [
       {
         id: 'aw-5', variant: 'player',
         topPill: 'DPOY · #1', topPillTone: 'teal',
-        name: 'Eddie Lampkin', team: 'Syracuse',
-        stat: '4.1 BPG · 11.8 RPG',
-        initial: 'E', color: '#F76900',
+        name: 'Travis Hunter', team: 'Colorado',
+        stat: '4 INT · 2-way starter',
+        initial: 'T', color: '#CFB87C',
       },
       {
         id: 'aw-6', variant: 'player',
-        topPill: '6th Man · #1', topPillTone: 'neutral',
-        name: 'Donnie Freeman', team: 'Syracuse',
-        stat: '14 PPG · off bench',
-        initial: 'D', color: '#F76900',
+        topPill: 'Spotlight · VB', topPillTone: 'neutral',
+        name: 'Simone Lee', team: 'Penn St',
+        stat: '5.2 k/set · Big Ten leader',
+        initial: 'S', color: '#041E42',
       },
     ],
     awardGroups: [
@@ -433,8 +433,8 @@ export const SECTIONS: Section[] = [
     cards: [
       {
         id: 'nil-1', variant: 'deal',
-        value: '$2.4M', athlete: 'Kiyan Anthony', athleteInitial: 'K', athleteColor: '#F76900',
-        brand: 'NIKE', brandColor: '#000', duration: '2yr · multi',
+        value: '$3.1M', athlete: 'Paige Bueckers', athleteInitial: 'P', athleteColor: '#000E2F',
+        brand: 'NIKE', brandColor: '#000', duration: '3yr · excl',
       },
       {
         id: 'nil-2', variant: 'deal',
@@ -443,23 +443,23 @@ export const SECTIONS: Section[] = [
       },
       {
         id: 'nil-3', variant: 'deal',
-        value: '$950K', athlete: 'AJ Dybantsa', athleteInitial: 'A', athleteColor: '#002E5D',
-        brand: 'Nike', brandColor: '#000', duration: '3yr · excl',
+        value: '$2.4M', athlete: 'Travis Hunter', athleteInitial: 'T', athleteColor: '#CFB87C',
+        brand: 'BEATS', brandColor: '#C8102E', duration: '2yr · multi',
       },
       {
         id: 'nil-4', variant: 'deal',
-        value: '$680K', athlete: 'RJ Davis', athleteInitial: 'R', athleteColor: '#7BAFD4',
-        brand: "BOJANGLES'", brandColor: '#E03A3E', duration: '1yr · regional',
+        value: '$680K', athlete: 'Kiyan Anthony', athleteInitial: 'K', athleteColor: '#F76900',
+        brand: 'CARMAX', brandColor: '#003087', duration: '1yr · regional',
       },
       {
         id: 'nil-5', variant: 'deal',
-        value: '$1.2M', athlete: 'Donnie Freeman', athleteInitial: 'D', athleteColor: '#F76900',
-        brand: 'SPOTIFY', brandColor: '#1DB954', duration: '2yr · creator',
+        value: '$1.1M', athlete: 'Paul Skenes', athleteInitial: 'P', athleteColor: '#461D7C',
+        brand: "ZAXBY'S", brandColor: '#E8451B', duration: '2yr · Southeast',
       },
       {
         id: 'nil-6', variant: 'deal',
-        value: '$540K', athlete: 'Eddie Lampkin', athleteInitial: 'E', athleteColor: '#F76900',
-        brand: 'BWW', brandColor: '#FFCA02', duration: '1yr',
+        value: '$540K', athlete: 'Simone Lee', athleteInitial: 'S', athleteColor: '#041E42',
+        brand: 'GATORADE', brandColor: '#FF6900', duration: '1yr · renew',
       },
     ],
   },
@@ -1378,21 +1378,25 @@ export default function FeedScreen() {
 
   // ── Tiles data (one tile per card + one hub tile per section) ──────────────
   const tiles = useMemo(() => {
-    const result: Array<{ id: string; caption: string; sectionId: string }> = [];
+    const result: Array<{ id: string; caption: string; subtitle: string; sectionId: string }> = [];
     for (const section of SECTIONS) {
       // Hub tile (one per section)
-      result.push({ id: `${section.id}:hub`, caption: section.title, sectionId: section.id });
+      result.push({ id: `${section.id}:hub`, caption: section.title, subtitle: section.subtitle, sectionId: section.id });
       // Per-card tiles
       section.cards.forEach((card, idx) => {
         let caption = section.title;
+        let subtitle = section.subtitle;
         if (card.variant === 'matchup') {
-          caption = `${card.away.abbr} @ ${card.home.abbr} · ${card.statusLabel}`;
+          caption = `${card.away.abbr} @ ${card.home.abbr}`;
+          subtitle = `${section.title} · ${card.statusLabel}${card.meta ? ' · ' + card.meta : ''}`;
         } else if (card.variant === 'player') {
-          caption = card.topPill ? `${card.name} · ${card.topPill}` : card.name;
+          caption = card.name;
+          subtitle = card.topPill ? `${section.title} · ${card.topPill} · ${card.team}` : `${section.title} · ${card.team}`;
         } else if (card.variant === 'deal') {
           caption = `${card.athlete} × ${card.brand}`;
+          subtitle = `NIL Deal · ${card.value} · ${card.duration}`;
         }
-        result.push({ id: `${section.id}:${card.id ?? idx}`, caption, sectionId: section.id });
+        result.push({ id: `${section.id}:${card.id ?? idx}`, caption, subtitle, sectionId: section.id });
       });
     }
     return result;
@@ -1420,11 +1424,10 @@ export default function FeedScreen() {
   }, [tiles, tileMedia]);
 
   // ── Stable navigation callback ────────────────────────────────────────────
-  // Every tile opens its card detail page (media + title); the card page
-  // routes onward to NCAA Basketball for now.
+  // Every tile opens its card detail page (media + title + subtitle + sectionId).
   const openCard = useCallback(
-    (tileId: string, caption: string) => {
-      router.push({ pathname: '/card/[id]', params: { id: tileId, caption } } as any);
+    (tileId: string, caption: string, subtitle: string, sectionId: string) => {
+      router.push({ pathname: '/card/[id]', params: { id: tileId, caption, subtitle, sectionId } } as any);
     },
     [router],
   );
@@ -1495,7 +1498,7 @@ export default function FeedScreen() {
               caption={t.caption}
               colWidth={GRID_CARD_WIDTH}
               index={index}
-              onPress={() => openCard(t.id, t.caption)}
+              onPress={() => openCard(t.id, t.caption, t.subtitle, t.sectionId)}
               media={tileMediaMap.get(t.id) ?? null}
               onMenuPress={() => setMenuTileId(t.id)}
             />
