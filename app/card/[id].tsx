@@ -24,6 +24,12 @@ import { AbstractArt } from '@/components/fan/abstract-art';
 import { TILE_MEDIA_STORAGE_KEY, tileSlot, type TileLocalMedia } from '@/lib/home/tiles';
 import { healLocalMediaUri } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
+import {
+  CANVAS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
+  SURFACE, SURFACE_SUBTLE, HAIRLINE, HAIRLINE_SUBTLE,
+  RADIUS_SM, RADIUS_CARD, RADIUS_LG, RADIUS_PILL,
+  ACCENT, SP_XS, SP_SM, SP_MD, SP_LG,
+} from '@/components/shared/ui-kit/tokens';
 
 const SCREEN_W = Dimensions.get('window').width;
 const HERO_H = Math.round(SCREEN_W * 1.05);
@@ -244,13 +250,13 @@ function RelatedRow({
       accessibilityLabel={title}
     >
       <View style={rStyles.iconWrap}>
-        <Ionicons name={icon} size={18} color={COPPER} />
+        <Ionicons name={icon} size={18} color={TEXT_SECONDARY} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={rStyles.rowTitle}>{title}</Text>
         <Text style={rStyles.rowSub} numberOfLines={1}>{sub}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.35)" />
+      <Ionicons name="chevron-forward" size={16} color={TEXT_TERTIARY} />
     </Pressable>
   );
 }
@@ -260,21 +266,21 @@ const rStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 13,
+    paddingVertical: SP_MD,
     paddingHorizontal: 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomColor: HAIRLINE_SUBTLE,
   },
   iconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(235,98,26,0.12)',
+    borderRadius: RADIUS_SM,
+    backgroundColor: SURFACE_SUBTLE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowTitle: { color: '#FFF', fontSize: 14, fontWeight: '700' },
-  rowSub: { color: 'rgba(255,255,255,0.45)', fontSize: 12, marginTop: 2 },
+  rowTitle: { color: TEXT_PRIMARY, fontSize: 15, fontWeight: '700' },
+  rowSub: { color: TEXT_TERTIARY, fontSize: 12, marginTop: 2 },
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -371,7 +377,7 @@ export default function CardDetailScreen() {
       >
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <View style={[styles.heroWrap, { height: HERO_H }]}>
-          {showHero ? hero : <View style={{ width: SCREEN_W, height: HERO_H, backgroundColor: '#1A1A1A' }} />}
+          {showHero ? hero : <View style={{ width: SCREEN_W, height: HERO_H, backgroundColor: SURFACE }} />}
           {/* Bottom fade into the page */}
           <View style={styles.heroFade} pointerEvents="none" />
         </View>
@@ -419,7 +425,7 @@ export default function CardDetailScreen() {
                 <Text style={styles.ctaEyebrow}>GO TO</Text>
                 <Text style={styles.ctaTitle}>{content.ctaLabel}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.6)" />
+              <Ionicons name="chevron-forward" size={20} color={TEXT_SECONDARY} />
             </Pressable>
           )}
 
@@ -458,8 +464,8 @@ export default function CardDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
-  heroWrap: { width: SCREEN_W, backgroundColor: '#1A1A1A', overflow: 'hidden' },
+  container: { flex: 1, backgroundColor: CANVAS },
+  heroWrap: { width: SCREEN_W, backgroundColor: SURFACE, overflow: 'hidden' },
   heroFade: {
     position: 'absolute',
     left: 0,
@@ -468,19 +474,19 @@ const styles = StyleSheet.create({
     height: 80,
     backgroundColor: 'transparent',
   },
-  body: { paddingHorizontal: 16, paddingTop: 16, gap: 18 },
+  body: { paddingHorizontal: SP_LG, paddingTop: SP_LG, gap: SP_LG },
 
   // Title block
-  titleBlock: { gap: 5 },
+  titleBlock: { gap: SP_XS },
   eyebrow: {
-    color: COPPER,
+    color: TEXT_SECONDARY,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   title: {
-    color: '#FFF',
+    color: TEXT_PRIMARY,
     fontSize: 26,
     fontWeight: '800',
     letterSpacing: -0.5,
@@ -489,7 +495,7 @@ const styles = StyleSheet.create({
 
   // Context
   context: {
-    color: 'rgba(255,255,255,0.72)',
+    color: TEXT_SECONDARY,
     fontSize: 15,
     lineHeight: 22,
     fontWeight: '400',
@@ -497,10 +503,10 @@ const styles = StyleSheet.create({
 
   // Meta card
   metaCard: {
-    backgroundColor: 'rgba(255,255,255,0.055)',
+    backgroundColor: SURFACE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.10)',
-    borderRadius: 14,
+    borderColor: HAIRLINE,
+    borderRadius: RADIUS_CARD,
     paddingHorizontal: 14,
     paddingVertical: 4,
   },
@@ -508,17 +514,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 11,
+    paddingVertical: SP_MD,
     gap: 8,
   },
   metaLabel: {
-    color: 'rgba(255,255,255,0.45)',
+    color: TEXT_TERTIARY,
     fontSize: 12,
     fontWeight: '600',
     flexShrink: 0,
   },
   metaValue: {
-    color: '#FFF',
+    color: TEXT_PRIMARY,
     fontSize: 13,
     fontWeight: '700',
     textAlign: 'right',
@@ -526,7 +532,7 @@ const styles = StyleSheet.create({
   },
   metaDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: HAIRLINE_SUBTLE,
   },
 
   // Primary CTA
@@ -534,10 +540,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(235,98,26,0.12)',
+    backgroundColor: `${ACCENT}1F`,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(235,98,26,0.30)',
-    borderRadius: 14,
+    borderColor: `${ACCENT}4D`,
+    borderRadius: RADIUS_CARD,
     paddingVertical: 14,
     paddingHorizontal: 14,
     minHeight: 44,
@@ -546,35 +552,35 @@ const styles = StyleSheet.create({
     width: 4,
     alignSelf: 'stretch',
     borderRadius: 2,
-    backgroundColor: COPPER,
+    backgroundColor: ACCENT,
   },
   ctaEyebrow: {
-    color: COPPER,
+    color: ACCENT,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
   },
   ctaTitle: {
-    color: '#FFF',
-    fontSize: 16,
+    color: TEXT_PRIMARY,
+    fontSize: 17,
     fontWeight: '800',
     letterSpacing: -0.2,
     marginTop: 2,
   },
 
   // Related
-  relatedBlock: { gap: 10 },
+  relatedBlock: { gap: SP_SM },
   relatedHeader: {
-    color: 'rgba(255,255,255,0.35)',
+    color: TEXT_TERTIARY,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.2,
   },
   relatedCard: {
-    backgroundColor: 'rgba(255,255,255,0.042)',
+    backgroundColor: SURFACE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 14,
+    borderColor: HAIRLINE,
+    borderRadius: RADIUS_CARD,
     paddingHorizontal: 14,
     paddingVertical: 2,
   },
@@ -585,11 +591,11 @@ const styles = StyleSheet.create({
     left: 14,
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: RADIUS_PILL,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(14,14,16,0.55)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderColor: HAIRLINE,
   },
 });

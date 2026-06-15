@@ -29,14 +29,19 @@ import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import { DEAL_ENGINE_STORAGE_KEY, DEMO_DEAL } from '@/lib/data/mock-deal-engine';
 import type { EngineDeal } from '@/lib/types/deal-engine.types';
 import type { DealTruth } from '@/lib/athlete/truth';
+import {
+  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
+  SURFACE, HAIRLINE, HAIRLINE_SUBTLE,
+  RADIUS_SM, RADIUS_LG,
+  ACCENT, SIGNAL_POSITIVE, SIGNAL_WARN, SIGNAL_NEGATIVE,
+  SP_XS, SP_SM, SP_MD, SP_LG,
+} from '@/components/shared/ui-kit/tokens';
 
-const COPPER = '#EB621A';
-const RED = '#FF3B30';
-const AMBER = '#FFD60A';
-const GREEN = '#34C759';
-const CARD_BG = 'rgba(255,255,255,0.05)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const MUTED = 'rgba(255,255,255,0.55)';
+const COPPER = ACCENT;
+const RED = SIGNAL_NEGATIVE;
+const AMBER = SIGNAL_WARN;
+const GREEN = SIGNAL_POSITIVE;
+const MUTED = TEXT_SECONDARY;
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -350,22 +355,22 @@ const s = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SP_LG,
     paddingBottom: 40,
-    gap: 16,
+    gap: SP_LG,
   },
   card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    gap: 10,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
+    padding: SP_LG,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
     marginBottom: 2,
   },
   sectionBar: {
@@ -378,13 +383,13 @@ const s = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_PRIMARY,
   },
   // MONEY
   moneyBig: {
     fontSize: 38,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -1.5,
     fontVariant: ['tabular-nums'],
     lineHeight: 44,
@@ -405,9 +410,9 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
   taxLine: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255,214,10,0.8)',
+    color: `${AMBER}CC`,
     marginTop: 2,
   },
   // DUE FROM YOU
@@ -415,15 +420,15 @@ const s = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: MUTED,
-    paddingVertical: 4,
+    paddingVertical: SP_XS,
   },
   dueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
+    gap: SP_SM,
+    paddingVertical: SP_SM,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: HAIRLINE,
   },
   dueDot: {
     width: 8,
@@ -434,11 +439,11 @@ const s = StyleSheet.create({
   dueLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.1,
   },
   dueSub: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: MUTED,
     marginTop: 1,
@@ -447,39 +452,39 @@ const s = StyleSheet.create({
   dealRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
+    gap: SP_SM,
+    paddingVertical: SP_SM,
   },
   dealRowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: HAIRLINE,
   },
   dealBrand: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.1,
   },
   dealTitle: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: MUTED,
     marginTop: 1,
   },
   chipsRow: {
     flexDirection: 'row',
-    gap: 5,
+    gap: SP_XS,
     flexWrap: 'wrap',
     justifyContent: 'flex-end',
     maxWidth: 140,
   },
   chip: {
-    borderRadius: 6,
-    paddingHorizontal: 7,
+    borderRadius: RADIUS_SM,
+    paddingHorizontal: 8,
     paddingVertical: 3,
   },
   chipText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.5,
   },

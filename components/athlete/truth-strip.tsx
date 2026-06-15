@@ -15,7 +15,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useStableRouter } from '@/hooks/use-stable-router';
-import { CARD_BG, CARD_BORDER } from '@/components/shared/ui-kit/tokens';
+import {
+  TEXT_SECONDARY,
+  SURFACE, HAIRLINE,
+  RADIUS_SM, RADIUS_CARD,
+  ACCENT, SIGNAL_WARN, SIGNAL_NEGATIVE,
+  SP_SM,
+} from '@/components/shared/ui-kit/tokens';
 import {
   truthSummary,
   nextDisclosureDeadline,
@@ -25,9 +31,9 @@ import {
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import type { DealTruth } from '@/lib/athlete/truth';
 
-const COPPER = '#EB621A';
-const RED = '#FF3B30';
-const AMBER = '#FFD60A';
+const COPPER = ACCENT;
+const RED = SIGNAL_NEGATIVE;
+const AMBER = SIGNAL_WARN;
 
 function formatMoney(cents: number): string {
   return `$${Math.round(cents / 100).toLocaleString('en-US')}`;
@@ -111,22 +117,22 @@ export function TruthStrip({ deals = DEAL_TRUTH_FIXTURE }: TruthStripProps) {
 
 const styles = StyleSheet.create({
   strip: {
-    backgroundColor: CARD_BG,
-    borderRadius: 12,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    gap: 7,
+    gap: SP_SM,
   },
   disclosureChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    borderRadius: 8,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: COPPER,
-    backgroundColor: 'rgba(235,98,26,0.08)',
+    backgroundColor: `${COPPER}14`,
     paddingHorizontal: 10,
     paddingVertical: 10,
     minHeight: 44, // ≥44pt touch target (spec §6 E)
@@ -143,9 +149,9 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   summaryLine: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.55)',
+    color: TEXT_SECONDARY,
     fontVariant: ['tabular-nums'],
     letterSpacing: 0,
   },

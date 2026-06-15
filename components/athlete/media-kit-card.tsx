@@ -7,16 +7,20 @@ import { Ionicons } from '@expo/vector-icons';
 import * as React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { RADIUS_PILL } from '@/components/shared/ui-kit/tokens';
+import {
+  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
+  SURFACE, SURFACE_SUBTLE, HAIRLINE,
+  RADIUS_SM, RADIUS_CARD, RADIUS_LG, RADIUS_PILL,
+  ACCENT, SIGNAL_POSITIVE,
+} from '@/components/shared/ui-kit/tokens';
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import { getMockAthleteSocialReach } from '@/lib/data/mock-social-reach';
 
-const COPPER = '#EB621A';
-const MUTED = 'rgba(255,255,255,0.52)';
-const FAINT = 'rgba(255,255,255,0.40)';
-const WHITE = '#FFFFFF';
-const SUCCESS_GREEN = '#00C6B0';
-const HAIRLINE = 'rgba(255,255,255,0.08)';
+const COPPER = ACCENT;
+const MUTED = TEXT_SECONDARY;
+const FAINT = TEXT_TERTIARY;
+const WHITE = TEXT_PRIMARY;
+const SUCCESS_GREEN = SIGNAL_POSITIVE;
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -237,12 +241,12 @@ export function MediaKitCard({ onViewPosts }: MediaKitCardProps) {
 
 const mk = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: RADIUS_LG,
     padding: 16,
     gap: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: SURFACE,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: HAIRLINE,
   },
   headerRow: {
     flexDirection: 'row',
@@ -252,23 +256,23 @@ const mk = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(235,98,26,0.12)',
+    gap: 4,
+    backgroundColor: `${COPPER}1F`,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(235,98,26,0.45)',
+    borderColor: `${COPPER}73`,
     borderRadius: RADIUS_PILL,
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     paddingVertical: 4,
   },
   badgeText: {
     color: COPPER,
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.8,
   },
   updated: { color: FAINT, fontSize: 10, fontWeight: '600' },
   sectionLabel: {
-    color: COPPER,
+    color: TEXT_PRIMARY,
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1,
@@ -278,8 +282,8 @@ const mk = StyleSheet.create({
   statBand: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_CARD,
     paddingVertical: 14,
   },
   stat: { flex: 1, alignItems: 'center', gap: 3 },
@@ -292,14 +296,14 @@ const mk = StyleSheet.create({
   },
   statLabel: {
     color: MUTED,
-    fontSize: 9.5,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
   },
-  statDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: 6 },
+  statDivider: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: HAIRLINE, marginVertical: 6 },
   benchNote: {
     color: MUTED,
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '500',
     lineHeight: 16,
     marginTop: -2,
@@ -310,15 +314,15 @@ const mk = StyleSheet.create({
   pRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 11,
-    paddingVertical: 9,
+    gap: 8,
+    paddingVertical: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: HAIRLINE,
   },
   pIcon: {
     width: 34,
     height: 34,
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
@@ -326,15 +330,15 @@ const mk = StyleSheet.create({
   monogram: {
     width: 34,
     height: 34,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: RADIUS_SM,
+    backgroundColor: SURFACE_SUBTLE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   monogramText: { color: WHITE, fontSize: 15, fontWeight: '800' },
   pMeta: { flex: 1, gap: 1 },
   pHandleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  pHandle: { color: WHITE, fontSize: 14, fontWeight: '700', letterSpacing: -0.1, flexShrink: 1 },
+  pHandle: { color: WHITE, fontSize: 15, fontWeight: '700', letterSpacing: -0.1, flexShrink: 1 },
   pPlatform: { color: FAINT, fontSize: 11, fontWeight: '500' },
   pRight: { alignItems: 'flex-end', gap: 1 },
   pFollowers: { color: WHITE, fontSize: 15, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.3 },
@@ -347,13 +351,13 @@ const mk = StyleSheet.create({
     borderRadius: RADIUS_PILL,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: `${SUCCESS_GREEN}44`,
-    backgroundColor: `${SUCCESS_GREEN}12`,
+    backgroundColor: `${SUCCESS_GREEN}1F`,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   deliveredText: { color: SUCCESS_GREEN, fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
 
-  viewAllRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  viewAllRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   viewAll: { color: COPPER, fontSize: 13, fontWeight: '700' },
   footer: { color: FAINT, fontSize: 10, fontWeight: '500', lineHeight: 14 },
 
@@ -362,22 +366,22 @@ const mk = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 9,
+    paddingVertical: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: HAIRLINE,
   },
-  rateType: { color: WHITE, fontSize: 14, fontWeight: '600', letterSpacing: -0.1 },
-  rateValue: { color: WHITE, fontSize: 14, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
+  rateType: { color: WHITE, fontSize: 15, fontWeight: '600', letterSpacing: -0.1 },
+  rateValue: { color: WHITE, fontSize: 15, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.2 },
 
   // Reliability strip
   reliBand: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 12,
+    backgroundColor: SURFACE_SUBTLE,
+    borderRadius: RADIUS_CARD,
     paddingVertical: 12,
   },
   reliStat: { flex: 1, alignItems: 'center', gap: 2 },
-  reliNum: { color: WHITE, fontSize: 18, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.4 },
-  reliLabel: { color: MUTED, fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  reliNum: { color: WHITE, fontSize: 17, fontWeight: '900', fontVariant: ['tabular-nums'], letterSpacing: -0.4 },
+  reliLabel: { color: MUTED, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
 });

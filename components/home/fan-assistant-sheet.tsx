@@ -21,6 +21,12 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { fanAssistant, FAN_SUGGESTIONS, type AgentChunk } from '@/lib/api/fan-assistant';
+import {
+  CANVAS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
+  SURFACE, SURFACE_SUBTLE, HAIRLINE, HAIRLINE_SUBTLE,
+  RADIUS_CARD, RADIUS_LG, RADIUS_PILL,
+  ACCENT,
+} from '@/components/shared/ui-kit/tokens';
 
 // ─── Inline markdown renderer ─────────────────────────────────────────────────
 
@@ -51,7 +57,7 @@ function MarkdownText({ text }: { text: string }) {
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           return (
             <View key={i} style={{ flexDirection: 'row', paddingLeft: 4, paddingVertical: 1 }}>
-              <Text style={{ color: '#EB621A', fontSize: 15, lineHeight: 22, width: 16 }}>
+              <Text style={{ color: TEXT_SECONDARY, fontSize: 15, lineHeight: 22, width: 16 }}>
                 {'•'}
               </Text>
               <Text style={{ flex: 1, fontSize: 15, lineHeight: 22, color: 'rgba(255,255,255,0.9)' }}>
@@ -171,7 +177,7 @@ export function FanAssistant({ open: openProp, onOpenChange, hideFab }: FanAssis
           accessibilityLabel="Ask Proslync"
           accessibilityRole="button"
         >
-          <Ionicons name="chatbubble-ellipses-outline" size={24} color="#EB621A" />
+          <Ionicons name="chatbubble-ellipses-outline" size={24} color={ACCENT} />
         </Pressable>
       )}
 
@@ -183,7 +189,7 @@ export function FanAssistant({ open: openProp, onOpenChange, hideFab }: FanAssis
               {/* Header */}
               <View style={styles.header}>
                 <View style={styles.headerIcon}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={18} color="#EB621A" />
+                  <Ionicons name="chatbubble-ellipses-outline" size={18} color={ACCENT} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.headerTitle}>Proslync Assistant</Text>
@@ -196,7 +202,7 @@ export function FanAssistant({ open: openProp, onOpenChange, hideFab }: FanAssis
                   accessibilityLabel="Close assistant"
                   accessibilityRole="button"
                 >
-                  <Ionicons name="close" size={18} color="rgba(255,255,255,0.55)" />
+                  <Ionicons name="close" size={18} color={TEXT_SECONDARY} />
                 </Pressable>
               </View>
 
@@ -215,7 +221,7 @@ export function FanAssistant({ open: openProp, onOpenChange, hideFab }: FanAssis
                         onPress={() => handleAsk(s)}
                       >
                         <Text style={styles.chipText}>{s}</Text>
-                        <Ionicons name="arrow-forward" size={12} color="rgba(255,255,255,0.5)" />
+                        <Ionicons name="arrow-forward" size={12} color={TEXT_TERTIARY} />
                       </Pressable>
                     ))}
                   </View>
@@ -288,13 +294,13 @@ const styles = StyleSheet.create({
     bottom: 110,
     width: 52,
     height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(26,26,26,0.92)',
+    borderRadius: RADIUS_PILL,
+    backgroundColor: `${CANVAS}EB`,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 150,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: HAIRLINE,
   },
   fabPressed: {
     transform: [{ scale: 0.92 }],
@@ -322,10 +328,10 @@ const styles = StyleSheet.create({
   // The visible card
   panelInner: {
     height: PANEL_HEIGHT,
-    borderRadius: 20,
-    backgroundColor: 'rgba(16,16,16,0.98)',
+    borderRadius: RADIUS_LG,
+    backgroundColor: `${CANVAS}FA`,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: HAIRLINE,
     overflow: 'hidden',
   },
 
@@ -338,24 +344,24 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     gap: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: HAIRLINE_SUBTLE,
   },
   headerIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(235,98,26,0.15)',
+    borderRadius: RADIUS_PILL,
+    backgroundColor: SURFACE_SUBTLE,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#FFF',
+    color: TEXT_PRIMARY,
   },
   headerSubtitle: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.45)',
+    fontSize: 12,
+    color: TEXT_TERTIARY,
     marginTop: 1,
   },
   closeBtn: {
@@ -374,7 +380,7 @@ const styles = StyleSheet.create({
   },
   suggestionsLabel: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.5)',
+    color: TEXT_SECONDARY,
     fontWeight: '500',
   },
   suggestionsGrid: {
@@ -388,17 +394,17 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: RADIUS_CARD,
+    backgroundColor: SURFACE,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HAIRLINE_SUBTLE,
   },
   chipPressed: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: SURFACE_SUBTLE,
   },
   chipText: {
-    fontSize: 14,
-    color: '#FFF',
+    fontSize: 15,
+    color: TEXT_PRIMARY,
     fontWeight: '500',
   },
 
@@ -414,10 +420,10 @@ const styles = StyleSheet.create({
   responseText: {
     fontSize: 15,
     lineHeight: 22,
-    color: 'rgba(255,255,255,0.9)',
+    color: TEXT_SECONDARY,
   },
   cursor: {
-    color: '#EB621A',
+    color: ACCENT,
     fontWeight: '700',
   },
 
@@ -429,24 +435,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: HAIRLINE_SUBTLE,
   },
   input: {
     flex: 1,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: RADIUS_PILL,
+    backgroundColor: SURFACE,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HAIRLINE,
     paddingHorizontal: 16,
-    fontSize: 14,
-    color: '#FFF',
+    fontSize: 15,
+    color: TEXT_PRIMARY,
   },
   sendBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EB621A',
+    borderRadius: RADIUS_PILL,
+    backgroundColor: ACCENT,
     alignItems: 'center',
     justifyContent: 'center',
   },

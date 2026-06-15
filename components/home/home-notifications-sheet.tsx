@@ -7,11 +7,16 @@ import * as React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import {
+  CANVAS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
+  SURFACE, HAIRLINE, HAIRLINE_SUBTLE,
+  RADIUS_SM, RADIUS_LG,
+  ACCENT,
+} from '@/components/shared/ui-kit/tokens';
 
-const COPPER = '#EB621A';
-const WHITE = '#FFFFFF';
-const MUTED = 'rgba(255,255,255,0.52)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
+const COPPER = ACCENT;
+const WHITE = TEXT_PRIMARY;
+const MUTED = TEXT_SECONDARY;
 
 type NotifKind = 'deal' | 'payment' | 'support' | 'post' | 'system';
 
@@ -94,36 +99,36 @@ const styles = StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end' },
   scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.55)' },
   sheet: {
-    backgroundColor: '#0F0F0F',
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    backgroundColor: CANVAS,
+    borderTopLeftRadius: RADIUS_LG,
+    borderTopRightRadius: RADIUS_LG,
     paddingHorizontal: 16,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderColor: CARD_BORDER,
+    borderColor: HAIRLINE,
   },
-  handle: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)', marginBottom: 12 },
+  handle: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: HAIRLINE, marginBottom: 12 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  title: { color: WHITE, fontSize: 18, fontWeight: '800', letterSpacing: -0.3 },
+  title: { color: WHITE, fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingVertical: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: HAIRLINE_SUBTLE,
   },
   iconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: RADIUS_SM,
+    backgroundColor: SURFACE,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowTitle: { color: WHITE, fontSize: 14, fontWeight: '700', letterSpacing: -0.1 },
-  rowBody: { color: MUTED, fontSize: 12.5, marginTop: 2, lineHeight: 17 },
-  metaCol: { alignItems: 'flex-end', gap: 5 },
-  time: { color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '600' },
+  rowTitle: { color: WHITE, fontSize: 15, fontWeight: '700', letterSpacing: -0.1 },
+  rowBody: { color: MUTED, fontSize: 12, marginTop: 2, lineHeight: 17 },
+  metaCol: { alignItems: 'flex-end', gap: 4 },
+  time: { color: TEXT_TERTIARY, fontSize: 11, fontWeight: '600' },
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COPPER },
 });

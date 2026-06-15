@@ -45,6 +45,11 @@ import { SymbolView } from "expo-symbols";
 import { ActionSheet } from '@/components/ui/action-sheet';
 import { FanAssistant } from '@/components/home/fan-assistant-sheet';
 import { HomeNotificationsSheet } from '@/components/home/home-notifications-sheet';
+import {
+  CANVAS, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
+  SURFACE, SURFACE_RAISED, HAIRLINE, HAIRLINE_SUBTLE,
+  RADIUS_SM, RADIUS_CARD, RADIUS_LG, RADIUS_PILL,
+} from '@/components/shared/ui-kit/tokens';
 
 // ───── Layout constants ─────
 
@@ -922,7 +927,7 @@ function SectionCard({
             />
           )}
           <LinearGradient
-            colors={['rgba(28,28,30,0.2)', 'rgba(28,28,30,1)']}
+            colors={['rgba(14,14,16,0.2)', 'rgba(14,14,16,1)']}
             locations={[0, 1]}
             style={styles.sectionBgOverlay}
             pointerEvents="none"
@@ -935,7 +940,7 @@ function SectionCard({
           style={[
             styles.sectionIcon,
             logoSource
-              ? { backgroundColor: '#000', borderColor: 'rgba(255,255,255,0.18)' }
+              ? { backgroundColor: CANVAS, borderColor: HAIRLINE }
               : { backgroundColor: `${section.iconColor}26`, borderColor: `${section.iconColor}55` },
           ]}
         >
@@ -950,7 +955,7 @@ function SectionCard({
           <Text style={styles.sectionSubtitle} numberOfLines={1}>{section.subtitle}</Text>
         </View>
         <Pressable hitSlop={8} onPress={() => onMenuPress(section)}>
-          <Ionicons name="ellipsis-horizontal" size={20} color="rgba(255,255,255,0.5)" />
+          <Ionicons name="ellipsis-horizontal" size={20} color={TEXT_SECONDARY} />
         </Pressable>
       </View>
 
@@ -1127,7 +1132,7 @@ function SectionMenuSheet({
                 <Text style={menuStyles.headerSub} numberOfLines={1}>{section.subtitle}</Text>
               </View>
               <Pressable onPress={dismiss} style={menuStyles.closeBtn} hitSlop={8} accessibilityLabel="Close">
-                <Ionicons name="close" size={16} color="rgba(255,255,255,0.85)" />
+                <Ionicons name="close" size={16} color={TEXT_PRIMARY} />
               </Pressable>
             </View>
 
@@ -1146,7 +1151,7 @@ function SectionMenuSheet({
                       <Ionicons
                         name={item.icon}
                         size={20}
-                        color={item.destructive ? '#FF453A' : 'rgba(255,255,255,0.85)'}
+                        color={item.destructive ? '#FF453A' : TEXT_PRIMARY}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -1158,7 +1163,7 @@ function SectionMenuSheet({
                     <Ionicons
                       name="chevron-forward"
                       size={16}
-                      color="rgba(255,255,255,0.35)"
+                      color={TEXT_TERTIARY}
                     />
                   </Pressable>
                   {i < items.length - 1 && <View style={menuStyles.divider} />}
@@ -1564,7 +1569,7 @@ export default function FeedScreen() {
         pointerEvents="none"
       >
         <LinearGradient
-          colors={['#000', '#000', 'rgba(0,0,0,0)']}
+          colors={[CANVAS, CANVAS, 'rgba(14,14,16,0)']}
           locations={[0, 0.8, 1]}
           style={StyleSheet.absoluteFill}
         />
@@ -1637,7 +1642,7 @@ export default function FeedScreen() {
 // ───── Styles ─────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: CANVAS },
   // Floating action pill — identical material/size/position to the
   // profile & dashboard tab pills, but with three icon actions.
   floatingPillWrap: {
@@ -1650,7 +1655,7 @@ const styles = StyleSheet.create({
   floatingPill: {
     width: 240,
     height: 42,
-    borderRadius: 21,
+    borderRadius: RADIUS_PILL,
     flexDirection: 'row',
     alignItems: 'center',
     overflow: 'hidden',
@@ -1659,7 +1664,7 @@ const styles = StyleSheet.create({
   floatingPillGlass: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
-    borderRadius: 21,
+    borderRadius: RADIUS_PILL,
   },
   floatingPillBtn: {
     flex: 1,
@@ -1693,17 +1698,17 @@ const styles = StyleSheet.create({
   brandWordmark: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#FFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.4,
     marginLeft: -2,
   },
 
   // Section card
   section: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 22,
+    backgroundColor: SURFACE,
+    borderRadius: RADIUS_LG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: HAIRLINE_SUBTLE,
     overflow: 'hidden',
   },
   sectionContent: {
@@ -1720,49 +1725,49 @@ const styles = StyleSheet.create({
     paddingBottom: 12, paddingHorizontal: 4,
   },
   sectionIcon: {
-    width: 38, height: 38, borderRadius: 19,
+    width: 38, height: 38, borderRadius: RADIUS_PILL,
     alignItems: 'center', justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
   sectionIconText: { fontSize: 18 },
   sectionIconImage: { width: '100%', height: '100%' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#FFF', letterSpacing: -0.2 },
-  sectionSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: TEXT_PRIMARY, letterSpacing: -0.2 },
+  sectionSubtitle: { fontSize: 12, color: TEXT_SECONDARY, marginTop: 1 },
   sectionFooter: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingTop: 12, paddingHorizontal: 4,
   },
-  sectionFooterText: { fontSize: 16, color: '#FFF', fontWeight: '700' },
+  sectionFooterText: { fontSize: 17, color: TEXT_PRIMARY, fontWeight: '700' },
 
   // Mini card
   miniCard: {
     width: MINI_CARD_W,
     height: MINI_CARD_H,
-    borderRadius: 14,
+    borderRadius: RADIUS_CARD,
     padding: 10,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: HAIRLINE,
     overflow: 'hidden',
   },
   topPill: {
     alignSelf: 'flex-start',
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 7, paddingVertical: 3,
-    borderRadius: 7,
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: RADIUS_SM,
   },
-  topPillText: { fontSize: 9.5, fontWeight: '700', letterSpacing: 0.2 },
+  topPillText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.2 },
   liveDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#FF4444' },
   miniFooter: {
     marginTop: 4,
   },
   miniMeta: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
+    color: TEXT_TERTIARY,
   },
   miniMetaSub: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.75)',
+    color: TEXT_SECONDARY,
     fontWeight: '600',
     marginTop: 2,
   },
@@ -1771,36 +1776,36 @@ const styles = StyleSheet.create({
   matchupBody: { flex: 1, justifyContent: 'center', gap: 8 },
   matchupRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   teamLogo: {
-    width: 22, height: 22, borderRadius: 11,
+    width: 22, height: 22, borderRadius: RADIUS_PILL,
     alignItems: 'center', justifyContent: 'center',
   },
-  teamLogoText: { fontSize: 10, fontWeight: '900', color: '#FFF' },
-  teamAbbr: { fontSize: 12, color: '#FFF', fontWeight: '700', flex: 1 },
-  teamScore: { fontSize: 17, fontWeight: '900', color: '#FFF', fontVariant: ['tabular-nums'] },
-  teamScoreDim: { color: 'rgba(255,255,255,0.45)' },
+  teamLogoText: { fontSize: 10, fontWeight: '900', color: TEXT_PRIMARY },
+  teamAbbr: { fontSize: 12, color: TEXT_PRIMARY, fontWeight: '700', flex: 1 },
+  teamScore: { fontSize: 17, fontWeight: '900', color: TEXT_PRIMARY, fontVariant: ['tabular-nums'] },
+  teamScoreDim: { color: TEXT_TERTIARY },
 
   // Player body
   playerBody: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6 },
   playerAvatar: {
-    width: 52, height: 52, borderRadius: 26,
+    width: 52, height: 52, borderRadius: RADIUS_PILL,
     overflow: 'hidden',
   },
-  playerAvatarInitial: { fontSize: 20, fontWeight: '900', color: '#FFF' },
-  playerName: { fontSize: 12, color: '#FFF', fontWeight: '700' },
-  playerStat: { fontSize: 9.5, color: 'rgba(255,255,255,0.55)', textAlign: 'center' },
+  playerAvatarInitial: { fontSize: 20, fontWeight: '900', color: TEXT_PRIMARY },
+  playerName: { fontSize: 12, color: TEXT_PRIMARY, fontWeight: '700' },
+  playerStat: { fontSize: 10, color: TEXT_SECONDARY, textAlign: 'center' },
 
   // Deal body
   dealBody: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
   dealLogos: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dealLogoCircle: {
-    width: 28, height: 28, borderRadius: 14,
+    width: 28, height: 28, borderRadius: RADIUS_PILL,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.15)',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: HAIRLINE,
   },
-  dealLogoText: { fontSize: 12, fontWeight: '900', color: '#FFF' },
-  dealCross: { fontSize: 14, color: 'rgba(255,255,255,0.4)', fontWeight: '700' },
-  dealAthlete: { fontSize: 11, color: '#FFF', fontWeight: '700' },
-  dealBrand: { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontWeight: '600' },
+  dealLogoText: { fontSize: 12, fontWeight: '900', color: TEXT_PRIMARY },
+  dealCross: { fontSize: 14, color: TEXT_TERTIARY, fontWeight: '700' },
+  dealAthlete: { fontSize: 11, color: TEXT_PRIMARY, fontWeight: '700' },
+  dealBrand: { fontSize: 10, color: TEXT_SECONDARY, fontWeight: '600' },
 });
 
 const menuStyles = StyleSheet.create({
@@ -1809,12 +1814,12 @@ const menuStyles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#0F1012',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderWidth: 1,
+    backgroundColor: CANVAS,
+    borderTopLeftRadius: RADIUS_LG,
+    borderTopRightRadius: RADIUS_LG,
+    borderWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: 0,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: HAIRLINE,
     overflow: 'hidden',
     paddingBottom: 28,
   },
@@ -1822,7 +1827,7 @@ const menuStyles = StyleSheet.create({
     width: 38,
     height: 5,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: SURFACE_RAISED,
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 4,
@@ -1831,26 +1836,26 @@ const menuStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 14,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   headerIcon: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: RADIUS_PILL,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
   },
   headerIconText: { fontSize: 20 },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#FFF' },
-  headerSub: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: TEXT_PRIMARY },
+  headerSub: { fontSize: 12, color: TEXT_SECONDARY, marginTop: 2 },
   closeBtn: {
     width: 30,
     height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: RADIUS_PILL,
+    backgroundColor: SURFACE_RAISED,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1861,9 +1866,9 @@ const menuStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 16,
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   rowIcon: {
     width: 30,
@@ -1871,11 +1876,11 @@ const menuStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowLabel: { fontSize: 15, color: '#FFF', fontWeight: '600' },
-  rowSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  rowLabel: { fontSize: 15, color: TEXT_PRIMARY, fontWeight: '600' },
+  rowSub: { fontSize: 12, color: TEXT_TERTIARY, marginTop: 2 },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: HAIRLINE_SUBTLE,
     marginLeft: 56,
   },
 });
