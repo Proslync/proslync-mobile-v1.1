@@ -260,15 +260,44 @@ function SocialPostCard({ post, athleteName, athleteMeta, avatarSource }: { post
           <Ionicons name={liked ? 'heart' : 'heart-outline'} size={19} color={liked ? '#FF6F3C' : '#FFF'} />
           <Text style={s.socialActionText}>{formatShortCount(post.likes + (liked ? 1 : 0))}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.socialAction} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={s.socialAction}
+          activeOpacity={0.7}
+          onPress={() =>
+            Alert.alert(
+              'Comments (DEMO)',
+              `${formatShortCount(post.comments)} comments on this post. The comment thread isn't wired in this build. (DEMO)`,
+            )
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`View ${formatShortCount(post.comments)} comments`}
+        >
           <Ionicons name="chatbubble-outline" size={18} color="#FFF" />
           <Text style={s.socialActionText}>{formatShortCount(post.comments)}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.socialAction} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={s.socialAction}
+          activeOpacity={0.7}
+          onPress={() =>
+            Alert.alert('Repost (DEMO)', `Reposted ${athleteName}'s ${meta.label} post to your feed. (DEMO)`)
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Repost"
+        >
           <Ionicons name="repeat-outline" size={20} color="#FFF" />
           <Text style={s.socialActionText}>Repost</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.socialAction} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={s.socialAction}
+          activeOpacity={0.7}
+          onPress={() =>
+            Share.share({
+              message: `${athleteName} on ${meta.label}: ${post.caption}`,
+            }).catch(() => {})
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Share post"
+        >
           <Ionicons name="paper-plane-outline" size={18} color="#FFF" />
         </TouchableOpacity>
       </View>
@@ -1334,8 +1363,78 @@ const MOCK_MERCH: MerchProduct[] = [
   { id: 'm-10', name: 'Pre-Game Hype Video', price: 25, image: 'https://images.unsplash.com/photo-1519861531473-9200262188bf?w=800&q=80', category: 'digital', badge: 'Digital', stockLine: 'Instant delivery' },
 ];
 
+// Honest stock parse: a product is sold out only when its stock line reads
+// "0 ... left". Drives the sheet CTA so the label can't drift from the card.
+function merchSoldOut(p: MerchProduct): boolean {
+  return /^0\b/.test(p.stockLine ?? '');
+}
+
+// Lightweight merch product sheet — bottom sheet over a dimmed backdrop.
+// Honest DEMO: checkout isn't real, so the CTA carries a DEMO label. Sold-out
+// products surface a "Notify me" path instead of a buy CTA.
+function MerchProductSheet({
+  product,
+  visible,
+  onClose,
+}: {
+  product: MerchProduct | null;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  if (!product) return null;
+  const soldOut = merchSoldOut(product);
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
+      <View style={s.merchSheetBackdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
+        <View style={s.merchSheetCard}>
+          <View style={s.merchSheetHandle} />
+          <Image source={{ uri: product.image }} style={s.merchSheetImage} resizeMode="cover" />
+          {product.badge ? (
+            <View style={s.merchSheetBadgeRow}>
+              <Text style={s.merchSheetBadge}>{product.badge.toUpperCase()}</Text>
+            </View>
+          ) : null}
+          <Text style={s.merchSheetName}>{product.name}</Text>
+          <View style={s.merchSheetMetaRow}>
+            <Text style={s.merchSheetPrice}>${product.price}</Text>
+            {product.stockLine ? <Text style={s.merchSheetStock}>{product.stockLine}</Text> : null}
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            disabled={soldOut}
+            onPress={() =>
+              Alert.alert(
+                soldOut ? 'Notify Me (DEMO)' : 'Add to Cart (DEMO)',
+                soldOut
+                  ? `You'll be notified when "${product.name}" restocks. (DEMO — no real notification is sent.)`
+                  : `"${product.name}" added to cart — checkout is not wired in this build. (DEMO)`,
+              )
+            }
+            style={[s.merchSheetCta, soldOut && s.merchSheetCtaMuted]}
+            accessibilityRole="button"
+            accessibilityLabel={soldOut ? 'Notify me when back in stock' : 'Add to cart (demo)'}
+          >
+            <Ionicons
+              name={soldOut ? 'notifications-outline' : 'bag-add-outline'}
+              size={16}
+              color={soldOut ? '#FFF' : '#000'}
+            />
+            <Text style={[s.merchSheetCtaText, soldOut && s.merchSheetCtaTextMuted]}>
+              {soldOut ? 'Notify Me' : `Add to Cart · $${product.price}`}
+            </Text>
+          </TouchableOpacity>
+          <Text style={s.merchSheetDemoNote}>Demo storefront — purchases are not processed.</Text>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function MerchTab() {
   const [filter, setFilter] = React.useState<MerchCategory>('all');
+  const [selected, setSelected] = React.useState<MerchProduct | null>(null);
   const filtered = filter === 'all' ? MOCK_MERCH : MOCK_MERCH.filter((m) => m.category === filter);
 
   return (
@@ -1391,7 +1490,14 @@ function MerchTab() {
       {/* Product grid */}
       <View style={s.merchGrid}>
         {filtered.map((p) => (
-          <TouchableOpacity key={p.id} activeOpacity={0.85} style={s.merchItem}>
+          <TouchableOpacity
+            key={p.id}
+            activeOpacity={0.85}
+            style={s.merchItem}
+            onPress={() => setSelected(p)}
+            accessibilityRole="button"
+            accessibilityLabel={`${p.name}, $${p.price}`}
+          >
             <View style={s.merchImageWrap}>
               <Image source={{ uri: p.image }} style={s.merchImage} resizeMode="cover" />
               {p.badge ? (
@@ -1411,6 +1517,12 @@ function MerchTab() {
           </TouchableOpacity>
         ))}
       </View>
+
+      <MerchProductSheet
+        product={selected}
+        visible={selected !== null}
+        onClose={() => setSelected(null)}
+      />
     </View>
   );
 }
@@ -2615,6 +2727,23 @@ const s = StyleSheet.create({
   merchFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   merchPrice: { fontSize: 15, fontWeight: '800', color: '#FFF', letterSpacing: -0.2 },
   merchStock: { fontSize: 11, color: 'rgba(255,255,255,0.5)', letterSpacing: -0.05, flex: 1, textAlign: 'right' },
+
+  // Merch product sheet
+  merchSheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'flex-end' },
+  merchSheetCard: { backgroundColor: '#161616', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 18, paddingTop: 10, paddingBottom: 34, gap: 12 },
+  merchSheetHandle: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.22)', marginBottom: 6 },
+  merchSheetImage: { width: '100%', aspectRatio: 1.4, borderRadius: 16, backgroundColor: '#111' },
+  merchSheetBadgeRow: { flexDirection: 'row' },
+  merchSheetBadge: { fontSize: 10, fontWeight: '800', color: '#FF6F3C', letterSpacing: 1 },
+  merchSheetName: { fontSize: 18, fontWeight: '800', color: '#FFF', letterSpacing: -0.3 },
+  merchSheetMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  merchSheetPrice: { fontSize: 22, fontWeight: '800', color: '#FFF', letterSpacing: -0.4 },
+  merchSheetStock: { fontSize: 12, color: 'rgba(255,255,255,0.55)' },
+  merchSheetCta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, backgroundColor: '#FF6F3C', marginTop: 4 },
+  merchSheetCtaMuted: { backgroundColor: 'rgba(255,255,255,0.10)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.16)' },
+  merchSheetCtaText: { fontSize: 15, fontWeight: '800', color: '#000', letterSpacing: -0.2 },
+  merchSheetCtaTextMuted: { color: '#FFF' },
+  merchSheetDemoNote: { fontSize: 11, color: 'rgba(255,255,255,0.4)', textAlign: 'center' },
 
   // Media tab
   mediaHeroCard: {
