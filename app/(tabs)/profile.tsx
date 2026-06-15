@@ -1,4 +1,9 @@
 import { ProfileActions } from "@/components/athlete/profile-actions";
+import {
+  SURFACE as DS_SURFACE,
+  RADIUS_SM as DS_RADIUS_SM,
+  RADIUS_CARD as DS_RADIUS_CARD,
+} from '@/components/shared/ui-kit/tokens';
 import { MediaKitCard } from "@/components/athlete/media-kit-card";
 import { FollowersSheet } from "@/components/feed/followers-sheet";
 import { LinkifiedText } from "@/components/shared/linkified-text";
@@ -1120,7 +1125,7 @@ const dealSheetStyles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderColor: 'rgba(255,255,255,0.08)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 10,
+    borderRadius: DS_RADIUS_SM,
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
@@ -2535,12 +2540,12 @@ const s = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 17,
   },
-  socialCard: { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.12)', borderRadius: 14, overflow: 'hidden' },
+  socialCard: { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.12)', borderRadius: DS_RADIUS_CARD, overflow: 'hidden' },
   socialHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10 },
   socialAvatar: { width: 36, height: 36, borderRadius: 18 },
   socialName: { fontSize: 14, fontWeight: '700', color: '#FFF', letterSpacing: -0.1 },
   socialMeta: { fontSize: 12, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
-  socialPlatformChip: { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  socialPlatformChip: { width: 28, height: 28, borderRadius: DS_RADIUS_CARD, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   socialMediaWrap: { width: '100%', aspectRatio: 1.2, backgroundColor: '#111' },
   socialMedia: { width: '100%', height: '100%' },
   socialPlayBadge: { position: 'absolute', top: '50%', left: '50%', width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.55)', marginLeft: -24, marginTop: -24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
@@ -2556,7 +2561,7 @@ const s = StyleSheet.create({
   // Shared deals cards — glass / white / black design language
   dealCard: { backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 16, overflow: 'hidden', padding: 16, gap: 14 },
   dealHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  dealBrandLogo: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  dealBrandLogo: { width: 40, height: 40, borderRadius: DS_RADIUS_SM, alignItems: 'center', justifyContent: 'center' },
   dealBrandInitial: { fontSize: 18, fontWeight: '800', color: '#FFF', letterSpacing: -0.3 },
   dealBrandName: { fontSize: 15, fontWeight: '700', color: '#FFF', letterSpacing: -0.2 },
   dealTypeText: { fontSize: 12, color: 'rgba(255,255,255,0.65)', marginTop: 2, letterSpacing: -0.1 },
@@ -2564,7 +2569,7 @@ const s = StyleSheet.create({
   dealNetworkDot: { width: 6, height: 6, borderRadius: 3 },
   dealNetworkText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3, color: '#FFF' },
   dealChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  dealChip: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.08)' },
+  dealChip: { flexDirection: 'row', alignItems: 'baseline', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: DS_RADIUS_SM, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.08)' },
   dealChipLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.6, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' },
   dealChipValue: { fontSize: 13, color: '#FFF', fontWeight: '600', letterSpacing: -0.1 },
   dealQuoteBlock: { gap: 10, paddingTop: 2 },
@@ -2613,7 +2618,7 @@ const s = StyleSheet.create({
 
   // Media tab
   mediaHeroCard: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: DS_SURFACE,
     borderRadius: 16,
     padding: 14,
     marginHorizontal: 14,
@@ -2635,7 +2640,7 @@ const s = StyleSheet.create({
   mediaHeroName: { color: '#FFF', fontSize: 22, fontWeight: '700', letterSpacing: -0.4 },
   mediaHeroSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   mediaHeroSub: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '500', flex: 1 },
-  mediaCard: { backgroundColor: '#1C1C1E', borderRadius: 16, overflow: 'hidden' },
+  mediaCard: { backgroundColor: DS_SURFACE, borderRadius: 16, overflow: 'hidden' },
   mediaHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10 },
   mediaSourceLogo: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   mediaSourceInitial: { fontSize: 14, fontWeight: '800', color: '#FFF', letterSpacing: -0.2 },
@@ -2657,7 +2662,7 @@ const s = StyleSheet.create({
 
   // Awards tab
   awardsWrap: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 8, gap: 18 },
-  impactCard: { backgroundColor: 'rgba(255,111,60,0.08)', borderWidth: 1, borderColor: 'rgba(255,111,60,0.25)', borderRadius: 14, padding: 14, gap: 8 },
+  impactCard: { backgroundColor: 'rgba(255,111,60,0.08)', borderWidth: 1, borderColor: 'rgba(255,111,60,0.25)', borderRadius: DS_RADIUS_CARD, padding: 14, gap: 8 },
   impactHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   impactLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 1, color: '#FF6F3C' },
   impactBody: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },

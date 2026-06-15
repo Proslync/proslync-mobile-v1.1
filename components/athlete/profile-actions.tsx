@@ -37,13 +37,32 @@ import {
   type SupporterReceipt,
 } from '@/lib/fan/supporter';
 
-const COPPER = '#EB621A';
-const MUTED = 'rgba(255,255,255,0.52)';
-const WHITE = '#FFFFFF';
-const SHEET_BG = '#0F0F0F';
-const CARD_BG = 'rgba(255,255,255,0.055)';
-const CARD_BORDER = 'rgba(255,255,255,0.10)';
-const SUCCESS_GREEN = '#00C6B0';
+import {
+  ACCENT,
+  CANVAS,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  SURFACE,
+  SURFACE_SUBTLE,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_PILL,
+  SIGNAL_POSITIVE,
+  SP_XS,
+  SP_SM,
+  SP_MD,
+  SP_LG,
+} from '@/components/shared/ui-kit/tokens';
+
+const COPPER = ACCENT;
+const MUTED = TEXT_SECONDARY;
+const WHITE = TEXT_PRIMARY;
+const SHEET_BG = CANVAS;
+const CARD_BG = SURFACE;
+const CARD_BORDER = HAIRLINE;
+const SUCCESS_GREEN = SIGNAL_POSITIVE;
 const DANGER = '#B53A2B';
 
 // ─── SupporterSheet ──────────────────────────────────────────
@@ -650,20 +669,20 @@ export function ProfileActions({ athleteId = 'a-1', athleteName }: ProfileAction
 // ─── Styles ──────────────────────────────────────────────────
 
 const BTN_HEIGHT = 46;
-const BTN_RADIUS = 23;
+const BTN_RADIUS = RADIUS_PILL;
 
 const pa = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: 10,
-    paddingHorizontal: 16,
+    gap: SP_SM,
+    paddingHorizontal: SP_LG,
     marginTop: -48,
-    marginBottom: 4,
+    marginBottom: SP_XS,
   },
   supportBtn: {
     flex: 1,
     height: 32,
-    borderRadius: 10,
+    borderRadius: RADIUS_CARD,
     backgroundColor: COPPER,
     alignItems: 'center',
     justifyContent: 'center',
@@ -695,7 +714,7 @@ const pa = StyleSheet.create({
   workBtn: {
     flex: 1,
     height: 32,
-    borderRadius: 10,
+    borderRadius: RADIUS_CARD,
     backgroundColor: 'rgba(235,98,26,0.10)',
     borderWidth: 1.5,
     borderColor: COPPER,
@@ -722,9 +741,9 @@ const ss = StyleSheet.create({
   },
   sheet: {
     backgroundColor: SHEET_BG,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 8,
+    borderTopLeftRadius: RADIUS_LG,
+    borderTopRightRadius: RADIUS_LG,
+    paddingTop: SP_SM,
     maxHeight: '88%',
   },
   handle: {
@@ -733,24 +752,24 @@ const ss = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.25)',
-    marginBottom: 8,
+    marginBottom: SP_SM,
   },
   sheetContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: SP_SM,
     paddingBottom: 24,
-    gap: 12,
+    gap: SP_MD,
   },
   title: {
     color: WHITE,
     fontSize: 22,
     fontWeight: '900',
     letterSpacing: -0.4,
-    marginBottom: 4,
+    marginBottom: SP_XS,
   },
   // Tier cards
   tierCard: {
-    borderRadius: 12,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: CARD_BORDER,
     backgroundColor: CARD_BG,
@@ -763,12 +782,12 @@ const ss = StyleSheet.create({
   tierRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: SP_MD,
   },
   radio: {
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: RADIUS_PILL,
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.3)',
     alignItems: 'center',
@@ -780,7 +799,7 @@ const ss = StyleSheet.create({
   radioDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: RADIUS_PILL,
     backgroundColor: COPPER,
   },
   tierMeta: {
@@ -799,7 +818,7 @@ const ss = StyleSheet.create({
     letterSpacing: 0.3,
   },
   currentChip: {
-    borderRadius: 999,
+    borderRadius: RADIUS_PILL,
     backgroundColor: `${SUCCESS_GREEN}22`,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: `${SUCCESS_GREEN}55`,
@@ -808,13 +827,13 @@ const ss = StyleSheet.create({
   },
   currentChipText: {
     color: SUCCESS_GREEN,
-    fontSize: 8.5,
+    fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.4,
   },
   tierPerks: {
     color: MUTED,
-    fontSize: 11.5,
+    fontSize: 12,
     fontWeight: '500',
     lineHeight: 15,
   },
@@ -842,18 +861,18 @@ const ss = StyleSheet.create({
     marginTop: 2,
   },
   receiptCard: {
-    borderRadius: 12,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: CARD_BORDER,
     backgroundColor: CARD_BG,
     padding: 14,
-    gap: 10,
+    gap: SP_SM,
   },
   receiptRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
   },
   receiptLabel: {
     color: MUTED,
@@ -871,12 +890,12 @@ const ss = StyleSheet.create({
   },
   demoPill: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
+    borderRadius: RADIUS_PILL,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderColor: HAIRLINE_SUBTLE,
+    backgroundColor: SURFACE_SUBTLE,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS,
   },
   demoPillText: {
     color: MUTED,
@@ -891,19 +910,19 @@ const ss = StyleSheet.create({
     backgroundColor: COPPER,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 4,
+    marginTop: SP_XS,
   },
   ctaBtnGhost: {
     height: BTN_HEIGHT,
     borderRadius: BTN_RADIUS,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: HAIRLINE_SUBTLE,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: SP_SM,
   },
   ctaBtnGhostText: {
-    color: 'rgba(255,255,255,0.7)',
+    color: TEXT_SECONDARY,
     fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.3,
@@ -926,22 +945,22 @@ const ss = StyleSheet.create({
     letterSpacing: 0.2,
   },
   cancelConfirmRow: {
-    gap: 8,
-    borderRadius: 12,
+    gap: SP_SM,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: `${DANGER}44`,
     backgroundColor: `${DANGER}10`,
     padding: 14,
   },
   cancelConfirmMsg: {
-    color: 'rgba(255,255,255,0.7)',
+    color: TEXT_SECONDARY,
     fontSize: 13,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: SP_XS,
   },
   cancelDestructiveBtn: {
     height: 40,
-    borderRadius: 20,
+    borderRadius: RADIUS_PILL,
     backgroundColor: DANGER,
     alignItems: 'center',
     justifyContent: 'center',
@@ -962,12 +981,12 @@ const ss = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 12,
+    borderRadius: RADIUS_CARD,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: CARD_BORDER,
     backgroundColor: CARD_BG,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: SP_MD,
     minHeight: 52,
   },
   dealTypeLabel: {
@@ -995,19 +1014,19 @@ const ss = StyleSheet.create({
   trustRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: SP_SM,
     marginTop: 2,
   },
   trustChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    borderRadius: 999,
+    gap: SP_XS,
+    borderRadius: RADIUS_PILL,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: `${SUCCESS_GREEN}44`,
     backgroundColor: `${SUCCESS_GREEN}12`,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS,
   },
   trustChipText: {
     color: SUCCESS_GREEN,

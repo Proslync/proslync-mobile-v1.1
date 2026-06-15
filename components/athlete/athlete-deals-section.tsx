@@ -48,7 +48,25 @@ import {
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import type { DealTruth, PaymentState } from '@/lib/athlete/truth';
 
-const STATS_CARD_BG = '#1C1C1E';
+import {
+  ACCENT as TOKEN_ACCENT,
+  SURFACE,
+  SURFACE_RAISED,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  HAIRLINE,
+  HAIRLINE_SUBTLE,
+  RADIUS_SM,
+  RADIUS_CARD,
+  RADIUS_LG,
+  RADIUS_PILL,
+  SP_XS,
+  SP_SM,
+  SP_MD,
+} from '@/components/shared/ui-kit/tokens';
+
+const STATS_CARD_BG = SURFACE;
 
 // ── Comparable offers CTA (Sprint 2.9) ──
 const COMPARABLE_OFFER_TILES: ReadonlyArray<{
@@ -286,7 +304,7 @@ function AthleteWalletRefreshCta() {
 // One row per deal. Copper for current state, white-30 for pending, green for paid.
 // Tapping any row → /athlete/disclosures (v1 deep-link, sufficient for demo).
 
-const COPPER = '#EB621A';
+const COPPER = TOKEN_ACCENT;
 const GREEN_PAID = '#34C759';
 const RED_DENIED = '#FF3B30';
 const AMBER_DUE = '#FFD60A';
@@ -477,12 +495,12 @@ function PaymentTruthSection() {
 
 const ptStyles = StyleSheet.create({
   section: {
-    gap: 8,
+    gap: SP_SM,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SP_SM,
   },
   sectionBar: {
     width: 4,
@@ -494,11 +512,11 @@ const ptStyles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 1.2,
-    color: COPPER,
+    color: TEXT_SECONDARY,
     flex: 1,
   },
   startDealCta: {
-    borderRadius: 999,
+    borderRadius: RADIUS_PILL,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: COPPER,
     paddingHorizontal: 11,
@@ -514,29 +532,29 @@ const ptStyles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   rows: {
-    gap: 8,
+    gap: SP_SM,
   },
   row: {
     backgroundColor: STATS_CARD_BG,
-    borderRadius: 14,
-    padding: 12,
-    gap: 8,
+    borderRadius: RADIUS_CARD,
+    padding: SP_MD,
+    gap: SP_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: HAIRLINE_SUBTLE,
   },
   rowTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: SP_SM,
   },
   brandName: {
-    color: '#FFF',
+    color: TEXT_PRIMARY,
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: -0.1,
   },
   titleLine: {
-    color: 'rgba(255,255,255,0.55)',
+    color: TEXT_SECONDARY,
     fontSize: 11,
     fontWeight: '500',
     marginTop: 2,
@@ -550,7 +568,7 @@ const ptStyles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     position: 'relative',
-    paddingHorizontal: 4,
+    paddingHorizontal: SP_XS,
   },
   stepDot: {
     width: 8,
@@ -583,13 +601,13 @@ const ptStyles = StyleSheet.create({
   subChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    gap: SP_XS,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS,
+    borderRadius: RADIUS_SM,
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: HAIRLINE,
   },
   subChipText: {
     fontSize: 10,
@@ -599,9 +617,9 @@ const ptStyles = StyleSheet.create({
   nudgeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: `${COPPER}66`,
     backgroundColor: 'rgba(235,98,26,0.08)',
@@ -995,18 +1013,18 @@ function OfferRow({ o }: { o: OfferInboxView }) {
 const heroStyles = StyleSheet.create({
   heroCard: {
     backgroundColor: STATS_CARD_BG,
-    borderRadius: 20,
+    borderRadius: RADIUS_LG,
     padding: 16,
     gap: 14,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: HAIRLINE_SUBTLE,
   },
   heroHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroIconBubble: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: RADIUS_CARD,
     backgroundColor: 'rgba(235,98,26,0.18)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(235,98,26,0.45)',
@@ -1014,13 +1032,13 @@ const heroStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroEyebrow: {
-    color: 'rgba(255,255,255,0.55)',
+    color: TEXT_SECONDARY,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.4,
   },
   heroAmount: {
-    color: '#FFF',
+    color: TEXT_PRIMARY,
     fontSize: 30,
     fontWeight: '900',
     letterSpacing: -1,
@@ -1030,10 +1048,10 @@ const heroStyles = StyleSheet.create({
   heroChevron: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: SP_XS,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS,
+    borderRadius: RADIUS_SM,
     backgroundColor: 'rgba(52,199,89,0.14)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(52,199,89,0.4)',
@@ -1049,31 +1067,31 @@ const heroStyles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 14,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: HAIRLINE_SUBTLE,
   },
   heroTileDivider: {
     width: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginHorizontal: 4,
+    backgroundColor: HAIRLINE,
+    marginHorizontal: SP_XS,
   },
-  heroTile: { flex: 1, alignItems: 'center', gap: 4 },
+  heroTile: { flex: 1, alignItems: 'center', gap: SP_XS },
   heroTileIcon: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: RADIUS_PILL,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroTileValue: {
-    color: '#FFF',
+    color: TEXT_PRIMARY,
     fontSize: 18,
     fontWeight: '900',
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.4,
   },
   heroTileLabel: {
-    color: 'rgba(255,255,255,0.5)',
+    color: TEXT_SECONDARY,
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.8,
@@ -1085,19 +1103,19 @@ const listStyles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.2,
-    color: 'rgba(255,255,255,0.45)',
-    paddingHorizontal: 4,
+    color: TEXT_TERTIARY,
+    paddingHorizontal: SP_XS,
   },
 });
 
 const dealsStyles = StyleSheet.create({
   card: {
     backgroundColor: STATS_CARD_BG,
-    borderRadius: 16,
+    borderRadius: RADIUS_LG,
     flexDirection: 'row',
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: HAIRLINE_SUBTLE,
   },
   accentStripe: {
     width: 4,
@@ -1112,37 +1130,37 @@ const dealsStyles = StyleSheet.create({
   brandBadge: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: RADIUS_CARD,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.18)',
+    borderColor: HAIRLINE,
   },
-  brandBadgeText: { color: '#FFF', fontSize: 17, fontWeight: '900', letterSpacing: -0.4 },
-  brandName: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
-  contractLine: { color: 'rgba(255,255,255,0.6)', fontSize: 12 },
+  brandBadgeText: { color: TEXT_PRIMARY, fontSize: 17, fontWeight: '900', letterSpacing: -0.4 },
+  brandName: { color: TEXT_PRIMARY, fontSize: 15, fontWeight: '700', letterSpacing: -0.2 },
+  contractLine: { color: TEXT_SECONDARY, fontSize: 12 },
   offerHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  offerMetaRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4 },
-  offerAmount: { color: '#EB621A', fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
-  offerReceived: { color: 'rgba(255,255,255,0.45)', fontSize: 11, fontWeight: '500' },
+  offerMetaRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: SP_XS },
+  offerAmount: { color: TEXT_PRIMARY, fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
+  offerReceived: { color: TEXT_TERTIARY, fontSize: 11, fontWeight: '500' },
   newDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#EB621A',
+    backgroundColor: COPPER,
   },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    gap: SP_XS,
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS,
+    borderRadius: RADIUS_SM,
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   statusText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
 
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: SP_SM },
   progressTrack: {
     flex: 1,
     height: 5,
@@ -1152,7 +1170,7 @@ const dealsStyles = StyleSheet.create({
   },
   progressFill: { height: '100%', borderRadius: 3 },
   progressLabel: {
-    color: 'rgba(255,255,255,0.6)',
+    color: TEXT_SECONDARY,
     fontSize: 10,
     fontWeight: '800',
     fontVariant: ['tabular-nums'],
@@ -1163,33 +1181,33 @@ const dealsStyles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    paddingTop: 10,
+    paddingTop: SP_SM,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(255,255,255,0.06)',
+    borderTopColor: HAIRLINE_SUBTLE,
   },
   metaDivider: {
     width: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: HAIRLINE,
     marginHorizontal: 12,
   },
   metaLabel: {
     fontSize: 9,
     fontWeight: '800',
     letterSpacing: 0.8,
-    color: 'rgba(255,255,255,0.45)',
+    color: TEXT_TERTIARY,
   },
   metaValue: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#FFF',
+    color: TEXT_PRIMARY,
     letterSpacing: -0.1,
-    marginTop: 4,
+    marginTop: SP_XS,
   },
   matchRing: {
     width: 54,
     height: 54,
-    borderRadius: 27,
+    borderRadius: RADIUS_PILL,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1204,85 +1222,85 @@ const dealsStyles = StyleSheet.create({
   },
   stateCard: {
     backgroundColor: STATS_CARD_BG,
-    borderRadius: 16,
-    padding: 18,
-    gap: 10,
+    borderRadius: RADIUS_LG,
+    padding: RADIUS_LG,
+    gap: SP_SM,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stateBody: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 12.5,
+    color: TEXT_SECONDARY,
+    fontSize: 13,
     fontWeight: '500',
     textAlign: 'center',
     lineHeight: 17,
   },
   emptyRow: {
     backgroundColor: STATS_CARD_BG,
-    borderRadius: 14,
+    borderRadius: RADIUS_CARD,
     paddingVertical: 14,
     paddingHorizontal: 14,
     alignItems: 'center',
   },
   emptyText: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 12.5,
+    color: TEXT_SECONDARY,
+    fontSize: 13,
     fontWeight: '600',
   },
 });
 
 const ctaStyles = StyleSheet.create({
   card: {
-    gap: 10,
-    borderRadius: 16,
+    gap: SP_SM,
+    borderRadius: RADIUS_LG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,111,60,0.32)',
-    backgroundColor: 'rgba(255,111,60,0.08)',
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
     padding: 14,
   },
   headRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 7,
+    gap: SP_SM,
   },
   title: {
-    color: '#EB621A',
-    fontSize: 12.5,
+    color: TEXT_PRIMARY,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
   },
   blurb: {
-    color: 'rgba(255,255,255,0.74)',
+    color: TEXT_SECONDARY,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
   },
   tileRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SP_SM,
     marginTop: 2,
   },
   tile: {
     flex: 1,
     gap: 6,
-    borderRadius: 10,
+    borderRadius: RADIUS_SM,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,111,60,0.42)',
-    backgroundColor: 'rgba(255,111,60,0.10)',
-    padding: 10,
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE_RAISED,
+    padding: SP_SM,
     minHeight: 92,
     justifyContent: 'space-between',
   },
   tileAthlete: {
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: -0.1,
   },
   tileBrand: {
-    color: 'rgba(255,255,255,0.62)',
-    fontSize: 10.5,
+    color: TEXT_SECONDARY,
+    fontSize: 11,
     fontWeight: '600',
     lineHeight: 14,
   },
@@ -1292,8 +1310,8 @@ const ctaStyles = StyleSheet.create({
     gap: 3,
   },
   tileCta: {
-    color: '#EB621A',
-    fontSize: 10.5,
+    color: COPPER,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -1302,21 +1320,21 @@ const ctaStyles = StyleSheet.create({
 
 const whoHasAccessCtaStyles = StyleSheet.create({
   card: {
-    gap: 8,
-    borderRadius: 16,
+    gap: SP_SM,
+    borderRadius: RADIUS_LG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(0,198,176,0.32)',
-    backgroundColor: 'rgba(0,198,176,0.08)',
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
     padding: 14,
   },
   headRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 7,
+    gap: SP_SM,
   },
   title: {
-    color: '#00C6B0',
-    fontSize: 12.5,
+    color: TEXT_PRIMARY,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -1325,9 +1343,9 @@ const whoHasAccessCtaStyles = StyleSheet.create({
   countPill: {
     minWidth: 22,
     alignItems: 'center',
-    paddingHorizontal: 7,
+    paddingHorizontal: SP_SM,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: RADIUS_PILL,
     backgroundColor: 'rgba(0,198,176,0.20)',
   },
   countText: {
@@ -1337,7 +1355,7 @@ const whoHasAccessCtaStyles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   blurb: {
-    color: 'rgba(255,255,255,0.74)',
+    color: TEXT_SECONDARY,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
@@ -1349,8 +1367,8 @@ const whoHasAccessCtaStyles = StyleSheet.create({
     marginTop: 2,
   },
   metaText: {
-    color: 'rgba(255,255,255,0.56)',
-    fontSize: 11.5,
+    color: TEXT_SECONDARY,
+    fontSize: 12,
     fontWeight: '700',
   },
   cta: {
@@ -1360,7 +1378,7 @@ const whoHasAccessCtaStyles = StyleSheet.create({
   },
   ctaText: {
     color: '#00C6B0',
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -1369,21 +1387,21 @@ const whoHasAccessCtaStyles = StyleSheet.create({
 
 const opportunitiesCtaStyles = StyleSheet.create({
   card: {
-    gap: 8,
-    borderRadius: 16,
+    gap: SP_SM,
+    borderRadius: RADIUS_LG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,111,60,0.32)',
-    backgroundColor: 'rgba(255,111,60,0.08)',
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
     padding: 14,
   },
   headRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 7,
+    gap: SP_SM,
   },
   title: {
-    color: '#EB621A',
-    fontSize: 12.5,
+    color: TEXT_PRIMARY,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -1392,19 +1410,19 @@ const opportunitiesCtaStyles = StyleSheet.create({
   countPill: {
     minWidth: 22,
     alignItems: 'center',
-    paddingHorizontal: 7,
+    paddingHorizontal: SP_SM,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: RADIUS_PILL,
     backgroundColor: 'rgba(255,111,60,0.20)',
   },
   countText: {
-    color: '#EB621A',
+    color: COPPER,
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.2,
   },
   blurb: {
-    color: 'rgba(255,255,255,0.74)',
+    color: TEXT_SECONDARY,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
@@ -1416,8 +1434,8 @@ const opportunitiesCtaStyles = StyleSheet.create({
     marginTop: 2,
   },
   metaText: {
-    color: 'rgba(255,255,255,0.56)',
-    fontSize: 11.5,
+    color: TEXT_SECONDARY,
+    fontSize: 12,
     fontWeight: '700',
   },
   cta: {
@@ -1426,8 +1444,8 @@ const opportunitiesCtaStyles = StyleSheet.create({
     gap: 3,
   },
   ctaText: {
-    color: '#EB621A',
-    fontSize: 10.5,
+    color: COPPER,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -1476,36 +1494,36 @@ const dealsBellStyles = StyleSheet.create({
 
 const walletCtaStyles = StyleSheet.create({
   card: {
-    gap: 10,
-    borderRadius: 16,
+    gap: SP_SM,
+    borderRadius: RADIUS_LG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,214,10,0.32)',
-    backgroundColor: 'rgba(255,214,10,0.08)',
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
     padding: 14,
   },
   headRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 7,
+    gap: SP_SM,
   },
   title: {
-    color: '#FFD60A',
-    fontSize: 12.5,
+    color: TEXT_PRIMARY,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
     flex: 1,
   },
   periodLabel: {
-    color: 'rgba(255,255,255,0.55)',
-    fontSize: 10.5,
+    color: TEXT_SECONDARY,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: SP_SM,
     marginTop: 2,
   },
   stat: {
@@ -1513,23 +1531,23 @@ const walletCtaStyles = StyleSheet.create({
     gap: 2,
   },
   statValue: {
-    color: '#FFFFFF',
+    color: TEXT_PRIMARY,
     fontSize: 16,
     fontWeight: '900',
     letterSpacing: -0.3,
     fontVariant: ['tabular-nums'],
   },
   statLabel: {
-    color: 'rgba(255,255,255,0.55)',
+    color: TEXT_SECONDARY,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
   blurb: {
-    color: 'rgba(255,214,10,0.92)',
-    fontSize: 11.5,
-    fontWeight: '700',
+    color: TEXT_SECONDARY,
+    fontSize: 12,
+    fontWeight: '600',
     lineHeight: 15,
   },
   footer: {
@@ -1539,8 +1557,8 @@ const walletCtaStyles = StyleSheet.create({
     marginTop: 2,
   },
   metaText: {
-    color: 'rgba(255,255,255,0.56)',
-    fontSize: 11.5,
+    color: TEXT_SECONDARY,
+    fontSize: 12,
     fontWeight: '700',
   },
   cta: {
@@ -1550,7 +1568,7 @@ const walletCtaStyles = StyleSheet.create({
   },
   ctaText: {
     color: '#FFD60A',
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -1559,28 +1577,28 @@ const walletCtaStyles = StyleSheet.create({
 
 const contractCheckCtaStyles = StyleSheet.create({
   card: {
-    gap: 8,
-    borderRadius: 16,
+    gap: SP_SM,
+    borderRadius: RADIUS_LG,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(235,98,26,0.32)',
-    backgroundColor: 'rgba(235,98,26,0.08)',
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
     padding: 14,
   },
   headRow: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 7,
+    gap: SP_SM,
   },
   title: {
-    color: COPPER,
-    fontSize: 12.5,
+    color: TEXT_PRIMARY,
+    fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
     flex: 1,
   },
   blurb: {
-    color: 'rgba(255,255,255,0.74)',
+    color: TEXT_SECONDARY,
     fontSize: 12,
     fontWeight: '500',
     lineHeight: 17,
@@ -1592,8 +1610,8 @@ const contractCheckCtaStyles = StyleSheet.create({
     marginTop: 2,
   },
   metaText: {
-    color: 'rgba(255,255,255,0.56)',
-    fontSize: 11.5,
+    color: TEXT_SECONDARY,
+    fontSize: 12,
     fontWeight: '700',
   },
   cta: {
@@ -1603,7 +1621,7 @@ const contractCheckCtaStyles = StyleSheet.create({
   },
   ctaText: {
     color: COPPER,
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '900',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
