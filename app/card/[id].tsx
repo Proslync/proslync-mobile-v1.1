@@ -74,9 +74,12 @@ type CardContent = {
   subtitle: string;
   context: string;
   metaRows: { label: string; value: string }[];
-  related: { icon: keyof typeof Ionicons.glyphMap; title: string; sub: string }[];
+  related: { icon: keyof typeof Ionicons.glyphMap; title: string; sub: string; route?: string }[];
   ctaLabel: string;
   ctaSectionId: string | null;
+  /** When set, the primary CTA + (for routed rows) navigation pushes this
+   *  pathname with { id: tileId } instead of opening the section. */
+  ctaRoute?: string;
 };
 
 /** Parse the tileId and params to derive richer content without needing the
@@ -151,12 +154,13 @@ function deriveContent(
         ...(venue ? [{ label: 'Venue', value: venue }] : []),
       ],
       related: [
-        { icon: 'stats-chart-outline', title: 'Box Score', sub: 'Full stats · player lines' },
-        { icon: 'play-circle-outline', title: 'Highlights', sub: 'Top plays from this game' },
-        { icon: 'calendar-outline', title: `${leagueLabel} Schedule`, sub: 'Upcoming matchups' },
+        { icon: 'stats-chart-outline', title: 'Box Score', sub: 'Full stats · player lines', route: '/game/[id]/box-score' },
+        { icon: 'play-circle-outline', title: 'Highlights', sub: 'Top plays from this game', route: '/game/[id]/highlights' },
+        { icon: 'calendar-outline', title: 'Schedule', sub: 'Full season schedule', route: '/game/[id]/schedule' },
       ],
-      ctaLabel: `Open ${leagueLabel}`,
+      ctaLabel: 'View full box score',
       ctaSectionId: sectionId,
+      ctaRoute: '/game/[id]/box-score',
     };
   }
 
@@ -363,10 +367,25 @@ export default function CardDetailScreen() {
   const showHero = hydrated || local !== null;
 
   const handleCta = React.useCallback(() => {
+    if (content.ctaRoute) {
+      router.push({ pathname: content.ctaRoute, params: { id: tileId } } as any);
+      return;
+    }
     if (content.ctaSectionId) {
       router.push({ pathname: '/section/[id]', params: { id: content.ctaSectionId } } as any);
     }
-  }, [router, content.ctaSectionId]);
+  }, [router, content.ctaRoute, content.ctaSectionId, tileId]);
+
+  const goRelated = React.useCallback(
+    (route?: string) => {
+      if (route) {
+        router.push({ pathname: route, params: { id: tileId } } as any);
+        return;
+      }
+      handleCta();
+    },
+    [router, tileId, handleCta],
+  );
 
   return (
     <View style={styles.container}>
@@ -440,7 +459,13 @@ export default function CardDetailScreen() {
                     icon={r.icon}
                     title={r.title}
                     sub={r.sub}
-                    onPress={content.ctaSectionId ? handleCta : undefined}
+                    onPress={
+                      r.route
+                        ? () => goRelated(r.route)
+                        : content.ctaSectionId
+                          ? handleCta
+                          : undefined
+                    }
                   />
                 ))}
               </View>
