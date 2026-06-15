@@ -653,6 +653,21 @@ export const SECTIONS: Section[] = [
   },
 ];
 
+// ───── Section gating ─────
+// Clean & simple: show ~5 default sections; the rest stay reachable but are
+// hidden until "followed" (revealed). The five matchup carousels look alike,
+// so MLB / NHL / WNBA + the Transfer Portal default to hidden. NOTHING is
+// deleted — every section still has tiles + a working /section/[id] page once
+// revealed, and the full SECTIONS export is unchanged.
+const DEFAULT_VISIBLE_SECTION_IDS: ReadonlySet<string> = new Set([
+  'ncaab',
+  'awards',
+  'nba',
+  'nil',
+  'mlb',
+]);
+const STORAGE_KEY_REVEALED_SECTIONS = 'proslync:home:revealedSections:v1';
+
 // ───── Helpers ─────
 
 function chunk<T>(arr: T[], size: number): T[][] {
@@ -1186,6 +1201,8 @@ export default function FeedScreen() {
   const [coverMedia, setCoverMedia] = useState<Record<string, CoverMedia>>({});
   const [customLogos, setCustomLogos] = useState<Record<string, string>>({});
   const [tileMedia, setTileMedia] = useState<Record<string, { uri: string; type: 'image' | 'video' }>>({});
+  const [revealedSections, setRevealedSections] = useState<string[]>([]);
+  const [addSectionsOpen, setAddSectionsOpen] = useState(false);
   const [storageHydrated, setStorageHydrated] = useState(false);
 
   useEffect(() => { trackScreen('feed', 'home-explore'); }, []);
@@ -1196,13 +1213,29 @@ export default function FeedScreen() {
     let cancelled = false;
     (async () => {
       try {
-        const [coversRaw, legacyRaw, logosRaw, tileMediaRaw] = await Promise.all([
+        const [coversRaw, legacyRaw, logosRaw, tileMediaRaw, revealedRaw] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY_COVERS),
           AsyncStorage.getItem(STORAGE_KEY_COVERS_LEGACY),
           AsyncStorage.getItem(STORAGE_KEY_LOGOS),
           AsyncStorage.getItem(STORAGE_KEY_TILE_MEDIA),
+          AsyncStorage.getItem(STORAGE_KEY_REVEALED_SECTIONS),
         ]);
         if (cancelled) return;
+        // Revealed (followed) sections — only keep ids that still exist and
+        // aren't already default-visible.
+        if (revealedRaw) {
+          try {
+            const parsed = JSON.parse(revealedRaw) as string[];
+            const valid = parsed.filter(
+              (id) =>
+                !DEFAULT_VISIBLE_SECTION_IDS.has(id) &&
+                SECTIONS.some((s) => s.id === id),
+            );
+            if (valid.length) setRevealedSections(valid);
+          } catch {
+            // ignore corrupt entry
+          }
+        }
         let covers: Record<string, CoverMedia> = {};
         if (coversRaw) {
           covers = JSON.parse(coversRaw);
@@ -1281,6 +1314,11 @@ export default function FeedScreen() {
     AsyncStorage.setItem(STORAGE_KEY_TILE_MEDIA, JSON.stringify(tileMedia)).catch(() => {});
   }, [tileMedia, storageHydrated]);
 
+  useEffect(() => {
+    if (!storageHydrated) return;
+    AsyncStorage.setItem(STORAGE_KEY_REVEALED_SECTIONS, JSON.stringify(revealedSections)).catch(() => {});
+  }, [revealedSections, storageHydrated]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await new Promise((r) => setTimeout(r, 600));
@@ -1356,10 +1394,26 @@ export default function FeedScreen() {
     });
   }, []);
 
+  // ── Visible vs hidden sections ────────────────────────────────────────────
+  // A section shows when it's default-visible OR has been revealed ("followed").
+  const visibleSectionIds = useMemo(() => {
+    const set = new Set<string>(DEFAULT_VISIBLE_SECTION_IDS);
+    revealedSections.forEach((id) => set.add(id));
+    return set;
+  }, [revealedSections]);
+
+  const hiddenSections = useMemo(
+    () => SECTIONS.filter((s) => !visibleSectionIds.has(s.id)),
+    [visibleSectionIds],
+  );
+
   // ── Tiles data (one tile per card + one hub tile per section) ──────────────
+  // Only visible sections contribute tiles; hidden ones stay reachable via the
+  // "Add sections" sheet (which reveals them) and their /section/[id] page.
   const tiles = useMemo(() => {
     const result: Array<{ id: string; caption: string; subtitle: string; sectionId: string; dealId?: string }> = [];
     for (const section of SECTIONS) {
+      if (!visibleSectionIds.has(section.id)) continue;
       // Hub tile (one per section)
       result.push({ id: `${section.id}:hub`, caption: section.title, subtitle: section.subtitle, sectionId: section.id });
       // Per-card tiles — params come from the shared tileParamsFromCard helper
@@ -1369,6 +1423,10 @@ export default function FeedScreen() {
       });
     }
     return result;
+  }, [visibleSectionIds]);
+
+  const revealSection = useCallback((sectionId: string) => {
+    setRevealedSections((prev) => (prev.includes(sectionId) ? prev : [...prev, sectionId]));
   }, []);
 
   // ── Per-tile resolved media (local pick or curated fallback) ─────────────
@@ -1481,6 +1539,21 @@ export default function FeedScreen() {
           paddingTop: HEADER_CLEARANCE,
           paddingBottom: 240,
         }}
+        ListFooterComponent={
+          hiddenSections.length > 0 ? (
+            <Pressable
+              style={styles.addSectionsBtn}
+              onPress={() => setAddSectionsOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Add more sports sections"
+            >
+              <Ionicons name="add-circle-outline" size={18} color={TEXT_PRIMARY} />
+              <Text style={styles.addSectionsText}>
+                Add sections · {hiddenSections.length} more
+              </Text>
+            </Pressable>
+          ) : null
+        }
         showsVerticalScrollIndicator={false}
         onScroll={onListScroll}
         scrollEventThrottle={16}
@@ -1521,6 +1594,18 @@ export default function FeedScreen() {
               }]
             : []),
         ]}
+      />
+
+      {/* Add sections — reveals (follows) a hidden section so its tiles appear. */}
+      <ActionSheet
+        visible={addSectionsOpen}
+        title="Add sections"
+        onClose={() => setAddSectionsOpen(false)}
+        options={hiddenSections.map((s) => ({
+          label: `Follow ${s.title}`,
+          icon: 'add-circle-outline' as const,
+          onPress: () => revealSection(s.id),
+        }))}
       />
 
       <LinearGradient
@@ -1640,6 +1725,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   scrollContent: { paddingHorizontal: SECTION_OUTER_PAD, paddingBottom: 240, gap: SECTION_GAP_V },
+  addSectionsBtn: {
+    marginTop: 8,
+    marginHorizontal: GRID_GUTTER / 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: RADIUS_CARD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: HAIRLINE,
+    backgroundColor: SURFACE,
+  },
+  addSectionsText: {
+    color: TEXT_PRIMARY,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
   bottomFade: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 140, zIndex: 10 },
   topFade: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 150 },
 
