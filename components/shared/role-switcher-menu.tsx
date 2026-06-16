@@ -177,7 +177,12 @@ export function RoleSwitcherSheet({
       statusBarTranslucent
     >
       <Animated.View style={[styles.backdrop, backdropAnimStyle]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={dismiss}
+          accessibilityRole="button"
+          accessibilityLabel="Close role switcher"
+        />
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.sheet, sheetAnimStyle]}>
           <View style={styles.handle} />
@@ -199,6 +204,7 @@ export function RoleSwitcherSheet({
                       style={[styles.accountSeg, active && styles.accountSegActive]}
                       activeOpacity={0.8}
                       accessibilityRole="button"
+                      accessibilityLabel={m === 'personal' ? 'Personal account' : 'Professional account'}
                       accessibilityState={{ selected: active }}
                       onPress={() => {
                         onSwitchAccountMode(m);
@@ -229,6 +235,9 @@ export function RoleSwitcherSheet({
                     style={styles.row}
                     activeOpacity={0.7}
                     onPress={() => handlePick(r.role)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Switch to ${r.label} role. ${r.description}`}
+                    accessibilityState={{ selected }}
                   >
                     <View
                       style={[
@@ -270,6 +279,8 @@ export function RoleSwitcherSheet({
               <TouchableOpacity
                 style={styles.row}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={isEditing ? 'Save profile' : 'Edit profile'}
                 onPress={() => {
                   dismiss();
                   setTimeout(onEditProfile, 240);
@@ -294,6 +305,8 @@ export function RoleSwitcherSheet({
               <TouchableOpacity
                 style={styles.row}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Go live. Start a livestream for your fans"
                 onPress={() => {
                   dismiss();
                   setTimeout(onGoLive, 240);
@@ -314,6 +327,8 @@ export function RoleSwitcherSheet({
               <TouchableOpacity
                 style={styles.row}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={hasCustomBanner ? 'Change banner' : 'Set banner'}
                 onPress={() => {
                   dismiss();
                   setTimeout(onChangeBanner, 240);
@@ -334,6 +349,8 @@ export function RoleSwitcherSheet({
               <TouchableOpacity
                 style={styles.row}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Remove banner. Restore the default cover image"
                 onPress={() => {
                   dismiss();
                   setTimeout(onRemoveBanner, 240);
@@ -354,6 +371,8 @@ export function RoleSwitcherSheet({
               <TouchableOpacity
                 style={styles.row}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={hasCustomAvatar ? 'Change profile photo' : 'Set profile photo'}
                 onPress={() => {
                   dismiss();
                   setTimeout(onChangeAvatar, 240);
@@ -374,6 +393,8 @@ export function RoleSwitcherSheet({
               <TouchableOpacity
                 style={styles.row}
                 activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Remove profile photo. Restore the default avatar"
                 onPress={() => {
                   dismiss();
                   setTimeout(onRemoveAvatar, 240);
@@ -393,6 +414,8 @@ export function RoleSwitcherSheet({
             <TouchableOpacity
               style={styles.row}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Settings. Account, payouts, security"
               onPress={handleSettings}
             >
               <View style={styles.icon}>
