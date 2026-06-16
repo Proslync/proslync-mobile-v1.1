@@ -31,6 +31,7 @@ import { useOpenDeal, useRankedApplicants } from '@/hooks/use-open-deals';
 import type { AiApplicantRank, AiTrustMeta } from '@/lib/api/ai-review';
 import type { RankedApplicant } from '@/lib/api/open-deals';
 import type {
+  OpenDealApplicantReviewAction,
   OpenDealStatus,
   OpenDealSurfaceRecord,
 } from '@/lib/types/open-deal.types';
@@ -250,6 +251,35 @@ function ApplicantReviewSection({
     [rankings],
   );
 
+  // Local optimistic reviewer state — promotes the previously visual-only
+  // Approve/Skip/Reject pills to a real per-row decision the brand can toggle
+  // before any outbound contact (see ApprovalGateBanner). Keyed by the stable
+  // application id; tapping the active pill clears the decision.
+  const [decisions, setDecisions] = React.useState<
+    Record<string, OpenDealApplicantReviewAction>
+  >({});
+
+  const onDecide = React.useCallback(
+    (applicationId: string, action: OpenDealApplicantReviewAction) => {
+      setDecisions((prev) => {
+        const next = { ...prev };
+        if (next[applicationId] === action) {
+          delete next[applicationId];
+        } else {
+          next[applicationId] = action;
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  const approvedCount = React.useMemo(
+    () => Object.values(decisions).filter((d) => d === 'approve').length,
+    [decisions],
+  );
+  const reviewedCount = Object.keys(decisions).length;
+
   return (
     <View style={styles.card}>
       <SectionHead label="Applicant review" icon="people-outline" />
@@ -262,17 +292,26 @@ function ApplicantReviewSection({
       ) : applicants.length === 0 ? (
         <Text style={styles.bodyText}>No applicants yet. Open the deal to start the pool.</Text>
       ) : (
-        applicants.map((item, index) => {
-          const ranking = rankingsById.get(item.application.id);
-          return (
-            <ApplicantRow
-              key={item.application.id}
-              applicant={item}
-              ranking={ranking}
-              rank={ranking?.rank ?? index + 1}
-            />
-          );
-        })
+        <>
+          <Text style={styles.reviewProgress}>
+            {reviewedCount === 0
+              ? `${applicants.length} to review · no decisions yet`
+              : `${approvedCount} approved · ${reviewedCount} of ${applicants.length} reviewed`}
+          </Text>
+          {applicants.map((item, index) => {
+            const ranking = rankingsById.get(item.application.id);
+            return (
+              <ApplicantRow
+                key={item.application.id}
+                applicant={item}
+                ranking={ranking}
+                rank={ranking?.rank ?? index + 1}
+                decision={decisions[item.application.id]}
+                onDecide={onDecide}
+              />
+            );
+          })}
+        </>
       )}
     </View>
   );
@@ -282,10 +321,14 @@ function ApplicantRow({
   applicant,
   ranking,
   rank,
+  decision,
+  onDecide,
 }: {
   applicant: RankedApplicant;
   ranking: AiApplicantRank | undefined;
   rank: number;
+  decision: OpenDealApplicantReviewAction | undefined;
+  onDecide: (applicationId: string, action: OpenDealApplicantReviewAction) => void;
 }) {
   const router = useRouter();
   const athlete = applicant.athlete;
@@ -298,6 +341,7 @@ function ApplicantRow({
     ? formatMoney(applicant.application.askCents)
     : '—';
   const applicantId = applicant.application.athleteId;
+  const applicationId = applicant.application.id;
 
   const onOpenPermissions = React.useCallback(() => {
     if (!applicantId) {
@@ -311,8 +355,10 @@ function ApplicantRow({
     router.push(`/athlete/permissions?athleteId=${applicantId}`);
   }, [router, applicantId]);
 
+  const dimmed = decision === 'skip' || decision === 'reject';
+
   return (
-    <View style={styles.applicantRow}>
+    <View style={[styles.applicantRow, dimmed && styles.applicantRowDimmed]}>
       <View style={styles.applicantHead}>
         <View style={styles.rankBadge}>
           <Text style={styles.rankBadgeText}>#{rank}</Text>
@@ -345,9 +391,30 @@ function ApplicantRow({
       </Pressable>
 
       <View style={styles.actionRow}>
-        <ActionPill label="Approve" icon="checkmark" tint={TEAL} />
-        <ActionPill label="Skip" icon="ellipsis-horizontal" tint="rgba(255,255,255,0.55)" />
-        <ActionPill label="Reject" icon="close" tint="#FF5A5F" />
+        <ActionPill
+          label="Approve"
+          icon="checkmark"
+          tint={TEAL}
+          selected={decision === 'approve'}
+          athleteName={name}
+          onPress={() => onDecide(applicationId, 'approve')}
+        />
+        <ActionPill
+          label="Skip"
+          icon="ellipsis-horizontal"
+          tint="rgba(255,255,255,0.55)"
+          selected={decision === 'skip'}
+          athleteName={name}
+          onPress={() => onDecide(applicationId, 'skip')}
+        />
+        <ActionPill
+          label="Reject"
+          icon="close"
+          tint="#FF5A5F"
+          selected={decision === 'reject'}
+          athleteName={name}
+          onPress={() => onDecide(applicationId, 'reject')}
+        />
       </View>
     </View>
   );
@@ -378,18 +445,49 @@ function TrustBand({
   );
 }
 
-function ActionPill({ label, icon, tint }: { label: string; icon: keyof typeof Ionicons.glyphMap; tint: string }) {
+function ActionPill({
+  label,
+  icon,
+  tint,
+  selected,
+  athleteName,
+  onPress,
+}: {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  tint: string;
+  selected: boolean;
+  athleteName: string;
+  onPress: () => void;
+}) {
+  // Selected = solid tint chip with dark glyph; idle = ghost chip with tinted
+  // glyph. A neutral skip selection keeps a light glyph for contrast.
+  const isNeutral = tint.startsWith('rgba');
+  const glyphColor = selected ? (isNeutral ? '#FFFFFF' : '#0E0E10') : tint;
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.actionPill,
-        { borderColor: `${tint}55`, backgroundColor: pressed ? `${tint}22` : `${tint}10` },
+        {
+          borderColor: selected ? tint : `${tint}55`,
+          backgroundColor: selected
+            ? tint
+            : pressed
+              ? `${tint}22`
+              : `${tint}10`,
+        },
       ]}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityState={{ selected }}
+      accessibilityLabel={
+        selected
+          ? `${label} selected for ${athleteName} — tap to clear`
+          : `${label} ${athleteName}`
+      }
     >
-      <Ionicons name={icon} size={13} color={tint} />
-      <Text style={[styles.actionPillText, { color: tint }]}>{label}</Text>
+      <Ionicons name={icon} size={13} color={glyphColor} />
+      <Text style={[styles.actionPillText, { color: glyphColor }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -652,6 +750,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.10)',
     backgroundColor: 'rgba(0,0,0,0.18)',
     padding: 12,
+  },
+  applicantRowDimmed: {
+    opacity: 0.5,
+  },
+  reviewProgress: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   applicantHead: {
     flexDirection: 'row',
