@@ -48,6 +48,8 @@ export type FollowingAthlete = {
   lastUpdate: string;
   avatarColor: string;
   isLive?: boolean;
+  /** Optional headshot; AthleteAvatar falls back to initials when omitted. */
+  headshotUrl?: string;
   /**
    * ID bridge → `lib/data/demo-roster.ts` `DEMO_ATHLETES`. Lets fan-side UIs
    * (e.g. AthleteDetailSheet) hydrate rich athlete data (sport/school/class/
@@ -78,6 +80,8 @@ export type FeedItem = {
   athleteName: string;
   athleteInitials: string;
   athleteColor: string;
+  /** Optional headshot; feed-card falls back to getHeadshotUrl when omitted. */
+  athleteHeadshotUrl?: string;
   type: 'highlight' | 'post' | 'announcement' | 'milestone';
   content: string;
   timeAgo: string;
@@ -317,6 +321,8 @@ export type Perk = {
   tier: 'Gold' | 'Platinum' | 'Diamond';
   claimed: boolean;
   description: string;
+  /** Optional hero image; rendered by perks-section when present. */
+  imageUrl?: string;
 };
 
 export const FAN_PERKS: Perk[] = [

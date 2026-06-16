@@ -78,7 +78,7 @@ export function MessageBubble({
       case 'text':
         return (
           <LinkifiedText style={[styles.messageText, isOwn && styles.messageTextOwn]}>
-            {message.text}
+            {message.text ?? ""}
           </LinkifiedText>
         );
 

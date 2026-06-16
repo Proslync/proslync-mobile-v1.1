@@ -1,5 +1,5 @@
 // Chat Thread Screen - Instagram/Snapchat-style messaging
-import { FlashList } from "@shopify/flash-list";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { MiniEventCard } from "@/components/chat/mini-event-card";
 import { MiniUserCard } from "@/components/chat/mini-user-card";
 import { MiniVenueCard } from "@/components/chat/mini-venue-card";
@@ -37,7 +37,7 @@ import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { LiquidGlassView, isLiquidGlassSupported } from '@callstack/liquid-glass';
 import { useLocalSearchParams } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -623,12 +623,14 @@ function VoiceMessagePlayer({
   isOwn,
   colors,
   isDark,
+  onError,
 }: {
   audioUrl: string;
   duration?: number;
   isOwn: boolean;
   colors: ThemeColors;
   isDark: boolean;
+  onError?: (message: string) => void;
 }) {
   const barHeights = useMemo(
     () => generateWaveformBars(audioUrl, 20),
@@ -682,7 +684,7 @@ function VoiceMessagePlayer({
     } catch (error) {
       console.error("Error playing audio:", error);
       setIsLoading(false);
-      setErrorAlert("Failed to play voice message");
+      onError?.("Failed to play voice message");
     }
   };
 
@@ -784,6 +786,7 @@ function Composer({
   isSending,
   colors,
   isDark,
+  onError,
 }: {
   onSend: (text: string) => void;
   onTyping?: () => void;
@@ -796,6 +799,7 @@ function Composer({
   isSending: boolean;
   colors: ThemeColors;
   isDark: boolean;
+  onError?: (message: string) => void;
 }) {
   const [text, setText] = useState("");
   const [showAttachSheet, setShowAttachSheet] = useState(false);
@@ -877,7 +881,7 @@ function Composer({
       // Request permissions
       const { status } = await requestRecordingPermissionsAsync();
       if (status !== "granted") {
-        setErrorAlert("Please allow microphone access to send voice messages.");
+        onError?.("Please allow microphone access to send voice messages.");
         return;
       }
 
@@ -900,7 +904,7 @@ function Composer({
       }, 1000);
     } catch (error) {
       console.error("Failed to start recording:", error);
-      setErrorAlert("Failed to start recording. Please try again.");
+      onError?.("Failed to start recording. Please try again.");
     }
   };
 
@@ -1377,7 +1381,7 @@ export default function ChatThreadScreen() {
   const insets = useSafeAreaInsets();
   const router = useStableRouter();
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
-  const flatListRef = useRef<FlashList<any>>(null);
+  const flatListRef = useRef<FlashListRef<MessageGroup>>(null);
   const prevMessageCountRef = useRef(0);
   const scrollToBottomOpacity = useSharedValue(0);
   const { colors, isDark } = useAppTheme();
@@ -1958,14 +1962,12 @@ export default function ChatThreadScreen() {
               : `msg-${item.message?.id || index}`
           }
           renderItem={renderItem}
-          estimatedItemSize={80}
           contentContainerStyle={
             messages.length === 0 ? styles.emptyList : styles.messagesList
           }
           onScroll={handleScroll}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
-          inverted={false}
           ListEmptyComponent={
             <EmptyChat userName={channelInfo?.name} colors={colors} />
           }
@@ -2041,6 +2043,7 @@ export default function ChatThreadScreen() {
             isSending={isSending}
             colors={colors}
             isDark={isDark}
+            onError={setErrorAlert}
           />
         )}
       </KeyboardAvoidingView>
@@ -2602,6 +2605,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
   },
+  // Referenced in JSX (ErrorScreen / SystemMessageRow) but previously absent
+  // from the stylesheet, so `styles.X` resolved to `undefined`. Declared as
+  // empty styles to keep type-safety; an empty style object is equivalent to
+  // `undefined` at runtime, so no visual behavior changes.
+  systemMessageBubble: {},
+  backButton: {},
+  headerCenter: {},
+  headerRight: {},
   headerNameGlass: {
     paddingHorizontal: 18,
     paddingVertical: 12,

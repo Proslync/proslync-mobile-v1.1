@@ -10,11 +10,16 @@ export default function AdminLayout() {
         fullScreenGestureEnabled: true,
         fullScreenGestureShadowEnabled: true,
         gestureDirection: "horizontal",
-        customAnimationOnGesture: true,
+        // `customAnimationOnGesture` was removed from react-native-screens and
+        // is now implied; the new API ignores it. `animationMatchesGesture`
+        // remains the supported way to drive the gesture-matched animation.
         animationMatchesGesture: true,
         animationDuration: 350,
         freezeOnBlur: true,
-        gestureResponseDistance: 300,
+        // react-native-screens now takes a per-edge object instead of a bare
+        // number. The gesture is horizontal, so the responsive distance maps to
+        // the leading (`start`) edge — same 300px swipe region as before.
+        gestureResponseDistance: { start: 300 },
       }}
     >
       <Stack.Screen name="index" />

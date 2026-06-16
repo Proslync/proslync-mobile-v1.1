@@ -1,6 +1,13 @@
 import { Platform } from 'react-native';
-import { requireNativeModule, EventEmitter } from 'expo-modules-core';
-export type { Subscription } from 'expo-modules-core';
+import { requireNativeModule, EventEmitter, type EventSubscription } from 'expo-modules-core';
+export type { EventSubscription as Subscription } from 'expo-modules-core';
+
+type VoipPushEvents = {
+  onVoipToken: (event: { token: string }) => void;
+  onVoipNotification: (payload: Record<string, any>) => void;
+  onCallAnswered: (event: { callId: string }) => void;
+  onCallEnded: (event: { callId: string }) => void;
+};
 
 const isIOS = Platform.OS === 'ios';
 
@@ -17,11 +24,14 @@ const VoipPush: any = (() => {
     return null;
   }
 })();
-const emitter = VoipPush ? new EventEmitter(VoipPush) : null;
+type VoipEmitter = InstanceType<typeof EventEmitter<VoipPushEvents>>;
+const emitter: VoipEmitter | null = VoipPush
+  ? new EventEmitter<VoipPushEvents>(VoipPush)
+  : null;
 
 export function addTokenListener(
   listener: (token: string) => void,
-): ReturnType<typeof emitter.addListener> | null {
+): EventSubscription | null {
   if (!emitter) return null;
   return emitter.addListener('onVoipToken', (event: { token: string }) => {
     listener(event.token);
@@ -30,7 +40,7 @@ export function addTokenListener(
 
 export function addNotificationListener(
   listener: (payload: Record<string, any>) => void,
-): ReturnType<typeof emitter.addListener> | null {
+): EventSubscription | null {
   if (!emitter) return null;
   return emitter.addListener('onVoipNotification', (payload: Record<string, any>) => {
     listener(payload);
@@ -39,7 +49,7 @@ export function addNotificationListener(
 
 export function addCallAnsweredListener(
   listener: (callId: string) => void,
-): ReturnType<typeof emitter.addListener> | null {
+): EventSubscription | null {
   if (!emitter) return null;
   return emitter.addListener('onCallAnswered', (event: { callId: string }) => {
     listener(event.callId);
@@ -48,7 +58,7 @@ export function addCallAnsweredListener(
 
 export function addCallEndedListener(
   listener: (callId: string) => void,
-): ReturnType<typeof emitter.addListener> | null {
+): EventSubscription | null {
   if (!emitter) return null;
   return emitter.addListener('onCallEnded', (event: { callId: string }) => {
     listener(event.callId);

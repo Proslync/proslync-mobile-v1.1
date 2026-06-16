@@ -155,7 +155,10 @@ export function NativeSheet({
                   {children}
                 </ScrollView>
               ) : (
-                children
+                // RNHostView expects a single ReactElement. When `rnContent` is
+                // set the caller passes a single RN element here (see prop docs
+                // above); narrow the ReactNode to a ReactElement to match.
+                (children as React.ReactElement)
               )}
             </RNHostView>
           ) : (

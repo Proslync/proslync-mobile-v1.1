@@ -53,7 +53,7 @@ function ToggleRow({
   item: ToggleItem;
   value: boolean;
   onToggle: (key: keyof UserPreferences, val: boolean) => void;
-  t: typeof glassText.dark;
+  t: (typeof glassText)[keyof typeof glassText];
   border: string;
   isDark: boolean;
   isLast: boolean;
@@ -99,7 +99,7 @@ function Section({
   items: ToggleItem[];
   preferences: UserPreferences;
   onToggle: (key: keyof UserPreferences, val: boolean) => void;
-  t: typeof glassText.dark;
+  t: (typeof glassText)[keyof typeof glassText];
   border: string;
   surfaceTint: string;
   isDark: boolean;

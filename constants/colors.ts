@@ -206,4 +206,10 @@ export const Status = {
 
 // Type exports
 export type ThemeMode = 'light' | 'dark' | 'system';
-export type ThemeColors = typeof LightColors;
+// Widen each color value from its literal type to the underlying primitive so
+// that both the light and dark palettes (which share identical keys but differ
+// in their literal values) are assignable to `ThemeColors`. Keeping literal
+// types here made `DarkColors` fail to match the light-derived shape. This is a
+// type-only change — the runtime palettes are unchanged.
+type Widen<T> = T extends string ? string : T extends number ? number : T extends boolean ? boolean : T;
+export type ThemeColors = { [K in keyof typeof LightColors]: Widen<(typeof LightColors)[K]> };

@@ -474,7 +474,6 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontSize: 20,
-    lineHeight: 26,
     lineHeight: 32,
   },
   eventDate: {

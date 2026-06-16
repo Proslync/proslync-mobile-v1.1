@@ -1,6 +1,6 @@
 // File upload types for presigned URL flow
 
-export type FileType = 'flyer' | 'logo' | 'activity-media' | 'avatar' | 'table-image' | 'voice-message';
+export type FileType = 'flyer' | 'logo' | 'activity-media' | 'post-media' | 'avatar' | 'table-image' | 'voice-message';
 
 export interface PresignedUrlRequest {
   fileType: FileType;

@@ -371,7 +371,7 @@ function PersonSearchRow({
 }: {
   item: UnifiedSearchItem;
   isSelected: boolean;
-  onPress: () => void;
+  onPress?: () => void;
   colors: ReturnType<typeof useAppTheme>["colors"];
 }) {
   const displayName = [item.firstName, item.lastName].filter(Boolean).join(" ") || item.userName || "User";
@@ -708,7 +708,9 @@ export default function MessagesScreen() {
 
   // Pull-to-refresh
   const { refreshControl } = useRefreshControl({
-    onRefresh: refetch,
+    onRefresh: async () => {
+      await refetch();
+    },
   });
 
   // Local search through channel names and last messages

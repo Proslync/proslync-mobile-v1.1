@@ -398,20 +398,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#fff",
   },
-  listRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(255,255,255,0.08)",
-  },
-  listImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.1)",
-  },
   listName: {
     fontSize: 15,
     fontWeight: "600",
@@ -421,16 +407,6 @@ const styles = StyleSheet.create({
   listSub: {
     fontSize: 13,
     color: "rgba(255,255,255,0.6)",
-  },
-  listMeta: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.4)",
-  },
-  listOnlineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#34c759",
   },
 
   // Legacy modals (unused)

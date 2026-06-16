@@ -118,7 +118,9 @@ function mapMessage(msg: MessageResponse, currentUserId: number): ChatMessage {
     ];
   }
 
-  const isSystem = msg.type === "system" || msg.isDeleted;
+  // `msg.type === "system"` is already handled by the early return above, so at
+  // this point `msg.type` can never be "system" — only `isDeleted` matters here.
+  const isSystem = msg.isDeleted;
 
   return {
     id: String(msg.id),

@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import { filesApi, getFileInfo } from './files';
+import type { SpotifyTrack } from './spotify';
 
 export interface PostMedia {
   type: 'image' | 'video';
@@ -98,9 +99,8 @@ export const postsApi = {
     venueId?: number;
     isPublic?: boolean;
     location?: { name: string; address: string; lat: number; lng: number };
-    spotifyTrack?: Record<string, unknown>;
+    spotifyTrack?: SpotifyTrack | Record<string, unknown>;
     taggedUserIds?: number[];
-    [key: string]: unknown;
   }) => apiClient.post<FeedItemResponse>('/api/posts', data),
 
   deletePost: (postId: number) => apiClient.delete(`/api/posts/${postId}`),

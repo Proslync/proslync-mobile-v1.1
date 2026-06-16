@@ -24,6 +24,8 @@ export type AgentAthlete = {
   totalDealValue: string; // '$248k YTD'
   activeDeals: number;
   followers: string;
+  /** Optional headshot; the avatar falls back to initials when omitted. */
+  headshotUrl?: string;
 };
 
 export type AgentDeal = {
