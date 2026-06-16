@@ -184,6 +184,9 @@ export function GlassButton({
       onPress={handlePress}
       activeOpacity={disabled ? 1 : 0.9}
       disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
       style={fullWidth ? styles.fullWidth : undefined}
     >
       <Animated.View
