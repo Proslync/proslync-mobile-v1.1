@@ -87,6 +87,8 @@ function ActivityRow({ item, onPress }: { item: AppNotification; onPress: (n: Ap
       activeOpacity={0.7}
       onPress={() => onPress(item)}
       style={styles.activityRow}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.read ? '' : 'Unread. '}${item.title}. ${item.body}`}
     >
       {showActorPhoto ? (
         <Image source={actorUser?.avatar?.url ? { uri: actorUser.avatar.url } : DefaultAvatarImage} style={styles.actorAvatar} />
@@ -134,10 +136,26 @@ function TeamInvitationRow({
       </View>
       {invitation.status === 'pending' ? (
         <View style={styles.invitationActions}>
-          <TouchableOpacity style={styles.acceptBtn} onPress={() => onAccept(invitation.id)} disabled={busy} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.acceptBtn}
+            onPress={() => onAccept(invitation.id)}
+            disabled={busy}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Accept invitation to ${invitation.eventName}`}
+            accessibilityState={{ disabled: busy, busy: accepting }}
+          >
             {accepting ? <ActivityIndicator color="#000" size="small" /> : <Text style={styles.acceptText}>Accept</Text>}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.declineBtn} onPress={() => onDecline(invitation.id)} disabled={busy} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.declineBtn}
+            onPress={() => onDecline(invitation.id)}
+            disabled={busy}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Decline invitation to ${invitation.eventName}`}
+            accessibilityState={{ disabled: busy, busy: declining }}
+          >
             {declining ? <ActivityIndicator color="#FFFFFF" size="small" /> : <Text style={styles.declineText}>Decline</Text>}
           </TouchableOpacity>
         </View>
@@ -232,26 +250,52 @@ export function NotificationSheet({ visible, onClose, extraItems = [] }: Notific
       {/* Top bar */}
       <View style={[styles.topBar, { paddingTop: insets.top + 4 }]}>
         <Text style={styles.sheetTitle}>Notifications</Text>
-        <TouchableOpacity style={styles.iconBtn} onPress={handleClose} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.iconBtn}
+          onPress={handleClose}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Close notifications"
+        >
           <Ionicons name="close" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
 
       {/* Tabs */}
       <View style={styles.tabBar}>
-        <TouchableOpacity style={[styles.tab, activeTab === 'activity' && styles.tabActive]} onPress={() => setActiveTab('activity')} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'activity' && styles.tabActive]}
+          onPress={() => setActiveTab('activity')}
+          activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityLabel={`Activity${unreadCount && unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+          accessibilityState={{ selected: activeTab === 'activity' }}
+        >
           <Text style={[styles.tabText, activeTab === 'activity' && styles.tabTextActive]}>Activity</Text>
           {!!unreadCount && unreadCount > 0 && (
             <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>
           )}
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === 'teams' && styles.tabActive]} onPress={() => setActiveTab('teams')} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'teams' && styles.tabActive]}
+          onPress={() => setActiveTab('teams')}
+          activeOpacity={0.7}
+          accessibilityRole="tab"
+          accessibilityLabel={`Teams${pendingCount > 0 ? `, ${pendingCount} pending` : ''}`}
+          accessibilityState={{ selected: activeTab === 'teams' }}
+        >
           <Text style={[styles.tabText, activeTab === 'teams' && styles.tabTextActive]}>Teams</Text>
           {pendingCount > 0 && <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{pendingCount}</Text></View>}
         </TouchableOpacity>
         <View style={{ flex: 1 }} />
         {activeTab === 'activity' && !!unreadCount && unreadCount > 0 && (
-          <TouchableOpacity onPress={() => markAllReadMutation.mutate()} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => markAllReadMutation.mutate()}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Mark all notifications read"
+            accessibilityState={{ busy: markAllReadMutation.isPending }}
+          >
             <Text style={styles.markAllRead}>Mark all read</Text>
           </TouchableOpacity>
         )}
