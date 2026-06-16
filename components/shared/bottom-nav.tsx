@@ -13,6 +13,7 @@ type TabName = 'search' | 'explore' | 'index' | 'activity' | 'profile';
 
 interface TabConfig {
   name: TabName;
+  label: string;
   path: string;
   icon: string;
   iconFocused: string;
@@ -20,11 +21,11 @@ interface TabConfig {
 }
 
 const TABS: TabConfig[] = [
-  { name: 'search', path: '/map', icon: 'map-outline', iconFocused: 'map', size: 26 },
-  { name: 'explore', path: '/messages', icon: 'paper-plane-outline', iconFocused: 'paper-plane', size: 24 },
-  { name: 'index', path: '/(tabs)', icon: 'home-outline', iconFocused: 'home-sharp', size: 24 },
-  { name: 'activity', path: '/(tabs)/activity', icon: 'wallet-outline', iconFocused: 'wallet', size: 26 },
-  { name: 'profile', path: '/(tabs)/profile', icon: 'person-outline', iconFocused: 'person', size: 24 },
+  { name: 'search', label: 'Map', path: '/map', icon: 'map-outline', iconFocused: 'map', size: 26 },
+  { name: 'explore', label: 'Messages', path: '/messages', icon: 'paper-plane-outline', iconFocused: 'paper-plane', size: 24 },
+  { name: 'index', label: 'Home', path: '/(tabs)', icon: 'home-outline', iconFocused: 'home-sharp', size: 24 },
+  { name: 'activity', label: 'Wallet', path: '/(tabs)/activity', icon: 'wallet-outline', iconFocused: 'wallet', size: 26 },
+  { name: 'profile', label: 'Profile', path: '/(tabs)/profile', icon: 'person-outline', iconFocused: 'person', size: 24 },
 ];
 
 function ProfileTabIcon({ focused }: { focused: boolean }) {
@@ -73,6 +74,9 @@ export function BottomNav() {
             style={styles.tabButton}
             onPress={() => handleTabPress(tab)}
             activeOpacity={0.7}
+            accessibilityRole="tab"
+            accessibilityLabel={tab.label}
+            accessibilityState={{ selected: isActive }}
           >
             {isProfile ? (
               <ProfileTabIcon focused={isActive} />
