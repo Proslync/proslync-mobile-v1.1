@@ -147,8 +147,16 @@ function PersonRow({ item, onPress }: { item: UnifiedSearchItem; onPress: () => 
   const { isFollowing, follow, unfollow, isFollowInProgress, isUnfollowInProgress } = useFollowUser(item.id);
   const name = `${item.firstName || ''} ${item.lastName || ''}`.trim();
 
+  const followBusy = isFollowInProgress || isUnfollowInProgress;
+
   return (
-    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.resultRow}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`${name || 'User'}${item.userName ? `, @${item.userName}` : ''}. View profile`}
+    >
       {item.avatar?.url ? (
         <Image source={{ uri: item.avatar.url }} style={styles.avatar} />
       ) : (
@@ -166,8 +174,11 @@ function PersonRow({ item, onPress }: { item: UnifiedSearchItem; onPress: () => 
         <TouchableOpacity
           style={[styles.followButton, isFollowing && styles.followButtonFollowing]}
           onPress={() => isFollowing ? unfollow() : follow()}
-          disabled={isFollowInProgress || isUnfollowInProgress}
+          disabled={followBusy}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={isFollowing ? `Unfollow ${name || item.userName || 'user'}` : `Follow ${name || item.userName || 'user'}`}
+          accessibilityState={{ selected: isFollowing, busy: followBusy, disabled: followBusy }}
         >
           <Text style={[styles.followButtonText, isFollowing && styles.followButtonTextFollowing]}>
             {isFollowInProgress || isUnfollowInProgress ? '...' : isFollowing ? 'Following' : 'Follow'}
@@ -181,7 +192,13 @@ function PersonRow({ item, onPress }: { item: UnifiedSearchItem; onPress: () => 
 function EventRow({ item, onPress }: { item: UnifiedSearchItem; onPress: () => void }) {
   const dateLabel = item.startDate ? format(new Date(item.startDate), 'MMM d, yyyy') : 'Date TBA';
   return (
-    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.resultRow}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Event: ${item.name || 'Event'}. ${dateLabel}${item.venueName ? `, at ${item.venueName}` : ''}`}
+    >
       {item.flyer?.url ? (
         <Image source={{ uri: item.flyer.url }} style={styles.eventThumb} />
       ) : (
@@ -206,7 +223,13 @@ function EventRow({ item, onPress }: { item: UnifiedSearchItem; onPress: () => v
 
 function VenueRow({ item, onPress }: { item: UnifiedSearchItem; onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.resultRow}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Venue: ${item.name || 'Venue'}${item.address ? `, ${item.address}` : ''}`}
+    >
       {item.logo?.url ? (
         <Image source={{ uri: item.logo.url }} style={styles.venueThumb} />
       ) : (
@@ -231,7 +254,13 @@ function RecentSearchRow({ item, onPress, onDelete }: { item: SearchSuggestion; 
   const name = isPerson ? `${item.firstName || ''} ${item.lastName || ''}`.trim() || item.displayName || 'User' : item.displayName || item.query || 'Search';
 
   return (
-    <TouchableOpacity style={styles.resultRow} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.resultRow}
+      onPress={onPress}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Recent search: ${name}. Open`}
+    >
       {imageUrl ? (
         <Image source={{ uri: imageUrl }} style={isPerson ? styles.avatar : styles.venueThumb} />
       ) : isPerson ? (
@@ -243,7 +272,12 @@ function RecentSearchRow({ item, onPress, onDelete }: { item: SearchSuggestion; 
         <Text style={styles.resultTitle} numberOfLines={1}>{name}</Text>
         {isPerson && item.userName && <Text style={styles.resultSubtitle} numberOfLines={1}>@{item.userName}</Text>}
       </View>
-      <TouchableOpacity onPress={onDelete} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+      <TouchableOpacity
+        onPress={onDelete}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        accessibilityRole="button"
+        accessibilityLabel={`Remove ${name} from recent searches`}
+      >
         <Ionicons name="close" size={18} color="rgba(255,255,255,0.5)" />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -255,7 +289,14 @@ function FrequentAvatarRow({ items, onPress }: { items: SearchSuggestion[]; onPr
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.frequentRow}>
       {items.map((item) => (
-        <TouchableOpacity key={item.id} style={styles.frequentItem} onPress={() => onPress(item)} activeOpacity={0.7}>
+        <TouchableOpacity
+          key={item.id}
+          style={styles.frequentItem}
+          onPress={() => onPress(item)}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`View profile of ${`${item.firstName || ''} ${item.lastName || ''}`.trim() || item.userName || 'user'}`}
+        >
           {item.avatar?.url ? (
             <Image source={{ uri: item.avatar.url }} style={styles.frequentAvatar} />
           ) : (
@@ -392,10 +433,22 @@ export function SearchSheet({ visible, onClose }: SearchSheetProps) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Top bar */}
         <View style={[styles.topBar, { paddingTop: insets.top + 4 }]}>
-          <TouchableOpacity style={styles.iconBtn} onPress={clearSearchHistory} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={clearSearchHistory}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Clear search history"
+          >
             <Ionicons name="time-outline" size={24} color="#FFF" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={handleClose} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={handleClose}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Close search"
+          >
             <Ionicons name="close" size={24} color="#FFF" />
           </TouchableOpacity>
         </View>
@@ -426,7 +479,7 @@ export function SearchSheet({ visible, onClose }: SearchSheetProps) {
                 <Animated.View entering={FadeInDown.duration(300)}>
                   <View style={styles.sectionHeader}>
                     <Text style={styles.sectionTitle}>Recent</Text>
-                    <TouchableOpacity onPress={clearSearchHistory}><Text style={styles.clearText}>Clear all</Text></TouchableOpacity>
+                    <TouchableOpacity onPress={clearSearchHistory} accessibilityRole="button" accessibilityLabel="Clear all recent searches"><Text style={styles.clearText}>Clear all</Text></TouchableOpacity>
                   </View>
                   {recentSearches.map(item => (
                     <RecentSearchRow key={item.id} item={item} onPress={() => handleRecentPress(item)} onDelete={() => deleteSearchEntry(item.id)} />
@@ -468,11 +521,11 @@ export function SearchSheet({ visible, onClose }: SearchSheetProps) {
               keyboardAppearance="dark"
             />
             <View style={styles.inputActions}>
-              <TouchableOpacity style={styles.plusBtn} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.plusBtn} activeOpacity={0.7} accessible={false}>
                 <Ionicons name="add" size={20} color="rgba(255,255,255,0.6)" />
               </TouchableOpacity>
               <View style={{ flex: 1 }} />
-              <TouchableOpacity style={searchQuery.length > 0 ? styles.arrowBtn : styles.arrowBtnInactive} activeOpacity={0.7}>
+              <TouchableOpacity style={searchQuery.length > 0 ? styles.arrowBtn : styles.arrowBtnInactive} activeOpacity={0.7} accessible={false}>
                 <Ionicons name="arrow-forward" size={18} color={searchQuery.length > 0 ? '#FFF' : 'rgba(255,255,255,0.35)'} />
               </TouchableOpacity>
             </View>
