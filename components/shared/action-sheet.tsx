@@ -109,6 +109,8 @@ export function ActionSheet({ visible, title, options, onClose }: ActionSheetPro
                     style={styles.optionRow}
                     onPress={() => handleSelect(option)}
                     activeOpacity={0.6}
+                    accessibilityRole="button"
+                    accessibilityLabel={option.label}
                   >
                     {option.icon && (
                       <View style={styles.iconCircle}>
