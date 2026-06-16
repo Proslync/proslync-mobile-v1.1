@@ -258,7 +258,13 @@ export function AthleteWalletSection() {
        *  in `stripeConnectApi.getAccountStatus`. Wire in a later phase. */}
       <View style={{ gap: 10 }}>
         <Text style={styles.sectionLabel}>PAYOUT METHOD</Text>
-        <TouchableOpacity activeOpacity={0.7} style={styles.card}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.card}
+          accessibilityRole="button"
+          accessibilityLabel="Payout method"
+          accessibilityHint="Connect a destination to receive payouts"
+        >
           <View style={styles.cardTop}>
             <View style={[styles.brandBadge, { backgroundColor: '#635BFF' }]}>
               <Ionicons name="card" size={20} color="#FFF" />
@@ -377,8 +383,17 @@ function TransferOutSheet({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={transferStyles.flex}
       >
-        <Pressable style={transferStyles.backdrop} onPress={onClose}>
-          <Pressable style={transferStyles.sheet} onPress={() => {}}>
+        <Pressable
+          style={transferStyles.backdrop}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss transfer sheet"
+        >
+          <Pressable
+            style={transferStyles.sheet}
+            onPress={() => {}}
+            accessible={false}
+          >
             <View style={transferStyles.grabber} />
 
             <Text style={transferStyles.title}>Transfer out</Text>
@@ -415,6 +430,12 @@ function TransferOutSheet({
                   key={q.label}
                   onPress={() => setQuick(q.mult)}
                   style={transferStyles.quickChip}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    q.label === 'Max'
+                      ? 'Transfer maximum available'
+                      : `Transfer ${q.label} of available`
+                  }
                 >
                   <Text style={transferStyles.quickChipText}>{q.label}</Text>
                 </Pressable>
@@ -422,12 +443,24 @@ function TransferOutSheet({
             </View>
 
             <View style={transferStyles.actions}>
-              <Pressable onPress={onClose} style={[transferStyles.btn, transferStyles.btnGhost]}>
+              <Pressable
+                onPress={onClose}
+                style={[transferStyles.btn, transferStyles.btnGhost]}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel transfer"
+              >
                 <Text style={transferStyles.btnGhostText}>Cancel</Text>
               </Pressable>
               <Pressable
                 onPress={confirm}
                 disabled={!validAmount}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  amountCents > 0
+                    ? `Transfer ${formatCents(amountCents)}`
+                    : 'Transfer'
+                }
+                accessibilityState={{ disabled: !validAmount }}
                 style={[
                   transferStyles.btn,
                   transferStyles.btnPrimary,
