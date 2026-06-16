@@ -1,6 +1,6 @@
 // Messages Components - Barrel export
 
-export { SegmentedControl } from './segmented-control';
+export { SegmentedControl } from '@/components/shared/segmented-control';
 export { SearchBar } from './search-bar';
 export { ConversationRow } from './conversation-row';
 export { SwipeableConversationRow } from './swipeable-conversation-row';
