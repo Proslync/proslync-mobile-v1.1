@@ -38,14 +38,95 @@ const STAGES: { key: AgentDeal['stage']; label: string; color: string }[] = [
 
 const COLUMN_WIDTH = 280;
 
+// ── Pipeline filters ─────────────────────────────────────────────────────────
+// Charter-safe: these scope the agent's OWN signed roster/deals (never a
+// discovery surface over unrepresented athletes). Each filter is a pure
+// predicate over the already-loaded mock data, mirroring the kanban's own
+// `.filter(d => d.stage === ...)` pattern.
+type PipelineFilter = {
+  key: string;
+  label: string;
+  matchDeal?: (deal: AgentDeal, sportById: Map<string, string>) => boolean;
+  matchAthlete?: (athlete: (typeof AGENT_ATHLETES)[number]) => boolean;
+};
+
+/** Parse the leading dollar figure from a value string like '$120k + product'. */
+function dealValueUsd(value: string): number {
+  const m = value.match(/\$\s*([\d.]+)\s*([km])?/i);
+  if (!m) return 0;
+  const n = parseFloat(m[1]);
+  if (Number.isNaN(n)) return 0;
+  const unit = m[2]?.toLowerCase();
+  return unit === 'm' ? n * 1_000_000 : unit === 'k' ? n * 1_000 : n;
+}
+
+const PIPELINE_FILTERS: PipelineFilter[] = [
+  { key: 'all', label: 'All athletes' },
+  {
+    key: 'signed',
+    label: `${AGENT_ATHLETES.length} signed`,
+    matchAthlete: (a) => a.status === 'signed',
+    matchDeal: (d, sportById) => sportById.has(d.athleteId),
+  },
+  {
+    key: 'basketball',
+    label: 'Basketball',
+    matchAthlete: (a) => a.sport === 'Basketball',
+    matchDeal: (d, sportById) => sportById.get(d.athleteId) === 'Basketball',
+  },
+  {
+    key: 'football',
+    label: 'Football',
+    matchAthlete: (a) => a.sport === 'Football',
+    matchDeal: (d, sportById) => sportById.get(d.athleteId) === 'Football',
+  },
+  {
+    key: 'soccer',
+    label: 'Soccer',
+    matchAthlete: (a) => a.sport === 'Soccer',
+    matchDeal: (d, sportById) => sportById.get(d.athleteId) === 'Soccer',
+  },
+  {
+    key: 'over100k',
+    label: '>$100k',
+    matchDeal: (d) => dealValueUsd(d.value) > 100_000,
+    matchAthlete: (a) => dealValueUsd(a.totalDealValue) > 100_000,
+  },
+];
+
 export default function AgentPipelineScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const stalledCount = AGENT_DEALS.filter(
+  const [filterKey, setFilterKey] = React.useState<string>('all');
+  const activeFilter =
+    PIPELINE_FILTERS.find((f) => f.key === filterKey) ?? PIPELINE_FILTERS[0];
+
+  // athleteId → sport, so deal filters can join through to the roster.
+  const sportById = React.useMemo(
+    () => new Map(AGENT_ATHLETES.map((a) => [a.id, a.sport] as const)),
+    [],
+  );
+
+  const visibleDeals = React.useMemo(
+    () =>
+      activeFilter.matchDeal
+        ? AGENT_DEALS.filter((d) => activeFilter.matchDeal!(d, sportById))
+        : AGENT_DEALS,
+    [activeFilter, sportById],
+  );
+
+  const visibleAthletes = React.useMemo(
+    () =>
+      activeFilter.matchAthlete
+        ? AGENT_ATHLETES.filter((a) => activeFilter.matchAthlete!(a))
+        : AGENT_ATHLETES,
+    [activeFilter],
+  );
+
+  const stalledCount = visibleDeals.filter(
     (d) => d.due.toLowerCase().includes('overdue') || d.due.toLowerCase().includes('week'),
   ).length;
-  const totalAthletes = AGENT_ATHLETES.length;
 
   return (
     <View style={styles.container}>
@@ -97,16 +178,18 @@ export default function AgentPipelineScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipsRow}
         >
-          <FilterChip label="All athletes" active />
-          <FilterChip label={`${totalAthletes} signed`} />
-          <FilterChip label="Basketball" />
-          <FilterChip label="Football" />
-          <FilterChip label="Soccer" />
-          <FilterChip label=">$100k" />
+          {PIPELINE_FILTERS.map((f) => (
+            <FilterChip
+              key={f.key}
+              label={f.label}
+              active={f.key === filterKey}
+              onPress={() => setFilterKey(f.key)}
+            />
+          ))}
         </ScrollView>
 
         {/* Kanban */}
-        {AGENT_DEALS.length === 0 ? (
+        {visibleDeals.length === 0 ? (
           <EmptyDealsState
             role="agent"
             cta={{
@@ -114,7 +197,7 @@ export default function AgentPipelineScreen() {
               onPress: () =>
                 router.push({
                   pathname: '/agent/athlete/[id]',
-                  params: { id: AGENT_ATHLETES[0]?.id ?? '' },
+                  params: { id: visibleAthletes[0]?.id ?? AGENT_ATHLETES[0]?.id ?? '' },
                 }),
             }}
           />
@@ -127,7 +210,7 @@ export default function AgentPipelineScreen() {
           snapToInterval={COLUMN_WIDTH + 12}
         >
           {STAGES.map((s) => {
-            const items = AGENT_DEALS.filter((d) => d.stage === s.key);
+            const items = visibleDeals.filter((d) => d.stage === s.key);
             return (
               <View key={s.key} style={styles.column}>
                 <View style={styles.columnHeader}>
@@ -178,8 +261,11 @@ export default function AgentPipelineScreen() {
 
         {/* Athlete coverage strip */}
         <Text style={styles.sectionLabel}>YOUR ATHLETES</Text>
+        {visibleAthletes.length === 0 ? (
+          <Text style={styles.stripEmpty}>No athletes match this filter</Text>
+        ) : (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.athleteStripRow}>
-          {AGENT_ATHLETES.map((a) => (
+          {visibleAthletes.map((a) => (
             <Pressable
               key={a.id}
               onPress={() =>
@@ -208,14 +294,33 @@ export default function AgentPipelineScreen() {
             </Pressable>
           ))}
         </ScrollView>
+        )}
       </ScrollView>
     </View>
   );
 }
 
-function FilterChip({ label, active }: { label: string; active?: boolean }) {
+function FilterChip({
+  label,
+  active,
+  onPress,
+}: {
+  label: string;
+  active?: boolean;
+  onPress?: () => void;
+}) {
   return (
-    <Pressable style={[styles.chip, active && styles.chipActive]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.chip,
+        active && styles.chipActive,
+        pressed && !active && { backgroundColor: 'rgba(255,255,255,0.1)' },
+      ]}
+      accessibilityRole="button"
+      accessibilityState={{ selected: !!active }}
+      accessibilityLabel={`Filter: ${label}`}
+    >
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
     </Pressable>
   );
@@ -318,6 +423,12 @@ const styles = StyleSheet.create({
     fontSize: 11, fontWeight: '800', letterSpacing: 1.2,
     color: 'rgba(255,255,255,0.55)',
     paddingHorizontal: 20, marginTop: 16, marginBottom: 8,
+  },
+  stripEmpty: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.4)',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
   },
   athleteStripRow: { paddingHorizontal: 16, gap: 10, paddingBottom: 8 },
   athleteStripCard: {
