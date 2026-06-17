@@ -13,6 +13,7 @@ import * as React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GlassButton } from '@/components/glass/glass-button';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import {
   CARD_BG,
@@ -55,7 +56,8 @@ const REVIEW_LABEL: Record<DisclosureReviewState, string> = {
 export default function AthleteDisclosuresListScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { data, isLoading } = useAthleteDisclosures(DEMO_ATHLETE_ID);
+  const { data, isLoading, isError, refetch, isRefetching } =
+    useAthleteDisclosures(DEMO_ATHLETE_ID);
 
   const onBack = React.useCallback(() => {
     if (router.canGoBack()) {
@@ -100,7 +102,26 @@ export default function AthleteDisclosuresListScreen() {
             </View>
           </View>
 
-          {disclosures.length === 0 ? (
+          {isError && disclosures.length === 0 ? (
+            <View style={styles.stateCard}>
+              <Ionicons
+                name="cloud-offline-outline"
+                size={28}
+                color="rgba(255,255,255,0.55)"
+              />
+              <Text style={styles.stateTitle}>Disclosures unavailable</Text>
+              <Text style={styles.stateBody}>
+                Couldn&apos;t load your disclosure packets. Pull to retry, or tap below.
+              </Text>
+              <GlassButton
+                label={isRefetching ? 'Retrying…' : 'Retry'}
+                icon={<Ionicons name="refresh" size={15} color="#FFF" />}
+                variant="glass"
+                size="sm"
+                onPress={() => refetch()}
+              />
+            </View>
+          ) : disclosures.length === 0 ? (
             <EmptyState
               icon={isLoading ? 'hourglass-outline' : 'document-text-outline'}
               title={isLoading ? 'Loading disclosures' : 'No disclosures yet'}
@@ -221,6 +242,30 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 10,
+  },
+  stateCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 18,
+    borderRadius: RADIUS_MD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: CARD_BORDER,
+    backgroundColor: CARD_BG,
+  },
+  stateTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: -0.2,
+  },
+  stateBody: {
+    color: 'rgba(255,255,255,0.62)',
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 17,
+    textAlign: 'center',
+    maxWidth: 280,
   },
   row: {
     gap: 6,
