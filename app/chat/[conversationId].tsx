@@ -165,7 +165,12 @@ function SystemMessageRow({
 }
 
 // Message Bubble Component - Instagram/Snapchat style
-function MessageBubble({
+// Memoized: rows are recycled by FlashList and the parent re-renders on every
+// socket event / typing toggle / send. All props passed from renderItem are
+// referentially stable (memoized theme colors, stable setState/useCallback
+// handlers, module-level avatar lookup, item fields from the messageGroups
+// memo), so React.memo's default shallow compare reliably skips re-renders.
+const MessageBubble = React.memo(function MessageBubble({
   message,
   isGroupStart,
   showTime,
@@ -464,7 +469,7 @@ function MessageBubble({
       </Pressable>
     </View>
   );
-}
+});
 
 // Animated Typing Dot
 function AnimatedDot({ delay, isDark }: { delay: number; isDark: boolean }) {
@@ -1765,6 +1770,12 @@ export default function ChatThreadScreen() {
     setSelectedMessage(message);
   }, []);
 
+  const keyExtractor = useCallback((item: MessageGroup, index: number) => {
+    return item.type === "day"
+      ? `day-${item.date?.toISOString()}`
+      : `msg-${item.message?.id || index}`;
+  }, []);
+
   const handleUnsend = useCallback(async () => {
     if (!selectedMessage) return;
     try {
@@ -1788,6 +1799,14 @@ export default function ChatThreadScreen() {
     }
   }, [selectedMessage]);
 
+  // Resolve the other user's local avatar once per render instead of per row.
+  // getLocalAvatar returns a module-level (stable) reference, keeping the
+  // MessageBubble prop referentially stable for React.memo.
+  const otherLocalAvatar = useMemo(
+    () => (!isGroupChat ? getLocalAvatar(conversationId) : undefined),
+    [isGroupChat, conversationId],
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: MessageGroup }) => {
       if (item.type === "day" && item.date) {
@@ -1808,14 +1827,22 @@ export default function ChatThreadScreen() {
             readAt={otherReadAt}
             isGroupChat={isGroupChat}
             isConciergeChat={isConcierge}
-            otherLocalAvatar={!isGroupChat ? getLocalAvatar(conversationId) : undefined}
+            otherLocalAvatar={otherLocalAvatar}
           />
         );
       }
 
       return null;
     },
-    [colors, isDark, handleLongPressMessage, otherReadAt],
+    [
+      colors,
+      isDark,
+      handleLongPressMessage,
+      otherReadAt,
+      isGroupChat,
+      isConcierge,
+      otherLocalAvatar,
+    ],
   );
 
   if (isLoading) {
@@ -1956,11 +1983,7 @@ export default function ChatThreadScreen() {
         <FlashList
           ref={flatListRef}
           data={messageGroups}
-          keyExtractor={(item, index) =>
-            item.type === "day"
-              ? `day-${item.date?.toISOString()}`
-              : `msg-${item.message?.id || index}`
-          }
+          keyExtractor={keyExtractor}
           renderItem={renderItem}
           contentContainerStyle={
             messages.length === 0 ? styles.emptyList : styles.messagesList
