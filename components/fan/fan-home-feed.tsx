@@ -66,6 +66,19 @@ export function FanHomeFeed({ topInset, onScroll }: FanHomeFeedProps = {}): Reac
 
   const openDetail = React.useCallback((p: FanPost) => setDetailPost(p), []);
 
+  // Stable renderItem so FlashList isn't handed a fresh function on every
+  // parent render — and the per-row wrapper style is hoisted into StyleSheet
+  // (an inline object literal here would be a new reference per row per render,
+  // defeating MasonryPostCard's React.memo via the wrapping View).
+  const renderItem = React.useCallback(
+    ({ item, index }: { item: FanPost; index: number }) => (
+      <View style={styles.cardWrap}>
+        <MasonryPostCard post={item} colWidth={CARD_WIDTH} index={index} onPress={openDetail} />
+      </View>
+    ),
+    [openDetail],
+  );
+
   // Keep detailPost fresh against the live list so likes update in the sheet.
   const livePost = detailPost ? (posts.find((p) => p.id === detailPost.id) ?? null) : null;
 
@@ -106,11 +119,7 @@ export function FanHomeFeed({ topInset, onScroll }: FanHomeFeedProps = {}): Reac
         numColumns={2}
         optimizeItemArrangement
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }) => (
-          <View style={{ paddingHorizontal: GRID_GUTTER / 2, paddingBottom: GRID_GUTTER }}>
-            <MasonryPostCard post={item} colWidth={CARD_WIDTH} index={index} onPress={openDetail} />
-          </View>
-        )}
+        renderItem={renderItem}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#EB621A" />
         }
@@ -197,6 +206,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  cardWrap: {
+    paddingHorizontal: GRID_GUTTER / 2,
+    paddingBottom: GRID_GUTTER,
   },
   empty: {
     alignItems: 'center',
