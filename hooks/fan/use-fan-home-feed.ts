@@ -8,6 +8,7 @@
 import * as React from 'react';
 
 import { fanAuthedApi } from '@/lib/api/fan/authed';
+import { applyOptimisticLike, rollbackOptimisticLike } from '@/lib/fan/like-state';
 import type { FanPost } from '@/lib/types/fan.types';
 
 export interface UseFanHomeFeedResult {
@@ -32,6 +33,12 @@ export function useFanHomeFeed(): UseFanHomeFeedResult {
   const [pageTick, setPageTick] = React.useState(0);
   const [resetTick, setResetTick] = React.useState(0);
   const loadingMoreRef = React.useRef(false);
+
+  // Always-current mirror of `posts` so like/unlike can read the exact
+  // pre-mutation state synchronously (for a correct optimistic rollback)
+  // without depending on React state-flush timing.
+  const postsRef = React.useRef<FanPost[]>(posts);
+  postsRef.current = posts;
 
   // Initial / refresh load.
   React.useEffect(() => {
@@ -101,8 +108,11 @@ export function useFanHomeFeed(): UseFanHomeFeedResult {
           p.id === id
             ? {
                 ...p,
-                likeCount: Math.max(0, p.likeCount + delta),
-                viewerLiked,
+                ...applyOptimisticLike(
+                  { likeCount: p.likeCount, viewerLiked: Boolean(p.viewerLiked) },
+                  delta,
+                  viewerLiked,
+                ),
               }
             : p,
         ),
@@ -111,22 +121,45 @@ export function useFanHomeFeed(): UseFanHomeFeedResult {
     [],
   );
 
+  // Restore a post's like fields to an exact captured snapshot. Used to roll
+  // back a failed optimistic mutation. Restoring the snapshot (not inverting
+  // the delta) is required for correctness: the optimistic count passes through
+  // `Math.max(0, …)`, so when the optimistic value is clamped at 0 (e.g.
+  // unliking a post already showing likeCount 0) inverting the delta rolls back
+  // to 1 — inventing a like that never existed. Snapshot-restore is exact.
+  const restoreLikeState = React.useCallback(
+    (id: string, snapshot: { likeCount: number; viewerLiked: boolean }) => {
+      setPosts((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, ...rollbackOptimisticLike(snapshot) } : p)),
+      );
+    },
+    [],
+  );
+
   const like = React.useCallback(
     async (id: string) => {
+      const prev = postsRef.current.find((p) => p.id === id);
+      const snapshot = prev
+        ? { likeCount: prev.likeCount, viewerLiked: Boolean(prev.viewerLiked) }
+        : null;
       applyLikeMutation(id, 1, true);
       const ok = await fanAuthedApi.likePost(id);
-      if (!ok) applyLikeMutation(id, -1, false);
+      if (!ok && snapshot) restoreLikeState(id, snapshot);
     },
-    [applyLikeMutation],
+    [applyLikeMutation, restoreLikeState],
   );
 
   const unlike = React.useCallback(
     async (id: string) => {
+      const prev = postsRef.current.find((p) => p.id === id);
+      const snapshot = prev
+        ? { likeCount: prev.likeCount, viewerLiked: Boolean(prev.viewerLiked) }
+        : null;
       applyLikeMutation(id, -1, false);
       const ok = await fanAuthedApi.unlikePost(id);
-      if (!ok) applyLikeMutation(id, 1, true);
+      if (!ok && snapshot) restoreLikeState(id, snapshot);
     },
-    [applyLikeMutation],
+    [applyLikeMutation, restoreLikeState],
   );
 
   const prepend = React.useCallback((post: FanPost) => {
