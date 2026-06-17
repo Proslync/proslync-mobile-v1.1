@@ -14,6 +14,6 @@ export function formatCents(cents: number): string {
 /** Format cents with a +/- prefix for activity lists. */
 export function formatCentsSigned(cents: number): string {
   if (!Number.isFinite(cents)) return '$0.00';
-  const prefix = cents >= 0 ? '+' : '';
+  const prefix = cents < 0 ? '-' : '+';
   return `${prefix}$${(Math.abs(cents) / 100).toFixed(2)}`;
 }
