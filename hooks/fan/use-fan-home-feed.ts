@@ -8,6 +8,7 @@
 import * as React from 'react';
 
 import { fanAuthedApi } from '@/lib/api/fan/authed';
+import { mergeFeedPage } from '@/lib/fan/feed-merge';
 import { applyOptimisticLike, rollbackOptimisticLike } from '@/lib/fan/like-state';
 import type { FanPost } from '@/lib/types/fan.types';
 
@@ -34,6 +35,15 @@ export function useFanHomeFeed(): UseFanHomeFeedResult {
   const [resetTick, setResetTick] = React.useState(0);
   const loadingMoreRef = React.useRef(false);
 
+  // Monotonic load epoch. A refresh (resetTick) and an in-flight pagination
+  // fetch live in two SEPARATE effects, so a refresh cannot abort a pagination
+  // request already on the wire. Without coordination, a page that resolves
+  // AFTER a refresh would append stale rows (from the pre-refresh feed) onto
+  // the fresh list AND clobber the fresh cursor with the stale one. The epoch
+  // is bumped on every refresh; a pagination resolve only applies its result
+  // when the epoch it captured at trigger time is still current.
+  const epochRef = React.useRef(0);
+
   // Always-current mirror of `posts` so like/unlike can read the exact
   // pre-mutation state synchronously (for a correct optimistic rollback)
   // without depending on React state-flush timing.
@@ -44,6 +54,11 @@ export function useFanHomeFeed(): UseFanHomeFeedResult {
   React.useEffect(() => {
     const controller = new AbortController();
     let cancelled = false;
+    // Invalidate any pagination fetch already on the wire from the prior feed —
+    // its resolve will see a newer epoch and discard itself (see pagination
+    // effect). Also stop the in-flight guard from latching across a refresh.
+    epochRef.current += 1;
+    loadingMoreRef.current = false;
     if (resetTick === 0) setLoading(true);
     else setRefreshing(true);
     fanAuthedApi
@@ -71,17 +86,20 @@ export function useFanHomeFeed(): UseFanHomeFeedResult {
     if (!cursor) return;
     const controller = new AbortController();
     let cancelled = false;
+    const epoch = epochRef.current;
     loadingMoreRef.current = true;
     fanAuthedApi
       .getHomeFeed({ cursor, signal: controller.signal })
       .then((env) => {
-        if (cancelled) return;
-        setPosts((prev) => [...prev, ...env.data]);
+        // Discard a page that resolved after a refresh moved the epoch on: its
+        // data + cursor belong to a feed that no longer exists on screen.
+        if (cancelled || epoch !== epochRef.current) return;
+        setPosts((prev) => mergeFeedPage(prev, env.data));
         setCursor(env.nextCursor);
         setHasMore(Boolean(env.nextCursor));
       })
       .finally(() => {
-        if (!cancelled) loadingMoreRef.current = false;
+        if (!cancelled && epoch === epochRef.current) loadingMoreRef.current = false;
       });
     return () => {
       cancelled = true;
