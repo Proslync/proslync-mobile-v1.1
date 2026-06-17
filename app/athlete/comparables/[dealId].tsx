@@ -15,6 +15,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AthleteComparablesCard } from '@/components/athlete/athlete-comparables-card';
+import { GlassButton } from '@/components/glass/glass-button';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import { useDealComparables } from '@/hooks/use-deal-comparables';
 import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
@@ -27,7 +28,8 @@ export default function AthleteComparablesScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ dealId?: string }>();
   const dealId = normalizeParam(params.dealId);
-  const { data: evidence, isLoading } = useDealComparables(dealId);
+  const { data: evidence, isLoading, isError, refetch, isRefetching } =
+    useDealComparables(dealId);
   const detail = dealId ? getBrandDealDetail(dealId) : undefined;
   const insets = useSafeAreaInsets();
 
@@ -72,7 +74,12 @@ export default function AthleteComparablesScreen() {
             </View>
           </View>
 
-          {!hasComps ? (
+          {isError && !hasComps ? (
+            <ComparablesErrorState
+              isRefetching={isRefetching}
+              onRetry={() => refetch()}
+            />
+          ) : !hasComps ? (
             <ComparablesEmptyState isLoading={isLoading} />
           ) : (
             <AthleteComparablesCard evidence={evidence!} />
@@ -102,6 +109,38 @@ function ComparablesEmptyState({ isLoading }: { isLoading: boolean }) {
           ? 'One moment — we are gathering reviewer-tagged comparable offers for this deal.'
           : 'We have not surfaced reviewer-tagged comparable offers for this deal yet. Check back once your NIL manager runs the evidence pass.'}
       </Text>
+    </View>
+  );
+}
+
+// Network-failure state — distinct from "no comparables yet" so a failed
+// fetch is never misread as an empty evidence packet. Matches the athlete
+// deals/wallet peer pattern (cloud-offline + GlassButton retry).
+function ComparablesErrorState({
+  isRefetching,
+  onRetry,
+}: {
+  isRefetching: boolean;
+  onRetry: () => void;
+}) {
+  return (
+    <View style={styles.emptyBox}>
+      <Ionicons
+        name="cloud-offline-outline"
+        size={28}
+        color="rgba(255,255,255,0.62)"
+      />
+      <Text style={styles.emptyTitle}>Comparables unavailable</Text>
+      <Text style={styles.emptyBody}>
+        Couldn&apos;t load comparable offers. Pull to retry, or tap below.
+      </Text>
+      <GlassButton
+        label={isRefetching ? 'Retrying…' : 'Retry'}
+        icon={<Ionicons name="refresh" size={15} color="#FFF" />}
+        variant="glass"
+        size="sm"
+        onPress={onRetry}
+      />
     </View>
   );
 }

@@ -26,6 +26,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GlassButton } from '@/components/glass/glass-button';
 import { GuidedFlowPage } from '@/components/page-rescue';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import {
@@ -91,7 +92,8 @@ export default function ApprovalQueueScreen() {
   const [filter, setFilter] = React.useState<FilterKey>(initialFilter);
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
-  const { data: queue, isLoading } = useSchoolApprovalQueue(schoolId);
+  const { data: queue, isLoading, isError, refetch, isRefetching } =
+    useSchoolApprovalQueue(schoolId);
   const { user } = useAuth();
   const decideMutation = useDecideApprovalQueueItem();
   // Auto-expand the freshly-decided row so the reviewer sees the
@@ -166,6 +168,25 @@ export default function ApprovalQueueScreen() {
             title="Loading approval queue"
             body="Pulling disclosures awaiting review for this school cycle."
           />
+        ) : isError && !queue ? (
+          <View style={styles.emptyBox}>
+            <Ionicons
+              name="cloud-offline-outline"
+              size={26}
+              color="rgba(255,255,255,0.55)"
+            />
+            <Text style={styles.emptyTitle}>Approval queue unavailable</Text>
+            <Text style={styles.emptyBody}>
+              Couldn&apos;t load the approval queue. Pull to retry, or tap below.
+            </Text>
+            <GlassButton
+              label={isRefetching ? 'Retrying…' : 'Retry'}
+              icon={<Ionicons name="refresh" size={15} color="#FFF" />}
+              variant="glass"
+              size="sm"
+              onPress={() => refetch()}
+            />
+          </View>
         ) : !queue ? (
           <View style={styles.emptyBox}>
             <Ionicons

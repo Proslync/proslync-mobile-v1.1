@@ -18,6 +18,7 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GlassButton } from '@/components/glass/glass-button';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
 import {
   CATEGORY_ORDER,
@@ -58,7 +59,8 @@ export default function RiskReportScreen() {
   const schoolId = params.schoolId ?? 'school:syracuse';
   const focusCategory = (params.focus as RiskCategory | undefined) ?? null;
 
-  const { data: report, isLoading } = useRiskReport(schoolId);
+  const { data: report, isLoading, isError, refetch, isRefetching } =
+    useRiskReport(schoolId);
 
   return (
     <View style={styles.container}>
@@ -88,6 +90,21 @@ export default function RiskReportScreen() {
             title="Loading risk report"
             body="Aggregating the audit-defense rollup across compliance categories."
           />
+        ) : isError && !report ? (
+          <View style={styles.emptyBox}>
+            <Ionicons name="cloud-offline-outline" size={26} color="rgba(255,255,255,0.55)" />
+            <Text style={styles.emptyTitle}>Risk report unavailable</Text>
+            <Text style={styles.emptyBody}>
+              Couldn&apos;t load the audit-defense rollup. Pull to retry, or tap below.
+            </Text>
+            <GlassButton
+              label={isRefetching ? 'Retrying…' : 'Retry'}
+              icon={<Ionicons name="refresh" size={15} color="#FFF" />}
+              variant="glass"
+              size="sm"
+              onPress={() => refetch()}
+            />
+          </View>
         ) : !report ? (
           <View style={styles.emptyBox}>
             <Ionicons name="document-text-outline" size={26} color="rgba(255,255,255,0.5)" />
