@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -40,6 +39,7 @@ import {
 } from '@/components/school/approval-queue-card';
 import {
   EmptyDealsState,
+  EmptyState,
   StatusPill,
   TONE_COLOR,
 } from '@/components/shared/ui-kit';
@@ -161,9 +161,11 @@ export default function ApprovalQueueScreen() {
         </View>
 
         {isLoading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator color="#FFFFFF" />
-          </View>
+          <EmptyState
+            icon="hourglass-outline"
+            title="Loading approval queue"
+            body="Pulling disclosures awaiting review for this school cycle."
+          />
         ) : !queue ? (
           <View style={styles.emptyBox}>
             <Ionicons
@@ -1049,7 +1051,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 
-  loadingBox: { alignItems: 'center', paddingVertical: 60 },
   emptyBox: {
     gap: 8,
     alignItems: 'center',

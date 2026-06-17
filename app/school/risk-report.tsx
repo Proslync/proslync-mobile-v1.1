@@ -9,7 +9,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as React from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,6 +25,7 @@ import {
   severityColor,
   severityLabel,
 } from '@/components/school/risk-report-card';
+import { EmptyState } from '@/components/shared/ui-kit';
 import { useRiskReport } from '@/hooks/use-risk-report';
 import type {
   RiskCategory,
@@ -83,9 +83,11 @@ export default function RiskReportScreen() {
         </View>
 
         {isLoading ? (
-          <View style={styles.loadingBox}>
-            <ActivityIndicator color="#FFFFFF" />
-          </View>
+          <EmptyState
+            icon="hourglass-outline"
+            title="Loading risk report"
+            body="Aggregating the audit-defense rollup across compliance categories."
+          />
         ) : !report ? (
           <View style={styles.emptyBox}>
             <Ionicons name="document-text-outline" size={26} color="rgba(255,255,255,0.5)" />
@@ -280,10 +282,6 @@ const styles = StyleSheet.create({
     height: 34,
     justifyContent: 'center',
     width: 34,
-  },
-  loadingBox: {
-    paddingTop: 60,
-    alignItems: 'center',
   },
   emptyBox: {
     gap: 8,
