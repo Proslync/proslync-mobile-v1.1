@@ -19,10 +19,10 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-1': {
     summary: {
       inputDealId: 'd-1',
-      estimate: { cents: 38_500_00, currency: 'USD' },
+      estimate: { cents: 385_000_00, currency: 'USD' },
       range: {
-        low: { cents: 31_000_00, currency: 'USD' },
-        high: { cents: 46_500_00, currency: 'USD' },
+        low: { cents: 310_000_00, currency: 'USD' },
+        high: { cents: 465_000_00, currency: 'USD' },
       },
       confidence: 'medium',
       summary:
@@ -52,7 +52,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           category: 'Apparel',
           headquarters: 'Pacific Northwest',
         },
-        amount: { cents: 36_000_00, currency: 'USD' },
+        amount: { cents: 360_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-09-04',
         rationale:
@@ -86,7 +86,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           displayName: 'Regional collective',
           category: 'Collective',
         },
-        amount: { cents: 41_000_00, currency: 'USD' },
+        amount: { cents: 410_000_00, currency: 'USD' },
         nilCategory: 'roster-retention',
         dealReportedAt: '2024-12-18',
         rationale:
@@ -119,7 +119,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           displayName: 'DTC nutrition brand',
           category: 'Nutrition / supplements',
         },
-        amount: { cents: 31_500_00, currency: 'USD' },
+        amount: { cents: 315_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-10-22',
         rationale: 'Same recruit tier, smaller audience, shorter exclusivity window.',
@@ -147,10 +147,10 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-2': {
     summary: {
       inputDealId: 'd-2',
-      estimate: { cents: 27_500_00, currency: 'USD' },
+      estimate: { cents: 275_000_00, currency: 'USD' },
       range: {
-        low: { cents: 22_000_00, currency: 'USD' },
-        high: { cents: 34_000_00, currency: 'USD' },
+        low: { cents: 220_000_00, currency: 'USD' },
+        high: { cents: 340_000_00, currency: 'USD' },
       },
       confidence: 'low',
       summary:
@@ -173,7 +173,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           displayName: 'Lifestyle apparel',
           category: 'Apparel',
         },
-        amount: { cents: 28_500_00, currency: 'USD' },
+        amount: { cents: 285_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-11-09',
         rationale:
@@ -199,10 +199,10 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-3': {
     summary: {
       inputDealId: 'd-3',
-      estimate: { cents: 8_800_00, currency: 'USD' },
+      estimate: { cents: 88_000_00, currency: 'USD' },
       range: {
-        low: { cents: 6_500_00, currency: 'USD' },
-        high: { cents: 11_000_00, currency: 'USD' },
+        low: { cents: 65_000_00, currency: 'USD' },
+        high: { cents: 110_000_00, currency: 'USD' },
       },
       confidence: 'low',
       summary:
@@ -225,7 +225,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           displayName: 'Regional QSR chain',
           category: 'Quick-serve restaurant',
         },
-        amount: { cents: 9_500_00, currency: 'USD' },
+        amount: { cents: 95_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-10-04',
         rationale: 'Same recruit tier, non-exclusive scope, similar audience reach.',
@@ -250,10 +250,10 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-4': {
     summary: {
       inputDealId: 'd-4',
-      estimate: { cents: 67_000_00, currency: 'USD' },
+      estimate: { cents: 670_000_00, currency: 'USD' },
       range: {
-        low: { cents: 58_000_00, currency: 'USD' },
-        high: { cents: 78_500_00, currency: 'USD' },
+        low: { cents: 580_000_00, currency: 'USD' },
+        high: { cents: 785_000_00, currency: 'USD' },
       },
       confidence: 'high',
       summary:
@@ -276,7 +276,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           displayName: 'Global beverage brand',
           category: 'Beverage',
         },
-        amount: { cents: 71_000_00, currency: 'USD' },
+        amount: { cents: 710_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-08-11',
         rationale: 'Same audience tier, same contract length, same exclusivity.',
@@ -307,7 +307,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           displayName: 'Athletic-wear startup',
           category: 'Apparel',
         },
-        amount: { cents: 63_500_00, currency: 'USD' },
+        amount: { cents: 635_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-07-02',
         rationale: 'Similar tier; non-renewed contract may price slightly under.',
@@ -332,10 +332,10 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-5': {
     summary: {
       inputDealId: 'd-5',
-      estimate: { cents: 14_500_00, currency: 'USD' },
+      estimate: { cents: 145_000_00, currency: 'USD' },
       range: {
-        low: { cents: 11_000_00, currency: 'USD' },
-        high: { cents: 18_000_00, currency: 'USD' },
+        low: { cents: 110_000_00, currency: 'USD' },
+        high: { cents: 180_000_00, currency: 'USD' },
       },
       confidence: 'medium',
       summary:
@@ -354,7 +354,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           classYearOrPro: 'HS Sr (2025)',
         },
         brand: { id: 'cmp-brand-008', displayName: 'National athletic-wear label', category: 'Apparel' },
-        amount: { cents: 13_500_00, currency: 'USD' },
+        amount: { cents: 135_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-09-22',
         rationale: 'Same HS-senior tier, comparable two-year exclusive scope.',
@@ -369,10 +369,10 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-6': {
     summary: {
       inputDealId: 'd-6',
-      estimate: { cents: 52_500_00, currency: 'USD' },
+      estimate: { cents: 525_000_00, currency: 'USD' },
       range: {
-        low: { cents: 44_000_00, currency: 'USD' },
-        high: { cents: 62_000_00, currency: 'USD' },
+        low: { cents: 440_000_00, currency: 'USD' },
+        high: { cents: 620_000_00, currency: 'USD' },
       },
       confidence: 'high',
       summary:
@@ -395,7 +395,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           classYearOrPro: 'So (2025)',
         },
         brand: { id: 'cmp-brand-009', displayName: 'Global footwear brand', category: 'Footwear' },
-        amount: { cents: 58_000_00, currency: 'USD' },
+        amount: { cents: 580_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-06-15',
         rationale: 'Same recruit tier, signature-line scope, two-year renewal cadence.',
@@ -416,7 +416,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
           classYearOrPro: 'Fr (2025)',
         },
         brand: { id: 'cmp-brand-010', displayName: 'National sportswear brand', category: 'Apparel' },
-        amount: { cents: 48_500_00, currency: 'USD' },
+        amount: { cents: 485_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-08-30',
         rationale: 'Similar recruit tier and signature-line scope; smaller co-branded apparel rights.',
@@ -431,8 +431,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-7': {
     summary: {
       inputDealId: 'd-7',
-      estimate: { cents: 9_200_00, currency: 'USD' },
-      range: { low: { cents: 7_500_00, currency: 'USD' }, high: { cents: 11_000_00, currency: 'USD' } },
+      estimate: { cents: 92_000_00, currency: 'USD' },
+      range: { low: { cents: 75_000_00, currency: 'USD' }, high: { cents: 110_000_00, currency: 'USD' } },
       confidence: 'medium',
       summary: 'QSR ambassador deals for marquee men\'s basketball recruits cluster $75K–$110K.',
     },
@@ -442,7 +442,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-7',
         athlete: { id: 'cmp-athlete-011', displayName: 'Top-5 wing (anonymized)', sport: 'Basketball', schoolOrTeam: 'Big Ten program', followerReach: 1_900_000, classYearOrPro: 'Fr (2024)' },
         brand: { id: 'cmp-brand-011', displayName: 'National QSR chain', category: 'Quick-serve restaurant' },
-        amount: { cents: 10_500_00, currency: 'USD' },
+        amount: { cents: 105_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-03-05',
         rationale: 'Comparable QSR non-exclusive ambassador scope and one-year term.',
@@ -457,8 +457,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-8': {
     summary: {
       inputDealId: 'd-8',
-      estimate: { cents: 19_000_00, currency: 'USD' },
-      range: { low: { cents: 14_500_00, currency: 'USD' }, high: { cents: 24_000_00, currency: 'USD' } },
+      estimate: { cents: 190_000_00, currency: 'USD' },
+      range: { low: { cents: 145_000_00, currency: 'USD' }, high: { cents: 240_000_00, currency: 'USD' } },
       confidence: 'medium',
       summary: 'Audio-category add-ons for footwear-exclusive athletes disclose in a $145K–$240K band, but most carve-outs require master-agreement review.',
       perRoleCaveats: {
@@ -472,7 +472,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-8',
         athlete: { id: 'cmp-athlete-012', displayName: 'Top-15 wing (anonymized)', sport: 'Basketball', schoolOrTeam: 'Big East program', followerReach: 1_400_000, classYearOrPro: 'So (2025)' },
         brand: { id: 'cmp-brand-012', displayName: 'Consumer audio brand', category: 'Consumer electronics / audio' },
-        amount: { cents: 19_500_00, currency: 'USD' },
+        amount: { cents: 195_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-11-12',
         rationale: 'Comparable audio-category add-on with master-agreement carve-out.',
@@ -488,8 +488,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-9': {
     summary: {
       inputDealId: 'd-9',
-      estimate: { cents: 48_500_00, currency: 'USD' },
-      range: { low: { cents: 40_000_00, currency: 'USD' }, high: { cents: 58_000_00, currency: 'USD' } },
+      estimate: { cents: 485_000_00, currency: 'USD' },
+      range: { low: { cents: 400_000_00, currency: 'USD' }, high: { cents: 580_000_00, currency: 'USD' } },
       confidence: 'high',
       summary: 'Two-year exclusive footwear deals for top-3 recruits cluster $400K–$580K.',
     },
@@ -499,7 +499,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-9',
         athlete: { id: 'cmp-athlete-013', displayName: 'Top-3 forward (anonymized)', sport: 'Basketball', schoolOrTeam: 'Big 12 program', followerReach: 1_500_000, classYearOrPro: 'Fr (2025)' },
         brand: { id: 'cmp-brand-013', displayName: 'Global footwear brand', category: 'Footwear & apparel' },
-        amount: { cents: 52_000_00, currency: 'USD' },
+        amount: { cents: 520_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-07-18',
         rationale: 'Same tier, two-year exclusive scope, category-exclusive footwear.',
@@ -514,8 +514,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-10': {
     summary: {
       inputDealId: 'd-10',
-      estimate: { cents: 31_500_00, currency: 'USD' },
-      range: { low: { cents: 26_000_00, currency: 'USD' }, high: { cents: 38_000_00, currency: 'USD' } },
+      estimate: { cents: 315_000_00, currency: 'USD' },
+      range: { low: { cents: 260_000_00, currency: 'USD' }, high: { cents: 380_000_00, currency: 'USD' } },
       confidence: 'medium',
       summary: 'Second-year wing endorsements with category-exclusive scope cluster $260K–$380K.',
     },
@@ -525,7 +525,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-10',
         athlete: { id: 'cmp-athlete-014', displayName: 'Top-12 wing (anonymized)', sport: 'Basketball', schoolOrTeam: 'ACC program', followerReach: 600_000, classYearOrPro: 'Fr (2025)' },
         brand: { id: 'cmp-brand-014', displayName: 'Global footwear brand', category: 'Footwear' },
-        amount: { cents: 33_000_00, currency: 'USD' },
+        amount: { cents: 330_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-09-08',
         rationale: 'Same recruit tier, two-year exclusive footwear scope.',
@@ -540,8 +540,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-11': {
     summary: {
       inputDealId: 'd-11',
-      estimate: { cents: 72_000_00, currency: 'USD' },
-      range: { low: { cents: 60_000_00, currency: 'USD' }, high: { cents: 86_000_00, currency: 'USD' } },
+      estimate: { cents: 720_000_00, currency: 'USD' },
+      range: { low: { cents: 600_000_00, currency: 'USD' }, high: { cents: 860_000_00, currency: 'USD' } },
       confidence: 'high',
       summary: 'Flagship women\'s multi-category deals for top-3 recruits cluster $600K–$860K with global-usage premiums.',
     },
@@ -551,7 +551,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-11',
         athlete: { id: 'cmp-athlete-015', displayName: 'Top-3 W guard (anonymized)', sport: 'Basketball', schoolOrTeam: 'SEC program', followerReach: 2_100_000, classYearOrPro: 'So (2025)' },
         brand: { id: 'cmp-brand-015', displayName: 'Global footwear brand', category: 'Footwear & apparel' },
-        amount: { cents: 78_500_00, currency: 'USD' },
+        amount: { cents: 785_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-08-21',
         rationale: 'Same recruit tier, multi-category exclusive, two-year term with global usage.',
@@ -566,8 +566,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-12': {
     summary: {
       inputDealId: 'd-12',
-      estimate: { cents: 42_000_00, currency: 'USD' },
-      range: { low: { cents: 34_000_00, currency: 'USD' }, high: { cents: 51_000_00, currency: 'USD' } },
+      estimate: { cents: 420_000_00, currency: 'USD' },
+      range: { low: { cents: 340_000_00, currency: 'USD' }, high: { cents: 510_000_00, currency: 'USD' } },
       confidence: 'medium',
       summary: 'Sophomore-year women\'s basketball exclusive deals cluster $340K–$510K.',
     },
@@ -577,7 +577,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-12',
         athlete: { id: 'cmp-athlete-016', displayName: 'Top-6 W guard (anonymized)', sport: 'Basketball', schoolOrTeam: 'ACC program', followerReach: 920_000, classYearOrPro: 'So (2025)' },
         brand: { id: 'cmp-brand-016', displayName: 'Global footwear brand', category: 'Footwear & apparel' },
-        amount: { cents: 44_500_00, currency: 'USD' },
+        amount: { cents: 445_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-10-30',
         rationale: 'Same tier, two-year exclusive scope.',
@@ -592,8 +592,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-13': {
     summary: {
       inputDealId: 'd-13',
-      estimate: { cents: 40_500_00, currency: 'USD' },
-      range: { low: { cents: 32_000_00, currency: 'USD' }, high: { cents: 49_000_00, currency: 'USD' } },
+      estimate: { cents: 405_000_00, currency: 'USD' },
+      range: { low: { cents: 320_000_00, currency: 'USD' }, high: { cents: 490_000_00, currency: 'USD' } },
       confidence: 'medium',
       summary: 'SEC football wide-receiver exclusive deals cluster $320K–$490K depending on Heisman trajectory.',
     },
@@ -603,7 +603,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-13',
         athlete: { id: 'cmp-athlete-017', displayName: 'Top-10 WR (anonymized)', sport: 'Football', schoolOrTeam: 'SEC program', followerReach: 1_200_000, classYearOrPro: 'So (2025)' },
         brand: { id: 'cmp-brand-017', displayName: 'Global footwear brand', category: 'Footwear & training' },
-        amount: { cents: 38_500_00, currency: 'USD' },
+        amount: { cents: 385_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-07-25',
         rationale: 'Same recruit profile, one-year exclusive scope, similar audience.',
@@ -618,8 +618,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-14': {
     summary: {
       inputDealId: 'd-14',
-      estimate: { cents: 24_500_00, currency: 'USD' },
-      range: { low: { cents: 20_000_00, currency: 'USD' }, high: { cents: 30_000_00, currency: 'USD' } },
+      estimate: { cents: 245_000_00, currency: 'USD' },
+      range: { low: { cents: 200_000_00, currency: 'USD' }, high: { cents: 300_000_00, currency: 'USD' } },
       confidence: 'medium',
       summary: 'Senior-year exclusive footwear deals for ACC veterans cluster $200K–$300K.',
     },
@@ -629,7 +629,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-14',
         athlete: { id: 'cmp-athlete-018', displayName: 'Top-25 senior PG (anonymized)', sport: 'Basketball', schoolOrTeam: 'ACC program', followerReach: 720_000, classYearOrPro: 'Sr (2025)' },
         brand: { id: 'cmp-brand-018', displayName: 'Global footwear brand', category: 'Footwear' },
-        amount: { cents: 25_500_00, currency: 'USD' },
+        amount: { cents: 255_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-06-10',
         rationale: 'Same conference, senior-year scope, similar audience reach.',
@@ -644,8 +644,8 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-15': {
     summary: {
       inputDealId: 'd-15',
-      estimate: { cents: 9_800_00, currency: 'USD' },
-      range: { low: { cents: 7_500_00, currency: 'USD' }, high: { cents: 12_500_00, currency: 'USD' } },
+      estimate: { cents: 98_000_00, currency: 'USD' },
+      range: { low: { cents: 75_000_00, currency: 'USD' }, high: { cents: 125_000_00, currency: 'USD' } },
       confidence: 'low',
       summary: 'Freshman-year non-exclusive deals at this audience tier cluster $75K–$125K.',
     },
@@ -655,7 +655,7 @@ export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
         inputDealId: 'd-15',
         athlete: { id: 'cmp-athlete-019', displayName: 'Top-30 freshman (anonymized)', sport: 'Basketball', schoolOrTeam: 'ACC program', followerReach: 230_000, classYearOrPro: 'Fr (2025)' },
         brand: { id: 'cmp-brand-019', displayName: 'National footwear brand', category: 'Footwear' },
-        amount: { cents: 9_500_00, currency: 'USD' },
+        amount: { cents: 95_000_00, currency: 'USD' },
         nilCategory: 'endorsement',
         dealReportedAt: '2025-12-01',
         rationale: 'Similar recruit tier, one-year non-exclusive scope.',

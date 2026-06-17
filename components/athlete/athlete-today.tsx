@@ -518,8 +518,8 @@ function YourMarketZone({
 
   // Use mock comps data for the market range (d-1 = typical top-10 PG deal)
   const comps = MOCK_DEAL_COMPS['d-1'];
-  const rangeLow = comps?.summary.range ? comps.summary.range.low.cents / 100 : 31_000;
-  const rangeHigh = comps?.summary.range ? comps.summary.range.high.cents / 100 : 46_500;
+  const rangeLow = comps?.summary.range ? comps.summary.range.low.cents / 100 : 310_000;
+  const rangeHigh = comps?.summary.range ? comps.summary.range.high.cents / 100 : 465_000;
 
   const reachStr = reach
     ? reach.totalFollowers >= 1_000_000
