@@ -16,6 +16,7 @@ import { CONVERSATIONS_KEY } from "./use-conversations";
 import { BLOCKED_USERS_KEY } from "./use-blocked-users";
 import { filesApi } from "@/lib/api/files";
 import { usersApi } from "@/lib/api/users";
+import { prependMessageDedup } from "@/lib/chat/message-merge";
 
 // --- Types ---
 
@@ -296,16 +297,17 @@ export function useConversation(conversationId: string | undefined) {
       // Skip own messages — already added optimistically via sendMessage
       if (data.message.senderId === currentUserId) return;
 
-      // Insert into React Query cache (prepend to newest page)
+      // Insert into React Query cache (prepend to newest page).
+      // Dedup by id: socket.io replays buffered events on reconnect, and the
+      // initial getMessages() page can already hold the newest message, so the
+      // same chat:message can arrive for an id already cached. Without this the
+      // FlashList key `msg-<id>` collides (see lib/chat/message-merge.mjs).
       queryClient.setQueryData<InfiniteMessagesData>(
         [CONVERSATION_MESSAGES_KEY, conversationId],
         (old) => {
           if (!old?.pages?.length) return old;
-          const pages = [...old.pages];
-          pages[0] = {
-            ...pages[0],
-            messages: [data.message, ...pages[0].messages],
-          };
+          const pages = prependMessageDedup(old.pages, data.message);
+          if (pages === old.pages) return old; // duplicate — nothing to insert
           return { ...old, pages };
         },
       );
