@@ -6,6 +6,7 @@
 export declare function addBusinessDays(startDate: Date, businessDays: number): Date;
 export declare function hoursUntilISO(isoString: string | null | undefined): number | null;
 export declare function thresholdForHours(hours: number | null): 'red' | 'amber' | 'green';
+export declare function urgencyForDeadline(deadlineISO: string | null | undefined): 'red' | 'amber' | 'green';
 
 export interface TruthSummaryResult {
   expectedCents: number;

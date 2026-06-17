@@ -43,7 +43,7 @@ import {
 import { getAthleteDiscovery } from '@/lib/data/mock-athlete-discovery';
 import {
   hoursUntilISO,
-  thresholdForHours,
+  urgencyForDeadline,
 } from '@/lib/athlete/truth';
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import type { DealTruth, PaymentState } from '@/lib/athlete/truth';
@@ -349,7 +349,8 @@ function PaymentTruthRow({ deal, onPress }: { deal: DealTruth; onPress: () => vo
   let disclosureChip: React.ReactNode = null;
   if (deal.disclosure.state === 'undisclosed' && deal.disclosure.deadlineISO) {
     const hours = hoursUntilISO(deal.disclosure.deadlineISO);
-    const threshold = thresholdForHours(hours);
+    // Overdue-aware: a past NIL Go deadline must read red, not calm-copper.
+    const threshold = urgencyForDeadline(deal.disclosure.deadlineISO);
     const chipColor = threshold === 'red' ? RED_DENIED : threshold === 'amber' ? AMBER_DUE : COPPER;
     const label =
       hours === null ? 'overdue'
@@ -370,7 +371,9 @@ function PaymentTruthRow({ deal, onPress }: { deal: DealTruth; onPress: () => vo
     .sort((a, b) => a.dueISO.localeCompare(b.dueISO))[0];
   if (nextDel && !disclosureChip) {
     const hours = hoursUntilISO(nextDel.dueISO);
-    const threshold = thresholdForHours(hours);
+    // Overdue-aware: an overdue deliverable must surface as red — previously
+    // thresholdForHours(null) returned green, so the chip was silently dropped.
+    const threshold = urgencyForDeadline(nextDel.dueISO);
     if (threshold === 'amber' || threshold === 'red') {
       const chipColor = threshold === 'red' ? RED_DENIED : AMBER_DUE;
       const label =

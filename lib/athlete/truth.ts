@@ -50,6 +50,7 @@ import {
   addBusinessDays as _addBusinessDays,
   hoursUntilISO as _hoursUntilISO,
   thresholdForHours as _thresholdForHours,
+  urgencyForDeadline as _urgencyForDeadline,
   truthSummary as _truthSummary,
   nextDisclosureDeadline as _nextDisclosureDeadline,
   upcomingDeliverables as _upcomingDeliverables,
@@ -60,6 +61,10 @@ export const addBusinessDays = _addBusinessDays as (startDate: Date, businessDay
 export const hoursUntilISO = _hoursUntilISO as (isoString: string | null | undefined) => number | null;
 
 export const thresholdForHours = _thresholdForHours as (hours: number | null) => 'red' | 'amber' | 'green';
+
+export const urgencyForDeadline = _urgencyForDeadline as (
+  deadlineISO: string | null | undefined,
+) => 'red' | 'amber' | 'green';
 
 export const truthSummary = _truthSummary as (deals: DealTruth[]) => TruthSummaryResult;
 

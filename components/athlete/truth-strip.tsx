@@ -26,7 +26,7 @@ import {
   truthSummary,
   nextDisclosureDeadline,
   hoursUntilISO,
-  thresholdForHours,
+  urgencyForDeadline,
 } from '@/lib/athlete/truth';
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import type { DealTruth } from '@/lib/athlete/truth';
@@ -67,7 +67,9 @@ export function TruthStrip({ deals = DEAL_TRUTH_FIXTURE }: TruthStripProps) {
   let disclosureChip: React.ReactNode = null;
   if (urgentDeal) {
     const hours = hoursUntilISO(urgentDeal.disclosure.deadlineISO ?? undefined);
-    const threshold = thresholdForHours(hours);
+    // Overdue-aware: a past NIL Go deadline must read RED, not calm-copper.
+    // hoursUntilISO clamps the past to null, so colour from the deadline itself.
+    const threshold = urgencyForDeadline(urgentDeal.disclosure.deadlineISO ?? undefined);
     const textColor = threshold === 'red' ? RED : threshold === 'amber' ? AMBER : COPPER;
     const countdownLabel = formatCountdownLabel(hours);
 

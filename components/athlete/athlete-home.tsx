@@ -23,7 +23,7 @@ import {
   upcomingDeliverables,
   nextDisclosureDeadline,
   hoursUntilISO,
-  thresholdForHours,
+  urgencyForDeadline,
 } from '@/lib/athlete/truth';
 import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
 import { DEAL_ENGINE_STORAGE_KEY, DEMO_DEAL } from '@/lib/data/mock-deal-engine';
@@ -136,13 +136,16 @@ function buildDueRows(deals: DealTruth[], engineDeals: EngineDeal[]): DueRow[] {
   // 1. NIL Go disclosure countdowns (undisclosed deals)
   const urgentDisclosure = nextDisclosureDeadline(deals);
   if (urgentDisclosure) {
-    const hours = hoursUntilISO(urgentDisclosure.disclosure.deadlineISO ?? undefined);
+    const deadlineISO = urgentDisclosure.disclosure.deadlineISO ?? undefined;
+    const hours = hoursUntilISO(deadlineISO);
     rows.push({
       key: `disclosure-${urgentDisclosure.dealId}`,
       label: `Report ${urgentDisclosure.brand} to NIL Go`,
       subLabel: `${countdownLabel(hours)} left`,
       hours,
-      urgency: thresholdForHours(hours),
+      // Overdue-aware: a past NIL Go deadline is the hardest eligibility
+      // consequence and must read red, not the calm "no deadline" green.
+      urgency: urgencyForDeadline(deadlineISO),
     });
   }
 
@@ -155,7 +158,7 @@ function buildDueRows(deals: DealTruth[], engineDeals: EngineDeal[]): DueRow[] {
       label: del.label,
       subLabel: `${del.brand} · due ${formatShortDate(del.dueISO)}`,
       hours,
-      urgency: thresholdForHours(hours),
+      urgency: urgencyForDeadline(del.dueISO),
     });
   }
 
@@ -236,8 +239,10 @@ function paymentStateChip(state: PaymentStateAlias): { label: string; color: str
 
 function disclosureNilGoChip(deal: DealTruth): { label: string; color: string } | null {
   if (deal.disclosure.state !== 'undisclosed') return null;
-  const hours = hoursUntilISO(deal.disclosure.deadlineISO ?? undefined);
-  const urgency = thresholdForHours(hours);
+  const deadlineISO = deal.disclosure.deadlineISO ?? undefined;
+  const hours = hoursUntilISO(deadlineISO);
+  // Overdue-aware: past NIL Go deadline → red (not calm-copper).
+  const urgency = urgencyForDeadline(deadlineISO);
   const color = urgency === 'red' ? RED : urgency === 'amber' ? AMBER : COPPER;
   const label =
     hours === null
