@@ -7,6 +7,7 @@
 // No animations (charter law). Tabular numerals throughout.
 
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   Alert,
@@ -49,6 +50,8 @@ const PIPELINE_STAGES: PipelineStage[] = ['SOURCED', 'NEGOTIATING', 'SIGNED', 'C
 // ── Client fixture type ───────────────────────────────────────────────────
 type ClientRow = {
   id: string;
+  /** Maps to an AGENT_ATHLETES id so the card opens the real athlete/audience detail. */
+  athleteId: string;
   name: string;
   initials: string;
   avatarColor: string;
@@ -66,6 +69,7 @@ type ClientRow = {
 const CLIENT_ROWS: ClientRow[] = [
   {
     id: 'c-1',
+    athleteId: 'a-1',
     name: 'Kiyan Anthony',
     initials: 'KA',
     avatarColor: ACCENT,
@@ -80,6 +84,7 @@ const CLIENT_ROWS: ClientRow[] = [
   },
   {
     id: 'c-2',
+    athleteId: 'a-2',
     name: 'JJ Starling',
     initials: 'JS',
     avatarColor: '#F76900',
@@ -94,6 +99,7 @@ const CLIENT_ROWS: ClientRow[] = [
   },
   {
     id: 'c-3',
+    athleteId: 'a-3',
     name: 'Maya Chen',
     initials: 'MC',
     avatarColor: '#2774AE',
@@ -108,6 +114,7 @@ const CLIENT_ROWS: ClientRow[] = [
   },
   {
     id: 'c-4',
+    athleteId: 'a-4',
     name: 'Jalen Ortiz',
     initials: 'JO',
     avatarColor: '#00274C',
@@ -204,6 +211,7 @@ export interface AgentClientsProps {
 }
 
 export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentClientsProps) {
+  const router = useRouter();
   return (
     <ScrollView
       style={s.scroll}
@@ -234,11 +242,22 @@ export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentC
         <Text style={s.inviteHint}>Athletes add you from their Deals tab</Text>
       </Pressable>
 
-      {/* Client rows */}
+      {/* Client rows — tap a card to open the athlete's audience/detail screen */}
       {CLIENT_ROWS.map((client) => {
         const isPendingFee = client.feeStatus === 'pending-athlete';
         return (
-          <View key={client.id} style={s.clientCard}>
+          <Pressable
+            key={client.id}
+            style={({ pressed }) => [s.clientCard, pressed && { opacity: 0.65 }]}
+            onPress={() =>
+              router.push({
+                pathname: '/agent/athlete/[id]',
+                params: { id: client.athleteId },
+              })
+            }
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${client.name} · ${client.sport} · ${client.activeDeals} active deals`}
+          >
             {/* Avatar + name row */}
             <View style={s.clientTopRow}>
               <View style={[s.avatar, { backgroundColor: client.avatarColor }]}>
@@ -280,7 +299,7 @@ export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentC
               <Ionicons name="time-outline" size={12} color={TEXT_SECONDARY} />
               <Text style={s.deadlineText} numberOfLines={1}>{client.nextDeadline}</Text>
             </View>
-          </View>
+          </Pressable>
         );
       })}
     </ScrollView>

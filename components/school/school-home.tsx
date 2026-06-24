@@ -14,6 +14,7 @@
 // No animations (charter law). Tabular numerals throughout.
 
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
   Alert,
@@ -49,6 +50,9 @@ import {
   WEIGHT,
 } from '@/components/shared/ui-kit/tokens';
 import { TriageDetailSheet, type TriageDetail } from '@/components/school/triage-detail-sheet';
+
+// Demo school context — both full-screen compliance routes key off this.
+const SCHOOL_ID = 'school:syracuse';
 
 // ── Module helpers ─────────────────────────────────────────────────────────
 
@@ -111,7 +115,7 @@ const TRIAGE_ROWS: TriageRow[] = [
   },
 ];
 
-function NilGoTriageModule() {
+function NilGoTriageModule({ onOpenQueue }: { onOpenQueue: () => void }) {
   // Tapping a row opens a CHARTER-SAFE flag detail: clock + flag state +
   // banded value + SPARTA/AE flags + export. No dollar ledger, no approve/veto.
   const [openRow, setOpenRow] = React.useState<TriageDetail | null>(null);
@@ -163,6 +167,17 @@ function NilGoTriageModule() {
         );
       })}
       <Text style={s.triageFooter}>12 more · all clear ✓</Text>
+      {/* Primary entry → full-screen approval queue (approve a deal end-to-end) */}
+      <Pressable
+        style={({ pressed }) => [s.queueBtn, { opacity: pressed ? 0.65 : 1 }]}
+        onPress={onOpenQueue}
+        accessibilityRole="button"
+        accessibilityLabel="Open the full approval queue"
+      >
+        <Ionicons name="albums-outline" size={14} color={ACCENT} />
+        <Text style={s.queueBtnText}>OPEN APPROVAL QUEUE</Text>
+        <Ionicons name="chevron-forward" size={14} color={ACCENT} />
+      </Pressable>
       <TriageDetailSheet row={openRow} visible={openRow !== null} onClose={() => setOpenRow(null)} />
     </View>
   );
@@ -212,9 +227,23 @@ function SpartaLedgerModule() {
       {AGENT_ROWS.map((row) => {
         const isPending = row.noticeType === 'pending';
         return (
-          <View
+          <Pressable
             key={row.id}
-            style={[s.agentRow, isPending && s.agentRowPending]}
+            style={({ pressed }) => [
+              s.agentRow,
+              isPending && s.agentRowPending,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+            onPress={() =>
+              Alert.alert(
+                `${row.agent} → ${row.athlete}`,
+                isPending
+                  ? `SPARTA notice still pending — ${row.notice}. The office logs the clock; the agent files the notice. No action required from you.`
+                  : `SPARTA notice on file — ${row.notice}. Registered and receipt archived for audit defense.`,
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel={`Agent notice: ${row.agent} for ${row.athlete} — ${row.notice}`}
           >
             {isPending && <View style={s.agentStripe} />}
             <View style={s.agentContent}>
@@ -233,7 +262,7 @@ function SpartaLedgerModule() {
                 {row.detail ? <Text style={s.agentCheck}> {row.detail}</Text> : null}
               </Text>
             </View>
-          </View>
+          </Pressable>
         );
       })}
       {/* Primary export CTA — keeps ACCENT (act-now affordance) */}
@@ -263,7 +292,7 @@ const AE_STATS = [
   { value: '0', label: 'warehousing flags' },
 ];
 
-function AeExposureModule() {
+function AeExposureModule({ onOpenRiskReport }: { onOpenRiskReport: () => void }) {
   return (
     <View style={s.card}>
       <SectionHeader label="AE EXPOSURE" />
@@ -275,12 +304,29 @@ function AeExposureModule() {
           </View>
         ))}
       </View>
-      <View style={[s.flagRow, s.flagRowAmber]}>
+      <Pressable
+        style={({ pressed }) => [s.flagRow, s.flagRowAmber, { opacity: pressed ? 0.7 : 1 }]}
+        onPress={onOpenRiskReport}
+        accessibilityRole="button"
+        accessibilityLabel="Open the audit-defense risk report for Orange Collective exposure"
+      >
         <View style={s.flagStripe} />
         <Text style={s.flagText} numberOfLines={2}>
           Orange Collective — 2 deals awaiting valid-business-purpose docs
         </Text>
-      </View>
+        <Ionicons name="chevron-forward" size={14} color={SIGNAL_WARN} style={s.flagChevron} />
+      </Pressable>
+      {/* Audit/Risk entry → full-screen audit-defense rollup (AD audit defense) */}
+      <Pressable
+        style={({ pressed }) => [s.queueBtn, { opacity: pressed ? 0.65 : 1 }]}
+        onPress={onOpenRiskReport}
+        accessibilityRole="button"
+        accessibilityLabel="Open the full audit-defense risk report"
+      >
+        <Ionicons name="shield-checkmark-outline" size={14} color={ACCENT} />
+        <Text style={s.queueBtnText}>VIEW RISK REPORT</Text>
+        <Ionicons name="chevron-forward" size={14} color={ACCENT} />
+      </Pressable>
     </View>
   );
 }
@@ -319,12 +365,23 @@ function PaymentAlertsModule() {
   return (
     <View style={s.card}>
       <SectionHeader label="PAYMENT ALERTS" />
-      <View style={[s.flagRow, s.flagRowAmber]}>
+      <Pressable
+        style={({ pressed }) => [s.flagRow, s.flagRowAmber, { opacity: pressed ? 0.7 : 1 }]}
+        onPress={() =>
+          Alert.alert(
+            'Hometown Auto — reliability: low',
+            '2 athletes report being unpaid more than 30 days. This signal is derived from athlete-confirmed payment truth — the office sees the reliability flag, never the athlete ledger.',
+          )
+        }
+        accessibilityRole="button"
+        accessibilityLabel="Payment reliability flag: Hometown Auto, 2 athletes unpaid over 30 days"
+      >
         <View style={s.flagStripe} />
         <Text style={s.flagText} numberOfLines={2}>
           2 athletes unpaid {'>'} 30d by Hometown Auto (reliability: low)
         </Text>
-      </View>
+        <Ionicons name="chevron-forward" size={14} color={SIGNAL_WARN} style={s.flagChevron} />
+      </Pressable>
       <Text style={s.paymentFooter}>
         Brand reliability comes from athlete-confirmed payment truth.
       </Text>
@@ -354,6 +411,22 @@ export interface SchoolHomeProps {
 }
 
 export function SchoolHome({ bottomInset = 0, topInset = 0, onScroll }: SchoolHomeProps) {
+  const router = useRouter();
+
+  const openApprovalQueue = React.useCallback(() => {
+    router.push({
+      pathname: '/school/approval-queue',
+      params: { schoolId: SCHOOL_ID },
+    });
+  }, [router]);
+
+  const openRiskReport = React.useCallback(() => {
+    router.push({
+      pathname: '/school/risk-report',
+      params: { schoolId: SCHOOL_ID },
+    });
+  }, [router]);
+
   return (
     <ScrollView
       style={s.scroll}
@@ -365,9 +438,9 @@ export function SchoolHome({ bottomInset = 0, topInset = 0, onScroll }: SchoolHo
       onScroll={onScroll}
       scrollEventThrottle={16}
     >
-      <NilGoTriageModule />
+      <NilGoTriageModule onOpenQueue={openApprovalQueue} />
       <SpartaLedgerModule />
-      <AeExposureModule />
+      <AeExposureModule onOpenRiskReport={openRiskReport} />
       <DisclosureHealthModule />
       <PaymentAlertsModule />
       <FooterWall />
@@ -494,6 +567,26 @@ const s = StyleSheet.create({
     fontWeight: WEIGHT.semibold,
     color: SIGNAL_POSITIVE,
     marginTop: 2,
+  },
+
+  // Shared full-screen entry CTA (copper = act-now affordance)
+  queueBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginTop: SP_XS,
+    paddingVertical: 11,
+    borderRadius: RADIUS_CARD,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${ACCENT}55`,
+    backgroundColor: `${ACCENT}10`,
+  },
+  queueBtnText: {
+    fontSize: TEXT.caption,
+    fontWeight: WEIGHT.bold,
+    color: ACCENT,
+    letterSpacing: 0.7,
   },
 
   // ── Module 2: SPARTA Ledger ──────────────────────────────
@@ -627,6 +720,10 @@ const s = StyleSheet.create({
     paddingHorizontal: SP_SM,
     paddingVertical: 9,
     lineHeight: 16,
+  },
+  flagChevron: {
+    alignSelf: 'center',
+    marginRight: SP_SM,
   },
 
   // ── Module 4: Anomaly row ────────────────────────────────
