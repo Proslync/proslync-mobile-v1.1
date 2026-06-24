@@ -112,9 +112,9 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
       ),
     ],
     socialFootprint: {
-      instagram: '@pumahoops',
-      tiktok: '@pumahoops',
-      twitter: '@pumahoops',
+      instagram: '@nikehoops',
+      tiktok: '@nikehoops',
+      twitter: '@nikehoops',
     },
     trustMeta: {
       lastVerifiedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),

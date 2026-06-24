@@ -61,30 +61,28 @@ type CampaignRow = {
   dealId: string;
 };
 
+// The brand role is Nike Hoops (ROLE_META). Its campaign roster therefore
+// opens ONLY Nike Hoops deal packets (d-1 Dylan Harper, d-6 Cooper Flagg) —
+// never the Gatorade packet (d-4) it used to, which made the brand's identity
+// collapse into a different sponsor. Every module below (Active / Results /
+// Rebook) derives its athlete name from this single roster so the three
+// sections can never disagree within one screen.
 const ACTIVE_CAMPAIGNS: CampaignRow[] = [
   {
     id: 'ac-1',
-    athlete: 'Kiyan A.',
+    athlete: 'Dylan Harper',
     briefType: '3 Posts + Promo Code',
     currentStep: 'VERIFIED',
     proofState: 'verified',
-    dealId: 'd-4', // Kiyan Anthony · Syracuse
+    dealId: 'd-1', // Dylan Harper · Rutgers — Nike Hoops
   },
   {
     id: 'ac-2',
-    athlete: 'JJ S.',
-    briefType: 'Local Appearance',
+    athlete: 'Cooper Flagg',
+    briefType: 'Signature Capsule',
     currentStep: 'POSTED',
     proofState: 'posted',
-    dealId: 'd-1',
-  },
-  {
-    id: 'ac-3',
-    athlete: 'Maya C.',
-    briefType: 'Brand Ambassador Package',
-    currentStep: 'BRIEF',
-    proofState: 'funded',
-    dealId: 'd-6',
+    dealId: 'd-6', // Cooper Flagg · Duke — Nike Hoops signature line
   },
 ];
 
@@ -93,6 +91,25 @@ const ACTIVE_CAMPAIGNS: CampaignRow[] = [
 function campaignAthleteName(row: CampaignRow): string {
   const full = getBrandDealDetail(row.dealId)?.deal.athlete;
   return full ? full.split('·')[0].trim() : row.athlete;
+}
+
+// Short "First L." form for the compact Results / Rebook rows, derived from the
+// same packet so a "Dylan H." chip can never name a different athlete than the
+// "Dylan Harper" campaign row above it.
+function shortAthleteName(dealId: string, fallback: string): string {
+  const full = getBrandDealDetail(dealId)?.deal.athlete?.split('·')[0].trim();
+  if (!full) return fallback;
+  const [first, ...rest] = full.split(' ');
+  const lastInitial = rest.length ? `${rest[rest.length - 1]!.charAt(0)}.` : '';
+  return lastInitial ? `${first} ${lastInitial}` : first;
+}
+
+// First-name uppercase promo-code stem (e.g. "DYLAN20") derived from the packet
+// so a redemption code can never advertise an athlete who isn't on the roster.
+function promoCodeFor(dealId: string, suffix: string, fallback: string): string {
+  const full = getBrandDealDetail(dealId)?.deal.athlete?.split('·')[0].trim();
+  const first = full ? full.split(' ')[0] : fallback;
+  return `${first.toUpperCase()}${suffix}`;
 }
 
 // ── Fixture: clearance lines ──────────────────────────────────────────────
@@ -125,9 +142,13 @@ const CLEARANCE_ROWS: ClearanceRow[] = [
 ];
 
 // ── Fixture: redemption counter rows ─────────────────────────────────────
+// Codes are derived from the same roster dealIds as ACTIVE_CAMPAIGNS so the
+// promo code can never name an athlete the brand isn't running.
 type RedemptionRow = {
   id: string;
-  code: string;
+  dealId: string;
+  codeSuffix: string;
+  codeFallback: string;
   redemptions: number;
   trackedSales: string;
 };
@@ -135,13 +156,17 @@ type RedemptionRow = {
 const REDEMPTION_ROWS: RedemptionRow[] = [
   {
     id: 'rd-1',
-    code: 'KIYAN20',
+    dealId: 'd-1', // Dylan Harper
+    codeSuffix: '20',
+    codeFallback: 'DYLAN',
     redemptions: 47,
     trackedSales: '$1,880',
   },
   {
     id: 'rd-2',
-    code: 'JJ15',
+    dealId: 'd-6', // Cooper Flagg
+    codeSuffix: '15',
+    codeFallback: 'COOPER',
     redemptions: 31,
     trackedSales: '$1,240',
   },
@@ -150,7 +175,8 @@ const REDEMPTION_ROWS: RedemptionRow[] = [
 // ── Fixture: past performer rebook rows ──────────────────────────────────
 type RebookRow = {
   id: string;
-  athlete: string;
+  dealId: string;
+  athleteFallback: string;
   campaigns: number;
   onTime: boolean;
 };
@@ -158,13 +184,15 @@ type RebookRow = {
 const REBOOK_ROWS: RebookRow[] = [
   {
     id: 'rb-1',
-    athlete: 'Kiyan A.',
+    dealId: 'd-1', // Dylan Harper
+    athleteFallback: 'Dylan H.',
     campaigns: 3,
     onTime: true,
   },
   {
     id: 'rb-2',
-    athlete: 'JJ S.',
+    dealId: 'd-6', // Cooper Flagg
+    athleteFallback: 'Cooper F.',
     campaigns: 2,
     onTime: true,
   },
@@ -282,7 +310,9 @@ function ResultsModule() {
       <SectionHeader label="RESULTS" />
       {REDEMPTION_ROWS.map((row, idx) => (
         <View key={row.id} style={[s.redemptionRow, idx > 0 && s.redemptionRowBorder]}>
-          <Text style={s.redemptionCode}>{row.code}</Text>
+          <Text style={s.redemptionCode}>
+            {promoCodeFor(row.dealId, row.codeSuffix, row.codeFallback)}
+          </Text>
           <Text style={s.redemptionMeta}>
             <Text style={s.redemptionCount}>{row.redemptions}</Text>
             <Text style={s.redemptionCountLabel}> redemptions</Text>
@@ -303,10 +333,12 @@ function RebookModule() {
   return (
     <View style={s.card}>
       <SectionHeader label="REBOOK" />
-      {REBOOK_ROWS.map((row, idx) => (
+      {REBOOK_ROWS.map((row, idx) => {
+        const athlete = shortAthleteName(row.dealId, row.athleteFallback);
+        return (
         <View key={row.id} style={[s.rebookRow, idx > 0 && s.rebookRowBorder]}>
           <View style={{ flex: 1 }}>
-            <Text style={s.rebookAthlete}>{row.athlete}</Text>
+            <Text style={s.rebookAthlete}>{athlete}</Text>
             <Text style={s.rebookMeta}>
               {row.campaigns} campaigns · {row.onTime ? 'on time ✓' : 'late once'}
             </Text>
@@ -321,7 +353,7 @@ function RebookModule() {
               )
             }
             accessibilityRole="button"
-            accessibilityLabel={`Rebook ${row.athlete}`}
+            accessibilityLabel={`Rebook ${athlete}`}
           >
             <Text style={s.rebookChipText}>REBOOK</Text>
           </Pressable>
@@ -335,12 +367,13 @@ function RebookModule() {
               )
             }
             accessibilityRole="button"
-            accessibilityLabel={`Make ${row.athlete} ambassador`}
+            accessibilityLabel={`Make ${athlete} ambassador`}
           >
             <Text style={s.ambassadorChipText}>MAKE AMBASSADOR</Text>
           </Pressable>
         </View>
-      ))}
+        );
+      })}
     </View>
   );
 }

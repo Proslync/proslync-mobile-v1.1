@@ -65,7 +65,7 @@ const ROLE_META: Record<ProfileRole, RoleMeta> = {
     icon: 'briefcase-outline',
     color: '#00C6B0',
     name: 'Nike Hoops',
-    handle: '@pumahoops',
+    handle: '@nikehoops',
   },
   fan: {
     label: 'Fan',

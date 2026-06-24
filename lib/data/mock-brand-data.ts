@@ -2,10 +2,10 @@
 
 export const BRAND_PROFILE = {
   name: 'Nike Hoops',
-  handle: 'pumahoops',
+  handle: 'nikehoops',
   metaPrimary: 'NIL & Amateur Athletics',
-  metaSecondary: 'Boston, MA · HQ',
-  tagline: 'Forever Faster. On-court, in-class, in culture.',
+  metaSecondary: 'Beaverton, OR · HQ',
+  tagline: 'Just Do It. On-court, in-class, in culture.',
   bio: [
     {
       key: 'mission',
@@ -25,7 +25,7 @@ export const BRAND_PROFILE = {
     {
       key: 'team',
       title: 'Team',
-      body: 'Led by Tosan Evbuomwan (VP, NIL & Grassroots). 6-person deal team + 4-person creative team based in Boston and LA. Legal handled by Reed Smith NIL group.',
+      body: 'Led by Tosan Evbuomwan (VP, NIL & Grassroots). 6-person deal team + 4-person creative team based in Beaverton and LA. Legal handled by Reed Smith NIL group.',
     },
   ],
   stats: [

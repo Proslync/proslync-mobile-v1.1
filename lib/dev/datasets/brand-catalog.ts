@@ -26,7 +26,7 @@ export const BRAND_CATALOG: BrandItem[] = [
   { id: "br-nike", name: "Nike", handle: "@nike", category: "Athleticwear", initials: "N", color: "#000000", followers: "12.4M", logoAssetId: requireLogo("br-nike") },
   { id: "br-gatorade", name: "Gatorade", handle: "@gatorade", category: "Hydration", initials: "G", color: "#FF6900", followers: "4.1M", logoAssetId: requireLogo("br-gatorade") },
   { id: "br-adidas", name: "Adidas", handle: "@adidas", category: "Athleticwear", initials: "A", color: "#000000", followers: "11.2M", logoAssetId: requireLogo("br-adidas") },
-  { id: "br-puma", name: "Nike Hoops", handle: "@pumahoops", category: "Basketball", initials: "P", color: "#000000", followers: "2.4M", logoAssetId: requireLogo("br-puma") },
+  { id: "br-puma", name: "Nike Hoops", handle: "@nikehoops", category: "Basketball", initials: "N", color: "#000000", followers: "2.4M", logoAssetId: requireLogo("br-puma") },
   { id: "br-spotify", name: "Spotify", handle: "@spotify", category: "Music / creator", initials: "S", color: "#1DB954", followers: "8.6M", logoAssetId: requireLogo("br-spotify") },
   { id: "br-atandt", name: "AT&T", handle: "@att", category: "Tech / telecom", initials: "A", color: "#00A8E0", followers: "3.7M", logoAssetId: requireLogo("br-atandt") },
   { id: "br-underarmour", name: "Under Armour", handle: "@underarmour", category: "Athleticwear", initials: "UA", color: "#000000", followers: "5.9M", logoAssetId: requireLogo("br-underarmour") },
