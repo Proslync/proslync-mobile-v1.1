@@ -333,7 +333,7 @@ export const FAN_PERKS: Perk[] = [
     athlete: 'JMA Wireless Dome',
     cost: 6000,
     tier: 'Platinum',
-    claimed: false,
+    claimed: true,
     description: 'Section A · Row 1 · Complimentary parking included',
   },
   {
@@ -363,7 +363,7 @@ export const FAN_PERKS: Perk[] = [
     athlete: 'Syracuse Men\'s Basketball',
     cost: 8500,
     tier: 'Platinum',
-    claimed: false,
+    claimed: true,
     description: 'Watch practice from courtside · no meet, silent observe',
   },
   {

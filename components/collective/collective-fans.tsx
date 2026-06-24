@@ -126,6 +126,7 @@ type OverdueRow = {
 
 const OVERDUE_ROWS: OverdueRow[] = [
   { id: 'ov-1', desc: 'M. Reid shoutout', age: '6 days' },
+  { id: 'ov-2', desc: 'A. Carter signed photo', age: '3 days' },
 ];
 
 function PerkFulfillmentModule() {
@@ -143,7 +144,11 @@ function PerkFulfillmentModule() {
           <Text style={s.fulfillLabel}>median delivery</Text>
         </View>
         <View style={[s.fulfillStat, s.fulfillStatBorder]}>
-          <Text style={[s.fulfillValue, s.fulfillValueAmber]}>2</Text>
+          {/* Derived from the overdue list below so the count can't drift from
+              the rows it summarizes (PART 8). */}
+          <Text style={[s.fulfillValue, s.fulfillValueAmber]}>
+            {OVERDUE_ROWS.length}
+          </Text>
           <Text style={s.fulfillLabel}>overdue</Text>
         </View>
       </View>

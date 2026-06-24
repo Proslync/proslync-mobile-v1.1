@@ -230,7 +230,13 @@ function claimedPerkToSheet(p: (typeof FAN_PERKS)[number]): SheetPerk {
   };
 }
 
-function PerksRedeemedSection({ onOpenHistory }: { onOpenHistory: () => void }) {
+function PerksRedeemedSection({
+  onOpenHistory,
+  redeemedCount,
+}: {
+  onOpenHistory: () => void;
+  redeemedCount: number;
+}) {
   return (
     <View style={s.card}>
       <SectionHeader label="PERKS REDEEMED" />
@@ -242,7 +248,9 @@ function PerksRedeemedSection({ onOpenHistory }: { onOpenHistory: () => void }) 
       >
         <View style={s.perksRedeemedStat}>
           <Ionicons name="checkmark-circle" size={16} color={GREEN} />
-          <Text style={s.perksRedeemedValue}>7</Text>
+          {/* Derived from the claimed-perks list the history sheet renders, so
+              the stat and the list can never drift (PART 8). */}
+          <Text style={s.perksRedeemedValue}>{redeemedCount}</Text>
           <Text style={s.perksRedeemedLabel}>perks redeemed</Text>
         </View>
         <View style={s.perksRedeemedDivider} />
@@ -325,6 +333,13 @@ export default function FanProfile({ footer }: FanProfileProps) {
   const [athleteSheet, setAthleteSheet] = React.useState<FanAthlete | null>(null);
   const [historyVisible, setHistoryVisible] = React.useState(false);
   const [perkSheet, setPerkSheet] = React.useState<SheetPerk | null>(null);
+
+  // PERKS REDEEMED count is derived from the same claimed-perks list the
+  // history sheet renders, so the stat and the list never drift (PART 8).
+  const redeemedCount = React.useMemo(
+    () => FAN_PERKS.filter((p) => p.claimed).length,
+    [],
+  );
 
   // ── Unmounted state (kept for future re-enable without re-archaeology) ──
   // const _tab = React.useState<_TabKey>('about');
@@ -470,7 +485,10 @@ export default function FanProfile({ footer }: FanProfileProps) {
           <SupporterCardSection />
           <SegmentSection />
           <RosterSupportedSection onOpenAthlete={setAthleteSheet} />
-          <PerksRedeemedSection onOpenHistory={() => setHistoryVisible(true)} />
+          <PerksRedeemedSection
+            onOpenHistory={() => setHistoryVisible(true)}
+            redeemedCount={redeemedCount}
+          />
 
           {/* Injected footer (LinkedRolesPanel + Sign out from profile.tsx) */}
           {footer}
