@@ -26,8 +26,13 @@ export interface CoachNilRow {
   classYear: string;
   jerseyNumber: number;
   nilStatus: CoachRosterNilStatus;
-  /** Display value of the latest BRAND_DEAL for this athlete, or null. */
-  lastDealValue: string | null;
+  /**
+   * Dollar-BLIND status of the latest BRAND_DEAL for this athlete (deal
+   * stage, e.g. "Signed" / "In negotiation"), or null. Coach surfaces never
+   * see deal dollar amounts (the dollar-blind wall) — the coach needs to know
+   * a deal exists and where it sits in compliance, not what it's worth.
+   */
+  lastDealStatus: string | null;
   /** Latest disclosure review state for this athlete, or null. */
   lastDisclosureState: DisclosureReviewState | null;
   /** Pre-formatted human label for `lastDisclosureState` (sentence case). */
@@ -68,7 +73,7 @@ export function buildCoachNilRows({
         classYear: entry.classYear,
         jerseyNumber: entry.jerseyNumber,
         nilStatus: entry.nilStatus,
-        lastDealValue: latestDeal?.value ?? null,
+        lastDealStatus: latestDeal ? formatDealStage(latestDeal.stage) : null,
         lastDisclosureState: latestDisclosure?.reviewState ?? null,
         lastDisclosureLabel: latestDisclosure
           ? formatDisclosureState(latestDisclosure.reviewState)
@@ -127,6 +132,27 @@ function pickLatestDisclosure(
   // Disclosures already arrive in fixture order; reuse last as latest
   // until we have a real `updatedAt` to sort on.
   return disclosures[disclosures.length - 1] ?? null;
+}
+
+/** Dollar-free, sentence-case label for a deal stage — the only deal signal a
+ *  (dollar-blind) coach surface is allowed to show. */
+function formatDealStage(stage: Deal['stage']): string {
+  switch (stage) {
+    case 'draft':
+      return 'Drafting';
+    case 'sent':
+      return 'Offer sent';
+    case 'negotiation':
+      return 'In negotiation';
+    case 'signed':
+      return 'Signed';
+    case 'live':
+      return 'Active';
+    default: {
+      const exhaustive: never = stage;
+      return exhaustive;
+    }
+  }
 }
 
 function formatDisclosureState(state: DisclosureReviewState): string {

@@ -167,7 +167,7 @@ function NilWatchRow({
         <View style={styles.rowFootRow}>
           <Text style={styles.rowFootLabel}>Last deal</Text>
           <Text style={styles.rowFootValue}>
-            {row.lastDealValue ?? '—'}
+            {row.lastDealStatus ?? '—'}
           </Text>
           <Text style={styles.rowFootLabel}>· Disclosure</Text>
           <Text style={styles.rowFootValue}>
