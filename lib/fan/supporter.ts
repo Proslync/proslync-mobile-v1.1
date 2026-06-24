@@ -65,18 +65,83 @@ function tierLabel(tier: SupporterPass['tier']): string {
   }
 }
 
+// ── Demo seed ────────────────────────────────────────────────────────────
+// Fresh-demo safety net: Fan HQ keys its feed / perks / "My athletes" off
+// stored supporter passes, so a clean install lands on a mostly-empty page.
+// When storage has none, surface these seeded passes (+ their receipts) so the
+// fan landing tells a coherent story out of the box. Athlete ids/names match
+// the supporter-only feed rows ("Kiyan A.", "JJ Starling") so nothing
+// contradicts. The user can still cancel them; once they take any action the
+// real persisted map/array takes over. priceCents matches tierLabel().
+const SEED_NOW = new Date();
+function seedISO(daysAgo: number): string {
+  return new Date(SEED_NOW.getTime() - daysAgo * 24 * 3600e3).toISOString();
+}
+
+const SEEDED_PASSES: Record<string, SupporterPass> = {
+  'a-1': {
+    athleteId: 'a-1',
+    athleteName: 'Kiyan Anthony',
+    tier: 'courtside',
+    priceCents: 25_00,
+    supporterNumber: 15,
+    startedAtISO: seedISO(34),
+  },
+  'a-4': {
+    athleteId: 'a-4',
+    athleteName: 'JJ Starling',
+    tier: 'insider',
+    priceCents: 12_00,
+    supporterNumber: 8,
+    startedAtISO: seedISO(12),
+  },
+};
+
+function seededReceiptFor(
+  pass: SupporterPass,
+  idSuffix: string,
+  atISO: string,
+): SupporterReceipt {
+  const { toAthleteCents, platformCents } = splitCents(pass.priceCents);
+  return {
+    id: `seed-rcpt-${pass.athleteId}-${idSuffix}`,
+    passAthleteId: pass.athleteId,
+    atISO,
+    paidCents: pass.priceCents,
+    toAthleteCents,
+    platformCents,
+    note: `${tierLabel(pass.tier)} — monthly`,
+    ledger: [
+      { id: `seed-${pass.athleteId}-${idSuffix}-pay`, atISO, kind: 'supporter-credit', amountCents: pass.priceCents, sign: 1, ref: pass.athleteId },
+      { id: `seed-${pass.athleteId}-${idSuffix}-athlete`, atISO, kind: 'payout', amountCents: toAthleteCents, sign: -1, ref: pass.athleteId },
+      { id: `seed-${pass.athleteId}-${idSuffix}-platform`, atISO, kind: 'platform-fee', amountCents: platformCents, sign: -1, ref: pass.athleteId },
+    ],
+  };
+}
+
+// Two months of Kiyan + one month of JJ — most-recent last (the UI reads the
+// tail as the latest impact receipt).
+const SEEDED_RECEIPTS: SupporterReceipt[] = [
+  seededReceiptFor(SEEDED_PASSES['a-1']!, 'm1', seedISO(34)),
+  seededReceiptFor(SEEDED_PASSES['a-4']!, 'm1', seedISO(12)),
+  seededReceiptFor(SEEDED_PASSES['a-1']!, 'm2', seedISO(4)),
+];
+
 // ── Public API ─────────────────────────────────────────────────────────
 
-/** Load all stored passes (never throws — returns {} on corrupt). */
+/** Load all stored passes (never throws — returns the demo seed when storage
+ *  is empty so Fan HQ isn't blank on a fresh install). */
 export async function loadPasses(): Promise<Record<string, SupporterPass>> {
   try {
     const raw = await AsyncStorage.getItem(PASSES_KEY);
-    if (!raw) return {};
+    if (!raw) return { ...SEEDED_PASSES };
     const parsed = JSON.parse(raw);
-    if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) return {};
+    if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+      return { ...SEEDED_PASSES };
+    }
     return parsed as Record<string, SupporterPass>;
   } catch {
-    return {};
+    return { ...SEEDED_PASSES };
   }
 }
 
@@ -143,15 +208,16 @@ export async function cancelPass(athleteId: string): Promise<void> {
   }
 }
 
-/** Load all receipts (never throws — returns [] on corrupt). */
+/** Load all receipts (never throws — returns the demo seed when storage is
+ *  empty so the "Your impact" proof isn't blank on a fresh install). */
 export async function loadReceipts(): Promise<SupporterReceipt[]> {
   try {
     const raw = await AsyncStorage.getItem(RECEIPTS_KEY);
-    if (!raw) return [];
+    if (!raw) return [...SEEDED_RECEIPTS];
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) return [...SEEDED_RECEIPTS];
     return parsed as SupporterReceipt[];
   } catch {
-    return [];
+    return [...SEEDED_RECEIPTS];
   }
 }
