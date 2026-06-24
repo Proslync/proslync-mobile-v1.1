@@ -129,6 +129,58 @@ function buildDealTile(p: DealTilePresentation): DealCard {
 
 export const SECTIONS: Section[] = [
   {
+    id: 'ncaaf',
+    title: 'NCAA Football',
+    subtitle: '4 live · 12 today',
+    iconLabel: '🏈',
+    iconColor: '#5B3A1A',
+    accent: '#C8732B',
+    cards: [
+      {
+        id: 'ncaaf-1', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Q3 9:12',
+        away: { abbr: 'OSU', color: '#BB0000', score: 21 },
+        home: { abbr: 'MICH', color: '#00274C', score: 17 },
+        meta: 'The Big House',
+      },
+      {
+        id: 'ncaaf-2', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Q2 2:40',
+        away: { abbr: 'UGA', color: '#BA0C2F', score: 14 },
+        home: { abbr: 'BAMA', color: '#9E1B32', score: 10 },
+        meta: 'Bryant-Denny',
+      },
+      {
+        id: 'ncaaf-3', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Sat · 3:30p',
+        away: { abbr: 'TEX', color: '#BF5700' },
+        home: { abbr: 'OU', color: '#841617' },
+        meta: 'Cotton Bowl',
+      },
+      {
+        id: 'ncaaf-4', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Sat · 7:30p',
+        away: { abbr: 'ORE', color: '#154733' },
+        home: { abbr: 'WASH', color: '#4B2E83' },
+        meta: 'Husky Stadium',
+      },
+      {
+        id: 'ncaaf-5', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'LSU', color: '#461D7C', score: 31 },
+        home: { abbr: 'FLA', color: '#0021A5', score: 24 },
+        meta: 'The Swamp',
+      },
+      {
+        id: 'ncaaf-6', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final · OT',
+        away: { abbr: 'ND', color: '#0C2340', score: 28 },
+        home: { abbr: 'USC', color: '#990000', score: 27 },
+        meta: 'LA Memorial Coliseum',
+      },
+    ],
+  },
+  {
     id: 'ncaab',
     title: 'NCAA Basketball',
     subtitle: '6 live · 18 today',
@@ -651,6 +703,214 @@ export const SECTIONS: Section[] = [
       },
     ],
   },
+  {
+    id: 'soccer',
+    title: 'College Soccer',
+    subtitle: '2 live · 10 today',
+    iconLabel: '⚽',
+    iconColor: '#0B3D2E',
+    accent: '#2E9E5B',
+    cards: [
+      {
+        id: 'soccer-1', variant: 'matchup',
+        status: 'LIVE', statusLabel: "LIVE · 2nd 67'",
+        away: { abbr: 'UCLA', color: '#2774AE', score: 2 },
+        home: { abbr: 'STAN', color: '#8C1515', score: 1 },
+        meta: 'Cagan Stadium',
+      },
+      {
+        id: 'soccer-2', variant: 'matchup',
+        status: 'LIVE', statusLabel: "LIVE · 2nd 54'",
+        away: { abbr: 'UNC', color: '#4B9CD3', score: 1 },
+        home: { abbr: 'FSU', color: '#782F40', score: 1 },
+        meta: 'Seminole Soccer Complex',
+      },
+      {
+        id: 'soccer-3', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Tonight · 7:00p',
+        away: { abbr: 'ND', color: '#0C2340' },
+        home: { abbr: 'CLEM', color: '#F56600' },
+        meta: 'Historic Riggs Field',
+      },
+      {
+        id: 'soccer-4', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Sat · 6:00p',
+        away: { abbr: 'DUKE', color: '#00539B' },
+        home: { abbr: 'WAKE', color: '#9E7E38' },
+        meta: 'Spry Stadium',
+      },
+      {
+        id: 'soccer-5', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'GTWN', color: '#041E42', score: 3 },
+        home: { abbr: 'UVA', color: '#232D4B', score: 2 },
+        meta: 'Klöckner Stadium',
+      },
+      {
+        id: 'soccer-6', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final · 2OT',
+        away: { abbr: 'IND', color: '#990000', score: 1 },
+        home: { abbr: 'MD', color: '#E03A3E', score: 2 },
+        meta: 'Ludwig Field',
+      },
+    ],
+  },
+  {
+    id: 'softball',
+    title: 'College Softball',
+    subtitle: '2 live · 10 today',
+    iconLabel: '🥎',
+    iconColor: '#2E5A2E',
+    accent: '#E0533D',
+    cards: [
+      {
+        id: 'softball-1', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Bot 5th',
+        away: { abbr: 'UCLA', color: '#2D68C4', score: 3 },
+        home: { abbr: 'OU', color: '#841617', score: 6 },
+        meta: "Love's Field",
+      },
+      {
+        id: 'softball-2', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Top 7th',
+        away: { abbr: 'TENN', color: '#FF8200', score: 2 },
+        home: { abbr: 'ALA', color: '#9E1B32', score: 4 },
+        meta: 'Rhoads Stadium',
+      },
+      {
+        id: 'softball-3', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Sat · 6:00p',
+        away: { abbr: 'FSU', color: '#782F40' },
+        home: { abbr: 'FLA', color: '#0021A5' },
+        meta: 'Katie Seashole Pressly Stadium',
+      },
+      {
+        id: 'softball-4', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Tonight · 7:30p',
+        away: { abbr: 'ARK', color: '#9D2235' },
+        home: { abbr: 'TEX', color: '#BF5700' },
+        meta: 'Red & Charline McCombs Field',
+      },
+      {
+        id: 'softball-5', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'OKST', color: '#FF7300', score: 5 },
+        home: { abbr: 'WASH', color: '#4B2E83', score: 8 },
+        meta: 'Husky Softball Stadium',
+      },
+      {
+        id: 'softball-6', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final · 9 inn',
+        away: { abbr: 'LSU', color: '#461D7C', score: 1 },
+        home: { abbr: 'ALA', color: '#9E1B32', score: 0 },
+        meta: 'Rhoads Stadium',
+      },
+    ],
+  },
+  {
+    id: 'vball',
+    title: 'College Volleyball',
+    subtitle: '2 live · 8 today',
+    iconLabel: '🏐',
+    iconColor: '#3A2C5B',
+    accent: '#7B4FC2',
+    cards: [
+      {
+        id: 'vball-1', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Set 3 14-11',
+        away: { abbr: 'NEB', color: '#E41C38', score: 1 },
+        home: { abbr: 'WIS', color: '#C5050C', score: 1 },
+        meta: 'UW Field House',
+      },
+      {
+        id: 'vball-2', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Set 2 18-16',
+        away: { abbr: 'STAN', color: '#8C1515', score: 1 },
+        home: { abbr: 'ORE', color: '#154733', score: 0 },
+        meta: 'Matthew Knight Arena',
+      },
+      {
+        id: 'vball-3', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Tonight · 6:00p',
+        away: { abbr: 'LOU', color: '#AD0000' },
+        home: { abbr: 'PITT', color: '#003594' },
+        meta: 'Fitzgerald Field House',
+      },
+      {
+        id: 'vball-4', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Sat · 7:00p',
+        away: { abbr: 'UK', color: '#0033A0' },
+        home: { abbr: 'MINN', color: '#7A0019' },
+        meta: 'Maturi Pavilion',
+      },
+      {
+        id: 'vball-5', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'TEX', color: '#BF5700', score: 3 },
+        home: { abbr: 'PSU', color: '#041E42', score: 1 },
+        meta: 'Rec Hall',
+      },
+      {
+        id: 'vball-6', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final · 4 sets',
+        away: { abbr: 'CREI', color: '#005CA9', score: 1 },
+        home: { abbr: 'NEB', color: '#E41C38', score: 3 },
+        meta: 'Bob Devaney Sports Center',
+      },
+    ],
+  },
+  {
+    id: 'gym',
+    title: 'College Gymnastics',
+    subtitle: '2 live · 8 today',
+    iconLabel: '🤸',
+    iconColor: '#3A1F5B',
+    accent: '#B046C8',
+    cards: [
+      {
+        id: 'gym-1', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Rotation 3',
+        away: { abbr: 'OU', color: '#841617', score: 197.6 },
+        home: { abbr: 'LSU', color: '#461D7C', score: 198.1 },
+        meta: 'Pete Maravich Assembly Center',
+      },
+      {
+        id: 'gym-2', variant: 'matchup',
+        status: 'LIVE', statusLabel: 'LIVE · Rotation 2',
+        away: { abbr: 'CAL', color: '#003262', score: 197.3 },
+        home: { abbr: 'UTAH', color: '#CC0000', score: 197.9 },
+        meta: 'Jon M. Huntsman Center',
+      },
+      {
+        id: 'gym-3', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Fri · 7:00p',
+        away: { abbr: 'BAMA', color: '#9E1B32' },
+        home: { abbr: 'FLA', color: '#0021A5' },
+        meta: 'Exactech Arena',
+      },
+      {
+        id: 'gym-4', variant: 'matchup',
+        status: 'PRE', statusLabel: 'Sat · 4:00p',
+        away: { abbr: 'AUB', color: '#0C2340' },
+        home: { abbr: 'UK', color: '#0033A0' },
+        meta: 'Memorial Coliseum',
+      },
+      {
+        id: 'gym-5', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'DEN', color: '#8B2332', score: 196.9 },
+        home: { abbr: 'MICH', color: '#00274C', score: 197.8 },
+        meta: 'Crisler Center',
+      },
+      {
+        id: 'gym-6', variant: 'matchup',
+        status: 'FINAL', statusLabel: 'Final',
+        away: { abbr: 'UCLA', color: '#2D68C4', score: 197.2 },
+        home: { abbr: 'OSU', color: '#BB0000', score: 196.4 },
+        meta: 'Value City Arena',
+      },
+    ],
+  },
 ];
 
 // ───── Section gating ─────
@@ -660,13 +920,45 @@ export const SECTIONS: Section[] = [
 // deleted — every section still has tiles + a working /section/[id] page once
 // revealed, and the full SECTIONS export is unchanged.
 const DEFAULT_VISIBLE_SECTION_IDS: ReadonlySet<string> = new Set([
+  'ncaaf',
   'ncaab',
   'awards',
   'nba',
   'nil',
   'mlb',
+  'softball',
+  'soccer',
+  'vball',
+  'gym',
 ]);
 const STORAGE_KEY_REVEALED_SECTIONS = 'proslync:home:revealedSections:v1';
+
+// ── Sport filter ───────────────────────────────────────────────────────────
+// Maps each sport section to its sport chip. Sections NOT listed here
+// (awards, nil, portal) are cross-sport and only appear under "All".
+const SPORT_OF_SECTION: Record<string, string> = {
+  ncaaf: 'Football',
+  ncaab: 'Basketball',
+  nba: 'Basketball',
+  wnba: 'Basketball',
+  mlb: 'Baseball',
+  softball: 'Softball',
+  soccer: 'Soccer',
+  vball: 'Volleyball',
+  gym: 'Gymnastics',
+  nhl: 'Hockey',
+};
+// Chip display order (after "All"); only sports with ≥1 visible section show.
+const SPORT_ORDER = [
+  'Football',
+  'Basketball',
+  'Baseball',
+  'Softball',
+  'Soccer',
+  'Volleyball',
+  'Gymnastics',
+  'Hockey',
+];
 
 // ───── Helpers ─────
 
@@ -1198,6 +1490,7 @@ export default function FeedScreen() {
   const [composerOpen, setComposerOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [sportFilter, setSportFilter] = useState<string>('All');
   const [coverMedia, setCoverMedia] = useState<Record<string, CoverMedia>>({});
   const [customLogos, setCustomLogos] = useState<Record<string, string>>({});
   const [tileMedia, setTileMedia] = useState<Record<string, { uri: string; type: 'image' | 'video' }>>({});
@@ -1407,6 +1700,18 @@ export default function FeedScreen() {
     [visibleSectionIds],
   );
 
+  // Sport chips: "All" + each sport that has at least one visible section,
+  // in SPORT_ORDER. Derived so a chip never shows an empty feed.
+  const sportChips = useMemo(() => {
+    const present = new Set<string>();
+    for (const s of SECTIONS) {
+      if (!visibleSectionIds.has(s.id)) continue;
+      const sport = SPORT_OF_SECTION[s.id];
+      if (sport) present.add(sport);
+    }
+    return ['All', ...SPORT_ORDER.filter((sp) => present.has(sp))];
+  }, [visibleSectionIds]);
+
   // ── Tiles data (one tile per card + one hub tile per section) ──────────────
   // Only visible sections contribute tiles; hidden ones stay reachable via the
   // "Add sections" sheet (which reveals them) and their /section/[id] page.
@@ -1414,6 +1719,10 @@ export default function FeedScreen() {
     const result: Array<{ id: string; caption: string; subtitle: string; sectionId: string; dealId?: string }> = [];
     for (const section of SECTIONS) {
       if (!visibleSectionIds.has(section.id)) continue;
+      // Sport filter: when a specific sport is selected, only that sport's
+      // sections contribute. Cross-sport sections (awards/nil/portal) have no
+      // SPORT_OF_SECTION entry, so they appear only under "All".
+      if (sportFilter !== 'All' && SPORT_OF_SECTION[section.id] !== sportFilter) continue;
       // Hub tile (one per section)
       result.push({ id: `${section.id}:hub`, caption: section.title, subtitle: section.subtitle, sectionId: section.id });
       // Per-card tiles — params come from the shared tileParamsFromCard helper
@@ -1423,7 +1732,7 @@ export default function FeedScreen() {
       });
     }
     return result;
-  }, [visibleSectionIds]);
+  }, [visibleSectionIds, sportFilter]);
 
   const revealSection = useCallback((sectionId: string) => {
     setRevealedSections((prev) => (prev.includes(sectionId) ? prev : [...prev, sectionId]));
@@ -1539,6 +1848,32 @@ export default function FeedScreen() {
           paddingTop: HEADER_CLEARANCE,
           paddingBottom: 240,
         }}
+        ListHeaderComponent={
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.sportRow}
+            contentContainerStyle={styles.sportRowContent}
+          >
+            {sportChips.map((sport) => {
+              const active = sportFilter === sport;
+              return (
+                <Pressable
+                  key={sport}
+                  onPress={() => setSportFilter(sport)}
+                  style={[styles.sportChip, active && styles.sportChipActive]}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`Show ${sport}`}
+                >
+                  <Text style={[styles.sportChipText, active && styles.sportChipTextActive]}>
+                    {sport}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        }
         ListFooterComponent={
           hiddenSections.length > 0 ? (
             <Pressable
@@ -1627,7 +1962,7 @@ export default function FeedScreen() {
         />
       </Animated.View>
 
-      {/* Floating action pill — map · notifications · plus.
+      {/* Floating action pill — map · notifications · assistant.
           Same glass material, size, position and scroll-shrink as the
           profile/dashboard tab pills. */}
       <Animated.View
@@ -1659,14 +1994,6 @@ export default function FeedScreen() {
           </Pressable>
           <Pressable
             style={styles.floatingPillBtn}
-            onPress={() => setComposerOpen(true)}
-            accessibilityLabel="Create post"
-            accessibilityRole="button"
-          >
-            <SymbolView name="plus" size={20} tintColor="#FFF" />
-          </Pressable>
-          <Pressable
-            style={styles.floatingPillBtn}
             onPress={() => setAssistantOpen(true)}
             accessibilityLabel="Ask Proslync"
             accessibilityRole="button"
@@ -1695,6 +2022,35 @@ export default function FeedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: CANVAS },
+  // Sport filter row (All · Football · Basketball · …) at the top of the feed.
+  sportRow: {
+    marginBottom: 12,
+  },
+  sportRowContent: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  sportChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  sportChipActive: {
+    borderColor: 'rgba(255,111,60,0.55)',
+    backgroundColor: 'rgba(255,111,60,0.16)',
+  },
+  sportChipText: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  sportChipTextActive: {
+    color: '#FFFFFF',
+  },
   // Floating action pill — identical material/size/position to the
   // profile & dashboard tab pills, but with three icon actions.
   floatingPillWrap: {
