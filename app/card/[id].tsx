@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AbstractArt } from '@/components/fan/abstract-art';
 import { AthleteDetailSheet } from '@/components/athlete/athlete-detail-sheet';
+import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
 import { TILE_MEDIA_STORAGE_KEY, tileSlot, type TileLocalMedia } from '@/lib/home/tiles';
 import { healLocalMediaUri } from '@/lib/media/local-media';
 import { resolveSlotMedia } from '@/lib/media/resolve-media';
@@ -122,17 +123,30 @@ function deriveContent(
     const dealRoute = dealId
       ? `/deal/[id]?role=athlete&__id=${dealId}`
       : undefined;
+    // Derive the status + narrative from the SAME packet the tile routes to,
+    // so the card detail never claims a deal is "closed/executed" when the
+    // deal-detail page still shows Negotiate / Sent / Draft. Falls back to a
+    // stage-neutral line when the tile isn't bridged to a real packet.
+    const packet = dealId ? getBrandDealDetail(dealId) : undefined;
+    const stageLabel = packet?.stage.label ?? null;
+    const stageDescription = packet?.stage.description ?? null;
+    const statusValue = stageLabel
+      ? `${stageLabel} · on Proslync`
+      : 'On Proslync';
+    const context = stageDescription
+      ? `${athlete} × ${brand} — a ${duration} NIL partnership valued at ${value}. ${stageDescription} Track terms, money split, and compliance in the full deal packet on Proslync.`
+      : `${athlete} and ${brand} are working a ${duration} NIL partnership valued at ${value}. The deal covers merchandise, social media activations, and branded content on the Proslync marketplace.`;
     return {
       kind: 'deal',
       title: caption,
       subtitle: `NIL Deal · ${value}`,
-      context: `${athlete} and ${brand} have finalized a ${duration} NIL partnership valued at ${value}. The deal covers merchandise, social media activations, and branded content — one of the highest-value college NIL agreements closed this week on the Proslync marketplace.`,
+      context,
       metaRows: [
         { label: 'Athlete', value: athlete },
         { label: 'Brand', value: brand },
         { label: 'Value', value: value },
         { label: 'Term', value: duration },
-        { label: 'Status', value: 'Executed · Active' },
+        { label: 'Status', value: statusValue },
       ],
       related: [
         { icon: 'trending-up-outline', title: 'NIL Valuation', sub: `${athlete}'s market rate vs peers`, route: dealRoute },

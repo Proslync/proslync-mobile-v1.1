@@ -479,8 +479,11 @@ export const SECTIONS: Section[] = [
   },
   {
     id: 'nil',
+    // Subtitle is stage-agnostic on purpose: these tiles route to deal packets
+    // in mixed stages (Negotiate / Sent / Draft / Signed / Live), so claiming
+    // "Closed this week" would contradict the detail the user lands on.
     title: 'Top NIL Deals',
-    subtitle: 'Closed this week',
+    subtitle: 'Trending now',
     iconLabel: '💎',
     iconColor: '#14B8A6',
     accent: '#14B8A6',
