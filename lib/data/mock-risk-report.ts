@@ -110,7 +110,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
             '2 brand payors show shared registered-agent overlap with active collective.',
           rationale:
             'Bylaw 22 association test inconclusive — registered-agent overlap does not auto-trigger circumvention but warrants the structured layering review before cap attribution.',
-          relatedDealIds: ['d-2', 'd-7'],
+          relatedDealIds: ['d-2', 'd-3'],
           recommendedAction:
             'Request structured layering disclosure from both payors before period close.',
           sources: [
@@ -288,19 +288,19 @@ const DUKE_RISK_REPORT: RiskReport = {
       category: 'associated-entity-cap-circumvention',
       severity: 'watch',
       summary:
-        '1 deal (d-7 Cooper Flagg BWW) cleared AD pre-approval; no current payor association overlap detected in remaining portfolio.',
+        '1 deal (Cooper Flagg renewal) cleared AD pre-approval; no current payor association overlap detected in remaining portfolio.',
       reviewerState: 'pending-review',
       evidenceRefs: [syntheticSource('src-rr-duke-bylaw22', 'Bylaw 22 receipt batch — Duke')],
       findings: [
         {
           id: 'f-duke-asc-001',
           severity: 'watch',
-          headline: 'Cooper Flagg BWW ambassador (d-7) cleared AD pre-approval but secondary review pending.',
+          headline: 'Cooper Flagg signature renewal cleared AD pre-approval but secondary review pending.',
           rationale:
-            'Bylaw 22 association test for the BWW payor passed initial screen; AD-level secondary review still in queue.',
-          relatedDealIds: ['d-7'],
+            'Bylaw 22 association test for the payor passed initial screen; AD-level secondary review still in queue.',
+          relatedDealIds: ['d-6'],
           recommendedAction: 'Confirm AD-level secondary review before activation enters live stage.',
-          sources: [syntheticSource('src-rr-duke-asc-001', 'AD pre-approval memo — d-7', 1)],
+          sources: [syntheticSource('src-rr-duke-asc-001', 'AD pre-approval memo', 1)],
         },
       ],
     },

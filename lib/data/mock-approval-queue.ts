@@ -106,7 +106,7 @@ const ITEMS: ApprovalQueueItem[] = [
       'Mock heuristic sorted on surfaced fitScore + audience reach.',
       'No external evidence consulted.',
     ]),
-    source: syntheticSource('aq-src-001', 'Proslync · AI ranking output v0'),
+    source: syntheticSource('aq-src-001', 'Proslync · AI ranking output'),
   },
   {
     id: 'aq-002',
@@ -129,7 +129,7 @@ const ITEMS: ApprovalQueueItem[] = [
       'Amount-band heuristic flags high-value endorsement renewals.',
       'Verify Bylaw 22 threshold + payor association status.',
     ]),
-    source: syntheticSource('aq-src-002', 'Proslync · AI compliance v0', 1),
+    source: syntheticSource('aq-src-002', 'Proslync · AI compliance', 1),
   },
   {
     id: 'aq-003',
@@ -148,7 +148,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(7),
     dueBy: isoPlusHours(24),
     blockers: [],
-    source: syntheticSource('aq-src-003', 'Proslync · outbound queue v0', 0),
+    source: syntheticSource('aq-src-003', 'Proslync · outbound queue', 0),
   },
   {
     id: 'aq-004',
@@ -166,7 +166,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedBy: { actor: 'Maya L.', role: 'brand' },
     submittedAt: isoMinusHours(14),
     blockers: [],
-    source: syntheticSource('aq-src-004', 'Proslync · stage-change v0', 0),
+    source: syntheticSource('aq-src-004', 'Proslync · stage-change', 0),
   },
   {
     id: 'aq-005',
@@ -187,7 +187,7 @@ const ITEMS: ApprovalQueueItem[] = [
     blockers: [],
     source: syntheticSource(
       'aq-src-005',
-      'Proslync · NIL-Go-shaped disclosure v0',
+      'Proslync · NIL-Go-shaped disclosure',
       1,
     ),
   },
@@ -240,7 +240,7 @@ const ITEMS: ApprovalQueueItem[] = [
     trustMeta: trustFor('approved', 'medium', [
       'Reviewer accepted the surfaced fit + audience reach ordering.',
     ]),
-    source: syntheticSource('aq-src-007', 'Proslync · AI ranking output v0', 2),
+    source: syntheticSource('aq-src-007', 'Proslync · AI ranking output', 2),
     reviewerNote: 'Top-2 cleared for outreach; bottom-2 deferred.',
     resolvedBy: {
       actor: 'Mrs. Wilson',
@@ -264,7 +264,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedBy: { actor: 'Tosan E.', role: 'brand' },
     submittedAt: isoMinusHours(72),
     blockers: [],
-    source: syntheticSource('aq-src-008', 'Proslync · outbound queue v0', 3),
+    source: syntheticSource('aq-src-008', 'Proslync · outbound queue', 3),
     reviewerNote: 'Approved — press packet matches signed terms.',
     resolvedBy: {
       actor: 'Mrs. Wilson',
@@ -294,7 +294,7 @@ const ITEMS: ApprovalQueueItem[] = [
       'Insufficient rationale surfaced for off-tier athlete.',
       'Audience-match heuristic alone is not enough.',
     ]),
-    source: syntheticSource('aq-src-009', 'Proslync · AI ranking output v0', 1),
+    source: syntheticSource('aq-src-009', 'Proslync · AI ranking output', 1),
     reviewerNote: 'Refresh ranking once compliance + consent confirmed; resubmit then.',
     resolvedBy: {
       actor: 'Mrs. Wilson',
@@ -328,7 +328,7 @@ const ITEMS: ApprovalQueueItem[] = [
       'Platform-fee math derived from the rev-share ledger.',
       'Separate from House-v.-NCAA cap (PLAN P4).',
     ]),
-    source: syntheticSource('aq-src-010', 'Proslync · rev-share ledger v0', 4),
+    source: syntheticSource('aq-src-010', 'Proslync · rev-share ledger', 4),
   },
 
   // ── Expired (1) ────────────────────────────────────────
@@ -351,7 +351,7 @@ const ITEMS: ApprovalQueueItem[] = [
     blockers: ['Window closed before attestation landed.'],
     source: syntheticSource(
       'aq-src-011',
-      'Proslync · NIL-Go-shaped disclosure v0',
+      'Proslync · NIL-Go-shaped disclosure',
       6,
     ),
     reviewerNote: 'Expired — resubmit with refreshed attachments.',
@@ -374,17 +374,17 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedBy: { actor: 'Tosan E.', role: 'brand' },
     submittedAt: isoMinusHours(28),
     blockers: [],
-    source: syntheticSource('aq-src-012', 'Proslync · stage-change v0', 1),
+    source: syntheticSource('aq-src-012', 'Proslync · stage-change', 1),
   },
 
   // ── Phase-C expansion — pending (deal-graph activity) ───
   {
     id: 'aq-013',
     kind: 'compliance-review',
-    title: 'Beats add-on category overlap — Kiyan Anthony',
+    title: 'Category overlap review — Kiyan Anthony renewal',
     summary:
-      'Audio-category add-on (d-8) flagged against the Nike Hoops master agreement. Carve-out memo missing — blocks activation.',
-    subjectRef: { kind: 'deal', id: 'd-8', label: 'Kiyan Anthony · Syracuse — $210K Beats add-on' },
+      'Audio-category add-on flagged against the Nike Hoops master agreement on the Kiyan Anthony renewal. Carve-out memo missing — blocks activation.',
+    subjectRef: { kind: 'deal', id: 'd-4', label: 'Kiyan Anthony · Syracuse — $660K renewal' },
     priority: 'urgent',
     state: 'pending',
     submittedBy: { actor: 'Tosan E.', role: 'brand' },
@@ -395,7 +395,7 @@ const ITEMS: ApprovalQueueItem[] = [
       'Master-agreement category overlap auto-detected by mock reviewer.',
       'Carve-out memo must be attached before activation.',
     ]),
-    source: syntheticSource('aq-src-013', 'Proslync · master-agreement check v0', 0),
+    source: syntheticSource('aq-src-013', 'Proslync · master-agreement check', 0),
   },
   {
     id: 'aq-014',
@@ -410,7 +410,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(12),
     dueBy: isoPlusHours(36),
     blockers: [],
-    source: syntheticSource('aq-src-014', 'Proslync · outbound queue v0', 1),
+    source: syntheticSource('aq-src-014', 'Proslync · outbound queue', 1),
   },
   {
     id: 'aq-015',
@@ -425,7 +425,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(16),
     dueBy: isoPlusHours(54),
     blockers: [],
-    source: syntheticSource('aq-src-015', 'Proslync · NIL-Go-shaped disclosure v0', 0),
+    source: syntheticSource('aq-src-015', 'Proslync · NIL-Go-shaped disclosure', 0),
   },
   {
     id: 'aq-016',
@@ -443,7 +443,7 @@ const ITEMS: ApprovalQueueItem[] = [
     trustMeta: trustFor('pending', 'high', [
       'Royalty schedule is non-standard — escalated to AD.',
     ]),
-    source: syntheticSource('aq-src-016', 'Proslync · royalty review v0', 0),
+    source: syntheticSource('aq-src-016', 'Proslync · royalty review', 0),
   },
   {
     id: 'aq-017',
@@ -457,7 +457,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedBy: { actor: 'Maya L.', role: 'brand' },
     submittedAt: isoMinusHours(18),
     blockers: [],
-    source: syntheticSource('aq-src-017', 'Proslync · stage-change v0', 0),
+    source: syntheticSource('aq-src-017', 'Proslync · stage-change', 0),
   },
   {
     id: 'aq-018',
@@ -472,7 +472,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(10),
     dueBy: isoPlusHours(24),
     blockers: [],
-    source: syntheticSource('aq-src-018', 'Proslync · outbound queue v0', 0),
+    source: syntheticSource('aq-src-018', 'Proslync · outbound queue', 0),
   },
   // ── Phase-C expansion — approved ────────────────────────
   {
@@ -505,7 +505,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(56),
     blockers: [],
     trustMeta: trustFor('approved', 'high', ['Duke AD signed off; no master-agreement conflict.']),
-    source: syntheticSource('aq-src-020', 'Proslync · 3-track review v0', 2),
+    source: syntheticSource('aq-src-020', 'Proslync · 3-track review', 2),
     reviewerNote: 'Activation cleared.',
     resolvedBy: { actor: 'D. Roach', role: 'school', at: isoMinusHours(40) },
   },
@@ -521,7 +521,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedBy: { actor: 'Maya L.', role: 'brand' },
     submittedAt: isoMinusHours(80),
     blockers: [],
-    source: syntheticSource('aq-src-021', 'Proslync · outbound queue v0', 3),
+    source: syntheticSource('aq-src-021', 'Proslync · outbound queue', 3),
     reviewerNote: 'Approved — packet matches d-7 signed terms.',
     resolvedBy: { actor: 'D. Roach', role: 'school', at: isoMinusHours(72) },
   },
@@ -539,7 +539,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(28),
     blockers: [],
     trustMeta: trustFor('rejected', 'low', ['Audience-match heuristic alone is not enough for football side.']),
-    source: syntheticSource('aq-src-022', 'Proslync · AI ranking output v0', 1),
+    source: syntheticSource('aq-src-022', 'Proslync · AI ranking output', 1),
     reviewerNote: 'Refresh ranking once social-reach sync runs.',
     resolvedBy: { actor: 'Mrs. Wilson', role: 'school', at: isoMinusHours(20) },
   },
@@ -558,7 +558,7 @@ const ITEMS: ApprovalQueueItem[] = [
     dueBy: isoPlusHours(96),
     blockers: ['Cap-context reference signature pending.'],
     trustMeta: trustFor('blocked', 'medium', ['Platform-fee math derived from the Duke rev-share ledger.']),
-    source: syntheticSource('aq-src-023', 'Proslync · Duke rev-share ledger v0', 3),
+    source: syntheticSource('aq-src-023', 'Proslync · Duke rev-share ledger', 3),
   },
   // ── Phase-C expansion — expired ─────────────────────────
   {
@@ -574,7 +574,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(160),
     dueBy: isoMinusHours(40),
     blockers: ['Submission window closed before attestation landed.'],
-    source: syntheticSource('aq-src-024', 'Proslync · NIL-Go-shaped disclosure v0', 7),
+    source: syntheticSource('aq-src-024', 'Proslync · NIL-Go-shaped disclosure', 7),
     reviewerNote: 'Expired — resubmit with refreshed attachments.',
   },
   // ── Phase-C expansion — pending ─────────────────────────
@@ -590,7 +590,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedBy: { actor: 'Maya L.', role: 'brand' },
     submittedAt: isoMinusHours(22),
     blockers: [],
-    source: syntheticSource('aq-src-025', 'Proslync · activation receipt v0', 0),
+    source: syntheticSource('aq-src-025', 'Proslync · activation receipt', 0),
   },
   {
     id: 'aq-026',
@@ -605,7 +605,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(36),
     dueBy: isoPlusHours(36),
     blockers: [],
-    source: syntheticSource('aq-src-026', 'Proslync · NIL-Go-shaped disclosure v0', 1),
+    source: syntheticSource('aq-src-026', 'Proslync · NIL-Go-shaped disclosure', 1),
   },
   {
     id: 'aq-027',
@@ -621,7 +621,7 @@ const ITEMS: ApprovalQueueItem[] = [
     dueBy: isoPlusHours(24),
     blockers: ['Bylaw 22 payor questionnaire receipts missing.'],
     trustMeta: trustFor('pending', 'medium', ['Auto-flagged on payor-association unknown state.']),
-    source: syntheticSource('aq-src-027', 'Proslync · payor-association reviewer v0', 2),
+    source: syntheticSource('aq-src-027', 'Proslync · payor-association reviewer', 2),
   },
   {
     id: 'aq-028',
@@ -635,7 +635,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedBy: { actor: 'Tosan E.', role: 'brand' },
     submittedAt: isoMinusHours(14),
     blockers: [],
-    source: syntheticSource('aq-src-028', 'Proslync · outbound queue v0', 0),
+    source: syntheticSource('aq-src-028', 'Proslync · outbound queue', 0),
   },
   {
     id: 'aq-029',
@@ -650,7 +650,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedAt: isoMinusHours(72),
     blockers: [],
     trustMeta: trustFor('approved', 'high', ['Amendment includes disclosed non-cash value.']),
-    source: syntheticSource('aq-src-029', 'Proslync · amendment receipt v0', 3),
+    source: syntheticSource('aq-src-029', 'Proslync · amendment receipt', 3),
     reviewerNote: 'Amendment accepted; compliance close-out registered.',
     resolvedBy: { actor: 'L. Whitcombe', role: 'school', at: isoMinusHours(60) },
   },
@@ -666,7 +666,7 @@ const ITEMS: ApprovalQueueItem[] = [
     submittedBy: { actor: 'Tosan E.', role: 'brand' },
     submittedAt: isoMinusHours(8),
     blockers: [],
-    source: syntheticSource('aq-src-030', 'Proslync · stage-change v0', 0),
+    source: syntheticSource('aq-src-030', 'Proslync · stage-change', 0),
   },
 ];
 

@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@/components/glass/glass-button';
 import { DarkGradientBg } from '@/components/shared/dark-gradient-bg';
+import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
 import {
   CATEGORY_ORDER,
   RiskReportCard,
@@ -226,9 +227,15 @@ function FindingRow({ finding }: { finding: RiskReportFinding }) {
       (finding.relatedAthleteIds?.length ?? 0) > 0 ||
       (finding.relatedEntityIds?.length ?? 0) > 0 ? (
         <View style={styles.relatedRow}>
-          {finding.relatedDealIds?.map((id) => (
-            <RelatedChip key={`d-${id}`} icon="briefcase-outline" label={id} />
-          ))}
+          {finding.relatedDealIds?.map((id) => {
+            const label = resolveDealLabel(id);
+            // Skip ids that don't resolve to a real deal so no raw "d-7"
+            // chip leaks onto the reviewer surface.
+            if (!label) return null;
+            return (
+              <RelatedChip key={`d-${id}`} icon="briefcase-outline" label={label} />
+            );
+          })}
           {finding.relatedAthleteIds?.map((id) => (
             <RelatedChip key={`a-${id}`} icon="person-outline" label={id} />
           ))}
@@ -266,6 +273,20 @@ function RelatedChip({
       <Text style={styles.relatedChipText}>{label}</Text>
     </View>
   );
+}
+
+/**
+ * Resolve a related deal id (d-1…d-6) to a human chip label
+ * "{Brand} × {Athlete}" via the brand-deal fixture. Returns null when
+ * the id doesn't resolve so the caller can skip the chip entirely
+ * (no raw "d-7" ids on the reviewer surface).
+ */
+function resolveDealLabel(id: string): string | null {
+  const detail = getBrandDealDetail(id);
+  if (!detail) return null;
+  // The packet athlete is "Name · School" — keep just the name for the chip.
+  const athleteName = detail.deal.athlete.split('·')[0].trim();
+  return `${detail.companyOverview.name} × ${athleteName}`;
 }
 
 function formatFreshness(days: number): string {

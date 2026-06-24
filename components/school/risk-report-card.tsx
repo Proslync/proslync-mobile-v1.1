@@ -115,6 +115,23 @@ function formatRefreshedAt(iso: string): string {
   return iso.slice(0, 10);
 }
 
+/**
+ * The attribution.source field is an internal slug
+ * (e.g. "proslync-ad-audit-defense"). Render a human attribution so the
+ * reviewer footer reads as a product name, not a code identifier.
+ */
+function humanizeAttribution(source: string): string {
+  const KNOWN: Record<string, string> = {
+    'proslync-ad-audit-defense': 'Proslync Audit Defense',
+  };
+  if (KNOWN[source]) return KNOWN[source];
+  // Fallback: title-case the slug so any future source still reads clean.
+  return source
+    .split('-')
+    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : part))
+    .join(' ');
+}
+
 type RiskReportCardProps = {
   report: RiskReport;
   /** Tapping the hero or a category row routes to the full screen. */
@@ -161,7 +178,7 @@ export function RiskReportCard({
         <View style={styles.footerSourceRow}>
           <Ionicons name="document-text-outline" size={12} color="rgba(255,255,255,0.55)" />
           <Text style={styles.footerSourceText} numberOfLines={2}>
-            Source: {report.attribution.source}
+            Source: {humanizeAttribution(report.attribution.source)}
             {report.attribution.schemaLicense
               ? ` · ${report.attribution.schemaLicense}`
               : ''}

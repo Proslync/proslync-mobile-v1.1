@@ -48,6 +48,9 @@ import {
   useDecideApprovalQueueItem,
   useSchoolApprovalQueue,
 } from '@/hooks/use-approval-queue';
+import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
+import { getMockDisclosure } from '@/lib/data/mock-disclosures';
+import { getMockOpenDeal } from '@/lib/data/mock-open-deals';
 import { useAuth } from '@/lib/providers/auth-provider';
 import type {
   ApprovalQueueItem,
@@ -441,28 +444,46 @@ function ActiveDecisionPanel({
 }
 
 /**
- * Cross-surface deep-link target for a queue row, when one applies.
+ * Cross-surface deep-link target for a queue row, when one applies AND
+ * the target will actually resolve in its fixture. Returns null when the
+ * referenced id has no record (e.g. a deal id outside d-1…d-6, or a
+ * disclosure id outside the disclosures fixture) so the chip simply
+ * doesn't render — no dead-end taps into a "not found" screen.
+ *
  * Pure additive — surfaces already shipped, this just hops to them
  * without back-tracking through the role switcher / tabs.
  */
 function deepLinkFor(
   item: ApprovalQueueItem,
 ): { label: string; href: string } | null {
-  if (item.kind === 'disclosure-submission') {
+  // Disclosure packet — only when the disclosure id resolves.
+  if (
+    item.kind === 'disclosure-submission' &&
+    item.subjectRef.kind === 'disclosure' &&
+    getMockDisclosure(item.subjectRef.id)
+  ) {
     return {
       label: 'Open packet',
       href: `/athlete/disclosures/${item.subjectRef.id}`,
     };
   }
-  if (item.kind === 'ai-applicant-rank') {
+  // OpenDeal — only for open-deal subjects that resolve (applicant-id
+  // subjects are not OpenDeal ids and would dead-end).
+  if (
+    item.kind === 'ai-applicant-rank' &&
+    item.subjectRef.kind === 'open-deal' &&
+    getMockOpenDeal(item.subjectRef.id)
+  ) {
     return {
       label: 'View OpenDeal',
       href: `/brand/open-deals/${item.subjectRef.id}`,
     };
   }
+  // Brand deal — only when the deal id resolves in the brand-deal fixture.
   if (
     item.kind === 'compliance-review' &&
-    item.subjectRef.kind === 'deal'
+    item.subjectRef.kind === 'deal' &&
+    getBrandDealDetail(item.subjectRef.id)
   ) {
     return {
       label: 'Open deal',
