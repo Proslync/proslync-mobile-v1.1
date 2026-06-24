@@ -286,23 +286,25 @@ export default function CoachProfile() {
               <Text style={styles.blockLabel}>CAMPS &amp; CLINICS</Text>
             </View>
 
+            {/* Coach-facing surface is dollar-blind (Charter §B) — no prices;
+                CTA requests a spot/info rather than quoting a fee. */}
             {[
-              { name: 'Summer Skills Camp', dates: 'Jun 24–27', price: '$295' },
-              { name: 'Coaches Clinic',      dates: 'Aug 2',    price: '$150' },
+              { name: 'Summer Skills Camp', dates: 'Jun 24–27', spots: 'Limited spots' },
+              { name: 'Coaches Clinic',      dates: 'Aug 2',    spots: 'Open enrollment' },
             ].map((camp, idx) => (
               <View key={camp.name} style={[styles.campRow, idx > 0 && styles.campRowBorder]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.campName}>{camp.name}</Text>
-                  <Text style={styles.campMeta}>{camp.dates} · {camp.price}</Text>
+                  <Text style={styles.campMeta}>{camp.dates} · {camp.spots}</Text>
                 </View>
                 <TouchableOpacity
                   style={styles.bookBtn}
                   activeOpacity={0.7}
                   onPress={() => Alert.alert('Request sent', 'The camp will confirm your spot by email.')}
                   accessibilityRole="button"
-                  accessibilityLabel={`Book ${camp.name}`}
+                  accessibilityLabel={`Reserve a spot at ${camp.name}`}
                 >
-                  <Text style={styles.bookBtnText}>BOOK</Text>
+                  <Text style={styles.bookBtnText}>RESERVE</Text>
                 </TouchableOpacity>
               </View>
             ))}
