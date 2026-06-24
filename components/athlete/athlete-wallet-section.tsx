@@ -250,7 +250,20 @@ export function AthleteWalletSection() {
           size="sm"
           fullWidth
           style={styles.actionButton}
-          onPress={() => {}}
+          onPress={() =>
+            Alert.alert(
+              'Manage wallet',
+              'Set your default payout method, auto-transfer schedule, and tax forms. Your earnings stay yours — nobody else can move or see this balance.',
+              [
+                { text: 'Not now', style: 'cancel' },
+                {
+                  text: 'Auto-transfer: On',
+                  onPress: () =>
+                    Alert.alert('Auto-transfer on', 'Cleared funds will sweep to your default method weekly.'),
+                },
+              ],
+            )
+          }
         />
       </View>
 
@@ -264,6 +277,20 @@ export function AthleteWalletSection() {
           accessibilityRole="button"
           accessibilityLabel="Payout method"
           accessibilityHint="Connect a destination to receive payouts"
+          onPress={() =>
+            Alert.alert(
+              'Connect a payout method',
+              'We use Stripe Connect to send your earnings to a bank account or debit card. Setup takes about a minute and your details never touch a brand or school.',
+              [
+                { text: 'Later', style: 'cancel' },
+                {
+                  text: 'Connect with Stripe',
+                  onPress: () =>
+                    Alert.alert('Opening Stripe', 'Continue in the secure Stripe flow to verify your destination.'),
+                },
+              ],
+            )
+          }
         >
           <View style={styles.cardTop}>
             <View style={[styles.brandBadge, { backgroundColor: '#635BFF' }]}>

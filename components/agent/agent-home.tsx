@@ -258,7 +258,23 @@ function ClearanceQueueModule() {
       {CLEARANCE_ROWS.map((row, idx) => {
         const cc = clockColor(row);
         return (
-          <View key={row.id} style={[s.clearanceRow, idx > 0 && s.clearanceRowBorder]}>
+          <Pressable
+            key={row.id}
+            style={({ pressed }) => [
+              s.clearanceRow,
+              idx > 0 && s.clearanceRowBorder,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+            onPress={() =>
+              Alert.alert(
+                row.deal,
+                `${row.athlete} · ${row.clockLabel}.\n\nThe athlete makes the final submission — you prep the packet. We'll keep the clock and ping you before it closes.`,
+                [{ text: 'Got it' }],
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel={`${row.deal} for ${row.athlete}, ${row.clockLabel}`}
+          >
             <View style={[s.clearanceStripe, { backgroundColor: cc }]} />
             <View style={s.clearanceContent}>
               <View style={s.clearanceTopRow}>
@@ -270,7 +286,7 @@ function ClearanceQueueModule() {
               <Text style={s.clearanceAthlete} numberOfLines={1}>{row.athlete}</Text>
               <Text style={s.clearanceFootnote}>Athlete submits — you prep</Text>
             </View>
-          </View>
+          </Pressable>
         );
       })}
     </View>
@@ -286,7 +302,30 @@ function DueAcrossClientsModule() {
       {TASK_ROWS.map((row, idx) => {
         const dotColor = taskDotColor(row.urgency);
         return (
-          <View key={row.id} style={[s.taskRow, idx > 0 && s.taskRowBorder]}>
+          <Pressable
+            key={row.id}
+            style={({ pressed }) => [
+              s.taskRow,
+              idx > 0 && s.taskRowBorder,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+            onPress={() =>
+              Alert.alert(
+                row.task,
+                `${row.client} · ${row.due}.`,
+                [
+                  { text: 'Close', style: 'cancel' },
+                  {
+                    text: 'Set reminder',
+                    onPress: () =>
+                      Alert.alert('Reminder set', `We'll nudge you before ${row.client}'s task is due.`),
+                  },
+                ],
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel={`${row.client}: ${row.task}, ${row.due}`}
+          >
             <View style={[s.taskDot, { backgroundColor: dotColor }]} />
             <View style={{ flex: 1 }}>
               <Text style={s.taskClient} numberOfLines={1}>{row.client}</Text>
@@ -300,7 +339,7 @@ function DueAcrossClientsModule() {
                 </Text>
               </View>
             )}
-          </View>
+          </Pressable>
         );
       })}
     </View>

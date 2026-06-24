@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -174,7 +175,12 @@ export default function SettingsScreen() {
               iconColor="#FFFFFF"
               label="Security"
               sub="Passkey, 2FA, connected devices"
-              onPress={() => {}}
+              onPress={() =>
+                Alert.alert(
+                  'Security',
+                  'Passkey is on, two-factor authentication is enabled, and 2 devices are connected. Manage your sign-in and connected devices here.',
+                )
+              }
             />
           </View>
         </Animated.View>
@@ -206,7 +212,12 @@ export default function SettingsScreen() {
 
         <Pressable
           style={styles.toolbarPill}
-          onPress={() => {}}
+          onPress={() =>
+            Alert.alert(
+              'Contact Proslync',
+              'Our team replies within one business day. Reach us at support@proslync.com or start a chat from the help center.',
+            )
+          }
           accessibilityLabel="Contact Proslync"
           accessibilityRole="button"
         >

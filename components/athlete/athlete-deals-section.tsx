@@ -893,10 +893,22 @@ function OffersList({ query }: { query: OffersQueryReturn }) {
 }
 
 function OfferRow({ o }: { o: OfferInboxView }) {
+  const router = useStableRouter();
   const matchTint =
     o.matchScore >= 85 ? '#34C759' : o.matchScore >= 70 ? '#EB621A' : '#FFD60A';
   return (
-    <View style={dealsStyles.card}>
+    <TouchableOpacity
+      style={dealsStyles.card}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${o.brand} offer — ${o.amount}, ${o.matchScore} match`}
+      onPress={() =>
+        router.push({
+          pathname: '/athlete/comparables/[dealId]',
+          params: { dealId: o.id, role: 'player' },
+        })
+      }
+    >
       <View style={[dealsStyles.accentStripe, { backgroundColor: o.color }]} />
       <View style={dealsStyles.cardInner}>
         <View style={dealsStyles.cardTop}>
@@ -924,8 +936,12 @@ function OfferRow({ o }: { o: OfferInboxView }) {
             <Text style={[dealsStyles.matchLabel, { color: matchTint }]}>MATCH</Text>
           </View>
         </View>
+        <View style={dealsStyles.offerCtaRow}>
+          <Text style={dealsStyles.offerCtaText}>View comparable offers</Text>
+          <Ionicons name="chevron-forward" size={13} color="#EB621A" />
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -1089,6 +1105,14 @@ const dealsStyles = StyleSheet.create({
   offerMetaRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: SP_XS },
   offerAmount: { color: TEXT_PRIMARY, fontSize: 13, fontWeight: '800', letterSpacing: -0.2 },
   offerReceived: { color: TEXT_TERTIARY, fontSize: 11, fontWeight: '500' },
+  offerCtaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 3,
+    marginTop: SP_SM,
+  },
+  offerCtaText: { color: '#EB621A', fontSize: 11, fontWeight: '700', letterSpacing: 0.2 },
   newDot: {
     width: 6,
     height: 6,

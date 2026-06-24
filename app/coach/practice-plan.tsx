@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -70,7 +71,14 @@ export default function PracticePlanScreen() {
           <Text style={styles.headerTitle}>Practice Plan</Text>
           <Text style={styles.headerSub}>{MY_TEAM_SUMMARY.name} · Today</Text>
         </View>
-        <TouchableOpacity style={styles.backBtn}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() =>
+            Alert.alert('Practice calendar', 'Jump to another day to view or build its practice plan.')
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Open practice calendar"
+        >
           <Ionicons name="calendar-outline" size={22} color="#FFF" />
         </TouchableOpacity>
       </View>
@@ -164,17 +172,53 @@ export default function PracticePlanScreen() {
             </Animated.View>
           ))}
 
-          <View style={styles.addSegmentBtn}>
+          <Pressable
+            style={({ pressed }) => [styles.addSegmentBtn, pressed && { opacity: 0.65 }]}
+            onPress={() =>
+              Alert.alert(
+                'Add drill or segment',
+                'Pick a category — warm-up, skill work, conditioning, or scrimmage — and set its duration.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Add 15-min drill',
+                    onPress: () => Alert.alert('Segment added', 'A new 15-minute drill was added to the timeline.'),
+                  },
+                ],
+              )
+            }
+            accessibilityRole="button"
+            accessibilityLabel="Add drill or segment"
+          >
             <Ionicons name="add" size={16} color="rgba(255,255,255,0.6)" />
             <Text style={styles.addSegmentText}>Add drill or segment</Text>
-          </View>
+          </Pressable>
         </View>
 
         {/* Roster strip */}
         <Text style={styles.sectionLabel}>ROSTER · TAP TO ASSIGN</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rosterStripRow}>
           {MY_ROSTER.map((p) => (
-            <Pressable key={p.id} style={styles.rosterStripCard}>
+            <Pressable
+              key={p.id}
+              style={({ pressed }) => [styles.rosterStripCard, pressed && { opacity: 0.65 }]}
+              onPress={() =>
+                Alert.alert(
+                  `Assign ${p.name}`,
+                  `Add #${p.number} ${p.name} (${p.position}) to a practice segment.`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Add to next segment',
+                      onPress: () =>
+                        Alert.alert('Assigned', `${p.name} was added to the next open segment.`),
+                    },
+                  ],
+                )
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`Assign ${p.name}, number ${p.number}, ${p.position}`}
+            >
               <View style={[styles.rosterStripAvatar, { backgroundColor: p.color }, p.status === 'questionable' && styles.rosterQuestionable]}>
                 <Text style={styles.rosterStripInitials}>{p.initials}</Text>
                 {p.status === 'questionable' && <View style={styles.statusDotQuestion} />}
@@ -186,7 +230,16 @@ export default function PracticePlanScreen() {
         </ScrollView>
 
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          <GlassButton label="Publish & blast to roster" onPress={() => undefined} fullWidth />
+          <GlassButton
+            label="Publish & blast to roster"
+            onPress={() =>
+              Alert.alert(
+                'Plan published',
+                `Today's practice plan was sent to all ${MY_ROSTER.length} players. They'll get a push with the timeline and their assignments.`,
+              )
+            }
+            fullWidth
+          />
         </View>
       </ScrollView>
     </View>

@@ -5,6 +5,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
 import {
+  Alert,
   Image,
   ScrollView,
   StyleSheet,
@@ -128,7 +129,12 @@ export default function GamedayScreen() {
             <GlassButton
               label="Walk me to my seat"
               icon="navigate-outline"
-              onPress={() => undefined}
+              onPress={() =>
+                Alert.alert(
+                  'Walking you to Section 108',
+                  'Head to Gate C, take the escalator up one level, then turn left. Row F, Seat 14 — about a 3 minute walk.',
+                )
+              }
               fullWidth
             />
           </View>
@@ -169,17 +175,51 @@ export default function GamedayScreen() {
           ))}
           <View style={styles.tabActions}>
             <View style={{ flex: 1 }}>
-              <GlassButton label="Order another" onPress={() => undefined} fullWidth />
+              <GlassButton
+                label="Order another"
+                onPress={() =>
+                  Alert.alert(
+                    'Order placed',
+                    "We'll bring your next round to Section 108, Row F, Seat 14. Added to your open tab.",
+                  )
+                }
+                fullWidth
+              />
             </View>
             <View style={{ flex: 1 }}>
-              <GlassButton label="Close tab" onPress={() => undefined} fullWidth />
+              <GlassButton
+                label="Close tab"
+                onPress={() =>
+                  Alert.alert(
+                    'Close your tab?',
+                    `Your total is $${tabTotal.toFixed(2)}.`,
+                    [
+                      { text: 'Keep open', style: 'cancel' },
+                      {
+                        text: 'Close & pay',
+                        onPress: () =>
+                          Alert.alert('Tab closed', `$${tabTotal.toFixed(2)} charged. Receipt sent to your email.`),
+                      },
+                    ],
+                  )
+                }
+                fullWidth
+              />
             </View>
           </View>
         </View>
 
         {/* Watch */}
         <Text style={styles.sectionLabel}>WATCH</Text>
-        <View style={styles.watchCard}>
+        <TouchableOpacity
+          style={styles.watchCard}
+          activeOpacity={0.85}
+          onPress={() =>
+            Alert.alert('Replay last play', `Kiyan Anthony · 3-pointer · ${liveGame.quarter} · ${liveGame.clock}. Starting playback…`)
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Replay last play"
+        >
           <View style={styles.watchPoster}>
             <View style={styles.watchPlay}>
               <Ionicons name="play" size={22} color="#000" />
@@ -190,7 +230,7 @@ export default function GamedayScreen() {
             <Text style={styles.watchTitle}>Replay last play</Text>
             <Text style={styles.watchSub}>Kiyan Anthony · 3-pointer · {liveGame.quarter} · {liveGame.clock}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* After-game offers */}
         <Text style={styles.sectionLabel}>AFTER THE GAME</Text>
@@ -200,15 +240,42 @@ export default function GamedayScreen() {
             { id: 'o-2', title: 'Free dessert with QR', vendor: 'Pastabilities · 0.6mi' },
             { id: 'o-3', title: 'Half-off rides home', vendor: 'Lyft' },
           ].map((o) => (
-            <View key={o.id} style={styles.offerCard}>
+            <TouchableOpacity
+              key={o.id}
+              style={styles.offerCard}
+              activeOpacity={0.85}
+              onPress={() =>
+                Alert.alert(o.title, `${o.vendor}\n\nShow this code at checkout: GAMEDAY-${o.id.toUpperCase()}`)
+              }
+              accessibilityRole="button"
+              accessibilityLabel={`Redeem offer: ${o.title} at ${o.vendor}`}
+            >
               <Text style={styles.offerTitle}>{o.title}</Text>
               <Text style={styles.offerVendor}>{o.vendor}</Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
 
         <View style={{ paddingHorizontal: 16, marginTop: 20 }}>
-          <GlassButton label="Get me home" icon="car-outline" onPress={() => undefined} fullWidth />
+          <GlassButton
+            label="Get me home"
+            icon="car-outline"
+            onPress={() =>
+              Alert.alert(
+                'Get me home',
+                'Half-off rides are live from the dome tonight.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Request a ride',
+                    onPress: () =>
+                      Alert.alert('Finding your ride', "Matching you with a driver — they'll meet you at the Gate C pickup."),
+                  },
+                ],
+              )
+            }
+            fullWidth
+          />
         </View>
       </ScrollView>
     </View>
