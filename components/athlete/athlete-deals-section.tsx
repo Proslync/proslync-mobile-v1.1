@@ -69,14 +69,18 @@ import {
 const STATS_CARD_BG = SURFACE;
 
 // ── Comparable offers CTA (Sprint 2.9) ──
+// Brand + athlete labels MUST match the deal packet each tile opens
+// (getBrandDealDetail(dealId)) so the comp tile never advertises a brand the
+// detail contradicts: d-1 = Nike × Dylan Harper, d-2 = Beats × Ace Bailey,
+// d-4 = Gatorade × Kiyan Anthony.
 const COMPARABLE_OFFER_TILES: ReadonlyArray<{
   dealId: string;
   brand: string;
   athlete: string;
 }> = [
   { dealId: 'd-1', brand: 'Nike · Two-year exclusive', athlete: 'Dylan Harper' },
-  { dealId: 'd-2', brand: 'Nike · Two-year exclusive', athlete: 'Ace Bailey' },
-  { dealId: 'd-4', brand: 'Nike · Three-year renewal', athlete: 'Kiyan Anthony' },
+  { dealId: 'd-2', brand: 'Beats · Two-year exclusive', athlete: 'Ace Bailey' },
+  { dealId: 'd-4', brand: 'Gatorade · Three-year renewal', athlete: 'Kiyan Anthony' },
 ];
 
 function ComparableOffersCta() {
@@ -647,6 +651,7 @@ function useDealNotifications() {
 export function AthleteDealsSection() {
   const contractsQuery = useAthleteContracts(DEMO_ATHLETE_ID);
   const offersQuery = useAthleteOffers();
+  const payoutsQuery = useAthletePayouts(DEMO_ATHLETE_ID);
 
   // Computed deck-top totals — sum live contract values for the hero KPI.
   const ytdTotal = React.useMemo(() => {
@@ -666,6 +671,14 @@ export function AthleteDealsSection() {
       : ytdTotal >= 1000_00
         ? `$${Math.round(ytdTotal / 1000_00)}K`
         : `$${(ytdTotal / 100).toFixed(0)}`;
+
+  // Derived delta — the share of YTD deal value already paid out (settled
+  // / booked). Replaces the old hardcoded "+12%" that sat next to a $0; this
+  // reconciles with the same paid total Home + Wallet + the payout breakdown
+  // show. Null until both numbers are known so we never flash a bogus figure.
+  const paidYtdCents = payoutsQuery.data?.totals.paidYtd.cents ?? 0;
+  const paidSharePct =
+    ytdTotal > 0 ? Math.round((paidYtdCents / ytdTotal) * 100) : null;
 
   return (
     <View style={{ gap: 16 }}>
@@ -688,10 +701,12 @@ export function AthleteDealsSection() {
             <Text style={heroStyles.heroEyebrow}>YTD DEAL VALUE</Text>
             <Text style={heroStyles.heroAmount}>{ytdDisplay}</Text>
           </View>
-          <View style={heroStyles.heroChevron}>
-            <Ionicons name="trending-up" size={14} color="#34C759" />
-            <Text style={heroStyles.heroDelta}>+12%</Text>
-          </View>
+          {paidSharePct !== null && paidSharePct > 0 ? (
+            <View style={heroStyles.heroChevron}>
+              <Ionicons name="checkmark-circle" size={14} color="#34C759" />
+              <Text style={heroStyles.heroDelta}>{paidSharePct}% paid</Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -905,7 +920,10 @@ function OfferRow({ o }: { o: OfferInboxView }) {
       onPress={() =>
         router.push({
           pathname: '/athlete/comparables/[dealId]',
-          params: { dealId: o.id, role: 'player' },
+          // Pass the row's brand + amount so the detail header matches the
+          // row even when the open campaign has no comparable-evidence
+          // packet yet (no contradictory brand/amount on the detail).
+          params: { dealId: o.id, role: 'player', brand: o.brand, amount: o.amount },
         })
       }
     >

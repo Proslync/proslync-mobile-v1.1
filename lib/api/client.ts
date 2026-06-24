@@ -5,6 +5,12 @@
 
 import { ApiClientError } from './errors';
 import { config } from '../config';
+import {
+  KIYAN_WALLET_ID,
+  kiyanAvailableCents,
+  kiyanPendingCents,
+} from '../data/mock-kiyan-money';
+import { DEAL_TRUTH_FIXTURE } from '../data/mock-deal-truth';
 
 async function httpRequest<T>(
   method: string,
@@ -43,6 +49,58 @@ async function httpRequest<T>(
 // ── Mock data ────────────────────────────────────────────
 const NOW = Date.now();
 const ago = (mins: number) => new Date(NOW - mins * 60_000).toISOString();
+
+// ── Canonical Kiyan money mocks (derived from DEAL_TRUTH_FIXTURE) ─────────
+// Wallet transactions: every `paid` truth deal surfaces as one posted credit
+// (sourceType=payout) dated this calendar year, so `useAthleteWallet`'s YTD
+// rollup === Home "paid this season" === payout fixture paidYtd ($3,200), and
+// REVENUE BY PARTNER reads the brand label off the memo.
+const KIYAN_WALLET_TRANSACTIONS = DEAL_TRUTH_FIXTURE.filter(
+  (d) => d.paymentState === 'paid',
+).map((d) => ({
+  id: `txn-${d.dealId}`,
+  walletId: KIYAN_WALLET_ID,
+  kind: 'credit' as const,
+  amountCents: d.amountCents,
+  currency: 'USD',
+  status: 'posted' as const,
+  sourceType: 'payout' as const,
+  sourceId: d.dealId,
+  memo: d.brand,
+  idempotencyKey: null,
+  occurredAt: d.paidAtISO ?? new Date().toISOString(),
+  createdAt: d.paidAtISO ?? new Date().toISOString(),
+}));
+
+// NIL deals: the 4 canonical Kiyan contracts, carrying REAL brand names so the
+// ACTIVE CONTRACTS list shows "Gatorade / Nike / …" (never "Brand <ID>") and
+// the Deals "YTD DEAL VALUE" sums to the same $11,900 booked total.
+const KIYAN_NIL_DEAL_STAGE: Record<string, string> = {
+  paid: 'settled',
+  cleared: 'live',
+  'in-review': 'committed',
+  expected: 'negotiating',
+};
+const KIYAN_NIL_DEALS = DEAL_TRUTH_FIXTURE.map((d) => ({
+  id: d.dealId,
+  sourceOpenDealId: null,
+  sourceApplicationId: null,
+  athleteId: 'a-1',
+  brandId: `brand-${d.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+  brandName: d.brand,
+  categoryId: null,
+  title: d.title,
+  stage: KIYAN_NIL_DEAL_STAGE[d.paymentState] ?? 'live',
+  amountCents: d.amountCents,
+  startDate: d.disclosure.executedAtISO ?? null,
+  endDate: null,
+  exclusivity: null,
+  contractStatus: d.paymentState === 'expected' ? 'pending' : 'signed',
+  reviewSummary: d.paymentState === 'in-review' ? 'all-pending' : 'all-cleared',
+  appealState: 'none' as const,
+  createdAt: d.disclosure.executedAtISO ?? new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+}));
 
 const MOCK_CONVERSATIONS = [
   {
@@ -401,16 +459,21 @@ function mockResponse(method: string, endpoint: string): any {
   }
 
   // ── Wallet ───────────────────────────────────────────────
+  // Numbers are derived from the canonical Kiyan money story
+  // (lib/data/mock-kiyan-money.ts → DEAL_TRUTH_FIXTURE) so the wallet
+  // reconciles with Home (paid this season), Deals (YTD), and the payout
+  // breakdown: available = paid − tax set-aside, pending = in-flight deals,
+  // YTD = the single paid (Gatorade) deal surfaced as a posted credit.
   if (path === '/api/wallet/me') {
     return {
       data: {
-        id: 'wallet-1',
+        id: KIYAN_WALLET_ID,
         holderType: 'athlete',
         holderId: '1',
         userId: 1,
         currency: 'USD',
-        balanceCents: 24550,
-        pendingCents: 0,
+        balanceCents: kiyanAvailableCents,
+        pendingCents: kiyanPendingCents,
         status: 'active',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -418,13 +481,25 @@ function mockResponse(method: string, endpoint: string): any {
     };
   }
   if (path.match(/^\/api\/wallet\/[^/]+\/transactions/)) {
-    return { data: [], nextCursor: null, hasMore: false };
+    return { data: KIYAN_WALLET_TRANSACTIONS, nextCursor: null, hasMore: false };
   }
   if (path.startsWith('/api/wallet')) {
     return MOCK_WALLET;
   }
   if (path.startsWith('/api/stripe-connect/payouts/balance')) {
-    return { available: 245.5, pending: 0, currency: 'USD' };
+    return {
+      available: kiyanAvailableCents / 100,
+      pending: kiyanPendingCents / 100,
+      currency: 'USD',
+    };
+  }
+
+  // ── NIL deals (athlete active contracts / Deals YTD hero) ────────────────
+  // The canonical Kiyan deal set, with REAL brand names so the contracts
+  // list never shows "Brand <ID>" and the Deals "YTD DEAL VALUE" reconciles
+  // with Home + Wallet ($11,900 booked, $3,200 of it paid).
+  if (path.startsWith('/api/nil-deals')) {
+    return { data: KIYAN_NIL_DEALS };
   }
 
   // ── Users / follows ──────────────────────────────────────

@@ -280,6 +280,9 @@ export interface ProslyncNilDeal {
   sourceApplicationId: string | null;
   athleteId: string;
   brandId: string;
+  /** Brand display name when the backend denormalizes it onto the row.
+   *  Preferred over the derived "Brand <id>" fallback when present. */
+  brandName?: string | null;
   categoryId: string | null;
   title: string;
   stage: ProslyncNilDealStage;
@@ -326,6 +329,9 @@ export type ProslyncCampaignStatus =
 export interface ProslyncCampaign {
   id: string;
   brandId: string;
+  /** Brand display name returned by the public campaigns endpoint.
+   *  Preferred over the derived "Brand <id>" fallback when present. */
+  brandName?: string | null;
   categoryId: string | null;
   title: string;
   briefMarkdown: string;

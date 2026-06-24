@@ -3,6 +3,15 @@
 // (Kiyan Anthony, Syracuse) for FY 2025-26 H1. Every row tagged
 // `synthetic` per `mock-rev-share.ts` / `mock-deal-comps.ts` precedent.
 //
+// DEMO RECONCILIATION: Kiyan's items mirror the canonical
+// DEAL_TRUTH_FIXTURE deals (Gatorade paid $3,200 + JMA/Nike/Legacy in
+// flight) so the payout breakdown's `paidYtd` ($3,200) and gross booked
+// ($11,900) match Home "paid this season", Wallet YTD, and the Deals
+// "YTD DEAL VALUE" exactly. The aggregate `taxSetAside` line is a 24%
+// SUGGESTION across all booked income (clearly labeled "estimate, not tax
+// advice") — distinct from the $768 actual set-aside Home shows on the one
+// settled Gatorade deal; both are 24% and neither contradicts the other.
+//
 // Suggested tax rate: 2400 bp (24%). The set-aside is a SUGGESTION, not
 // enforced withholding. UI surfaces the "estimate, not tax advice"
 // caveat next to the total.
@@ -78,131 +87,67 @@ function makeItem(args: {
   };
 }
 
+// ── Items mirror the canonical DEAL_TRUTH_FIXTURE deals so the payout
+// breakdown tells the SAME money story as Home / Deals / Wallet: one paid
+// deal (Gatorade $3,200) and three in-flight (JMA $4,500 expected, Nike
+// $2,400 in CSC review, Legacy $1,800 cleared-awaiting-settlement).
+//
+//   gross (booked)  = 3,200 + 4,500 + 2,400 + 1,800 = $11,900   (== Deals YTD)
+//   paidYtd         = 3,200                                       (== Home + Wallet YTD)
+//   pendingPayout   = 4,500 + 2,400 + 1,800        = $8,700       (everything not yet paid)
+//
 const ITEMS: AthletePayoutItem[] = [
-  // ── Guaranteed base — Nike master deal, paid Q3 ──
+  // ── Gatorade — Performance Partnership, PAID (24% tax set aside) ──
   makeItem({
     id: 'ap-001',
-    dealId: 'd-4',
-    brandId: 'brand:puma-hoops',
-    brandLabel: 'Nike',
-    category: 'guaranteed',
-    amountCents: 280_000_00,
-    status: 'paid',
-    date: '2025-09-15T00:00:00.000Z',
-    sourceLabel: 'Nike · master deal Q3 base disbursement',
-  }),
-  // ── Performance bonus — preseason AP top-25 trigger ──
-  makeItem({
-    id: 'ap-002',
-    dealId: 'd-4',
-    brandId: 'brand:puma-hoops',
-    brandLabel: 'Nike',
-    category: 'performance',
-    amountCents: 25_000_00,
-    status: 'paid',
-    date: '2025-11-12T00:00:00.000Z',
-    note: 'Triggered by preseason AP top-25 placement.',
-    sourceLabel: 'Nike · preseason AP25 bonus trigger',
-  }),
-  // ── Usage-rights — Beats launch reel ──
-  makeItem({
-    id: 'ap-003',
-    dealId: 'd-syr-203',
-    brandId: 'brand:beats-by-dre',
-    brandLabel: 'Beats by Dre',
-    category: 'usage-rights',
-    amountCents: 48_000_00,
-    status: 'paid',
-    date: '2025-12-04T00:00:00.000Z',
-    sourceLabel: 'Beats · launch-reel usage-rights settlement',
-  }),
-  // ── Appearance — Gatorade in-arena series ──
-  makeItem({
-    id: 'ap-004',
-    dealId: 'd-syr-201',
+    dealId: 'dt-gatorade-1',
     brandId: 'brand:gatorade',
     brandLabel: 'Gatorade',
-    category: 'appearance',
-    amountCents: 18_000_00,
-    status: 'paid',
-    date: '2025-10-08T00:00:00.000Z',
-    sourceLabel: 'Gatorade · in-arena appearance settled',
-  }),
-  // ── Royalty — Nike holiday content batch (Q4 streaming/click) ──
-  makeItem({
-    id: 'ap-005',
-    dealId: 'd-syr-205',
-    brandId: 'brand:puma-hoops',
-    brandLabel: 'Nike',
-    category: 'royalty',
-    amountCents: 6_400_00,
-    status: 'paid',
-    date: '2026-01-22T00:00:00.000Z',
-    sourceLabel: 'Nike · Q4 royalty roll-up',
-  }),
-  // ── Pending — Dick's January refresh batch (in flight) ──
-  makeItem({
-    id: 'ap-006',
-    dealId: 'd-syr-207',
-    brandId: 'brand:dicks-sporting-goods',
-    brandLabel: "Dick's Sporting Goods",
     category: 'guaranteed',
-    amountCents: 32_000_00,
-    status: 'pending',
-    date: '2026-04-12T00:00:00.000Z',
-    note: 'Awaiting Q1 disbursement window — slated 2026-05-15.',
-    sourceLabel: "Dick's · January refresh batch in disbursement queue",
+    amountCents: 3_200_00,
+    status: 'paid',
+    date: '2026-05-02T00:00:00.000Z',
+    note: 'Performance Partnership settled; $768 set aside for taxes (24%).',
+    sourceLabel: 'Gatorade · Performance Partnership disbursement',
   }),
-  // ── Pending — performance bonus (Big-East Player of the Week) ──
+  // ── JMA Wireless — Brand Ambassador Q3, executed, payment expected ──
   makeItem({
-    id: 'ap-007',
-    dealId: 'd-4',
-    brandId: 'brand:puma-hoops',
-    brandLabel: 'Nike',
-    category: 'performance',
-    amountCents: 12_500_00,
-    status: 'pending',
-    date: '2026-02-19T00:00:00.000Z',
-    note: 'Big-East Player of the Week trigger — pending Nike confirmation.',
-    sourceLabel: 'Nike · Big-East POW bonus trigger',
-  }),
-  // ── Held — usage-rights pending school disclosure clearance ──
-  makeItem({
-    id: 'ap-008',
-    dealId: 'd-syr-208',
-    brandId: 'brand:beats-by-dre',
-    brandLabel: 'Beats by Dre',
-    category: 'usage-rights',
-    amountCents: 14_000_00,
-    status: 'held',
-    date: '2026-04-02T00:00:00.000Z',
-    note: 'Held pending school disclosure clearance',
-    sourceLabel: 'Beats · spring usage-rights extension',
-  }),
-  // ── Projected — summer creator-camp (Nike, signature window open) ──
-  makeItem({
-    id: 'ap-009',
-    dealId: 'd-syr-209',
-    brandId: 'brand:puma-hoops',
-    brandLabel: 'Nike',
+    id: 'ap-002',
+    dealId: 'dt-jma-1',
+    brandId: 'brand:jma-wireless',
+    brandLabel: 'JMA Wireless',
     category: 'guaranteed',
-    amountCents: 65_000_00,
+    amountCents: 4_500_00,
     status: 'projected',
     date: '2026-06-15T00:00:00.000Z',
-    note: 'Projected summer creator-camp base; signature window open.',
-    sourceLabel: 'Nike · summer creator-camp projected',
+    note: 'Brand Ambassador · Q3 — executed, awaiting disclosure + disbursement.',
+    sourceLabel: 'JMA Wireless · Q3 ambassador base projected',
   }),
-  // ── Projected — appearance (Hoffman Auto, local market) ──
+  // ── Nike — Campus Activation, payment in CSC review ──
   makeItem({
-    id: 'ap-010',
-    dealId: 'd-syr-210',
-    brandId: 'brand:hoffman-auto',
-    brandLabel: 'Hoffman Auto',
-    category: 'appearance',
-    amountCents: 4_200_00,
-    status: 'projected',
-    date: '2026-06-28T00:00:00.000Z',
-    sourceLabel: 'Hoffman Auto · local-market appearance projected',
+    id: 'ap-003',
+    dealId: 'dt-nike-1',
+    brandId: 'brand:nike',
+    brandLabel: 'Nike',
+    category: 'guaranteed',
+    amountCents: 2_400_00,
+    status: 'pending',
+    date: '2026-05-20T00:00:00.000Z',
+    note: 'Campus Activation · Summer — in CSC review, release on clearance.',
+    sourceLabel: 'Nike · Campus Activation pending CSC clearance',
+  }),
+  // ── Legacy Athletics — Apparel Deal, cleared, awaiting settlement ──
+  makeItem({
+    id: 'ap-004',
+    dealId: 'dt-legacy-1',
+    brandId: 'brand:legacy-athletics',
+    brandLabel: 'Legacy Athletics',
+    category: 'guaranteed',
+    amountCents: 1_800_00,
+    status: 'pending',
+    date: '2026-05-25T00:00:00.000Z',
+    note: 'Apparel Deal · FY26 — cleared, in disbursement queue.',
+    sourceLabel: 'Legacy Athletics · FY26 apparel cleared, queued',
   }),
 ];
 

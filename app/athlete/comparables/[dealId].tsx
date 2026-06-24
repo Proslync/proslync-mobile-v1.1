@@ -26,8 +26,10 @@ function normalizeParam(value: string | string[] | undefined): string | undefine
 
 export default function AthleteComparablesScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ dealId?: string }>();
+  const params = useLocalSearchParams<{ dealId?: string; brand?: string; amount?: string }>();
   const dealId = normalizeParam(params.dealId);
+  const brandParam = normalizeParam(params.brand);
+  const amountParam = normalizeParam(params.amount);
   const { data: evidence, isLoading, isError, refetch, isRefetching } =
     useDealComparables(dealId);
   const detail = dealId ? getBrandDealDetail(dealId) : undefined;
@@ -69,7 +71,11 @@ export default function AthleteComparablesScreen() {
               <Text style={styles.headerTitle} numberOfLines={2}>
                 {detail
                   ? `${detail.companyOverview.name} x ${detail.deal.athlete.split(' · ')[0]}`
-                  : 'Comparable offers'}
+                  : brandParam
+                    ? amountParam
+                      ? `${brandParam} · ${amountParam}`
+                      : brandParam
+                    : 'Comparable offers'}
               </Text>
             </View>
           </View>

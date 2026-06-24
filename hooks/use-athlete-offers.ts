@@ -129,7 +129,13 @@ function placeholderScore(campaignId: string): number {
 }
 
 function mapOffer(row: ProslyncCampaign): OfferInboxView {
-  const brand = brandLabelFromId(row.brandId);
+  // The public campaigns endpoint already returns a real `brandName`
+  // (e.g. "EliteGear Athletic", "Gatorade", "Vuori") — prefer it so the
+  // offer row never reads "Brand <id>". Fall back to the derived label.
+  const brand =
+    row.brandName && row.brandName.trim().length > 0
+      ? row.brandName.trim()
+      : brandLabelFromId(row.brandId);
   return {
     id: row.id,
     brand,

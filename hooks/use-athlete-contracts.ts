@@ -141,7 +141,12 @@ function formatDueLine(row: ProslyncNilDeal): string {
 }
 
 function mapContract(row: ProslyncNilDeal): ActiveContractView {
-  const brand = brandLabelFromId(row.brandId);
+  // Prefer the denormalized brand name when the row carries one (no
+  // "Brand <id>" placeholder); fall back to the derived label otherwise.
+  const brand =
+    row.brandName && row.brandName.trim().length > 0
+      ? row.brandName.trim()
+      : brandLabelFromId(row.brandId);
   return {
     id: row.id,
     brand,
