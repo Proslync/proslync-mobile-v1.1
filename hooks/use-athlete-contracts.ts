@@ -30,8 +30,8 @@ import {
 export const ATHLETE_CONTRACTS_KEY = 'athlete-contracts';
 
 /** UI-facing status pill states. Maps the 9-state backend stage to the
- *  3-state visual taxonomy the deals section uses (Active/Pending/Signed). */
-export type ActiveContractStatus = 'Active' | 'Pending' | 'Signed';
+ *  visual taxonomy the deals section uses (Active/Pending/Signed/Paid). */
+export type ActiveContractStatus = 'Active' | 'Pending' | 'Signed' | 'Paid';
 
 export interface ActiveContractView {
   id: string;
@@ -106,10 +106,13 @@ function formatAmountCents(cents: number): string {
   return `$${dollars.toLocaleString()}`;
 }
 
-/** Map the 9-state backend `stage` to the section's 3-state pill. The
+/** Map the 9-state backend `stage` to the section's pill. The
  *  contract-status column is also considered so a signed-but-not-live
- *  row reads as "Signed" rather than "Pending". */
+ *  row reads as "Signed" rather than "Pending". A `settled` deal (paid
+ *  out) reads as "Paid" so it can sit in the list alongside in-flight
+ *  rows without contradicting the payout breakdown's Gross total. */
 function statusFromRow(row: ProslyncNilDeal): ActiveContractStatus {
+  if (row.stage === 'settled') return 'Paid';
   if (row.contractStatus === 'signed') {
     if (row.stage === 'live' || row.stage === 'delivered') return 'Active';
     return 'Signed';
@@ -119,6 +122,8 @@ function statusFromRow(row: ProslyncNilDeal): ActiveContractStatus {
 }
 
 function formatDueLine(row: ProslyncNilDeal): string {
+  // A settled deal has nothing left to do — the next cue is the payout.
+  if (row.stage === 'settled') return 'Paid out';
   // The backend doesn't track per-deal "next milestone" yet. Compose a
   // best-effort cue from the contract window so the cell isn't empty.
   if (row.endDate) {
@@ -160,14 +165,18 @@ function mapContract(row: ProslyncNilDeal): ActiveContractView {
   };
 }
 
-// Stages we treat as "active enough to surface on the contracts list".
-// Anything pre-commit (open/applied/reviewing) is still in the OFFER
-// INBOX view; settled/disputed are historical.
+// Stages we treat as "surfaceable on the contracts list" — i.e. a real
+// executed/booked deal. Anything pre-commit (open/applied/reviewing) is
+// still in the OFFER INBOX view; `disputed` is exceptional. `settled`
+// (paid out) IS included so the Deals "YTD DEAL VALUE" sums every booked
+// deal and reconciles with the payout breakdown's Gross (the paid deal
+// renders with a "Paid" pill rather than being silently dropped).
 const ACTIVE_CONTRACT_STAGES: ReadonlySet<ProslyncNilDealStage> = new Set([
   'negotiating',
   'committed',
   'live',
   'delivered',
+  'settled',
 ]);
 
 function isActive(view: ActiveContractView): boolean {

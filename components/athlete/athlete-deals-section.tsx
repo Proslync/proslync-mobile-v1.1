@@ -792,13 +792,13 @@ function ContractsList({ query }: { query: ContractsQueryReturn }) {
 
 function ContractRow({ d }: { d: ActiveContractView }) {
   const statusColor =
-    d.status === 'Active'
+    d.status === 'Active' || d.status === 'Paid'
       ? '#34C759'
       : d.status === 'Pending'
         ? '#EB621A'
         : 'rgba(255,255,255,0.85)';
   const statusBg =
-    d.status === 'Active'
+    d.status === 'Active' || d.status === 'Paid'
       ? 'rgba(52,199,89,0.16)'
       : d.status === 'Pending'
         ? 'rgba(255,111,60,0.16)'
