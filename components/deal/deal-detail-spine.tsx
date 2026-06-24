@@ -513,7 +513,7 @@ function ComparableDealsCard({ evidence }: { evidence: ComparableDealEvidence })
       <View style={styles.aiCommentaryBox}>
         <View style={styles.inlineRow}>
           <Ionicons name="sparkles-outline" size={13} color="#7BAFD4" />
-          <Text style={styles.aiCommentaryLabel}>AI commentary  ·  mock</Text>
+          <Text style={styles.aiCommentaryLabel}>AI commentary</Text>
         </View>
         <Text style={styles.bodyText}>{aiCommentary}</Text>
       </View>

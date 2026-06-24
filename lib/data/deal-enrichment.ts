@@ -52,12 +52,18 @@ const DEAL_ID_BRIDGE: Record<string, DealBridge> = {
   'd-2': { truthId: 'dt-legacy-1' },
   // Zaxby's draft → no live truth/engine record yet (graceful omit).
   'd-3': {},
-  // Gatorade flagship signed → Gatorade truth (PAID) + Kiyan engine escrow deal.
-  'd-4': { truthId: 'dt-gatorade-1', engineId: DEMO_DEAL.dealId },
+  // Gatorade flagship signed → Gatorade truth (PAID). No engine bridge: the
+  // only engine fixture is the Kiyan × JMA Wireless demo deal, whose milestone
+  // copy ("JMA product", "JMA booth") is foreign to a Gatorade deal — bridging
+  // it leaked JMA escrow/milestones into the Gatorade detail. Payment truth
+  // alone carries the settled-money story coherently.
+  'd-4': { truthId: 'dt-gatorade-1' },
   // CarMax live → no live truth/engine record yet (graceful omit).
   'd-5': {},
-  // Nike signature renewal in negotiation → JMA truth (UNDISCLOSED → NIL Go clock).
-  'd-6': { truthId: 'dt-jma-1', engineId: DEMO_DEAL.dealId },
+  // Nike signature renewal in negotiation → JMA truth for the NIL-Go disclosure
+  // clock only. No engine bridge: the JMA-Wireless demo-deal milestones are
+  // foreign to a Cooper Flagg × Nike Hoops deal and must not render here.
+  'd-6': { truthId: 'dt-jma-1' },
 };
 
 // ── Per-deal FMV inputs ──────────────────────────────────────────────────────
@@ -179,18 +185,33 @@ export function buildDealEnrichment(detail: BrandDealDetail): DealEnrichment {
   const out: DealEnrichment = {};
 
   // ── Payment truth (three-state expected/in-review/cleared/paid) ──────────
+  // The truth fixture (dt-*) carries the payment STATE + timing, but its
+  // dollar amount is from a SEPARATE athlete-side demo deal (~$2-4K) and would
+  // contradict this packet's headline money (~$300-700K) — a ~150x gap on the
+  // same screen. Reconcile by deriving the displayed amount from the packet's
+  // own money.total; the tax set-aside (when the truth has one) is rescaled to
+  // hold the same ratio (Gatorade's 24%), so payment-truth never disagrees with
+  // the deal's headline value.
   const truth = bridge.truthId
     ? DEAL_TRUTH_FIXTURE.find((t) => t.dealId === bridge.truthId)
     : undefined;
   if (truth) {
+    const packetCents = parseDisplayMoneyToCents(detail.money.total);
+    const reconciledCents = packetCents ?? truth.amountCents;
+    const reconciledTaxCents =
+      truth.taxSetAsideCents !== undefined && truth.amountCents > 0
+        ? Math.round(
+            (truth.taxSetAsideCents / truth.amountCents) * reconciledCents,
+          )
+        : undefined;
     out.payment = {
       dealId: truth.dealId,
       state: truth.paymentState,
       stateLabel: PAYMENT_STATE_LABEL[truth.paymentState],
-      amount: formatCentsUSD(truth.amountCents),
+      amount: formatCentsUSD(reconciledCents),
       ...(truth.paidAtISO ? { paidAt: truth.paidAtISO } : {}),
-      ...(truth.taxSetAsideCents !== undefined
-        ? { taxSetAside: formatCentsUSD(truth.taxSetAsideCents) }
+      ...(reconciledTaxCents !== undefined
+        ? { taxSetAside: formatCentsUSD(reconciledTaxCents) }
         : {}),
     };
   }
