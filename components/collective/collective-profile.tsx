@@ -88,7 +88,7 @@ function TrustCard() {
         <View style={tc.tabularBlock}>
           <View style={tc.tabularRow}>
             <Text style={tc.tabularLabel}>Business purpose documented</Text>
-            <Text style={[tc.tabularValue, { color: GREEN }]}>34 / 34 ✓</Text>
+            <Text style={[tc.tabularValue, { color: GREEN }]}>31 / 31 ✓</Text>
           </View>
           <View style={[tc.tabularRow, tc.tabularRowBorder]}>
             <Text style={tc.tabularLabel}>First-pass clearance</Text>
@@ -115,7 +115,7 @@ function TrustCard() {
         <View style={tc.tabularBlock}>
           <View style={tc.tabularRow}>
             <Text style={tc.tabularLabel}>Athletes fully paid</Text>
-            <Text style={tc.tabularValue}>34 / 34</Text>
+            <Text style={tc.tabularValue}>31 / 31</Text>
           </View>
           <View style={[tc.tabularRow, tc.tabularRowBorder]}>
             <Text style={tc.tabularLabel}>Median days to pay</Text>

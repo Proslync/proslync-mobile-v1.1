@@ -425,10 +425,13 @@ function AeExposureModule() {
 
 // ── MODULE 4: PAYMENT OPS ─────────────────────────────────────────────────
 
+// 1099s issue only on cleared/paid deals, so this tracks the CLEARED stage
+// pill (31) rather than the full 42-deal pipeline — the two can't disagree
+// on the same screen.
 const PAYMENT_STATS = [
   { value: '100%', label: 'escrow-funded before work' },
   { value: '0',    label: 'athletes unpaid >30d'     },
-  { value: '34',   label: '1099s issued · current'   },
+  { value: '31',   label: '1099s issued · current'   },
 ] as const;
 
 function PaymentOpsModule() {

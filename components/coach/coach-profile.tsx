@@ -270,8 +270,8 @@ export default function CoachProfile() {
             </View>
 
             <View style={styles.blockRow}>
-              <Text style={styles.brandRowLabel}>Brand partners</Text>
-              <Text style={styles.brandLogos}>Nike · Gatorade · JMA Wireless · Legacy</Text>
+              <Text style={styles.brandRowLabel}>Brand partners · 12 active</Text>
+              <Text style={styles.brandLogos}>Nike · Gatorade · JMA Wireless · Legacy +8 more</Text>
             </View>
 
             <View style={styles.blockRow}>
