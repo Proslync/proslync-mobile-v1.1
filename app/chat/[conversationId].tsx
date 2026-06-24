@@ -1429,7 +1429,21 @@ export default function ChatThreadScreen() {
   } = useConversation(conversationId);
 
   const useMock = isMockConversation(conversationId);
-  const messages = useMock ? getMockMessages(conversationId) : liveMessages;
+
+  // Locally-appended messages for mock conversations. The live backend POST
+  // fails silently for these fixture threads, so we keep the prospect's typed
+  // message in component state and merge it onto the seeded mock array. This
+  // makes a sent message appear immediately and STAY (until the screen unmounts),
+  // mirroring the optimistic-cache pattern the live path uses in
+  // hooks/use-conversation.ts.
+  const [mockAppended, setMockAppended] = useState<ChatMessage[]>([]);
+
+  const messages = useMemo(() => {
+    if (!useMock) return liveMessages;
+    const base = getMockMessages(conversationId);
+    return mockAppended.length > 0 ? [...base, ...mockAppended] : base;
+  }, [useMock, liveMessages, conversationId, mockAppended]);
+
   const channelInfo = useMock
     ? getMockChannelInfo(conversationId) ?? liveChannelInfo
     : liveChannelInfo;
@@ -1559,12 +1573,40 @@ export default function ChatThreadScreen() {
 
   const handleSend = useCallback(
     async (text: string) => {
+      const trimmed = text.trim();
+      const attachments = pendingMedia.map((m) => ({
+        type: m.type,
+        uri: m.uri,
+      }));
+
+      // Mock (fixture) conversations: the live backend send fails silently for
+      // these threads, so append the typed message to local state instead. The
+      // bubble renders right-aligned (isOwn) and stays in the thread.
+      if (useMock) {
+        if (!trimmed && attachments.length === 0) return;
+        const ownMsg: ChatMessage = {
+          id: `mock-sent-${Date.now()}`,
+          text: trimmed,
+          userId: "me",
+          userName: user?.userName || "You",
+          userImage: user?.avatar?.url,
+          createdAt: new Date(),
+          isOwn: true,
+          attachments:
+            attachments.length > 0
+              ? attachments.map((a) => ({ type: a.type, url: a.uri }))
+              : undefined,
+        };
+        setMockAppended((prev) => [...prev, ownMsg]);
+        setPendingMedia([]);
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+        return;
+      }
+
       try {
         setIsSending(true);
-        const attachments = pendingMedia.map((m) => ({
-          type: m.type,
-          uri: m.uri,
-        }));
         await sendMessage(
           text,
           attachments.length > 0 ? attachments : undefined,
@@ -1579,7 +1621,7 @@ export default function ChatThreadScreen() {
         setIsSending(false);
       }
     },
-    [sendMessage, pendingMedia],
+    [sendMessage, pendingMedia, useMock, user],
   );
 
   const handlePickImage = useCallback(async () => {
@@ -1646,6 +1688,26 @@ export default function ChatThreadScreen() {
 
   const handleSendAudio = useCallback(
     async (uri: string, duration: number) => {
+      // Mock (fixture) conversations: append the voice message locally so it
+      // appears immediately as an own (right-aligned) bubble.
+      if (useMock) {
+        const ownMsg: ChatMessage = {
+          id: `mock-sent-${Date.now()}`,
+          text: "",
+          userId: "me",
+          userName: user?.userName || "You",
+          userImage: user?.avatar?.url,
+          createdAt: new Date(),
+          isOwn: true,
+          attachments: [{ type: "audio", url: uri, duration }],
+        };
+        setMockAppended((prev) => [...prev, ownMsg]);
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+        return;
+      }
+
       try {
         setIsSending(true);
         // Upload and send the voice message
@@ -1660,7 +1722,7 @@ export default function ChatThreadScreen() {
         setIsSending(false);
       }
     },
-    [sendVoiceMessage],
+    [sendVoiceMessage, useMock, user],
   );
 
   const handleScroll = useCallback(
