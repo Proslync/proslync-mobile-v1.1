@@ -47,7 +47,7 @@ function DealNotFound({ onBack }: { onBack: () => void }) {
       <DarkGradientBg />
       <Text style={styles.notFoundTitle}>Deal not found</Text>
       <Text style={styles.notFoundBody}>
-        This route is ready for backend persistence, but the current fixture only includes the seeded Brand HQ deals.
+        We couldn't find that deal. It may have been closed or moved.
       </Text>
       <Pressable onPress={onBack} style={styles.notFoundButton} accessibilityRole="button">
         <Text style={styles.notFoundButtonText}>Go back</Text>

@@ -120,7 +120,7 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
       lastVerifiedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
       verificationSource: ref(
         'src-puma-verify',
-        'Proslync brand registry · synthetic',
+        'Proslync brand registry',
         4,
       ),
     },
@@ -170,7 +170,7 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
       lastVerifiedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
       verificationSource: ref(
         'src-honda-verify',
-        'Proslync brand registry · synthetic',
+        'Proslync brand registry',
         9,
       ),
     },
@@ -222,7 +222,7 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
     },
     trustMeta: {
       lastVerifiedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-      verificationSource: ref('src-beats-verify', 'Proslync brand registry · synthetic', 6),
+      verificationSource: ref('src-beats-verify', 'Proslync brand registry', 6),
     },
   },
   {
@@ -269,7 +269,7 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
     socialFootprint: { instagram: '@dickssportinggoods', tiktok: '@dickssportinggoods' },
     trustMeta: {
       lastVerifiedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-      verificationSource: ref('src-dicks-verify', 'Proslync brand registry · synthetic', 3),
+      verificationSource: ref('src-dicks-verify', 'Proslync brand registry', 3),
     },
   },
   {
@@ -315,7 +315,7 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
     socialFootprint: { instagram: '@athleticbrewing' },
     trustMeta: {
       lastVerifiedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-      verificationSource: ref('src-ab-verify', 'Proslync brand registry · synthetic', 7),
+      verificationSource: ref('src-ab-verify', 'Proslync brand registry', 7),
     },
   },
   {
@@ -366,7 +366,7 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
     },
     trustMeta: {
       lastVerifiedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-      verificationSource: ref('src-adi-verify', 'Proslync brand registry · synthetic', 5),
+      verificationSource: ref('src-adi-verify', 'Proslync brand registry', 5),
     },
   },
   {
@@ -412,7 +412,7 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
     socialFootprint: { instagram: '@hoffmanauto' },
     trustMeta: {
       lastVerifiedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString(),
-      verificationSource: ref('src-hoff-verify', 'Proslync brand registry · synthetic', 11),
+      verificationSource: ref('src-hoff-verify', 'Proslync brand registry', 11),
     },
   },
   {
@@ -471,7 +471,7 @@ export const MOCK_BRAND_COMPANIES: BrandCompanyProfile[] = [
     },
     trustMeta: {
       lastVerifiedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-      verificationSource: ref('src-gat-verify', 'Proslync brand registry · synthetic', 2),
+      verificationSource: ref('src-gat-verify', 'Proslync brand registry', 2),
     },
   },
 ];

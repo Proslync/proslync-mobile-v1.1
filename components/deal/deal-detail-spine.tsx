@@ -554,7 +554,10 @@ function ComparableDealRowView({ row }: { row: ComparableDealRow }) {
         : row.reviewerState === 'pending-review'
           ? 'warning'
           : 'muted';
-  const sourceKindLabel = row.source.kind.replace(/-/g, ' ');
+  const sourceKindLabel =
+    row.source.kind === 'synthetic'
+      ? 'Proslync comps'
+      : row.source.kind.replace(/-/g, ' ');
   return (
     <View style={styles.compRow}>
       <View style={styles.compRowTop}>

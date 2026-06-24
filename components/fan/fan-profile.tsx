@@ -225,7 +225,7 @@ function claimedPerkToSheet(p: (typeof FAN_PERKS)[number]): SheetPerk {
     source: p.athlete,
     tier: p.tier,
     kind: 'status',
-    fulfillment: 'Redeemed — fulfillment complete in the demo timeline.',
+    fulfillment: 'Redeemed — fulfillment complete.',
     delivered: true,
   };
 }

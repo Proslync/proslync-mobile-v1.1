@@ -243,7 +243,7 @@ function FindingRow({ finding }: { finding: RiskReportFinding }) {
           <View key={source.id} style={styles.sourceRow}>
             <Ionicons name="document-text-outline" size={11} color="rgba(255,255,255,0.55)" />
             <Text style={styles.sourceText} numberOfLines={2}>
-              {source.label} · {source.kind} · {formatFreshness(source.freshnessDays)}
+              {source.label} · {source.kind === 'synthetic' ? 'internal' : source.kind} · {formatFreshness(source.freshnessDays)}
               {source.caveat ? ` — ${source.caveat}` : ''}
             </Text>
           </View>

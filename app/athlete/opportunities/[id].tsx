@@ -318,7 +318,7 @@ function ApplyCard({ openDealId, category }: { openDealId: string; category: str
 
       {apply.isError ? (
         <Text style={styles.submitError}>
-          Could not submit. Try again — this is a mock surface and never persists.
+          Couldn't submit — please try again.
         </Text>
       ) : null}
     </View>

@@ -968,11 +968,6 @@ function ConfirmationStep({ dealId, onOpenDeal }: ConfirmationProps) {
     <View style={confirmStyles.container}>
       <View style={confirmStyles.card}>
         <Text style={confirmStyles.emoji}>Deal signed</Text>
-        <View style={confirmStyles.demoRow}>
-          <View style={confirmStyles.demoPill}>
-            <Text style={confirmStyles.demoPillText}>DEMO</Text>
-          </View>
-        </View>
         <Text style={confirmStyles.label}>DEAL ID</Text>
         <Text style={confirmStyles.dealId} selectable>
           {dealId}

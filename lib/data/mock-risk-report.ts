@@ -71,7 +71,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
           sources: [
             syntheticSource(
               'src-rr-alloc-001',
-              'Synthetic EADA-shaped allocation export',
+              'EADA-shaped allocation export',
               0,
               'Hand-authored for demo; replace with reviewer-approved EADA filing.',
             ),
@@ -87,7 +87,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
           sources: [
             syntheticSource(
               'src-rr-alloc-002',
-              'Synthetic per-sport allocation snapshot',
+              'per-sport allocation snapshot',
             ),
           ],
         },
@@ -116,7 +116,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
           sources: [
             syntheticSource(
               'src-rr-asc-001',
-              'Synthetic registered-agent overlap report',
+              'registered-agent overlap report',
               1,
               'Public Secretary-of-State cross-reference; not yet reviewer-confirmed.',
             ),
@@ -147,7 +147,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
           sources: [
             syntheticSource(
               'src-rr-disp-001',
-              'Synthetic disclosure-SLA monitor',
+              'disclosure-SLA monitor',
               0,
               'Mocked SLA monitor; replace with the real disclosure-room export.',
             ),
@@ -162,7 +162,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
           sources: [
             syntheticSource(
               'src-rr-disp-002',
-              'Synthetic public-docket scan',
+              'public-docket scan',
               2,
             ),
           ],
@@ -191,7 +191,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
           rationale:
             'Daily hash-chain checks pass for every deal-state transition; 0 gaps, 0 reverted writes.',
           sources: [
-            syntheticSource('src-rr-tamp-001', 'Synthetic audit-log integrity report'),
+            syntheticSource('src-rr-tamp-001', 'audit-log integrity report'),
           ],
         },
       ],
@@ -218,7 +218,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
           sources: [
             syntheticSource(
               'src-rr-fresh-001',
-              'Synthetic freshness scan',
+              'freshness scan',
               35,
               'Source freshness > 30d — this finding itself anchors on a stale baseline.',
             ),
@@ -233,7 +233,7 @@ const SYRACUSE_RISK_REPORT: RiskReport = {
     versionTag: 'rr-syr-fy2026-h1@v1',
   },
   caveats: [
-    'Synthetic fixture for the Proslync demo. Reviewer must approve every finding before any legal or external use.',
+    'Reviewer must approve every finding before any legal or external use.',
     'House-v.-NCAA cap figures are a reference display of the school\'s reported usage — Proslync does not reconcile cap disbursements.',
   ],
   attribution: {
@@ -279,7 +279,7 @@ const DUKE_RISK_REPORT: RiskReport = {
           rationale:
             'Men\'s basketball + football account for 68% of cap-affected dollar volume; women\'s basketball + Olympic sports balance the remaining 32%.',
           sources: [
-            syntheticSource('src-rr-duke-alloc-001', 'Synthetic EADA-shaped allocation export — Duke'),
+            syntheticSource('src-rr-duke-alloc-001', 'EADA-shaped allocation export — Duke'),
           ],
         },
       ],
@@ -300,7 +300,7 @@ const DUKE_RISK_REPORT: RiskReport = {
             'Bylaw 22 association test for the BWW payor passed initial screen; AD-level secondary review still in queue.',
           relatedDealIds: ['d-7'],
           recommendedAction: 'Confirm AD-level secondary review before activation enters live stage.',
-          sources: [syntheticSource('src-rr-duke-asc-001', 'Synthetic AD pre-approval memo — d-7', 1)],
+          sources: [syntheticSource('src-rr-duke-asc-001', 'AD pre-approval memo — d-7', 1)],
         },
       ],
     },
@@ -318,7 +318,7 @@ const DUKE_RISK_REPORT: RiskReport = {
           headline: 'No high-value deals lack signed disclosure attestation.',
           rationale:
             'All FY26 H1 Duke deals (d-6, d-7, d-10, d-20-Reyes) have attestations on file or are inside the SLA window.',
-          sources: [syntheticSource('src-rr-duke-disp-001', 'Synthetic disclosure-SLA monitor — Duke')],
+          sources: [syntheticSource('src-rr-duke-disp-001', 'disclosure-SLA monitor — Duke')],
         },
       ],
     },
@@ -336,7 +336,7 @@ const DUKE_RISK_REPORT: RiskReport = {
           severity: 'clear',
           headline: 'All deal/disclosure events have unbroken audit-log hash chain.',
           rationale: 'Daily hash-chain checks pass; 0 gaps, 0 reverted writes.',
-          sources: [syntheticSource('src-rr-duke-tamp-001', 'Synthetic audit-log integrity report — Duke')],
+          sources: [syntheticSource('src-rr-duke-tamp-001', 'audit-log integrity report — Duke')],
         },
       ],
     },
@@ -354,7 +354,7 @@ const DUKE_RISK_REPORT: RiskReport = {
           rationale:
             'Reports older than 30 days should not anchor external attestation. Duke refresh batch scheduled for end of week.',
           recommendedAction: 'Run the source-freshness refresh job before sharing this report externally.',
-          sources: [syntheticSource('src-rr-duke-fresh-001', 'Synthetic freshness scan — Duke', 38)],
+          sources: [syntheticSource('src-rr-duke-fresh-001', 'freshness scan — Duke', 38)],
         },
       ],
     },
@@ -365,7 +365,7 @@ const DUKE_RISK_REPORT: RiskReport = {
     versionTag: 'rr-duke-fy2026-h1@v1',
   },
   caveats: [
-    'Synthetic fixture for the Proslync demo. Reviewer must approve every finding before any legal or external use.',
+    'Reviewer must approve every finding before any legal or external use.',
     'House-v.-NCAA cap figures are a reference display of the school\'s reported usage — Proslync does not reconcile cap disbursements.',
     'Duke report exists alongside Syracuse for cross-school AD-cockpit comparison.',
   ],

@@ -223,7 +223,7 @@ export function AgentClients({ bottomInset = 0, topInset = 0, onScroll }: AgentC
         onPress={() =>
           Alert.alert(
             'Invite Code',
-            'Share your code — athletes add you from their side. (DEMO)',
+            'Share your code — athletes add you from their side.',
           )
         }
         accessibilityRole="button"

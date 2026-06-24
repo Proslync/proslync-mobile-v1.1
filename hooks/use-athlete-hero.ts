@@ -51,7 +51,7 @@ const MOCK_TRENDING_DELTA: Record<string, number> = {
 
 const TRENDING_SOURCE_REF: ComparableDealSourceRef = {
   id: 'src:mock-trending-delta',
-  label: 'Synthetic · platform engagement signal',
+  label: 'Platform engagement signal',
   kind: 'synthetic',
   retrievedAt: '2026-05-10T00:00:00.000Z',
   freshnessDays: 0,

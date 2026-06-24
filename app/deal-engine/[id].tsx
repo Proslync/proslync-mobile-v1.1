@@ -270,7 +270,7 @@ function buildCscPacketHtml(deal: EngineDeal): string {
 <h1>NIL Pre-Clearance &amp; CSC Packet</h1>
 <p style="color:#888;font-size:12px">Deal ID: <strong>${deal.dealId}</strong> · Generated ${new Date().toLocaleString()}</p>
 
-<div class="demo-notice">DEMO — Prepared with Proslync — not an official CSC submission. No legal obligations created.</div>
+<div class="demo-notice">Prepared with Proslync — not an official CSC submission. No legal obligations created.</div>
 
 <h2>Parties</h2>
 <p><strong>Athlete:</strong> ${deal.athlete}</p>
@@ -495,9 +495,6 @@ function EscrowCard({
           accessibilityLabel="Fund escrow"
         >
           <Text style={cockpitStyles.fundBtnText}>FUND ESCROW</Text>
-          <View style={cockpitStyles.demoBadge}>
-            <Text style={cockpitStyles.demoBadgeText}>DEMO</Text>
-          </View>
         </TouchableOpacity>
       )}
     </View>
@@ -756,9 +753,6 @@ function DeterminationSheet({
             <View style={sheetStyles.handle} />
             <View style={sheetStyles.titleRow}>
               <Text style={sheetStyles.sheetTitle}>Admin Determination</Text>
-              <View style={sheetStyles.demoPill}>
-                <Text style={sheetStyles.demoPillText}>DEMO</Text>
-              </View>
             </View>
             <Text style={sheetStyles.sheetSubtitle} numberOfLines={2}>
               {milestoneDescription}
@@ -1213,9 +1207,6 @@ function MilestoneRow({
               accessibilityLabel="Escalate to Proslync Admin for determination"
             >
               <Text style={milestoneStyles.escalateBtnText}>ESCALATE TO PROSLYNC ADMIN</Text>
-              <View style={milestoneStyles.demoBadgeSmall}>
-                <Text style={milestoneStyles.demoBadgeSmallText}>DEMO</Text>
-              </View>
             </TouchableOpacity>
           )}
         </View>
@@ -1245,9 +1236,6 @@ function MilestoneRow({
             accessibilityLabel={`Approve milestone ${milestone.description}`}
           >
             <Text style={milestoneStyles.approveBtnText}>APPROVE</Text>
-            <View style={milestoneStyles.demoBadgeSmall}>
-              <Text style={milestoneStyles.demoBadgeSmallText}>DEMO</Text>
-            </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={milestoneStyles.disputeBtn}
@@ -1971,11 +1959,6 @@ export default function DealEngineCockpit() {
           <Text style={cockpitStyles.navTitle} numberOfLines={1}>
             Deal Cockpit
           </Text>
-          {deal.isDemo && (
-            <View style={cockpitStyles.demoPill}>
-              <Text style={cockpitStyles.demoPillText}>DEMO</Text>
-            </View>
-          )}
           <BellButton
             onPress={() => setNotifSheetVisible(true)}
             deal={deal}

@@ -270,7 +270,7 @@ function perkToSheet(p: Perk): SheetPerk {
     tier: p.tier,
     kind: p.claimed ? 'status' : 'claimable',
     fulfillment: p.claimed
-      ? 'Claimed — fulfillment complete in the demo timeline.'
+      ? 'Claimed — fulfillment complete.'
       : `Costs ${p.cost.toLocaleString()} pts · fulfilled by the athlete's team after claim.`,
     delivered: p.claimed,
   };

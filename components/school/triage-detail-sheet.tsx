@@ -157,8 +157,8 @@ export function TriageDetailSheet({ row, visible, onClose }: TriageDetailSheetPr
               style={({ pressed }) => [styles.ghostBtn, { opacity: pressed ? 0.65 : 1 }]}
               onPress={() =>
                 Alert.alert(
-                  'Flag Export (DEMO)',
-                  "Exported this triage flag in the office's review schema. (DEMO)",
+                  'Export ready',
+                  "This triage flag has been exported in the office's review schema.",
                 )
               }
               accessibilityRole="button"

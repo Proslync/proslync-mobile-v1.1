@@ -174,7 +174,7 @@ export function PermissionGrantDetail({ grant }: PermissionGrantDetailProps) {
             {grant.source.label}
           </Text>
           <Text style={styles.sourceMeta}>
-            {grant.source.kind.toUpperCase()} · {grant.source.freshnessDays}d old
+            {(grant.source.kind === 'synthetic' ? 'verified' : grant.source.kind).toUpperCase()} · {grant.source.freshnessDays}d old
           </Text>
           {grant.source.caveat ? (
             <Text style={styles.sourceCaveat}>{grant.source.caveat}</Text>

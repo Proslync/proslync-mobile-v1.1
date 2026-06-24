@@ -317,7 +317,7 @@ function RebookModule() {
             onPress={() =>
               Alert.alert(
                 'Brief funded to escrow',
-                `Matched athletes will see it first. (DEMO)`,
+                `Matched athletes will see it first.`,
               )
             }
             accessibilityRole="button"
@@ -331,7 +331,7 @@ function RebookModule() {
             onPress={() =>
               Alert.alert(
                 'Make Ambassador',
-                'Extended deal funded to escrow — athlete will be notified. (DEMO)',
+                'Extended deal funded to escrow — athlete will be notified.',
               )
             }
             accessibilityRole="button"

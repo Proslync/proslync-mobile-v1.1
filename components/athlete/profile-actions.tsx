@@ -291,9 +291,6 @@ function SupporterSheet({
                 />
                 <ReceiptRow label="Platform" value={formatCents(tier.platformCents)} />
               </View>
-              <View style={ss.demoPill}>
-                <Text style={ss.demoPillText}>DEMO — payments not enabled</Text>
-              </View>
               <TouchableOpacity
                 style={ss.ctaBtn}
                 onPress={handleClose}
@@ -426,10 +423,6 @@ function SupporterSheet({
                   </TouchableOpacity>
                 </View>
               )}
-
-              <View style={ss.demoPill}>
-                <Text style={ss.demoPillText}>DEMO — payments not enabled</Text>
-              </View>
             </ScrollView>
           )}
     </DraggableSheet>
@@ -488,9 +481,6 @@ function WorkWithMeSheet({ visible, athleteName, onClose }: WorkWithMeSheetProps
                 The team typically responds within 2 business days — or draft the
                 contract now and send it for signature.
               </Text>
-              <View style={ss.demoPill}>
-                <Text style={ss.demoPillText}>DEMO</Text>
-              </View>
               <TouchableOpacity
                 style={ss.ctaBtn}
                 onPress={() => {

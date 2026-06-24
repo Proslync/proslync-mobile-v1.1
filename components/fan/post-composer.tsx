@@ -175,7 +175,7 @@ export function FanPostComposer({
             <Pressable
               style={[styles.mediaButton, styles.mediaButtonDisabled]}
               disabled
-              accessibilityLabel="Add photo (coming soon)"
+              accessibilityLabel="Add photo"
               accessibilityRole="button"
               accessibilityState={{ disabled: true }}
             >
@@ -184,13 +184,13 @@ export function FanPostComposer({
             <Pressable
               style={[styles.mediaButton, styles.mediaButtonDisabled]}
               disabled
-              accessibilityLabel="Add video (coming soon)"
+              accessibilityLabel="Add video"
               accessibilityRole="button"
               accessibilityState={{ disabled: true }}
             >
               <Ionicons name="videocam-outline" size={20} color={TEXT_TERTIARY} />
             </Pressable>
-            <Text style={styles.comingSoon}>Media coming soon</Text>
+            <Text style={styles.comingSoon}>Photo & video</Text>
           </View>
           <Text
             style={[

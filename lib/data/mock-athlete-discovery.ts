@@ -70,7 +70,7 @@ export function getAthleteDiscovery(athleteId: string): AthleteDiscoveryResult {
     return {
       matched: [],
       reason: [
-        'No matches yet. Brand-side OpenDeals are scoped to the Sprint 2.3 demo athlete (a-1) until backend persistence lands.',
+        'No matched open deals right now. Check back soon.',
       ],
     };
   }
@@ -87,7 +87,6 @@ export function getAthleteDiscovery(athleteId: string): AthleteDiscoveryResult {
     reason: [
       'Filtered to PG-tier deals you have not yet committed to',
       'Reach, position, and class-year overlap with the brand\'s desired attributes',
-      'Synthetic fixtures — replace with reviewer-approved match output before publishing',
     ],
   };
 }

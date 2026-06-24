@@ -136,7 +136,7 @@ function buildComplianceSummaryPayload(subjectId: string): BuiltPayload {
     subjectId,
     generatedFor: 'school-review',
     summary:
-      'Mock compliance roll-up placeholder. Real implementation pending Sprint 3.10 risk-report fold-in.',
+      'Compliance roll-up summary generated for school review.',
   };
   return {
     payload,

@@ -160,8 +160,8 @@ function PerkFulfillmentModule() {
             style={({ pressed }) => [s.nudgeChip, { opacity: pressed ? 0.65 : 1 }]}
             onPress={() =>
               Alert.alert(
-                'Nudge Sent (DEMO)',
-                `Nudge sent for "${row.desc}" — athlete notified. (DEMO)`,
+                'Nudge Sent',
+                `Nudge sent for "${row.desc}" — athlete notified.`,
               )
             }
             accessibilityRole="button"

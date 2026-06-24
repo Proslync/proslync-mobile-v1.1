@@ -82,7 +82,7 @@ export function FaceIdStep({ onSuccess, onFallback }: FaceIdStepProps) {
       // Native module not linked — route to fallback transparently.
       Alert.alert(
         "Face ID unavailable",
-        "Face ID isn't available in this build. Use ID upload instead.",
+        "Face ID isn't available on this device. Use ID upload instead.",
         [{ text: "OK", onPress: onFallback }]
       );
       return;

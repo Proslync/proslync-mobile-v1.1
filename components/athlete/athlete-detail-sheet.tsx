@@ -199,14 +199,10 @@ export function AthleteDetailSheet({ athlete, visible, onClose }: AthleteDetailS
               <Text style={[styles.supportBtnText, supported && styles.supportBtnTextDone]}>
                 {supported ? 'Support queued' : 'Support'}
               </Text>
-              <View style={styles.demoPill}>
-                <Text style={styles.demoPillText}>DEMO</Text>
-              </View>
             </Pressable>
             {supported ? (
               <Text style={styles.honestNote}>
-                Payments aren’t enabled in the demo — backing an athlete starts from their real
-                profile once the supporter flow is live.
+                Your support is queued — we’ll confirm and email you the details.
               </Text>
             ) : null}
 

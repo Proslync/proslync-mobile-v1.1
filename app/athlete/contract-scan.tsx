@@ -252,7 +252,7 @@ export default function ContractScanScreen() {
           <View style={styles.footer}>
             <Ionicons name="information-circle-outline" size={13} color={MUTED} />
             <Text style={styles.footerText}>
-              Automated scan — not legal advice. Upgrades to full AI review once connected.
+              Automated scan — not legal advice.
             </Text>
           </View>
         </ScrollView>

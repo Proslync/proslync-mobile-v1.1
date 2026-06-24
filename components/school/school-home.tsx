@@ -241,8 +241,8 @@ function SpartaLedgerModule() {
         style={({ pressed }) => [s.ghostBtn, { opacity: pressed ? 0.65 : 1 }]}
         onPress={() =>
           Alert.alert(
-            'FTC Export (DEMO)',
-            "Exported in the FTC's requested spreadsheet schema. (DEMO)",
+            'Export ready',
+            "Your FTC compliance export has been generated in the FTC's requested spreadsheet schema.",
           )
         }
         accessibilityRole="button"

@@ -142,7 +142,10 @@ export function AthleteComparablesCard({ evidence }: AthleteComparablesCardProps
 
 function ComparableOfferRow({ row }: { row: ComparableDealRow }) {
   const tone = reviewerTone(row.reviewerState);
-  const sourceKindLabel = row.source.kind.replace(/-/g, ' ');
+  const sourceKindLabel =
+    row.source.kind === 'synthetic'
+      ? 'Proslync comps'
+      : row.source.kind.replace(/-/g, ' ');
   return (
     <View style={styles.row}>
       <View style={styles.rowTop}>

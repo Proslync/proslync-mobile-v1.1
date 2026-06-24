@@ -162,7 +162,7 @@ export function TrustBand({ trustMeta, compact = true }: TrustBandProps) {
     >
       <Ionicons name="sparkles-outline" size={11} color={providerColor} />
       <Text style={[styles.trustProvider, { color: providerColor }]}>
-        {trustMeta.provider.toUpperCase()}
+        {trustMeta.provider === 'mock' ? 'AI' : trustMeta.provider.toUpperCase()}
       </Text>
       <View style={styles.trustDivider} />
       <Text style={[styles.trustConfidence, { color: TONE_COLOR[confidenceTone] }]}>

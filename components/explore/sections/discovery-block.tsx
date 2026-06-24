@@ -226,12 +226,7 @@ export function DiscoveryBlock({ topInset }: DiscoveryBlockProps = {}) {
             <Section
               title="Tonight's games"
               right={
-                isDemoData ? (
-                  <View style={styles.demoChip}>
-                    <Ionicons name="flask" size={11} color={DEMO_AMBER} />
-                    <Text style={styles.demoChipText}>Demo data</Text>
-                  </View>
-                ) : sourceTier === 'live-data' ? (
+                !isDemoData && sourceTier === 'live-data' ? (
                   <View style={styles.liveChip}>
                     <View style={styles.liveDot} />
                     <Text style={styles.liveChipText}>Live data</Text>

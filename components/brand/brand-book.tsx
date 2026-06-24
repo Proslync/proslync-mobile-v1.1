@@ -125,7 +125,7 @@ function PackageCardView({ pkg }: { pkg: PackageCard }) {
         onPress={() =>
           Alert.alert(
             'Brief funded to escrow',
-            'Matched athletes will see it first. (DEMO)',
+            'Matched athletes will see it first.',
           )
         }
         accessibilityRole="button"

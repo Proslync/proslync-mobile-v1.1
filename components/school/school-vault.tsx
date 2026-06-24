@@ -144,8 +144,8 @@ function CaseCardView({ card }: { card: CaseCard }) {
         style={({ pressed }) => [s.ghostBtn, { opacity: pressed ? 0.65 : 1 }]}
         onPress={() =>
           Alert.alert(
-            'Case File Export (DEMO)',
-            'CSC inquiry response assembled — same-day, not 2.5 weeks. (DEMO)',
+            'Export ready',
+            'CSC inquiry response assembled — same-day, not 2.5 weeks.',
           )
         }
         accessibilityRole="button"

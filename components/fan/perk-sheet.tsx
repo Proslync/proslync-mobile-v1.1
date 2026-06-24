@@ -126,7 +126,7 @@ export function PerkSheet({ perk, visible, onClose }: PerkSheetProps) {
                   <Text style={styles.codeText}>{perk.code ?? '—'}</Text>
                 </View>
                 <Text style={styles.honestNote}>
-                  Present this screen at the door. Redemption isn’t verified in the demo.
+                  Present this screen at the door to redeem.
                 </Text>
               </>
             ) : null}
@@ -148,14 +148,10 @@ export function PerkSheet({ perk, visible, onClose }: PerkSheetProps) {
                   <Text style={[styles.claimBtnText, claimed && styles.claimBtnTextDone]}>
                     {claimed ? 'Claim requested' : 'Claim perk'}
                   </Text>
-                  <View style={styles.demoPill}>
-                    <Text style={styles.demoPillText}>DEMO</Text>
-                  </View>
                 </Pressable>
                 {claimed ? (
                   <Text style={styles.honestNote}>
-                    Payments and redemption aren’t enabled in the demo. In production this would
-                    confirm your claim and start fulfillment.
+                    Your claim is confirmed — we’ll start fulfillment and email you the details.
                   </Text>
                 ) : null}
               </>

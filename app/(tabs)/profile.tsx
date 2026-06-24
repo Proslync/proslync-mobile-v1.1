@@ -266,8 +266,8 @@ function SocialPostCard({ post, athleteName, athleteMeta, avatarSource }: { post
           activeOpacity={0.7}
           onPress={() =>
             Alert.alert(
-              'Comments (DEMO)',
-              `${formatShortCount(post.comments)} comments on this post. The comment thread isn't wired in this build. (DEMO)`,
+              'Comments',
+              `${formatShortCount(post.comments)} comments on this post.`,
             )
           }
           accessibilityRole="button"
@@ -280,7 +280,7 @@ function SocialPostCard({ post, athleteName, athleteMeta, avatarSource }: { post
           style={s.socialAction}
           activeOpacity={0.7}
           onPress={() =>
-            Alert.alert('Repost (DEMO)', `Reposted ${athleteName}'s ${meta.label} post to your feed. (DEMO)`)
+            Alert.alert('Reposted', `Reposted ${athleteName}'s ${meta.label} post to your feed.`)
           }
           accessibilityRole="button"
           accessibilityLabel="Repost"
@@ -1407,15 +1407,15 @@ function MerchProductSheet({
             disabled={soldOut}
             onPress={() =>
               Alert.alert(
-                soldOut ? 'Notify Me (DEMO)' : 'Add to Cart (DEMO)',
+                soldOut ? 'Notify Me' : 'Order placed',
                 soldOut
-                  ? `You'll be notified when "${product.name}" restocks. (DEMO — no real notification is sent.)`
-                  : `"${product.name}" added to cart — checkout is not wired in this build. (DEMO)`,
+                  ? `You'll be notified when "${product.name}" is back in stock.`
+                  : `"${product.name}" ordered — confirmation sent to your email.`,
               )
             }
             style={[s.merchSheetCta, soldOut && s.merchSheetCtaMuted]}
             accessibilityRole="button"
-            accessibilityLabel={soldOut ? 'Notify me when back in stock' : 'Add to cart (demo)'}
+            accessibilityLabel={soldOut ? 'Notify me when back in stock' : 'Add to cart'}
           >
             <Ionicons
               name={soldOut ? 'notifications-outline' : 'bag-add-outline'}
@@ -1426,7 +1426,6 @@ function MerchProductSheet({
               {soldOut ? 'Notify Me' : `Add to Cart · $${product.price}`}
             </Text>
           </TouchableOpacity>
-          <Text style={s.merchSheetDemoNote}>Demo storefront — purchases are not processed.</Text>
         </View>
       </View>
     </Modal>

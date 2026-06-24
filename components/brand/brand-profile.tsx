@@ -195,7 +195,7 @@ function TrustCard() {
 
       {/* Footer — no open contact CTA */}
       <Pressable
-        onPress={() => Alert.alert('Funded briefs only', 'Offers arrive with escrow attached — contact only through a funded brief. (DEMO)')}
+        onPress={() => Alert.alert('Funded briefs only', 'Offers arrive with escrow attached — contact only through a funded brief.')}
         style={tc.footerRow}
         accessibilityRole="button"
         accessibilityLabel="How contact works"

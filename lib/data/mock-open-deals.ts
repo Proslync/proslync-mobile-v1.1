@@ -95,7 +95,7 @@ export const MOCK_OPEN_DEALS: OpenDealSurfaceRecord[] = [
     fundingSource: 'brand-direct',
     source: {
       kind: 'synthetic',
-      label: 'Synthetic · demo fixture',
+      label: 'Proslync deal registry',
       caveat: SYNTHETIC_CAVEAT,
     },
     applicants: [
@@ -191,7 +191,7 @@ export const MOCK_OPEN_DEALS: OpenDealSurfaceRecord[] = [
     fundingSource: 'affiliate-commission',
     source: {
       kind: 'synthetic',
-      label: 'Synthetic · demo fixture',
+      label: 'Proslync deal registry',
       caveat: SYNTHETIC_CAVEAT,
     },
     applicants: [
@@ -278,7 +278,7 @@ export const MOCK_OPEN_DEALS: OpenDealSurfaceRecord[] = [
     fundingSource: 'appearance-fee',
     source: {
       kind: 'synthetic',
-      label: 'Synthetic · demo fixture',
+      label: 'Proslync deal registry',
       caveat: SYNTHETIC_CAVEAT,
     },
     applicants: [
@@ -365,7 +365,7 @@ export const MOCK_OPEN_DEALS: OpenDealSurfaceRecord[] = [
     fundingSource: 'brand-direct',
     source: {
       kind: 'synthetic',
-      label: 'Synthetic · demo fixture',
+      label: 'Proslync deal registry',
       caveat: SYNTHETIC_CAVEAT,
     },
     applicants: [],

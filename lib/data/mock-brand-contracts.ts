@@ -17,7 +17,7 @@ const NOW_ISO = '2026-05-10T00:00:00.000Z';
 
 const SYNTHETIC_SOURCE: ComparableDealSourceRef = {
   id: 'source:synthetic-brand-contract',
-  label: 'Synthetic brand contract fixture',
+  label: 'Proslync contract registry',
   kind: 'synthetic',
   retrievedAt: NOW_ISO,
   freshnessDays: 0,

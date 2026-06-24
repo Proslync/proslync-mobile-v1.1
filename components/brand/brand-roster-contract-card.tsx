@@ -306,11 +306,6 @@ export function BrandRosterContractCard({
         <Text style={styles.trustText}>
           {contract.trustMeta.sourceRef.label} · verified {formatVerifiedAgo(contract.trustMeta.lastVerifiedAt)}
         </Text>
-        {contract.trustMeta.sourceRef.caveat ? (
-          <Text style={styles.trustCaveat} numberOfLines={3}>
-            {contract.trustMeta.sourceRef.caveat}
-          </Text>
-        ) : null}
       </View>
     </View>
   );

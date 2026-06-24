@@ -123,8 +123,8 @@ export function ExploreMap({
         style={style}
         message={
           !token
-            ? 'Map requires a Mapbox token. Set EXPO_PUBLIC_MAPBOX_TOKEN.'
-            : 'Map module not linked in this build. Run a dev client build.'
+            ? 'Map is temporarily unavailable.'
+            : 'Map is temporarily unavailable.'
         }
       />
     );

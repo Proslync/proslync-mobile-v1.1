@@ -426,7 +426,7 @@ function PatternsTab({ insets }: { insets: number }) {
             <Ionicons name="videocam-outline" size={32} color={ACCENT} />
             <Text style={styles.evidenceTitle}>Video Evidence</Text>
             <Text style={styles.evidenceSubtitle}>
-              {evidenceFor?.clipCount} clips — coming soon
+              {evidenceFor?.clipCount} clips on file
             </Text>
             <TouchableOpacity
               style={styles.evidenceClose}

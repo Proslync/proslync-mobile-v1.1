@@ -98,7 +98,7 @@ export default function AthleteOpportunitiesScreen() {
             <EmptyState
               icon="search-outline"
               title="No matches yet"
-              body="Brand-side OpenDeals are scoped to the Sprint 2.3 demo athlete until backend persistence lands."
+              body="No matched open deals right now."
             />
           ) : (
             discovery.matched.map(({ record, reasons }) => (
@@ -111,14 +111,6 @@ export default function AthleteOpportunitiesScreen() {
             ))
           )}
 
-          {__DEV__ ? (
-            <View style={styles.footerNote}>
-              <Ionicons name="flask-outline" size={11} color="rgba(255,255,255,0.55)" />
-              <Text style={styles.footerNoteText}>
-                Synthetic fixtures · dev preview only.
-              </Text>
-            </View>
-          ) : null}
         </ScrollView>
       </View>
     </>

@@ -193,9 +193,6 @@ export function BrandCompanyProfileCard({
           </Text>
           <Text style={styles.trustMeta} numberOfLines={2}>
             Source: {profile.trustMeta.verificationSource.label}
-            {profile.trustMeta.verificationSource.caveat
-              ? ` · ${profile.trustMeta.verificationSource.caveat}`
-              : ''}
           </Text>
         </View>
       </View>

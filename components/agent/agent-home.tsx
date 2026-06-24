@@ -233,7 +233,7 @@ function MoneyBoardModule() {
                 onPress={() =>
                   Alert.alert(
                     'Nudge Payer',
-                    'Athletes control payer communications — this queues a follow-up note for your records. (DEMO)',
+                    'Athletes control payer communications — this queues a follow-up note for your records.',
                   )
                 }
                 accessibilityRole="button"
@@ -319,7 +319,7 @@ function ComplianceLedgerModule() {
           SPARTA: 4/4 school notifications sent on time · UAAA: FL #A-2231, TX #88410 active
         </Text>
         <Pressable
-          onPress={() => Alert.alert('Receipts', 'Compliance receipts archive. (DEMO)')}
+          onPress={() => Alert.alert('Receipts', 'Compliance receipts archive.')}
           accessibilityRole="button"
           accessibilityLabel="View compliance receipts"
         >

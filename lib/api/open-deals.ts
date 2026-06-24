@@ -121,7 +121,7 @@ export const openDealsApi = {
     const pitch =
       payload.pitchNote && payload.pitchNote.trim().length > 0
         ? payload.pitchNote.trim()
-        : 'Synthetic application — athlete submitted via mock surface.';
+        : 'Submitted without an additional note.';
     return {
       id: `app-${openDealId}-${applicantId}-${Date.now()}`,
       openDealId,

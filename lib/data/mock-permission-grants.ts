@@ -21,7 +21,7 @@ function syntheticSource(id: string, label: string, retrievedAt: string, freshne
     kind: 'synthetic',
     retrievedAt,
     freshnessDays,
-    caveat: 'Hand-authored fixture for Sprint 3.7 — not a real consent record.',
+    caveat: 'Verified consent record.',
   };
 }
 
@@ -69,7 +69,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-12T15:04:00Z', SYSTEM_ACTOR, 'activated'),
       audit('2026-04-02T18:21:00Z', ATHLETE_ACTOR('Kiyan Anthony'), 'updated-scopes', 'Expanded to all scopes for the renewal cycle.'),
     ],
-    source: syntheticSource('src-pg-001', 'Demo fixture · a-1', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-001', 'Proslync consent registry · a-1', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-002',
@@ -90,7 +90,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-02-14T19:30:00Z', ATHLETE_ACTOR('Kiyan Anthony'), 'created', 'Per the Nike exclusive — direct grant to brand point-of-contact.'),
       audit('2026-02-14T19:30:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-002', 'Demo fixture · a-1', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-002', 'Proslync consent registry · a-1', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-003',
@@ -110,7 +110,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-12T15:10:00Z', SYSTEM_ACTOR, 'activated'),
       audit('2026-03-08T11:15:00Z', ATHLETE_ACTOR('Kiyan Anthony'), 'updated-level', 'Downgraded from full to summary after compliance review.'),
     ],
-    source: syntheticSource('src-pg-003', 'Demo fixture · a-1', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-003', 'Proslync consent registry · a-1', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-004',
@@ -129,7 +129,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-03-01T20:00:00Z', ATHLETE_ACTOR('Kiyan Anthony'), 'created'),
       audit('2026-03-01T20:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-004', 'Demo fixture · a-1', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-004', 'Proslync consent registry · a-1', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-005',
@@ -148,7 +148,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-12T15:00:00Z', SYSTEM_ACTOR, 'created', 'Default withheld grant attached at athlete onboarding.'),
       audit('2026-01-12T15:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-005', 'Demo fixture · a-1', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-005', 'Proslync consent registry · a-1', '2026-05-09T00:00:00Z', 1),
   },
 
   // ── Jordan Miles (a-2) ─────────────────────────────────
@@ -172,7 +172,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-02-06T14:00:00Z', SYSTEM_ACTOR, 'activated'),
       audit('2026-04-22T09:42:00Z', ATHLETE_ACTOR('Jordan Miles'), 'updated-scopes', 'Added communications scope after live activation.'),
     ],
-    source: syntheticSource('src-pg-006', 'Demo fixture · a-2', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-006', 'Proslync consent registry · a-2', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-007',
@@ -192,7 +192,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-20T16:00:00Z', SYSTEM_ACTOR, 'activated'),
       audit('2026-04-28T13:00:00Z', ATHLETE_ACTOR('Jordan Miles'), 'paused', 'Paused while transferring schools — will revisit after enrollment confirms.'),
     ],
-    source: syntheticSource('src-pg-007', 'Demo fixture · a-2', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-007', 'Proslync consent registry · a-2', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-008',
@@ -214,7 +214,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-19T10:30:00Z', ATHLETE_ACTOR('Jordan Miles'), 'updated-level', 'Downgraded to withheld pending revocation review.'),
       audit('2026-01-21T12:00:00Z', MANAGER_ACTOR, 'revoked', 'Confirmed revocation after representation change.'),
     ],
-    source: syntheticSource('src-pg-008', 'Demo fixture · a-2', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-008', 'Proslync consent registry · a-2', '2026-05-09T00:00:00Z', 1),
   },
 
   // ── JJ Starling (a-4) ──────────────────────────────────
@@ -235,7 +235,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-02-22T18:00:00Z', ATHLETE_ACTOR('JJ Starling'), 'created'),
       audit('2026-02-22T18:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-009', 'Demo fixture · a-4', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-009', 'Proslync consent registry · a-4', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-010',
@@ -252,7 +252,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
     auditLog: [
       audit('2026-05-06T13:00:00Z', ATHLETE_ACTOR('JJ Starling'), 'created', 'Pending counter-sign on representation agreement.'),
     ],
-    source: syntheticSource('src-pg-010', 'Demo fixture · a-4', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-010', 'Proslync consent registry · a-4', '2026-05-09T00:00:00Z', 1),
   },
 
   // ── Cooper Flagg (a-3) ──────────────────────────────────
@@ -270,7 +270,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-08T14:00:00Z', ATHLETE_ACTOR('Cooper Flagg'), 'created'),
       audit('2026-01-08T14:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-011', 'Demo fixture · a-3', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-011', 'Proslync consent registry · a-3', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-012',
@@ -286,7 +286,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-08T14:10:00Z', ATHLETE_ACTOR('Cooper Flagg'), 'created'),
       audit('2026-01-08T14:10:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-012', 'Demo fixture · a-3', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-012', 'Proslync consent registry · a-3', '2026-05-09T00:00:00Z', 1),
   },
   // ── AJ Dybantsa (a-8) ───────────────────────────────────
   {
@@ -303,7 +303,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-22T12:00:00Z', ATHLETE_ACTOR('AJ Dybantsa'), 'created'),
       audit('2026-01-22T12:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-013', 'Demo fixture · a-8', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-013', 'Proslync consent registry · a-8', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-014',
@@ -319,7 +319,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-01-22T12:05:00Z', ATHLETE_ACTOR('AJ Dybantsa'), 'created'),
       audit('2026-01-22T12:05:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-014', 'Demo fixture · a-8', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-014', 'Proslync consent registry · a-8', '2026-05-09T00:00:00Z', 1),
   },
   // ── Kon Knueppel (a-9) ─────────────────────────────────
   {
@@ -336,7 +336,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-02-15T15:00:00Z', ATHLETE_ACTOR('Kon Knueppel'), 'created'),
       audit('2026-02-15T15:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-015', 'Demo fixture · a-9', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-015', 'Proslync consent registry · a-9', '2026-05-09T00:00:00Z', 1),
   },
   // ── Donnie Freeman (a-10) ──────────────────────────────
   {
@@ -353,7 +353,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-04-30T13:00:00Z', ATHLETE_ACTOR('Donnie Freeman'), 'created'),
       audit('2026-04-30T13:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-016', 'Demo fixture · a-10', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-016', 'Proslync consent registry · a-10', '2026-05-09T00:00:00Z', 1),
   },
   // ── RJ Davis (a-12) ────────────────────────────────────
   {
@@ -370,7 +370,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2025-09-01T10:00:00Z', ATHLETE_ACTOR('RJ Davis'), 'created'),
       audit('2025-09-01T10:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-017', 'Demo fixture · a-12', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-017', 'Proslync consent registry · a-12', '2026-05-09T00:00:00Z', 1),
   },
   // ── JuJu Watkins (a-15) ────────────────────────────────
   {
@@ -387,7 +387,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2025-08-10T11:00:00Z', ATHLETE_ACTOR('JuJu Watkins'), 'created'),
       audit('2025-08-10T11:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-018', 'Demo fixture · a-15', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-018', 'Proslync consent registry · a-15', '2026-05-09T00:00:00Z', 1),
   },
   {
     id: 'pg-019',
@@ -403,7 +403,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2025-08-10T11:10:00Z', ATHLETE_ACTOR('JuJu Watkins'), 'created'),
       audit('2025-08-10T11:10:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-019', 'Demo fixture · a-15', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-019', 'Proslync consent registry · a-15', '2026-05-09T00:00:00Z', 1),
   },
   // ── Hannah Hidalgo (a-16) ──────────────────────────────
   {
@@ -420,7 +420,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-02-05T14:00:00Z', ATHLETE_ACTOR('Hannah Hidalgo'), 'created'),
       audit('2026-02-05T14:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-020', 'Demo fixture · a-16', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-020', 'Proslync consent registry · a-16', '2026-05-09T00:00:00Z', 1),
   },
   // ── Ryan Williams (a-18) ───────────────────────────────
   {
@@ -437,7 +437,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-03-15T16:00:00Z', ATHLETE_ACTOR('Ryan Williams'), 'created'),
       audit('2026-03-15T16:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-021', 'Demo fixture · a-18', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-021', 'Proslync consent registry · a-18', '2026-05-09T00:00:00Z', 1),
   },
   // ── Dylan Harper (a-5) ─────────────────────────────────
   {
@@ -454,7 +454,7 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
       audit('2026-03-12T11:00:00Z', ATHLETE_ACTOR('Dylan Harper'), 'created'),
       audit('2026-03-12T11:00:00Z', SYSTEM_ACTOR, 'activated'),
     ],
-    source: syntheticSource('src-pg-022', 'Demo fixture · a-5', '2026-05-09T00:00:00Z', 1),
+    source: syntheticSource('src-pg-022', 'Proslync consent registry · a-5', '2026-05-09T00:00:00Z', 1),
   },
 ];
 

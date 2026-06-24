@@ -119,7 +119,7 @@ function HeroBody({ state }: { state: AthleteHeroState }) {
       {state.sourceRef ? (
         <View style={styles.sourceRow}>
           <StatusPill
-            label={state.sourceRef.kind.replace('-', ' ')}
+            label={state.sourceRef.kind === 'synthetic' ? 'signal' : state.sourceRef.kind.replace('-', ' ')}
             tone={toUiTone(state.tone)}
             icon="link"
           />

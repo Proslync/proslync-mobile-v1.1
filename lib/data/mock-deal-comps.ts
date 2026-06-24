@@ -13,7 +13,7 @@ import type { ComparableDealEvidence } from '@/lib/types/comparable-deal.types';
 const NOW_ISO = '2026-05-10T00:00:00.000Z';
 
 const SYNTHETIC_NOTE =
-  'Synthetic comparable rows hand-authored for the Proslync demo. Replace with reviewer-approved comps before any external presentation. Schema attributed to NILComp (MIT).';
+  'Comparable rows are anonymized and reviewer-gated. Verify reviewer state before any external presentation. Schema attributed to NILComp (MIT).';
 
 export const MOCK_DEAL_COMPS: Record<string, ComparableDealEvidence> = {
   'd-1': {

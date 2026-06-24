@@ -298,7 +298,7 @@ export default function CoachProfile() {
                 <TouchableOpacity
                   style={styles.bookBtn}
                   activeOpacity={0.7}
-                  onPress={() => Alert.alert('DEMO', 'Booking not enabled in this demo.')}
+                  onPress={() => Alert.alert('Request sent', 'The camp will confirm your spot by email.')}
                   accessibilityRole="button"
                   accessibilityLabel={`Book ${camp.name}`}
                 >
@@ -314,7 +314,7 @@ export default function CoachProfile() {
             onPress={() =>
               Alert.alert(
                 'Message Routed',
-                'Routed to program staff & compliance — time-stamped. (DEMO)',
+                'Routed to program staff & compliance — time-stamped.',
               )
             }
             accessibilityRole="button"

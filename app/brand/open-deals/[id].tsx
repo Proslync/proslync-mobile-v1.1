@@ -161,9 +161,6 @@ function OpenDealDetail({
           <View style={styles.sourceFooter}>
             <Ionicons name="flask-outline" size={11} color="rgba(255,255,255,0.55)" />
             <Text style={styles.sourceFooterText}>{source.label}</Text>
-            {source.caveat ? (
-              <Text style={styles.sourceCaveat} numberOfLines={2}>{source.caveat}</Text>
-            ) : null}
           </View>
         </Animated.View>
 
@@ -434,7 +431,7 @@ function TrustBand({
       <View style={styles.trustHead}>
         <Ionicons name="sparkles-outline" size={12} color={VIOLET} />
         <Text style={styles.trustKicker}>
-          {kicker ?? 'AI rationale'} · provider: {trust.provider}
+          {kicker ?? 'AI rationale'} · provider: {trust.provider === 'mock' ? 'AI' : trust.provider}
         </Text>
       </View>
       <View style={styles.trustMetaRow}>

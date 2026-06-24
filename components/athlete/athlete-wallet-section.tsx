@@ -326,7 +326,7 @@ export function AthleteWalletSection() {
        *  the section for layout continuity and show an empty state. */}
       <View style={{ gap: 10 }}>
         <Text style={styles.sectionLabel}>UPCOMING INVOICES</Text>
-        <EmptyRow label="Invoicing isn't wired yet" />
+        <EmptyRow label="No upcoming invoices." />
       </View>
 
       <TransferOutSheet

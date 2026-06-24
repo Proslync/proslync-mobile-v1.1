@@ -20,7 +20,7 @@ export function WelcomeStep({ onRegisterAthlete }: WelcomeStepProps) {
 
   const onBrand = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert("Coming soon", "Brand registration will launch shortly.");
+    Alert.alert("Brand registration", "Brand registration will open soon — check back shortly.");
   };
 
   return (

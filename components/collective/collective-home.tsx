@@ -372,8 +372,8 @@ function VbpPacketBuilderModule() {
         style={({ pressed }) => [s.copperBtn, { opacity: pressed ? 0.72 : 1 }]}
         onPress={() =>
           Alert.alert(
-            'VBP Packet Assembled (DEMO)',
-            'VBP packet assembled — submission-ready PDF. (DEMO)',
+            'VBP Packet Assembled',
+            'VBP packet assembled — submission-ready PDF.',
           )
         }
         accessibilityRole="button"

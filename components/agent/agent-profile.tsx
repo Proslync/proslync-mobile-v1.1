@@ -189,10 +189,6 @@ function TrackRecordBlock() {
           Roster: 4 athletes · capacity 6 · responds in ~3h
         </Text>
       </View>
-      {/* DEMO label */}
-      <View style={s.demoChip}>
-        <Text style={s.demoChipText}>DEMO</Text>
-      </View>
     </GlassBlock>
   );
 }
@@ -212,7 +208,7 @@ function RepAgreementBlock() {
         </View>
         <Pressable
           onPress={() =>
-            Alert.alert('Rep Agreement', 'Standard agreement document. (DEMO)')
+            Alert.alert('Rep Agreement', 'Standard agreement document.')
           }
           accessibilityRole="button"
           accessibilityLabel="View rep agreement"

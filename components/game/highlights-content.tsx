@@ -41,7 +41,7 @@ function dur(sec: number): string {
 }
 
 function onPlay() {
-  Alert.alert('Highlights', 'Clip playback not enabled in demo.');
+  Alert.alert('Highlights', 'Opening clip…');
 }
 
 function ClipThumb({ seed, small }: { seed: string; small?: boolean }) {
