@@ -165,7 +165,7 @@ export default function SettingsScreen() {
               iconColor="#A855F7"
               label="Payouts & wallet"
               sub="Stripe Connect · tax forms"
-              onPress={() => router.push('/dashboard/payments' as any)}
+              onPress={() => router.push('/athlete/payouts' as any)}
             />
             <Divider />
             <SettingRow

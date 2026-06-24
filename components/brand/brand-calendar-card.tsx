@@ -298,7 +298,7 @@ export function BrandCalendarCard({ brandId, now }: BrandCalendarCardProps) {
               row={row}
               onPress={() =>
                 router.push(
-                  `/brand/deals/${row.commitmentRef.dealId}` as never,
+                  `/deal/${row.commitmentRef.dealId}?role=brand` as never,
                 )
               }
             />

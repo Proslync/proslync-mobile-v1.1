@@ -74,7 +74,7 @@ const CALENDAR_ITEMS: BrandCalendarItem[] = [
       'Brand deal d-1 · negotiation review',
       0,
     ),
-    deepLink: '/brand/deals/d-1',
+    deepLink: '/deal/d-1?role=brand',
   },
   // ── DAY 2 ───────────────────────────────────────────────
   {
@@ -92,7 +92,7 @@ const CALENDAR_ITEMS: BrandCalendarItem[] = [
       'Brand deal d-4 · commitment',
       0,
     ),
-    deepLink: '/brand/deals/d-4',
+    deepLink: '/deal/d-4?role=brand',
   },
   // ── DAY 4 ───────────────────────────────────────────────
   {
@@ -127,7 +127,7 @@ const CALENDAR_ITEMS: BrandCalendarItem[] = [
       'Brand deal d-2 · commitment',
       0,
     ),
-    deepLink: '/brand/deals/d-2',
+    deepLink: '/deal/d-2?role=brand',
   },
   // ── DAY 7 ───────────────────────────────────────────────
   {
@@ -163,7 +163,7 @@ const CALENDAR_ITEMS: BrandCalendarItem[] = [
       'Brand deal d-3 · commitment',
       0,
     ),
-    deepLink: '/brand/deals/d-3',
+    deepLink: '/deal/d-3?role=brand',
   },
   // ── DAY 14 ──────────────────────────────────────────────
   {
@@ -198,7 +198,7 @@ const CALENDAR_ITEMS: BrandCalendarItem[] = [
       'Brand deal d-6 · renewal window',
       0,
     ),
-    deepLink: '/brand/deals/d-6',
+    deepLink: '/deal/d-6?role=brand',
   },
 ];
 
