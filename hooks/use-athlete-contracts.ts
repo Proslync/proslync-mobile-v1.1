@@ -221,7 +221,7 @@ const SEEDED_CONTRACTS: ProslyncNilDeal[] = [
     brandName: 'Gatorade',
     categoryId: null,
     title: 'Performance Partnership',
-    stage: 'delivered',
+    stage: 'settled',
     amountCents: 3_200_00,
     startDate: null,
     endDate: new Date(Date.now() + 120 * 24 * 3600e3).toISOString(),

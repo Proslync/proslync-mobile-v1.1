@@ -669,7 +669,7 @@ export function AthleteDealsSection() {
     ytdTotal >= 100000_00
       ? `$${(ytdTotal / 100000_00).toFixed(1)}M`
       : ytdTotal >= 1000_00
-        ? `$${Math.round(ytdTotal / 1000_00)}K`
+        ? `$${(ytdTotal / 1000_00).toFixed(1).replace(/\.0$/, '')}K`
         : `$${(ytdTotal / 100).toFixed(0)}`;
 
   // Derived delta — the share of YTD deal value already paid out (settled
