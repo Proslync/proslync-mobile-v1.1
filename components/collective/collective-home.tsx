@@ -18,6 +18,7 @@ import {
 import type { DealKind } from '@/lib/fmv/fmv-engine';
 import { getMockAthleteSocialReach } from '@/lib/data/mock-social-reach';
 import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
+import { parseDisplayMoneyToCents } from '@/lib/data/deal-enrichment';
 import {
   Alert,
   NativeScrollEvent,
@@ -86,62 +87,57 @@ type DealRow = {
   /** Identity used by the FMV band engine (social reach lookup). Kept distinct
    *  from the deal packet so per-line clearance economics stay collective-scoped. */
   athleteId: string;
-  amount: string;
-  amountCents: number;
   dealKind: DealKind;
   status: DealRowStatus;
   detail: string;
 };
 
+// Each clearance row opens a deal-detail packet (`/deal/<dealId>`). The amount
+// shown on the row is DERIVED from that packet's headline value
+// (getBrandDealDetail().money.total) so the row can never advertise "$4,500"
+// and then open a "$660K · 3yr exclusive" detail — they are the same number,
+// parsed once from the single source of truth.
 const DEAL_ROWS: DealRow[] = [
   {
     id: 'cr-1',
-    dealId: 'd-4', // Kiyan Anthony · Syracuse — Gatorade packet
+    dealId: 'd-4', // Kiyan Anthony · Syracuse — Gatorade packet ($660K)
     athleteId: 'a-1',
-    amount: '$4,500',
-    amountCents: 450_000,
     dealKind: 'endorsement',
     status: 'cleared',
     detail: 'cleared in 26h ✓',
   },
   {
     id: 'cr-2',
-    dealId: 'd-1', // Dylan Harper · Rutgers — Nike Hoops packet
+    dealId: 'd-1', // Dylan Harper · Rutgers — Nike Hoops packet ($380K)
     athleteId: 'a-4',
-    amount: '$2,200',
-    amountCents: 220_000,
     dealKind: 'social-post',
     status: 'submitted',
     detail: 'submitted · day 4 of review',
   },
   {
     id: 'cr-3',
-    dealId: 'd-3', // Naithan George · GT — Zaxby's Southeast packet
-    // FMV identity fixed: was 'a-1' (= Kiyan, colliding with cr-1) so the band
-    // computed off the wrong athlete. 'a-3' is a real, distinct reach entry.
+    dealId: 'd-3', // Naithan George · GT — Zaxby's Southeast packet ($85K)
+    // FMV identity: 'a-3' is a real, distinct reach entry (was 'a-1',
+    // colliding with cr-1 so the band computed off the wrong athlete).
     athleteId: 'a-3',
-    amount: '$1,800',
-    amountCents: 180_000,
     dealKind: 'appearance',
     status: 'not-cleared',
     detail: 'NOT CLEARED — resubmission 9 of 14 days · missing VBP docs',
   },
   {
     id: 'cr-4',
-    dealId: 'd-5', // Jordan Miles · Paul VI — CarMax Syracuse packet
+    dealId: 'd-5', // Jordan Miles · Paul VI — CarMax Syracuse packet ($140K)
     athleteId: 'a-2',
-    amount: '$900',
-    amountCents: 90_000,
     dealKind: 'autograph',
     status: 'pre-checked',
     detail: 'pre-checked: likely-clear · ready to submit',
   },
 ];
 
-// Athlete + brand shown on each clearance line are derived from the linked deal
-// packet (single source of truth = getBrandDealDetail) so the row can never
-// drift from the detail page it opens. Falls back gracefully if a packet is
-// missing (e.g. mid-migration to backend persistence).
+// Athlete + brand + amount shown on each clearance line are derived from the
+// linked deal packet (single source of truth = getBrandDealDetail) so the row
+// can never drift from the detail page it opens. Falls back gracefully if a
+// packet is missing (e.g. mid-migration to backend persistence).
 function dealRowAthlete(row: DealRow): string {
   const full = getBrandDealDetail(row.dealId)?.deal.athlete;
   return full ? full.split('·')[0].trim() : 'Athlete';
@@ -151,21 +147,34 @@ function dealRowBrand(row: DealRow): string {
   return getBrandDealDetail(row.dealId)?.companyOverview.name ?? 'Brand';
 }
 
+/** Headline amount string from the packet (e.g. "$660K") — exactly what the
+ *  deal detail shows, so the row label and the detail can never disagree. */
+function dealRowAmount(row: DealRow): string {
+  return getBrandDealDetail(row.dealId)?.money.total ?? '—';
+}
+
+/** Amount in cents from the same packet headline, for the FMV band engine. */
+function dealRowAmountCents(row: DealRow): number {
+  const total = getBrandDealDetail(row.dealId)?.money.total;
+  return total ? parseDisplayMoneyToCents(total) ?? 0 : 0;
+}
+
 // ── FMV band chip (compact per-row indicator) ─────────────────────────────
 
 function FmvBandChip({ row }: { row: DealRow }) {
+  const amountCents = dealRowAmountCents(row);
   const prediction = React.useMemo(() => {
     const reach = getMockAthleteSocialReach(row.athleteId) ??
                   getMockAthleteSocialReach('a-1');
     return predictClearance({
-      amountCents: row.amountCents,
+      amountCents,
       dealKind: row.dealKind,
       deliverableDescription: 'Promotional activation for brand partnership',
       payerEntityType: 'brand',
       totalFollowers: reach?.totalFollowers ?? 0,
       engagementRate7d: reach?.engagementRate7d ?? 0,
     });
-  }, [row.athleteId, row.amountCents, row.dealKind]);
+  }, [row.athleteId, amountCents, row.dealKind]);
   const dotColor =
     prediction.band === 'likely'     ? SIGNAL_POSITIVE :
     prediction.band === 'borderline' ? SIGNAL_WARN :
@@ -215,7 +224,7 @@ function ClearancePipelineModule() {
         <Text style={s.heroStatValue}>91%</Text>
         <Text style={s.heroStatDivider}> · </Text>
         <Text style={s.heroStat}>season</Text>
-        <Text style={s.heroStatValue}> $284K</Text>
+        <Text style={s.heroStatValue}> $2.4M</Text>
         <Text style={s.heroStatDivider}> cleared</Text>
       </View>
 
@@ -267,6 +276,7 @@ function ClearancePipelineModule() {
         const isPreChecked = row.status === 'pre-checked';
         const athlete = dealRowAthlete(row);
         const brand = dealRowBrand(row);
+        const amount = dealRowAmount(row);
         return (
           <Pressable
             key={row.id}
@@ -278,7 +288,7 @@ function ClearancePipelineModule() {
             ]}
             onPress={() => router.push(`/deal/${row.dealId}?role=brand` as never)}
             accessibilityRole="button"
-            accessibilityLabel={`Clearance: ${athlete} × ${brand} ${row.amount}`}
+            accessibilityLabel={`Clearance: ${athlete} × ${brand} ${amount}`}
           >
             {(isNotCleared || isSubmitted) && (
               <View
@@ -293,7 +303,7 @@ function ClearancePipelineModule() {
                 <Text style={s.dealAthlete}>{athlete}</Text>
                 <Text style={s.dealDot}> × </Text>
                 <Text style={s.dealBrand}>{brand}</Text>
-                <Text style={s.dealAmount}> · {row.amount}</Text>
+                <Text style={s.dealAmount}> · {amount}</Text>
               </View>
               <Text
                 style={[
