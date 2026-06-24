@@ -54,6 +54,7 @@ import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { persistLocalMedia, isLocalMediaAlive, healLocalMediaUri, type LocalMedia } from '@/lib/media/local-media';
+import { consumePendingProfileAction } from '@/lib/profile/pending-action';
 import { resolveSlotMedia, resolveAvatarSource } from '@/lib/media/resolve-media';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GlassView } from "expo-glass-effect";
@@ -2124,6 +2125,21 @@ function PlayerProfileScreen() {
     setBanner(null);
   }, []);
 
+  // Settings → "Set banner" / "Edit profile" deep-link here. Consume the
+  // one-shot action on focus and run the handler the profile already owns
+  // (banner picker / inline edit-mode). Consume-once, so normal tab focus is
+  // a no-op and the action never re-fires.
+  useFocusEffect(
+    React.useCallback(() => {
+      const action = consumePendingProfileAction();
+      if (action === 'banner') {
+        pickBanner();
+      } else if (action === 'edit') {
+        setIsEditing(true);
+      }
+    }, [pickBanner]),
+  );
+
   const [displayName, setDisplayName] = React.useState("Kiyan Anthony");
   const [metaPrimary, setMetaPrimary] = React.useState("Freshman Guard at Syracuse");
   const [metaSecondary, setMetaSecondary] = React.useState("Brooklyn, New York");
@@ -2395,14 +2411,30 @@ function PlayerProfileScreen() {
           />
           <Ionicons name="menu" size={22} color="#FFF" style={{ marginLeft: 8 }} />
         </Pressable>
+
+        {/* Done — exits edit-mode (entered from Settings → Edit profile). */}
+        {isEditing && (
+          <Pressable
+            style={[s.editDonePill, { top: insets.top + 8 }]}
+            onPress={() => setIsEditing(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Done editing profile"
+          >
+            <View style={s.topLeftProfilePillGlass} pointerEvents="none">
+              <GlassView
+                glassEffectStyle="regular"
+                style={[StyleSheet.absoluteFill, { borderRadius: 23 }]}
+              />
+            </View>
+            <Ionicons name="checkmark" size={18} color="#FFF" />
+            <Text style={s.editDoneText}>Done</Text>
+          </Pressable>
+        )}
       </View>
       <RoleSwitcherSheet
         visible={roleSheetVisible}
         onClose={() => setRoleSheetVisible(false)}
-        onEditProfile={() => setIsEditing((v) => !v)}
         onGoLive={() => setShowCreateMenu(true)}
-        isEditing={isEditing}
-        onChangeBanner={pickBanner}
         onRemoveBanner={removeBanner}
         hasCustomBanner={!!banner}
       />
@@ -2549,6 +2581,23 @@ const s = StyleSheet.create({
     bottom: 0,
     borderRadius: 23,
     overflow: 'hidden',
+  },
+  editDonePill: {
+    position: 'absolute',
+    right: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    height: 46,
+    paddingHorizontal: 16,
+    borderRadius: 23,
+    overflow: 'hidden',
+    zIndex: 100,
+  },
+  editDoneText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
   },
   topLeftProfilePillAvatar: {
     width: 40,

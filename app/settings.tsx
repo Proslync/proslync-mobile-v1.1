@@ -17,6 +17,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GlassView } from 'expo-glass-effect';
 import { useAuth } from '@/lib/providers/auth-provider';
 import { useRole, type ProfileRole } from '@/lib/providers/role-provider';
+import { setPendingProfileAction } from '@/lib/profile/pending-action';
 
 const ACCENT = '#FF6F3C';
 
@@ -121,6 +122,39 @@ export default function SettingsScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Profile — athlete only (the athlete profile owns the banner +
+            inline edit-mode these rows trigger). */}
+        {activeProfile === 'player' && (
+          <Animated.View entering={FadeInDown.delay(120).duration(450)}>
+            <SectionLabel>PROFILE</SectionLabel>
+            <View style={styles.card}>
+              <SettingRow
+                icon="create-outline"
+                iconBg="rgba(255,111,60,0.16)"
+                iconColor="#FF6F3C"
+                label="Edit profile"
+                sub="Name, position, hometown"
+                onPress={() => {
+                  setPendingProfileAction('edit');
+                  router.replace('/(tabs)/profile' as any);
+                }}
+              />
+              <Divider />
+              <SettingRow
+                icon="image-outline"
+                iconBg="rgba(45,158,91,0.16)"
+                iconColor="#2E9E5B"
+                label="Set banner"
+                sub="Photo or video behind your header"
+                onPress={() => {
+                  setPendingProfileAction('banner');
+                  router.replace('/(tabs)/profile' as any);
+                }}
+              />
+            </View>
+          </Animated.View>
+        )}
+
         {/* Account */}
         <Animated.View entering={FadeInDown.delay(200).duration(450)}>
           <SectionLabel>ACCOUNT</SectionLabel>
