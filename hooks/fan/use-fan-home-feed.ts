@@ -10,6 +10,7 @@ import * as React from 'react';
 import { fanAuthedApi } from '@/lib/api/fan/authed';
 import { mergeFeedPage } from '@/lib/fan/feed-merge';
 import { applyOptimisticLike, rollbackOptimisticLike } from '@/lib/fan/like-state';
+import { getSeededFanFeed } from '@/lib/fan/seeded-feed';
 import type { FanPost } from '@/lib/types/fan.types';
 
 export interface UseFanHomeFeedResult {
@@ -65,9 +66,25 @@ export function useFanHomeFeed(): UseFanHomeFeedResult {
       .getHomeFeed({ signal: controller.signal })
       .then((env) => {
         if (cancelled) return;
+        // Demo safety net: the masonry feed is a headline surface. If the live
+        // VPS returns an empty page (or 401s — see the catch below), fall back
+        // to a seeded fixture so a prospect never lands on "Your feed is quiet".
+        if (!env.data || env.data.length === 0) {
+          setPosts(getSeededFanFeed());
+          setCursor(null);
+          setHasMore(false);
+          return;
+        }
         setPosts(env.data);
         setCursor(env.nextCursor);
         setHasMore(Boolean(env.nextCursor));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // Errored feed (network / auth) also gets the seeded fallback.
+        setPosts(getSeededFanFeed());
+        setCursor(null);
+        setHasMore(false);
       })
       .finally(() => {
         if (cancelled) return;

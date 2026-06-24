@@ -174,9 +174,98 @@ function isActive(view: ActiveContractView): boolean {
   return view.status === 'Active';
 }
 
-async function fetchAthleteContracts(athleteId: string): Promise<AthleteContractsView> {
-  const envelope = await proslyncNilDealsApi.list({ athleteId, limit: 50 });
-  const rows = envelope.data ?? [];
+// ── Seeded fallback ──────────────────────────────────────
+// Demo safety net: ACTIVE CONTRACTS is a headline list on the athlete deck.
+// If /api/nil-deals 401s/errors or returns no active rows, fall back to these
+// seeded contracts so a prospect never sees an empty list or a retry card on a
+// core surface. Brand names are real (not "Brand <id>" placeholders) and match
+// the deal-truth / payment cast (Nike, Gatorade, JMA, Legacy) so the demo reads
+// as one coherent world. The same mapContract pipeline maps these, so the
+// brandName denormalized field drives the label (PART 8 — no placeholder names).
+const SEEDED_CONTRACTS: ProslyncNilDeal[] = [
+  {
+    id: 'seed-contract-nike',
+    sourceOpenDealId: null,
+    sourceApplicationId: null,
+    athleteId: 'a-1',
+    brandId: 'b-nike',
+    brandName: 'Nike',
+    categoryId: null,
+    title: 'Campus Activation · Summer',
+    stage: 'live',
+    amountCents: 2_400_00,
+    startDate: null,
+    endDate: new Date(Date.now() + 60 * 24 * 3600e3).toISOString(),
+    exclusivity: null,
+    contractStatus: 'signed',
+    reviewSummary: 'all-cleared',
+    appealState: 'none',
+    createdAt: new Date(Date.now() - 30 * 24 * 3600e3).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'seed-contract-gatorade',
+    sourceOpenDealId: null,
+    sourceApplicationId: null,
+    athleteId: 'a-1',
+    brandId: 'b-gatorade',
+    brandName: 'Gatorade',
+    categoryId: null,
+    title: 'Performance Partnership',
+    stage: 'delivered',
+    amountCents: 3_200_00,
+    startDate: null,
+    endDate: new Date(Date.now() + 120 * 24 * 3600e3).toISOString(),
+    exclusivity: null,
+    contractStatus: 'signed',
+    reviewSummary: 'all-cleared',
+    appealState: 'none',
+    createdAt: new Date(Date.now() - 90 * 24 * 3600e3).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'seed-contract-jma',
+    sourceOpenDealId: null,
+    sourceApplicationId: null,
+    athleteId: 'a-1',
+    brandId: 'b-jma',
+    brandName: 'JMA Wireless',
+    categoryId: null,
+    title: 'Brand Ambassador · Q3',
+    stage: 'committed',
+    amountCents: 4_500_00,
+    startDate: new Date(Date.now() + 7 * 24 * 3600e3).toISOString(),
+    endDate: null,
+    exclusivity: null,
+    contractStatus: 'pending',
+    reviewSummary: 'all-cleared',
+    appealState: 'none',
+    createdAt: new Date(Date.now() - 5 * 24 * 3600e3).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'seed-contract-legacy',
+    sourceOpenDealId: null,
+    sourceApplicationId: null,
+    athleteId: 'a-1',
+    brandId: 'b-legacy',
+    brandName: 'Legacy Athletics',
+    categoryId: null,
+    title: 'Apparel Deal · FY26',
+    stage: 'negotiating',
+    amountCents: 1_800_00,
+    startDate: null,
+    endDate: null,
+    exclusivity: null,
+    contractStatus: 'pending',
+    reviewSummary: 'all-cleared',
+    appealState: 'none',
+    createdAt: new Date(Date.now() - 3 * 24 * 3600e3).toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+function buildView(rows: ProslyncNilDeal[]): AthleteContractsView {
   const visible = rows.filter((r) => ACTIVE_CONTRACT_STAGES.has(r.stage));
   const contracts = visible.map(mapContract);
   return {
@@ -184,6 +273,20 @@ async function fetchAthleteContracts(athleteId: string): Promise<AthleteContract
     activeCount: contracts.filter(isActive).length,
     totalCount: contracts.length,
   };
+}
+
+async function fetchAthleteContracts(athleteId: string): Promise<AthleteContractsView> {
+  try {
+    const envelope = await proslyncNilDealsApi.list({ athleteId, limit: 50 });
+    const view = buildView(envelope.data ?? []);
+    // Empty live list on a headline surface → seeded fallback (demo safety net).
+    if (view.totalCount === 0) return buildView(SEEDED_CONTRACTS);
+    return view;
+  } catch {
+    // Errored feed (network / 401) also gets the seeded fallback so the list
+    // renders content instead of a retry card during the demo.
+    return buildView(SEEDED_CONTRACTS);
+  }
 }
 
 export function useAthleteContracts(athleteId: string) {
