@@ -132,6 +132,27 @@ export const MOCK_PERMISSION_GRANTS: PermissionGrant[] = [
     source: syntheticSource('src-pg-004', 'Proslync consent registry · a-1', '2026-05-09T00:00:00Z', 1),
   },
   {
+    id: 'pg-023',
+    athleteId: 'a-1',
+    grantee: {
+      kind: 'organization',
+      organizationName: 'Hayes Sports Group',
+    },
+    level: 'full',
+    scopes: ['contracts', 'financials'],
+    rationale:
+      'Athlete-initiated representation grant — lets the agent (Hayes Sports Group) track Kiyan’s deals + payment states on the cross-client money board (incl. the Nike Hoops d-4 renewal). Athlete created it; agent reads only what Kiyan granted.',
+    createdAt: '2026-01-12T15:06:00Z',
+    activatedAt: '2026-01-12T15:06:00Z',
+    status: 'active',
+    auditLog: [
+      audit('2026-01-12T15:06:00Z', ATHLETE_ACTOR('Kiyan Anthony'), 'created', 'Granted money-board visibility to representing agent at onboarding.'),
+      audit('2026-01-12T15:06:00Z', SYSTEM_ACTOR, 'activated'),
+      audit('2026-04-22T17:05:00Z', ATHLETE_ACTOR('Kiyan Anthony'), 'updated-scopes', 'Confirmed contracts scope after the Nike Hoops d-4 renewal signed.'),
+    ],
+    source: syntheticSource('src-pg-023', 'Proslync consent registry · a-1', '2026-05-09T00:00:00Z', 1),
+  },
+  {
     id: 'pg-005',
     athleteId: 'a-1',
     grantee: {
