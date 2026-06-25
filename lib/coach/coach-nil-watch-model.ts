@@ -105,20 +105,23 @@ export function countByNilStatus(
 // ── INTERNALS ────────────────────────────────────────────
 
 /**
- * `BRAND_DEALS[*].athlete` is a free-form display string like
- * "Dylan Harper · Rutgers" — match by case-insensitive substring
- * on the athlete's display name. Returns the latest matching deal
- * (last in array wins; the fixture order is stable enough for the
- * demo + reflects "most recently surfaced").
+ * Join the roster athlete to their latest deal by STABLE ID
+ * (`Deal.athleteId` ←→ `Athlete.id`), not by substring-matching the
+ * free-form `Deal.athlete` display string. The name-substring match was
+ * fragile (false hits on shared names, misses on "First L." abbreviations)
+ * and could resolve the wrong deal — e.g. the hero a-1 (Kiyan) must land on
+ * d-4 deterministically. The coach output is unchanged: still only the deal
+ * STAGE label + the binary cleared flag — never a $ amount or payment id
+ * (the dollar-blind wall). Returns the latest matching deal (last in array
+ * wins; fixture order is stable + reflects "most recently surfaced").
  */
 function pickLatestDealForAthlete(
   athlete: Athlete,
   deals: readonly Deal[],
 ): Deal | null {
-  const needle = athlete.name.toLowerCase();
   let match: Deal | null = null;
   for (const deal of deals) {
-    if (deal.athlete.toLowerCase().includes(needle)) {
+    if (deal.athleteId === athlete.id) {
       match = deal;
     }
   }

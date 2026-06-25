@@ -155,6 +155,10 @@ export const BRAND_ATHLETES: Athlete[] = [
 
 export type Deal = {
   id: string;
+  /** Spine athlete id (BRAND_ATHLETES / coach roster) — the stable join key.
+   *  `athlete` below is the free-form display string; cross-role joins (e.g. the
+   *  coach NIL-watch model) must use `athleteId`, never substring the name. */
+  athleteId: string;
   athlete: string;
   stage: 'draft' | 'sent' | 'negotiation' | 'signed' | 'live';
   value: string;
@@ -164,12 +168,12 @@ export type Deal = {
 };
 
 export const BRAND_DEALS: Deal[] = [
-  { id: 'd-1', athlete: 'Dylan Harper · Rutgers', stage: 'negotiation', value: '$380K', term: '2 yrs · exclusive', lastTouched: '2h ago · Tosan', owner: 'Tosan E.' },
-  { id: 'd-2', athlete: 'Ace Bailey · Rutgers', stage: 'sent', value: '$290K', term: '2 yrs · exclusive', lastTouched: 'Yesterday · Maya', owner: 'Maya L.' },
-  { id: 'd-3', athlete: 'Naithan George · GT', stage: 'draft', value: '$85K', term: '1 yr · non-exclusive', lastTouched: 'Apr 18 · Tosan', owner: 'Tosan E.' },
-  { id: 'd-4', athlete: 'Kiyan Anthony · Syracuse', stage: 'signed', value: '$660K', term: '3 yrs · exclusive · renewed', lastTouched: 'Apr 12 · Tosan', owner: 'Tosan E.' },
-  { id: 'd-5', athlete: 'Jordan Miles · Paul VI', stage: 'live', value: '$140K', term: '2 yrs · exclusive', lastTouched: 'Feb 6', owner: 'Maya L.' },
-  { id: 'd-6', athlete: 'Cooper Flagg · Duke', stage: 'negotiation', value: '$520K renewal', term: '2 yrs · exclusive + signature line', lastTouched: '4h ago · Tosan', owner: 'Tosan E.' },
+  { id: 'd-1', athleteId: 'a-5', athlete: 'Dylan Harper · Rutgers', stage: 'negotiation', value: '$380K', term: '2 yrs · exclusive', lastTouched: '2h ago · Tosan', owner: 'Tosan E.' },
+  { id: 'd-2', athleteId: 'a-6', athlete: 'Ace Bailey · Rutgers', stage: 'sent', value: '$290K', term: '2 yrs · exclusive', lastTouched: 'Yesterday · Maya', owner: 'Maya L.' },
+  { id: 'd-3', athleteId: 'a-7', athlete: 'Naithan George · GT', stage: 'draft', value: '$85K', term: '1 yr · non-exclusive', lastTouched: 'Apr 18 · Tosan', owner: 'Tosan E.' },
+  { id: 'd-4', athleteId: 'a-1', athlete: 'Kiyan Anthony · Syracuse', stage: 'signed', value: '$660K', term: '3 yrs · exclusive · renewed', lastTouched: 'Apr 12 · Tosan', owner: 'Tosan E.' },
+  { id: 'd-5', athleteId: 'a-2', athlete: 'Jordan Miles · Paul VI', stage: 'live', value: '$140K', term: '2 yrs · exclusive', lastTouched: 'Feb 6', owner: 'Maya L.' },
+  { id: 'd-6', athleteId: 'a-3', athlete: 'Cooper Flagg · Duke', stage: 'negotiation', value: '$520K renewal', term: '2 yrs · exclusive + signature line', lastTouched: '4h ago · Tosan', owner: 'Tosan E.' },
 ];
 
 // ── DEAL DETAIL CONTRACT ──────────────────────────────────────────────────
