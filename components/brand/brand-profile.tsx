@@ -33,6 +33,7 @@ import { PROFILE_MEDIA } from '@/lib/profile-media';
 import { healLocalMediaUri } from '@/lib/media/local-media';
 import { IdentityAvatar } from '@/components/shared/identity-avatar';
 import { personaFor } from '@/lib/demo/personas';
+import { getNikeHoopsReliability } from '@/lib/brand/brand-reliability';
 
 // Unmounted old data imports — kept for lineage reference (not used).
 // import { BRAND_ATHLETES, BRAND_CAMPAIGNS, BRAND_PROFILE } from '@/lib/data/mock-brand-data';
@@ -76,6 +77,11 @@ const gb = StyleSheet.create({
 // ── Trust card content ────────────────────────────────────────────────────
 
 function TrustCard() {
+  // PAYMENT RELIABILITY is DERIVED from the athlete-confirmed payment ledger
+  // (Kiyan's a-1 paid history + the hero d-4 Nike Hoops record) — not literals.
+  // Charter §B: the brand's reliability badge is a projection over real payment
+  // truth, so neither side can fake a number the other's ledger disagrees with.
+  const reliability = React.useMemo(() => getNikeHoopsReliability(), []);
   return (
     <View style={tc.wrapper}>
 
@@ -86,24 +92,26 @@ function TrustCard() {
         </View>
 
         {/* Big badge */}
-        <View style={tc.reliabilityBadgeRow}>
-          <Ionicons name="checkmark-circle" size={20} color={GREEN} />
-          <Text style={tc.reliabilityBadge}>RELIABLE PAYER ✓</Text>
-        </View>
+        {reliability.reliable ? (
+          <View style={tc.reliabilityBadgeRow}>
+            <Ionicons name="checkmark-circle" size={20} color={GREEN} />
+            <Text style={tc.reliabilityBadge}>RELIABLE PAYER ✓</Text>
+          </View>
+        ) : null}
 
-        {/* Tabular rows */}
+        {/* Tabular rows — all derived from the payment ledger projection */}
         <View style={tc.tabularBlock}>
           <View style={tc.tabularRow}>
             <Text style={tc.tabularLabel}>Deals fully paid</Text>
-            <Text style={tc.tabularValue}>14 / 14</Text>
+            <Text style={tc.tabularValue}>{reliability.dealsFullyPaidLabel}</Text>
           </View>
           <View style={[tc.tabularRow, tc.tabularRowBorder]}>
             <Text style={tc.tabularLabel}>Median days to pay</Text>
-            <Text style={tc.tabularValue}>6 days</Text>
+            <Text style={tc.tabularValue}>{reliability.medianDaysToPayLabel}</Text>
           </View>
           <View style={[tc.tabularRow, tc.tabularRowBorder]}>
             <Text style={tc.tabularLabel}>Escrow-funded before work</Text>
-            <Text style={tc.tabularValue}>100%</Text>
+            <Text style={tc.tabularValue}>{reliability.escrowFundedBeforeWorkLabel}</Text>
           </View>
         </View>
       </GlassBlock>

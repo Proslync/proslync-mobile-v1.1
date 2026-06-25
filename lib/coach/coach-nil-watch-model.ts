@@ -16,6 +16,7 @@ import type {
   ComplianceDisclosure,
   DisclosureReviewState,
 } from '@/lib/types/compliance-disclosure.types';
+import { formatDealStageLabel } from '@/lib/coach/coach-dollar-blind.mjs';
 
 export interface CoachNilRow {
   athleteId: string;
@@ -73,7 +74,7 @@ export function buildCoachNilRows({
         classYear: entry.classYear,
         jerseyNumber: entry.jerseyNumber,
         nilStatus: entry.nilStatus,
-        lastDealStatus: latestDeal ? formatDealStage(latestDeal.stage) : null,
+        lastDealStatus: latestDeal ? formatDealStageLabel(latestDeal.stage) : null,
         lastDisclosureState: latestDisclosure?.reviewState ?? null,
         lastDisclosureLabel: latestDisclosure
           ? formatDisclosureState(latestDisclosure.reviewState)
@@ -137,26 +138,8 @@ function pickLatestDisclosure(
   return disclosures[disclosures.length - 1] ?? null;
 }
 
-/** Dollar-free, sentence-case label for a deal stage — the only deal signal a
- *  (dollar-blind) coach surface is allowed to show. */
-function formatDealStage(stage: Deal['stage']): string {
-  switch (stage) {
-    case 'draft':
-      return 'Drafting';
-    case 'sent':
-      return 'Offer sent';
-    case 'negotiation':
-      return 'In negotiation';
-    case 'signed':
-      return 'Signed';
-    case 'live':
-      return 'Active';
-    default: {
-      const exhaustive: never = stage;
-      return exhaustive;
-    }
-  }
-}
+// formatDealStage moved to lib/coach/coach-dollar-blind.mjs (formatDealStageLabel)
+// so the dollar-blind wall is a single, node:test-guarded projection.
 
 function formatDisclosureState(state: DisclosureReviewState): string {
   switch (state) {
