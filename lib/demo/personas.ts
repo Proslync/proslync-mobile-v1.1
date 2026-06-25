@@ -57,12 +57,12 @@ export const ROLE_PERSONA: Record<ProfileRole, RolePersona> = {
   },
   brand: {
     role: 'brand',
-    displayName: 'Hometown Auto Group',
-    handle: '@hometownauto',
-    initials: 'HA',
-    accent: '#10B981',
-    tagline: 'Local brand partner · Syracuse',
-    bannerColors: ['#051A12', '#071F15'],
+    displayName: 'Nike Hoops',
+    handle: '@nikehoops',
+    initials: 'NH',
+    accent: '#00C6B0',
+    tagline: 'Performance apparel · NIL partner',
+    bannerColors: ['#06201C', '#0A2E28'],
   },
   fan: {
     role: 'fan',

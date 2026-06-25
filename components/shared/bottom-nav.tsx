@@ -5,9 +5,18 @@ import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/lib/providers/auth-provider';
+import { useRole, type ProfileRole } from '@/lib/providers/role-provider';
+import { personaFor } from '@/lib/demo/personas';
+import { IdentityAvatar } from '@/components/shared/identity-avatar';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
-const DEFAULT_AVATAR = require('@/assets/images/default-avatar.png');
+// Per-role tab photo. Roles without a photo fall back to their IdentityAvatar
+// (colored initials circle) so EVERY role shows a real profile pic in the
+// bottom-right — not the generic default.
+const ROLE_TAB_PHOTO: Partial<Record<ProfileRole, ReturnType<typeof require>>> = {
+  player: require('@/assets/images/kiyan-avatar-tab.png'),
+  coach: require('@/assets/images/coach-avatar-tab.png'),
+};
 
 type TabName = 'search' | 'explore' | 'index' | 'activity' | 'profile';
 
@@ -30,14 +39,23 @@ const TABS: TabConfig[] = [
 
 function ProfileTabIcon({ focused }: { focused: boolean }) {
   const { user } = useAuth();
-  const avatarUrl = user?.avatar?.url;
+  const { role } = useRole();
+  const persona = personaFor(role);
+
+  // Player keeps any custom-uploaded avatar; otherwise each role shows its
+  // own identity (photo where we have one, else a colored initials circle).
+  const photo =
+    role === 'player' && user?.avatar?.url
+      ? { uri: user.avatar.url }
+      : ROLE_TAB_PHOTO[role];
 
   return (
     <View style={[styles.profileWrapper, focused && styles.profileWrapperActive]}>
-      <Image
-        source={avatarUrl ? { uri: avatarUrl } : DEFAULT_AVATAR}
-        style={styles.profileImage}
-      />
+      {photo ? (
+        <Image source={photo} style={styles.profileImage} />
+      ) : (
+        <IdentityAvatar name={persona.displayName} size={26} accent={persona.accent} />
+      )}
     </View>
   );
 }
