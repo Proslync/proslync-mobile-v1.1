@@ -72,7 +72,7 @@ const STATS_CARD_BG = SURFACE;
 // Brand + athlete labels MUST match the deal packet each tile opens
 // (getBrandDealDetail(dealId)) so the comp tile never advertises a brand the
 // detail contradicts: d-1 = Nike × Dylan Harper, d-2 = Beats × Ace Bailey,
-// d-4 = Gatorade × Kiyan Anthony.
+// d-4 = Nike Hoops × Kiyan Anthony (the hero deal, $660K signed).
 const COMPARABLE_OFFER_TILES: ReadonlyArray<{
   dealId: string;
   brand: string;
@@ -80,7 +80,7 @@ const COMPARABLE_OFFER_TILES: ReadonlyArray<{
 }> = [
   { dealId: 'd-1', brand: 'Nike · Two-year exclusive', athlete: 'Dylan Harper' },
   { dealId: 'd-2', brand: 'Beats · Two-year exclusive', athlete: 'Ace Bailey' },
-  { dealId: 'd-4', brand: 'Gatorade · Three-year renewal', athlete: 'Kiyan Anthony' },
+  { dealId: 'd-4', brand: 'Nike Hoops · Three-year renewal', athlete: 'Kiyan Anthony' },
 ];
 
 function ComparableOffersCta() {

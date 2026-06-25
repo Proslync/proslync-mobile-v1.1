@@ -100,7 +100,7 @@ type DealRow = {
 const DEAL_ROWS: DealRow[] = [
   {
     id: 'cr-1',
-    dealId: 'd-4', // Kiyan Anthony · Syracuse — Gatorade packet ($660K)
+    dealId: 'd-4', // Kiyan Anthony · Syracuse — Nike Hoops packet ($660K, hero deal)
     athleteId: 'a-1',
     dealKind: 'endorsement',
     status: 'cleared',

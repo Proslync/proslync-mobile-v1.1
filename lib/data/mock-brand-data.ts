@@ -521,25 +521,29 @@ export const BRAND_DEAL_DETAILS: Record<string, BrandDealDetail> = {
     },
   },
 
-  // ④ Kiyan Anthony × Gatorade — flagship, signed + renewed
+  // ④ Kiyan Anthony × Nike Hoops — HERO DEAL: flagship multi-year renewal,
+  // signed with payments scheduled/in-progress (NOT fully paid). This is the
+  // single canonical packet every role resolves d-4 through (brand/athlete/
+  // ad/agent/collective lenses + dr-003 hinge). $660K economics kept verbatim;
+  // only the brand identity is Nike Hoops (matches BRAND_PROFILE + dr-003).
   'd-4': {
     id: 'd-4',
     deal: BRAND_DEALS[3],
     companyOverview: {
-      name: 'Gatorade',
+      name: 'Nike Hoops',
       summary:
-        'Gatorade anchors its NIL roster around marquee performers, blending performance-fuel storytelling with national campaign placements and hydration-science content.',
-      headquarters: 'Chicago, IL',
-      founded: '1965',
-      category: 'National · Sports Nutrition',
+        'Nike Hoops anchors its NIL roster around marquee on-court talent, pairing signature-line co-design with national campaign placements and long-horizon partnership value.',
+      headquarters: 'Beaverton, OR',
+      founded: '1964',
+      category: 'National · Basketball Footwear & Apparel',
     },
     stage: stageFor(BRAND_DEALS[3]),
     money: {
       total: '$660K',
       guaranteed: '$540K guaranteed',
       performance: '$120K national-campaign + milestone pool',
-      usageRights: 'Category-exclusive (hydration/nutrition) · 3 yrs',
-      paymentTiming: 'Annual guarantees + campaign-milestone tranches',
+      usageRights: 'Category-exclusive (footwear/apparel) · 3 yrs',
+      paymentTiming: 'Signed — guarantees + milestone tranches scheduled (mostly future)',
       breakdown: [
         { label: 'Base guarantee', value: '$540K', note: 'Three annual installments of $180K.' },
         { label: 'Campaign pool', value: '$90K', note: 'Per national campaign Kiyan headlines.' },
@@ -547,9 +551,9 @@ export const BRAND_DEAL_DETAILS: Record<string, BrandDealDetail> = {
       ],
     },
     commitments: [
-      { id: 'd-4-c1', title: '2 national campaigns / yr', due: 'Per campaign calendar', owner: 'Gatorade brand', proof: 'Shoot deliverables + usage logs filed per campaign.', status: 'active' },
-      { id: 'd-4-c2', title: 'Hydration-science content series', due: 'Quarterly', owner: 'Kiyan Anthony', proof: 'Series episodes archived in the evidence packet.', status: 'done' },
-      { id: 'd-4-c3', title: 'Exclusivity upkeep', due: 'Full term', owner: 'Agent — CAA', proof: 'No competing nutrition brands across owned channels.', status: 'active' },
+      { id: 'd-4-c1', title: '2 national campaigns / yr', due: 'Per campaign calendar', owner: 'Nike Hoops brand', proof: 'Shoot deliverables + usage logs filed per campaign.', status: 'active' },
+      { id: 'd-4-c2', title: 'Signature-line co-design series', due: 'Quarterly', owner: 'Kiyan Anthony', proof: 'Co-design milestones archived in the evidence packet.', status: 'done' },
+      { id: 'd-4-c3', title: 'Exclusivity upkeep', due: 'Full term', owner: 'Agent — CAA', proof: 'No competing footwear/apparel brands across owned channels.', status: 'active' },
       { id: 'd-4-c4', title: 'Renewal disclosure receipt', due: 'Filed Apr 12', owner: 'Tosan E.', proof: 'Syracuse compliance receipt attached.', status: 'done' },
     ],
     contacts: [
@@ -559,7 +563,7 @@ export const BRAND_DEAL_DETAILS: Record<string, BrandDealDetail> = {
     aiCompliance: {
       status: 'cleared',
       summary:
-        'Flagship deal is signed and renewed with a clean compliance posture. All disclosure receipts are attached and the renewal sits within the comparable band for a national marquee partner.',
+        'Flagship Nike Hoops deal is signed and renewed with a clean compliance posture. All disclosure receipts are attached and the renewal sits within the comparable band for a national marquee partner.',
       tracks: [
         { label: 'FMV band', status: 'cleared', note: 'Within modeled range for a national flagship marquee deal.' },
         { label: 'School compliance', status: 'cleared', note: 'Syracuse renewal disclosure receipt attached.' },
@@ -571,12 +575,12 @@ export const BRAND_DEAL_DETAILS: Record<string, BrandDealDetail> = {
       ],
     },
     evidence: {
-      packetTitle: 'Gatorade × Anthony — flagship renewal packet',
+      packetTitle: 'Nike Hoops × Anthony — flagship renewal packet',
       matchScore: '95',
       confidence: 'high',
       rationale: [
         'Five reviewer-approved national-marquee comparables',
-        'Campaign reach validated against prior Gatorade flights',
+        'Campaign reach validated against prior Nike Hoops flights',
         'Renewal escalator benchmarked to category leaders',
       ],
       attachments: [
