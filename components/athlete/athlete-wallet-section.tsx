@@ -51,6 +51,12 @@ import {
 const STATS_CARD_BG = SURFACE;
 const ACCENT = TOKEN_ACCENT;
 
+// Whole-dollar compact format for the primary CTA label ("$2,432"), no cents.
+function compactUsd(cents: number): string {
+  const whole = Math.max(0, Math.round(cents / 100));
+  return '$' + whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 // Deterministic palette for partner badges. Hashed on the partner key
 // so the same partner gets a stable color across renders without the
 // component needing brand metadata from the backend.
@@ -223,15 +229,16 @@ export function AthleteWalletSection() {
         )}
       </View>
 
-      {/* Action buttons */}
-      <View style={styles.actionRow}>
-        <GlassButton
-          label="Transfer out"
-          icon={<Ionicons name="arrow-up" size={15} color="#FFF" />}
-          variant="glass"
-          size="sm"
-          fullWidth
-          style={styles.actionButton}
+      {/* Action — Transfer is the primary money move (solid copper, shows the
+          spendable amount); Manage is a quiet secondary link. */}
+      <View style={styles.actionStack}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            availableCents > 0
+              ? `Transfer ${compactUsd(availableCents)} out to your payout method`
+              : 'Transfer out'
+          }
           onPress={() => {
             if (availableCents <= 0) {
               Alert.alert(
@@ -242,14 +249,27 @@ export function AthleteWalletSection() {
             }
             setTransferOpen(true);
           }}
-        />
-        <GlassButton
-          label="Manage"
-          icon={<Ionicons name="swap-vertical" size={15} color="#FFF" />}
-          variant="glass"
-          size="sm"
-          fullWidth
-          style={styles.actionButton}
+          style={({ pressed }) => [
+            styles.transferBtn,
+            pressed && styles.transferBtnPressed,
+          ]}
+        >
+          <View style={styles.transferIconWrap}>
+            <Ionicons name="arrow-up" size={16} color="#FFF" />
+          </View>
+          <Text style={styles.transferBtnText}>
+            {availableCents > 0
+              ? `Transfer ${compactUsd(availableCents)} out`
+              : 'Transfer out'}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.85)" />
+        </Pressable>
+
+        <TouchableOpacity
+          style={styles.manageLink}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Manage payout settings"
           onPress={() =>
             Alert.alert(
               'Manage wallet',
@@ -264,7 +284,10 @@ export function AthleteWalletSection() {
               ],
             )
           }
-        />
+        >
+          <Ionicons name="settings-outline" size={13} color={TEXT_SECONDARY} />
+          <Text style={styles.manageLinkText}>Manage payout settings</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Payout method — placeholder; Stripe Connect status query lives
@@ -697,6 +720,44 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
   },
+  actionStack: { gap: SP_XS, marginTop: 2 },
+  transferBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: ACCENT,
+    borderRadius: RADIUS_PILL,
+    paddingVertical: 15,
+    paddingHorizontal: 18,
+    shadowColor: ACCENT,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  transferBtnPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
+  transferIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  transferBtnText: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  manageLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  manageLinkText: { color: TEXT_SECONDARY, fontSize: 13, fontWeight: '600' },
   stateCard: {
     backgroundColor: STATS_CARD_BG,
     borderRadius: RADIUS_LG,
