@@ -1,5 +1,7 @@
-// Perks section — tier progress card + available/claimed perk cards.
-// Fans-only. Extracted from components/fan/fan-view.tsx during
+// Perks section — membership card + available/claimed perk cards. Fans-only.
+// Points/score gamification removed (charter FAN CUT LIST: no points,
+// leaderboards, or "X pts to claim" — tier NAMES are identity, not currency).
+// Extracted from components/fan/fan-view.tsx during
 // fan-content-to-triad-2026-05-12.
 
 import { Ionicons } from '@expo/vector-icons';
@@ -43,7 +45,7 @@ export function PerksSection({ bottomInset = 0 }: PerksSectionProps) {
       ]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Tier progress */}
+      {/* Membership identity — tier NAME + tenure, no points/progress ladder */}
       <Animated.View entering={FadeIn.duration(300)} style={styles.tierCard}>
         <LinearGradient
           colors={['rgba(199,154,165,0.22)', 'rgba(199,154,165,0.02)']}
@@ -55,29 +57,12 @@ export function PerksSection({ bottomInset = 0 }: PerksSectionProps) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.tierCurrent}>
-              {FAN_PROFILE.superfanTier} Tier
+              {FAN_PROFILE.superfanTier} Member
             </Text>
             <Text style={styles.tierPoints}>
-              {FAN_PROFILE.superfanPoints.toLocaleString()} points
+              Supporter since {FAN_PROFILE.supporterSince}
             </Text>
           </View>
-          <Text style={styles.tierToNext}>
-            +{FAN_PROFILE.pointsToNext} to {FAN_PROFILE.nextTier}
-          </Text>
-        </View>
-        <View style={styles.tierTrack}>
-          <View
-            style={[
-              styles.tierFill,
-              {
-                width: `${
-                  (FAN_PROFILE.superfanPoints /
-                    (FAN_PROFILE.superfanPoints + FAN_PROFILE.pointsToNext)) *
-                  100
-                }%`,
-              },
-            ]}
-          />
         </View>
       </Animated.View>
 
@@ -111,8 +96,6 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
     Platinum: '#C0C0C0',
     Diamond: FAN_ACCENT,
   };
-
-  const affordable = FAN_PROFILE.superfanPoints >= p.cost;
 
   return (
     <Animated.View
@@ -170,33 +153,10 @@ function PerkCard({ p, delay }: { p: Perk; delay: number }) {
         <Text style={styles.perkAthlete}>{p.athlete}</Text>
         <Text style={styles.perkDesc}>{p.description}</Text>
         {!p.claimed && (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            style={[styles.claimBtn, !affordable && styles.claimBtnDisabled]}
-          >
-            <Ionicons
-              name="diamond-outline"
-              size={13}
-              color={affordable ? '#FFFFFF' : 'rgba(255,255,255,0.5)'}
-            />
-            <Text
-              style={[
-                styles.claimBtnText,
-                !affordable && { color: 'rgba(255,255,255,0.5)' },
-              ]}
-            >
-              {affordable
-                ? 'Claim'
-                : `Need ${(p.cost - FAN_PROFILE.superfanPoints).toLocaleString()} more`}
-            </Text>
-            <Text
-              style={[
-                styles.claimBtnCost,
-                !affordable && { color: 'rgba(255,255,255,0.5)' },
-              ]}
-            >
-              {p.cost.toLocaleString()} pts
-            </Text>
+          <TouchableOpacity activeOpacity={0.85} style={styles.claimBtn}>
+            <Ionicons name="diamond-outline" size={13} color="#FFFFFF" />
+            <Text style={styles.claimBtnText}>Claim</Text>
+            <Text style={styles.claimBtnCost}>{p.tier} perk</Text>
           </TouchableOpacity>
         )}
       </View>

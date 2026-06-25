@@ -22,10 +22,8 @@ import { FloatingTabPill, useTabCollapse } from '@/components/shared/floating-ta
 
 import {
   FAN_PERKS,
-  FAN_PREDICTIONS,
   FAN_PROFILE,
   type Perk,
-  type Prediction,
 } from '@/lib/data/mock-fan-data';
 
 import {
@@ -55,29 +53,27 @@ const PURPLE = '#A855F7';
 const TAB_BAR_TOP_FROM_BOTTOM = 90; // iOS 26 floating glass tab bar — top edge from screen bottom (incl. safe area)
 
 // "Play & Perks" surface (the legacy fan dashboard). This is NOT a second home:
-// `index.tsx` owns Fan HQ. Here the first pill is "Feed" (the live FanHomeFeed),
-// then the two interactive features that justify this tab: Pick'em + Perks.
-// (Removed: the dead HomeTab/FeedTab/GamesTab fixture screens — Home was already
-// repointed to FanHomeFeed so those were never rendered.)
-const FAN_TABS = ['Feed', "Pick'em", 'Perks'] as const;
+// `index.tsx` owns Fan HQ. Two pills: "Feed" (the live FanHomeFeed) + "Perks".
+// REMOVED (charter FAN CUT LIST): the Pick'em tab — a performance-contingent
+// predictions game with a Fan Score leaderboard. Fans buy content + perks,
+// never outcomes; spend leaderboards are the whale-toxicity pattern.
+const FAN_TABS = ['Feed', 'Perks'] as const;
 type FanTabLabel = (typeof FAN_TABS)[number];
 
-type TabKey = 'feed' | 'pickem' | 'perks';
+type TabKey = 'feed' | 'perks';
 
 function tabLabelToKey(label: FanTabLabel): TabKey {
   if (label === 'Feed') return 'feed';
-  if (label === "Pick'em") return 'pickem';
   return 'perks';
 }
 function tabKeyToLabel(key: TabKey): FanTabLabel {
   if (key === 'feed') return 'Feed';
-  if (key === 'pickem') return "Pick'em";
   return 'Perks';
 }
 
 export function FanView() {
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = React.useState<TabKey>('pickem');
+  const [activeTab, setActiveTab] = React.useState<TabKey>('feed');
   const [roleSheetVisible, setRoleSheetVisible] = React.useState(false);
   const { collapsed, onScroll } = useTabCollapse();
 
@@ -87,7 +83,6 @@ export function FanView() {
   return (
     <View style={styles.container}>
       {activeTab === 'feed' && <FanHomeFeed topInset={topPad} onScroll={onScroll} />}
-      {activeTab === 'pickem' && <PickemTab topPad={topPad} bottomPad={bottomPad} onScroll={onScroll} />}
       {activeTab === 'perks' && <PerksTab topPad={topPad} bottomPad={bottomPad} onScroll={onScroll} />}
 
       {/* Top fade */}
@@ -106,7 +101,7 @@ export function FanView() {
         pointerEvents="none"
       />
 
-      {/* Floating bottom pill — 3 main tabs, 240 wide (fits "Pick'em") */}
+      {/* Floating bottom pill — Feed + Perks */}
       <FloatingTabPill
         tabs={FAN_TABS}
         activeKey={tabKeyToLabel(activeTab)}
@@ -120,143 +115,11 @@ export function FanView() {
   );
 }
 
-// ============================================================
-// Tab 1 — Pick'em
-// ============================================================
-
-function PickemTab({ topPad, bottomPad, onScroll }: { topPad: number; bottomPad: number; onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void }) {
-  const [picks, setPicks] = React.useState<Record<string, string | undefined>>(
-    Object.fromEntries(FAN_PREDICTIONS.map((p) => [p.id, p.myPick])),
-  );
-
-  const setPick = (predId: string, optId: string) => {
-    setPicks((prev) => ({ ...prev, [predId]: optId }));
-  };
-
-  return (
-    <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingTop: topPad, paddingBottom: bottomPad }]}
-      showsVerticalScrollIndicator={false}
-      onScroll={onScroll}
-      scrollEventThrottle={16}
-    >
-      <Animated.View entering={FadeIn.duration(300)} style={styles.fanScoreCard}>
-        <LinearGradient
-          colors={['rgba(168,85,247,0.18)', 'rgba(168,85,247,0.02)']}
-          style={StyleSheet.absoluteFill}
-        />
-        <View>
-          <Text style={styles.fanScoreLabel}>FAN SCORE · SEASON</Text>
-          <Text style={styles.fanScoreValue}>{FAN_PROFILE.superfanPoints.toLocaleString()}</Text>
-          <Text style={styles.fanScoreMeta}>
-            #134 on the national leaderboard · up 22 this week
-          </Text>
-        </View>
-        <View style={styles.fanScoreRight}>
-          <Text style={styles.accuracyValue}>67%</Text>
-          <Text style={styles.accuracyLabel}>accuracy</Text>
-        </View>
-      </Animated.View>
-
-      {FAN_PREDICTIONS.map((p, i) => (
-        <PredictionCard
-          key={p.id}
-          p={p}
-          pick={picks[p.id]}
-          onPick={(opt) => !p.locked && setPick(p.id, opt)}
-          delay={i * 70}
-        />
-      ))}
-    </ScrollView>
-  );
-}
-
-function PredictionCard({
-  p,
-  pick,
-  onPick,
-  delay,
-}: {
-  p: Prediction;
-  pick: string | undefined;
-  onPick: (optId: string) => void;
-  delay: number;
-}) {
-  return (
-    <Animated.View
-      entering={FadeInDown.delay(delay).duration(380)}
-      style={[styles.predCard, p.locked && { opacity: 0.85 }]}
-    >
-      <View style={styles.predHead}>
-        <Text style={styles.predLabel}>{p.label}</Text>
-        <View style={[styles.potPill, p.locked && { opacity: 0.6 }]}>
-          <Ionicons name="trophy" size={11} color={ACCENT} />
-          <Text style={styles.potText}>{p.potPoints} pts</Text>
-        </View>
-      </View>
-      <Text
-        style={[
-          styles.predDeadline,
-          p.locked && { color: '#FF4444', fontWeight: '700' },
-        ]}
-      >
-        {p.deadline}
-      </Text>
-      <View style={styles.predOpts}>
-        {p.options.map((opt) => {
-          const selected = pick === opt.id;
-          return (
-            <TouchableOpacity
-              key={opt.id}
-              activeOpacity={p.locked ? 1 : 0.7}
-              onPress={() => onPick(opt.id)}
-              style={[styles.predOpt, selected && styles.predOptSelected]}
-            >
-              <View style={styles.predOptBarTrack}>
-                <View
-                  style={[
-                    styles.predOptBarFill,
-                    {
-                      width: `${opt.pct}%`,
-                      backgroundColor: selected ? 'rgba(168,85,247,0.35)' : 'rgba(255,255,255,0.07)',
-                    },
-                  ]}
-                />
-              </View>
-              <View style={styles.predOptContent}>
-                <Text
-                  style={[
-                    styles.predOptText,
-                    selected && styles.predOptTextSelected,
-                  ]}
-                >
-                  {opt.text}
-                </Text>
-                <Text
-                  style={[
-                    styles.predOptPct,
-                    selected && { color: PURPLE, fontWeight: '800' },
-                  ]}
-                >
-                  {opt.pct}%
-                </Text>
-              </View>
-              {selected && (
-                <View style={styles.predMyPick}>
-                  <Ionicons name="checkmark-circle" size={12} color={PURPLE} />
-                  <Text style={styles.predMyPickText}>YOUR PICK</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </Animated.View>
-  );
-}
+// (Pick'em tab removed — charter FAN CUT LIST: no performance-contingent
+//  predictions, no Fan Score leaderboard.)
 
 // ============================================================
-// Tab 4 — Perks
+// Perks
 // ============================================================
 
 // Map a FAN_PERKS row → the PerkSheet's shape. Available perks are claimable;
@@ -271,7 +134,7 @@ function perkToSheet(p: Perk): SheetPerk {
     kind: p.claimed ? 'status' : 'claimable',
     fulfillment: p.claimed
       ? 'Claimed — fulfillment complete.'
-      : `Costs ${p.cost.toLocaleString()} pts · fulfilled by the athlete's team after claim.`,
+      : `Included with your ${p.tier} membership · fulfilled by the athlete's team after claim.`,
     delivered: p.claimed,
   };
 }
@@ -288,7 +151,9 @@ function PerksTab({ topPad, bottomPad, onScroll }: { topPad: number; bottomPad: 
       onScroll={onScroll}
       scrollEventThrottle={16}
     >
-      {/* Tier progress */}
+      {/* Membership identity — tier NAME + supporter tenure. No points, no
+          progress-to-next-tier ladder (charter FAN CUT LIST: no points
+          gamification / leaderboards). Tier is identity, not a score. */}
       <Animated.View entering={FadeIn.duration(300)} style={styles.tierCard}>
         <LinearGradient
           colors={['rgba(168,85,247,0.22)', 'rgba(168,85,247,0.02)']}
@@ -299,24 +164,9 @@ function PerksTab({ topPad, bottomPad, onScroll }: { topPad: number; bottomPad: 
             <Ionicons name="diamond" size={22} color={PURPLE} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.tierCurrent}>{FAN_PROFILE.superfanTier} Tier</Text>
-            <Text style={styles.tierPoints}>{FAN_PROFILE.superfanPoints.toLocaleString()} points</Text>
+            <Text style={styles.tierCurrent}>{FAN_PROFILE.superfanTier} Member</Text>
+            <Text style={styles.tierPoints}>Supporter since {FAN_PROFILE.supporterSince}</Text>
           </View>
-          <Text style={styles.tierToNext}>+{FAN_PROFILE.pointsToNext} to {FAN_PROFILE.nextTier}</Text>
-        </View>
-        <View style={styles.tierTrack}>
-          <View
-            style={[
-              styles.tierFill,
-              {
-                width: `${
-                  (FAN_PROFILE.superfanPoints /
-                    (FAN_PROFILE.superfanPoints + FAN_PROFILE.pointsToNext)) *
-                  100
-                }%`,
-              },
-            ]}
-          />
         </View>
       </Animated.View>
 
@@ -349,8 +199,6 @@ function PerkCard({ p, delay, onOpen }: { p: Perk; delay: number; onOpen: (p: Pe
     Platinum: '#C0C0C0',
     Diamond: PURPLE,
   };
-
-  const affordable = FAN_PROFILE.superfanPoints >= p.cost;
 
   return (
     <Animated.View
@@ -390,24 +238,10 @@ function PerkCard({ p, delay, onOpen }: { p: Perk; delay: number; onOpen: (p: Pe
         <Text style={styles.perkAthlete}>{p.athlete}</Text>
         <Text style={styles.perkDesc}>{p.description}</Text>
         {!p.claimed && (
-          <View
-            style={[
-              styles.claimBtn,
-              !affordable && styles.claimBtnDisabled,
-            ]}
-          >
-            <Ionicons name="diamond-outline" size={13} color={affordable ? TEXT_PRIMARY : TEXT_TERTIARY} />
-            <Text style={[styles.claimBtnText, !affordable && { color: TEXT_TERTIARY }]}>
-              {affordable ? 'Claim' : `Need ${(p.cost - FAN_PROFILE.superfanPoints).toLocaleString()} more`}
-            </Text>
-            <Text
-              style={[
-                styles.claimBtnCost,
-                !affordable && { color: TEXT_TERTIARY },
-              ]}
-            >
-              {p.cost.toLocaleString()} pts
-            </Text>
+          <View style={styles.claimBtn}>
+            <Ionicons name="diamond-outline" size={13} color={TEXT_PRIMARY} />
+            <Text style={styles.claimBtnText}>Claim</Text>
+            <Text style={styles.claimBtnCost}>{p.tier} perk</Text>
           </View>
         )}
       </TouchableOpacity>

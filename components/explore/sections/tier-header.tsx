@@ -1,5 +1,6 @@
-// Tier header — gamification surface for fans-only users. Title +
-// "Following N · X pts" subtitle + tier pill (Diamond/Platinum/Gold/etc.)
+// Tier header — fan membership identity. Title + "Following N · tier name"
+// subtitle + tier pill (Diamond/Platinum/Gold/etc.). Points/score removed
+// (charter FAN CUT LIST: no points gamification / leaderboards; tier NAMES ok).
 // Extracted from components/fan/fan-view.tsx during the
 // fan-content-to-triad-2026-05-12 decomposition (Phase 2a). Hidden when
 // the user has any pro role; see isFansOnlyUser.
@@ -26,7 +27,7 @@ export function TierHeader({ title = 'Fan Hub' }: TierHeaderProps) {
         <Text style={styles.headerTitle}>{title}</Text>
         <Text style={styles.headerSubtitle}>
           Following {FAN_FOLLOWING.length} athletes ·{' '}
-          {FAN_PROFILE.superfanPoints.toLocaleString()} pts
+          {FAN_PROFILE.superfanTier} member
         </Text>
       </View>
       <View style={styles.tierPill}>

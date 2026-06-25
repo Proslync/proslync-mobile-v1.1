@@ -44,7 +44,6 @@ import {
 import {
   FAN_FOLLOWING as _FAN_FOLLOWING,
   FAN_PERKS as _FAN_PERKS,
-  FAN_PREDICTIONS as _FAN_PREDICTIONS,
 } from '@/lib/data/mock-fan-data';
 import { FAN_ACCENT, FAN_ACCENT_BORDER, FAN_ACCENT_SOFT } from '@/constants/brand';
 import { AthleteAvatar as _AthleteAvatar } from '@/components/explore/sections/athlete-avatar';
@@ -542,15 +541,10 @@ export default function FanHomeTab() {
   );
 
   // ── Unmounted vars (kept to avoid dead-code TS errors on imports) ────────
-  const _tierPct =
-    (FAN_PROFILE.superfanPoints /
-      (FAN_PROFILE.superfanPoints + FAN_PROFILE.pointsToNext)) *
-    100;
-  const _predictionTeasers = _FAN_PREDICTIONS.slice(0, 3);
+  // Pick'em + points removed (charter FAN CUT LIST); the tier-progress / Fan
+  // Score calc that referenced FAN_PROFILE.superfanPoints/pointsToNext is gone.
   const _perkTeasers = _FAN_PERKS.filter((p) => !p.claimed).slice(0, 3);
   const _liveAthletes = _FAN_FOLLOWING.filter((a) => a.isLive);
-  void _tierPct;
-  void _predictionTeasers;
   void _perkTeasers;
   void _liveAthletes;
   // Suppress unused-import warnings for unmounted visual components

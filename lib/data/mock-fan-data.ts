@@ -23,21 +23,18 @@ export const FAN_PROFILE = {
       title: 'Teams & Athletes',
       body: 'Syracuse Men\'s Basketball (ride-or-die). UConn WBB for Paige Bueckers. Colorado football when Travis Hunter plays both ways. Following Cooper Flagg, Simone Lee at Penn State, and Paul Skenes whenever LSU plays.',
     },
-    {
-      key: 'pickem',
-      title: 'Pick\'em Record',
-      body: '2025 Tournament: 42 of 63 correct (67%). All-time accuracy on Syracuse games: 74%. Undefeated when picking against UNC in the last four matchups.',
-    },
   ],
+  // Membership identity only — no Fan Score / points / streaks. Charter (FAN
+  // CUT LIST): spend leaderboards + points gamification are the whale-toxicity
+  // pattern. The fan's PAYING STATUS (tier name + perks) is the asset, not a
+  // score. Tier NAMES are allowed; points/score/leaderboards are not.
   stats: [
     { label: 'Following', value: '12' },
     { label: 'Games watched', value: '47' },
-    { label: 'Fan Score', value: '892' },
+    { label: 'Supporting', value: '4' },
   ],
   superfanTier: 'Platinum',
-  superfanPoints: 8920,
-  nextTier: 'Diamond',
-  pointsToNext: 1080,
+  supporterSince: 'Oct 2023',
 };
 
 export type FollowingAthlete = {
@@ -250,74 +247,19 @@ export const FAN_GAMES: LiveGame[] = [
   },
 ];
 
-export type Prediction = {
-  id: string;
-  label: string;
-  options: { id: string; text: string; pct: number }[];
-  deadline: string;
-  locked: boolean;
-  myPick?: string;
-  potPoints: number;
-};
-
-export const FAN_PREDICTIONS: Prediction[] = [
-  {
-    id: 'pred-1',
-    label: 'Does Kiyan score 20+ tonight?',
-    options: [
-      { id: 'yes', text: 'Yes · 20+ points', pct: 64 },
-      { id: 'no', text: 'No · under 20', pct: 36 },
-    ],
-    deadline: 'Closes 7:25 PM',
-    locked: false,
-    myPick: 'yes',
-    potPoints: 150,
-  },
-  {
-    id: 'pred-2',
-    label: 'Margin of victory · Syracuse vs Duke',
-    options: [
-      { id: 'm1', text: 'Duke wins', pct: 48 },
-      { id: 'm2', text: 'Cuse by 1-5', pct: 28 },
-      { id: 'm3', text: 'Cuse by 6+', pct: 24 },
-    ],
-    deadline: 'LOCKED at tipoff',
-    locked: true,
-    myPick: 'm2',
-    potPoints: 300,
-  },
-  {
-    id: 'pred-3',
-    label: 'Paul VI vs Gonzaga HS · WCAC final',
-    options: [
-      { id: 'pv', text: 'Paul VI wins', pct: 58 },
-      { id: 'gz', text: 'Gonzaga wins', pct: 42 },
-    ],
-    deadline: 'Closes Fri 7:20 PM',
-    locked: false,
-    potPoints: 200,
-  },
-  {
-    id: 'pred-4',
-    label: 'ACC Player of the Year',
-    options: [
-      { id: 'cf', text: 'Cooper Flagg', pct: 71 },
-      { id: 'ka', text: 'Kiyan Anthony', pct: 17 },
-      { id: 'dh', text: 'Field', pct: 12 },
-    ],
-    deadline: 'Closes season-end',
-    locked: false,
-    myPick: 'ka',
-    potPoints: 1000,
-  },
-];
+// REMOVED (charter FAN CUT LIST): the performance-contingent pick'em.
+// The `Prediction` type + `FAN_PREDICTIONS` (incl. "Does Kiyan score 20+
+// tonight?" with a points pot) were deleted outright — "ANYTHING performance-
+// contingent (win bonuses/predictions) = pay-for-play; fans buy content +
+// perks, never outcomes." Nothing imports them anymore.
 
 export type Perk = {
   id: string;
   type: 'tickets' | 'merch' | 'experience' | 'meet';
   title: string;
   athlete: string;
-  cost: number;
+  // No `cost` (points) — perks are tier-gated membership benefits, not a
+  // points-store currency (charter FAN CUT LIST: no points gamification).
   tier: 'Gold' | 'Platinum' | 'Diamond';
   claimed: boolean;
   description: string;
@@ -331,7 +273,6 @@ export const FAN_PERKS: Perk[] = [
     type: 'tickets',
     title: '2 floor-row tickets · Syracuse vs UNC',
     athlete: 'JMA Wireless Dome',
-    cost: 6000,
     tier: 'Platinum',
     claimed: true,
     description: 'Section A · Row 1 · Complimentary parking included',
@@ -341,7 +282,6 @@ export const FAN_PERKS: Perk[] = [
     type: 'meet',
     title: 'Meet & greet with Kiyan Anthony',
     athlete: 'Post-game · Dome tunnel',
-    cost: 12000,
     tier: 'Diamond',
     claimed: false,
     description: 'Signed jersey + 5-minute photo op · April 28',
@@ -351,7 +291,6 @@ export const FAN_PERKS: Perk[] = [
     type: 'merch',
     title: 'KA7 Orange Crush hoodie — pre-release',
     athlete: 'Kiyan Anthony · capsule drop',
-    cost: 3200,
     tier: 'Gold',
     claimed: true,
     description: 'Limited to 500 · shipped before public launch',
@@ -361,7 +300,6 @@ export const FAN_PERKS: Perk[] = [
     type: 'experience',
     title: 'Shoot-around pass · Practice Day',
     athlete: 'Syracuse Men\'s Basketball',
-    cost: 8500,
     tier: 'Platinum',
     claimed: true,
     description: 'Watch practice from courtside · no meet, silent observe',
@@ -371,7 +309,6 @@ export const FAN_PERKS: Perk[] = [
     type: 'tickets',
     title: 'Road-trip package · Duke @ Cameron',
     athlete: 'Duke vs Syracuse',
-    cost: 15000,
     tier: 'Diamond',
     claimed: false,
     description: 'Flight + hotel + 2 tickets · Cameron Crazies section',
@@ -381,7 +318,6 @@ export const FAN_PERKS: Perk[] = [
     type: 'merch',
     title: 'Game-worn Kiyan warmup jacket',
     athlete: 'Auction · bid with points',
-    cost: 22000,
     tier: 'Diamond',
     claimed: false,
     description: 'Worn vs Duke · size M · authenticated',
