@@ -72,16 +72,21 @@ const KIYAN_WALLET_TRANSACTIONS = DEAL_TRUTH_FIXTURE.filter(
   createdAt: d.paidAtISO ?? new Date().toISOString(),
 }));
 
-// NIL deals: the 4 canonical Kiyan contracts, carrying REAL brand names so the
-// ACTIVE CONTRACTS list shows "Gatorade / Nike / …" (never "Brand <ID>") and
-// the Deals "YTD DEAL VALUE" sums to the same $11,900 booked total.
+// NIL deals: the 4 canonical Kiyan wallet contracts PLUS the hero deal d-4
+// (Nike Hoops $660K, signed). Real brand names so the ACTIVE CONTRACTS list
+// shows "Nike Hoops / Gatorade / …" (never "Brand <ID>"). The Deals
+// "YTD DEAL VALUE" (BOOKED) sums to $671,900 = $11,900 wallet + $660K d-4;
+// "paid this season" stays $3,200 (d-4 is signed, payments scheduled — NOT
+// paid). Booked and paid are DIFFERENT, clearly-labeled concepts. d-4's
+// $660K here is the SAME number the Nike Hoops packet, dr-003, payout
+// breakdown, agent money board, and collective row all show — single source.
 const KIYAN_NIL_DEAL_STAGE: Record<string, string> = {
   paid: 'settled',
   cleared: 'live',
   'in-review': 'committed',
   expected: 'negotiating',
 };
-const KIYAN_NIL_DEALS = DEAL_TRUTH_FIXTURE.map((d) => ({
+const KIYAN_WALLET_NIL_DEALS = DEAL_TRUTH_FIXTURE.map((d) => ({
   id: d.dealId,
   sourceOpenDealId: null,
   sourceApplicationId: null,
@@ -101,6 +106,31 @@ const KIYAN_NIL_DEALS = DEAL_TRUTH_FIXTURE.map((d) => ({
   createdAt: d.disclosure.executedAtISO ?? new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 }));
+// Hero deal d-4 (Nike Hoops × Kiyan, $660K) — SIGNED, payments scheduled, NOT
+// settled. stage 'live' + contractStatus 'signed' → reads "Signed/Active",
+// never "Paid" (only `settled` deals read Paid), so the big booked number sits
+// next to the small paid number without contradiction.
+const KIYAN_HERO_NIL_DEAL = {
+  id: 'd-4',
+  sourceOpenDealId: null,
+  sourceApplicationId: null,
+  athleteId: 'a-1',
+  brandId: 'brand-nike-hoops',
+  brandName: 'Nike Hoops',
+  categoryId: null,
+  title: 'Three-year renewal · signature line',
+  stage: 'live',
+  amountCents: 660_000_00,
+  startDate: '2026-04-22T00:00:00.000Z',
+  endDate: null,
+  exclusivity: 'Footwear & apparel — category-exclusive · 3 yrs',
+  contractStatus: 'signed',
+  reviewSummary: 'all-cleared',
+  appealState: 'none' as const,
+  createdAt: '2026-04-22T00:00:00.000Z',
+  updatedAt: new Date().toISOString(),
+};
+const KIYAN_NIL_DEALS = [KIYAN_HERO_NIL_DEAL, ...KIYAN_WALLET_NIL_DEALS];
 
 const MOCK_CONVERSATIONS = [
   {
@@ -495,9 +525,10 @@ function mockResponse(method: string, endpoint: string): any {
   }
 
   // ── NIL deals (athlete active contracts / Deals YTD hero) ────────────────
-  // The canonical Kiyan deal set, with REAL brand names so the contracts
-  // list never shows "Brand <ID>" and the Deals "YTD DEAL VALUE" reconciles
-  // with Home + Wallet ($11,900 booked, $3,200 of it paid).
+  // The canonical Kiyan deal set (4 wallet deals + hero d-4), with REAL brand
+  // names so the contracts list never shows "Brand <ID>" and the Deals
+  // "YTD DEAL VALUE" (BOOKED) reconciles to $671,900 = $11,900 wallet + $660K
+  // Nike Hoops d-4; of that, only $3,200 is paid this season (booked ≠ paid).
   if (path.startsWith('/api/nil-deals')) {
     return { data: KIYAN_NIL_DEALS };
   }

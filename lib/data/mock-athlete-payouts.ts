@@ -4,10 +4,23 @@
 // `synthetic` per `mock-rev-share.ts` / `mock-deal-comps.ts` precedent.
 //
 // DEMO RECONCILIATION: Kiyan's items mirror the canonical
-// DEAL_TRUTH_FIXTURE deals (Gatorade paid $3,200 + JMA/Nike/Legacy in
-// flight) so the payout breakdown's `paidYtd` ($3,200) and gross booked
-// ($11,900) match Home "paid this season", Wallet YTD, and the Deals
-// "YTD DEAL VALUE" exactly. The aggregate `taxSetAside` line is a 24%
+// DEAL_TRUTH_FIXTURE wallet deals (Gatorade paid $3,200 + JMA/Nike/Legacy in
+// flight) PLUS the hero deal d-4 (Nike Hoops $660K, signed, payments
+// SCHEDULED — not paid). Two DIFFERENT, clearly-labeled concepts:
+//   • "paid this season" / paidYtd  = $3,200   (only `paid` items credit it)
+//   • gross BOOKED deal value       = $671,900 (the 4 wallet deals + d-4 $660K)
+// The big d-4 number sits next to the small paid number as "signed, payments
+// scheduled" — never as a contradiction (booked ≠ paid). These match Home
+// "paid this season", Wallet YTD ($3,200), and the Deals "YTD DEAL VALUE"
+// ($671,900) exactly (client.ts KIYAN_NIL_DEALS adds the same d-4 row).
+//
+// G4 FIX: the d-4 item carries `dealId: 'd-4'` — the SAME d-* key scheme the
+// spine (BRAND_DEALS / getBrandDealDetail / coach join / collective) uses — so
+// a dealId join from a payout row resolves to the real Nike Hoops packet
+// instead of the orphaned dt-* fork. The 4 wallet items keep their dt-* ids,
+// which correctly join to the dt-* DEAL_TRUTH_FIXTURE (their own namespace).
+//
+// The aggregate `taxSetAside` line is a 24%
 // SUGGESTION across all booked income (clearly labeled "estimate, not tax
 // advice") — distinct from the $768 actual set-aside Home shows on the one
 // settled Gatorade deal; both are 24% and neither contradicts the other.
@@ -87,16 +100,33 @@ function makeItem(args: {
   };
 }
 
-// ── Items mirror the canonical DEAL_TRUTH_FIXTURE deals so the payout
-// breakdown tells the SAME money story as Home / Deals / Wallet: one paid
-// deal (Gatorade $3,200) and three in-flight (JMA $4,500 expected, Nike
-// $2,400 in CSC review, Legacy $1,800 cleared-awaiting-settlement).
+// ── Items mirror the canonical DEAL_TRUTH_FIXTURE wallet deals + the hero
+// deal d-4 so the payout breakdown tells the SAME money story as Home / Deals
+// / Wallet: one paid deal (Gatorade $3,200), three in-flight small deals (JMA
+// $4,500 expected, Nike $2,400 in CSC review, Legacy $1,800 cleared-awaiting),
+// and the flagship d-4 Nike Hoops renewal ($660K, signed, payments scheduled).
 //
-//   gross (booked)  = 3,200 + 4,500 + 2,400 + 1,800 = $11,900   (== Deals YTD)
-//   paidYtd         = 3,200                                       (== Home + Wallet YTD)
-//   pendingPayout   = 4,500 + 2,400 + 1,800        = $8,700       (everything not yet paid)
+//   gross (booked)  = 3,200 + 4,500 + 2,400 + 1,800 + 660,000 = $671,900 (== Deals YTD)
+//   paidYtd         = 3,200                                              (== Home + Wallet YTD)
+//   pendingPayout   = 4,500 + 2,400 + 1,800 + 660,000        = $668,700  (everything not yet paid)
 //
 const ITEMS: AthletePayoutItem[] = [
+  // ── Nike Hoops — d-4 HERO DEAL: flagship 3-yr renewal, SIGNED, $660K total,
+  // payments SCHEDULED (mostly future — NOT paid). dealId 'd-4' joins to the
+  // real Nike Hoops packet (getBrandDealDetail) + dr-003 + collective/agent
+  // surfaces. Booked, not earned: status 'projected' keeps it out of paidYtd.
+  makeItem({
+    id: 'ap-000',
+    dealId: 'd-4',
+    brandId: 'brand:nike-hoops',
+    brandLabel: 'Nike Hoops',
+    category: 'guaranteed',
+    amountCents: 660_000_00,
+    status: 'projected',
+    date: '2026-04-22T00:00:00.000Z',
+    note: 'Three-year renewal signed Apr 22 · $250K at signature, $310K at content proof, $100K at final report — disbursements scheduled, not yet settled.',
+    sourceLabel: 'Nike Hoops · d-4 flagship renewal (signed, payments scheduled)',
+  }),
   // ── Gatorade — Performance Partnership, PAID (24% tax set aside) ──
   makeItem({
     id: 'ap-001',

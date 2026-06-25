@@ -18,7 +18,7 @@
 // alongside any band.
 
 import type { BrandDealDetail } from '@/lib/data/mock-brand-data';
-import { DEAL_TRUTH_FIXTURE } from '@/lib/data/mock-deal-truth';
+import { DEAL_TRUTH_FIXTURE, HERO_DEAL_TRUTH } from '@/lib/data/mock-deal-truth';
 import { DEMO_DEAL } from '@/lib/data/mock-deal-engine';
 import type { DealTruth } from '@/lib/athlete/truth';
 import { hoursUntilISO } from '@/lib/athlete/truth';
@@ -52,12 +52,13 @@ const DEAL_ID_BRIDGE: Record<string, DealBridge> = {
   'd-2': { truthId: 'dt-legacy-1' },
   // Zaxby's draft → no live truth/engine record yet (graceful omit).
   'd-3': {},
-  // Gatorade flagship signed → Gatorade truth (PAID). No engine bridge: the
-  // only engine fixture is the Kiyan × JMA Wireless demo deal, whose milestone
-  // copy ("JMA product", "JMA booth") is foreign to a Gatorade deal — bridging
-  // it leaked JMA escrow/milestones into the Gatorade detail. Payment truth
-  // alone carries the settled-money story coherently.
-  'd-4': { truthId: 'dt-gatorade-1' },
+  // Nike Hoops HERO deal (d-4) signed → Nike Hoops payment truth (SIGNED,
+  // payments SCHEDULED / in-review — NOT paid). dt-nike-hoops-1 carries the
+  // $660K booked-but-not-settled story so the d-4 packet reads "signed,
+  // payments scheduled" across every lens — never "$660K paid". No engine
+  // bridge: the only engine fixture is the Kiyan × JMA Wireless demo deal,
+  // whose milestone copy is foreign to a Nike Hoops signature-line deal.
+  'd-4': { truthId: 'dt-nike-hoops-1' },
   // CarMax live → no live truth/engine record yet (graceful omit).
   'd-5': {},
   // Nike signature renewal in negotiation → JMA truth for the NIL-Go disclosure
@@ -193,7 +194,9 @@ export function buildDealEnrichment(detail: BrandDealDetail): DealEnrichment {
   // hold the same ratio (Gatorade's 24%), so payment-truth never disagrees with
   // the deal's headline value.
   const truth = bridge.truthId
-    ? DEAL_TRUTH_FIXTURE.find((t) => t.dealId === bridge.truthId)
+    ? [...DEAL_TRUTH_FIXTURE, ...HERO_DEAL_TRUTH].find(
+        (t) => t.dealId === bridge.truthId,
+      )
     : undefined;
   if (truth) {
     const packetCents = parseDisplayMoneyToCents(detail.money.total);

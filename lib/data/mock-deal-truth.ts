@@ -207,5 +207,41 @@ const CANONICAL_DEALS: CanonicalDealTruth[] = [
 /** Display-shape fixture — DERIVED from the canonical records above. */
 export const DEAL_TRUTH_FIXTURE: DealTruth[] = CANONICAL_DEALS.map(toDealTruth);
 
+// ── HERO DEAL d-4 payment truth (Nike Hoops × Kiyan) ─────────────────────
+// Kept OUT of DEAL_TRUTH_FIXTURE on purpose: the fixture drives the athlete
+// wallet rollup + the (dollar-blind) coach aggregate, both of which reconcile
+// to the four SMALL deals. The hero d-4 is a BIG booked-but-not-paid deal; it
+// is surfaced separately to the deal-detail enrichment bridge so the d-4
+// packet's payment-truth read shows "$660K · signed, payments scheduled"
+// (in-review / not settled) — never "$660K paid". dealId 'dt-nike-hoops-1' is
+// the dt-* payment-truth id; deal-enrichment bridges d-4 → this record.
+const NIKE_HERO_EXECUTED_ISO = '2026-04-22T00:00:00.000Z';
+const HERO_CANONICAL: CanonicalDealTruth = {
+  dealId: 'dt-nike-hoops-1',
+  brand: 'Nike Hoops',
+  title: 'Three-year renewal · signature line',
+  amountCents: 660_000_00,
+  // Signed + first tranche scheduled, payment authorized/in-review — NOT paid.
+  paymentEvents: [
+    { kind: 'expected', atISO: NIKE_HERO_EXECUTED_ISO, source: 'contract' },
+    { kind: 'in-review', atISO: '2026-04-24T00:00:00.000Z', source: 'csc-attested' },
+  ],
+  clearance: {
+    state: 'cleared',
+    attestedAtISO: '2026-04-23T09:15:00.000Z',
+    source: 'csc-portal',
+  },
+  executedAtISO: NIKE_HERO_EXECUTED_ISO,
+  ledger: [
+    { id: 'lg-nike-hoops-credit', atISO: NIKE_HERO_EXECUTED_ISO, kind: 'deal-credit', amountCents: 660_000_00, sign: 1, ref: 'dt-nike-hoops-1' },
+  ],
+  deliverables: [
+    { label: 'Signature-line co-design milestone', dueISO: new Date(Date.now() + 30 * 24 * 3600e3).toISOString(), done: false },
+  ],
+};
+
+/** Hero d-4 payment truth — bridged by deal-enrichment, NOT in the wallet fixture. */
+export const HERO_DEAL_TRUTH: DealTruth[] = [toDealTruth(HERO_CANONICAL)];
+
 /** Empty fixture — selectors must be total functions over this. */
 export const EMPTY_DEAL_TRUTH: DealTruth[] = [];
