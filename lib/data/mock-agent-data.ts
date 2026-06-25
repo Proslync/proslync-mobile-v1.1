@@ -107,6 +107,17 @@ export const AGENT_PROFILE = {
   ],
 };
 
+// ── AGENT ROSTER (de-forked from the spine) ──────────────────────────────
+// Every entry is either a REAL spine athlete (same id = same person as
+// BRAND_ATHLETES) or an agent-only client with a DISTINCT non-colliding id
+// (`ag-*`). Previously a-2..a-5 reused spine ids for DIFFERENT people
+// (agent a-3 = Maya Chen vs spine a-3 = Cooper Flagg), which made a cross-role
+// id join name the wrong athlete. Fixed mapping:
+//   a-1  Kiyan Anthony  — REAL spine athlete (the hero; owns d-4)
+//   a-4  JJ Starling    — REAL spine athlete (was wrongly id'd a-2)
+//   a-6  Ace Bailey     — REAL spine athlete (was wrongly id'd a-5)
+//   ag-3 Maya Chen      — agent-only client, distinct id (no spine collision)
+//   ag-4 Jalen Ortiz    — agent-only client, distinct id (no spine collision)
 export const AGENT_ATHLETES: AgentAthlete[] = [
   {
     id: 'a-1',
@@ -122,7 +133,7 @@ export const AGENT_ATHLETES: AgentAthlete[] = [
     followers: '412K',
   },
   {
-    id: 'a-2',
+    id: 'a-4',
     name: 'JJ Starling',
     initials: 'JS',
     color: '#F76900',
@@ -135,7 +146,7 @@ export const AGENT_ATHLETES: AgentAthlete[] = [
     followers: '244K',
   },
   {
-    id: 'a-3',
+    id: 'ag-3',
     name: 'Maya Chen',
     initials: 'MC',
     color: '#2774AE',
@@ -148,7 +159,7 @@ export const AGENT_ATHLETES: AgentAthlete[] = [
     followers: '318K',
   },
   {
-    id: 'a-4',
+    id: 'ag-4',
     name: 'Jalen Ortiz',
     initials: 'JO',
     color: '#00274C',
@@ -161,7 +172,7 @@ export const AGENT_ATHLETES: AgentAthlete[] = [
     followers: '1.1M',
   },
   {
-    id: 'a-5',
+    id: 'a-6',
     name: 'Ace Bailey',
     initials: 'AB',
     color: '#CC0033',
@@ -175,23 +186,30 @@ export const AGENT_ATHLETES: AgentAthlete[] = [
   },
 ];
 
+// ── AGENT DEALS (de-forked) ──────────────────────────────────────────────
+// The Kiyan × Nike Hoops entry is re-pointed to the canonical hero deal d-4
+// ($660K, signed) so opening it from any agent surface resolves to the same
+// Nike Hoops packet (getBrandDealDetail('d-4')) every other role sees — no
+// more an $85k-in-negotiation phantom that contradicts the $660K-signed spine.
+// All OTHER agent deals carry distinct `ag-d-*` ids so they can't collide with
+// the spine's d-1..d-6 packets, and reference the de-forked athlete ids.
 export const AGENT_DEALS: AgentDeal[] = [
   {
-    id: 'd-1',
+    id: 'd-4',
     athleteId: 'a-1',
     athleteName: 'Kiyan Anthony',
     athleteInitial: 'K',
     athleteColor: '#F76900',
     brand: 'Nike Hoops',
-    brandInitial: 'P',
-    brandColor: '#E11E2B',
-    stage: 'negotiation',
-    value: '$85k + 4% royalty',
+    brandInitial: 'N',
+    brandColor: '#111111',
+    stage: 'signed',
+    value: '$660K · 3 yrs',
     category: 'Footwear · Apparel',
-    due: 'Counter due Friday',
+    due: 'Signed — payments scheduled',
   },
   {
-    id: 'd-2',
+    id: 'ag-d-2',
     athleteId: 'a-1',
     athleteName: 'Kiyan Anthony',
     athleteInitial: 'K',
@@ -205,8 +223,8 @@ export const AGENT_DEALS: AgentDeal[] = [
     due: 'Activations begin May 3',
   },
   {
-    id: 'd-3',
-    athleteId: 'a-4',
+    id: 'ag-d-3',
+    athleteId: 'ag-4',
     athleteName: 'Jalen Ortiz',
     athleteInitial: 'J',
     athleteColor: '#00274C',
@@ -219,8 +237,8 @@ export const AGENT_DEALS: AgentDeal[] = [
     due: 'Mid-cycle review Tuesday',
   },
   {
-    id: 'd-4',
-    athleteId: 'a-3',
+    id: 'ag-d-4',
+    athleteId: 'ag-3',
     athleteName: 'Maya Chen',
     athleteInitial: 'M',
     athleteColor: '#2774AE',
@@ -233,8 +251,8 @@ export const AGENT_DEALS: AgentDeal[] = [
     due: 'Awaiting brand response',
   },
   {
-    id: 'd-5',
-    athleteId: 'a-2',
+    id: 'ag-d-5',
+    athleteId: 'a-4',
     athleteName: 'JJ Starling',
     athleteInitial: 'J',
     athleteColor: '#F76900',
@@ -299,7 +317,7 @@ export const AGENT_INSIGHTS = {
   topCategory: 'Footwear & Apparel',
 };
 
-// Per-athlete audience analytics — keyed by AgentAthlete.id
+// Per-athlete audience analytics — keyed by AgentAthlete.id (de-forked ids).
 export const AGENT_ATHLETE_AUDIENCE: Record<string, AthleteAudience> = {
   'a-1': {
     score: 78,
@@ -323,7 +341,7 @@ export const AGENT_ATHLETE_AUDIENCE: Record<string, AthleteAudience> = {
       { bucket: '65+', male: 0, female: 0 },
     ],
   },
-  'a-2': {
+  'a-4': {
     score: 64,
     totalFollowers: 244018,
     followersDelta: 3.11,
@@ -345,7 +363,7 @@ export const AGENT_ATHLETE_AUDIENCE: Record<string, AthleteAudience> = {
       { bucket: '65+', male: 1, female: 0 },
     ],
   },
-  'a-3': {
+  'ag-3': {
     score: 71,
     totalFollowers: 318441,
     followersDelta: 4.86,
@@ -367,7 +385,7 @@ export const AGENT_ATHLETE_AUDIENCE: Record<string, AthleteAudience> = {
       { bucket: '65+', male: 0, female: 1 },
     ],
   },
-  'a-4': {
+  'ag-4': {
     score: 84,
     totalFollowers: 1142008,
     followersDelta: 8.21,
@@ -389,7 +407,7 @@ export const AGENT_ATHLETE_AUDIENCE: Record<string, AthleteAudience> = {
       { bucket: '65+', male: 1, female: 0 },
     ],
   },
-  'a-5': {
+  'a-6': {
     score: 69,
     totalFollowers: 642189,
     followersDelta: 5.18,

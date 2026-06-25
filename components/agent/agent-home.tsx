@@ -20,6 +20,9 @@ import {
   View,
 } from 'react-native';
 
+import { useStableRouter } from '@/hooks/use-stable-router';
+import { getBrandDealDetail } from '@/lib/data/mock-brand-data';
+
 import {
   ACCENT,
   HAIRLINE,
@@ -45,7 +48,12 @@ import {
 } from '@/components/shared/ui-kit/tokens';
 
 // ── Fixture: cross-client money board ─────────────────────────────────────
-// All numbers are static demo figures — no live API calls.
+// Cross-client deals in the three payment states (expected / in-review /
+// paid-or-scheduled). Each row that maps to a real deal packet carries a
+// `dealId` so opening it resolves to the SAME deal-detail packet every other
+// role sees (single source of truth). The hero deal d-4 (Kiyan × Nike Hoops,
+// $660K signed, payments scheduled) sits at the top of the board and opens the
+// real Nike Hoops packet via /deal/d-4?role=agent.
 type AgingRow = {
   id: string;
   athlete: string;
@@ -53,9 +61,21 @@ type AgingRow = {
   amount: string;
   status: string; // "expected 45d overdue"
   overdue: boolean;
+  /** Bridges to a real deal-detail packet (getBrandDealDetail). When present,
+   *  tapping the row opens /deal/<dealId>?role=agent. */
+  dealId?: string;
 };
 
 const AGING_ROWS: AgingRow[] = [
+  {
+    id: 'ar-0',
+    athlete: 'Kiyan A.',
+    brand: 'Nike Hoops',
+    amount: '$660K',
+    status: 'signed · payments scheduled',
+    overdue: false,
+    dealId: 'd-4', // hero deal — opens the real Nike Hoops $660K packet
+  },
   {
     id: 'ar-1',
     athlete: 'Kiyan A.',
@@ -196,54 +216,86 @@ function SectionHeader({ label }: { label: string }) {
 // ── MODULE 1: MONEY BOARD (cross-client) ──────────────────────────────────
 
 function MoneyBoardModule() {
+  const router = useStableRouter();
   return (
     <View style={s.card}>
       <SectionHeader label="MONEY BOARD" />
-      {/* Aggregate line — tabular; overdue segment in red */}
+      {/* Aggregate line — booked (signed/scheduled) vs near-term expected, kept
+          distinct so the $660K booked hero never reads as cash in hand. */}
       <View style={s.moneyAggregateLine}>
         <Text style={s.moneyAgg}>
-          <Text style={s.moneyAggAmount}>$23,400</Text>
-          <Text style={s.moneyAggMeta}> expected across 4 clients · 2 in CSC review · </Text>
+          <Text style={s.moneyAggAmount}>$660K</Text>
+          <Text style={s.moneyAggMeta}> booked across 4 clients · $23,400 near-term expected · </Text>
           <Text style={s.moneyAggOverdue}>$4,500 OVERDUE 45d</Text>
         </Text>
       </View>
 
-      {/* Aging rows — max 3 */}
+      {/* Deal rows in the three payment states. Rows bridged to a real packet
+          (dealId) open the deal detail in the agent lens; others keep the
+          ghost NUDGE PAYER affordance. */}
       <View style={s.agingTable}>
-        {AGING_ROWS.map((row, idx) => (
-          <View
-            key={row.id}
-            style={[s.agingRow, idx > 0 && s.agingRowBorder]}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={s.agingAthleteText}>
-                {row.athlete} · {row.brand}
-              </Text>
-              <Text style={[s.agingStatus, row.overdue && s.agingStatusOverdue]}>
-                {row.status}
-              </Text>
-            </View>
-            <View style={s.agingRight}>
-              <Text style={[s.agingAmount, row.overdue && s.agingAmountOverdue]}>
-                {row.amount}
-              </Text>
-              {/* Ghost NUDGE PAYER chip — deal-engine pattern, no-op tap */}
-              <Pressable
-                style={s.nudgeChip}
-                onPress={() =>
-                  Alert.alert(
-                    'Nudge Payer',
-                    'Athletes control payer communications — this queues a follow-up note for your records.',
-                  )
-                }
-                accessibilityRole="button"
-                accessibilityLabel="Nudge payer"
-              >
-                <Text style={s.nudgeChipText}>NUDGE PAYER</Text>
-              </Pressable>
-            </View>
-          </View>
-        ))}
+        {AGING_ROWS.map((row, idx) => {
+          const packet = row.dealId ? getBrandDealDetail(row.dealId) : undefined;
+          const openPacket = () => {
+            if (!row.dealId) return;
+            router.push({
+              pathname: '/deal/[id]',
+              params: { id: row.dealId, role: 'agent' },
+            });
+          };
+          return (
+            <Pressable
+              key={row.id}
+              disabled={!packet}
+              onPress={openPacket}
+              style={({ pressed }) => [
+                s.agingRow,
+                idx > 0 && s.agingRowBorder,
+                pressed && packet ? { opacity: 0.7 } : null,
+              ]}
+              accessibilityRole={packet ? 'button' : undefined}
+              accessibilityLabel={
+                packet
+                  ? `Open ${row.athlete} · ${row.brand} deal — ${row.amount}`
+                  : undefined
+              }
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={s.agingAthleteText}>
+                  {row.athlete} · {row.brand}
+                </Text>
+                <Text style={[s.agingStatus, row.overdue && s.agingStatusOverdue]}>
+                  {row.status}
+                </Text>
+              </View>
+              <View style={s.agingRight}>
+                <Text style={[s.agingAmount, row.overdue && s.agingAmountOverdue]}>
+                  {row.amount}
+                </Text>
+                {packet ? (
+                  <View style={s.openChip}>
+                    <Text style={s.openChipText}>OPEN DEAL</Text>
+                  </View>
+                ) : (
+                  /* Ghost NUDGE PAYER chip — deal-engine pattern, no-op tap */
+                  <Pressable
+                    style={s.nudgeChip}
+                    onPress={() =>
+                      Alert.alert(
+                        'Nudge Payer',
+                        'Athletes control payer communications — this queues a follow-up note for your records.',
+                      )
+                    }
+                    accessibilityRole="button"
+                    accessibilityLabel="Nudge payer"
+                  >
+                    <Text style={s.nudgeChipText}>NUDGE PAYER</Text>
+                  </Pressable>
+                )}
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
@@ -530,6 +582,20 @@ const s = StyleSheet.create({
     fontWeight: WEIGHT.bold,
     letterSpacing: 0.6,
     color: TEXT_TERTIARY,
+  },
+  openChip: {
+    paddingHorizontal: SP_SM,
+    paddingVertical: SP_XS,
+    borderRadius: RADIUS_SM,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: `${ACCENT}66`,
+    backgroundColor: 'rgba(235,98,26,0.08)',
+  },
+  openChipText: {
+    fontSize: 9,
+    fontWeight: WEIGHT.bold,
+    letterSpacing: 0.6,
+    color: ACCENT,
   },
 
   // ── Module 2: Clearance Queue ──────────────────────────────
