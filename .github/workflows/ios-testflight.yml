@@ -1,0 +1,44 @@
+name: iOS → TestFlight
+
+# Ships the iOS app to TestFlight automatically.
+# Trigger: any commit that lands on `main` (the release branch) — or run manually.
+# The build runs on Expo's cloud (EAS), auto-increments the build number, and
+# auto-submits to App Store Connect app 6763113930 → internal TestFlight testers.
+#
+# REQUIRED ONE-TIME SETUP (owner): add an `EXPO_TOKEN` repo secret.
+#   Mint it at https://expo.dev/accounts/arshiar/settings/access-tokens
+#   then:  gh secret set EXPO_TOKEN --repo Proslync/proslync-mobile-v1.1
+# Until that secret exists, this workflow will run and fail on the build step.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Only one TestFlight ship at a time; never cancel a build that's already running.
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: EAS build + submit to TestFlight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build iOS (production) and submit to TestFlight
+        run: eas build --platform ios --profile production --non-interactive --auto-submit
