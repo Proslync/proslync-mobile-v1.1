@@ -40,5 +40,10 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Install dependencies
+        # EAS resolves the app config (incl. the expo-router plugin) on the runner
+        # before uploading to the cloud build, so node_modules must be present.
+        run: npm ci
+
       - name: Build iOS (production) and submit to TestFlight
         run: eas build --platform ios --profile production --non-interactive --auto-submit
