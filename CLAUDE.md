@@ -196,3 +196,36 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+## Git & GitHub operating protocol (STRICT)
+
+**The repo owner is not a git/GitHub expert. You own all git and GitHub mechanics.**
+Translate plain-language intent into the correct git operations every time — never make
+the owner think about branches, remotes, or commits unless they explicitly ask.
+
+### Intent → action (interpret the owner's words this way, always)
+| Owner says (any phrasing) | You MUST do |
+|---|---|
+| "save / back up / keep / lock in my progress" | `git add -A` → commit (clear message) → **push to `origin`**. A local commit alone is NOT "saved". |
+| "share it" / "send it to \<person\>" | Ensure pushed to `origin`, then add that person as a GitHub collaborator (resolve their GitHub username from email via `gh` if needed). |
+| "publish / put it on GitHub" | Push to `origin` (the Proslync account). |
+| "make it live / ship / deploy" | Confirm the target first — do NOT assume deploy means push. |
+
+### Canonical setup — do not deviate
+- **GitHub home = `github.com/Proslync`** (account login `Proslync`, a User account). `origin`
+  points here. The `personal` remote (`arshiarahnavard7-sys`) is a backup mirror only —
+  never the default push target.
+- This repo's default branch is **`arshia`** (the canonical mobile-app branch, not `main`).
+- Collaborator with push access: **`TrajanWJ`** (trajanwj@gmail.com).
+
+### Hard rules
+1. **Never lose work.** On any "save/share" intent, commit ALL changes (tracked + untracked) and push. Don't leave a dirty tree behind.
+2. **Always push after committing** when intent is save/share/back-up — a local commit is not durable.
+3. **`origin` = Proslync.** Mirror to `personal` only when explicitly asked.
+4. **Never force-push, hard-reset, or delete branches / remotes / repos without explicit confirmation.**
+5. **Branch off the default branch for new feature work**; don't pile experiments onto the default branch unasked.
+6. **Verify before any outward or destructive action** — confirm branch, remote, and exactly what will be published.
+7. Commit messages: concise, conventional-commit style, ending with:
+   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
+8. Use the `gh` CLI for all GitHub operations. **Never print or echo auth tokens.**
+9. After any push, report repo URL + branch + collaborator status in plain language.
